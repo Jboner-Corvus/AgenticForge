@@ -20,7 +20,10 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url || '/', `http://${req.headers.host}`);
   logger.info(`[WebServer] ${req.method} ${url.pathname}`);
 
-  if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
+  if (
+    req.method === 'GET' &&
+    (url.pathname === '/' || url.pathname === '/index.html')
+  ) {
     const indexPath = path.join(__dirname, '..', 'public', 'index.html');
     fs.readFile(indexPath, 'utf8', (err, content) => {
       if (err) {
@@ -64,18 +67,21 @@ const server = http.createServer((req, res) => {
           logger.error({ err }, 'Error in runAgent');
           streamCallback({ type: 'error', message: 'Agent execution failed.' });
         });
-      } catch (error) {
+      } catch {
+        // CORRECTION : La variable d'erreur non utilisée a été supprimée.
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid JSON payload' }));
       }
     });
     return;
   }
-  
+
   if (req.method === 'GET' && url.pathname === '/web-health') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }));
-      return;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(
+      JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }),
+    );
+    return;
   }
 
   res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -83,7 +89,9 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(WEB_PORT, '0.0.0.0', () => {
-  logger.info(`🌐 Web interface server started on http://localhost:${WEB_PORT}`);
+  logger.info(
+    `🌐 Web interface server started on http://localhost:${WEB_PORT}`,
+  );
 });
 
 process.on('SIGTERM', () => server.close(() => process.exit(0)));

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic Prometheus</title>
+    <style>
+        :root {
+            --background-color: #1a1a1a;
+            --container-bg-color: #242424;
+            --text-color: #e0e0e0;
+            --primary-color: #00aaff;
+            --border-color: #333;
+            --input-bg-color: #333;
+            --input-text-color: #e0e0e0;
+            --button-bg-color: #00aaff;
+            --button-text-color: #fff;
+            --thought-bg-color: rgba(255, 255, 255, 0.05);
+            --tool-bg-color: rgba(0, 170, 255, 0.1);
+            --result-bg-color: #2a2a2a;
+            --error-bg-color: rgba(255, 0, 0, 0.1);
+            --error-text-color: #ffcccc;
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-family-mono: 'Fira Code', 'Courier New', monospace;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        #app-container {
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--container-bg-color);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        header h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        header .logo {
+            font-size: 1.5rem;
+        }
+
+        #stream-container {
+            flex-grow: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .message-group {
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .message-group .header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .message-group .content {
+            padding-left: 1.7rem;
+            color: #ccc;
+        }
+
+        .message-group.thought { background-color: var(--thought-bg-color); border-color: #444; }
+        .message-group.tool-call { background-color: var(--tool-bg-color); border-color: var(--primary-color); }
+        .message-group.tool-result { background-color: var(--result-bg-color); border-color: #555; }
+        .message-group.final-response { background-color: var(--tool-bg-color); border-color: var(--primary-color); }
+        .message-group.error { background-color: var(--error-bg-color); border-color: var(--error-text-color); }
+
+        .message-group.error .content {
+            color: var(--error-text-color);
+        }
+
+        pre {
+            background-color: rgba(0,0,0,0.3);
+            padding: 0.75rem;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: var(--font-family-mono);
+            font-size: 0.85rem;
+        }
+
+        #form-container {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        #goal-form {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        #goal-input {
+            flex-grow: 1;
+            background-color: var(--input-bg-color);
+            color: var(--input-text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-family: var(--font-family);
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        #goal-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        #goal-input:disabled {
+            background-color: #2a2a2a;
+            cursor: not-allowed;
+        }
+
+        button {
+            background-color: var(--button-bg-color);
+            color: var(--button-text-color);
+            border: none;
+            border-radius: 6px;
+            padding: 0.75rem 1.5rem;
+            font-family: var(--font-family);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #0099e6;
+        }
+        
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <header>
+        <span class="logo">🚀</span>
+        <h1>Agentic Prometheus</h1>
+    </header>
+    <div id="stream-container">
+        </div>
+    <div id="form-container">
+        <form id="goal-form">
+            <input type="text" id="goal-input" placeholder="Enter your goal for the agent..." autocomplete="off" required>
+            <button type="submit" id="run-button">Run</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const goalForm = document.getElementById('goal-form');
+    const goalInput = document.getElementById('goal-input');
+    const runButton = document.getElementById('run-button');
+    const streamContainer = document.getElementById('stream-container');
+    let eventSource;
+
+    const iconMap = {
+        thought: '🧠',
+        tool_call: '🛠️',
+        tool_result: '📋',
+        final_response: '✅',
+        error: '❌',
+        status: 'ℹ️'
+    };
+
+    const titleMap = {
+        thought: 'Thought',
+        tool_call: 'Tool Call',
+        tool_result: 'Tool Result',
+        final_response: 'Final Response',
+        error: 'Error',
+        status: 'Status'
+    };
+
+    function addMessageToStream(type, data) {
+        const messageGroup = document.createElement('div');
+        messageGroup.className = `message-group ${type}`;
+
+        let contentHtml = '';
+        switch (type) {
+            case 'thought':
+                contentHtml = `<pre>${escapeHtml(data.content)}</pre>`;
+                break;
+            case 'tool_call':
+                const params = JSON.stringify(data.parameters, null, 2);
+                contentHtml = `
+                    <strong>Tool:</strong> ${escapeHtml(data.tool)}<br>
+                    <strong>Parameters:</strong>
+                    <pre>${escapeHtml(params)}</pre>
+                `;
+                break;
+            case 'tool_result':
+                contentHtml = `<pre>${escapeHtml(JSON.stringify(data.result, null, 2))}</pre>`;
+                break;
+            case 'final_response':
+                 contentHtml = `<p>${escapeHtml(data.content)}</p>`;
+                 break;
+            case 'error':
+            case 'status':
+                contentHtml = `<p>${escapeHtml(data.message)}</p>`;
+                break;
+        }
+
+        messageGroup.innerHTML = `
+            <div class="header">
+                <span class="icon">${iconMap[type]}</span>
+                <span class="title">${titleMap[type]}</span>
+            </div>
+            <div class="content">${contentHtml}</div>
+        `;
+        
+        streamContainer.appendChild(messageGroup);
+        streamContainer.scrollTop = streamContainer.scrollHeight;
+    }
+    
+    function escapeHtml(unsafe) {
+        if (unsafe === null || unsafe === undefined) return '';
+        return unsafe
+             .toString()
+             .replace(/&/g, "&amp;")
+             .replace(/</g, "&lt;")
+             .replace(/>/g, "&gt;")
+             .replace(/"/g, "&quot;")
+             .replace(/'/g, "&#039;");
+    }
+
+    function setFormState(enabled) {
+        goalInput.disabled = !enabled;
+        runButton.disabled = !enabled;
+    }
+
+    goalForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const goal = goalInput.value.trim();
+        if (!goal) return;
+
+        setFormState(false);
+        streamContainer.innerHTML = ''; // Clear previous stream
+
+        eventSource = new EventSource('/api/v1/agent/run');
+
+        eventSource.onopen = () => {
+             addMessageToStream('status', { message: 'Connection established. Agent is starting...' });
+        };
+
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            
+            // Map the 'response' type from the backend to 'final_response' for the frontend
+            const type = data.type === 'response' ? 'final_response' : data.type;
+
+            addMessageToStream(type, data);
+
+            // The agent sends this status message when it's done.
+            if (data.type === 'status' && data.message.includes('Déconnecté')) {
+                stopAgent();
+            }
+        };
+
+        eventSource.onerror = (err) => {
+            console.error("EventSource failed:", err);
+            addMessageToStream('error', { message: 'Connection to agent lost. Please try again.' });
+            stopAgent();
+        };
+        
+        // Start the agent by sending the goal
+        fetch('/api/v1/agent/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ goal })
+        }).catch(err => {
+            console.error("Failed to start agent:", err);
+            addMessageToStream('error', { message: 'Could not start the agent. Check server logs.' });
+            stopAgent();
+        });
+    });
+    
+    function stopAgent() {
+        if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+        }
+        setFormState(true);
+        goalInput.focus();
+    }
+
+</script>
+</body>
+</html>

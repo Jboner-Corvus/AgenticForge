@@ -25,7 +25,6 @@ export interface AuthData {
 // Session de l'agent (utilisée côté serveur par FastMCP)
 export interface AgentSession extends FastMCPSession {
   history: History;
-  // CORRECTION : Remplacement de 'any' par 'unknown' pour une meilleure sécurité de type.
   [key: string]: unknown;
 }
 
@@ -33,8 +32,8 @@ export interface AgentSession extends FastMCPSession {
 export type Ctx = FastMCPContext<AgentSession>;
 
 // Définition d'un outil.
-// CORRECTION : Remplacement de 'any' par 'unknown' pour le type générique.
-export type Tool<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape, any, any>> =
+// CORRECTION : Remplacement de `any` par `ZodRawShape` pour une meilleure sécurité de type.
+export type Tool<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape>> =
   FastMCPTool<AgentSession, T>;
 
 // Types pour les tâches asynchrones via BullMQ.

@@ -6,7 +6,6 @@
  * génère les prompts, interroge le LLM et exécute les outils nécessaires
  * pour atteindre l'objectif de l'utilisateur.
  */
-// CORRECTION : Remplacement de @ts-ignore par @ts-expect-error, plus sécurisé.
 // @ts-expect-error - Contournement pour un problème de résolution de module.
 import { Client, StreamableHTTPClientTransport } from 'fastmcp';
 import { getMasterPrompt } from './prompts/orchestrator.prompt.js';
@@ -35,8 +34,12 @@ function parseLlmResponse(llmResponse: string): {
   if (toolCodeMatch) {
     try {
       toolCode = JSON.parse(toolCodeMatch[1].trim());
-    } catch (_error) { // CORRECTION : Variable non utilisée préfixée par _.
-      log.error({ rawToolCode: toolCodeMatch[1] }, 'Failed to parse tool code JSON');
+    } catch {
+      // CORRECTION: La variable d'erreur non utilisée a été supprimée.
+      log.error(
+        { rawToolCode: toolCodeMatch[1] },
+        'Failed to parse tool code JSON',
+      );
       throw new Error('Invalid tool code JSON format from LLM.');
     }
   }
@@ -54,7 +57,10 @@ export async function runAgent(
   streamCallback: (data: Record<string, unknown>) => void,
 ) {
   const history: History = [{ role: 'user', content: goal }];
-  const mcpClient = new Client({ name: 'agent-orchestrator-client', version: '1.0.0' }, { capabilities: {} });
+  const mcpClient = new Client(
+    { name: 'agent-orchestrator-client', version: '1.0.0' },
+    { capabilities: {} },
+  );
   const transport = new StreamableHTTPClientTransport(
     new URL(`http://localhost:${config.PORT}/api/v1/agent/stream`),
   );
@@ -62,12 +68,19 @@ export async function runAgent(
   try {
     await mcpClient.connect(transport);
     log.info('MCP client connected to tool server.');
-    streamCallback({ type: 'status', message: 'Connecté au serveur d\'outils.' });
+    streamCallback({
+      type: 'status',
+      message: "Connecté au serveur d'outils.",
+    });
 
-    for (let i = 0; i < 10; i++) { // Limite de sécurité à 10 itérations
+    for (let i = 0; i < 10; i++) {
+      // Limite de sécurité à 10 itérations
       // 1. Générer le prompt pour le LLM
       const masterPrompt = getMasterPrompt(history, []);
-      streamCallback({ type: 'status', message: 'Génération de la réponse du LLM...' });
+      streamCallback({
+        type: 'status',
+        message: 'Génération de la réponse du LLM...',
+      });
 
       // 2. Obtenir la réponse du LLM
       const llmResponse = await getLlmResponse(masterPrompt);
@@ -78,13 +91,18 @@ export async function runAgent(
       streamCallback({ type: 'thought', content: thought });
 
       if (!toolCode) {
-        const finalMessage = "L'agent n'a pas sélectionné d'outil. Fin de la tâche.";
+        const finalMessage =
+          "L'agent n'a pas sélectionné d'outil. Fin de la tâche.";
         streamCallback({ type: 'response', content: finalMessage });
         log.warn(finalMessage);
         break;
       }
 
-      streamCallback({ type: 'tool_call', tool: toolCode.tool, parameters: toolCode.parameters });
+      streamCallback({
+        type: 'tool_call',
+        tool: toolCode.tool,
+        parameters: toolCode.parameters,
+      });
 
       // 4. Gérer le cas final
       if (toolCode.tool === 'finish') {
@@ -96,12 +114,14 @@ export async function runAgent(
 
       // 5. Exécuter l'outil via le client MCP
       try {
-        const toolResult = await mcpClient.tools.call(toolCode.tool, toolCode.parameters);
+        const toolResult = await mcpClient.tools.call(
+          toolCode.tool,
+          toolCode.parameters,
+        );
         const resultString = JSON.stringify(toolResult.content, null, 2);
-        
+
         history.push({ role: 'user', content: `TOOL_RESULT: ${resultString}` });
         streamCallback({ type: 'tool_result', result: toolResult.content });
-
       } catch (error) {
         log.error({ err: error, tool: toolCode.tool }, 'Error executing tool');
         const errorMessage = `Error executing tool ${toolCode.tool}: ${(error as Error).message}`;
@@ -111,10 +131,16 @@ export async function runAgent(
     }
   } catch (error) {
     log.fatal({ err: error }, 'Agent failed to connect or run.');
-    streamCallback({ type: 'error', message: `Erreur fatale de l'agent: ${(error as Error).message}` });
+    streamCallback({
+      type: 'error',
+      message: `Erreur fatale de l'agent: ${(error as Error).message}`,
+    });
   } finally {
     await mcpClient.disconnect();
     log.info('MCP client disconnected.');
-    streamCallback({ type: 'status', message: 'Déconnecté du serveur d\'outils. Tâche terminée.' });
+    streamCallback({
+      type: 'status',
+      message: "Déconnecté du serveur d'outils. Tâche terminée.",
+    });
   }
 }

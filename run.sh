@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-# CONSOLE DE GESTION - AGENTIC PROMETHEUS v3.1 (Developer Edition)
+# CONSOLE DE GESTION - AGENTIC PROMETHEUS v3.4 (Bake Edition)
 # Script de gestion Docker et de développement pour l'écosystème autonome.
 # ==============================================================================
 
 # --- Configuration Stricte et Gestion des Erreurs ---
 set -euo pipefail
+
+# CORRECTION : Activation de Docker Buildx Bake pour des builds plus rapides
+export COMPOSE_BAKE=true
 
 # --- Palette de Couleurs ---
 NC='\033[0m'
@@ -17,7 +20,6 @@ FG_BLUE='\033[0;34m'
 FG_MAGENTA='\033[0;35m'
 FG_CYAN='\033[1;36m'
 FG_WHITE='\033[1;37m'
-FG_DARK_GRAY='\033[1;30m'
 
 # --- Fonctions Utilitaires ---
 _log() {
@@ -38,8 +40,9 @@ _check_deps() {
         _log "ERROR" "Docker n'est pas installé. Veuillez l'installer pour continuer."
         exit 1
     fi
-    if ! (command -v docker-compose &> /dev/null || command -v docker compose &> /dev/null); then
-        _log "ERROR" "Docker Compose n'est pas installé. Veuillez l'installer pour continuer."
+    # CORRECTION : Retour à l'utilisation explicite de docker-compose
+    if ! command -v docker-compose &> /dev/null; then
+        _log "ERROR" "Docker Compose n'est pas installé ou détecté. Veuillez l'installer."
         exit 1
     fi
     if ! docker info &> /dev/null; then
@@ -66,13 +69,16 @@ _check_env() {
 }
 
 _show_title() {
+    # Utilisation du nouveau logo fourni par l'utilisateur
     echo -e "${FG_CYAN}"
-    echo "    ___    __                    __   __________  __  _                           "
-    echo "   /   |  / /___ __  ______  ____/ /  / ____/ __ \/ /_(_)___  ____  ___  __________"
-    echo "  / /| | / / __ \`/ |/_/ __ \/ __  /  / /   / /_/ / __/ / __ \/ __ \/ _ \/ ___/ ___/"
-    echo " / ___ |/ / /_/ />  </ /_/ / /_/ /  / /___/ ____/ /_/ / /_/ / /_/ /  __/ /  (__  ) "
-    echo "/_/  |_/_/\__,_/_/|_/ .___/\__,_/   \____/_/    \__/_/\____/ .___/\___/_/  /____/  "
-    echo "                   /_/                                  /_/                       "
+    echo "  ╔════════════════════════════════╗"
+    echo "  ║ ▛▀▀▀▀▀▀▀▀▜ ▄▄▄ ▄ ▄▄▄ ▄▄▄▄▄▄▄▄▄▄ ║"
+    echo "  ║ █ AGENTIC ▐▛▀▀▀▜▌█▞▀▀▜ █▛▀▀▀▜▌ ║"
+    echo "  ║ █ PROMETHEUS ▐▌█▌▐▌▐▌█ █▌  ▐▌█ ║"
+    echo "  ║ ▙▄▄▄▄▄▄▄▄▟ █▄▄▄▟▌█▙▄▄▟ █▙▄▄▄▟▌ ║"
+    echo "  ╠═══════◇════════════════◇══════╣"
+    echo "  ║   ░▒▓▌ FIRE OF KNOWLEDGE ▐▓▒░  ║"
+    echo "  ╚══════════[̲̅⚡̲̅]═══[̲̅🌐̲̅]════════╝"
     echo -e "${NC}"
 }
 
@@ -90,10 +96,27 @@ _action_stop() { _log "INFO" "Arrêt de l'écosystème..."; docker-compose down;
 _action_restart() { _log "INFO" "Redémarrage des services..."; docker-compose restart; _log "INFO" "Services redémarrés."; }
 _action_logs() { _log "INFO" "Affichage des logs... [CTRL+C] pour quitter."; docker-compose logs -f; }
 _action_status() { _log "INFO" "Statut des services :"; docker-compose ps; }
-_action_rebuild() { _log "INFO" "Reconstruction des images..."; docker-compose build --no-cache; _log "INFO" "Images reconstruites."; }
+_action_rebuild() {
+    _log "INFO" "Reconstruction des images sans utiliser le cache..."
+    docker-compose build --no-cache
+    _log "INFO" "Images reconstruites."
+}
 _action_shell() {
-    local service; service=$(docker-compose config --services | fzf --prompt="Entrer dans quel conteneur ? > " --height=20% || true);
-    if [ -n "$service" ]; then _log "INFO" "Accès au shell de '${service}'..."; docker-compose exec "$service" /bin/sh; else _log "WARN" "Aucun service sélectionné."; fi
+    _log "INFO" "Sélectionnez un service pour accéder à son shell :"
+    local services=$(docker-compose config --services)
+    select service in $services "Annuler"; do
+        if [[ "$service" == "Annuler" ]] || [[ -z "$service" ]]; then
+            _log "INFO" "Opération annulée."
+            break
+        fi
+        if [[ -n "$service" ]]; then
+            _log "INFO" "Accès au shell de '${service}'... (tapez 'exit' pour quitter)"
+            docker-compose exec "$service" /bin/sh
+            break
+        else
+            _log "WARN" "Choix invalide. Veuillez réessayer."
+        fi
+    done
 }
 _action_prune() {
     if _confirm "Êtes-vous sûr de vouloir nettoyer Docker (conteneurs, réseaux, volumes non utilisés) ?"; then
@@ -104,7 +127,7 @@ _action_prune() {
 # --- Actions de Développement Local ---
 _action_lint() {
     _log "DEBUG" "Lancement de ESLint pour l'analyse statique du code..."
-    if pnpm run lint; then _log "INFO" "Analyse ESLint terminée. Aucune erreur trouvée."; else _log "ERROR" "ESLint a trouvé des erreurs."; fi
+    if pnpm run lint; then _log "INFO" "Analyse ESLint terminée."; else _log "ERROR" "ESLint a trouvé des erreurs."; fi
 }
 _action_lint_fix() {
     _log "DEBUG" "Lancement de ESLint avec auto-correction..."
@@ -122,8 +145,6 @@ _action_test() {
 }
 _action_check_types() {
     _log "DEBUG" "Lancement du compilateur TypeScript pour la vérification des types..."
-    # Utilise 'pnpm exec' pour être sûr d'utiliser la version de tsc de node_modules
-    # L'option --noEmit garantit qu'aucun fichier .js n'est généré.
     if pnpm exec tsc --noEmit; then
         _log "INFO" "Vérification des types terminée. Aucune erreur trouvée."
     else
@@ -137,7 +158,6 @@ _action_clean() {
         _log "INFO" "Répertoire 'dist' supprimé."
     else _log "INFO" "Opération annulée."; fi
 }
-
 
 # --- Boucle Principale de la Console ---
 _check_deps
@@ -167,18 +187,17 @@ while true; do
         6) _action_shell ;;
         7) _action_rebuild ;;
         8) _action_prune ;;
-        
         10) _action_lint ;;
         11) _action_lint_fix ;;
         12) _action_format ;;
         13) _action_test ;;
         14) _action_check_types ;;
         15) _action_clean ;;
-
         16) break ;;
         *) _log "WARN" "Choix invalide. Veuillez sélectionner une option valide." ;;
     esac
     
+    # Pause pour que l'utilisateur puisse voir le résultat avant de réafficher le menu.
     if [[ "$main_choice" != "16" ]]; then
          read -rp "$(echo -e ${FG_BLUE}"\nAppuyez sur [ENTRÉE] pour retourner au menu..."${NC})"
     fi

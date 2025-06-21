@@ -1,38 +1,52 @@
-FROM node:20.11.0-alpine AS builder
+# ==============================================================================
+# Dockerfile pour Agentic Prometheus
+# Utilise une construction multi-étapes pour optimiser la taille et la sécurité.
+# ==============================================================================
+
+# --- Étape 1: Builder ---
+# Cette étape installe toutes les dépendances (dev et prod) et compile le code.
+FROM node:24-alpine AS builder
+
+# Définir le répertoire de travail
 WORKDIR /usr/src/app
-RUN corepack enable
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
+
+# Copier les fichiers de manifeste de paquets
+COPY package.json pnpm-lock.yaml ./
+
+# Installer les dépendances avec pnpm
+RUN npm install -g pnpm
+# CORRECTION: Ajout de --ignore-scripts pour ne pas exécuter le hook husky
+RUN pnpm install --frozen-lockfile --ignore-scripts
+
+# Copier le reste du code source de l'application
 COPY . .
+
+# Compiler le code TypeScript en JavaScript
 RUN pnpm run build
 
-FROM node:20.11.0-alpine
+# --- Étape 2: Production ---
+# Cette étape crée l'image finale avec uniquement ce qui est nécessaire pour l'exécution.
+FROM node:24-alpine AS production
+
+# Définir le répertoire de travail
 WORKDIR /usr/src/app
-RUN corepack enable
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --prod --frozen-lockfile
+
+# Copier les fichiers de manifeste de paquets
+COPY package.json pnpm-lock.yaml ./
+
+# Installer UNIQUEMENT les dépendances de production
+RUN npm install -g pnpm
+# CORRECTION: Ajout de --ignore-scripts pour ne pas exécuter le hook husky
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts
+
+# Copier le code compilé depuis l'étape 'builder'
 COPY --from=builder /usr/src/app/dist ./dist
 
-# Installer les dépendances système nécessaires
-RUN apk add --no-cache \
-    udev \
-    ttf-freefont \
-    chromium \
-    curl \
-    wget \
-    procps \
-    netcat-openbsd
+# Copier le répertoire public pour l'interface web
+COPY --from=builder /usr/src/app/public ./public
 
-# Créer le groupe et l'utilisateur
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# Exposer le port par défaut du serveur principal.
+EXPOSE 8080
 
-# Créer le dossier workspace avec les bonnes permissions
-RUN mkdir -p /usr/src/app/workspace && \
-    chown -R appuser:appgroup /usr/src/app && \
-    chmod -R 755 /usr/src/app
-
-# Changer vers l'utilisateur non-root
-USER appuser
-
-EXPOSE 8080 3000
-CMD ["pnpm", "start"]
+# La commande par défaut pour démarrer le serveur principal.
+CMD ["pnpm", "run", "start"]
