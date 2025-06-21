@@ -58,6 +58,8 @@ services:
     container_name: agentic_prometheus_web
     ports:
       - "${WEB_PORT:-3000}:3000"
+    volumes:
+      - ./public:/usr/src/app/public
     depends_on:
       - server
     env_file: .env
