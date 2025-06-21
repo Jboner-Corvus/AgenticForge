@@ -3,6 +3,7 @@ node_modules
 dist
 coverage
 .pnpm-store
+pnpm-lock.yaml
 
 # Fichiers de Log
 logs
