@@ -1,189 +1,75 @@
-// src/worker.ts
+/**
+ * src/worker.ts
+ *
+ * Le worker BullMQ qui exécute les tâches asynchrones en arrière-plan.
+ * Il traite les jobs de la file d'attente (comme l'exécution de code ou le scraping).
+ */
 import { Worker } from 'bullmq';
 import { config } from './config.js';
 import logger from './logger.js';
-import {
-  redisConnection,
-  AsyncTaskJobPayload,
-  taskQueue,
-  deadLetterQueue,
-  AppJob,
-} from './queue.js';
-import {
-  doWorkSpecific as longProcDoWork,
-  LongProcessParamsType,
-  LongProcessResultType,
-} from './tools/longProcess.tool.js';
-import { TASK_QUEUE_NAME, DEAD_LETTER_QUEUE_NAME } from './utils/constants.js';
-import { getErrDetails, ErrorDetails } from './utils/errorUtils.js';
-import { sendWebhook } from './utils/webhookUtils.js';
-import type { AuthData } from './types.js';
-import type { TaskOutcome } from './utils/asyncToolHelper.js';
+import { taskQueue, deadLetterQueue, redisConnection } from './queue.js';
+import { allTools } from './tools/index.js';
+import type { AsyncTaskJob } from './types.js';
 
-const Q_NAME = TASK_QUEUE_NAME;
+const worker = new Worker(
+  taskQueue.name,
+  async (job: AsyncTaskJob) => {
+    const { toolName, toolArgs, session } = job.data;
+    const log = logger.child({ jobId: job.id, toolName });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type JobProcFn<P = any, R = any> = (
-  params: P,
-  auth: AuthData | undefined,
-  taskId: string,
-  job: AppJob<P, R>
-) => Promise<R>;
+    log.info({ toolArgs }, `Processing job for tool: ${toolName}`);
 
-const processors: Record<string, JobProcFn> = {
-  // Kept JobProcFn as JobProcFn<any,any> implicitly
-  asynchronousTaskSimulatorEnhanced: longProcDoWork as JobProcFn<
-    // Cast to satisfy the general type
-    LongProcessParamsType,
-    LongProcessResultType
-  >,
+    const tool = allTools.find((t) => t.name === toolName);
+
+    if (!tool) {
+      throw new Error(`Tool "${toolName}" not found.`);
+    }
+
+    // Crée un contexte minimal pour l'outil
+    const ctx = {
+      session,
+      log,
+      // Les fonctions de progression et de streaming ne sont pas disponibles dans le worker,
+      // mais on pourrait les simuler en écrivant dans Redis.
+      reportProgress: async (p: any) => log.debug(p, 'Progress report'),
+      streamContent: async (c: any) => log.debug(c, 'Content stream'),
+    };
+
+    // Exécute l'outil
+    const result = await tool.execute(toolArgs, ctx);
+    log.info({ result }, 'Job completed successfully.');
+    return result;
+  },
+  {
+    connection: redisConnection,
+    concurrency: config.WORKER_CONCURRENCY,
+  }
+);
+
+// --- Gestion des Événements du Worker ---
+
+worker.on('failed', async (job, error) => {
+  const log = logger.child({ jobId: job?.id, toolName: job?.data.toolName });
+  log.error({ err: error }, 'Job failed.');
+
+  // Si le job a échoué après toutes les tentatives, le déplace vers la DLQ
+  if (job && job.attemptsMade >= (job.opts.attempts || 1)) {
+    log.warn(`Job failed all attempts. Moving to dead-letter queue.`);
+    await deadLetterQueue.add(job.name, job.data, job.opts);
+  }
+});
+
+worker.on('error', (err) => {
+  logger.error({ err }, 'A critical error occurred in the worker.');
+});
+
+logger.info(`🚀 Agentic-MCP worker started. Waiting for jobs...`);
+
+const shutdown = async (signal: string) => {
+  logger.warn(`Received ${signal}. Shutting down worker.`);
+  await worker.close();
+  process.exit(0);
 };
 
-const workerLog = logger.child({ proc: 'worker', queue: Q_NAME });
-
-const worker = new Worker<AsyncTaskJobPayload, unknown, string>(
-  Q_NAME,
-  async (job: AppJob<unknown, unknown>) => {
-    const { toolName, params, auth, taskId, cbUrl } = job.data;
-    const jobLog = workerLog.child({
-      jobId: job.id,
-      taskId,
-      tool: toolName,
-      attempt: job.attemptsMade,
-    });
-    jobLog.info({ paramsPreview: JSON.stringify(params)?.substring(0, 100) }, `Traitement du job`);
-
-    const processor = processors[toolName];
-    if (!processor) {
-      jobLog.error(
-        `Aucun processeur pour l'outil : ${toolName}. La tâche sera marquée comme échouée.`
-      );
-      throw new Error(`Aucun processeur trouvé pour l'outil : ${toolName}`);
-    }
-
-    let outcome: TaskOutcome<typeof params, unknown> | undefined;
-    try {
-      if (cbUrl) {
-        const initialProgressOutcome: TaskOutcome<typeof params, unknown> = {
-          taskId,
-          status: 'processing',
-          msg: `La tâche ${taskId} (${toolName}) a commencé son traitement.`,
-          inParams: params,
-          ts: new Date().toISOString(),
-          progress: { current: 0, total: 100, unit: '%' },
-        };
-        sendWebhook(cbUrl, initialProgressOutcome, taskId, toolName, false).catch((e) =>
-          jobLog.warn(
-            { err: getErrDetails(e) },
-            "Échec de l'envoi du webhook de progression initiale."
-          )
-        );
-      }
-
-      const result = await processor(params, auth, taskId, job);
-      jobLog.info(`Logique du job terminée avec succès.`);
-      outcome = {
-        taskId,
-        status: 'completed',
-        msg: `Tâche ${taskId} (${toolName}) terminée avec succès.`,
-        result,
-        inParams: params,
-        ts: new Date().toISOString(),
-        progress: { current: 100, total: 100, unit: '%' },
-      };
-      return result;
-    } catch (error: unknown) {
-      const errDetails: ErrorDetails = getErrDetails(error);
-      jobLog.error({ err: errDetails }, 'Erreur de traitement du job.');
-      outcome = {
-        taskId,
-        status: 'error',
-        msg: `La tâche ${taskId} (${toolName}) a échoué : ${errDetails.message}`, // Use .message
-        error: errDetails,
-        inParams: params,
-        ts: new Date().toISOString(),
-      };
-      throw error;
-    } finally {
-      if (cbUrl && outcome) {
-        jobLog.info(`Envoi du webhook final pour ${taskId}, statut : ${outcome.status}`);
-        sendWebhook(cbUrl, outcome, taskId, toolName, false).catch((e) =>
-          jobLog.error({ err: getErrDetails(e) }, "Échec de l'envoi du webhook final.")
-        );
-      }
-    }
-  },
-  { connection: redisConnection, concurrency: config.NODE_ENV === 'development' ? 2 : 5 }
-);
-
-worker.on('completed', (job: AppJob, res: unknown) => {
-  workerLog.info(
-    { jobId: job.id, taskId: job.data.taskId, resPreview: JSON.stringify(res)?.substring(0, 50) },
-    `Job terminé.`
-  );
-});
-worker.on('failed', async (job: AppJob | undefined, err: Error) => {
-  const rawErrorDetails = getErrDetails(err);
-  const attemptsMade = job?.attemptsMade || 0;
-  const maxAttempts = job?.opts?.attempts || (taskQueue.defaultJobOptions.attempts ?? 3);
-  const logPayload = {
-    jobId: job?.id,
-    taskId: job?.data?.taskId,
-    err: rawErrorDetails,
-    attemptsMade,
-    maxAttempts,
-  };
-
-  if (job && attemptsMade >= maxAttempts) {
-    workerLog.error(
-      logPayload,
-      `ÉCHEC FINAL DU JOB (après ${attemptsMade} tentatives): ${rawErrorDetails.message}. Déplacement vers la DLQ.` // Use .message
-    );
-    if (deadLetterQueue && job.data) {
-      try {
-        await deadLetterQueue.add(
-          job.name,
-          { ...job.data, originalJobId: job.id, failureReason: rawErrorDetails },
-          {
-            removeOnComplete: true,
-            removeOnFail: false,
-          }
-        );
-        workerLog.info({ ...logPayload, dlq: DEAD_LETTER_QUEUE_NAME }, `Job déplacé vers la DLQ.`);
-      } catch (dlqError: unknown) {
-        workerLog.error(
-          { ...logPayload, dlqError: getErrDetails(dlqError) },
-          `Échec du déplacement du job vers la DLQ.`
-        );
-      }
-    }
-  } else {
-    workerLog.warn(
-      logPayload,
-      `Job échoué (tentative ${attemptsMade}/${maxAttempts}): ${rawErrorDetails.message}. Nouvelle tentative prévue si applicable.` // Use .message
-    );
-  }
-});
-
-worker.on('error', (err: Error) => {
-  const errDetails = getErrDetails(err);
-  workerLog.error({ err: errDetails }, `Erreur du Worker : ${errDetails.message}`); // Use .message
-});
-async function gracefulShutdown(signal: string) {
-  workerLog.warn(`Signal ${signal} reçu. Fermeture du worker...`);
-  try {
-    await worker.close();
-    workerLog.info('Worker fermé avec succès.');
-    process.exit(0);
-  } catch (err: unknown) {
-    workerLog.error({ err: getErrDetails(err) }, 'Erreur lors de la fermeture du worker.');
-    process.exit(1);
-  }
-}
-
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-workerLog.info(
-  `Worker pour la file d'attente '${Q_NAME}' démarré avec une concurrence de ${worker.opts.concurrency}. Prêt à traiter les tâches.`
-);
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
