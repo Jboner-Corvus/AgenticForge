@@ -25,7 +25,7 @@ export const writeFileTool: Tool<typeof writeFileParams> = {
   name: 'writeFile',
   description: 'Writes content to a file in the workspace.',
   parameters: writeFileParams,
-  execute: async (args, ctx: Ctx) => {
+  execute: async (_args, _ctx: Ctx) => {
     // ... reste de la logique inchangée
     return 'Write file executed.';
   },

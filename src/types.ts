@@ -1,11 +1,11 @@
 // src/types.ts
+import { z, type ZodObject, type ZodRawShape } from 'zod';
 import type {
   FastMCPSession,
   Context as FastMCPCtx,
   Tool as FastMCPTool,
 } from 'fastmcp';
 import type { Job } from 'bullmq';
-import type { z, ZodObject, ZodRawShape } from 'zod';
 
 // Données d'authentification
 export interface AuthData {

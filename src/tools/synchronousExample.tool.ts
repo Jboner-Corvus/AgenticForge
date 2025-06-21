@@ -1,8 +1,7 @@
 // --- Fichier : src/tools/synchronousExample.tool.ts ---
 import { z as zod } from 'zod';
-import type { SerializableValue, TextContent } from 'fastmcp';
-import loggerInstance from '../logger.js';
-import type { Ctx, Tool, AuthData } from '../types.js';
+import type { TextContent } from 'fastmcp';
+import type { Ctx, Tool } from '../types.js';
 
 const SYNC_TOOL_NAME = 'synchronousExampleToolEnhanced';
 
@@ -13,20 +12,15 @@ export const synchronousExampleParams = zod.object({
   userId: zod.string().optional(),
 });
 export type SyncParamsType = zod.infer<typeof synchronousExampleParams>;
-interface SyncOutputTypeInternal {
-  processed: string;
-  ts: number;
-  input: SyncParamsType;
-  appAuthId?: string;
-  clientIp?: string;
-  n8nSessionId?: string;
-}
 
 export const synchronousExampleTool: Tool<typeof synchronousExampleParams> = {
   name: SYNC_TOOL_NAME,
   description: "Exemple d'outil synchrone.",
   parameters: synchronousExampleParams,
-  execute: async (args: SyncParamsType, context: Ctx): Promise<TextContent> => {
+  execute: async (
+    _args: SyncParamsType,
+    _context: Ctx,
+  ): Promise<TextContent> => {
     // ... la logique reste la même
     return { type: 'text', text: 'Sync example executed.' };
   },

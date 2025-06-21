@@ -216,7 +216,7 @@ async function startServer() {
 }
 
 // Lancer le serveur
-startServer();
+void startServer();
 
 // Export pour usage externe si nécessaire
 export default mcp;

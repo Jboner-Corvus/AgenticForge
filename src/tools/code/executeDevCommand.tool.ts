@@ -1,7 +1,6 @@
 // --- Fichier : src/tools/code/executeDevCommand.tool.ts ---
 import { z } from 'zod';
 import type { Tool, Ctx } from '../../types.js';
-import { config } from '../../config.js';
 import { runInSandbox } from '../../utils/dockerManager.js';
 
 // Création d'une image Docker de base pour le développement Node.js/TypeScript

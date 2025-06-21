@@ -24,7 +24,7 @@ export const readFileTool: Tool<typeof readFileParams> = {
   name: 'readFile',
   description: 'Reads the content of a file from the workspace.',
   parameters: readFileParams,
-  execute: async (args, ctx: Ctx) => {
+  execute: async (_args, _ctx: Ctx) => {
     // ... reste de la logique inchangée
     return 'Read file executed.';
   },

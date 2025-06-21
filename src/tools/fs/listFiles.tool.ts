@@ -27,7 +27,7 @@ export const listFilesTool: Tool<typeof listFilesParams> = {
   name: 'listFiles',
   description: 'Lists files and directories within the workspace.',
   parameters: listFilesParams,
-  execute: async (args, ctx: Ctx) => {
+  execute: async (_args, _ctx: Ctx) => {
     // ... reste de la logique inchangée
     return 'List files executed.';
   },

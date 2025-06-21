@@ -6,7 +6,7 @@ import { taskQueue, deadLetterQueue, redisConnection } from './queue.js';
 import { allTools } from './tools/index.js';
 import { getContentWorkerLogic } from './tools/browser/getContent.tool.js';
 import { navigateWorkerLogic } from './tools/browser/navigate.tool.js';
-import type { AsyncTaskJob, Ctx, AgentSession, AuthData } from './types.js';
+import type { AsyncTaskJob, Ctx, AgentSession } from './types.js';
 
 const worker = new Worker(
   taskQueue.name,

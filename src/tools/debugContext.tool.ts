@@ -1,7 +1,5 @@
 // --- Fichier : src/tools/debugContext.tool.ts (Corrigé) ---
 import { z } from 'zod';
-import type { SerializableValue } from 'fastmcp';
-import logger from '../logger.js';
 import { type Tool, type Ctx } from '../types.js';
 
 const TOOL_NAME = 'correctDebugContextTool';
@@ -18,7 +16,7 @@ export const debugContextTool: Tool<typeof debugContextParams> = {
   name: TOOL_NAME,
   description: "Affiche le contexte d'authentification et de session.",
   parameters: debugContextParams,
-  execute: async (args: ParamsType, context: Ctx): Promise<string> => {
+  execute: async (_args: ParamsType, context: Ctx): Promise<string> => {
     if (!context.session) throw new Error('Session not found');
     // ... reste de la logique inchangée
     return 'Debug context executed.';

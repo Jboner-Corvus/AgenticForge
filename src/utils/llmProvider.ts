@@ -2,11 +2,6 @@
 import { config } from '../config.js';
 import logger from '../logger.js';
 
-interface LLMMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
 // Interface pour le format de contenu de l'API Gemini
 interface GeminiContent {
   role: 'user' | 'model';
