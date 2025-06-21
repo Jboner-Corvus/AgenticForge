@@ -43,7 +43,8 @@ services:
     restart: unless-stopped
     command: pnpm run start
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health", "||", "exit", "1"]
+      # Utiliser wget au lieu de curl (plus fiable dans Alpine)
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -51,7 +52,7 @@ services:
     networks:
       - agentic_network
 
-  # Serveur Web Interface avec dépendance corrigée
+  # Interface Web - Dépendance simplifiée
   web:
     build:
       context: .
@@ -59,9 +60,9 @@ services:
     container_name: agentic_prometheus_web
     ports:
       - "${WEB_PORT:-3000}:3000"
+    # Dépendance simple sans condition de santé stricte
     depends_on:
-      server:
-        condition: service_healthy  # Attendre que le serveur soit healthy
+      - server
     env_file: .env
     environment:
       - NODE_ENV=production
@@ -70,11 +71,11 @@ services:
     restart: unless-stopped
     command: pnpm run start:web
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/web-health", "||", "exit", "1"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/web-health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 45s  # Plus de temps pour démarrer après le serveur
+      start_period: 60s  # Plus de temps pour démarrer
     networks:
       - agentic_network
 
