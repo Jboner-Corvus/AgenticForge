@@ -1,7 +1,11 @@
-import logger from './logger.js';
-import { taskQueue, type AsyncTaskJobPayload } from './queue.js';
-import { EnqueueTaskError, getErrDetails, type ErrorDetails } from './errorUtils.js';
-import type { AuthData } from './types.js';
+import logger from '../logger.js';
+import { taskQueue, type AsyncTaskJobPayload } from '../queue.js';
+import {
+  EnqueueTaskError,
+  getErrDetails,
+  type ErrorDetails,
+} from './errorUtils.js';
+import type { AuthData } from '../types.js';
 
 export interface EnqueueParams<TParams> {
   params: TParams;
@@ -22,8 +26,8 @@ export interface TaskOutcome<TParams, TResult> {
   progress?: { current: number; total: number; unit?: string };
 }
 
-export async function enqueueTask<TParams>(
-  args: EnqueueParams<TParams>
+export async function enqueueTask<TParams extends Record<string, unknown>>(
+  args: EnqueueParams<TParams>,
 ): Promise<string | undefined> {
   const { params, auth, taskId, toolName, cbUrl } = args;
   const log = logger.child({
@@ -46,13 +50,12 @@ export async function enqueueTask<TParams>(
     return job.id;
   } catch (error: unknown) {
     const errDetails = getErrDetails(error);
-    log.error(
-      "Échec de l'ajout de la tâche à la file d'attente.",
-      { err: errDetails }
-    );
+    log.error("Échec de l'ajout de la tâche à la file d'attente.", {
+      err: errDetails,
+    });
     throw new EnqueueTaskError(
       `L'ajout de la tâche ${taskId} pour ${toolName} à la file d'attente a échoué : ${errDetails.message}`,
-      { originalError: errDetails, toolName, taskId }
+      { originalError: errDetails, toolName, taskId },
     );
   }
 }

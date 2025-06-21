@@ -36,7 +36,7 @@ export class WebhookError extends AppErrorBase {
     type: string = 'WebhookError',
     statusCode?: number,
     responseBody?: string,
-    details?: unknown
+    details?: unknown,
   ) {
     super(message, type, details);
     this.statusCode = statusCode;
@@ -63,17 +63,25 @@ export function getErrDetails(error: unknown): ErrorDetails {
       name: error.name,
       stack: error.stack?.substring(0, ERROR_STACK_TRACE_MAX_LENGTH),
       type: type,
-      details: 'details' in error ? (error as { details: unknown }).details : undefined,
+      details:
+        'details' in error
+          ? (error as { details: unknown }).details
+          : undefined,
     };
   }
   const name = 'UnknownError';
   const type = 'UnknownErrorType';
   let msgValue = 'An unknown error occurred.';
-  let detailsValue: { originalError: unknown; [key: string]: unknown } = { originalError: error };
+  let detailsValue: { originalError: unknown; [key: string]: unknown } = {
+    originalError: error,
+  };
   if (typeof error === 'string') {
     msgValue = error;
   } else if (error && typeof error === 'object') {
-    if ('message' in error && typeof (error as { message: unknown }).message === 'string') {
+    if (
+      'message' in error &&
+      typeof (error as { message: unknown }).message === 'string'
+    ) {
       msgValue = (error as { message: string }).message;
     } else {
       try {

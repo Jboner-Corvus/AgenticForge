@@ -8,6 +8,6 @@ export const allTools = [
 
   // Code Execution Tools
   executePythonTool,
-  
+
   // Add other corrected tools here as they are fixed
 ];

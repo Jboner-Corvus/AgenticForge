@@ -8,7 +8,10 @@ import logger from '../logger.js'; // Pour la journalisation interne si nécessa
  * @param context Un contexte optionnel pour la journalisation (ex: nom de la fonction appelante).
  * @returns `true` si l'URL est valide, `false` sinon.
  */
-export function isValidHttpUrl(urlString: string | undefined | null, context?: string): boolean {
+export function isValidHttpUrl(
+  urlString: string | undefined | null,
+  context?: string,
+): boolean {
   if (!urlString) {
     return false;
   }
@@ -18,7 +21,7 @@ export function isValidHttpUrl(urlString: string | undefined | null, context?: s
       if (context) {
         logger.warn(
           { context, url: urlString, reason: 'Protocole non supporté' },
-          "Tentative d'utilisation d'une URL avec un protocole non HTTP/HTTPS."
+          "Tentative d'utilisation d'une URL avec un protocole non HTTP/HTTPS.",
         );
       }
       return false;
@@ -28,7 +31,7 @@ export function isValidHttpUrl(urlString: string | undefined | null, context?: s
     if (context) {
       logger.warn(
         { context, url: urlString, error: (e as Error).message },
-        "Format d'URL invalide détecté."
+        "Format d'URL invalide détecté.",
       );
     }
     return false;

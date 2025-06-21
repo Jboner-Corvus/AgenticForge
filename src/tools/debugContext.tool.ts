@@ -1,4 +1,3 @@
-
 // --- Fichier : src/tools/debugContext.tool.ts (Corrigé) ---
 import { z } from 'zod';
 import type { SerializableValue } from 'fastmcp';
@@ -22,6 +21,6 @@ export const debugContextTool: Tool<typeof debugContextParams> = {
   execute: async (args: ParamsType, context: Ctx): Promise<string> => {
     if (!context.session) throw new Error('Session not found');
     // ... reste de la logique inchangée
-    return "Debug context executed.";
+    return 'Debug context executed.';
   },
 };

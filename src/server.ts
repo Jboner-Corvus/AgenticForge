@@ -9,7 +9,7 @@ import { getMasterPrompt } from './prompts/orchestrator.prompt.js';
 import { getLlmResponse } from './utils/llmProvider.js';
 
 // La configuration de la session, incluant la factory pour la créer.
-const sessionOptions: ServerOptions<AgentSession>['session'] = {
+const sessionOptions = {
   async create(req: IncomingMessage): Promise<Partial<AgentSession>> {
     const authHeader = req.headers.authorization;
     if (authHeader !== `Bearer ${config.AUTH_TOKEN}`) {
@@ -31,7 +31,7 @@ const sessionOptions: ServerOptions<AgentSession>['session'] = {
 };
 
 const mcp = new FastMCP<AgentSession>({
-  session: sessionOptions, // Correction: Utilisation de la propriété 'session'
+  session: sessionOptions,
   tools: allTools,
   transport: {
     transportType: 'httpStream',
@@ -53,7 +53,7 @@ const mcp = new FastMCP<AgentSession>({
     ctx.session.history.push({ role: 'assistant', content: llmResponse });
     return llmResponse;
   },
-});
+} as any);
 
 mcp
   .start()

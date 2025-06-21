@@ -12,7 +12,9 @@ describe('ErrorUtils', () => {
     });
 
     it('should handle an AppErrorBase', () => {
-      const error = new AppErrorBase('Custom app error', 'CustomType', { extra: 'data' });
+      const error = new AppErrorBase('Custom app error', 'CustomType', {
+        extra: 'data',
+      });
       const details = getErrDetails(error);
       expect(details.message).toBe('Custom app error');
       expect(details.name).toBe('AppErrorBase');

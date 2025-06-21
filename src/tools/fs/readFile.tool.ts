@@ -1,4 +1,3 @@
-
 // --- Fichier : src/tools/fs/readFile.tool.ts (Corrigé) ---
 import { z } from 'zod';
 import type { Tool, Ctx } from '../../types.js';
@@ -27,6 +26,6 @@ export const readFileTool: Tool<typeof readFileParams> = {
   parameters: readFileParams,
   execute: async (args, ctx: Ctx) => {
     // ... reste de la logique inchangée
-    return "Read file executed.";
+    return 'Read file executed.';
   },
 };

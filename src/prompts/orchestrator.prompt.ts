@@ -52,7 +52,10 @@ const formatToolForPrompt = (tool: Tool<any>): string => {
   return `### ${tool.name}\nDescription: ${tool.description}\nParameters (JSON Schema):\n${params}\n`;
 };
 
-export const getMasterPrompt = (history: AgentSession['history'], tools: Tool<any>[]): string => {
+export const getMasterPrompt = (
+  history: AgentSession['history'],
+  tools: Tool<any>[],
+): string => {
   const formattedTools = tools.map(formatToolForPrompt).join('\n');
   const toolsSection = `${TOOLS_SECTION_HEADER}\n${formattedTools}`;
 
@@ -63,6 +66,6 @@ export const getMasterPrompt = (history: AgentSession['history'], tools: Tool<an
 
   return `${format(
     PREAMBULE,
-    getCurrentDate()
+    getCurrentDate(),
   )}\n\n${toolsSection}\n\n${historySection}\n\nASSISTANT's turn. Your response:`;
 };

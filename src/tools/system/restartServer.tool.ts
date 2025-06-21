@@ -4,21 +4,34 @@ import type { Tool, Ctx } from '../../types.js';
 import { exec, type ExecException } from 'child_process';
 
 export const restartServerParams = z.object({
-  reason: z.string().optional().describe('The reason for the restart (e.g., loading a new tool).'),
+  reason: z
+    .string()
+    .optional()
+    .describe('The reason for the restart (e.g., loading a new tool).'),
 });
 
 export const restartServerTool: Tool<typeof restartServerParams> = {
   name: 'system_restartServer',
-  description: 'Restarts the agent server and workers to apply changes, such as loading a new tool.',
+  description:
+    'Restarts the agent server and workers to apply changes, such as loading a new tool.',
   parameters: restartServerParams,
   execute: async (args, ctx: Ctx) => {
-    ctx.log.warn('AGENT IS INITIATING A SERVER RESTART.', { reason: args.reason });
-    const command = 'docker-compose restart server worker';
-    exec(command, (error: ExecException | null, stdout: string, stderr: string) => {
-      if (error) {
-        ctx.log.error('Failed to execute restart command.', { err: { message: error.message, stack: error.stack }, stdout, stderr });
-      }
+    ctx.log.warn('AGENT IS INITIATING A SERVER RESTART.', {
+      reason: args.reason,
     });
+    const command = 'docker-compose restart server worker';
+    exec(
+      command,
+      (error: ExecException | null, stdout: string, stderr: string) => {
+        if (error) {
+          ctx.log.error('Failed to execute restart command.', {
+            err: { message: error.message, stack: error.stack },
+            stdout,
+            stderr,
+          });
+        }
+      },
+    );
     return `Restart command issued for reason: ${args.reason || 'No reason specified'}. The server will be unavailable for a moment.`;
   },
 };

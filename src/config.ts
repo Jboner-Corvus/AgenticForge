@@ -1,7 +1,8 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
-const envSchema = z.object({
+// Define the schema structure in a separate object.
+const schemaDefinition = {
   NODE_ENV: z.enum(['development', 'production', 'test']),
   PORT: z.coerce.number().int().positive(),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'fatal']),
@@ -14,16 +15,21 @@ const envSchema = z.object({
   LLM_MODEL_NAME: z.string().min(1, 'LLM_MODEL_NAME is required'),
   PYTHON_SANDBOX_IMAGE: z.string().min(1),
   BASH_SANDBOX_IMAGE: z.string().min(1),
-  CODE_EXECUTION_TIMEOUT_MS: z.coerce.number().int().min(1000), // Virgule manquante ajoutée ici
-  // AJOUTS POUR CORRIGER LES ERREURS DE TYPE
+  CODE_EXECUTION_TIMEOUT_MS: z.coerce.number().int().min(1000),
   SEARXNG_URL: z.string().url().optional(),
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
   WEBHOOK_SECRET: z.string().optional(),
-});
+};
+
+// Pass the schema object to z.object().
+const envSchema = z.object(schemaDefinition);
 
 const parsedConfig = envSchema.safeParse(process.env);
 if (!parsedConfig.success) {
-  console.error('❌ Invalid environment variables:', parsedConfig.error.flatten().fieldErrors);
+  console.error(
+    '❌ Invalid environment variables:',
+    parsedConfig.error.flatten().fieldErrors,
+  );
   throw new Error('Invalid environment variables.');
 }
 export const config = parsedConfig.data;

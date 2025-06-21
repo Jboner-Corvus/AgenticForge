@@ -4,7 +4,10 @@ import crypto from 'crypto';
 import logger from '../logger.js';
 import { getErrDetails, WebhookError, ErrorDetails } from './errorUtils.js';
 import { config } from '../config.js';
-import { WEBHOOK_SIGNATURE_HEADER, WEBHOOK_SECRET_ENV_VAR } from './constants.js';
+import {
+  WEBHOOK_SIGNATURE_HEADER,
+  WEBHOOK_SECRET_ENV_VAR,
+} from './constants.js';
 
 import type { TaskOutcome } from './asyncToolHelper.js';
 
@@ -15,9 +18,11 @@ function generateSignature(payload: unknown): string {
   const secret = config[WEBHOOK_SECRET_ENV_VAR];
   if (!secret) {
     logger.error(
-      `[WebhookUtils] ${WEBHOOK_SECRET_ENV_VAR} n'est pas défini. Impossible de signer le webhook.`
+      `[WebhookUtils] ${WEBHOOK_SECRET_ENV_VAR} n'est pas défini. Impossible de signer le webhook.`,
     );
-    throw new Error(`${WEBHOOK_SECRET_ENV_VAR} is not configured. Cannot sign webhook.`);
+    throw new Error(
+      `${WEBHOOK_SECRET_ENV_VAR} is not configured. Cannot sign webhook.`,
+    );
   }
   const hmac = crypto.createHmac('sha256', secret);
   hmac.update(JSON.stringify(payload));
@@ -32,12 +37,20 @@ export async function sendWebhook<P, R>(
   payload: TaskOutcome<P, R>,
   taskId: string,
   toolName: string,
-  throwErr: boolean = false
+  throwErr: boolean = false,
 ): Promise<boolean> {
-  const log = logger.child({ taskId, cbUrl: url, tool: toolName, op: 'sendWebhook' });
+  const log = logger.child({
+    taskId,
+    cbUrl: url,
+    tool: toolName,
+    op: 'sendWebhook',
+  });
   try {
     const signature = generateSignature(payload);
-    log.info({ payloadSize: JSON.stringify(payload).length }, 'Envoi du webhook avec signature...');
+    log.info(
+      { payloadSize: JSON.stringify(payload).length },
+      'Envoi du webhook avec signature...',
+    );
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -52,10 +65,13 @@ export async function sendWebhook<P, R>(
     if (!res.ok) {
       const errBody = await res
         .text()
-        .catch(() => "Échec de la récupération du corps de la réponse d'erreur du webhook.");
+        .catch(
+          () =>
+            "Échec de la récupération du corps de la réponse d'erreur du webhook.",
+        );
       log.error(
         { status: res.status, statusText: res.statusText, body: errBody },
-        'Le webhook a échoué avec une réponse non-OK.'
+        'Le webhook a échoué avec une réponse non-OK.',
       );
       if (throwErr) {
         throw new WebhookError(
@@ -63,7 +79,7 @@ export async function sendWebhook<P, R>(
           'WebhookDeliveryError',
           res.status,
           errBody,
-          { originalPayload: payload }
+          { originalPayload: payload },
         );
       }
       return false;
@@ -81,7 +97,7 @@ export async function sendWebhook<P, R>(
         'WebhookInfrastructureError',
         undefined,
         undefined,
-        errDetails
+        errDetails,
       );
     }
     return false;
@@ -94,11 +110,11 @@ export async function sendWebhook<P, R>(
 export function verifyWebhookSignature(
   payload: string,
   receivedSignature: string,
-  secret: string
+  secret: string,
 ): boolean {
   if (!payload || !receivedSignature || !secret) {
     logger.warn(
-      '[WebhookUtils] Vérification de signature impossible : payload, signature ou secret manquant.'
+      '[WebhookUtils] Vérification de signature impossible : payload, signature ou secret manquant.',
     );
     return false;
   }
@@ -108,12 +124,12 @@ export function verifyWebhookSignature(
     const computedSignature = hmac.digest('hex');
     return crypto.timingSafeEqual(
       Buffer.from(computedSignature, 'hex'),
-      Buffer.from(receivedSignature, 'hex')
+      Buffer.from(receivedSignature, 'hex'),
     );
   } catch (error) {
     logger.error(
       { err: getErrDetails(error) },
-      '[WebhookUtils] Erreur lors de la vérification de la signature du webhook.'
+      '[WebhookUtils] Erreur lors de la vérification de la signature du webhook.',
     );
     return false;
   }

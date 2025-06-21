@@ -1,4 +1,3 @@
-
 // --- Fichier : src/tools/longProcess.tool.ts (Corrigé) ---
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
@@ -9,7 +8,7 @@ import { isValidHttpUrl } from '../utils/validationUtils.js';
 import type { Tool, Ctx, AuthData } from '../types.js';
 
 export const longProcessParams = z.object({
-    // ...
+  // ...
 });
 export const longProcessTool: Tool<typeof longProcessParams> = {
   name: 'asynchronousTaskSimulatorEnhanced',
@@ -18,6 +17,6 @@ export const longProcessTool: Tool<typeof longProcessParams> = {
   annotations: { streamingHint: true },
   execute: async (args, context: Ctx): Promise<string> => {
     // ... reste de la logique inchangée
-    return "Long process tool executed.";
+    return 'Long process tool executed.';
   },
 };

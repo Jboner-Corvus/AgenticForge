@@ -14,7 +14,10 @@ interface LLMMessage {
 
 // Pour l'instant, on se concentre sur une structure compatible Ollama.
 // On pourrait facilement étendre cela pour supporter d'autres fournisseurs.
-export async function getLlmResponse(prompt: string, systemPrompt?: string): Promise<string> {
+export async function getLlmResponse(
+  prompt: string,
+  systemPrompt?: string,
+): Promise<string> {
   const log = logger.child({ module: 'LLMProvider' });
 
   // Utilise l'URL de base si elle est définie (pour Ollama, etc.)
@@ -36,7 +39,10 @@ export async function getLlmResponse(prompt: string, systemPrompt?: string): Pro
   });
 
   try {
-    log.debug({ apiUrl, model: config.LLM_MODEL_NAME }, 'Sending request to LLM');
+    log.debug(
+      { apiUrl, model: config.LLM_MODEL_NAME },
+      'Sending request to LLM',
+    );
 
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -49,14 +55,17 @@ export async function getLlmResponse(prompt: string, systemPrompt?: string): Pro
 
     if (!response.ok) {
       const errorBody = await response.text();
-      throw new Error(`LLM API request failed with status ${response.status}: ${errorBody}`);
+      throw new Error(
+        `LLM API request failed with status ${response.status}: ${errorBody}`,
+      );
     }
 
     const data = await response.json();
     log.debug({ response: data }, 'Received response from LLM');
 
     // La structure de la réponse varie selon le fournisseur
-    const content = data.choices?.[0]?.message?.content || data.message?.content;
+    const content =
+      data.choices?.[0]?.message?.content || data.message?.content;
 
     if (!content) {
       throw new Error('Invalid response structure from LLM API');

@@ -1,4 +1,3 @@
-
 // --- Fichier : src/worker.ts (Corrigé) ---
 import { Worker } from 'bullmq';
 import { config } from './config.js';
@@ -39,8 +38,10 @@ const worker = new Worker(
     const ctx: Ctx = {
       session: mockSession,
       log,
-      reportProgress: async (p: any) => log.debug({ p }, 'Progress report (worker)'),
-      streamContent: async (c: any) => log.debug({ c }, 'Content stream (worker)'),
+      reportProgress: async (p: any) =>
+        log.debug({ p }, 'Progress report (worker)'),
+      streamContent: async (c: any) =>
+        log.debug({ c }, 'Content stream (worker)'),
     };
 
     let result: any;
@@ -58,14 +59,19 @@ const worker = new Worker(
   {
     connection: redisConnection,
     concurrency: config.WORKER_CONCURRENCY,
-  }
+  },
 );
 
 worker.on('failed', async (job, error) => {
   const log = logger.child({ jobId: job?.id, toolName: job?.data.toolName });
   log.error({ err: error }, 'Job failed.');
 
-  if (job && job.opts && job.opts.attempts && job.attemptsMade >= job.opts.attempts) {
+  if (
+    job &&
+    job.opts &&
+    job.opts.attempts &&
+    job.attemptsMade >= job.opts.attempts
+  ) {
     log.warn(`Job failed all attempts. Moving to dead-letter queue.`);
     await deadLetterQueue.add(job.name, job.data, job.opts);
   }

@@ -13,6 +13,6 @@ export const webSearchTool: Tool<typeof webSearchParams> = {
   parameters: webSearchParams,
   execute: async (args, ctx: Ctx) => {
     // ... reste de la logique inchangée
-    return "Web search executed.";
+    return 'Web search executed.';
   },
 };

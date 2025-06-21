@@ -7,26 +7,30 @@ export const navigateParams = z.object({
   url: z.string().url().describe('The full URL to navigate to.'),
 });
 
-export async function navigateWorkerLogic(args: z.infer<typeof navigateParams>, _ctx: Ctx) {
-    const { chromium } = await import('playwright');
-    let browser = null;
-    try {
-      browser = await chromium.launch();
-      const page = await browser.newPage();
-      await page.goto(args.url, { waitUntil: 'domcontentloaded' });
-      const title = await page.title();
-      return `Successfully navigated to "${title}". URL: ${page.url()}`;
-    } finally {
-      await browser?.close();
-    }
+export async function navigateWorkerLogic(
+  args: z.infer<typeof navigateParams>,
+  _ctx: Ctx,
+) {
+  const { chromium } = await import('playwright');
+  let browser = null;
+  try {
+    browser = await chromium.launch();
+    const page = await browser.newPage();
+    await page.goto(args.url, { waitUntil: 'domcontentloaded' });
+    const title = await page.title();
+    return `Successfully navigated to "${title}". URL: ${page.url()}`;
+  } finally {
+    await browser?.close();
+  }
 }
 
 export const navigateTool: Tool<typeof navigateParams> = {
   name: 'browser_navigate',
-  description: 'Navigates a headless browser to a specified URL. This is an async task.',
+  description:
+    'Navigates a headless browser to a specified URL. This is an async task.',
   parameters: navigateParams,
   execute: async (args, ctx: Ctx) => {
-    if(!ctx.session) throw new Error("Session not found");
+    if (!ctx.session) throw new Error('Session not found');
     const job = await taskQueue.add('browser_navigate', {
       params: args,
       auth: ctx.session.auth,

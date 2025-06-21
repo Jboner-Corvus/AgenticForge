@@ -1,4 +1,3 @@
-
 // --- Fichier : src/tools/fs/writeFile.tool.ts (Corrigé) ---
 import { z } from 'zod';
 import type { Tool, Ctx } from '../../types.js';
@@ -28,6 +27,6 @@ export const writeFileTool: Tool<typeof writeFileParams> = {
   parameters: writeFileParams,
   execute: async (args, ctx: Ctx) => {
     // ... reste de la logique inchangée
-    return "Write file executed.";
+    return 'Write file executed.';
   },
 };

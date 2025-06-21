@@ -22,7 +22,10 @@ interface ExecutionResult {
  * @param command - La commande à exécuter (ex: ['python', '-c', 'print("hello")']).
  * @returns Une promesse qui se résout avec le résultat de l'exécution.
  */
-export async function runInSandbox(imageName: string, command: string[]): Promise<ExecutionResult> {
+export async function runInSandbox(
+  imageName: string,
+  command: string[],
+): Promise<ExecutionResult> {
   const log = logger.child({ module: 'DockerManager', imageName });
   log.info({ command }, 'Starting sandboxed execution');
 
@@ -50,7 +53,10 @@ export async function runInSandbox(imageName: string, command: string[]): Promis
     // Attend la fin de l'exécution, avec un timeout
     const waitPromise = container.wait();
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Execution timed out')), config.CODE_EXECUTION_TIMEOUT_MS)
+      setTimeout(
+        () => reject(new Error('Execution timed out')),
+        config.CODE_EXECUTION_TIMEOUT_MS,
+      ),
     );
 
     const result: { StatusCode: number } = (await Promise.race([
@@ -59,12 +65,19 @@ export async function runInSandbox(imageName: string, command: string[]): Promis
     ])) as any;
 
     // Récupère les logs (stdout/stderr)
-    const logStream = await container.logs({ follow: false, stdout: true, stderr: true });
+    const logStream = await container.logs({
+      follow: false,
+      stdout: true,
+      stderr: true,
+    });
 
     // Docker multiplexe stdout et stderr dans un seul flux, il faut le démultiplexer.
     const { stdout, stderr } = demuxStream(logStream as Buffer);
 
-    log.info({ exitCode: result.StatusCode, stdout, stderr }, 'Sandboxed execution finished');
+    log.info(
+      { exitCode: result.StatusCode, stdout, stderr },
+      'Sandboxed execution finished',
+    );
 
     return {
       stdout: stdout,
@@ -94,7 +107,9 @@ async function pullImageIfNotExists(imageName: string): Promise<void> {
       logger.info(`Image ${imageName} not found locally, pulling...`);
       const stream = await docker.pull(imageName);
       await new Promise((resolve, reject) => {
-        docker.modem.followProgress(stream, (err, res) => (err ? reject(err) : resolve(res)));
+        docker.modem.followProgress(stream, (err, res) =>
+          err ? reject(err) : resolve(res),
+        );
       });
       logger.info(`Image ${imageName} pulled successfully.`);
     } else {

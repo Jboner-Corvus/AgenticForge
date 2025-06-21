@@ -1,4 +1,3 @@
-
 // --- Fichier : src/tools/fs/listFiles.tool.ts (Corrigé) ---
 import { z } from 'zod';
 import type { Tool, Ctx } from '../../types.js';
@@ -13,7 +12,9 @@ const sanitizePath = (filePath: string): string => {
   if (filePath === '.' || filePath === '/') filePath = '';
   const resolvedPath = path.resolve(WORKSPACE_DIR, filePath);
   if (!resolvedPath.startsWith(WORKSPACE_DIR)) {
-    throw new Error('Directory path is outside the allowed workspace directory.');
+    throw new Error(
+      'Directory path is outside the allowed workspace directory.',
+    );
   }
   return resolvedPath;
 };
@@ -28,6 +29,6 @@ export const listFilesTool: Tool<typeof listFilesParams> = {
   parameters: listFilesParams,
   execute: async (args, ctx: Ctx) => {
     // ... reste de la logique inchangée
-    return "List files executed.";
+    return 'List files executed.';
   },
 };

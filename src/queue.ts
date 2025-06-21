@@ -47,7 +47,7 @@ export const deadLetterQueue = new Queue<AsyncTaskJobPayload>(
       removeOnComplete: true,
       removeOnFail: false,
     },
-  }
+  },
 );
 
 // Correction: Exportation du type pour qu'il soit accessible par d'autres modules.
