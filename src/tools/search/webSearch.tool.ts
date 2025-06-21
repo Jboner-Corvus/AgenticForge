@@ -1,10 +1,5 @@
-/**
- * src/tools/search/webSearch.tool.ts
- *
- * Outil pour effectuer des recherches sur le web via le service SearXNG local.
- */
 import { z } from 'zod';
-import type { Tool, Ctx } from '@fastmcp/fastmcp';
+import type { Tool, Ctx } from '../../types.js';
 import { config } from '../../config.js';
 
 export const webSearchParams = z.object({
@@ -15,8 +10,15 @@ export const webSearchTool: Tool<typeof webSearchParams> = {
   name: 'webSearch',
   description: 'Performs a web search using the local SearXNG instance.',
   parameters: webSearchParams,
-  execute: async (args, ctx: Ctx) => {
+  execute: async (args, ctx: Ctx<typeof webSearchParams>) => {
     const { query } = args;
+    
+    if (!config.SEARXNG_URL) {
+        const errorMsg = 'SearXNG URL is not configured.';
+        ctx.log.error(errorMsg);
+        return `Error: ${errorMsg}`;
+    }
+
     const searchUrl = new URL(config.SEARXNG_URL);
     searchUrl.searchParams.append('q', query);
     searchUrl.searchParams.append('format', 'json');

@@ -1,11 +1,5 @@
-/**
- * src/tools/fs/writeFile.tool.ts
- *
- * Outil pour écrire du contenu dans un fichier.
- * Tout comme readFile, il doit être confiné à un répertoire de travail.
- */
 import { z } from 'zod';
-import type { Tool, Ctx } from '@fastmcp/fastmcp';
+import type { Tool, Ctx } from '../../types.js';
 import { promises as fs } from 'fs';
 import path from 'path';
 
@@ -30,7 +24,7 @@ export const writeFileTool: Tool<typeof writeFileParams> = {
   name: 'writeFile',
   description: 'Writes content to a file in the workspace.',
   parameters: writeFileParams,
-  execute: async (args, ctx: Ctx) => {
+  execute: async (args, ctx: Ctx<typeof writeFileParams>) => {
     try {
       const safePath = sanitizePath(args.path);
       ctx.log.info({ path: safePath }, 'Writing file');

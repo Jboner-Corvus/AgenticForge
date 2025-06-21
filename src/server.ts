@@ -1,29 +1,37 @@
-import { FastMCP, UserError } from 'fastmcp';
+import { FastMCP, UserError, type ServerOptions } from 'fastmcp';
 import type { IncomingMessage } from 'http';
+import { randomUUID } from 'crypto';
 import { config } from './config.js';
 import logger from './logger.js';
 import { allTools } from './tools/index.js';
-import type { AgentSession, Ctx } from './types.js';
+import type { AgentSession, Ctx, AuthData } from './types.js';
 import { getMasterPrompt } from './prompts/orchestrator.prompt.js';
 import { getLlmResponse } from './utils/llmProvider.js';
 
-// Auth handler creates the initial session data
-const authHandler = async (req: IncomingMessage): Promise<Partial<AgentSession>> => {
+// 'authHandler' est la bonne propriété pour gérer l'authentification.
+const authHandler: ServerOptions<AgentSession>['authHandler'] = async (req: IncomingMessage): Promise<Partial<AgentSession>> => {
   const authHeader = req.headers.authorization;
-  // Use a more secure comparison
   if (authHeader !== `Bearer ${config.AUTH_TOKEN}`) {
-    // Correctly throw UserError with an extras object
     throw new UserError('Invalid token', { statusCode: 403 });
   }
-  // Return only the custom parts of the session
-  return { history: [] };
+  
+  const authData: AuthData = {
+    id: randomUUID(),
+    type: 'Bearer',
+    clientIp: req.socket.remoteAddress,
+    authenticatedAt: Date.now(),
+  };
+  
+  // On retourne un objet PARTIEL. FastMCP construira la session complète.
+  return {
+    history: [],
+    auth: authData,
+  };
 };
 
-// Instantiate FastMCP with the correct session type
 const mcp = new FastMCP<AgentSession>({
-  authHandler,
+  authHandler, // Correction: Utilisation de la propriété correcte
   tools: allTools,
-  // Pass the full options object for the transport
   transport: {
     transportType: "httpStream",
     httpStream: {
@@ -34,8 +42,10 @@ const mcp = new FastMCP<AgentSession>({
   logger: { level: config.LOG_LEVEL, customLogger: logger },
   healthCheckOptions: { path: '/health' },
 
-  // The conversation handler orchestrates the agent's logic
   async conversationHandler(goal: string, ctx: Ctx) {
+    if (!ctx.session) {
+        throw new Error("Session is not available in conversationHandler");
+    }
     ctx.session.history.push({ role: 'user', content: goal });
     const masterPrompt = getMasterPrompt(ctx.session.history, allTools);
     const llmResponse = await getLlmResponse(masterPrompt);
@@ -44,7 +54,6 @@ const mcp = new FastMCP<AgentSession>({
   },
 });
 
-// Start the server
 mcp.start().then(() => {
   logger.info(`🚀 Agentic Prometheus server started on port ${config.PORT}`);
 }).catch(err => {

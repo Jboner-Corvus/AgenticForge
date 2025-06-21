@@ -15,6 +15,10 @@ const envSchema = z.object({
   PYTHON_SANDBOX_IMAGE: z.string().min(1),
   BASH_SANDBOX_IMAGE: z.string().min(1),
   CODE_EXECUTION_TIMEOUT_MS: z.coerce.number().int().min(1000),
+  // AJOUTS POUR CORRIGER LES ERREURS DE TYPE
+  SEARXNG_URL: z.string().url().optional(),
+  WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
+  WEBHOOK_SECRET: z.string().optional(),
 });
 
 const parsedConfig = envSchema.safeParse(process.env);

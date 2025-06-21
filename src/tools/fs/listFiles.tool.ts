@@ -1,10 +1,5 @@
-/**
- * src/tools/fs/listFiles.tool.ts
- *
- * Outil pour lister les fichiers et dossiers dans un répertoire.
- */
 import { z } from 'zod';
-import type { Tool, Ctx } from '@fastmcp/fastmcp';
+import type { Tool, Ctx } from '../../types.js';
 import { promises as fs } from 'fs';
 import path from 'path';
 
@@ -30,7 +25,7 @@ export const listFilesTool: Tool<typeof listFilesParams> = {
   name: 'listFiles',
   description: 'Lists files and directories within the workspace.',
   parameters: listFilesParams,
-  execute: async (args, ctx: Ctx) => {
+  execute: async (args, ctx: Ctx<typeof listFilesParams>) => {
     try {
       const safePath = sanitizePath(args.path);
       ctx.log.info({ path: safePath }, 'Listing files');

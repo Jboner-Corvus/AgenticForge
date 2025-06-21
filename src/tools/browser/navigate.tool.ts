@@ -1,37 +1,13 @@
-/**
- * src/tools/browser/navigate.tool.ts
- *
- * Outil pour naviguer vers une URL donnée avec Playwright.
- * Cette tâche est asynchrone et gérée par le worker.
- */
 import { z } from 'zod';
-import type { Tool, Ctx } from '@fastmcp/fastmcp';
+import { randomUUID } from 'crypto';
+import type { Tool, Ctx } from '../../types.js';
 import { taskQueue } from '../../queue.js';
-import type { AgentSession } from '../../types.js';
 
 export const navigateParams = z.object({
   url: z.string().url().describe('The full URL to navigate to.'),
 });
 
-export const navigateTool: Tool<typeof navigateParams> = {
-  name: 'browser_navigate',
-  description: 'Navigates a headless browser to a specified URL.',
-  parameters: navigateParams,
-  // La fonction execute du serveur met simplement le job en file d'attente
-  execute: async (args, ctx: Ctx<AgentSession>) => {
-    const job = await taskQueue.add('browser_navigate', {
-      toolName: 'browser_navigate',
-      toolArgs: args,
-      session: ctx.session,
-    });
-    ctx.log.info({ jobId: job.id, url: args.url }, 'Queued browser navigation job.');
-    return `Navigating to ${args.url}. I will get the content in the next step.`;
-  },
-  // La vraie logique est dans une fonction `workerExecute` qui sera appelée par le worker
-  workerExecute: async (args, _ctx: Ctx) => {
-    // Note: This is a conceptual separation. In reality, the worker's
-    // logic would need a browser manager. For simplicity, we'll implement
-    // this as a standalone function for now.
+export async function navigateWorkerLogic(args: z.infer<typeof navigateParams>, _ctx: Ctx) {
     const { chromium } = await import('playwright');
     let browser = null;
     try {
@@ -43,5 +19,21 @@ export const navigateTool: Tool<typeof navigateParams> = {
     } finally {
       await browser?.close();
     }
+}
+
+export const navigateTool: Tool<typeof navigateParams> = {
+  name: 'browser_navigate',
+  description: 'Navigates a headless browser to a specified URL. This is an async task.',
+  parameters: navigateParams,
+  execute: async (args, ctx: Ctx) => {
+    if(!ctx.session) throw new Error("Session not found");
+    const job = await taskQueue.add('browser_navigate', {
+      params: args,
+      auth: ctx.session.auth,
+      taskId: randomUUID(),
+      toolName: 'browser_navigate',
+    });
+    ctx.log.info(`Queued browser navigation job. Job ID: ${job.id}`);
+    return `Navigating to ${args.url}. I will get the content in the next step.`;
   },
 };

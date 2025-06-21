@@ -1,20 +1,37 @@
-import type { FastMCPSession, Ctx as FastMCPCtx } from 'fastmcp';
+import type { FastMCPSession, Context as FastMCPCtx, Tool as FastMCPTool } from 'fastmcp';
 import type { Job } from 'bullmq';
+import type { z, ZodObject } from 'zod';
 
-// Extend the base FastMCPSession with our custom history property
+// Données d'authentification 
+export interface AuthData {
+    id: string;
+    type: string;
+    clientIp?: string;
+    authenticatedAt: number;
+}
+
+// Session de l'agent. Doit être compatible avec les contraintes de FastMCP.
 export interface AgentSession extends FastMCPSession {
   history: Array<{ role: 'user' | 'assistant'; content: string }>;
+  auth: AuthData;
+  // Ajout de la signature d'index pour satisfaire la contrainte de FastMCP
+  [key: string]: any; 
 }
 
-// Define a Ctx type specific to our application session
+// Contexte (Ctx) - Le contexte de FastMCP n'est PAS générique sur les paramètres de l'outil.
 export type Ctx = FastMCPCtx<AgentSession>;
 
-// Payload for asynchronous tasks processed by the worker
-export interface AsyncTaskPayload {
-  toolName: string;
-  toolArgs: Record<string, unknown>;
-  session: AgentSession;
+// Tool - Le Tool EST générique sur les paramètres de l'outil (le schéma Zod).
+export type Tool<T extends ZodObject<any, any, any> = ZodObject<any, any, any>> = FastMCPTool<AgentSession, T>;
+
+// Charge utile des tâches asynchrones
+export interface AsyncTaskJobPayload<TParams = Record<string, unknown>> {
+    params: TParams;
+    auth: AuthData | undefined;
+    taskId: string;
+    toolName: string;
+    cbUrl?: string;
 }
 
-// BullMQ Job type with our specific payload
-export type AsyncTaskJob = Job<AsyncTaskPayload, any, string>;
+// Job BullMQ
+export type AsyncTaskJob = Job<AsyncTaskJobPayload, any, string>;

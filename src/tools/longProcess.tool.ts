@@ -1,13 +1,10 @@
-// src/tools/longProcess.tool.ts
-
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
-import { UserError, type Context } from 'fastmcp';
-
+import { UserError } from 'fastmcp';
 import logger from '../logger.js';
 import { enqueueTask } from '../utils/asyncToolHelper.js';
 import { isValidHttpUrl } from '../utils/validationUtils.js';
-import type { AuthData } from '../types.js';
+import type { Tool, Ctx, AuthData } from '../types.js';
 
 const TOOL_NAME = 'asynchronousTaskSimulatorEnhanced';
 
@@ -61,14 +58,13 @@ export async function doWorkSpecific(
   };
 }
 
-export const longProcessTool = {
+export const longProcessTool: Tool<typeof longProcessParams> = {
   name: TOOL_NAME,
   description: 'Simulateur de tâche longue asynchrone.',
   parameters: longProcessParams,
   annotations: { streamingHint: true },
-  execute: async (args: LongProcessParamsType, context: Context<AuthData>): Promise<string> => {
-    // CORRIGÉ : `context.session` contient directement les données d'authentification.
-    const authData = context.session;
+  execute: async (args, context: Ctx<typeof longProcessParams>): Promise<string> => {
+    const authData = context.session.auth;
     const taskId = randomUUID();
     const toolLogger = context.log;
     const serverLog = logger.child({
@@ -90,9 +86,6 @@ export const longProcessTool = {
     if (args.callbackUrl && !isValidHttpUrl(args.callbackUrl, `${TOOL_NAME}-execute`)) {
       throw new UserError("Format de l'URL de rappel invalide.");
     }
-
-    // CORRIGÉ: La vérification `if (context.streamContent && ...)` est redondante
-    // car les fonctions sont définies dans le type `Context`. On peut les appeler directement.
 
     const jobId = await enqueueTask<LongProcessParamsType>({
       params: args,

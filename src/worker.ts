@@ -1,42 +1,59 @@
-/**
- * src/worker.ts
- *
- * Le worker BullMQ qui exécute les tâches asynchrones en arrière-plan.
- * Il traite les jobs de la file d'attente (comme l'exécution de code ou le scraping).
- */
 import { Worker } from 'bullmq';
 import { config } from './config.js';
 import logger from './logger.js';
 import { taskQueue, deadLetterQueue, redisConnection } from './queue.js';
 import { allTools } from './tools/index.js';
-import type { AsyncTaskJob } from './types.js';
+import { getContentWorkerLogic } from './tools/browser/getContent.tool.js';
+import { navigateWorkerLogic } from './tools/browser/navigate.tool.js';
+import type { AsyncTaskJob, Ctx, AgentSession, AuthData } from './types.js';
 
 const worker = new Worker(
   taskQueue.name,
   async (job: AsyncTaskJob) => {
-    const { toolName, toolArgs, session } = job.data;
+    const { toolName, params, auth } = job.data;
     const log = logger.child({ jobId: job.id, toolName });
 
-    log.info({ toolArgs }, `Processing job for tool: ${toolName}`);
+    log.info({ toolArgs: params }, `Processing job for tool: ${toolName}`);
 
     const tool = allTools.find((t) => t.name === toolName);
-
     if (!tool) {
       throw new Error(`Tool "${toolName}" not found.`);
     }
 
-    // Crée un contexte minimal pour l'outil
-    const ctx = {
-      session,
+    if (!auth) {
+      throw new Error(`Authentication data is missing for job ${job.id}`);
+    }
+    
+    // Création d'un mock de la session pour satisfaire les types.
+    // Seules les propriétés utilisées par les outils/workers sont nécessaires.
+    const mockSession: AgentSession = {
+        auth,
+        history: [],
+        sessionId: auth.id,
+        createdAt: auth.authenticatedAt,
+        // Propriétés de base pour la compatibilité
+        isClosed: false,
+        clientCapabilities: { streaming: true },
+        loggingLevel: 'info',
+    };
+    
+    const ctx: Ctx = {
+      session: mockSession,
       log,
-      // Les fonctions de progression et de streaming ne sont pas disponibles dans le worker,
-      // mais on pourrait les simuler en écrivant dans Redis.
-      reportProgress: async (p: any) => log.debug(p, 'Progress report'),
-      streamContent: async (c: any) => log.debug(c, 'Content stream'),
+      reportProgress: async (p: any) => log.debug({p}, 'Progress report (worker)'),
+      streamContent: async (c: any) => log.debug({c}, 'Content stream (worker)'),
     };
 
-    // Exécute l'outil
-    const result = await tool.execute(toolArgs, ctx);
+    let result: any;
+    if (toolName === 'browser_getContent') {
+        result = await getContentWorkerLogic(params as any, ctx);
+    } else if (toolName === 'browser_navigate') {
+        result = await navigateWorkerLogic(params as any, ctx);
+    }
+    else {
+        result = await tool.execute(params as any, ctx);
+    }
+    
     log.info({ result }, 'Job completed successfully.');
     return result;
   },
@@ -46,14 +63,11 @@ const worker = new Worker(
   }
 );
 
-// --- Gestion des Événements du Worker ---
-
 worker.on('failed', async (job, error) => {
   const log = logger.child({ jobId: job?.id, toolName: job?.data.toolName });
   log.error({ err: error }, 'Job failed.');
 
-  // Si le job a échoué après toutes les tentatives, le déplace vers la DLQ
-  if (job && job.attemptsMade >= (job.opts.attempts || 1)) {
+  if (job && job.opts && job.opts.attempts && job.attemptsMade >= job.opts.attempts) {
     log.warn(`Job failed all attempts. Moving to dead-letter queue.`);
     await deadLetterQueue.add(job.name, job.data, job.opts);
   }

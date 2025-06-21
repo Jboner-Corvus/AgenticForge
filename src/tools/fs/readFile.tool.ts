@@ -1,12 +1,5 @@
-/**
- * src/tools/fs/readFile.tool.ts
- *
- * Outil pour lire le contenu d'un fichier.
- * NOTE: C'est un outil très dangereux en production. Il devrait être
- * lourdement sécurisé pour n'accéder qu'à un répertoire de travail spécifique.
- */
 import { z } from 'zod';
-import type { Tool, Ctx } from '@fastmcp/fastmcp';
+import type { Tool, Ctx } from '../../types.js';
 import { promises as fs } from 'fs';
 import path from 'path';
 
@@ -32,7 +25,7 @@ export const readFileTool: Tool<typeof readFileParams> = {
   name: 'readFile',
   description: 'Reads the content of a file from the workspace.',
   parameters: readFileParams,
-  execute: async (args, ctx: Ctx) => {
+  execute: async (args, ctx: Ctx<typeof readFileParams>) => {
     try {
       const safePath = sanitizePath(args.path);
       ctx.log.info({ path: safePath }, 'Reading file');

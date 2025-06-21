@@ -1,31 +1,17 @@
-/**
- * src/tools/system/createTool.tool.ts
- *
- * Outil Prométhéen : Permet à l'agent de créer de nouveaux outils pour lui-même.
- *
- * ATTENTION : Cet outil est le summum de la liberté et du danger.
- * Il écrit du code exécutable directement dans le code source du serveur.
- * Il n'y a aucune sandbox ici.
- */
 import { z } from 'zod';
-import type { Tool, Ctx } from '@fastmcp/fastmcp';
+import type { Tool, Ctx } from '../../types.js';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-// Le chemin vers le répertoire où les outils sont stockés.
 const TOOLS_DIR = path.resolve(process.cwd(), 'src/tools');
 
-// Un template de code pour un nouveau fichier d'outil.
-// L'agent devra fournir les parties variables.
 const TOOL_TEMPLATE = `
 /**
  * Outil généré par l'agent : %s
  * Description : %s
  */
 import { z } from 'zod';
-import type { Tool, Ctx } from '@fastmcp/fastmcp';
-// L'agent peut ajouter des imports ici s'il est assez intelligent
-// import ...
+import type { Tool, Ctx } from '../../types.js';
 
 export const %sParams = z.object(%s);
 
@@ -37,7 +23,6 @@ export const %sTool: Tool<typeof %sParams> = {
 };
 `;
 
-// Helper pour convertir un nom d'outil (ex: 'my-tool') en nom de variable (ex: 'myTool')
 const toCamelCase = (str: string) => str.replace(/[-_](.)/g, (_, c) => c.toUpperCase());
 
 export const createToolParams = z.object({
@@ -65,46 +50,41 @@ export const createToolTool: Tool<typeof createToolParams> = {
   description:
     "Writes a new tool file to the server's source code. After using this, you MUST call system_restartServer to load the new tool.",
   parameters: createToolParams,
-  execute: async (args, ctx: Ctx) => {
+  execute: async (args, ctx: Ctx<typeof createToolParams>) => {
     const { tool_name, description, parameters_schema, execute_function } = args;
     const toolVarName = toCamelCase(tool_name);
     const toolFileName = `${toolVarName}.tool.ts`;
-    const toolFilePath = path.join(TOOLS_DIR, 'generated', toolFileName); // On les met dans un sous-dossier pour l'organisation
+    const toolFilePath = path.join(TOOLS_DIR, 'generated', toolFileName); 
 
     try {
       ctx.log.warn({ tool: args }, 'AGENT IS CREATING A NEW TOOL. THIS IS A HIGH-RISK OPERATION.');
 
-      // Formate le contenu du fichier de l'outil en utilisant le template.
       const toolFileContent = TOOL_TEMPLATE.trim()
-        .replace('%s', tool_name)
-        .replace('%s', description)
-        .replace(/%s/g, toolVarName) // remplace toutes les occurrences
-        .replace('%s', parameters_schema)
-        .replace('%s', execute_function);
+        .replace(/%s/g, (match, offset, string) => {
+            // Un peu de logique pour remplacer correctement
+            if (string.includes("Outil généré par l'agent")) return tool_name;
+            if (string.includes("Description :")) return description;
+            if (string.includes("z.object(%s)")) return parameters_schema;
+            if (string.includes("execute: %s")) return execute_function;
+            return toolVarName;
+        });
 
-      // Crée le répertoire 'generated' s'il n'existe pas
       await fs.mkdir(path.dirname(toolFilePath), { recursive: true });
-
-      // Écrit le nouveau fichier d'outil.
       await fs.writeFile(toolFilePath, toolFileContent, 'utf-8');
-
-      // Met à jour le fichier d'index pour inclure le nouvel outil.
-      // C'est l'étape la plus complexe et la plus fragile.
+      
       const indexFilePath = path.join(TOOLS_DIR, 'index.ts');
-      const newExportLine = `import { ${toolVarName}Tool } from './generated/${toolFileName}.js';`;
+      const newExportLine = `import { ${toolVarName}Tool } from './generated/${toolFileName.replace('.ts', '.js')}';`;
 
       let indexFileContent = await fs.readFile(indexFilePath, 'utf-8');
 
-      // Ajoute l'import
-      indexFileContent = `${newExportLine}\n${indexFileContent}`;
-
-      // Ajoute le nom de l'outil au tableau `allTools`
-      indexFileContent = indexFileContent.replace(
-        'export const allTools = [',
-        `export const allTools = [\n  ${toolVarName}Tool,`
-      );
-
-      await fs.writeFile(indexFilePath, indexFileContent, 'utf-8');
+      if (!indexFileContent.includes(newExportLine)) {
+        indexFileContent = `${newExportLine}\n${indexFileContent}`;
+        indexFileContent = indexFileContent.replace(
+          'export const allTools = [',
+          `export const allTools = [\n  ${toolVarName}Tool,`
+        );
+        await fs.writeFile(indexFilePath, indexFileContent, 'utf-8');
+      }
 
       const successMessage = `Successfully created new tool '${tool_name}' and updated the index. Please use 'system_restartServer' to load it.`;
       ctx.log.warn(successMessage);

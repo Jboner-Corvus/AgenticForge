@@ -1,11 +1,5 @@
-/**
- * src/tools/system/restartServer.tool.ts
- *
- * Outil Prométhéen : Permet à l'agent de se redémarrer lui-même.
- * Ceci est nécessaire pour charger les nouveaux outils créés dynamiquement.
- */
 import { z } from 'zod';
-import type { Tool, Ctx } from '@fastmcp/fastmcp';
+import type { Tool, Ctx } from '../../types.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -20,24 +14,17 @@ export const restartServerTool: Tool<typeof restartServerParams> = {
   description:
     'Restarts the agent server and workers to apply changes, such as loading a new tool.',
   parameters: restartServerParams,
-  execute: async (args, ctx: Ctx) => {
+  execute: async (args, ctx: Ctx<typeof restartServerParams>) => {
     ctx.log.warn({ reason: args.reason }, 'AGENT IS INITIATING A SERVER RESTART.');
 
-    // La commande exacte dépend de l'environnement.
-    // Dans notre cas, nous sommes dans Docker, donc nous utilisons docker-compose.
-    // Cela suppose que la commande `docker` est disponible dans le conteneur du serveur.
-    // Il faudrait monter le socket Docker pour que cela fonctionne.
     const command = 'docker-compose restart server worker';
 
-    // On ne `await` pas la commande, car le processus serveur va être tué.
-    // On lance la commande et on retourne un message immédiatement.
     exec(command, (error, stdout, stderr) => {
       if (error) {
         ctx.log.error({ err: error, stdout, stderr }, 'Failed to execute restart command.');
       }
     });
 
-    // Ce message sera probablement le dernier envoyé avant que le serveur ne s'arrête.
-    return `Restart command issued for reason: ${args.reason}. The server will be unavailable for a moment.`;
+    return `Restart command issued for reason: ${args.reason || 'No reason specified'}. The server will be unavailable for a moment.`;
   },
 };

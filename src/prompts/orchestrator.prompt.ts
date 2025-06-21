@@ -6,7 +6,7 @@
  * * VERSION PROMETHEUS : Le prompt inclut maintenant la capacité de
  * l'agent à créer ses propres outils.
  */
-import type { Tool } from '@fastmcp/fastmcp';
+import type { Tool } from '../types.js';
 import type { AgentSession } from '../types.js';
 import { format } from 'util';
 
@@ -48,7 +48,7 @@ const TOOLS_SECTION_HEADER = '## Available Tools:';
 const HISTORY_SECTION_HEADER = '## Conversation History:';
 
 const formatToolForPrompt = (tool: Tool<any>): string => {
-  const params = JSON.stringify(tool.parameters.schema.shape, null, 2);
+  const params = JSON.stringify(tool.parameters.shape, null, 2);
   return `### ${tool.name}\nDescription: ${tool.description}\nParameters (JSON Schema):\n${params}\n`;
 };
 

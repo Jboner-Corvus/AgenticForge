@@ -1,9 +1,7 @@
-// src/tools/synchronousExample.tool.ts
-
 import { z as zod } from 'zod';
-import type { Context, SerializableValue, TextContent } from 'fastmcp';
+import type { SerializableValue, TextContent } from 'fastmcp';
 import loggerInstance from '../logger.js';
-import type { AuthData as AuthDataType } from '../types.js';
+import type { Ctx, Tool, AuthData } from '../types.js';
 
 const SYNC_TOOL_NAME = 'synchronousExampleToolEnhanced';
 
@@ -14,7 +12,6 @@ export const synchronousExampleParams = zod.object({
   userId: zod.string().optional(),
 });
 export type SyncParamsType = zod.infer<typeof synchronousExampleParams>;
-type SyncResultType = TextContent;
 type SyncOutputTypeInternal = {
   processed: string;
   ts: number;
@@ -24,16 +21,15 @@ type SyncOutputTypeInternal = {
   n8nSessionId?: string;
 };
 
-export const synchronousExampleTool = {
+export const synchronousExampleTool: Tool<typeof synchronousExampleParams> = {
   name: SYNC_TOOL_NAME,
   description: "Exemple d'outil synchrone.",
   parameters: synchronousExampleParams,
   execute: async (
     args: SyncParamsType,
-    context: Context<AuthDataType>
-  ): Promise<SyncResultType> => {
-    // CORRIGÉ : `context.session` contient directement les données d'authentification.
-    const authData = context.session;
+    context: Ctx<typeof synchronousExampleParams>
+  ): Promise<TextContent> => {
+    const authData = context.session.auth;
     const clientLog = context.log;
     const serverLog = loggerInstance.child({
       tool: SYNC_TOOL_NAME,
@@ -64,7 +60,7 @@ export const synchronousExampleTool = {
       n8nSessionId: args.userId,
     };
 
-    const result: SyncResultType = {
+    const result: TextContent = {
       type: 'text',
       text: JSON.stringify(output, null, 2),
     };

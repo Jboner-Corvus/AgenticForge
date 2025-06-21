@@ -1,9 +1,7 @@
-// src/tools/debugContext.tool.ts
-
 import { z } from 'zod';
-import type { Context, SerializableValue } from 'fastmcp';
+import type { SerializableValue } from 'fastmcp';
 import logger from '../logger.js';
-import { type AuthData } from '../types.js';
+import { type Tool, type Ctx } from '../types.js';
 
 const TOOL_NAME = 'correctDebugContextTool';
 
@@ -15,12 +13,13 @@ export const debugContextParams = z.object({
 
 export type ParamsType = z.infer<typeof debugContextParams>;
 
-export const debugContextTool = {
+export const debugContextTool: Tool<typeof debugContextParams> = {
   name: TOOL_NAME,
   description: "Affiche le contexte d'authentification et de session.",
   parameters: debugContextParams,
-  execute: async (args: ParamsType, context: Context<AuthData>): Promise<string> => {
-    const authData = context.session;
+  execute: async (args: ParamsType, context: Ctx<typeof debugContextParams>): Promise<string> => {
+    if(!context.session) throw new Error("Session not found");
+    const authData = context.session.auth;
     const clientLog = context.log;
 
     const serverLog = logger.child({
@@ -29,37 +28,32 @@ export const debugContextTool = {
       appAuthId: authData?.id,
     });
 
-    const logFn = (message: string, data?: Record<string, SerializableValue>) => {
-      if (args.useClientLogger && clientLog) {
-        clientLog.info(message, data);
-      } else {
-        serverLog.info(data, message);
-      }
+    const logFn = (data: Record<string, SerializableValue> | string, message?: string) => {
+        if (args.useClientLogger && clientLog) {
+            clientLog.info(data as any, message);
+        } else {
+            serverLog.info(data, message);
+        }
     };
 
     let resultMessage = `Rapport de l'Outil de Débogage de Contexte:\n`;
     resultMessage += `UserID (n8n, depuis argument): ${args.userId || 'Non Fourni'}\n`;
 
-    resultMessage += `\n--- Données d'Authentification (context.session) ---\n`;
+    resultMessage += `\n--- Données d'Authentification (context.session.auth) ---\n`;
     if (authData) {
-      resultMessage += `Objet context.session présent.\n`;
+      resultMessage += `Objet context.session.auth présent.\n`;
       resultMessage += `  ID Applicatif: ${authData.id}\n`;
       resultMessage += `  Type d'Auth: ${authData.type}\n`;
       resultMessage += `  IP Client: ${authData.clientIp}\n`;
       resultMessage += `  Timestamp: ${new Date(authData.authenticatedAt).toISOString()}\n`;
+      
+      // On s'assure que l'objet est sérialisable pour le logger
+      const loggableAuthData = { ...authData };
+      logFn({ authData: loggableAuthData }, 'Données de session trouvées.');
 
-      // CORRECTION: Créer un objet plat et explicitement sérialisable pour le logging
-      // afin de satisfaire le type `SerializableValue`.
-      const loggableAuthData = {
-        id: authData.id,
-        type: authData.type,
-        authenticatedAt: authData.authenticatedAt,
-        clientIp: authData.clientIp,
-      };
-      logFn('Données de session trouvées.', { authData: loggableAuthData });
     } else {
-      resultMessage += `context.session est INDÉFINI ou NUL.\n`;
-      serverLog.warn('context.session est indéfini ou nul.');
+      resultMessage += `context.session.auth est INDÉFINI ou NUL.\n`;
+      serverLog.warn('context.session.auth est indéfini ou nul.');
     }
 
     logFn('Exécution de CorrectDebugContextTool terminée.');

@@ -1,10 +1,5 @@
-/**
- * src/tools/ai/summarize.tool.ts
- *
- * Un outil qui utilise le LLM pour résumer un texte donné.
- */
 import { z } from 'zod';
-import type { Tool, Ctx } from '@fastmcp/fastmcp';
+import type { Tool, Ctx } from '../../types.js';
 import { getSummarizerPrompt } from '../../prompts/summarizer.prompt.js';
 import { getLlmResponse } from '../../utils/llmProvider.js';
 
@@ -16,7 +11,7 @@ export const summarizeTextTool: Tool<typeof summarizeTextParams> = {
   name: 'summarizeText',
   description: 'Summarizes a long piece of text.',
   parameters: summarizeTextParams,
-  execute: async (args, ctx: Ctx) => {
+  execute: async (args, ctx: Ctx<typeof summarizeTextParams>) => {
     ctx.log.info('Summarizing text...');
     const prompt = getSummarizerPrompt(args.text);
     const summary = await getLlmResponse(prompt, 'You are a text summarization expert.');
