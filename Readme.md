@@ -1,118 +1,114 @@
-<div align="center">
-  <h1><font color="#2ECC71">MCP-Serveur</font></h1>
-  <p><strong>Un serveur modulaire et extensible pour opérations synchrones et asynchrones.</strong></p>
-  <p>Propulsé par Docker, BullMQ, Redis et FastMCP.</p>
-  <p>
-    <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="[Image du logo Docker]">
-    <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="[Image du logo Node.js]">
-    <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="[Image du logo TypeScript]">
-    <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="[Image du logo Redis]">
-    <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="[Image du logo pnpm]">
-  </p>
+div align="center">
+
+# Agentic Prometheus 🚀
+
+**Une fusée agentique autonome, conçue pour raisonner, évoluer et construire ses propres outils.**
+
+Propulsé par une architecture réactive en TypeScript, orchestrée par Docker et suralimentée par FastMCP.
+
+<p>
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="[Image du logo Docker]">
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="[Image du logo Node.js]">
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="[Image du logo TypeScript]">
+  <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="[Image du logo Redis]">
+  <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="[Image du logo pnpm]">
+</p>
+
 </div>
 
 ---
 
-## 📜 <font color="#3498DB">Table des Matières</font>
+## 📜 Table des Matières
 
-- [🌟 Introduction](#-introduction)
+- [🌟 Concept Fondamental](#-concept-fondamental--le-mode-prométhée)
+- [🛰️ Architecture de la Fusée](#️-architecture-de-la-fusée)
 - [📋 Prérequis](#-prérequis)
-- [🚀 Installation & Configuration Initiale](#-installation--configuration-initiale)
-- [⚙️ Exécution et Gestion du Serveur](#️-exécution-et-gestion-du-serveur)
-- [🔌 Intégration avec le client N8N](#-intégration-avec-le-client-n8n)
+- [🚀 Installation et Décollage](#-installation-et-décollage)
+- [🎛️ Console de Gestion (`run.sh`)](#️-console-de-gestion-runsh)
 - [🤝 Contribution](#-contribution)
 
 ---
 
-## 🌟 <font color="#3498DB">Introduction</font>
+## 🌟 Concept Fondamental : Le Mode Prométhée
 
-**MCP-Serveur** est un serveur robuste, conçue pour la performance et la modularité. Il permet de gérer avec élégance des tâches complexes, qu'elles soient immédiates (synchrones) ou de longue durée (asynchrones), grâce à une architecture découplée s'appuyant sur :
+**Agentic Prometheus** n'est pas un agent ordinaire. C'est une plateforme d'IA conçue pour l'**auto-amélioration radicale**. Comme le titan Prométhée qui a offert le feu de la connaissance à l'humanité, cet agent possède le "feu" de la création de code.
 
-- **FastMCP** : Pour un traitement efficace des requêtes et une gestion de session.
-- **Docker & Docker Compose** : Pour une conteneurisation fiable et un déploiement simplifié.
-- **BullMQ & Redis** : Pour une file d'attente de tâches asynchrones robuste et performante.
-- **TypeScript** : Pour un code typé, maintenable et évolutif.
+Lorsqu'il est confronté à une tâche pour laquelle il n'a pas d'outil, son instruction principale n'est pas d'échouer, mais de **construire la solution**. Il peut :
+1.  **Planifier** la création d'un nouvel outil.
+2.  **Écrire** son propre code source en TypeScript.
+3.  **S'auto-redémarrer** pour charger ses nouvelles capacités.
+4.  **Utiliser** l'outil qu'il vient de forger pour accomplir l'objectif initial.
 
-Ce document vous guidera à travers l'installation, l'exécution et l'extension du serveur.
-
----
-
-## 📋 <font color="#3498DB">Prérequis</font>
-
-Avant de commencer, assurez-vous que les éléments suivants sont installés et configurés sur votre système :
-
-- <img src="https://img.shields.io/badge/Docker_Engine-nécessaire-blue?logo=docker" alt="[Badge Docker Engine]"> : Pour l'exécution des conteneurs.
-- <img src="https://img.shields.io/badge/Docker_Compose_(v2+)-nécessaire-blue?logo=docker" alt="[Badge Docker Compose]"> : Pour l'orchestration des services. Le script `run.sh` vérifiera sa présence.
-- <img src="https://img.shields.io/badge/pnpm-recommandé-orange?logo=pnpm" alt="[Badge pnpm]"> : (Optionnel, mais recommandé pour le développement local) Pour la gestion des dépendances Node.js et l'exécution des scripts.
+C'est une véritable **fusée logicielle** : non seulement elle vole, mais elle construit de nouveaux étages en plein vol pour aller toujours plus loin.
 
 ---
 
-## 🚀 <font color="#3498DB">Installation & Configuration Initiale</font>
+## 🛰️ Architecture de la Fusée
 
-Suivez ces étapes pour mettre en place votre environnement :
+Le système est un écosystème modulaire orchestré par `docker-compose` :
 
-1.  **Clonez le Dépôt** :
+- **`server` (Le Cerveau de Vol)** : Le cœur de l'agent. Il communique avec le LLM, prend les décisions stratégiques et gère la conversation avec l'utilisateur.
+- **`worker` (Les Propulseurs Auxiliaires)** : Dédié aux tâches lourdes et longues (scraping web, exécution de code complexe). Il assure que le cerveau de vol reste toujours réactif.
+- **`redis` (La Mémoire de Bord)** : Le système nerveux central, utilisé pour la file d'attente des tâches et la gestion de la mémoire de session.
 
+---
+
+## 📋 Prérequis
+
+Avant le lancement, assurez-vous que les systèmes suivants sont opérationnels sur votre station de contrôle :
+
+- ![Badge Docker Engine](https://img.shields.io/badge/Docker_Engine-NÉCESSAIRE-blue?logo=docker)
+- ![Badge Docker Compose](https://img.shields.io/badge/Docker_Compose_(v2+)-NÉCESSAIRE-blue?logo=docker)
+- ![Badge pnpm](https://img.shields.io/badge/pnpm-RECOMMANDÉ-orange?logo=pnpm) (pour le développement local)
+
+---
+
+## 🚀 Installation et Décollage
+
+La mise à feu est simple et entièrement gérée par la console de lancement.
+
+1.  **Obtenez les plans de la fusée** :
     ```bash
-    git clone [https://github.com/Jboner-Corvus/MCP-Server-Asynchrone.git](https://github.com/Jboner-Corvus/MCP-Server-Asynchrone.git)
-    cd MCP-Server-Asynchrone
+    git clone [https://votre-repo/agentic-prometheus.git]
+    cd agentic-prometheus
     ```
 
-2.  **Configuration Initiale via `run.sh`** :
-    Le script `run.sh` est votre console de gestion interactive pour l'environnement Docker.
-    - Rendez le script exécutable :
-      ```bash
-      chmod +x run.sh
-      ```
-    - Lancez le script :
-      ```bash
-      ./run.sh
-      ```
-    - **Fichier d'Environnement (`.env`)** :
-      - Si le fichier `.env` est manquant, le script proposera de le créer.
-      - ⚠️ **Action Requise** : Éditez manuellement le fichier `.env` pour définir des valeurs **fortes et uniques** pour `AUTH_TOKEN`, `REDIS_PASSWORD`, `WEBHOOK_SECRET`, et toute autre variable sensible ou spécifique à votre déploiement.
-        ```dotenv
-        # Exemple de variables à personnaliser dans .env
-        AUTH_TOKEN="VOTRE_TOKEN_SECRET_ULTRA_ROBUSTE"
-        REDIS_PASSWORD="VOTRE_MOT_DE_PASSE_REDIS_COMPLEXE"
-        WEBHOOK_SECRET="VOTRE_SECRET_WEBHOOK_LONG_ET_UNIQUE"
-        ```
-    - **(Recommandé)** Validez votre configuration `.env` en utilisant l'option `15` ("🛡️ VALIDER Paramètres d'Environnement (.env)") dans le menu de `run.sh`.
+2.  **Activez la console de lancement** :
+    Rendez le script `run.sh` exécutable. C'est votre unique point de contrôle.
+    ```bash
+    chmod +x run.sh
+    ```
+
+3.  **Initialisez les systèmes** :
+    Lancez la console pour la première fois.
+    ```bash
+    ./run.sh
+    ```
+    - Le script détectera l'absence du fichier `.env` et le créera pour vous à partir de `.env.example`.
+    - ⚠️ **Action Requise** : Ouvrez le fichier `.env` et personnalisez vos clés secrètes (`AUTH_TOKEN`, `REDIS_PASSWORD`). C'est comme la clé d'armement de votre fusée, gardez-la en sécurité.
+
+4.  **Décollage !**
+    - Dans le menu de `run.sh`, choisissez l'option **1) Démarrer**.
+    - Docker va construire les étages de la fusée et mettre tous les systèmes en orbite.
 
 ---
 
-## ⚙️ <font color="#3498DB">Exécution et Gestion du Serveur</font>
+## 🎛️ Console de Gestion (`run.sh`)
 
-Utilisez le script `run.sh` pour la majorité des opérations de gestion :
+Votre script `run.sh` est une interface de commande interactive pour piloter Agentic Prometheus.
 
-- **Installer** : Option `1`,
-- **Visualiser les journaux (logs)** : Option `11`.
-
----
-
-## 🔌 <font color="#3498DB">Intégration avec le client N8N </font>
-
-Le serveur **MCP-Serveur** peut être facilement intégré avec **n8n** pour automatiser vos workflows en exploitant les capacités du **Model Context Protocol (MCP)**. Cette intégration permet d'orchestrer des tâches complexes et de créer des flux d'automatisation sophistiqués.
-
-1. **Ajout du Nœud MCP Client** :
-
-   - Dans votre workflow n8n, ajoutez un nœud de type **MCP Client Tool**.
-   - Ce nœud servira de pont entre n8n et votre serveur MCP.
-
-2. **Configuration du Point de Terminaison SSE** :
-
-   - **Endpoint SSE** : `http://VOTRE_IP:8081/sse`
-   - 💡 **Note** : Remplacez `VOTRE_IP` par l'adresse IP réelle de votre serveur MCP (exemple : `192.168.2.16`).
-   - Ce point de terminaison utilise les **Server-Sent Events** pour une communication en temps réel.
-
-3. **Configuration de l'Authentification** :
-   - **Type d'authentification** : `Bearer Token`
-   - Créez une nouvelle credential **Bearer Auth** dans n8n.
-   - Utilisez la valeur de votre variable `AUTH_TOKEN` définie dans le fichier `.env`.
-   - Cette authentification garantit la sécurité des communications entre n8n et votre serveur.
+| Commande          | Description                                                                 |
+| ----------------- | --------------------------------------------------------------------------- |
+| **1) Démarrer** | Lance tous les services de l'écosystème en arrière-plan.                  |
+| **3) Arrêter** | Arrête proprement tous les conteneurs.                                      |
+| **4) Statut** | Affiche l'état actuel de tous les services (en cours, arrêté, etc.).        |
+| **5) Logs** | Affiche en temps réel les journaux de tous les services pour le débogage.   |
+| **7) Rebuild** | Force la reconstruction des images Docker, utile après des changements majeurs. |
+| **9) Type-Check** | Lance le compilateur TypeScript pour vérifier les erreurs de type dans le code. |
+| **10) Clean** | Supprime le répertoire de build (`dist/`).                                 |
 
 ---
 
-## 🤝 <font color="#3498DB">Contribution</font>
+## 🤝 Contribution
 
-Les contributions sont les bienvenues ! ouvrez une _issue_ pour discuter des changements que vous souhaitez apporter.
+Les contributions qui nous aident à atteindre de nouvelles galaxies sont les bienvenues. Veuillez ouvrir une *issue* pour discuter des nouvelles fonctionnalités ou des corrections de bugs que vous souhaitez apporter.
