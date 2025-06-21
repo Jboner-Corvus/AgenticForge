@@ -1,4 +1,4 @@
-// src/webServer.ts (version améliorée pour servir tous les fichiers statiques)
+// src/webServer.ts (version corrigée et robuste)
 
 import * as http from 'http';
 import * as fs from 'fs';
@@ -13,7 +13,6 @@ const __dirname = path.dirname(__filename);
 const WEB_PORT = parseInt(process.env.WEB_PORT || '3000');
 const MCP_SERVER_URL = config.MCP_SERVER_URL || 'http://localhost:8080';
 
-// Dictionnaire des types MIME pour les fichiers statiques
 const mimeTypes: { [key: string]: string } = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
@@ -21,15 +20,12 @@ const mimeTypes: { [key: string]: string } = {
   '.json': 'application/json',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.svg': 'image/svg+xml',
 };
 
 const server = http.createServer((req, res) => {
-  // ... (gestion des CORS et OPTIONS reste identique) ...
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Session-ID');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
@@ -37,67 +33,70 @@ const server = http.createServer((req, res) => {
     return;
   }
   
-  const url = new URL(req.url || '/', `http://${req.headers.host}`);
-  const timestamp = new Date().toISOString();
+  const incomingUrl = new URL(req.url || '/', `http://${req.headers.host}`);
+  logger.info(`${req.method} ${incomingUrl.pathname} from ${req.socket.remoteAddress}`);
 
-  logger.info(`${req.method} ${url.pathname} from ${req.socket.remoteAddress}`);
+  // ---- BLOC PROXY CORRIGÉ ----
+  if (incomingUrl.pathname.startsWith('/api/') || incomingUrl.pathname === '/health') {
+    if (!MCP_SERVER_URL) {
+        logger.error('Configuration Error: MCP_SERVER_URL is not defined.');
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Internal Server Configuration Error' }));
+        return;
+    }
 
-  // Proxy pour l'API
-  if (url.pathname.startsWith('/api/') || url.pathname === '/health') {
-    // ... (la logique du proxy reste identique) ...
-    const targetUrl = `${MCP_SERVER_URL}${url.pathname}${url.search}`;
-    logger.info(`Proxying to: ${targetUrl}`);
+    const targetUrl = new URL(incomingUrl.pathname + incomingUrl.search, MCP_SERVER_URL);
+    logger.info(`Proxying request to: ${targetUrl.href}`);
+
     const proxyReq = http.request(
       targetUrl,
-      { method: req.method, headers: req.headers, timeout: 30000 },
+      {
+        method: req.method,
+        headers: {
+            ...req.headers,
+            host: targetUrl.host, // Important pour le proxying
+        },
+        timeout: 30000,
+      },
       (proxyRes) => {
         res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
         proxyRes.pipe(res);
       }
     );
+
     proxyReq.on('error', (err: Error) => {
-      logger.error({ err, targetUrl }, 'Proxy request failed');
+      logger.error({ err: err.message, targetUrl: targetUrl.href }, 'Proxy request failed');
       res.writeHead(502, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Bad Gateway' }));
+      res.end(JSON.stringify({ error: 'Bad Gateway', message: 'Could not reach the main API server.' }));
     });
+
     req.pipe(proxyReq);
     return;
   }
 
-  // Logique améliorée pour servir les fichiers statiques
+  // ---- SERVEUR DE FICHIERS STATIQUES (inchangé) ----
   try {
-    let filePath = url.pathname;
-    if (filePath === '/') {
-      filePath = '/index.html';
-    }
-
+    let requestedPath = incomingUrl.pathname === '/' ? '/index.html' : incomingUrl.pathname;
     const publicDir = path.join(__dirname, '..', 'public');
-    const fullPath = path.join(publicDir, filePath);
+    const fullPath = path.join(publicDir, requestedPath);
 
-    // Mesure de sécurité : s'assurer que le chemin est bien dans le dossier public
     if (!fullPath.startsWith(publicDir)) {
         res.writeHead(403, { 'Content-Type': 'text/plain' });
         res.end('Forbidden');
         return;
     }
 
-    if (fs.existsSync(fullPath)) {
+    if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
       const extname = String(path.extname(fullPath)).toLowerCase();
       const contentType = mimeTypes[extname] || 'application/octet-stream';
       const content = fs.readFileSync(fullPath);
       res.writeHead(200, { 'Content-Type': contentType });
       res.end(content, 'utf-8');
     } else {
-      // Si un fichier n'est pas trouvé, renvoyer index.html (utile pour les routeurs front-end)
       const indexPath = path.join(publicDir, 'index.html');
-      if (fs.existsSync(indexPath)) {
-        const content = fs.readFileSync(indexPath, 'utf-8');
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(content);
-      } else {
-          res.writeHead(404, { 'Content-Type': 'text/plain' });
-          res.end('Not Found');
-      }
+      const content = fs.readFileSync(indexPath, 'utf-8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(content);
     }
   } catch (error) {
     logger.error({ error }, 'Error serving static file');
