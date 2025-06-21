@@ -24,28 +24,42 @@ const mimeTypes: { [key: string]: string } = {
 
 const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Session-ID');
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PUT, DELETE, OPTIONS',
+  );
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, X-Session-ID',
+  );
 
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
     res.end();
     return;
   }
-  
+
   const incomingUrl = new URL(req.url || '/', `http://${req.headers.host}`);
-  logger.info(`${req.method} ${incomingUrl.pathname} from ${req.socket.remoteAddress}`);
+  logger.info(
+    `${req.method} ${incomingUrl.pathname} from ${req.socket.remoteAddress}`,
+  );
 
   // ---- BLOC PROXY CORRIGÉ ----
-  if (incomingUrl.pathname.startsWith('/api/') || incomingUrl.pathname === '/health') {
+  if (
+    incomingUrl.pathname.startsWith('/api/') ||
+    incomingUrl.pathname === '/health'
+  ) {
     if (!MCP_SERVER_URL) {
-        logger.error('Configuration Error: MCP_SERVER_URL is not defined.');
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Internal Server Configuration Error' }));
-        return;
+      logger.error('Configuration Error: MCP_SERVER_URL is not defined.');
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Internal Server Configuration Error' }));
+      return;
     }
 
-    const targetUrl = new URL(incomingUrl.pathname + incomingUrl.search, MCP_SERVER_URL);
+    const targetUrl = new URL(
+      incomingUrl.pathname + incomingUrl.search,
+      MCP_SERVER_URL,
+    );
     logger.info(`Proxying request to: ${targetUrl.href}`);
 
     const proxyReq = http.request(
@@ -53,21 +67,29 @@ const server = http.createServer((req, res) => {
       {
         method: req.method,
         headers: {
-            ...req.headers,
-            host: targetUrl.host, // Important pour le proxying
+          ...req.headers,
+          host: targetUrl.host, // Important pour le proxying
         },
         timeout: 30000,
       },
       (proxyRes) => {
         res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
         proxyRes.pipe(res);
-      }
+      },
     );
 
     proxyReq.on('error', (err: Error) => {
-      logger.error({ err: err.message, targetUrl: targetUrl.href }, 'Proxy request failed');
+      logger.error(
+        { err: err.message, targetUrl: targetUrl.href },
+        'Proxy request failed',
+      );
       res.writeHead(502, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Bad Gateway', message: 'Could not reach the main API server.' }));
+      res.end(
+        JSON.stringify({
+          error: 'Bad Gateway',
+          message: 'Could not reach the main API server.',
+        }),
+      );
     });
 
     req.pipe(proxyReq);
@@ -76,14 +98,15 @@ const server = http.createServer((req, res) => {
 
   // ---- SERVEUR DE FICHIERS STATIQUES (inchangé) ----
   try {
-    let requestedPath = incomingUrl.pathname === '/' ? '/index.html' : incomingUrl.pathname;
+    let requestedPath =
+      incomingUrl.pathname === '/' ? '/index.html' : incomingUrl.pathname;
     const publicDir = path.join(__dirname, '..', 'public');
     const fullPath = path.join(publicDir, requestedPath);
 
     if (!fullPath.startsWith(publicDir)) {
-        res.writeHead(403, { 'Content-Type': 'text/plain' });
-        res.end('Forbidden');
-        return;
+      res.writeHead(403, { 'Content-Type': 'text/plain' });
+      res.end('Forbidden');
+      return;
     }
 
     if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {

@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="description" content="Interface de contrôle pour le système d'IA autonome Agentic Prometheus.">
-    <meta name="author" content="Agentic Prometheus Project">
-    
     <title>🚀 Agentic Prometheus - Interface de Contrôle</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
-
     <link rel="stylesheet" href="/css/main.css">
 </head>
 <body>
@@ -21,50 +18,44 @@
         </div>
 
         <div class="status-bar">
-            <div class="token-input-wrapper">
+            <div id="token-form" class="token-controls">
                 <label for="authToken" class="token-label">Auth Token:</label>
                 <input type="password" id="authToken" class="token-input" placeholder="Collez votre Bearer Token ici" aria-label="Authentication Token Input">
+                <button type="button" id="saveTokenBtn" class="token-save-btn" aria-label="Save Token">
+                    ✅
+                </button>
             </div>
 
             <div class="status-item" aria-live="polite">
-                <div class="status-indicator"></div>
-                <span id="connectionStatus">Connecting...</span>
+                <div id="tokenStatusIndicator" class="status-indicator-token"></div>
+                <span id="connectionStatus">Token requis</span>
             </div>
         </div>
     </header>
 
     <div class="main-container">
-
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2 class="sidebar-title">Panneau de Contrôle</h2>
             </div>
             <section class="sidebar-content">
                 <p class="sidebar-info">L'agent sélectionne et exécute les outils automatiquement en fonction de votre objectif.</p>
-                </section>
+            </section>
         </aside>
 
         <main class="content-area">
             <div class="chat-container">
-
                 <section class="messages-container" id="messagesContainer" aria-live="assertive">
                     <noscript>
                         <p class="no-script-warning">
-                            Cette application nécessite JavaScript pour fonctionner. Veuillez l'activer dans votre navigateur.
+                            Cette application nécessite JavaScript pour fonctionner.
                         </p>
                     </noscript>
                 </section>
-
                 <div class="input-area">
                     <form id="chat-form" class="input-container" action="javascript:void(0);">
                         <div class="input-wrapper">
-                            <textarea 
-                                class="input-field" 
-                                id="messageInput" 
-                                placeholder="Décrivez votre objectif... (Ctrl+Enter pour envoyer)" 
-                                aria-label="Message input field"
-                                rows="1"
-                            ></textarea>
+                            <textarea class="input-field" id="messageInput" placeholder="Décrivez votre objectif..." aria-label="Message input field" rows="1"></textarea>
                         </div>
                         <div class="input-actions">
                             <button type="submit" class="btn" id="sendBtn" aria-label="Send Message">
@@ -74,13 +65,10 @@
                         </div>
                     </form>
                 </div>
-
             </div>
         </main>
-
     </div>
-
+    
     <script type="module" src="/js/main.js" defer></script>
-
 </body>
 </html>
