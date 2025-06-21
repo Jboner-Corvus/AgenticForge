@@ -10,7 +10,7 @@
     "start:web": "node dist/webServer.js",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "dev": "pnpm run build && (pnpm run start & pnpm run start:worker & pnpm run start:web)",
+    "dev": "pnpm run build && pnpm exec concurrently \"pnpm run start\" \"pnpm run start:worker\" \"pnpm run start:web\"",
     "dev:watch": "tsc -w",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -22,7 +22,6 @@
   "author": "Senior Refactoring AI",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.13.0",
     "bullmq": "^5.55.0",
     "dockerode": "^4.0.7",
     "dotenv": "^16.5.0",
@@ -39,6 +38,7 @@
     "@types/node": "^24.0.3",
     "@typescript-eslint/eslint-plugin": "^8.34.1",
     "@typescript-eslint/parser": "^8.34.1",
+    "concurrently": "^9.1.0",
     "eslint": "^9.29.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-import-resolver-typescript": "^4.4.3",
@@ -99,7 +99,7 @@
       ".ts",
       ".tsx"
     ],
-    "moduleNameMapper": {
+    "moduleNameMapping": {
       "^@/(.*)$": "<rootDir>/src/$1",
       "^(./.*)\\.js$": "$1"
     },

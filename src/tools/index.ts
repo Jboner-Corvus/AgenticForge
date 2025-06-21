@@ -1,29 +1,43 @@
-// This file aggregates and exports all available tools.
+// src/tools/index.ts - Import correct des outils
 import type { Tool } from '../types.js';
 import { finishTool } from './system/finish.tool.js';
 import { executeDevCommandTool } from './code/executeDevCommand.tool.js';
 import { createToolTool } from './system/createTool.tool.js';
 import { restartServerTool } from './system/restartServer.tool.js';
-// Import other tools...
 import { readFileTool } from './fs/readFile.tool.js';
 import { writeFileTool } from './fs/writeFile.tool.js';
 import { listFilesTool } from './fs/listFiles.tool.js';
+import { getContentTool } from './browser/getContent.tool.js';
+import { navigateTool } from './browser/navigate.tool.js';
 
-// Explicitly type the array to satisfy TypeScript's generic constraints
+// Explicitement typé pour satisfaire TypeScript
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const allTools: Tool<any>[] = [
-  // System Tools
+  // System Tools - Outils de gestion du système
   finishTool,
   createToolTool,
   restartServerTool,
 
-  // Code Execution Tools
-  executeDevCommandTool, // Remplacé executePythonTool
+  // Code Execution Tools - Exécution de code
+  executeDevCommandTool,
 
-  // Filesystem Tools
+  // Filesystem Tools - Manipulation de fichiers
   readFileTool,
   writeFileTool,
   listFilesTool,
 
-  // Add other corrected tools here as they are fixed
+  // Browser Tools - Navigation web (async)
+  getContentTool,
+  navigateTool,
 ];
+
+// Export du nombre d'outils pour diagnostic
+export const toolCount = allTools.length;
+
+// Export des catégories pour organisation
+export const toolCategories = {
+  system: [finishTool, createToolTool, restartServerTool],
+  code: [executeDevCommandTool],
+  filesystem: [readFileTool, writeFileTool, listFilesTool],
+  browser: [getContentTool, navigateTool],
+} as const;

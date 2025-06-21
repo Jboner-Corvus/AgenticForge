@@ -1,52 +1,66 @@
-# ==============================================================================
-# Dockerfile pour Agentic Prometheus
-# Utilise une construction multi-étapes pour optimiser la taille et la sécurité.
-# ==============================================================================
-
-# --- Étape 1: Builder ---
-# Cette étape installe toutes les dépendances (dev et prod) et compile le code.
+# Stage 1: Builder
+# This stage installs all dependencies (including dev) and builds the TypeScript code.
 FROM node:24-alpine AS builder
-
-# Définir le répertoire de travail
 WORKDIR /usr/src/app
-
-# Copier les fichiers de manifeste de paquets
-COPY package.json pnpm-lock.yaml ./
-
-# Installer les dépendances avec pnpm
-RUN npm install -g pnpm
-# CORRECTION: Ajout de --ignore-scripts pour ne pas exécuter le hook husky
-RUN pnpm install --frozen-lockfile --ignore-scripts
-
-# Copier le reste du code source de l'application
+# Enable pnpm via corepack
+RUN corepack enable
+# Copy package manifests
+COPY package.json pnpm-lock.yaml* ./
+# Install all dependencies to build the project
+RUN pnpm install --frozen-lockfile
+# Copy the rest of the source code
 COPY . .
-
-# Compiler le code TypeScript en JavaScript
+# Run the build script
 RUN pnpm run build
 
-# --- Étape 2: Production ---
-# Cette étape crée l'image finale avec uniquement ce qui est nécessaire pour l'exécution.
+# Stage 2: Production
+# This stage creates a lean production image with only necessary dependencies and artifacts.
 FROM node:24-alpine AS production
-
-# Définir le répertoire de travail
 WORKDIR /usr/src/app
+# Enable pnpm via corepack
+RUN corepack enable
 
-# Copier les fichiers de manifeste de paquets
-COPY package.json pnpm-lock.yaml ./
+# Configure pnpm's home directory
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN mkdir -p /pnpm
 
-# Installer UNIQUEMENT les dépendances de production
-RUN npm install -g pnpm
-# CORRECTION: Ajout de --ignore-scripts pour ne pas exécuter le hook husky
+# Copy package manifests again for the production install
+COPY package.json pnpm-lock.yaml* ./
+
+# --- FIX ---
+# Install ONLY production dependencies and IGNORE scripts (like husky's "prepare").
+# This prevents the "husky: not found" error during the Docker build.
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
-# Copier le code compilé depuis l'étape 'builder'
+# Copy the built application from the builder stage
 COPY --from=builder /usr/src/app/dist ./dist
 
-# Copier le répertoire public pour l'interface web
-COPY --from=builder /usr/src/app/public ./public
+# Install necessary system dependencies for runtime (Playwright, Docker)
+# Using --no-cache to keep the image size down
+RUN apk add --no-cache \
+    udev \
+    ttf-freefont \
+    chromium \
+    curl \
+    wget \
+    procps \
+    netcat-openbsd \
+    docker
 
-# Exposer le port par défaut du serveur principal.
-EXPOSE 8080
+# Create a non-root user and group for better security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# La commande par défaut pour démarrer le serveur principal.
-CMD ["pnpm", "run", "start"]
+# Create and set permissions for the workspace directory
+RUN mkdir -p /usr/src/app/workspace && \
+    chown -R appuser:appgroup /usr/src/app && \
+    chmod -R 755 /usr/src/app
+
+# Switch to the non-root user
+USER appuser
+
+# Expose the ports for the server and web interface
+EXPOSE 8080 3000
+
+# Default command to start the main server
+CMD ["pnpm", "start"]

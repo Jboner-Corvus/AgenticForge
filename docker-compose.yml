@@ -42,7 +42,6 @@ services:
     restart: unless-stopped
     command: pnpm run start
     healthcheck:
-      # Utiliser wget au lieu de curl (plus fiable dans Alpine)
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
@@ -51,7 +50,7 @@ services:
     networks:
       - agentic_network
 
-  # Interface Web - Dépendance simplifiée
+  # Interface Web
   web:
     build:
       context: .
@@ -59,7 +58,6 @@ services:
     container_name: agentic_prometheus_web
     ports:
       - "${WEB_PORT:-3000}:3000"
-    # Dépendance simple sans condition de santé stricte
     depends_on:
       - server
     env_file: .env
@@ -74,7 +72,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s  # Plus de temps pour démarrer
+      start_period: 60s
     networks:
       - agentic_network
 
