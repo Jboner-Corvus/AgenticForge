@@ -54,14 +54,14 @@ const mcp = new FastMCP<AgentSession>({
     ctx.session.history.push({ role: 'assistant', content: llmResponse });
     return llmResponse;
   },
-} as any); // Utilisation de 'as any' pour contourner le problème de typage strict
+} as any);
 
 mcp
   .start()
   .then(() => {
     logger.info(`🚀 Agentic Prometheus server started on port ${config.PORT}`);
   })
-  .catch((err) => {
+  .catch((err: unknown) => {
     logger.fatal({ err }, '💀 Server startup failed.');
     process.exit(1);
   });
