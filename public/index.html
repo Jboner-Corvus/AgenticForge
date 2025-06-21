@@ -1,375 +1,1385 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agentic Prometheus</title>
+    <title>🚀 Agentic Prometheus - Autonomous AI System</title>
     <style>
         :root {
-            --background-color: #1a1a1a;
-            --container-bg-color: #242424;
-            --text-color: #e0e0e0;
-            --primary-color: #00aaff;
-            --border-color: #333;
-            --input-bg-color: #333;
-            --input-text-color: #e0e0e0;
-            --button-bg-color: #00aaff;
-            --button-text-color: #fff;
-            --thought-bg-color: rgba(255, 255, 255, 0.05);
-            --tool-bg-color: rgba(0, 170, 255, 0.1);
-            --result-bg-color: #2a2a2a;
-            --error-bg-color: rgba(255, 0, 0, 0.1);
-            --error-text-color: #ffcccc;
-            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            --font-family-mono: 'Fira Code', 'Courier New', monospace;
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-primary: #00ff88;
+            --accent-secondary: #00cc66;
+            --accent-danger: #ff4444;
+            --accent-warning: #ffaa00;
+            --accent-info: #00aaff;
+            --border-color: #333333;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
 
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap');
-
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: var(--font-family);
-            background-color: var(--background-color);
-            color: var(--text-color);
-            line-height: 1.6;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            padding: 2rem;
-        }
-
-        #app-container {
-            width: 100%;
-            max-width: 800px;
-            height: 90vh;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            background-color: var(--container-bg-color);
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
-        
-        header {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            padding: 1rem 2rem;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
         }
 
-        header h1 {
-            font-size: 1.2rem;
-            font-weight: 700;
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
-        header .logo {
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .logo-text {
             font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        #main-content {
-            flex-grow: 1;
+        .status-bar {
             display: flex;
-            overflow: hidden;
+            gap: 2rem;
+            align-items: center;
         }
 
-        #stream-container {
-            flex: 2;
-            padding: 1.5rem;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-            border-right: 1px solid var(--border-color);
-        }
-        
-        #side-panel {
-            flex: 1;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-        }
-
-        #browser-view-container {
-            text-align: center;
-        }
-
-        #browser-view-container h3 {
-            font-size: 1rem;
-            margin-bottom: 1rem;
-        }
-        
-        #browser-image {
-            max-width: 100%;
-            border-radius: 8px;
-            border: 1px solid #444;
-            background-color: #111;
-            min-height: 150px;
-        }
-
-        .message-group {
-            padding: 1rem;
-            border-radius: 8px;
-            border: 1px solid transparent;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        .message-group .header {
+        .status-item {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-        }
-        
-        .message-group .content {
-            padding-left: 1.7rem;
-            color: #ccc;
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 20px;
+            font-size: 0.875rem;
         }
 
-        .message-group.thought { background-color: var(--thought-bg-color); border-color: #444; }
-        .message-group.tool-call { background-color: var(--tool-bg-color); border-color: var(--primary-color); }
-        .message-group.tool-result { background-color: var(--result-bg-color); border-color: #555; }
-        .message-group.final-response { background-color: var(--tool-bg-color); border-color: var(--primary-color); }
-        .message-group.error { background-color: var(--error-bg-color); border-color: var(--error-text-color); }
-
-        .message-group.error .content { color: var(--error-text-color); }
-
-        pre {
-            background-color: rgba(0,0,0,0.3);
-            padding: 0.75rem;
-            border-radius: 6px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            font-family: var(--font-family-mono);
-            font-size: 0.85rem;
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            animation: pulse 2s infinite;
         }
 
-        #form-container {
-            padding: 1rem;
-            border-top: 1px solid var(--border-color);
-        }
-        
-        #auth-container {
-            padding-bottom: 0.75rem;
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
 
-        #auth-token-input {
-            width: 100%;
-            background-color: var(--input-bg-color);
-            color: var(--input-text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.75rem;
-            font-family: var(--font-family);
-            font-size: 0.9rem;
-        }
-        #auth-token-input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
-
-        #goal-form {
+        /* Main Layout */
+        .main-container {
             display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .tools-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .tool-category {
+            margin-bottom: 1.5rem;
+        }
+
+        .category-title {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+            padding-left: 0.5rem;
+        }
+
+        .tool-item {
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
             gap: 0.75rem;
         }
 
-        #goal-input {
-            flex-grow: 1;
-            background-color: var(--input-bg-color);
-            color: var(--input-text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.75rem;
-            font-family: var(--font-family);
-            font-size: 1rem;
-            transition: border-color 0.2s;
+        .tool-item:hover {
+            background: rgba(0, 255, 136, 0.1);
+            transform: translateX(4px);
         }
 
-        #goal-input:focus {
-            outline: none;
-            border-color: var(--primary-color);
+        .tool-item.active {
+            background: rgba(0, 255, 136, 0.2);
+            border-left: 3px solid var(--accent-primary);
         }
-        
-        #goal-input:disabled { background-color: #2a2a2a; cursor: not-allowed; }
-        button:disabled { background-color: #555; cursor: not-allowed; }
 
-        button {
-            background-color: var(--button-bg-color);
-            color: var(--button-text-color);
-            border: none;
-            border-radius: 6px;
-            padding: 0.75rem 1.5rem;
-            font-family: var(--font-family);
-            font-size: 1rem;
+        .tool-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tool-name {
+            font-size: 0.875rem;
             font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s;
         }
 
-        button:hover { background-color: #0099e6; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Chat Interface */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .message {
+            display: flex;
+            gap: 1rem;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .user .message-avatar {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+
+        .assistant .message-avatar {
+            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+        }
+
+        .message-content {
+            background: var(--bg-secondary);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .user .message-content {
+            background: linear-gradient(45deg, #1a4d2e, #0d2818);
+        }
+
+        .message-text {
+            font-size: 0.875rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .message-timestamp {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        /* Tool Execution Display */
+        .tool-execution {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 0.75rem;
+        }
+
+        .tool-execution-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .tool-execution-icon {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tool-execution-name {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
+        .tool-execution-params {
+            background: var(--bg-primary);
+            border-radius: 4px;
+            padding: 0.75rem;
+            font-family: 'SF Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            overflow-x: auto;
+        }
+
+        .tool-execution-result {
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-family: 'SF Mono', monospace;
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 1.5rem 2rem;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .input-container {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            resize: none;
+            outline: none;
+            transition: all 0.2s;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .input-field:focus {
+            border-color: var(--accent-primary);
+            background: var(--bg-primary);
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        /* Right Panel */
+        .right-panel {
+            width: 320px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            margin-bottom: 2rem;
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Activity Log */
+        .activity-item {
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            font-size: 0.75rem;
+        }
+
+        .activity-time {
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-text {
+            color: var(--text-primary);
+        }
+
+        /* Progress Indicator */
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            transition: width 0.3s ease;
+        }
+
+        /* Loading Animation */
+        .typing-indicator {
+            display: flex;
+            gap: 0.3rem;
+            padding: 0.5rem 1rem;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--text-secondary);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { opacity: 0.3; }
+            30% { opacity: 1; }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--accent-danger);
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-primary);
+            background: var(--bg-primary);
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* File Upload */
+        .file-upload {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            border-color: var(--accent-primary);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .file-upload.dragover {
+            border-color: var(--accent-primary);
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .file-upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .file-upload-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Code Editor */
+        .code-editor {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'SF Mono', monospace;
+            font-size: 0.875rem;
+            min-height: 200px;
+            color: var(--text-primary);
+            overflow: auto;
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            animation: slideInRight 0.3s ease-out;
+            z-index: 2000;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .notification.success {
+            border-color: var(--accent-primary);
+        }
+
+        .notification.error {
+            border-color: var(--accent-danger);
+        }
+
+        .notification.warning {
+            border-color: var(--accent-warning);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar { width: 240px; }
+            .right-panel { width: 280px; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .right-panel { display: none; }
+            .message { max-width: 90%; }
+        }
     </style>
 </head>
 <body>
-
-<div id="app-container">
-    <header>
-        <span class="logo">🚀</span>
-        <h1>Agentic Prometheus</h1>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">🚀</div>
+            <div class="logo-text">Agentic Prometheus</div>
+        </div>
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-indicator"></div>
+                <span>Connected</span>
+            </div>
+            <div class="status-item">
+                <span>🛠️ Tools: <span id="toolCount">12</span></span>
+            </div>
+            <div class="status-item">
+                <span>📊 Sessions: <span id="sessionCount">1</span></span>
+            </div>
+        </div>
     </header>
-    <div id="main-content">
-        <div id="stream-container">
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">Available Tools</h2>
             </div>
-        <div id="side-panel">
-            <div id="browser-view-container">
-                <h3>Browser View</h3>
-                <img id="browser-image" src="" alt="Live browser view will appear here" />
+            <div class="tools-container">
+                <!-- System Tools -->
+                <div class="tool-category">
+                    <h3 class="category-title">System</h3>
+                    <div class="tool-item" data-tool="finish">
+                        <div class="tool-icon">✅</div>
+                        <div class="tool-name">Finish Task</div>
+                    </div>
+                    <div class="tool-item" data-tool="system_createTool">
+                        <div class="tool-icon">🛠️</div>
+                        <div class="tool-name">Create Tool</div>
+                    </div>
+                    <div class="tool-item" data-tool="system_restartServer">
+                        <div class="tool-icon">🔄</div>
+                        <div class="tool-name">Restart Server</div>
+                    </div>
+                </div>
+
+                <!-- Code Execution -->
+                <div class="tool-category">
+                    <h3 class="category-title">Code Execution</h3>
+                    <div class="tool-item" data-tool="executeDevCommand">
+                        <div class="tool-icon">💻</div>
+                        <div class="tool-name">Execute Dev Command</div>
+                    </div>
+                    <div class="tool-item" data-tool="executePython">
+                        <div class="tool-icon">🐍</div>
+                        <div class="tool-name">Execute Python</div>
+                    </div>
+                </div>
+
+                <!-- File System -->
+                <div class="tool-category">
+                    <h3 class="category-title">File System</h3>
+                    <div class="tool-item" data-tool="readFile">
+                        <div class="tool-icon">📖</div>
+                        <div class="tool-name">Read File</div>
+                    </div>
+                    <div class="tool-item" data-tool="writeFile">
+                        <div class="tool-icon">✏️</div>
+                        <div class="tool-name">Write File</div>
+                    </div>
+                    <div class="tool-item" data-tool="listFiles">
+                        <div class="tool-icon">📁</div>
+                        <div class="tool-name">List Files</div>
+                    </div>
+                </div>
+
+                <!-- Browser Tools -->
+                <div class="tool-category">
+                    <h3 class="category-title">Browser</h3>
+                    <div class="tool-item" data-tool="browser_navigate">
+                        <div class="tool-icon">🌐</div>
+                        <div class="tool-name">Navigate</div>
+                    </div>
+                    <div class="tool-item" data-tool="browser_getContent">
+                        <div class="tool-icon">📄</div>
+                        <div class="tool-name">Get Content</div>
+                    </div>
+                </div>
+
+                <!-- AI Tools -->
+                <div class="tool-category">
+                    <h3 class="category-title">AI</h3>
+                    <div class="tool-item" data-tool="summarizeText">
+                        <div class="tool-icon">📝</div>
+                        <div class="tool-name">Summarize Text</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="content-area">
+            <div class="chat-container">
+                <div class="messages-container" id="messagesContainer">
+                    <!-- Welcome Message -->
+                    <div class="message assistant">
+                        <div class="message-avatar">🤖</div>
+                        <div class="message-content">
+                            <div class="message-text">Bonjour ! Je suis Agentic Prometheus, un agent IA autonome avec des capacités d'auto-amélioration.
+
+🚀 <strong>Mes capacités principales :</strong>
+• Création automatique de nouveaux outils selon vos besoins
+• Exécution de code Python et commandes shell en sandbox sécurisé
+• Manipulation de fichiers dans l'espace de travail
+• Navigation web et extraction de contenu
+• Auto-redémarrage pour charger de nouvelles capacités
+
+💡 <strong>Ma directive principale :</strong> Si je n'ai pas l'outil nécessaire pour accomplir une tâche, je peux le créer moi-même !
+
+Comment puis-je vous aider aujourd'hui ?</div>
+                            <div class="message-timestamp">System • Just now</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="input-area">
+                    <div class="input-container">
+                        <div class="input-wrapper">
+                            <textarea 
+                                class="input-field" 
+                                id="messageInput" 
+                                placeholder="Décrivez votre objectif... (Ctrl+Enter pour envoyer)"
+                                rows="1"
+                            ></textarea>
+                        </div>
+                        <div class="input-actions">
+                            <button class="btn secondary" id="attachBtn" title="Joindre un fichier">
+                                <span>📎</span>
+                            </button>
+                            <button class="btn" id="sendBtn">
+                                <span>Envoyer</span>
+                                <span>→</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel -->
+        <aside class="right-panel">
+            <!-- Activity Log -->
+            <div class="panel-section">
+                <h3 class="panel-title">
+                    <span>📊</span>
+                    <span>Activity Log</span>
+                </h3>
+                <div id="activityLog">
+                    <div class="activity-item">
+                        <div class="activity-time">Just now</div>
+                        <div class="activity-text">System initialized</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Task -->
+            <div class="panel-section">
+                <h3 class="panel-title">
+                    <span>🎯</span>
+                    <span>Current Task</span>
+                </h3>
+                <div id="currentTask">
+                    <p style="color: var(--text-secondary); font-size: 0.875rem;">No active task</p>
+                </div>
+            </div>
+
+            <!-- System Stats -->
+            <div class="panel-section">
+                <h3 class="panel-title">
+                    <span>📈</span>
+                    <span>System Stats</span>
+                </h3>
+                <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                    <div style="margin-bottom: 0.5rem;">Memory Usage: <span style="color: var(--accent-primary);">245 MB</span></div>
+                    <div style="margin-bottom: 0.5rem;">Active Workers: <span style="color: var(--accent-primary);">2</span></div>
+                    <div style="margin-bottom: 0.5rem;">Queue Length: <span style="color: var(--accent-primary);">0</span></div>
+                    <div>Uptime: <span style="color: var(--accent-primary);" id="uptime">00:00:00</span></div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Tool Parameter Modal -->
+    <div class="modal" id="toolModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Tool Parameters</h2>
+                <div class="modal-close" onclick="closeModal()">✕</div>
+            </div>
+            <div id="modalBody">
+                <!-- Dynamic content will be inserted here -->
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button class="btn secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn" id="executeToolBtn">Execute Tool</button>
             </div>
         </div>
     </div>
-    <div id="form-container">
-        <div id="auth-container">
-            <input type="password" id="auth-token-input" placeholder="Enter your Bearer Token..." autocomplete="off">
-        </div>
-        <form id="goal-form">
-            <input type="text" id="goal-input" placeholder="Enter your goal for the agent..." autocomplete="off" required>
-            <button type="submit" id="run-button">Run</button>
-        </form>
-    </div>
-</div>
 
-<script>
-    const goalForm = document.getElementById('goal-form');
-    const goalInput = document.getElementById('goal-input');
-    const runButton = document.getElementById('run-button');
-    const streamContainer = document.getElementById('stream-container');
-    const authTokenInput = document.getElementById('auth-token-input');
-    const browserImage = document.getElementById('browser-image');
-    let eventSource;
+    <script>
+        // Configuration
+        const API_URL = '/api/v1/agent/stream';
+        const AUTH_TOKEN = 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0';
 
-    const iconMap = {
-        thought: '🧠',
-        tool_call: '🛠️',
-        tool_result: '📋',
-        final_response: '✅',
-        error: '❌',
-        status: 'ℹ️'
-    };
+        // State
+        let currentTool = null;
+        let isProcessing = false;
+        let sessionStartTime = Date.now();
 
-    const titleMap = {
-        thought: 'Thought',
-        tool_call: 'Tool Call',
-        tool_result: 'Tool Result',
-        final_response: 'Final Response',
-        error: 'Error',
-        status: 'Status'
-    };
+        // DOM Elements
+        const messagesContainer = document.getElementById('messagesContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const activityLog = document.getElementById('activityLog');
+        const currentTask = document.getElementById('currentTask');
+        const toolModal = document.getElementById('toolModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
 
-    function addMessageToStream(type, data) {
-        const messageGroup = document.createElement('div');
-        messageGroup.className = `message-group ${type}`;
-
-        let contentHtml = '';
-        switch (type) {
-            case 'thought': contentHtml = `<pre>${escapeHtml(data.content)}</pre>`; break;
-            case 'tool_call':
-                const params = JSON.stringify(data.parameters, null, 2);
-                contentHtml = `<strong>Tool:</strong> ${escapeHtml(data.tool)}<br><strong>Parameters:</strong><pre>${escapeHtml(params)}</pre>`;
-                break;
-            case 'tool_result': contentHtml = `<pre>${escapeHtml(JSON.stringify(data.result, null, 2))}</pre>`; break;
-            case 'final_response': contentHtml = `<p>${escapeHtml(data.content)}</p>`; break;
-            case 'error':
-            case 'status': contentHtml = `<p>${escapeHtml(data.message)}</p>`; break;
-        }
-
-        messageGroup.innerHTML = `<div class="header"><span class="icon">${iconMap[type]}</span><span class="title">${titleMap[type]}</span></div><div class="content">${contentHtml}</div>`;
-        streamContainer.appendChild(messageGroup);
-        streamContainer.scrollTop = streamContainer.scrollHeight;
-    }
-    
-    function escapeHtml(unsafe) {
-        if (unsafe === null || unsafe === undefined) return '';
-        return unsafe.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
-
-    function setFormState(enabled) {
-        goalInput.disabled = !enabled;
-        runButton.disabled = !enabled;
-        authTokenInput.disabled = !enabled;
-    }
-
-    goalForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const goal = goalInput.value.trim();
-        if (!goal) return;
-
-        const token = authTokenInput.value.trim();
-        if (!token) {
-            addMessageToStream('error', { message: 'Authentication token is required.' });
-            return;
-        }
-
-        setFormState(false);
-        streamContainer.innerHTML = '';
-        browserImage.src = '';
-
-        eventSource = new EventSource(`/api/v1/agent/run?goal=${encodeURIComponent(goal)}&token=${encodeURIComponent(token)}`);
-        
-        eventSource.onopen = () => { addMessageToStream('status', { message: 'Connection established. Agent is starting...' }); };
-
-        eventSource.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            const type = data.type === 'response' ? 'final_response' : data.type;
-            
-            if (type === 'browser_view') {
-                browserImage.src = `data:image/png;base64,${data.image}`;
-                browserImage.alt = `Browser view: ${data.step}`;
-            } else {
-                addMessageToStream(type, data);
-            }
-
-            if (data.type === 'status' && data.message.includes('Déconnecté')) {
-                stopAgent();
-            }
-        };
-
-        eventSource.onerror = (err) => {
-            console.error("EventSource failed:", err);
-            addMessageToStream('error', { message: 'Connection to agent lost. Please try again.' });
-            stopAgent();
-        };
-        
-        fetch('/api/v1/agent/run', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+        // Tool Definitions
+        const toolDefinitions = {
+            finish: {
+                name: 'finish',
+                description: 'Complete the current task',
+                parameters: {
+                    response: { type: 'string', description: 'Final response to the user', required: true }
+                }
             },
-            body: JSON.stringify({ goal })
-        }).catch(err => {
-            console.error("Failed to start agent:", err);
-            addMessageToStream('error', { message: 'Could not start the agent. Check server logs.' });
-            stopAgent();
-        });
-    });
-    
-    function stopAgent() {
-        if (eventSource) {
-            eventSource.close();
-            eventSource = null;
+            system_createTool: {
+                name: 'system_createTool',
+                description: 'Create a new tool',
+                parameters: {
+                    tool_name: { type: 'string', description: 'Tool name (kebab-case)', required: true },
+                    description: { type: 'string', description: 'Tool description', required: true },
+                    parameters_schema: { type: 'string', description: 'Zod schema for parameters', required: true },
+                    execute_function: { type: 'string', description: 'TypeScript execute function', required: true }
+                }
+            },
+            system_restartServer: {
+                name: 'system_restartServer',
+                description: 'Restart the server to load new tools',
+                parameters: {
+                    reason: { type: 'string', description: 'Reason for restart', required: false }
+                }
+            },
+            executeDevCommand: {
+                name: 'executeDevCommand',
+                description: 'Execute a development command',
+                parameters: {
+                    command: { type: 'string', description: 'Shell command to execute', required: true }
+                }
+            },
+            executePython: {
+                name: 'executePython',
+                description: 'Execute Python code',
+                parameters: {
+                    code: { type: 'string', description: 'Python code to execute', required: true }
+                }
+            },
+            readFile: {
+                name: 'readFile',
+                description: 'Read a file from workspace',
+                parameters: {
+                    path: { type: 'string', description: 'File path in workspace', required: true }
+                }
+            },
+            writeFile: {
+                name: 'writeFile',
+                description: 'Write content to a file',
+                parameters: {
+                    path: { type: 'string', description: 'File path in workspace', required: true },
+                    content: { type: 'string', description: 'Content to write', required: true }
+                }
+            },
+            listFiles: {
+                name: 'listFiles',
+                description: 'List files in a directory',
+                parameters: {
+                    path: { type: 'string', description: 'Directory path', required: false, default: '.' }
+                }
+            },
+            browser_navigate: {
+                name: 'browser_navigate',
+                description: 'Navigate to a URL',
+                parameters: {
+                    url: { type: 'string', description: 'URL to navigate to', required: true }
+                }
+            },
+            browser_getContent: {
+                name: 'browser_getContent',
+                description: 'Extract content from a webpage',
+                parameters: {
+                    url: { type: 'string', description: 'URL to extract content from', required: true }
+                }
+            },
+            summarizeText: {
+                name: 'summarizeText',
+                description: 'Summarize a text',
+                parameters: {
+                    text: { type: 'string', description: 'Text to summarize (min 100 chars)', required: true }
+                }
+            }
+        };
+
+        // Initialize
+        function init() {
+            // Setup event listeners
+            sendBtn.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            // Auto-resize textarea
+            messageInput.addEventListener('input', () => {
+                messageInput.style.height = 'auto';
+                messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+            });
+
+            // Tool item clicks
+            document.querySelectorAll('.tool-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const toolName = item.dataset.tool;
+                    openToolModal(toolName);
+                });
+            });
+
+            // Update uptime
+            setInterval(updateUptime, 1000);
+
+            // File upload
+            document.getElementById('attachBtn').addEventListener('click', () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.onchange = handleFileUpload;
+                input.click();
+            });
+
+            logActivity('System initialized');
         }
-        setFormState(true);
-        goalInput.focus();
-    }
-</script>
+
+        // Update uptime display
+        function updateUptime() {
+            const elapsed = Date.now() - sessionStartTime;
+            const hours = Math.floor(elapsed / 3600000);
+            const minutes = Math.floor((elapsed % 3600000) / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            document.getElementById('uptime').textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // Send message
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || isProcessing) return;
+
+            isProcessing = true;
+            sendBtn.disabled = true;
+            
+            // Add user message
+            addMessage(message, 'user');
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            // Show typing indicator
+            showTypingIndicator();
+            
+            try {
+                logActivity(`User: ${message.substring(0, 50)}...`);
+                updateCurrentTask(message);
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${AUTH_TOKEN}`
+                    },
+                    body: JSON.stringify({ goal: message })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                hideTypingIndicator();
+
+                // Parse and display response
+                parseAgentResponse(data);
+
+            } catch (error) {
+                hideTypingIndicator();
+                showNotification(`Error: ${error.message}`, 'error');
+                addMessage(`❌ Error: ${error.message}`, 'assistant');
+                logActivity(`Error: ${error.message}`);
+            } finally {
+                isProcessing = false;
+                sendBtn.disabled = false;
+                updateCurrentTask(null);
+            }
+        }
+
+        // Parse agent response
+        function parseAgentResponse(data) {
+            const response = data.response || JSON.stringify(data);
+            
+            // Extract thought process
+            const thoughtMatch = response.match(/<thought>([\s\S]*?)<\/thought>/);
+            const toolMatch = response.match(/<tool_code>([\s\S]*?)<\/tool_code>/);
+
+            if (thoughtMatch) {
+                const thought = thoughtMatch[1].trim();
+                addMessage(thought, 'assistant', 'thought');
+            }
+
+            if (toolMatch) {
+                try {
+                    const toolData = JSON.parse(toolMatch[1]);
+                    displayToolExecution(toolData);
+                } catch (e) {
+                    console.error('Failed to parse tool data:', e);
+                }
+            }
+
+            // Extract final response
+            const finalResponse = response
+                .replace(/<thought>[\s\S]*?<\/thought>/g, '')
+                .replace(/<tool_code>[\s\S]*?<\/tool_code>/g, '')
+                .trim();
+
+            if (finalResponse) {
+                addMessage(finalResponse, 'assistant');
+                logActivity('Response delivered');
+            }
+        }
+
+        // Add message to chat
+        function addMessage(text, sender, type = 'normal') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = sender === 'user' ? '👤' : '🤖';
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            
+            if (type === 'thought') {
+                textDiv.innerHTML = `<em style="color: var(--text-secondary);">💭 ${escapeHtml(text)}</em>`;
+            } else {
+                textDiv.innerHTML = formatMessage(text);
+            }
+            
+            const timestamp = document.createElement('div');
+            timestamp.className = 'message-timestamp';
+            timestamp.textContent = `${sender === 'user' ? 'You' : 'Prometheus'} • ${new Date().toLocaleTimeString()}`;
+            
+            content.appendChild(textDiv);
+            content.appendChild(timestamp);
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Display tool execution
+        function displayToolExecution(toolData) {
+            const executionDiv = document.createElement('div');
+            executionDiv.className = 'tool-execution';
+            
+            const header = document.createElement('div');
+            header.className = 'tool-execution-header';
+            header.innerHTML = `
+                <div class="tool-execution-icon">⚡</div>
+                <div class="tool-execution-name">Executing: ${toolData.tool}</div>
+            `;
+            
+            const params = document.createElement('div');
+            params.className = 'tool-execution-params';
+            params.textContent = JSON.stringify(toolData.parameters, null, 2);
+            
+            executionDiv.appendChild(header);
+            executionDiv.appendChild(params);
+            
+            const lastMessage = messagesContainer.lastElementChild;
+            if (lastMessage && lastMessage.classList.contains('assistant')) {
+                lastMessage.querySelector('.message-content').appendChild(executionDiv);
+            }
+            
+            logActivity(`Tool executed: ${toolData.tool}`);
+        }
+
+        // Show typing indicator
+        function showTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'message assistant';
+            indicator.id = 'typingIndicator';
+            indicator.innerHTML = `
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">
+                    <div class="typing-indicator">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            messagesContainer.appendChild(indicator);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Hide typing indicator
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
+        }
+
+        // Open tool modal
+        function openToolModal(toolName) {
+            const tool = toolDefinitions[toolName];
+            if (!tool) return;
+
+            currentTool = tool;
+            modalTitle.textContent = `Execute: ${tool.name}`;
+            
+            // Build form
+            let formHtml = `<p style="color: var(--text-secondary); margin-bottom: 1.5rem;">${tool.description}</p>`;
+            
+            for (const [key, param] of Object.entries(tool.parameters)) {
+                formHtml += `
+                    <div class="form-group">
+                        <label class="form-label" for="${key}">
+                            ${key} ${param.required ? '<span style="color: var(--accent-danger);">*</span>' : ''}
+                        </label>
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                            ${param.description}
+                        </p>
+                `;
+                
+                if (key === 'code' || key === 'execute_function' || key === 'parameters_schema') {
+                    formHtml += `<textarea class="form-input form-textarea code-editor" id="${key}" ${param.required ? 'required' : ''}></textarea>`;
+                } else {
+                    formHtml += `<input class="form-input" type="text" id="${key}" ${param.required ? 'required' : ''} ${param.default ? `value="${param.default}"` : ''}>`;
+                }
+                
+                formHtml += '</div>';
+            }
+            
+            modalBody.innerHTML = formHtml;
+            toolModal.classList.add('active');
+            
+            // Setup execute button
+            document.getElementById('executeToolBtn').onclick = () => executeTool();
+        }
+
+        // Close modal
+        function closeModal() {
+            toolModal.classList.remove('active');
+            currentTool = null;
+        }
+
+        // Execute tool
+        async function executeTool() {
+            if (!currentTool) return;
+
+            const params = {};
+            let isValid = true;
+
+            // Collect parameters
+            for (const [key, param] of Object.entries(currentTool.parameters)) {
+                const input = document.getElementById(key);
+                const value = input.value.trim();
+                
+                if (param.required && !value) {
+                    input.style.borderColor = 'var(--accent-danger)';
+                    isValid = false;
+                } else if (value) {
+                    params[key] = value;
+                }
+            }
+
+            if (!isValid) {
+                showNotification('Please fill all required fields', 'error');
+                return;
+            }
+
+            // Build command
+            const command = `Please execute the ${currentTool.name} tool with these parameters: ${JSON.stringify(params)}`;
+            
+            closeModal();
+            messageInput.value = command;
+            sendMessage();
+        }
+
+        // Handle file upload
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                messageInput.value = `I've uploaded a file: ${file.name}\n\nContent:\n${content.substring(0, 1000)}${content.length > 1000 ? '...' : ''}`;
+                showNotification(`File "${file.name}" loaded`, 'success');
+            };
+            reader.readAsText(file);
+        }
+
+        // Log activity
+        function logActivity(text) {
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            item.innerHTML = `
+                <div class="activity-time">${new Date().toLocaleTimeString()}</div>
+                <div class="activity-text">${escapeHtml(text)}</div>
+            `;
+            
+            activityLog.insertBefore(item, activityLog.firstChild);
+            
+            // Keep only last 10 items
+            while (activityLog.children.length > 10) {
+                activityLog.removeChild(activityLog.lastChild);
+            }
+        }
+
+        // Update current task
+        function updateCurrentTask(task) {
+            if (task) {
+                currentTask.innerHTML = `
+                    <div style="padding: 1rem; background: var(--bg-tertiary); border-radius: 8px;">
+                        <div style="font-size: 0.875rem; margin-bottom: 0.5rem;">${escapeHtml(task)}</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 50%;"></div>
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                            Processing...
+                        </div>
+                    </div>
+                `;
+            } else {
+                currentTask.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.875rem;">No active task</p>';
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease-in';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Format message with markdown-like syntax
+        function formatMessage(text) {
+            return escapeHtml(text)
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">$1</code>')
+                .replace(/\n/g, '<br>')
+                .replace(/• /g, '• ');
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+K to focus input
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                messageInput.focus();
+            }
+            
+            // Escape to close modal
+            if (e.key === 'Escape' && toolModal.classList.contains('active')) {
+                closeModal();
+            }
+        });
+
+        // Initialize on load
+        init();
+    </script>
 </body>
 </html>
