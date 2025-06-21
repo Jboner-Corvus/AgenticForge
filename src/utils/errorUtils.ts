@@ -33,7 +33,7 @@ export class WebhookError extends AppErrorBase {
   public responseBody?: string;
   constructor(
     message: string,
-    type: string = 'WebhookError',
+    type = 'WebhookError',
     statusCode?: number,
     responseBody?: string,
     details?: unknown,

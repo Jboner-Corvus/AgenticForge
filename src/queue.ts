@@ -3,7 +3,8 @@
  *
  * Configure et exporte les instances de file d'attente BullMQ.
  */
-import { Queue, ConnectionOptions } from 'bullmq';
+import type { ConnectionOptions } from 'bullmq';
+import { Queue } from 'bullmq';
 import { config } from './config.js';
 import type { AsyncTaskJobPayload } from './types.js'; // Le type est importé ici
 

@@ -17,10 +17,7 @@ export default tseslint.config(
   },
   {
     files: ['src/**/*.ts'],
-    extends: [
-      ...tseslint.configs.recommended,
-      ...tseslint.configs.stylistic,
-    ],
+    extends: [...tseslint.configs.recommended, ...tseslint.configs.stylistic],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
@@ -32,7 +29,10 @@ export default tseslint.config(
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/consistent-type-imports': 'error',
-      '@typescript-eslint/no-unused-vars': ['warn', { 'argsIgnorePattern': '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_' },
+      ],
     },
   },
   eslintPluginPrettierRecommended,

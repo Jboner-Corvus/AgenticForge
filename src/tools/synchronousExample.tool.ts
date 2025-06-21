@@ -13,14 +13,14 @@ export const synchronousExampleParams = zod.object({
   userId: zod.string().optional(),
 });
 export type SyncParamsType = zod.infer<typeof synchronousExampleParams>;
-type SyncOutputTypeInternal = {
+interface SyncOutputTypeInternal {
   processed: string;
   ts: number;
   input: SyncParamsType;
   appAuthId?: string;
   clientIp?: string;
   n8nSessionId?: string;
-};
+}
 
 export const synchronousExampleTool: Tool<typeof synchronousExampleParams> = {
   name: SYNC_TOOL_NAME,

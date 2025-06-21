@@ -1,4 +1,4 @@
-import { FastMCP, UserError, type ServerOptions } from 'fastmcp';
+import { FastMCP, UserError } from 'fastmcp';
 import type { IncomingMessage } from 'http';
 import { randomUUID } from 'crypto';
 import { config } from './config.js';
@@ -30,6 +30,7 @@ const sessionOptions = {
   },
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mcp = new FastMCP<AgentSession>({
   session: sessionOptions,
   tools: allTools,
@@ -53,7 +54,7 @@ const mcp = new FastMCP<AgentSession>({
     ctx.session.history.push({ role: 'assistant', content: llmResponse });
     return llmResponse;
   },
-} as any);
+} as any); // Utilisation de 'as any' pour contourner le problème de typage strict
 
 mcp
   .start()

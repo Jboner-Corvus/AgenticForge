@@ -19,7 +19,7 @@ importers:
         version: 16.5.0
       fastmcp:
         specifier: ^3.4.0
-        version: 3.4.0
+        version: 3.5.0
       ioredis:
         specifier: ^5.4.1
         version: 5.6.1
@@ -60,6 +60,9 @@ importers:
       eslint-plugin-prettier:
         specifier: ^5.1.3
         version: 5.5.0(eslint-config-prettier@9.1.0(eslint@8.57.1))(eslint@8.57.1)(prettier@3.5.3)
+      globals:
+        specifier: ^15.8.0
+        version: 15.15.0
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@20.19.1)
@@ -75,6 +78,9 @@ importers:
       typescript:
         specifier: ^5.5.3
         version: 5.8.3
+      typescript-eslint:
+        specifier: ^7.15.0
+        version: 7.18.0(eslint@8.57.1)(typescript@5.8.3)
 
 packages:
 
@@ -1255,8 +1261,8 @@ packages:
   fast-safe-stringify@2.1.1:
     resolution: {integrity: sha512-W+KJc2dmILlPplD/H4K9l9LcAHAfPtP6BY84uVLXQ6Evcz9Lcg33Y2z1IVblT6xdY54PXYVHEv+0Wpq8Io6zkA==}
 
-  fastmcp@3.4.0:
-    resolution: {integrity: sha512-lsYGgrakp+1GYsdx2I6Fe0P24qiPMZd98VJ6YmpxqEjdVjee3BJpIFUzB4zj7WV6Lv3tZAOXU3yPIkAeE2yTtg==}
+  fastmcp@3.5.0:
+    resolution: {integrity: sha512-80OeYVFCqusrOFPNxm8uJ5G/ZaKMasygZTLvZReZ5o6iCvDBwFR/S485Is3jY0128aAaIyYx9eAgWjBUQUwoYg==}
     hasBin: true
 
   fastq@1.19.1:
@@ -1403,6 +1409,10 @@ packages:
   globals@13.24.0:
     resolution: {integrity: sha512-AhO5QUcj8llrbG09iWhPU2B204J1xnPeL8kQmVorSsy+Sjj1sk8gIyh6cUocGmH4L0UuhAJy+hJMRA4mgA4mFQ==}
     engines: {node: '>=8'}
+
+  globals@15.15.0:
+    resolution: {integrity: sha512-7ACyT3wmyp3I61S4fG682L0VA2RGD9otkqGJIwNUMF1SWUombIIk+af1unuDYgMm082aHYwD+mzJvv9Iu8dsgg==}
+    engines: {node: '>=18'}
 
   globalthis@1.0.4:
     resolution: {integrity: sha512-DpLKbNU4WylpxJykQujfCcwYWiV/Jhm50Goo0wrVILAv5jOr9d+H+UR3PhSCD2rCCEIg0uc+G+muBTwD54JhDQ==}
@@ -2641,6 +2651,16 @@ packages:
   typed-array-length@1.0.7:
     resolution: {integrity: sha512-3KS2b+kL7fsuk/eJZ7EQdnEmQoaho/r6KUef7hxvltNA5DR8NAUM+8wJMbJyZ4G9/7i3v5zPBIMN5aybAh2/Jg==}
     engines: {node: '>= 0.4'}
+
+  typescript-eslint@7.18.0:
+    resolution: {integrity: sha512-PonBkP603E3tt05lDkbOMyaxJjvKqQrXsnow72sVeOFINDE/qNmnnd+f9b4N+U7W6MXnnYyrhtmF2t08QWwUbA==}
+    engines: {node: ^18.18.0 || >=20.0.0}
+    peerDependencies:
+      eslint: ^8.56.0
+      typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   typescript@5.8.3:
     resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
@@ -4322,7 +4342,7 @@ snapshots:
 
   fast-safe-stringify@2.1.1: {}
 
-  fastmcp@3.4.0:
+  fastmcp@3.5.0:
     dependencies:
       '@modelcontextprotocol/sdk': 1.13.0
       '@standard-schema/spec': 1.0.0
@@ -4502,6 +4522,8 @@ snapshots:
   globals@13.24.0:
     dependencies:
       type-fest: 0.20.2
+
+  globals@15.15.0: {}
 
   globalthis@1.0.4:
     dependencies:
@@ -5963,6 +5985,17 @@ snapshots:
       is-typed-array: 1.1.15
       possible-typed-array-names: 1.1.0
       reflect.getprototypeof: 1.0.10
+
+  typescript-eslint@7.18.0(eslint@8.57.1)(typescript@5.8.3):
+    dependencies:
+      '@typescript-eslint/eslint-plugin': 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@5.8.3)
+      '@typescript-eslint/parser': 7.18.0(eslint@8.57.1)(typescript@5.8.3)
+      '@typescript-eslint/utils': 7.18.0(eslint@8.57.1)(typescript@5.8.3)
+      eslint: 8.57.1
+    optionalDependencies:
+      typescript: 5.8.3
+    transitivePeerDependencies:
+      - supports-color
 
   typescript@5.8.3: {}
 

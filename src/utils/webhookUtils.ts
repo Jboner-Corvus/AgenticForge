@@ -2,7 +2,8 @@
 
 import crypto from 'crypto';
 import logger from '../logger.js';
-import { getErrDetails, WebhookError, ErrorDetails } from './errorUtils.js';
+import type { ErrorDetails } from './errorUtils.js';
+import { getErrDetails, WebhookError } from './errorUtils.js';
 import { config } from '../config.js';
 import {
   WEBHOOK_SIGNATURE_HEADER,
@@ -37,7 +38,7 @@ export async function sendWebhook<P, R>(
   payload: TaskOutcome<P, R>,
   taskId: string,
   toolName: string,
-  throwErr: boolean = false,
+  throwErr = false,
 ): Promise<boolean> {
   const log = logger.child({
     taskId,

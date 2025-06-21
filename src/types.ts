@@ -1,10 +1,11 @@
+// src/types.ts
 import type {
   FastMCPSession,
   Context as FastMCPCtx,
   Tool as FastMCPTool,
 } from 'fastmcp';
 import type { Job } from 'bullmq';
-import type { z, ZodObject } from 'zod';
+import type { z, ZodObject, ZodRawShape } from 'zod';
 
 // Données d'authentification
 export interface AuthData {
@@ -16,19 +17,18 @@ export interface AuthData {
 
 // Session de l'agent. Doit être compatible avec les contraintes de FastMCP.
 export interface AgentSession extends FastMCPSession {
-  history: Array<{ role: 'user' | 'assistant'; content: string }>;
+  history: { role: 'user' | 'assistant'; content: string }[];
   auth: AuthData;
-  // Ajout de la signature d'index pour satisfaire la contrainte de FastMCP
-  [key: string]: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any; // Requis par FastMCP pour des propriétés dynamiques
 }
 
-// Contexte (Ctx) - Le contexte de FastMCP n'est PAS générique.
+// Contexte (Ctx)
 export type Ctx = FastMCPCtx<AgentSession>;
 
-// Tool - Le Tool EST générique sur les paramètres de l'outil (le schéma Zod).
-export type Tool<
-  T extends ZodObject<any, any, any> = ZodObject<any, any, any>,
-> = FastMCPTool<AgentSession, T>;
+// Tool
+export type Tool<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape>> =
+  FastMCPTool<AgentSession, T>;
 
 // Charge utile des tâches asynchrones
 export interface AsyncTaskJobPayload<TParams = Record<string, unknown>> {
@@ -40,4 +40,4 @@ export interface AsyncTaskJobPayload<TParams = Record<string, unknown>> {
 }
 
 // Job BullMQ
-export type AsyncTaskJob = Job<AsyncTaskJobPayload, any, string>;
+export type AsyncTaskJob = Job<AsyncTaskJobPayload, unknown, string>;

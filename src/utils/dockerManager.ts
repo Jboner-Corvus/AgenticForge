@@ -10,47 +10,59 @@ import logger from '../logger.js';
 
 const docker = new Docker(); // Se connecte au socket Docker local par défaut
 
+// Définition manuelle du type Mount car il n'est pas exporté par @types/dockerode
+interface DockerMount {
+  Target: string;
+  Source: string;
+  Type: 'bind' | 'volume' | 'tmpfs';
+  ReadOnly?: boolean;
+}
+
 interface ExecutionResult {
   stdout: string;
   stderr: string;
   exitCode: number;
 }
 
+interface SandboxOptions {
+  workingDir?: string;
+  mounts?: DockerMount[];
+}
+
 /**
  * Exécute une commande dans un conteneur Docker jetable.
- * @param imageName - L'image Docker à utiliser (ex: 'python:3.11-slim').
- * @param command - La commande à exécuter (ex: ['python', '-c', 'print("hello")']).
+ * @param imageName - L'image Docker à utiliser.
+ * @param command - La commande à exécuter.
+ * @param options - Options supplémentaires pour le sandbox (workingDir, mounts).
  * @returns Une promesse qui se résout avec le résultat de l'exécution.
  */
 export async function runInSandbox(
   imageName: string,
   command: string[],
+  options: SandboxOptions = {},
 ): Promise<ExecutionResult> {
   const log = logger.child({ module: 'DockerManager', imageName });
-  log.info({ command }, 'Starting sandboxed execution');
+  log.info({ command, options }, 'Starting sandboxed execution');
 
   let container: Docker.Container | null = null;
   try {
-    // S'assure que l'image est disponible localement
     await pullImageIfNotExists(imageName);
 
-    // Crée le conteneur
     container = await docker.createContainer({
       Image: imageName,
       Cmd: command,
       Tty: false,
+      WorkingDir: options.workingDir,
       HostConfig: {
-        // Limite les ressources pour éviter les abus
-        Memory: 256 * 1024 * 1024, // 256MB
-        CpuShares: 512, // Priorité CPU relative
-        NetworkMode: 'none', // Isole le conteneur du réseau par défaut
+        Memory: 512 * 1024 * 1024, // 512MB
+        CpuShares: 512,
+        NetworkMode: 'bridge',
+        Mounts: options.mounts,
       },
     });
 
-    // Démarre le conteneur
     await container.start();
 
-    // Attend la fin de l'exécution, avec un timeout
     const waitPromise = container.wait();
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(
@@ -59,19 +71,16 @@ export async function runInSandbox(
       ),
     );
 
-    const result: { StatusCode: number } = (await Promise.race([
-      waitPromise,
-      timeoutPromise,
-    ])) as any;
+    const result = (await Promise.race([waitPromise, timeoutPromise])) as {
+      StatusCode: number;
+    };
 
-    // Récupère les logs (stdout/stderr)
     const logStream = await container.logs({
       follow: false,
       stdout: true,
       stderr: true,
     });
 
-    // Docker multiplexe stdout et stderr dans un seul flux, il faut le démultiplexer.
     const { stdout, stderr } = demuxStream(logStream as Buffer);
 
     log.info(
@@ -88,7 +97,6 @@ export async function runInSandbox(
     log.error({ err: error }, 'Error during sandboxed execution');
     throw error;
   } finally {
-    // Nettoie le conteneur après l'exécution
     if (container) {
       await container.remove({ force: true });
       log.debug('Sandbox container removed.');
@@ -102,8 +110,9 @@ export async function runInSandbox(
 async function pullImageIfNotExists(imageName: string): Promise<void> {
   try {
     await docker.getImage(imageName).inspect();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    if (error.statusCode === 404) {
+    if (error?.statusCode === 404) {
       logger.info(`Image ${imageName} not found locally, pulling...`);
       const stream = await docker.pull(imageName);
       await new Promise((resolve, reject) => {
@@ -132,10 +141,8 @@ function demuxStream(stream: Buffer): { stdout: string; stderr: string } {
     offset += 8;
     const payload = stream.toString('utf-8', offset, offset + length);
     if (type === 1) {
-      // stdout
       stdout += payload;
     } else if (type === 2) {
-      // stderr
       stderr += payload;
     }
     offset += length;

@@ -1,4 +1,4 @@
-// --- Fichier : src/worker.ts (Corrigé) ---
+// src/worker.ts
 import { Worker } from 'bullmq';
 import { config } from './config.js';
 import logger from './logger.js';
@@ -6,7 +6,7 @@ import { taskQueue, deadLetterQueue, redisConnection } from './queue.js';
 import { allTools } from './tools/index.js';
 import { getContentWorkerLogic } from './tools/browser/getContent.tool.js';
 import { navigateWorkerLogic } from './tools/browser/navigate.tool.js';
-import type { AsyncTaskJob, Ctx, AgentSession } from './types.js';
+import type { AsyncTaskJob, Ctx, AgentSession, AuthData } from './types.js';
 
 const worker = new Worker(
   taskQueue.name,
@@ -25,31 +25,36 @@ const worker = new Worker(
       throw new Error(`Authentication data is missing for job ${job.id}`);
     }
 
-    const mockSession: AgentSession = {
+    const mockSession: Partial<AgentSession> = {
       auth,
       history: [],
       sessionId: auth.id,
       createdAt: auth.authenticatedAt,
       isClosed: false,
-      clientCapabilities: { streaming: true },
-      loggingLevel: 'info',
-    } as any;
+    };
 
     const ctx: Ctx = {
-      session: mockSession,
+      session: mockSession as AgentSession,
       log,
-      reportProgress: async (p: any) =>
+      reportProgress: async (p: unknown) =>
         log.debug({ p }, 'Progress report (worker)'),
-      streamContent: async (c: any) =>
+      streamContent: async (c: unknown) =>
         log.debug({ c }, 'Content stream (worker)'),
     };
 
-    let result: any;
+    let result: unknown;
     if (toolName === 'browser_getContent') {
-      result = await getContentWorkerLogic(params as any, ctx);
+      result = await getContentWorkerLogic(
+        params as Parameters<typeof getContentWorkerLogic>[0],
+        ctx,
+      );
     } else if (toolName === 'browser_navigate') {
-      result = await navigateWorkerLogic(params as any, ctx);
+      result = await navigateWorkerLogic(
+        params as Parameters<typeof navigateWorkerLogic>[0],
+        ctx,
+      );
     } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       result = await tool.execute(params as any, ctx);
     }
 
@@ -62,7 +67,7 @@ const worker = new Worker(
   },
 );
 
-worker.on('failed', async (job, error) => {
+worker.on('failed', (job, error) => {
   const log = logger.child({ jobId: job?.id, toolName: job?.data.toolName });
   log.error({ err: error }, 'Job failed.');
 
@@ -73,7 +78,13 @@ worker.on('failed', async (job, error) => {
     job.attemptsMade >= job.opts.attempts
   ) {
     log.warn(`Job failed all attempts. Moving to dead-letter queue.`);
-    await deadLetterQueue.add(job.name, job.data, job.opts);
+    void (async () => {
+      try {
+        await deadLetterQueue.add(job.name, job.data, job.opts);
+      } catch (e) {
+        log.error({ err: e }, 'Failed to move job to dead-letter queue.');
+      }
+    })();
   }
 });
 

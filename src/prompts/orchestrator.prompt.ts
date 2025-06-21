@@ -6,8 +6,7 @@
  * * VERSION PROMETHEUS : Le prompt inclut maintenant la capacité de
  * l'agent à créer ses propres outils.
  */
-import type { Tool } from '../types.js';
-import type { AgentSession } from '../types.js';
+import type { Tool, AgentSession } from '../types.js';
 import { format } from 'util';
 
 const getCurrentDate = () => new Date().toISOString();
@@ -47,14 +46,17 @@ If the task is complete, use the "finish" tool.
 const TOOLS_SECTION_HEADER = '## Available Tools:';
 const HISTORY_SECTION_HEADER = '## Conversation History:';
 
-const formatToolForPrompt = (tool: Tool<any>): string => {
+const formatToolForPrompt = (tool: Tool): string => {
+  if (!tool.parameters) {
+    return `### ${tool.name}\nDescription: ${tool.description}\nParameters: None\n`;
+  }
   const params = JSON.stringify(tool.parameters.shape, null, 2);
   return `### ${tool.name}\nDescription: ${tool.description}\nParameters (JSON Schema):\n${params}\n`;
 };
 
 export const getMasterPrompt = (
   history: AgentSession['history'],
-  tools: Tool<any>[],
+  tools: Tool[],
 ): string => {
   const formattedTools = tools.map(formatToolForPrompt).join('\n');
   const toolsSection = `${TOOLS_SECTION_HEADER}\n${formattedTools}`;

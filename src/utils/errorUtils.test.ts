@@ -1,5 +1,5 @@
 // src/utils/errorUtils.test.ts
-import { getErrDetails, AppErrorBase } from './errorUtils'; // Adjust path as needed
+import { getErrDetails, AppErrorBase } from './errorUtils.js';
 
 describe('ErrorUtils', () => {
   describe('getErrDetails', () => {

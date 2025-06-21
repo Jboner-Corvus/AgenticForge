@@ -1,9 +1,4 @@
-/**
- * src/utils/llmProvider.ts
- *
- * Centralise les appels au modèle de langage (LLM).
- * Abstrait la logique pour communiquer avec différentes APIs (Ollama, OpenAI, etc.).
- */
+// --- Fichier : src/utils/llmProvider.ts (Modifié pour Google Gemini) ---
 import { config } from '../config.js';
 import logger from '../logger.js';
 
@@ -12,63 +7,76 @@ interface LLMMessage {
   content: string;
 }
 
-// Pour l'instant, on se concentre sur une structure compatible Ollama.
-// On pourrait facilement étendre cela pour supporter d'autres fournisseurs.
+// Interface pour le format de contenu de l'API Gemini
+interface GeminiContent {
+  role: 'user' | 'model';
+  parts: { text: string }[];
+}
+
 export async function getLlmResponse(
   prompt: string,
   systemPrompt?: string,
 ): Promise<string> {
   const log = logger.child({ module: 'LLMProvider' });
 
-  // Utilise l'URL de base si elle est définie (pour Ollama, etc.)
-  const apiUrl = config.LLM_API_BASE_URL
-    ? `${config.LLM_API_BASE_URL}/api/chat`
-    : 'https://api.openai.com/v1/chat/completions'; // Fallback pour OpenAI
+  // Construit l'URL pour l'API Google Gemini
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${config.LLM_MODEL_NAME}:generateContent?key=${config.LLM_API_KEY}`;
 
-  const messages: LLMMessage[] = [];
+  // Transformation des messages au format requis par Gemini
+  const contents: GeminiContent[] = [];
   if (systemPrompt) {
-    messages.push({ role: 'system', content: systemPrompt });
+    // Gemini gère les instructions système différemment. On peut les préfixer au prompt utilisateur.
+    prompt = `${systemPrompt}\n\n${prompt}`;
   }
-  // Le prompt de l'orchestrateur contient déjà l'historique, donc on le passe en tant que 'user'
-  messages.push({ role: 'user', content: prompt });
+
+  // Le prompt de l'orchestrateur contient déjà l'historique, on le passe en tant que 'user'
+  contents.push({
+    role: 'user', // Pour Gemini, le rôle est 'user'
+    parts: [{ text: prompt }],
+  });
 
   const body = JSON.stringify({
-    model: config.LLM_MODEL_NAME,
-    messages: messages,
-    stream: false, // On ne streame pas la réponse du LLM à l'orchestrateur
+    contents: contents,
+    // On peut ajouter ici des safetySettings ou generationConfig si nécessaire
   });
 
   try {
     log.debug(
       { apiUrl, model: config.LLM_MODEL_NAME },
-      'Sending request to LLM',
+      'Sending request to Google Gemini API',
     );
 
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.LLM_API_KEY}`,
       },
       body,
     });
 
     if (!response.ok) {
       const errorBody = await response.text();
+      log.error(
+        { status: response.status, errorBody },
+        'Gemini API request failed',
+      );
       throw new Error(
-        `LLM API request failed with status ${response.status}: ${errorBody}`,
+        `Gemini API request failed with status ${response.status}: ${errorBody}`,
       );
     }
 
     const data = await response.json();
-    log.debug({ response: data }, 'Received response from LLM');
+    log.debug('Received response from Gemini API');
 
-    // La structure de la réponse varie selon le fournisseur
-    const content =
-      data.choices?.[0]?.message?.content || data.message?.content;
+    // La structure de la réponse de Gemini est différente
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!content) {
-      throw new Error('Invalid response structure from LLM API');
+      log.error(
+        { response: data },
+        'Invalid response structure from Gemini API',
+      );
+      throw new Error('Invalid response structure from Gemini API');
     }
 
     return content.trim();
