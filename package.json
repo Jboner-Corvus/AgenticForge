@@ -22,6 +22,7 @@
   "author": "Senior Refactoring AI",
   "license": "MIT",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.13.0",
     "bullmq": "^5.55.0",
     "dockerode": "^4.0.7",
     "dotenv": "^16.5.0",
