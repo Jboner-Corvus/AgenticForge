@@ -74,13 +74,44 @@
             font-size: 1.5rem;
         }
 
-        #stream-container {
+        #main-content {
             flex-grow: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        #stream-container {
+            flex: 2;
             padding: 1.5rem;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 1.25rem;
+            border-right: 1px solid var(--border-color);
+        }
+        
+        #side-panel {
+            flex: 1;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #browser-view-container {
+            text-align: center;
+        }
+
+        #browser-view-container h3 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        #browser-image {
+            max-width: 100%;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: #111;
+            min-height: 150px;
         }
 
         .message-group {
@@ -110,9 +141,7 @@
         .message-group.final-response { background-color: var(--tool-bg-color); border-color: var(--primary-color); }
         .message-group.error { background-color: var(--error-bg-color); border-color: var(--error-text-color); }
 
-        .message-group.error .content {
-            color: var(--error-text-color);
-        }
+        .message-group.error .content { color: var(--error-text-color); }
 
         pre {
             background-color: rgba(0,0,0,0.3);
@@ -127,6 +156,25 @@
         #form-container {
             padding: 1rem;
             border-top: 1px solid var(--border-color);
+        }
+        
+        #auth-container {
+            padding-bottom: 0.75rem;
+        }
+
+        #auth-token-input {
+            width: 100%;
+            background-color: var(--input-bg-color);
+            color: var(--input-text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-family: var(--font-family);
+            font-size: 0.9rem;
+        }
+        #auth-token-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
         }
 
         #goal-form {
@@ -151,10 +199,8 @@
             border-color: var(--primary-color);
         }
         
-        #goal-input:disabled {
-            background-color: #2a2a2a;
-            cursor: not-allowed;
-        }
+        #goal-input:disabled { background-color: #2a2a2a; cursor: not-allowed; }
+        button:disabled { background-color: #555; cursor: not-allowed; }
 
         button {
             background-color: var(--button-bg-color);
@@ -169,19 +215,8 @@
             transition: background-color 0.2s;
         }
 
-        button:hover {
-            background-color: #0099e6;
-        }
-        
-        button:disabled {
-            background-color: #555;
-            cursor: not-allowed;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        button:hover { background-color: #0099e6; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -191,9 +226,20 @@
         <span class="logo">🚀</span>
         <h1>Agentic Prometheus</h1>
     </header>
-    <div id="stream-container">
+    <div id="main-content">
+        <div id="stream-container">
+            </div>
+        <div id="side-panel">
+            <div id="browser-view-container">
+                <h3>Browser View</h3>
+                <img id="browser-image" src="" alt="Live browser view will appear here" />
+            </div>
         </div>
+    </div>
     <div id="form-container">
+        <div id="auth-container">
+            <input type="password" id="auth-token-input" placeholder="Enter your Bearer Token..." autocomplete="off">
+        </div>
         <form id="goal-form">
             <input type="text" id="goal-input" placeholder="Enter your goal for the agent..." autocomplete="off" required>
             <button type="submit" id="run-button">Run</button>
@@ -206,6 +252,8 @@
     const goalInput = document.getElementById('goal-input');
     const runButton = document.getElementById('run-button');
     const streamContainer = document.getElementById('stream-container');
+    const authTokenInput = document.getElementById('auth-token-input');
+    const browserImage = document.getElementById('browser-image');
     let eventSource;
 
     const iconMap = {
@@ -232,55 +280,31 @@
 
         let contentHtml = '';
         switch (type) {
-            case 'thought':
-                contentHtml = `<pre>${escapeHtml(data.content)}</pre>`;
-                break;
+            case 'thought': contentHtml = `<pre>${escapeHtml(data.content)}</pre>`; break;
             case 'tool_call':
                 const params = JSON.stringify(data.parameters, null, 2);
-                contentHtml = `
-                    <strong>Tool:</strong> ${escapeHtml(data.tool)}<br>
-                    <strong>Parameters:</strong>
-                    <pre>${escapeHtml(params)}</pre>
-                `;
+                contentHtml = `<strong>Tool:</strong> ${escapeHtml(data.tool)}<br><strong>Parameters:</strong><pre>${escapeHtml(params)}</pre>`;
                 break;
-            case 'tool_result':
-                contentHtml = `<pre>${escapeHtml(JSON.stringify(data.result, null, 2))}</pre>`;
-                break;
-            case 'final_response':
-                 contentHtml = `<p>${escapeHtml(data.content)}</p>`;
-                 break;
+            case 'tool_result': contentHtml = `<pre>${escapeHtml(JSON.stringify(data.result, null, 2))}</pre>`; break;
+            case 'final_response': contentHtml = `<p>${escapeHtml(data.content)}</p>`; break;
             case 'error':
-            case 'status':
-                contentHtml = `<p>${escapeHtml(data.message)}</p>`;
-                break;
+            case 'status': contentHtml = `<p>${escapeHtml(data.message)}</p>`; break;
         }
 
-        messageGroup.innerHTML = `
-            <div class="header">
-                <span class="icon">${iconMap[type]}</span>
-                <span class="title">${titleMap[type]}</span>
-            </div>
-            <div class="content">${contentHtml}</div>
-        `;
-        
+        messageGroup.innerHTML = `<div class="header"><span class="icon">${iconMap[type]}</span><span class="title">${titleMap[type]}</span></div><div class="content">${contentHtml}</div>`;
         streamContainer.appendChild(messageGroup);
         streamContainer.scrollTop = streamContainer.scrollHeight;
     }
     
     function escapeHtml(unsafe) {
         if (unsafe === null || unsafe === undefined) return '';
-        return unsafe
-             .toString()
-             .replace(/&/g, "&amp;")
-             .replace(/</g, "&lt;")
-             .replace(/>/g, "&gt;")
-             .replace(/"/g, "&quot;")
-             .replace(/'/g, "&#039;");
+        return unsafe.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
     function setFormState(enabled) {
         goalInput.disabled = !enabled;
         runButton.disabled = !enabled;
+        authTokenInput.disabled = !enabled;
     }
 
     goalForm.addEventListener('submit', (e) => {
@@ -288,24 +312,31 @@
         const goal = goalInput.value.trim();
         if (!goal) return;
 
+        const token = authTokenInput.value.trim();
+        if (!token) {
+            addMessageToStream('error', { message: 'Authentication token is required.' });
+            return;
+        }
+
         setFormState(false);
-        streamContainer.innerHTML = ''; // Clear previous stream
+        streamContainer.innerHTML = '';
+        browserImage.src = '';
 
-        eventSource = new EventSource('/api/v1/agent/run');
-
-        eventSource.onopen = () => {
-             addMessageToStream('status', { message: 'Connection established. Agent is starting...' });
-        };
+        eventSource = new EventSource(`/api/v1/agent/run?goal=${encodeURIComponent(goal)}&token=${encodeURIComponent(token)}`);
+        
+        eventSource.onopen = () => { addMessageToStream('status', { message: 'Connection established. Agent is starting...' }); };
 
         eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            
-            // Map the 'response' type from the backend to 'final_response' for the frontend
             const type = data.type === 'response' ? 'final_response' : data.type;
+            
+            if (type === 'browser_view') {
+                browserImage.src = `data:image/png;base64,${data.image}`;
+                browserImage.alt = `Browser view: ${data.step}`;
+            } else {
+                addMessageToStream(type, data);
+            }
 
-            addMessageToStream(type, data);
-
-            // The agent sends this status message when it's done.
             if (data.type === 'status' && data.message.includes('Déconnecté')) {
                 stopAgent();
             }
@@ -317,10 +348,12 @@
             stopAgent();
         };
         
-        // Start the agent by sending the goal
         fetch('/api/v1/agent/run', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({ goal })
         }).catch(err => {
             console.error("Failed to start agent:", err);
@@ -337,7 +370,6 @@
         setFormState(true);
         goalInput.focus();
     }
-
 </script>
 </body>
 </html>

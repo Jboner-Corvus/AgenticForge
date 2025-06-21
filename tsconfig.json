@@ -11,15 +11,7 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": "./",
-    "paths": {
-      "@modelcontextprotocol/sdk/client": [
-        "./node_modules/@modelcontextprotocol/sdk/dist/esm/client/index.js"
-      ],
-      "@modelcontextprotocol/sdk/client/streamableHttp": [
-        "./node_modules/@modelcontextprotocol/sdk/dist/esm/client/streamableHttp.js"
-      ]
-    }
+    "baseUrl": "./"
   },
   "include": [
     "src/**/*.ts",

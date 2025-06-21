@@ -23,6 +23,7 @@ const schemaDefinition = {
   SEARXNG_URL: z.string().url().optional(),
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
   WEBHOOK_SECRET: z.string().optional(),
+  MCP_SERVER_URL: z.string().url().optional(),
 };
 
 // Pass the schema object to z.object().

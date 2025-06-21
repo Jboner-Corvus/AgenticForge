@@ -16,9 +16,18 @@ export async function navigateWorkerLogic(
   try {
     browser = await chromium.launch();
     const page = await browser.newPage();
+
     await page.goto(args.url, { waitUntil: 'domcontentloaded' });
     const title = await page.title();
-    return `Successfully navigated to "${title}". URL: ${page.url()}`;
+
+    // Correction: prendre la capture et la convertir en base64 ensuite.
+    const finalScreenshotBuffer = await page.screenshot();
+    const finalScreenshot = finalScreenshotBuffer.toString('base64');
+
+    return {
+      message: `Successfully navigated to "${title}". URL: ${page.url()}`,
+      screenshots: [{ step: 'after', image: finalScreenshot }],
+    };
   } finally {
     await browser?.close();
   }
@@ -33,7 +42,7 @@ export const navigateTool: Tool<typeof navigateParams> = {
     if (!ctx.session) throw new Error('Session not found');
     const job = await taskQueue.add('browser_navigate', {
       params: args,
-      // CORRECTION: Ajout d'une assertion de type pour résoudre le conflit.
+      // Correction: caster explicitement le type de `auth`.
       auth: ctx.session.auth as AuthData | undefined,
       taskId: randomUUID(),
       toolName: 'browser_navigate',

@@ -1,8 +1,9 @@
 /**
- * src/webServer.ts (Corrigé et Linted)
+ * src/webServer.ts (Linted et Corrigé)
  *
  * Ce serveur web fournit l'interface utilisateur et agit comme point d'entrée pour les requêtes de conversation.
  * Il déclenche l'orchestrateur d'agent (`runAgent`) et streame les résultats en temps réel.
+ * Il valide désormais le jeton d'authentification.
  */
 import * as http from 'http';
 import * as fs from 'fs';
@@ -10,6 +11,7 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import logger from './logger.js';
 import { runAgent } from './agent.js';
+import { config } from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,6 +40,19 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === 'POST' && url.pathname === '/api/v1/agent/run') {
+    const authHeader = req.headers['authorization'];
+    const expectedToken = `Bearer ${config.AUTH_TOKEN}`;
+
+    if (!authHeader || authHeader !== expectedToken) {
+      logger.warn(
+        { ip: req.socket.remoteAddress },
+        'Unauthorized attempt to run agent',
+      );
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      return;
+    }
+
     let body = '';
     req.on('data', (chunk) => {
       body += chunk.toString();
@@ -68,7 +83,7 @@ const server = http.createServer((req, res) => {
           streamCallback({ type: 'error', message: 'Agent execution failed.' });
         });
       } catch {
-        // CORRECTION : La variable d'erreur non utilisée a été supprimée.
+        // Variable 'error' retirée
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid JSON payload' }));
       }
