@@ -1,5 +1,5 @@
-// src/types.ts
-import { z, type ZodObject, type ZodRawShape } from 'zod';
+// ===== src/types.ts =====
+import type { ZodObject, ZodRawShape } from 'zod';
 import type {
   FastMCPSession,
   Context as FastMCPCtx,

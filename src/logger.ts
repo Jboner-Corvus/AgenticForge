@@ -1,3 +1,4 @@
+// ===== src/logger.ts =====
 import pino from 'pino';
 import { config } from './config.js';
 
@@ -16,7 +17,7 @@ if (config.NODE_ENV === 'development' && !process.env.DOCKER) {
         ignore: 'pid,hostname',
       },
     };
-  } catch (error) {
+  } catch {
     // Si pino-pretty n'est pas disponible, utilise le format par défaut
     console.warn('pino-pretty not available, using default format');
   }

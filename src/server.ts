@@ -1,3 +1,4 @@
+// ===== src/server.ts =====
 // src/server.ts - Version corrigée et fonctionnelle
 import { FastMCP, UserError } from 'fastmcp';
 import type { IncomingMessage } from 'http';
@@ -133,7 +134,7 @@ const mcp = new FastMCP<AgentSession>({
       return errorMessage;
     }
   },
-} as any);
+});
 
 // Fonction pour maintenir le serveur en vie et gérer les erreurs
 const setupServerStability = () => {
