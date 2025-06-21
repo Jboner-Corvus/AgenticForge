@@ -37,4 +37,3 @@ if (!parsedConfig.success) {
   throw new Error('Invalid environment variables.');
 }
 export const config = parsedConfig.data;
-

@@ -39,11 +39,11 @@ Lorsqu'il est confronté à une tâche pour laquelle il n'a pas d'outil, son ins
 3.  **S'auto-redémarrer** pour charger ses nouvelles capacités.
 4.  **Utiliser** l'outil qu'il vient de forger pour accomplir l'objectif initial.
 
-C'est une véritable **fusée logicielle** : non seulement elle vole, mais elle construit de nouveaux étages en plein vol pour aller toujours plus loin.
+
 
 ---
 
-## 🛰️ Architecture de la Fusée
+## 🛰️ Architecture
 
 Le système est un écosystème modulaire orchestré par `docker-compose` :
 

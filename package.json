@@ -7,9 +7,10 @@
   "scripts": {
     "start": "node dist/server.js",
     "start:worker": "node dist/worker.js",
+    "start:web": "node dist/webServer.js",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "dev": "pnpm run build && (pnpm run start & pnpm run start:worker)",
+    "dev": "pnpm run build && (pnpm run start & pnpm run start:worker & pnpm run start:web)",
     "dev:watch": "tsc -w",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

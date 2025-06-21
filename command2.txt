@@ -1,0 +1,15 @@
+curl -X POST http://localhost:8080/api/v1/agent/stream \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0" \
+  -d '{"goal": "Dis bonjour et explique tes capacités"}'
+
+
+  curl -X POST http://localhost:8080/api/v1/agent/stream \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0" \
+  -d '{"goal": "Dis bonjour et explique tes capacités"}'
+
+
+  curl -I http://localhost:8080/health
+
+  
