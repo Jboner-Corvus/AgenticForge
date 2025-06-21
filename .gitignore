@@ -18,7 +18,7 @@ command2.txt
 .env.local
 .env.*.local
 !.env.example
-
+.husky
 # Fichiers du système d'exploitation
 .DS_Store
 Thumbs.db

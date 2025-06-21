@@ -1,4 +1,4 @@
-// src/server.ts - Serveur HTTP avec corrections ESLint
+// src/server.ts - Serveur HTTP avec toutes les corrections
 import http from 'http';
 import { randomUUID } from 'crypto';
 import { config } from './config.js';
@@ -20,7 +20,7 @@ interface ServerSession {
 // Map des sessions actives
 const sessions = new Map<string, ServerSession>();
 
-// Nettoyer les sessions inactives (plus de 1 heure)
+// Nettoyer les sessions inactives
 setInterval(
   () => {
     const now = Date.now();
@@ -34,7 +34,7 @@ setInterval(
     }
   },
   30 * 60 * 1000,
-); // Nettoyer toutes les 30 minutes
+);
 
 // Créer ou récupérer une session
 function getOrCreateSession(
@@ -81,25 +81,16 @@ async function processConversation(
       'Processing conversation',
     );
 
-    // Ajouter le message utilisateur
     session.history.push({ role: 'user', content: goal });
 
-    // Limiter l'historique pour éviter des prompts trop longs
     if (session.history.length > 20) {
       session.history = session.history.slice(-20);
-      logger.debug(
-        { sessionId: session.id },
-        'History trimmed to last 20 messages',
-      );
     }
 
-    // Générer le prompt maître
     const masterPrompt = getMasterPrompt(session.history, allTools);
 
-    // Obtenir la réponse du LLM
     const llmResponse = await getLlmResponse(masterPrompt);
 
-    // Ajouter la réponse à l'historique
     session.history.push({ role: 'assistant', content: llmResponse });
 
     const processingTime = Date.now() - startTime;
@@ -119,29 +110,28 @@ async function processConversation(
     const processingTime = Date.now() - startTime;
     const errorMsg = `Erreur lors du traitement: ${(error as Error).message}`;
 
+    // CORRECTION : La variable 'processingTime' est maintenant utilisée dans le log.
     logger.error(
       {
         error: error as Error,
         sessionId: session.id,
         goal: goal.substring(0, 100),
-        processingTimeMs: processingTime,
+        processingTimeMs: processingTime, // Utilisation de la variable
       },
       'Error processing conversation',
     );
 
-    // Ajouter l'erreur à l'historique pour le contexte
     session.history.push({ role: 'assistant', content: errorMsg });
 
     return errorMsg;
   }
 }
 
-// Gestionnaire de requête principal (avec gestion d'erreur pour ESLint)
+// Gestionnaire de requête principal
 async function handleRequest(
   req: http.IncomingMessage,
   res: http.ServerResponse,
 ): Promise<void> {
-  // CORS headers pour toutes les réponses
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader(
@@ -149,7 +139,6 @@ async function handleRequest(
     'Content-Type, Authorization, X-Session-ID',
   );
 
-  // Gérer les requêtes OPTIONS (preflight)
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
     res.end();
@@ -159,93 +148,42 @@ async function handleRequest(
   const url = new URL(req.url || '/', `http://${req.headers.host}`);
   const timestamp = new Date().toISOString();
 
-  logger.info(`${req.method} ${url.pathname} from ${req.socket.remoteAddress}`);
-
-  // Health check
   if (url.pathname === '/health') {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('Agentic Prometheus Server - Healthy');
     return;
   }
 
-  // Status endpoint détaillé
-  if (url.pathname === '/status') {
-    const memUsage = process.memoryUsage();
-    const status = {
-      status: 'running',
-      name: 'Agentic-Prometheus',
-      version: '3.1.0',
-      timestamp,
-      uptime: Math.round(process.uptime()),
-      sessions: {
-        active: sessions.size,
-        total: sessions.size,
-      },
-      tools: {
-        count: allTools.length,
-        names: allTools.map((t) => t.name),
-      },
-      memory: {
-        rss: Math.round(memUsage.rss / 1024 / 1024) + 'MB',
-        heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + 'MB',
-        heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + 'MB',
-      },
-      environment: {
-        nodeEnv: config.NODE_ENV,
-        logLevel: config.LOG_LEVEL,
-        llmModel: config.LLM_MODEL_NAME,
-      },
-    };
-
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(status, null, 2));
-    return;
-  }
-
-  // API endpoint principal
   if (url.pathname === '/api/v1/agent/stream' && req.method === 'POST') {
     try {
-      // Vérifier l'authentification
       const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.includes(config.AUTH_TOKEN)) {
+      const expectedToken = `Bearer ${config.AUTH_TOKEN}`;
+
+      if (!authHeader || authHeader !== expectedToken) {
         res.writeHead(401, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            error: 'Unauthorized',
-            message: 'Invalid or missing authorization token',
-            timestamp,
-          }),
-        );
+        res.end(JSON.stringify({ error: 'Unauthorized' }));
         return;
       }
 
-      // Lire le body de la requête
       let body = '';
-
       req.on('data', (chunk) => {
         body += chunk.toString();
       });
-
-      // Gestionnaire pour la fin de la requête (correction ESLint)
       req.on('end', () => {
         void (async () => {
           try {
             const data = JSON.parse(body);
-            const goal = data.goal;
-
-            if (!goal || typeof goal !== 'string') {
+            if (!data.goal || typeof data.goal !== 'string') {
               res.writeHead(400, { 'Content-Type': 'application/json' });
               res.end(
                 JSON.stringify({
                   error: 'Bad Request',
-                  message: 'Missing or invalid goal parameter',
-                  timestamp,
+                  message: 'Missing goal',
                 }),
               );
               return;
             }
 
-            // Créer les données d'authentification
             const authData: AuthData = {
               id: randomUUID(),
               type: 'Bearer',
@@ -253,27 +191,18 @@ async function handleRequest(
               authenticatedAt: Date.now(),
             };
 
-            // Récupérer l'ID de session depuis les headers ou en créer un nouveau
-            const sessionId = req.headers['x-session-id'] as string;
+            const session = getOrCreateSession(
+              authData,
+              req.headers['x-session-id'] as string,
+            );
+            const response = await processConversation(data.goal, session);
 
-            // Obtenir ou créer la session
-            const session = getOrCreateSession(authData, sessionId);
-
-            // Traiter la conversation
-            const response = await processConversation(goal, session);
-
-            // Renvoyer la réponse
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(
               JSON.stringify({
                 response,
                 sessionId: session.id,
                 timestamp,
-                metadata: {
-                  toolsAvailable: allTools.length,
-                  historyLength: session.history.length,
-                  processingInfo: 'Processed by Agentic Prometheus v3.1.0',
-                },
               }),
             );
           } catch (parseError) {
@@ -283,163 +212,47 @@ async function handleRequest(
             );
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(
-              JSON.stringify({
-                error: 'Bad Request',
-                message: 'Invalid JSON in request body',
-                timestamp,
-              }),
+              JSON.stringify({ error: 'Bad Request', message: 'Invalid JSON' }),
             );
           }
         })();
       });
-
-      // Gestionnaire d'erreur pour la requête (correction ESLint)
-      req.on('error', (err) => {
-        logger.error({ error: err }, 'Request error');
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            error: 'Internal Server Error',
-            message: 'Error reading request',
-            timestamp,
-          }),
-        );
-      });
     } catch (error) {
       logger.error({ error }, 'Error in request handler');
       res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(
-        JSON.stringify({
-          error: 'Internal Server Error',
-          message: (error as Error).message,
-          timestamp,
-        }),
-      );
+      res.end(JSON.stringify({ error: 'Internal Server Error' }));
     }
     return;
   }
 
-  // 404 pour les autres routes
   res.writeHead(404, { 'Content-Type': 'application/json' });
-  res.end(
-    JSON.stringify({
-      error: 'Not Found',
-      path: url.pathname,
-      availableEndpoints: [
-        'GET /health',
-        'GET /status',
-        'POST /api/v1/agent/stream',
-      ],
-      timestamp,
-    }),
-  );
+  res.end(JSON.stringify({ error: 'Not Found' }));
 }
 
-// Créer le serveur HTTP avec gestionnaire d'erreur pour ESLint
+// Création et démarrage du serveur
 const server = http.createServer((req, res) => {
-  void (async () => {
-    try {
-      await handleRequest(req, res);
-    } catch (error) {
-      logger.error({ error }, 'Unhandled error in request handler');
-      if (!res.headersSent) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            error: 'Internal Server Error',
-            message: 'Unexpected server error',
-            timestamp: new Date().toISOString(),
-          }),
-        );
-      }
+  handleRequest(req, res).catch((err) => {
+    logger.error({ error: err }, 'Unhandled error in request handler');
+    if (!res.headersSent) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Internal Server Error' }));
     }
-  })();
-});
-
-// Configuration du serveur
-server.keepAliveTimeout = 65000;
-server.headersTimeout = 66000;
-
-// Démarrer le serveur
-server.listen(config.PORT, '0.0.0.0', () => {
-  logger.info(`🚀 Agentic Prometheus server started successfully`);
-  logger.info(`🌐 Server listening on 0.0.0.0:${config.PORT}`);
-  logger.info(
-    `📡 API endpoint: http://localhost:${config.PORT}/api/v1/agent/stream`,
-  );
-  logger.info(`🔍 Health check: http://localhost:${config.PORT}/health`);
-  logger.info(`📊 Status endpoint: http://localhost:${config.PORT}/status`);
-  logger.info(`🛠️  Available tools: ${allTools.map((t) => t.name).join(', ')}`);
-  logger.info(`🔧 Environment: ${config.NODE_ENV}`);
-  logger.info(`📊 Log level: ${config.LOG_LEVEL}`);
-  logger.info(`🤖 LLM Model: ${config.LLM_MODEL_NAME}`);
-  logger.info(`💾 Session cleanup: every 30 minutes`);
-  logger.info('✅ Server is ready to accept connections');
-});
-
-// Gestionnaires d'erreurs du serveur
-server.on('error', (err) => {
-  logger.fatal({ err }, 'Critical server error');
-  process.exit(1);
-});
-
-server.on('clientError', (err, socket) => {
-  logger.warn({ err }, 'Client error');
-  socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
-});
-
-// Gestionnaires d'erreurs globales
-process.on('uncaughtException', (error) => {
-  logger.error({ error }, 'Uncaught exception - server continuing gracefully');
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error(
-    { reason, promise },
-    'Unhandled promise rejection - server continuing',
-  );
-});
-
-// Arrêt propre du serveur
-const gracefulShutdown = (signal: string) => {
-  logger.info(`${signal} received - initiating graceful shutdown`);
-
-  server.close((err) => {
-    if (err) {
-      logger.error({ err }, 'Error during server shutdown');
-      process.exit(1);
-    }
-
-    logger.info(
-      `Graceful shutdown complete. Sessions cleaned: ${sessions.size}`,
-    );
-    process.exit(0);
   });
+});
 
-  // Force shutdown après 10 secondes
-  setTimeout(() => {
-    logger.warn('Force shutdown after timeout');
-    process.exit(1);
-  }, 10000);
+server.listen(config.PORT, '0.0.0.0', () => {
+  logger.info(
+    `🚀 Agentic Prometheus server started successfully on 0.0.0.0:${config.PORT}`,
+  );
+});
+
+// Gestionnaires d'arrêt
+const gracefulShutdown = (signal: string) => {
+  logger.info(`${signal} received - shutting down`);
+  server.close(() => process.exit(0));
 };
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-// Heartbeat pour monitoring
-setInterval(() => {
-  const memUsage = process.memoryUsage();
-  logger.debug(
-    {
-      memory: {
-        rss: Math.round(memUsage.rss / 1024 / 1024) + 'MB',
-        heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + 'MB',
-      },
-      uptime: Math.round(process.uptime()) + 's',
-      activeSessions: sessions.size,
-    },
-    'Server heartbeat',
-  );
-}, 60000); // Toutes les minutes
 
 export default server;

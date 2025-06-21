@@ -69,6 +69,7 @@
             font-weight: 600;
             background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -1759,17 +1760,6 @@ Comment puis-je vous aider aujourd'hui ?</div>
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
             
             return messageDiv;
-        }'message-timestamp';
-            timestamp.textContent = `${sender === 'user' ? 'You' : 'Prometheus'} • ${new Date().toLocaleTimeString()}`;
-            
-            content.appendChild(textDiv);
-            content.appendChild(timestamp);
-            
-            messageDiv.appendChild(avatar);
-            messageDiv.appendChild(content);
-            
-            messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
         // Display tool execution
