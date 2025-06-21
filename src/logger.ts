@@ -5,15 +5,21 @@ const pinoOptions: pino.LoggerOptions = {
   level: config.LOG_LEVEL,
 };
 
-if (config.NODE_ENV === 'development') {
-  pinoOptions.transport = {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: 'SYS:yyyy-mm-dd HH:MM:ss',
-      ignore: 'pid,hostname',
-    },
-  };
+// Utilise pino-pretty seulement en développement ET si nous ne sommes pas dans Docker
+if (config.NODE_ENV === 'development' && !process.env.DOCKER) {
+  try {
+    pinoOptions.transport = {
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+        translateTime: 'SYS:yyyy-mm-dd HH:MM:ss',
+        ignore: 'pid,hostname',
+      },
+    };
+  } catch (error) {
+    // Si pino-pretty n'est pas disponible, utilise le format par défaut
+    console.warn('pino-pretty not available, using default format');
+  }
 }
 
 // Use pino.default for ES module compatibility

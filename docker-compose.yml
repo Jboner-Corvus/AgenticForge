@@ -14,8 +14,10 @@ services:
         condition: service_healthy
     env_file: .env
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - REDIS_HOST=redis
+      - REDIS_PORT=6378
+      - DOCKER=true
     restart: unless-stopped
     command: pnpm run start
 
@@ -27,6 +29,7 @@ services:
     command: pnpm run start:worker
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./workspace:/usr/src/app/workspace
     depends_on:
       redis:
         condition: service_healthy
@@ -34,18 +37,20 @@ services:
     environment:
       - NODE_ENV=production
       - REDIS_HOST=redis
+      - REDIS_PORT=6378
+      - DOCKER=true
     restart: unless-stopped
 
   redis:
     image: redis:7.2-alpine
     container_name: agentic_prometheus_redis
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD} --port 6378
     ports:
-      - "${REDIS_HOST_PORT:-6379}:6379"
+      - "${REDIS_HOST_PORT:-6378}:6378"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "-p", "6378", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
