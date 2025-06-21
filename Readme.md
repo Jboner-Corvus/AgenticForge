@@ -1,8 +1,8 @@
 div align="center">
 
-# Agentic Prometheus 🚀
+# Agentic Prometheus
 
-**Une fusée agentique autonome, conçue pour raisonner, évoluer et construire ses propres outils.**
+**Une fusée agentique autonome, conçue pour raisonner, évoluer et construire ses propres outils.Une Alternative a Manus gratuite, local ready **
 
 Propulsé par une architecture réactive en TypeScript, orchestrée par Docker et suralimentée par FastMCP.
 
@@ -31,7 +31,7 @@ Propulsé par une architecture réactive en TypeScript, orchestrée par Docker e
 
 ## 🌟 Concept Fondamental : Le Mode Prométhée
 
-**Agentic Prometheus** n'est pas un agent ordinaire. C'est une plateforme d'IA conçue pour l'**auto-amélioration radicale**. Comme le titan Prométhée qui a offert le feu de la connaissance à l'humanité, cet agent possède le "feu" de la création de code.
+**Agentic Prometheus** n'est pas un agent ordinaire. C'est une plateforme multi Agent conçue pour l'**auto-amélioration radicale**. Comme le titan Prométhée qui a offert le feu de la connaissance à l'humanité, cet agent possède le "feu" de la création de code.
 
 Lorsqu'il est confronté à une tâche pour laquelle il n'a pas d'outil, son instruction principale n'est pas d'échouer, mais de **construire la solution**. Il peut :
 1.  **Planifier** la création d'un nouvel outil.
