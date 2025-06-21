@@ -64,7 +64,7 @@ export const createToolTool: Tool<typeof createToolParams> = {
     const toolFileName = `${toolVarName}.tool.ts`;
     const toolFilePath = path.join(TOOLS_DIR, 'generated', toolFileName);
 
-    let outputMessages: string[] = [];
+    const outputMessages: string[] = [];
 
     try {
       ctx.log.warn(

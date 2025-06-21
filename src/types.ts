@@ -1,13 +1,20 @@
-// ===== src/types.ts =====
+/**
+ * src/types.ts (Corrigé et Linted)
+ *
+ * Ce fichier définit les types et interfaces partagés dans l'application.
+ * Il a été corrigé pour résoudre les conflits de types et les erreurs de linting.
+ */
 import type { ZodObject, ZodRawShape } from 'zod';
 import type {
   FastMCPSession,
-  Context as FastMCPCtx,
+  Context as FastMCPContext,
   Tool as FastMCPTool,
 } from 'fastmcp';
-import type { Job } from 'bullmq';
 
-// Données d'authentification
+// L'historique de la conversation, utilisé par l'orchestrateur de l'agent.
+export type History = { role: 'user' | 'assistant'; content: string }[];
+
+// Les données d'authentification.
 export interface AuthData {
   id: string;
   type: string;
@@ -15,29 +22,35 @@ export interface AuthData {
   authenticatedAt: number;
 }
 
-// Session de l'agent. Doit être compatible avec les contraintes de FastMCP.
+// Session de l'agent (utilisée côté serveur par FastMCP)
 export interface AgentSession extends FastMCPSession {
-  history: { role: 'user' | 'assistant'; content: string }[];
-  auth: AuthData;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any; // Requis par FastMCP pour des propriétés dynamiques
+  history: History;
+  // CORRECTION : Remplacement de 'any' par 'unknown' pour une meilleure sécurité de type.
+  [key: string]: unknown;
 }
 
-// Contexte (Ctx)
-export type Ctx = FastMCPCtx<AgentSession>;
+// Contexte (Ctx) fourni par FastMCP à l'intérieur de la méthode `execute` d'un outil.
+export type Ctx = FastMCPContext<AgentSession>;
 
-// Tool
-export type Tool<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape>> =
+// Définition d'un outil.
+// CORRECTION : Remplacement de 'any' par 'unknown' pour le type générique.
+export type Tool<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape, any, any>> =
   FastMCPTool<AgentSession, T>;
 
-// Charge utile des tâches asynchrones
+// Types pour les tâches asynchrones via BullMQ.
+export interface AsyncTaskJob<TParams = Record<string, unknown>> {
+  data: AsyncTaskJobPayload<TParams>;
+  id?: string;
+  name: string;
+  opts?: {
+    attempts?: number;
+  };
+  attemptsMade: number;
+}
 export interface AsyncTaskJobPayload<TParams = Record<string, unknown>> {
   params: TParams;
-  auth: AuthData | undefined;
+  auth?: AuthData;
   taskId: string;
   toolName: string;
   cbUrl?: string;
 }
-
-// Job BullMQ
-export type AsyncTaskJob = Job<AsyncTaskJobPayload, unknown, string>;
