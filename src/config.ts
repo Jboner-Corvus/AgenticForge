@@ -14,7 +14,7 @@ const envSchema = z.object({
   LLM_MODEL_NAME: z.string().min(1, 'LLM_MODEL_NAME is required'),
   PYTHON_SANDBOX_IMAGE: z.string().min(1),
   BASH_SANDBOX_IMAGE: z.string().min(1),
-  CODE_EXECUTION_TIMEOUT_MS: z.coerce.number().int().min(1000),
+  CODE_EXECUTION_TIMEOUT_MS: z.coerce.number().int().min(1000), // Virgule manquante ajoutée ici
   // AJOUTS POUR CORRIGER LES ERREURS DE TYPE
   SEARXNG_URL: z.string().url().optional(),
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
