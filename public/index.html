@@ -467,23 +467,226 @@
             30% { opacity: 1; }
         }
 
-        /* Scrollbar Styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+        /* Agent Canvas Styles */
+        .agent-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.3s ease-out;
         }
 
-        ::-webkit-scrollbar-track {
-            background: var(--bg-primary);
+        .canvas-header {
+            padding: 1rem 2rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        ::-webkit-scrollbar-thumb {
+        .canvas-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .canvas-icon {
+            font-size: 1.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        .canvas-close {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             background: var(--bg-tertiary);
-            border-radius: 4px;
+            border: none;
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-secondary);
+        .canvas-close:hover {
+            background: var(--accent-danger);
+        }
+
+        .canvas-content {
+            flex: 1;
+            display: flex;
+            padding: 2rem;
+            gap: 2rem;
+            overflow: hidden;
+        }
+
+        #thoughtCanvas {
+            flex: 1;
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            max-width: 100%;
+            height: 100%;
+        }
+
+        .canvas-sidebar {
+            width: 300px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .process-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .process-step {
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            border-left: 3px solid var(--border-color);
+            transition: all 0.3s;
+        }
+
+        .process-step.active {
+            border-left-color: var(--accent-primary);
+            background: rgba(0, 255, 136, 0.1);
+            animation: glow 1s ease-in-out infinite alternate;
+        }
+
+        .process-step.completed {
+            border-left-color: var(--accent-primary);
+            opacity: 0.7;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 5px rgba(0, 255, 136, 0.2); }
+            to { box-shadow: 0 0 15px rgba(0, 255, 136, 0.4); }
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .step-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+        }
+
+        .step-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .step-description {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .step-details {
+            font-size: 0.75rem;
+            font-family: 'SF Mono', monospace;
+            background: var(--bg-primary);
+            padding: 0.5rem;
+            border-radius: 4px;
+            color: var(--accent-primary);
+        }
+
+        /* Thinking Animation */
+        .thinking-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-primary);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--accent-primary);
+            animation: pulse 2s infinite;
+        }
+
+        .thinking-spinner {
+            width: 12px;
+            height: 12px;
+            border: 2px solid transparent;
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Canvas Toggle Button */
+        .canvas-toggle {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+            transition: all 0.3s;
+            z-index: 50;
+        }
+
+        .canvas-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 255, 136, 0.5);
+        }
+
+        .canvas-toggle.active {
+            background: var(--accent-danger);
+        }
+
+        /* Node Styles for Canvas */
+        .node {
+            filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.3));
+        }
+
+        .node-active {
+            filter: drop-shadow(0 0 20px rgba(0, 255, 136, 0.8));
+        }
+
+        .connection-line {
+            stroke: var(--accent-primary);
+            stroke-width: 2;
+            fill: none;
+            opacity: 0.5;
+        }
+
+        .connection-active {
+            opacity: 1;
+            stroke-width: 3;
+            filter: drop-shadow(0 0 5px rgba(0, 255, 136, 0.8));
         }
 
         /* Modal */
@@ -773,6 +976,23 @@
 
         <!-- Content Area -->
         <main class="content-area">
+            <!-- Agent Canvas -->
+            <div class="agent-canvas" id="agentCanvas" style="display: none;">
+                <div class="canvas-header">
+                    <div class="canvas-title">
+                        <span class="canvas-icon">🧠</span>
+                        <span>Agent Thinking Process</span>
+                    </div>
+                    <button class="canvas-close" onclick="toggleCanvas()">✕</button>
+                </div>
+                <div class="canvas-content">
+                    <canvas id="thoughtCanvas" width="800" height="400"></canvas>
+                    <div class="canvas-sidebar">
+                        <div class="process-steps" id="processSteps"></div>
+                    </div>
+                </div>
+            </div>
+
             <div class="chat-container">
                 <div class="messages-container" id="messagesContainer">
                     <!-- Welcome Message -->
@@ -881,6 +1101,11 @@ Comment puis-je vous aider aujourd'hui ?</div>
         </div>
     </div>
 
+    <!-- Canvas Toggle Button -->
+    <div class="canvas-toggle" id="canvasToggle" onclick="toggleCanvas()" title="Toggle Agent Canvas">
+        <span id="canvasToggleIcon">🧠</span>
+    </div>
+
     <script>
         // Configuration
         const API_URL = '/api/v1/agent/stream';
@@ -890,6 +1115,17 @@ Comment puis-je vous aider aujourd'hui ?</div>
         let currentTool = null;
         let isProcessing = false;
         let sessionStartTime = Date.now();
+        let canvasVisible = false;
+        let thoughtGraph = null;
+        let canvasContext = null;
+        let nodes = [];
+        let connections = [];
+        let animationFrame = null;
+
+        // Canvas Animation State
+        let particles = [];
+        let currentNode = null;
+        let targetNode = null;
 
         // DOM Elements
         const messagesContainer = document.getElementById('messagesContainer');
@@ -986,42 +1222,270 @@ Comment puis-je vous aider aujourd'hui ?</div>
             }
         };
 
-        // Initialize
-        function init() {
-            // Setup event listeners
-            sendBtn.addEventListener('click', sendMessage);
-            messageInput.addEventListener('keydown', (e) => {
-                if (e.ctrlKey && e.key === 'Enter') {
-                    sendMessage();
-                }
-            });
+        // Initialize canvas
+        function initCanvas() {
+            const canvas = document.getElementById('thoughtCanvas');
+            canvasContext = canvas.getContext('2d');
+            
+            // Set canvas size
+            const resizeCanvas = () => {
+                const container = canvas.parentElement;
+                canvas.width = container.offsetWidth;
+                canvas.height = container.offsetHeight - 100;
+            };
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Start animation loop
+            startCanvasAnimation();
+        }
 
-            // Auto-resize textarea
-            messageInput.addEventListener('input', () => {
-                messageInput.style.height = 'auto';
-                messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
-            });
+        // Canvas animation loop
+        function startCanvasAnimation() {
+            const animate = () => {
+                if (!canvasContext) return;
+                
+                // Clear canvas
+                canvasContext.fillStyle = 'rgba(10, 10, 10, 0.1)';
+                canvasContext.fillRect(0, 0, canvasContext.canvas.width, canvasContext.canvas.height);
+                
+                // Draw connections
+                connections.forEach(conn => {
+                    drawConnection(conn);
+                });
+                
+                // Draw nodes
+                nodes.forEach(node => {
+                    drawNode(node);
+                });
+                
+                // Draw particles
+                particles = particles.filter(particle => {
+                    updateParticle(particle);
+                    drawParticle(particle);
+                    return particle.life > 0;
+                });
+                
+                animationFrame = requestAnimationFrame(animate);
+            };
+            
+            animate();
+        }
 
-            // Tool item clicks
-            document.querySelectorAll('.tool-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const toolName = item.dataset.tool;
-                    openToolModal(toolName);
+        // Draw node
+        function drawNode(node) {
+            const ctx = canvasContext;
+            const isActive = node.id === currentNode;
+            
+            // Node glow effect
+            if (isActive) {
+                const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, 40);
+                gradient.addColorStop(0, 'rgba(0, 255, 136, 0.3)');
+                gradient.addColorStop(1, 'rgba(0, 255, 136, 0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 40, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Node circle
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, 20, 0, Math.PI * 2);
+            ctx.fillStyle = isActive ? '#00ff88' : '#2a2a2a';
+            ctx.fill();
+            ctx.strokeStyle = isActive ? '#00ff88' : '#444';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Node icon
+            ctx.font = '16px sans-serif';
+            ctx.fillStyle = isActive ? '#000' : '#fff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(node.icon, node.x, node.y);
+            
+            // Node label
+            ctx.font = '12px sans-serif';
+            ctx.fillStyle = '#a0a0a0';
+            ctx.fillText(node.label, node.x, node.y + 35);
+        }
+
+        // Draw connection
+        function drawConnection(conn) {
+            const ctx = canvasContext;
+            const from = nodes.find(n => n.id === conn.from);
+            const to = nodes.find(n => n.id === conn.to);
+            
+            if (!from || !to) return;
+            
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            
+            // Curved line
+            const cp1x = from.x + (to.x - from.x) * 0.5;
+            const cp1y = from.y;
+            const cp2x = from.x + (to.x - from.x) * 0.5;
+            const cp2y = to.y;
+            
+            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, to.x, to.y);
+            
+            ctx.strokeStyle = conn.active ? '#00ff88' : '#333';
+            ctx.lineWidth = conn.active ? 3 : 1;
+            ctx.stroke();
+            
+            // Arrow
+            const angle = Math.atan2(to.y - from.y, to.x - from.x);
+            ctx.save();
+            ctx.translate(to.x - 25 * Math.cos(angle), to.y - 25 * Math.sin(angle));
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-10, -5);
+            ctx.lineTo(-10, 5);
+            ctx.closePath();
+            ctx.fillStyle = conn.active ? '#00ff88' : '#333';
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Draw particle
+        function drawParticle(particle) {
+            const ctx = canvasContext;
+            ctx.beginPath();
+            ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(0, 255, 136, ${particle.life})`;
+            ctx.fill();
+        }
+
+        // Update particle
+        function updateParticle(particle) {
+            particle.x += particle.vx;
+            particle.y += particle.vy;
+            particle.life -= 0.02;
+            particle.size *= 0.98;
+        }
+
+        // Create particle burst
+        function createParticleBurst(x, y) {
+            for (let i = 0; i < 20; i++) {
+                const angle = (Math.PI * 2 * i) / 20;
+                const speed = 2 + Math.random() * 2;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: 3 + Math.random() * 2,
+                    life: 1
+                });
+            }
+        }
+
+        // Add process step
+        function addProcessStep(title, description, icon = '🔄', details = null) {
+            const step = document.createElement('div');
+            step.className = 'process-step active';
+            step.innerHTML = `
+                <div class="step-header">
+                    <div class="step-icon">${icon}</div>
+                    <div class="step-title">${title}</div>
+                </div>
+                <div class="step-description">${description}</div>
+                ${details ? `<div class="step-details">${details}</div>` : ''}
+            `;
+            
+            const processSteps = document.getElementById('processSteps');
+            
+            // Mark previous steps as completed
+            processSteps.querySelectorAll('.process-step.active').forEach(s => {
+                s.classList.remove('active');
+                s.classList.add('completed');
+            });
+            
+            processSteps.insertBefore(step, processSteps.firstChild);
+            
+            // Limit to 10 steps
+            while (processSteps.children.length > 10) {
+                processSteps.removeChild(processSteps.lastChild);
+            }
+            
+            return step;
+        }
+
+        // Create thought graph
+        function createThoughtGraph(thought) {
+            nodes = [];
+            connections = [];
+            
+            const canvas = canvasContext.canvas;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            // Create central node
+            nodes.push({
+                id: 'thinking',
+                x: centerX,
+                y: centerY,
+                icon: '🤔',
+                label: 'Analyzing'
+            });
+            
+            // Create tool nodes in a circle
+            const tools = ['🔍', '⚡', '📝', '🌐', '💾', '🔧'];
+            const toolLabels = ['Search', 'Execute', 'Write', 'Browse', 'Save', 'Build'];
+            const radius = 150;
+            
+            tools.forEach((tool, index) => {
+                const angle = (Math.PI * 2 * index) / tools.length - Math.PI / 2;
+                nodes.push({
+                    id: `tool-${index}`,
+                    x: centerX + Math.cos(angle) * radius,
+                    y: centerY + Math.sin(angle) * radius,
+                    icon: tool,
+                    label: toolLabels[index]
+                });
+                
+                connections.push({
+                    from: 'thinking',
+                    to: `tool-${index}`,
+                    active: false
                 });
             });
+            
+            currentNode = 'thinking';
+        }
 
-            // Update uptime
-            setInterval(updateUptime, 1000);
+        // Animate to node
+        function animateToNode(nodeId) {
+            const node = nodes.find(n => n.id === nodeId);
+            if (node) {
+                currentNode = nodeId;
+                createParticleBurst(node.x, node.y);
+                
+                // Activate connection
+                connections.forEach(conn => {
+                    conn.active = conn.to === nodeId || conn.from === nodeId;
+                });
+            }
+        }
 
-            // File upload
-            document.getElementById('attachBtn').addEventListener('click', () => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.onchange = handleFileUpload;
-                input.click();
-            });
-
-            logActivity('System initialized');
+        // Toggle canvas visibility
+        function toggleCanvas() {
+            canvasVisible = !canvasVisible;
+            const canvas = document.getElementById('agentCanvas');
+            const toggle = document.getElementById('canvasToggle');
+            const icon = document.getElementById('canvasToggleIcon');
+            
+            if (canvasVisible) {
+                canvas.style.display = 'flex';
+                toggle.classList.add('active');
+                icon.textContent = '✕';
+                if (!canvasContext) initCanvas();
+            } else {
+                canvas.style.display = 'none';
+                toggle.classList.remove('active');
+                icon.textContent = '🧠';
+            }
         }
 
         // Update uptime display
@@ -1085,7 +1549,7 @@ Comment puis-je vous aider aujourd'hui ?</div>
             }
         }
 
-        // Parse agent response
+        // Parse agent response with canvas updates
         function parseAgentResponse(data) {
             const response = data.response || JSON.stringify(data);
             
@@ -1096,12 +1560,35 @@ Comment puis-je vous aider aujourd'hui ?</div>
             if (thoughtMatch) {
                 const thought = thoughtMatch[1].trim();
                 addMessage(thought, 'assistant', 'thought');
+                
+                // Update canvas with thought
+                if (canvasVisible) {
+                    addProcessStep('Thinking', thought.substring(0, 100) + '...', '🤔');
+                    createThoughtGraph(thought);
+                }
             }
 
             if (toolMatch) {
                 try {
                     const toolData = JSON.parse(toolMatch[1]);
                     displayToolExecution(toolData);
+                    
+                    // Update canvas with tool execution
+                    if (canvasVisible) {
+                        const toolDef = toolDefinitions[toolData.tool];
+                        const icon = getToolIcon(toolData.tool);
+                        addProcessStep(
+                            `Executing: ${toolData.tool}`,
+                            toolDef ? toolDef.description : 'Running tool...',
+                            icon,
+                            JSON.stringify(toolData.parameters, null, 2)
+                        );
+                        
+                        // Animate to tool node
+                        setTimeout(() => {
+                            animateToNode(`tool-${getToolNodeIndex(toolData.tool)}`);
+                        }, 500);
+                    }
                 } catch (e) {
                     console.error('Failed to parse tool data:', e);
                 }
@@ -1116,13 +1603,126 @@ Comment puis-je vous aider aujourd'hui ?</div>
             if (finalResponse) {
                 addMessage(finalResponse, 'assistant');
                 logActivity('Response delivered');
+                
+                if (canvasVisible) {
+                    addProcessStep('Response Ready', 'Final answer generated', '✅');
+                    animateToNode('thinking');
+                }
             }
         }
 
-        // Add message to chat
+        // Get tool icon
+        function getToolIcon(toolName) {
+            const iconMap = {
+                'finish': '✅',
+                'system_createTool': '🛠️',
+                'system_restartServer': '🔄',
+                'executeDevCommand': '💻',
+                'executePython': '🐍',
+                'readFile': '📖',
+                'writeFile': '✏️',
+                'listFiles': '📁',
+                'browser_navigate': '🌐',
+                'browser_getContent': '📄',
+                'summarizeText': '📝',
+                'webSearch': '🔍'
+            };
+            return iconMap[toolName] || '⚡';
+        }
+
+        // Get tool node index
+        function getToolNodeIndex(toolName) {
+            const categories = {
+                'webSearch': 0,
+                'browser_navigate': 3,
+                'browser_getContent': 3,
+                'executeDevCommand': 1,
+                'executePython': 1,
+                'writeFile': 2,
+                'readFile': 4,
+                'listFiles': 4,
+                'system_createTool': 5,
+                'system_restartServer': 5
+            };
+            return categories[toolName] || 1;
+        }
+
+        // Enhanced send message with canvas updates
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || isProcessing) return;
+
+            isProcessing = true;
+            sendBtn.disabled = true;
+            
+            // Add user message
+            addMessage(message, 'user');
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            // Show thinking indicator
+            showTypingIndicator();
+            
+            // Update canvas
+            if (canvasVisible) {
+                addProcessStep('New Request', message.substring(0, 100) + '...', '💬');
+                createThoughtGraph(message);
+            }
+            
+            // Show canvas if complex query
+            if (message.includes('search') || message.includes('create') || message.includes('analyze')) {
+                if (!canvasVisible) {
+                    toggleCanvas();
+                }
+            }
+            
+            try {
+                logActivity(`User: ${message.substring(0, 50)}...`);
+                updateCurrentTask(message);
+
+                // Simulate streaming response
+                let streamingMessage = null;
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${AUTH_TOKEN}`
+                    },
+                    body: JSON.stringify({ goal: message })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                hideTypingIndicator();
+
+                // Parse and display response
+                parseAgentResponse(data);
+
+            } catch (error) {
+                hideTypingIndicator();
+                showNotification(`Error: ${error.message}`, 'error');
+                addMessage(`❌ Error: ${error.message}`, 'assistant');
+                logActivity(`Error: ${error.message}`);
+                
+                if (canvasVisible) {
+                    addProcessStep('Error', error.message, '❌');
+                }
+            } finally {
+                isProcessing = false;
+                sendBtn.disabled = false;
+                updateCurrentTask(null);
+            }
+        }
+
+        // Add message with streaming support
         function addMessage(text, sender, type = 'normal') {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${sender}`;
+            messageDiv.id = `message-${Date.now()}`;
             
             const avatar = document.createElement('div');
             avatar.className = 'message-avatar';
@@ -1135,13 +1735,31 @@ Comment puis-je vous aider aujourd'hui ?</div>
             textDiv.className = 'message-text';
             
             if (type === 'thought') {
-                textDiv.innerHTML = `<em style="color: var(--text-secondary);">💭 ${escapeHtml(text)}</em>`;
+                textDiv.innerHTML = `
+                    <div class="thinking-indicator">
+                        <div class="thinking-spinner"></div>
+                        <span>Analyzing: ${escapeHtml(text)}</span>
+                    </div>
+                `;
             } else {
                 textDiv.innerHTML = formatMessage(text);
             }
             
             const timestamp = document.createElement('div');
             timestamp.className = 'message-timestamp';
+            timestamp.textContent = `${sender === 'user' ? 'You' : 'Prometheus'} • ${new Date().toLocaleTimeString()}`;
+            
+            content.appendChild(textDiv);
+            content.appendChild(timestamp);
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            return messageDiv;
+        }'message-timestamp';
             timestamp.textContent = `${sender === 'user' ? 'You' : 'Prometheus'} • ${new Date().toLocaleTimeString()}`;
             
             content.appendChild(textDiv);
