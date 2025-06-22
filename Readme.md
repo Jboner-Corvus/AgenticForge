@@ -6,7 +6,7 @@
 
 **Français** | [English](#english) | [中文](#中文) | [Español](#español)
 
-Un agent IA autonome **100% local** qui forge ses propres outils, écrit du code et exécute des tâches complexes tout en gardant toutes les données sur votre appareil. Basé sur le **protocole MCP (Model Context Protocol)** avec **FastMCP** comme fusée propulsive, il est conçu pour les modèles de raisonnement locaux et adaptable à l'API de votre LLM favori, garantissant une confidentialité complète et aucune dépendance cloud.
+Un agentic IA autonome **100% local** qui forge ses propres outils, écrit du code et exécute des tâches complexes tout en gardant toutes les données sur votre appareil. Basé sur le **protocole MCP (Model Context Protocol)** avec **FastMCP** comme fusée propulsive, il est conçu pour les modèles de raisonnement locaux et adaptable à l'API de votre LLM favori, garantissant une confidentialité complète et aucune dépendance cloud.
 
 [![Licence](https://img.shields.io/badge/Licence-MIT-blue.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://docker.com)
