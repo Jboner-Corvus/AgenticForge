@@ -73,7 +73,7 @@ async function fetchAndDisplayToolCount() {
     const count = await getToolCount();
     updateToolCount(count);
   } catch (error) {
-    console.error('Échec de la récupération du nombre d\'outils:', error);
+    console.error("Échec de la récupération du nombre d'outils:", error);
     updateToolCount('N/A');
   }
 }

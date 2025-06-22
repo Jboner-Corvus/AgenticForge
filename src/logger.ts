@@ -1,10 +1,10 @@
-// ===== src/logger.ts (Corrigé et Simplifié) =====
-import * as pino from 'pino';
-import { config } from './config.js';
+// ===== src/logger.ts (Corrigé et Robuste) =====
+import pino from 'pino';
 import type { LoggerOptions } from 'pino';
+import { config } from 'src/config.js';
 
 // Configuration simplifiée qui fonctionne de manière fiable dans tous les environnements.
-const pinoOptions: pino.LoggerOptions = {
+const pinoOptions: LoggerOptions = {
   level: config.LOG_LEVEL,
   // REMARQUE: Le transport pino-pretty n'est plus configuré dans le code
   // pour éviter les erreurs de déploiement dans Docker.
@@ -13,9 +13,12 @@ const pinoOptions: pino.LoggerOptions = {
   // Exemple: `pnpm run dev | pnpm exec pino-pretty`
 };
 
-// CORRECTION: Pour contourner l'erreur de typage persistante, nous utilisons
-// une assertion de type 'any' pour forcer TypeScript à traiter
-// 'pino.default' comme une fonction appelable.
-const logger = (pino.default as any)(pinoOptions);
+// Cette approche gère la complexité des modules CJS/ESM.
+// 'pino' importé avec `import pino from 'pino'` est l'objet module,
+// et la fonction constructeur est sur la propriété 'default'.
+// Nous utilisons `(pino as any)` pour contourner les problèmes de déclaration de types.
+const loggerConstructor = (pino as any).default || pino;
+
+const logger = loggerConstructor(pinoOptions);
 
 export default logger;

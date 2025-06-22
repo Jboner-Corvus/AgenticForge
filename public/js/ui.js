@@ -23,9 +23,15 @@ function formatMessage(text) {
     try {
       // Note: The outer text is already escaped, so we parse the original unescaped code
       const tool = JSON.parse(toolCode);
-      return `<div class="tool-call"><strong>Outil : ${escapeHtml(tool.tool)}</strong><pre>${escapeHtml(JSON.stringify(tool.parameters, null, 2))}</pre></div>`;
+      return `<div class="tool-call"><strong>Outil : ${escapeHtml(
+        tool.tool,
+      )}</strong><pre>${escapeHtml(
+        JSON.stringify(tool.parameters, null, 2),
+      )}</pre></div>`;
     } catch (e) {
-      return `<div class="tool-call"><strong>Outil mal formé</strong><pre>${escapeHtml(toolCode)}</pre></div>`;
+      return `<div class="tool-call"><strong>Outil mal formé</strong><pre>${escapeHtml(
+        toolCode,
+      )}</pre></div>`;
     }
   });
 
@@ -33,7 +39,6 @@ function formatMessage(text) {
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n/g, '<br>');
 }
-
 
 function getAvatar(sender) {
   switch (sender) {
@@ -113,7 +118,6 @@ export function updateToolCount(count) {
     toolCountEl.textContent = count;
   }
 }
-
 
 function scrollToBottom() {
   messagesContainer.scrollTop = messagesContainer.scrollHeight;

@@ -50,7 +50,7 @@ export async function getToolCount() {
     console.error(`Erreur API ${response.status}: ${errorBody}`);
     return 'Erreur';
   }
-  
+
   const data = await response.json();
   return data.toolCount;
 }

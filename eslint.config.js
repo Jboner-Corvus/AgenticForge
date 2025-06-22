@@ -4,9 +4,12 @@ import tseslint from 'typescript-eslint';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 
 export default tseslint.config(
+  // Ignore global directories
   {
     ignores: ['node_modules/', 'dist/', 'coverage/', 'logs/'],
   },
+
+  // Base config for Node.js environment
   {
     languageOptions: {
       globals: {
@@ -15,8 +18,11 @@ export default tseslint.config(
       },
     },
   },
+
+  // Config for SRC TypeScript files (excluding tests)
   {
     files: ['src/**/*.ts'],
+    ignores: ['src/**/*.test.ts'], // Exclude test files from this strict config
     extends: [...tseslint.configs.recommended, ...tseslint.configs.stylistic],
     languageOptions: {
       parser: tseslint.parser,
@@ -35,5 +41,33 @@ export default tseslint.config(
       ],
     },
   },
+
+  // Config for TEST files
+  // This block does NOT use project-based parsing, avoiding the error.
+  {
+    files: ['src/**/*.test.ts'],
+    extends: [...tseslint.configs.recommended],
+    languageOptions: {
+      parser: tseslint.parser,
+      globals: {
+        ...globals.jest,
+      },
+    },
+    rules: {
+      // Relax rules for tests if necessary
+    },
+  },
+
+  // Config for public JS files (browser environment)
+  {
+    files: ['public/js/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
+
+  // Prettier config must be the last one to override other formatting rules.
   eslintPluginPrettierRecommended,
 );
