@@ -109,7 +109,7 @@ async function handleSendMessage(event) {
     
     document.querySelectorAll('.message.client').forEach(el => el.remove());
     
-    const userMessage = addMessage(goal, 'user');
+    addMessage(goal, 'user'); // Affiche le message de l'utilisateur
     elements.messageInput.value = '';
     showTypingIndicator();
 
@@ -121,11 +121,16 @@ async function handleSendMessage(event) {
         }
 
         const responseText = data.response || "L'agent a terminé mais n'a fourni aucune réponse textuelle.";
-        updateUserMessage(userMessage, responseText, 'assistant'); 
+        
+        // CORRECTION : On cache l'indicateur de frappe et on AJOUTE un nouveau message pour l'assistant
+        hideTypingIndicator();
+        addMessage(responseText, 'assistant'); 
 
     } catch (error) {
         const errorMessage = `❌ Erreur : ${error.message}`;
-        updateUserMessage(userMessage, errorMessage, 'assistant');
+        // CORRECTION : On cache l'indicateur et on AJOUTE un message d'erreur
+        hideTypingIndicator();
+        addMessage(errorMessage, 'assistant');
         console.error(error);
     } finally {
         state.isProcessing = false;
