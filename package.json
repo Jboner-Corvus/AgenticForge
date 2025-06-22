@@ -1,7 +1,7 @@
 {
-  "name": "agentic-prometheus-server",
+  "name": "agentic-forge-server",
   "version": "1.0.0",
-  "description": "A fully autonomous, self-improving agentic system based on the FastMCP framework.",
+  "description": "A fully autonomous, self-improving agentic system to forge new tools, based on the FastMCP framework.",
   "type": "module",
   "main": "dist/server.js",
   "scripts": {

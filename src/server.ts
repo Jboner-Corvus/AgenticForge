@@ -110,13 +110,12 @@ async function processConversation(
     const processingTime = Date.now() - startTime;
     const errorMsg = `Erreur lors du traitement: ${(error as Error).message}`;
 
-    // CORRECTION : La variable 'processingTime' est maintenant utilisée dans le log.
     logger.error(
       {
         error: error as Error,
         sessionId: session.id,
         goal: goal.substring(0, 100),
-        processingTimeMs: processingTime, // Utilisation de la variable
+        processingTimeMs: processingTime,
       },
       'Error processing conversation',
     );
@@ -150,7 +149,7 @@ async function handleRequest(
 
   if (url.pathname === '/health') {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Agentic Prometheus Server - Healthy');
+    res.end('Agentic Forge Server - Healthy');
     return;
   }
 
@@ -242,7 +241,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(config.PORT, '0.0.0.0', () => {
   logger.info(
-    `🚀 Agentic Prometheus server started successfully on 0.0.0.0:${config.PORT}`,
+    `🐉 Agentic Forge server started successfully on 0.0.0.0:${config.PORT}`,
   );
 });
 

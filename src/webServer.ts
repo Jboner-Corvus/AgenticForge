@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 const WEB_PORT = parseInt(process.env.WEB_PORT || '3000');
 const MCP_SERVER_URL = config.MCP_SERVER_URL || 'http://localhost:8080';
 
-const mimeTypes: { [key: string]: string } = {
+const mimeTypes: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
   '.css': 'text/css',
@@ -98,7 +98,7 @@ const server = http.createServer((req, res) => {
 
   // ---- SERVEUR DE FICHIERS STATIQUES (inchangé) ----
   try {
-    let requestedPath =
+    const requestedPath =
       incomingUrl.pathname === '/' ? '/index.html' : incomingUrl.pathname;
     const publicDir = path.join(__dirname, '..', 'public');
     const fullPath = path.join(publicDir, requestedPath);

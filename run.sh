@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-# CONSOLE DE GESTION - AGENTIC PROMETHEUS v3.1 (Developer Edition)
+# CONSOLE DE GESTION - AGENTIC FORGE v1.0 (Developer Edition)
 # Script de gestion Docker et de développement pour l'écosystème autonome.
-# Mis à jour pour utiliser Docker Compose V2 et Buildx Bake.
 # ==============================================================================
 
 # --- Configuration Stricte et Gestion des Erreurs ---
 set -euo pipefail
 
 # --- Configuration de l'environnement de Build ---
-# Active la fonctionnalité "bake" de Docker Compose pour des builds plus rapides.
 export COMPOSE_BAKE=true
 
 # --- Palette de Couleurs ---
@@ -43,12 +41,10 @@ _check_deps() {
         _log "ERROR" "Docker n'est pas installé. Veuillez l'installer pour continuer."
         exit 1
     fi
-    # Vérifie la présence de la commande "docker compose" (V2)
     if ! docker compose version &> /dev/null; then
         _log "ERROR" "Docker Compose V2 (plugin 'compose') n'est pas installé ou accessible. Veuillez l'installer."
         exit 1
     fi
-    # CORRECTION DE LA FAUTE DE FRAPPE ICI
     if ! docker info &> /dev/null; then
         _log "ERROR" "Le démon Docker ne semble pas fonctionner. Assurez-vous qu'il est lancé."
         exit 1
@@ -74,13 +70,21 @@ _check_env() {
 
 _show_title() {
     echo -e "${FG_CYAN}"
-    echo "    ___    __                    __   __________  __  _                           "
-    echo "   /   |  / /___ __  ______  ____/ /  / ____/ __ \/ /_(_)___  ____  ___  __________"
-    echo "  / /| | / / __ \`/ |/_/ __ \/ __  /  / /   / /_/ / __/ / __ \/ __ \/ _ \/ ___/ ___/"
-    echo " / ___ |/ / /_/ />  </ /_/ / /_/ /  / /___/ ____/ /_/ / /_/ / /_/ /  __/ /  (__  ) "
-    echo "/_/  |_/_/\__,_/_/|_/ .___/\__,_/   \____/_/    \__/_/\____/ .___/\___/_/  /____/  "
-    echo "                   /_/                                  /_/                       "
+    echo "                      >----->"
+    echo "                     / __  /"
+    echo "                    / /  \/"
+    echo "                ---/ /"
+    echo "            --,--/ /"
+    echo "           / / / /"
+    echo ""
+    echo '    _    ____   ____  _____  _   _  _____   ____   ____'
+    echo '   / \  |  _ \ | __ )|_   _|| \ | || ____| / ___| |  _ \ '
+    echo '  / _ \ | |_) ||  _ \  | |  |  \| ||  _|   \___ \ | | | |'
+    echo ' / ___ \|  __/ | |_) | | |  | |\  || |___   ___) || |_| |'
+    echo '/_/   \_\_|    |____/  |_|  |_| \_||_____| |____/ |____/ '
     echo -e "${NC}"
+    echo -e "${FG_WHITE}                     La forge agentique autonome${NC}"
+    echo ""
 }
 
 _confirm() {
@@ -109,40 +113,16 @@ _action_prune() {
 }
 
 # --- Actions de Développement Local ---
-_action_lint() {
-    _log "DEBUG" "Lancement de ESLint pour l'analyse statique du code..."
-    if pnpm run lint; then _log "INFO" "Analyse ESLint terminée. Aucune erreur trouvée."; else _log "ERROR" "ESLint a trouvé des erreurs."; fi
-}
-_action_lint_fix() {
-    _log "DEBUG" "Lancement de ESLint avec auto-correction..."
-    pnpm run lint:fix
-    _log "INFO" "Tentative de correction automatique terminée."
-}
-_action_format() {
-    _log "DEBUG" "Lancement de Prettier pour formater le code..."
-    pnpm run format
-    _log "INFO" "Formatage du code terminé."
-}
-_action_test() {
-    _log "DEBUG" "Lancement des tests avec Jest..."
-    pnpm run test
-}
-_action_check_types() {
-    _log "DEBUG" "Lancement du compilateur TypeScript pour la vérification des types..."
-    if pnpm exec tsc --noEmit; then
-        _log "INFO" "Vérification des types terminée. Aucune erreur trouvée."
-    else
-        _log "ERROR" "TypeScript a trouvé des erreurs de typage."
-    fi
-}
+_action_lint() { _log "DEBUG" "Lancement de ESLint..."; pnpm run lint; }
+_action_lint_fix() { _log "DEBUG" "Lancement de ESLint avec auto-correction..."; pnpm run lint:fix; _log "INFO" "Correction terminée."; }
+_action_format() { _log "DEBUG" "Lancement de Prettier..."; pnpm run format; _log "INFO" "Formatage terminé."; }
+_action_test() { _log "DEBUG" "Lancement des tests..."; pnpm run test; }
+_action_check_types() { _log "DEBUG" "Vérification des types TypeScript..."; pnpm exec tsc --noEmit; }
 _action_clean() {
     if _confirm "Voulez-vous vraiment supprimer le répertoire 'dist' ?"; then
-        _log "INFO" "Nettoyage du répertoire de build..."
-        pnpm run clean
-        _log "INFO" "Répertoire 'dist' supprimé."
+        _log "INFO" "Nettoyage du répertoire de build..."; pnpm run clean; _log "INFO" "'dist' supprimé.";
     else _log "INFO" "Opération annulée."; fi
 }
-
 
 # --- Boucle Principale de la Console ---
 _check_deps
@@ -189,5 +169,5 @@ while true; do
     fi
 done
 
-_log "INFO" "Fermeture de la console Agentic Prometheus. À la prochaine !"
+_log "INFO" "Fermeture de la console Agentic Forge. À la prochaine !"
 exit 0
