@@ -1,5 +1,39 @@
+# ==============================================================================
+# Docker Compose pour Agentic Forge - Version de Production
+# ==============================================================================
+# Cette configuration utilise un proxy de socket Docker pour sécuriser l'accès
+# et ne nécessite aucune modification de permission sur la machine hôte.
+# ------------------------------------------------------------------------------
+
 services:
-  # Base de données Redis
+  # ----------------------------------------------------------------------------
+  # Service 1: Proxy de Socket Docker (Le "Garde du Corps")
+  # ----------------------------------------------------------------------------
+  # Ce conteneur est le seul à avoir accès au vrai socket Docker de l'hôte.
+  # Il expose un nouveau socket sécurisé que l'agent utilisera.
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy
+    container_name: agentic_forge_docker_proxy
+    restart: unless-stopped
+    volumes:
+      # Montage du socket Docker de l'hôte, en lecture seule pour plus de sécurité.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      # --- LISTE BLANCHE DES PERMISSIONS ---
+      # On autorise uniquement les actions sur les conteneurs.
+      - CONTAINERS=1
+      # On autorise la consultation des événements Docker.
+      - EVENTS=1
+      # On autorise la consultation d'informations générales sur Docker.
+      - PING=1
+      - INFO=1
+      - VERSION=1
+    networks:
+      - agentic_network
+
+  # ----------------------------------------------------------------------------
+  # Service 2: Redis (Base de Données et File d'Attente)
+  # ----------------------------------------------------------------------------
   redis:
     image: redis:7.2-alpine
     container_name: agentic_forge_redis
@@ -18,27 +52,36 @@ services:
     networks:
       - agentic_network
 
-  # Serveur MCP principal
+  # ----------------------------------------------------------------------------
+  # Service 3: Serveur Principal de l'Agent
+  # ----------------------------------------------------------------------------
   server:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: agentic_forge_server
+    restart: unless-stopped
     ports:
       - "${HOST_PORT:-8080}:8080"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      # Lie le code source pour le développement et la création d'outils.
+      - .:/usr/src/app
+      # Le workspace de l'agent reste monté.
       - ./workspace:/usr/src/app/workspace
     depends_on:
       redis:
         condition: service_healthy
+      # L'agent doit attendre que son garde du corps soit prêt.
+      docker-proxy:
+        condition: service_started
     env_file: .env
     environment:
       - NODE_ENV=production
       - REDIS_HOST=redis
       - REDIS_PORT=6378
-      - DOCKER=true
-    restart: unless-stopped
+      # --- CONFIGURATION SÉCURISÉE ---
+      # L'agent communique maintenant avec le proxy via le réseau interne.
+      - DOCKER_HOST=tcp://docker-proxy:2375
     command: pnpm run start
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
@@ -49,14 +92,19 @@ services:
     networks:
       - agentic_network
 
-  # Interface Web
+  # ----------------------------------------------------------------------------
+  # Service 4: Interface Web
+  # ----------------------------------------------------------------------------
   web:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: agentic_forge_web
+    restart: unless-stopped
     ports:
       - "${WEB_PORT:-3000}:3000"
+    # Le volume de "public" n'est nécessaire que si vous modifiez le front-end en direct.
+    # En production pure, on pourrait même le retirer pour une image plus légère.
     volumes:
       - ./public:/usr/src/app/public
     depends_on:
@@ -66,10 +114,8 @@ services:
       - NODE_ENV=production
       - WEB_PORT=3000
       - MCP_SERVER_URL=http://server:8080
-    restart: unless-stopped
     command: pnpm run start:web
     healthcheck:
-      # --- CORRECTION APPLIQUÉE ICI ---
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
       interval: 30s
       timeout: 10s
@@ -78,35 +124,37 @@ services:
     networks:
       - agentic_network
 
-  # Worker pour les tâches asynchrones
+  # ----------------------------------------------------------------------------
+  # Service 5: Worker pour les Tâches Asynchrones
+  # ----------------------------------------------------------------------------
   worker:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: agentic_forge_worker
-    command: pnpm run start:worker
+    restart: unless-stopped
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/usr/src/app
       - ./workspace:/usr/src/app/workspace
     depends_on:
       redis:
         condition: service_healthy
+      docker-proxy:
+        condition: service_started
     env_file: .env
     environment:
       - NODE_ENV=production
       - REDIS_HOST=redis
       - REDIS_PORT=6378
-      - DOCKER=true
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "pgrep", "-f", "worker.js", "||", "exit", "1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      # --- CONFIGURATION SÉCURISÉE ---
+      - DOCKER_HOST=tcp://docker-proxy:2375
+    command: pnpm run start:worker
     networks:
       - agentic_network
 
+# ==============================================================================
+# Volumes & Réseaux
+# ==============================================================================
 volumes:
   redis_data:
     driver: local

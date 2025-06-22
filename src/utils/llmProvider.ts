@@ -1,4 +1,4 @@
-// src/utils/llmProvider.ts (version corrigée avec l'API v1)
+// src/utils/llmProvider.ts (version corrigée et robuste)
 
 import { config } from '../config.js';
 import logger from '../logger.js';
@@ -14,7 +14,6 @@ export async function getLlmResponse(
 ): Promise<string> {
   const log = logger.child({ module: 'LLMProvider' });
 
-  // CORRECTION : Passage de v1beta à v1 pour supporter les modèles plus récents.
   const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${config.LLM_MODEL_NAME}:generateContent?key=${config.LLM_API_KEY}`;
 
   const contents: GeminiContent[] = [];
@@ -59,10 +58,10 @@ export async function getLlmResponse(
         { response: data },
         'Invalid response structure from Gemini API',
       );
-      // Return an empty tool call to prevent the agent from getting stuck
       return `<tool_code>{"tool": "error", "parameters": {"message": "Invalid response structure from Gemini API. The model may have returned an empty response."}}</tool_code>`;
     }
     return content.trim();
+
   } catch (error) {
     log.error({ err: error }, 'Failed to get response from LLM');
     return `<tool_code>{"tool": "error", "parameters": {"message": "Failed to communicate with the LLM."}}</tool_code>`;
