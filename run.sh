@@ -126,54 +126,36 @@ audit_dependencies() {
 # UI Functions
 # ==============================================================================
 
-show_animation() {
-    clear
-    echo -e "${COLOR_ORANGE}"
-    echo '  ╔════ AGENTIC ════╗'
-    echo '  ║  ▓▓▓▓▓▓▓▓▓▓▓▓▓  ║'
-    echo '  ║ ▓ [FORGE] ▓▓▓▓▓ ║'
-    echo '  ║ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ ║'
-    echo -e "  ║ ▓▓▓▓${COLOR_RED}▒▒${NC}${COLOR_ORANGE}▓▓[⚒]▓ ║"
-    echo '  ╚══════════🐉═════╝'
-    sleep 0.5
-    
-    clear
-    echo -e "${COLOR_ORANGE}"
-    echo '  ╔════ AGENTIC ════╗'
-    echo '  ║  ▓▓▓▓▓▓▓▓▓▓▓▓▓  ║'
-    echo '  ║ ▓ [FORGE] ▓▓▓▓▓ ║'
-    echo '  ║ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ ║'
-    echo -e "  ║ ▓▓▓${COLOR_RED}▒▒▒${NC}${COLOR_ORANGE}▓[⚒]▓▓ ║"
-    echo '  ╚══════════🐉═════╝'
-    sleep 0.5
-}
-
 show_menu() {
     clear
-    echo -e "${COLOR_ORANGE}🔨 Agentic Forge - Console de Gestion${NC}"
-    echo -e "────────────────────────────────────────"
+    echo -e "${COLOR_ORANGE}"
+    echo '   ╔══════════════════════════════════╗'
+    echo '   ║      A G E N T I C  F O R G E    ║'
+    echo '   ╠═══════════════════╦══════════════╣'
+    echo -e "   ║        ${NC}🐉${COLOR_ORANGE}         ║       ${NC}⚒️${COLOR_ORANGE}      ║"
+    echo '   ╚═══════════════════╩══════════════╝'
+    echo -e "${NC}"
+    echo ""
+    echo -e "──────────────────────────────────────────"
     echo ""
     echo -e "  ${COLOR_CYAN}Docker & Services${NC}"
-    echo -e "   1) ${COLOR_GREEN}🟢 Démarrer${NC}         5) ${COLOR_BLUE}📊 Logs${NC}"
-    echo -e "   2) ${COLOR_YELLOW}🔄 Redémarrer${NC}       6) ${COLOR_BLUE}🐚 Shell${NC}"
-    echo -e "   3) ${COLOR_RED}🔴 Arrêter${NC}           7) ${COLOR_BLUE}🔨 Rebuild${NC}"
-    echo -e "   4) ${COLOR_CYAN}⚡ Statut${NC}           8) ${COLOR_RED}🧹 Nettoyer Docker${NC}"
+    printf "   1) ${COLOR_GREEN}🟢 Démarrer${NC}         5) ${COLOR_BLUE}📊 Logs${NC}\n"
+    printf "   2) ${COLOR_YELLOW}🔄 Redémarrer${NC}       6) ${COLOR_BLUE}🐚 Shell${NC}\n"
+    printf "   3) ${COLOR_RED}🔴 Arrêter${NC}           7) ${COLOR_BLUE}🔨 Rebuild${NC}\n"
+    printf "   4) ${COLOR_CYAN}⚡ Statut${NC}            8) ${COLOR_RED}🧹 Nettoyer Docker${NC}\n"
     echo ""
     echo -e "  ${COLOR_CYAN}Développement & Qualité${NC}"
-    echo -e "  10) ${COLOR_BLUE}🔍 Lint${NC}             13) ${COLOR_BLUE}🧪 Tests${NC}"
-    echo -e "  11) ${COLOR_BLUE}✨ Formater${NC}         14) ${COLOR_BLUE}📘 TypeCheck${NC}"
-    echo -e "  12) ${COLOR_RED}🧽 Nettoyer Dev${NC}      15) ${COLOR_BLUE}📋 Audit${NC}"
+    printf "  10) ${COLOR_BLUE}🔍 Lint${NC}             13) ${COLOR_BLUE}🧪 Tests${NC}\n"
+    printf "  11) ${COLOR_BLUE}✨ Formater${NC}         14) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
+    printf "  12) ${COLOR_RED}🧽 Nettoyer Dev${NC}      15) ${COLOR_BLUE}📋 Audit${NC}\n"
     echo ""
-    echo -e "  16) ${COLOR_RED}🚪 Quitter${NC}"
+    printf "  16) ${COLOR_RED}🚪 Quitter${NC}\n"
     echo ""
 }
 
 # ==============================================================================
 # Main Loop
 # ==============================================================================
-
-# Initial animation
-show_animation
 
 while true; do
     show_menu
