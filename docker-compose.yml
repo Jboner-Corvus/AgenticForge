@@ -9,22 +9,16 @@ services:
   # ----------------------------------------------------------------------------
   # Service 1: Proxy de Socket Docker (Le "Garde du Corps")
   # ----------------------------------------------------------------------------
-  # Ce conteneur est le seul à avoir accès au vrai socket Docker de l'hôte.
-  # Il expose un nouveau socket sécurisé que l'agent utilisera.
+  # ... (no changes here)
   docker-proxy:
     image: tecnativa/docker-socket-proxy
     container_name: agentic_forge_docker_proxy
     restart: unless-stopped
     volumes:
-      # Montage du socket Docker de l'hôte, en lecture seule pour plus de sécurité.
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
-      # --- LISTE BLANCHE DES PERMISSIONS ---
-      # On autorise uniquement les actions sur les conteneurs.
       - CONTAINERS=1
-      # On autorise la consultation des événements Docker.
       - EVENTS=1
-      # On autorise la consultation d'informations générales sur Docker.
       - PING=1
       - INFO=1
       - VERSION=1
@@ -64,14 +58,11 @@ services:
     ports:
       - "${HOST_PORT:-8080}:8080"
     volumes:
-      # Lie le code source pour le développement et la création d'outils.
       - .:/usr/src/app
-      # Le workspace de l'agent reste monté.
       - ./workspace:/usr/src/app/workspace
     depends_on:
       redis:
         condition: service_healthy
-      # L'agent doit attendre que son garde du corps soit prêt.
       docker-proxy:
         condition: service_started
     env_file: .env
@@ -79,10 +70,9 @@ services:
       - NODE_ENV=production
       - REDIS_HOST=redis
       - REDIS_PORT=6378
-      # --- CONFIGURATION SÉCURISÉE ---
-      # L'agent communique maintenant avec le proxy via le réseau interne.
       - DOCKER_HOST=tcp://docker-proxy:2375
-    command: pnpm run start
+    # --- CHANGE HERE ---
+    command: sh -c "pnpm run build && pnpm run start"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s
@@ -103,8 +93,6 @@ services:
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-3000}:3000"
-    # Le volume de "public" n'est nécessaire que si vous modifiez le front-end en direct.
-    # En production pure, on pourrait même le retirer pour une image plus légère.
     volumes:
       - ./public:/usr/src/app/public
     depends_on:
@@ -146,9 +134,9 @@ services:
       - NODE_ENV=production
       - REDIS_HOST=redis
       - REDIS_PORT=6378
-      # --- CONFIGURATION SÉCURISÉE ---
       - DOCKER_HOST=tcp://docker-proxy:2375
-    command: pnpm run start:worker
+    # --- CHANGE HERE ---
+    command: sh -c "pnpm run build && pnpm run start:worker"
     networks:
       - agentic_network
 

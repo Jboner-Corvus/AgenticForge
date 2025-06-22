@@ -14,11 +14,11 @@
     "baseUrl": "./"
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.test.ts"
+    "src/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "**/*.test.ts"
   ]
 }
