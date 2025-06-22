@@ -62,7 +62,7 @@ Avant de commencer, assurez-vous d'avoir les logiciels suivants installés :
 ```bash
 git clone https://github.com/votre-username/agentic-forge.git
 cd agentic-forge
-mv .env.example .env
+./run.sh
 ```
 
 ## 2. Configurer votre environnement
@@ -80,7 +80,7 @@ REDIS_PASSWORD="votre_mot_de_passe_redis"
 
 # Configuration LLM (pour usage local ou API)
 LLM_API_KEY="votre_cle_api_llm"  # Optionnel pour modèles locaux
-LLM_MODEL_NAME="gemini-1.5-pro"  # Ou votre modèle préféré
+LLM_MODEL_NAME="gemini-2.5-pro"  # Ou votre modèle préféré
 LLM_API_BASE_URL=""  # Optionnel pour endpoints personnalisés
 
 # Espace de travail

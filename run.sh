@@ -16,12 +16,49 @@ COLOR_CYAN='\e[0;36m'
 NC='\e[0m' # No Color
 
 # ==============================================================================
+# Functions for .env file management
+# ==============================================================================
+
+# Function to check for and create .env file if it doesn't exist
+check_and_create_env() {
+    if [ ! -f .env ]; then
+        echo -e "${COLOR_YELLOW}Le fichier .env n'a pas été trouvé. Création d'un nouveau fichier .env...${NC}"
+        cat > .env << EOF
+# Copiez ce fichier en .env et remplissez les valeurs.
+HOST_PORT=8080
+PORT=8080
+NODE_ENV=development
+LOG_LEVEL=info
+AUTH_TOKEN="votre clef"
+REDIS_HOST=redis
+REDIS_PORT=6378
+REDIS_HOST_PORT=6378
+REDIS_PASSWORD="votre clef"
+# L'URL de base n'est plus nécessaire pour l'API Google, commentez-la ou supprimez-la.
+# LLM_API_BASE_URL=
+WEB_PORT=3000
+# Utilisez votre clé d'API Google Gemini
+LLM_API_KEY="votre clef"
+
+# Spécifiez un modèle Gemini, par exemple "gemini-1.5-pro-latest"
+LLM_MODEL_NAME=gemini-2.5-flash
+PYTHON_SANDBOX_IMAGE="python:3.11-slim"
+BASH_SANDBOX_IMAGE="alpine:latest"
+CODE_EXECUTION_TIMEOUT_MS=60000
+EOF
+        echo -e "${COLOR_GREEN}Le fichier .env a été créé. Veuillez le remplir avec vos informations d'identification.${NC}"
+    fi
+}
+
+
+# ==============================================================================
 # Functions for Menu Actions
 # ==============================================================================
 
 # --- Docker & Services ---
 
 start_services() {
+    check_and_create_env
     echo -e "${COLOR_YELLOW}Démarrage des services Docker...${NC}"
     docker-compose up --build -d
     echo -e "${COLOR_GREEN}Services démarrés.${NC}"
