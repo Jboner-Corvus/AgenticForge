@@ -1,65 +1,61 @@
 # 🔨 Agentic Forge
 
-### Private, Local AI Agent Alternative
+### Une Alternative a MANUS Privée et Locale
 
 ![Agentic Forge Logo](https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge)
 
-**English** | [Français](#français) | [中文](#中文) | [Español](#español)
+**Français** | [English](#english) | [中文](#中文) | [Español](#español)
 
-A **100% local** autonomous AI agent that forges its own tools, writes code, and executes complex tasks while keeping all data on your device. Tailored for local reasoning models, it runs entirely on your hardware, ensuring complete privacy and zero cloud dependency.
+Un agent IA autonome **100% local** qui forge ses propres outils, écrit du code et exécute des tâches complexes tout en gardant toutes les données sur votre appareil. Conçu pour les modèles de raisonnement locaux, et adaptable à l'API de votre LLM favori, il garantit une confidentialité complète et aucune dépendance cloud.
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Licence](https://img.shields.io/badge/Licence-MIT-blue.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://docker.com)
 [![GitHub stars](https://img.shields.io/github/stars/votre-username/agentic-forge?style=social)](https://github.com/votre-username/agentic-forge)
 
 ---
 
-## Why Agentic Forge?
+## Pourquoi Agentic Forge ?
 
-🔒 **Fully Local & Private** - Everything runs on your machine — no cloud, no data sharing. Your files, conversations, and tools stay private.
+🔒 **Entièrement Local et Privé** - Tout fonctionne sur votre machine — pas de cloud, pas de partage de données. Vos fichiers, conversations et outils restent privés.
 
-🛠️ **Self-Forging Tools** - Agentic Forge can create its own tools — when it lacks a capability, it writes the code to build it.
+🛠️ **Auto-Forge d'Outils** - Agentic Forge peut créer ses propres outils — quand une capacité lui manque, il écrit le code pour la construire.
 
-💻 **Autonomous Coding Assistant** - Need code? It can write, debug, and run programs in Python, TypeScript, Bash, and more — all without supervision.
+💻 **Assistant de Codage Autonome** - Besoin de code ? Il peut écrire, déboguer et exécuter des programmes en Python, TypeScript, Bash et plus — sans supervision.
 
-🧠 **Smart Tool Selection** - You ask, it figures out the best tool for the job automatically. Like having a forge of experts ready to help.
+🧠 **Sélection Intelligente d'Outils** - Vous demandez, il trouve automatiquement le meilleur outil pour le travail. Comme avoir une forge d'experts prêts à aider.
 
-📋 **Plans & Executes Complex Tasks** - From file management to web scraping — it can split big tasks into steps and forge the tools to get things done.
+📋 **Planifie et Exécute des Tâches Complexes** - De la gestion de fichiers au scraping web — il peut diviser les grandes tâches en étapes et forger les outils pour accomplir le travail.
 
-🌐 **Smart Web Browsing** - Agentic Forge can browse the internet autonomously — search, read, extract info, automate tasks — all hands-free.
-
----
-
-## Demo
-
-> **Can you create a tool to analyze my CSV files, then use it to generate a report from sales_data.csv?**
-
-*[Demo showing the agent creating a CSV analysis tool, then using it to process data]*
-
-**Disclaimer**: This demo, including all files shown, are entirely fictional for demonstration purposes.
+🌐 **Navigation Web Intelligente** - Agentic Forge peut naviguer sur internet de manière autonome — rechercher, lire, extraire des infos, automatiser des tâches — le tout sans intervention.
 
 ---
 
-## 🛠️ ⚠️ Active Work in Progress
+## Démo
 
-🙏 This project started as an exploration into self-improving AI agents and has grown beyond expectations. Contributions, feedback, and patience are deeply appreciated as we forge ahead.
-
----
-
-## Prerequisites
-
-Before you begin, ensure you have the following software installed:
-
-- **Git**: For cloning the repository. [Download Git](https://git-scm.com/)
-- **Docker Engine & Docker Compose**: For running bundled services.
-  - [Install Docker Desktop](https://www.docker.com/products/docker-desktop/) (includes Docker Compose V2): Windows | Mac | Linux
-  - Or install separately: [Docker Engine](https://docs.docker.com/engine/install/) | [Docker Compose](https://docs.docker.com/compose/install/)
-- **Node.js 20+**: For the web interface. [Download Node.js](https://nodejs.org/)
-- **pnpm**: Package manager. Install with `npm install -g pnpm`
+> **"Peux-tu créer un outil pour analyser mes fichiers CSV, puis l'utiliser pour générer un rapport à partir de donnees_ventes.csv ?"**
 
 ---
 
-## 1. Clone the repository and setup
+## 🛠️ ⚠️ Travail Actif en Cours
+
+🙏 Ce projet a commencé comme une exploration des agents IA auto-améliorants et a grandi au-delà des attentes. Les contributions, commentaires et patience sont profondément appréciés alors que nous forgeons de l'avant.
+
+---
+
+## Prérequis
+
+Avant de commencer, assurez-vous d'avoir les logiciels suivants installés :
+
+- **Git** : Pour cloner le dépôt. [Télécharger Git](https://git-scm.com/)
+- **Docker Engine & Docker Compose** : Pour exécuter les services groupés.
+  - [Installer Docker Desktop](https://www.docker.com/products/docker-desktop/) (inclut Docker Compose V2) : Windows | Mac | Linux
+  - Ou installer séparément : [Docker Engine](https://docs.docker.com/engine/install/) | [Docker Compose](https://docs.docker.com/compose/install/)
+- **Node.js 20+** : Pour l'interface web. [Télécharger Node.js](https://nodejs.org/)
+- **pnpm** : Gestionnaire de paquets. Installer avec `npm install -g pnpm`
+
+---
+
+## 1. Cloner le dépôt et configuration
 
 ```bash
 git clone https://github.com/votre-username/agentic-forge.git
@@ -67,497 +63,497 @@ cd agentic-forge
 mv .env.example .env
 ```
 
-## 2. Configure your environment
+## 2. Configurer votre environnement
 
-Update the `.env` file with your settings:
+Mettez à jour le fichier `.env` avec vos paramètres :
 
 ```env
-# Authentication
-AUTH_TOKEN="your_strong_auth_token_here"
+# Authentification
+AUTH_TOKEN="votre_token_auth_fort_ici"
 
-# Redis Configuration
+# Configuration Redis
 REDIS_HOST="redis"
 REDIS_PORT="6378"
-REDIS_PASSWORD="your_redis_password"
+REDIS_PASSWORD="votre_mot_de_passe_redis"
 
-# LLM Configuration (for local or API usage)
-LLM_API_KEY="your_llm_api_key"  # Optional for local models
-LLM_MODEL_NAME="gemini-1.5-pro"  # Or your preferred model
-LLM_API_BASE_URL=""  # Optional for custom endpoints
+# Configuration LLM (pour usage local ou API)
+LLM_API_KEY="votre_cle_api_llm"  # Optionnel pour modèles locaux
+LLM_MODEL_NAME="gemini-1.5-pro"  # Ou votre modèle préféré
+LLM_API_BASE_URL=""  # Optionnel pour endpoints personnalisés
 
-# Workspace
-WORK_DIR="/path/to/your/workspace"  # Directory for file operations
+# Espace de travail
+WORK_DIR="/chemin/vers/votre/espace-travail"  # Répertoire pour opérations fichiers
 
 # Ports
 HOST_PORT="8080"
 WEB_PORT="3000"
 
-# Docker Images
+# Images Docker
 PYTHON_SANDBOX_IMAGE="python:3.11-alpine"
 BASH_SANDBOX_IMAGE="alpine:latest"
 
-# Optional API Keys
+# Clés API Optionnelles
 OPENAI_API_KEY=""
 GOOGLE_API_KEY=""
 ANTHROPIC_API_KEY=""
 ```
 
-**Important**: 
-- Set a strong `AUTH_TOKEN` (32+ characters recommended)
-- Update `WORK_DIR` to your desired workspace directory
-- API keys are optional if using local models
+**Important** : 
+- Définissez un `AUTH_TOKEN` fort (32+ caractères recommandés)
+- Mettez à jour `WORK_DIR` vers votre répertoire d'espace de travail désiré
+- Les clés API sont optionnelles si vous utilisez des modèles locaux
 
 ---
 
-## 3. Start Docker
+## 3. Démarrer Docker
 
-Make sure Docker is running:
+Assurez-vous que Docker fonctionne :
 
-**Linux/macOS:**
+**Linux/macOS :**
 ```bash
 sudo systemctl start docker
-# Or launch Docker Desktop
+# Ou lancez Docker Desktop
 ```
 
-**Windows:**
-Start Docker Desktop from the Start menu.
+**Windows :**
+Démarrez Docker Desktop depuis le menu Démarrer.
 
-Verify Docker is running:
+Vérifiez que Docker fonctionne :
 ```bash
 docker info
 ```
 
 ---
 
-## Setup for Local LLM (Recommended)
+## Configuration pour LLM Local (Recommandé)
 
-### Hardware Requirements
+### Exigences Matérielles
 
-| Model Size | GPU Memory | Performance |
-|------------|------------|-------------|
-| 7B | 8GB VRAM | ⚠️ Basic tasks only |
-| 14B | 12GB VRAM | ✅ Most tasks work well |
-| 32B | 24GB VRAM | 🚀 Excellent performance |
-| 70B+ | 48GB+ VRAM | 💪 Professional grade |
+| Taille Modèle | Mémoire GPU | Performance |
+|---------------|-------------|-------------|
+| 7B | 8GB VRAM | ⚠️ Tâches basiques seulement |
+| 14B | 12GB VRAM | ✅ La plupart des tâches fonctionnent bien |
+| 32B | 24GB VRAM | 🚀 Excellentes performances |
+| 70B+ | 48GB+ VRAM | 💪 Qualité professionnelle |
 
-### Setup with Ollama (Recommended)
+### Configuration avec Ollama (Recommandé)
 
-1. **Install Ollama**: [Download Ollama](https://ollama.ai/)
+1. **Installer Ollama** : [Télécharger Ollama](https://ollama.ai/)
 
-2. **Start Ollama**:
+2. **Démarrer Ollama** :
 ```bash
 ollama serve
 ```
 
-3. **Pull a reasoning model**:
+3. **Télécharger un modèle de raisonnement** :
 ```bash
 ollama pull deepseek-r1:14b
-# or for more power: ollama pull deepseek-r1:32b
+# ou pour plus de puissance : ollama pull deepseek-r1:32b
 ```
 
-4. **Update configuration** in `.env`:
+4. **Mettre à jour la configuration** dans `.env` :
 ```env
 LLM_MODEL_NAME="deepseek-r1:14b"
 LLM_API_BASE_URL="http://localhost:11434"
 ```
 
-### Alternative: LM Studio
+### Alternative : LM Studio
 
-1. Download and install [LM Studio](https://lmstudio.ai/)
-2. Load a model like `deepseek-r1-distill-qwen-14b`
-3. Start the local server
-4. Update `.env`:
+1. Téléchargez et installez [LM Studio](https://lmstudio.ai/)
+2. Chargez un modèle comme `deepseek-r1-distill-qwen-14b`
+3. Démarrez le serveur local
+4. Mettez à jour `.env` :
 ```env
 LLM_API_BASE_URL="http://localhost:1234"
 ```
 
 ---
 
-## Setup for API Usage
+## Configuration pour Usage API
 
-If you prefer cloud models or lack sufficient hardware:
+Si vous préférez les modèles cloud ou manquez de matériel suffisant :
 
-### 1. Choose an API Provider
+### 1. Choisir un Fournisseur API
 
-| Provider | Model Examples | API Key Link |
-|----------|----------------|--------------|
+| Fournisseur | Exemples de Modèles | Lien Clé API |
+|-------------|---------------------|--------------|
 | OpenAI | `gpt-4`, `gpt-3.5-turbo` | [platform.openai.com](https://platform.openai.com/signup) |
 | Google | `gemini-1.5-pro`, `gemini-1.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys) |
 | Anthropic | `claude-3-sonnet`, `claude-3-haiku` | [console.anthropic.com](https://console.anthropic.com/) |
 | DeepSeek | `deepseek-chat`, `deepseek-coder` | [platform.deepseek.com](https://platform.deepseek.com) |
 
-### 2. Set your API key
+### 2. Définir votre clé API
 
-**Linux/macOS:**
+**Linux/macOS :**
 ```bash
-export LLM_API_KEY="your_api_key_here"
-# Add to ~/.bashrc or ~/.zshrc for persistence
+export LLM_API_KEY="votre_cle_api_ici"
+# Ajoutez à ~/.bashrc ou ~/.zshrc pour la persistance
 ```
 
-**Windows:**
+**Windows :**
 ```cmd
-set LLM_API_KEY=your_api_key_here
+set LLM_API_KEY=votre_cle_api_ici
 ```
 
-### 3. Update `.env`:
+### 3. Mettre à jour `.env` :
 ```env
-LLM_API_KEY="your_api_key_here"
+LLM_API_KEY="votre_cle_api_ici"
 LLM_MODEL_NAME="gemini-1.5-pro"
 ```
 
 ---
 
-## Start Services and Run
+## Démarrer les Services et Exécuter
 
-### Using the Management Console (Recommended)
+### Utiliser la Console de Gestion (Recommandé)
 
-Make the script executable:
+Rendez le script exécutable :
 ```bash
 chmod +x run.sh
 ```
 
-Launch the interactive console:
+Lancez la console interactive :
 ```bash
 ./run.sh
 ```
 
-From the console menu:
-1. **Start** - Launch all services
-2. **Status** - Check service health
-3. **Logs** - Monitor real-time logs
+Depuis le menu de la console :
+1. **Démarrer** - Lancer tous les services
+2. **Statut** - Vérifier la santé des services
+3. **Logs** - Surveiller les logs en temps réel
 
-### Manual Docker Commands
+### Commandes Docker Manuelles
 
-Start all services:
+Démarrer tous les services :
 ```bash
 docker-compose up -d
 ```
 
-Check status:
+Vérifier le statut :
 ```bash
 docker-compose ps
 ```
 
-View logs:
+Voir les logs :
 ```bash
 docker-compose logs -f
 ```
 
-**⚠️ Warning**: Initial startup may take 10-15 minutes as Docker images are downloaded and services initialize. Wait until you see `backend: "GET /health HTTP/1.1" 200 OK` in the logs.
+**⚠️ Attention** : Le démarrage initial peut prendre 10-15 minutes car les images Docker sont téléchargées et les services s'initialisent. Attendez de voir `backend: "GET /health HTTP/1.1" 200 OK` dans les logs.
 
 ---
 
-## Access Points
+## Points d'Accès
 
-Once services are running:
+Une fois les services en marche :
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| **Web Interface** | http://localhost:3000 | Main user interface |
-| **API Endpoint** | http://localhost:8080/api/v1/agent/stream | Direct API access |
-| **Health Check** | http://localhost:8080/health | Service health status |
+| **Interface Web** | http://localhost:3000 | Interface utilisateur principale |
+| **Point d'API** | http://localhost:8080/api/v1/agent/stream | Accès API direct |
+| **Vérification Santé** | http://localhost:8080/health | Statut de santé des services |
 
-### Quick Test
+### Test Rapide
 
 ```bash
-# Health check
+# Vérification santé
 curl http://localhost:8080/health
 
-# API test
+# Test API
 curl -X POST http://localhost:8080/api/v1/agent/stream \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_AUTH_TOKEN" \
-  -d '{"goal": "Create a simple hello world Python script"}'
+  -H "Authorization: Bearer VOTRE_AUTH_TOKEN" \
+  -d '{"goal": "Crée un simple script Python hello world"}'
 ```
 
 ---
 
-## Usage Examples
+## Exemples d'Usage
 
-Once your services are running, try these examples:
+Une fois vos services en marche, essayez ces exemples :
 
-### 🔧 Tool Forging
+### 🔧 Forge d'Outils
 ```
-"I need a tool to convert CSV files to JSON format. Create it and then use it on my data.csv file."
-```
-
-### 💻 Code Generation
-```
-"Write a Python script that monitors a directory for new files and logs their details."
+"J'ai besoin d'un outil pour convertir des fichiers CSV en format JSON. Crée-le puis utilise-le sur mon fichier donnees.csv."
 ```
 
-### 🌐 Web Automation
+### 💻 Génération de Code
 ```
-"Search for the latest TypeScript best practices online and create a summary document."
-```
-
-### 📊 Data Analysis
-```
-"Analyze the sales_data.csv file in my workspace and create a visualization of trends."
+"Écris un script Python qui surveille un répertoire pour les nouveaux fichiers et enregistre leurs détails."
 ```
 
-### 🛠️ System Tasks
+### 🌐 Automatisation Web
 ```
-"Create a backup script for my important files and schedule it to run daily."
+"Recherche en ligne les dernières bonnes pratiques TypeScript et crée un document de résumé."
 ```
 
-**Note**: Be explicit in your requests. Instead of "Do you know about X?", ask "Search online for information about X and summarize it."
+### 📊 Analyse de Données
+```
+"Analyse le fichier donnees_ventes.csv dans mon espace de travail et crée une visualisation des tendances."
+```
+
+### 🛠️ Tâches Système
+```
+"Crée un script de sauvegarde pour mes fichiers importants et programme son exécution quotidienne."
+```
+
+**Note** : Soyez explicite dans vos demandes. Au lieu de "Est-ce que tu connais X ?", demandez "Recherche en ligne des informations sur X et résume-les."
 
 ---
 
-## Management Console (`run.sh`)
+## Console de Gestion (`run.sh`)
 
-The interactive console provides full control over your Agentic Forge instance:
+La console interactive fournit un contrôle complet sur votre instance Agentic Forge :
 
 ```
-🔨 Agentic Forge - Management Console
+🔨 Agentic Forge - Console de Gestion
 ────────────────────────────────────────
 
    Docker & Services
-1) 🟢 Start           5) 📊 Logs
-2) 🔄 Restart         6) 🐚 Shell
-3) 🔴 Stop            7) 🔨 Rebuild
-4) ⚡ Status          8) 🧹 Prune
+1) 🟢 Démarrer        5) 📊 Logs
+2) 🔄 Redémarrer      6) 🐚 Shell
+3) 🔴 Arrêter         7) 🔨 Rebuild
+4) ⚡ Statut          8) 🧹 Nettoyer
 
-   Development & Quality
+   Développement & Qualité
 10) 🔍 Lint           13) 🧪 Tests
-11) ✨ Format         14) 📘 TypeCheck
-12) 🧽 Clean          15) 📋 Audit
+11) ✨ Formater       14) 📘 TypeCheck
+12) 🧽 Nettoyer       15) 📋 Audit
 
-16) 🚪 Exit
+16) 🚪 Quitter
 ```
 
-### Key Commands
+### Commandes Clés
 
-| Option | Description | When to Use |
-|--------|-------------|-------------|
-| **1** | Start ecosystem | First launch or after stop |
-| **2** | Restart services | After configuration changes |
-| **4** | Check status | Health diagnostics |
-| **5** | Follow logs | Real-time monitoring |
-| **7** | Rebuild images | After major code changes |
+| Option | Description | Quand l'Utiliser |
+|--------|-------------|------------------|
+| **1** | Démarrer l'écosystème | Premier lancement ou après arrêt |
+| **2** | Redémarrer les services | Après changements de configuration |
+| **4** | Vérifier le statut | Diagnostics de santé |
+| **5** | Suivre les logs | Surveillance en temps réel |
+| **7** | Reconstruire les images | Après changements majeurs de code |
 
 ---
 
-## Architecture Overview
+## Aperçu de l'Architecture
 
-### 🏗️ Distributed Microservices
+### 🏗️ Microservices Distribués
 
-- **🧠 Server** (Port 8080): Central orchestration, LLM communication, session management
-- **⚡ Worker**: Async task processing, code execution, web automation
-- **🌐 Web Interface** (Port 3000): Modern React-based UI
-- **💾 Redis** (Port 6378): Task queue, session storage, caching
+- **🧠 Serveur** (Port 8080) : Orchestration centrale, communication LLM, gestion de session
+- **⚡ Worker** : Traitement de tâches async, exécution de code, automatisation web
+- **🌐 Interface Web** (Port 3000) : UI moderne basée sur React
+- **💾 Redis** (Port 6378) : File de tâches, stockage de session, mise en cache
 
-### 🔄 Tool Forging Process
+### 🔄 Processus de Forge d'Outils
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant S as Server
+    participant U as Utilisateur
+    participant S as Serveur
     participant L as LLM
     participant W as Worker
-    participant F as File System
+    participant F as Système Fichiers
 
-    U->>S: "Create CSV analyzer tool"
-    S->>L: Generate tool creation plan
-    L->>S: Tool code + specifications
-    S->>F: Write tool to filesystem
-    S->>S: Auto-restart to load tool
-    S->>W: Execute new tool
-    W->>S: Results
-    S->>U: Tool created and executed
+    U->>S: "Crée un outil d'analyse CSV"
+    S->>L: Génère plan de création d'outil
+    L->>S: Code d'outil + spécifications
+    S->>F: Écrit l'outil sur le système de fichiers
+    S->>S: Auto-redémarrage pour charger l'outil
+    S->>W: Exécute le nouvel outil
+    W->>S: Résultats
+    S->>U: Outil créé et exécuté
 ```
 
 ---
 
-## Development
+## Développement
 
-### Project Structure
+### Structure du Projet
 
 ```
 agentic-forge/
-├── 📁 src/                    # TypeScript source code
-│   ├── 📁 tools/             # Available tools
-│   │   ├── 📁 system/        # System tools (creation, restart)
-│   │   ├── 📁 fs/            # File system operations
-│   │   ├── 📁 code/          # Code execution
-│   │   ├── 📁 browser/       # Web automation
-│   │   └── 📁 generated/     # Auto-generated tools
-│   ├── 📁 prompts/           # LLM prompt templates
-│   ├── 📁 utils/             # Utilities and helpers
-│   ├── 📄 server.ts          # Main server
-│   ├── 📄 worker.ts          # Async worker
-│   └── 📄 webServer.ts       # Web interface
-├── 📁 workspace/             # Isolated workspace
-├── 📄 docker-compose.yml     # Service orchestration
-├── 📄 Dockerfile             # Container definition
-├── 📄 run.sh                 # Management console
-└── 📄 README.md              # This documentation
+├── 📁 src/                    # Code source TypeScript
+│   ├── 📁 tools/             # Outils disponibles
+│   │   ├── 📁 system/        # Outils système (création, redémarrage)
+│   │   ├── 📁 fs/            # Opérations système de fichiers
+│   │   ├── 📁 code/          # Exécution de code
+│   │   ├── 📁 browser/       # Automatisation web
+│   │   └── 📁 generated/     # Outils auto-générés
+│   ├── 📁 prompts/           # Templates de prompts LLM
+│   ├── 📁 utils/             # Utilitaires et assistants
+│   ├── 📄 server.ts          # Serveur principal
+│   ├── 📄 worker.ts          # Worker async
+│   └── 📄 webServer.ts       # Interface web
+├── 📁 workspace/             # Espace de travail isolé
+├── 📄 docker-compose.yml     # Orchestration services
+├── 📄 Dockerfile             # Définition conteneur
+├── 📄 run.sh                 # Console de gestion
+└── 📄 README.md              # Cette documentation
 ```
 
-### Adding Custom Tools
+### Ajouter des Outils Personnalisés
 
 ```typescript
-// src/tools/custom/myTool.tool.ts
+// src/tools/custom/monOutil.tool.ts
 import { z } from 'zod';
 import type { Tool, Ctx } from '../../types.js';
 
-export const myToolParams = z.object({
-  input: z.string().describe('Input parameter'),
+export const monOutilParams = z.object({
+  entree: z.string().describe('Paramètre d\'entrée'),
   options: z.number().default(1)
 });
 
-export const myTool: Tool<typeof myToolParams> = {
-  name: 'myCustomTool',
-  description: 'Description of what this tool does',
-  parameters: myToolParams,
+export const monOutil: Tool<typeof monOutilParams> = {
+  name: 'monOutilPersonnalise',
+  description: 'Description de ce que fait cet outil',
+  parameters: monOutilParams,
   execute: async (args, ctx: Ctx) => {
-    ctx.log.info('Executing custom tool', { args });
+    ctx.log.info('Exécution outil personnalisé', { args });
     
-    // Your tool logic here
-    const result = await processInput(args.input, args.options);
+    // Votre logique d'outil ici
+    const resultat = await traiterEntree(args.entree, args.options);
     
-    return result;
+    return resultat;
   }
 };
 ```
 
-Don't forget to add it to `src/tools/index.ts`:
+N'oubliez pas de l'ajouter à `src/tools/index.ts` :
 ```typescript
-import { myTool } from './custom/myTool.tool.js';
+import { monOutil } from './custom/monOutil.tool.js';
 
 export const allTools: Tool<any>[] = [
-  // ... existing tools
-  myTool,
+  // ... outils existants
+  monOutil,
 ];
 ```
 
 ---
 
-## Troubleshooting
+## Dépannage
 
-### Common Issues
+### Problèmes Courants
 
 #### ❌ "Docker not found"
 ```bash
-# Install Docker
+# Installer Docker
 curl -fsSL https://get.docker.com -o get-docker.sh
 sh get-docker.sh
 ```
 
-#### ❌ "Permission denied" for run.sh
+#### ❌ "Permission denied" pour run.sh
 ```bash
 chmod +x run.sh
 ```
 
 #### ❌ "Port already in use"
 ```bash
-# Check what's using the ports
+# Vérifier ce qui utilise les ports
 netstat -tulpn | grep :8080
 netstat -tulpn | grep :3000
 
-# Kill processes or change ports in docker-compose.yml
+# Tuer les processus ou changer les ports dans docker-compose.yml
 ```
 
-#### ❌ "Authentication failed"
-Check your `.env` file:
-- Ensure `AUTH_TOKEN` is set and matches what you're using
-- Verify the token has no trailing spaces
+#### ❌ "Authentification failed"
+Vérifiez votre fichier `.env` :
+- Assurez-vous que `AUTH_TOKEN` est défini et correspond à ce que vous utilisez
+- Vérifiez que le token n'a pas d'espaces en fin
 
 #### ❌ "Redis connection failed"
 ```bash
-# Check Redis logs
+# Vérifier les logs Redis
 docker-compose logs redis
 
-# Restart with fresh volumes
+# Redémarrer avec des volumes frais
 docker-compose down -v
 docker-compose up -d
 ```
 
 #### ❌ "LLM connection failed"
-- For local models: Ensure Ollama/LM Studio is running
-- For API models: Verify your API key is correct
-- Check the `LLM_API_BASE_URL` format (include `http://`)
+- Pour modèles locaux : Assurez-vous qu'Ollama/LM Studio fonctionne
+- Pour modèles API : Vérifiez que votre clé API est correcte
+- Vérifiez le format `LLM_API_BASE_URL` (incluez `http://`)
 
-### Getting Help
+### Obtenir de l'Aide
 
-1. **Check logs**: Use `./run.sh` → Option 5 for real-time logs
-2. **Verify configuration**: Ensure `.env` file is properly configured
-3. **Test components**: Use health check endpoints
-4. **Search issues**: Check existing GitHub issues
-5. **Ask for help**: Create a new issue with logs and configuration
+1. **Vérifier les logs** : Utilisez `./run.sh` → Option 5 pour les logs temps réel
+2. **Vérifier la configuration** : Assurez-vous que le fichier `.env` est correctement configuré
+3. **Tester les composants** : Utilisez les points de vérification santé
+4. **Rechercher les problèmes** : Vérifiez les issues GitHub existantes
+5. **Demander de l'aide** : Créez une nouvelle issue avec logs et configuration
 
 ---
 
 ## FAQ
 
-### Q: What hardware do I need to run locally?
+### Q : De quel matériel ai-je besoin pour fonctionner localement ?
 
-See the hardware requirements table above. For basic usage, 12GB VRAM is sufficient. For professional use, 24GB+ is recommended.
+Voir le tableau des exigences matérielles ci-dessus. Pour un usage basique, 12GB VRAM suffisent. Pour un usage professionnel, 24GB+ sont recommandés.
 
-### Q: Can it really run 100% locally?
+### Q : Peut-il vraiment fonctionner 100% localement ?
 
-Yes! With Ollama or LM Studio, all LLM processing, tool creation, and execution happen on your machine. No external API calls required.
+Oui ! Avec Ollama ou LM Studio, tout le traitement LLM, la création d'outils et l'exécution se font sur votre machine. Aucun appel API externe requis.
 
-### Q: How does tool forging work?
+### Q : Comment fonctionne la forge d'outils ?
 
-When the agent encounters a task it can't handle with existing tools, it:
-1. Analyzes the requirement
-2. Generates TypeScript code for a new tool
-3. Writes the tool to the filesystem
-4. Restarts itself to load the new tool
-5. Uses the new tool to complete the task
+Quand l'agent rencontre une tâche qu'il ne peut pas gérer avec les outils existants, il :
+1. Analyse l'exigence
+2. Génère du code TypeScript pour un nouvel outil
+3. Écrit l'outil sur le système de fichiers
+4. Se redémarre pour charger le nouvel outil
+5. Utilise le nouvel outil pour compléter la tâche
 
-### Q: Is it secure?
+### Q : Est-ce sécurisé ?
 
-Yes, with built-in security measures:
-- Docker sandboxing for code execution
-- No external network access for sensitive operations
-- Configurable timeouts and resource limits
-- Local data processing (when using local models)
+Oui, avec des mesures de sécurité intégrées :
+- Sandboxing Docker pour l'exécution de code
+- Pas d'accès réseau externe pour les opérations sensibles
+- Timeouts et limites de ressources configurables
+- Traitement de données local (lors de l'utilisation de modèles locaux)
 
-### Q: How do I contribute?
+### Q : Comment puis-je contribuer ?
 
-We welcome contributions! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Follow the existing code style
-4. Add tests for new functionality
-5. Submit a pull request
-
----
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+Nous accueillons les contributions ! Veuillez :
+1. Forker le dépôt
+2. Créer une branche de fonctionnalité
+3. Suivre le style de code existant
+4. Ajouter des tests pour les nouvelles fonctionnalités
+5. Soumettre une pull request
 
 ---
 
-## Acknowledgments
+## Licence
 
-- **[FastMCP](https://github.com/punkpeye/fastmcp)**: Robust MCP framework foundation
-- **[Docker](https://docker.com)**: Containerization and isolation
-- **[Redis](https://redis.io)**: High-performance data structures
-- **[Playwright](https://playwright.dev)**: Modern web automation
-- **Open Source Community**: For inspiration and collaboration
+Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour les détails.
+
+---
+
+## Remerciements
+
+- **[FastMCP](https://github.com/punkpeye/fastmcp)** : Fondation framework MCP robuste
+- **[Docker](https://docker.com)** : Conteneurisation et isolation
+- **[Redis](https://redis.io)** : Structures de données haute performance
+- **[Playwright](https://playwright.dev)** : Automatisation web moderne
+- **Communauté Open Source** : Pour l'inspiration et la collaboration
 
 ---
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/votre-username/agentic-forge/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/votre-username/agentic-forge/discussions)
-- **Documentation**: [Project Wiki](https://github.com/votre-username/agentic-forge/wiki)
+- **Issues** : [GitHub Issues](https://github.com/votre-username/agentic-forge/issues)
+- **Discussions** : [GitHub Discussions](https://github.com/votre-username/agentic-forge/discussions)
+- **Documentation** : [Wiki du Projet](https://github.com/votre-username/agentic-forge/wiki)
 
 ---
 
 <div align="center">
 
-**🔨 A blacksmith forges their hammers.**  
-**🤖 Agentic Forge forges its own capabilities.**
+**🔨 Un forgeron forge ses marteaux.**  
+**🤖 Agentic Forge forge ses propres capacités.**
 
-*Forge your technological future.*
+*Forgez votre avenir technologique.*
 
-[![Get Started](https://img.shields.io/badge/🚀_Get_Started-brightgreen?style=for-the-badge)](./run.sh)
+[![Commencer](https://img.shields.io/badge/🚀_Commencer-brightgreen?style=for-the-badge)](./run.sh)
 
 </div>
