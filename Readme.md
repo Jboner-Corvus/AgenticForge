@@ -1,12 +1,12 @@
 # 🔨 Agentic Forge
 
-### Une Alternative a MANUS Privée et Locale
+### Alternative d'Agent IA Privée et Locale
 
 ![Agentic Forge Logo](https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge)
 
 **Français** | [English](#english) | [中文](#中文) | [Español](#español)
 
-Un agent IA autonome **100% local** qui forge ses propres outils, écrit du code et exécute des tâches complexes tout en gardant toutes les données sur votre appareil. Conçu pour les modèles de raisonnement locaux, et adaptable à l'API de votre LLM favori, il garantit une confidentialité complète et aucune dépendance cloud.
+Un agent IA autonome **100% local** qui forge ses propres outils, écrit du code et exécute des tâches complexes tout en gardant toutes les données sur votre appareil. Basé sur le **protocole MCP (Model Context Protocol)** avec **FastMCP** comme fusée propulsive, il est conçu pour les modèles de raisonnement locaux et adaptable à l'API de votre LLM favori, garantissant une confidentialité complète et aucune dépendance cloud.
 
 [![Licence](https://img.shields.io/badge/Licence-MIT-blue.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://docker.com)
@@ -27,6 +27,8 @@ Un agent IA autonome **100% local** qui forge ses propres outils, écrit du code
 📋 **Planifie et Exécute des Tâches Complexes** - De la gestion de fichiers au scraping web — il peut diviser les grandes tâches en étapes et forger les outils pour accomplir le travail.
 
 🌐 **Navigation Web Intelligente** - Agentic Forge peut naviguer sur internet de manière autonome — rechercher, lire, extraire des infos, automatiser des tâches — le tout sans intervention.
+
+🚀 **Propulsé par FastMCP** - Utilise le protocole MCP (Model Context Protocol) avec FastMCP comme framework ultra-performant — une véritable fusée pour les interactions LLM.
 
 ---
 
@@ -531,7 +533,8 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour les dét
 
 ## Remerciements
 
-- **[FastMCP](https://github.com/punkpeye/fastmcp)** : Fondation framework MCP robuste
+- **[FastMCP](https://github.com/punkpeye/fastmcp)** : Framework MCP ultra-performant - la fusée qui propulse Agentic Forge 🚀
+- **[Model Context Protocol (MCP)](https://modelcontextprotocol.io/)** : Protocole révolutionnaire pour l'interaction avec les LLMs
 - **[Docker](https://docker.com)** : Conteneurisation et isolation
 - **[Redis](https://redis.io)** : Structures de données haute performance
 - **[Playwright](https://playwright.dev)** : Automatisation web moderne
