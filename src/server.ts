@@ -21,6 +21,7 @@ interface ServerSession {
 }
 const sessions = new Map<string, ServerSession>();
 
+// Nettoyage des sessions inactives
 setInterval(
   () => {
     const now = Date.now();
@@ -139,6 +140,7 @@ async function handleRequest(
   req: http.IncomingMessage,
   res: http.ServerResponse,
 ): Promise<void> {
+  // Configuration des en-têtes CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader(
@@ -146,12 +148,15 @@ async function handleRequest(
     'Content-Type, Authorization, X-Session-ID',
   );
 
+  // Gérer les requêtes pre-flight OPTIONS
   if (req.method === 'OPTIONS') {
     res.writeHead(200).end();
     return;
   }
 
   const url = new URL(req.url || '/', `http://${req.headers.host}`);
+
+  // Endpoint de vérification de santé
   if (url.pathname === '/health') {
     res
       .writeHead(200, { 'Content-Type': 'text/plain' })
@@ -159,6 +164,7 @@ async function handleRequest(
     return;
   }
 
+  // Endpoint pour le traitement principal de l'agent
   if (url.pathname === '/api/v1/agent/stream' && req.method === 'POST') {
     let body = '';
     req.on('data', (chunk) => {
@@ -191,7 +197,6 @@ async function handleRequest(
             .writeHead(200, { 'Content-Type': 'application/json' })
             .end(JSON.stringify({ response, sessionId: session.id }));
         } catch (parseError) {
-          // CORRECTION: Le message est maintenant fourni par getErrDetails.
           logger.error({
             ...getErrDetails(parseError),
             logContext: 'Error parsing request body',
@@ -207,7 +212,16 @@ async function handleRequest(
     });
     return;
   }
+  
+  // Endpoint pour compter les outils
+  if (url.pathname === '/api/v1/tools/count' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ toolCount: allTools.length }));
+    return;
+  }
 
+
+  // Gérer les routes non trouvées
   res
     .writeHead(404, { 'Content-Type': 'application/json' })
     .end(JSON.stringify({ error: 'Not Found' }));
@@ -215,10 +229,10 @@ async function handleRequest(
 
 async function startServer() {
   try {
+    // Charger les outils au démarrage
     allTools = await loadTools();
     const server = http.createServer((req, res) => {
       handleRequest(req, res).catch((err) => {
-        // CORRECTION: Le message est maintenant fourni par getErrDetails.
         logger.error({
           ...getErrDetails(err),
           logContext: 'Unhandled error in request handler',
@@ -234,7 +248,6 @@ async function startServer() {
       logger.info(`🐉 Agentic Forge server started on 0.0.0.0:${config.PORT}`);
     });
   } catch (error) {
-    // CORRECTION: Le message est maintenant fourni par getErrDetails.
     logger.fatal({
       ...getErrDetails(error),
       logContext: 'Impossible de démarrer le serveur.',

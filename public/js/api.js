@@ -1,6 +1,7 @@
 // public/js/api.js
 
-const API_URL = '/api/v1/agent/stream';
+const API_STREAM_URL = '/api/v1/agent/stream';
+const API_TOOLS_COUNT_URL = '/api/v1/tools/count';
 
 /**
  * Envoie un objectif à l'agent.
@@ -23,7 +24,7 @@ export async function sendGoal(goal, token, sessionId) {
     headers['X-Session-ID'] = sessionId;
   }
 
-  const response = await fetch(API_URL, {
+  const response = await fetch(API_STREAM_URL, {
     method: 'POST',
     headers,
     body: JSON.stringify({ goal }),
@@ -35,4 +36,21 @@ export async function sendGoal(goal, token, sessionId) {
   }
 
   return response.json();
+}
+
+/**
+ * Récupère le nombre d'outils détectés depuis le serveur.
+ * @returns {Promise<number>} Le nombre d'outils.
+ */
+export async function getToolCount() {
+  const response = await fetch(API_TOOLS_COUNT_URL);
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error(`Erreur API ${response.status}: ${errorBody}`);
+    return 'Erreur';
+  }
+  
+  const data = await response.json();
+  return data.toolCount;
 }

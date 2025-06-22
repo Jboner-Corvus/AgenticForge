@@ -1,15 +1,11 @@
 # ==============================================================================
-# Docker Compose pour Agentic Forge - Version de Production
+# Docker Compose pour Agentic Forge - Solution Complète
 # ==============================================================================
-# Cette configuration utilise un proxy de socket Docker pour sécuriser l'accès
-# et ne nécessite aucune modification de permission sur la machine hôte.
-# ------------------------------------------------------------------------------
 
 services:
   # ----------------------------------------------------------------------------
-  # Service 1: Proxy de Socket Docker (Le "Garde du Corps")
+  # Service 1: Proxy de Socket Docker (TOUTES LES PERMISSIONS)
   # ----------------------------------------------------------------------------
-  # ... (no changes here)
   docker-proxy:
     image: tecnativa/docker-socket-proxy
     container_name: agentic_forge_docker_proxy
@@ -17,16 +13,49 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
-      - CONTAINERS=1
-      - EVENTS=1
-      - PING=1
-      - INFO=1
-      - VERSION=1
+      # ✅ PERMISSIONS COMPLÈTES POUR AGENTIC FORGE
+      - CONTAINERS=1       # Gestion des conteneurs
+      - IMAGES=1           # Gestion des images
+      - NETWORKS=1         # Gestion des réseaux
+      - VOLUMES=1          # Gestion des volumes
+      - SERVICES=1         # Gestion des services
+      - SWARM=1            # Support Swarm
+      - SYSTEM=1           # Informations système
+      - EVENTS=1           # Événements Docker
+      - PING=1             # Health checks
+      - INFO=1             # Informations Docker
+      - VERSION=1          # Version Docker
+      - BUILD=1            # Construction d'images
+      - COMMIT=1           # Commits de conteneurs
+      - CREATE=1           # ✅ CRÉATION DE CONTENEURS
+      - START=1            # ✅ DÉMARRAGE
+      - STOP=1             # ✅ ARRÊT
+      - RESTART=1          # ✅ REDÉMARRAGE
+      - KILL=1             # ✅ KILL
+      - REMOVE=1           # ✅ SUPPRESSION
+      - EXEC=1             # ✅ EXÉCUTION DANS CONTENEURS
+      - RENAME=1           # Renommage
+      - PAUSE=1            # Pause/Unpause
+      - WAIT=1             # Attente
+      - LOGS=1             # Lecture des logs
+      - STATS=1            # Statistiques
+      - UPDATE=1           # Mise à jour
+      - ATTACH=1           # Attachement
+      - COPY=1             # Copie de fichiers
+      - ARCHIVE=1          # Archives
+      - DIFF=1             # Différences
+      - EXPORT=1           # Export
+      - IMPORT=1           # Import
+      - LOAD=1             # Chargement d'images
+      - SAVE=1             # Sauvegarde d'images
+      - TAG=1              # Tags d'images
+      - PUSH=1             # Push d'images
+      - PULL=1             # ✅ PULL D'IMAGES
     networks:
       - agentic_network
 
   # ----------------------------------------------------------------------------
-  # Service 2: Redis (Base de Données et File d'Attente)
+  # Service 2: Redis
   # ----------------------------------------------------------------------------
   redis:
     image: redis:7.2-alpine
@@ -47,7 +76,7 @@ services:
       - agentic_network
 
   # ----------------------------------------------------------------------------
-  # Service 3: Serveur Principal de l'Agent
+  # Service 3: Serveur Principal
   # ----------------------------------------------------------------------------
   server:
     build:
@@ -67,12 +96,11 @@ services:
         condition: service_started
     env_file: .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development  # ✅ Changé en development pour plus de logs
       - REDIS_HOST=redis
       - REDIS_PORT=6378
       - DOCKER_HOST=tcp://docker-proxy:2375
-    # --- CHANGE HERE ---
-    command: sh -c "pnpm run build && pnpm run start"
+    command: pnpm run start
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s
@@ -99,7 +127,7 @@ services:
       - server
     env_file: .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development  # ✅ Development mode
       - WEB_PORT=3000
       - MCP_SERVER_URL=http://server:8080
     command: pnpm run start:web
@@ -113,7 +141,7 @@ services:
       - agentic_network
 
   # ----------------------------------------------------------------------------
-  # Service 5: Worker pour les Tâches Asynchrones
+  # Service 5: Worker
   # ----------------------------------------------------------------------------
   worker:
     build:
@@ -131,12 +159,11 @@ services:
         condition: service_started
     env_file: .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - REDIS_HOST=redis
       - REDIS_PORT=6378
       - DOCKER_HOST=tcp://docker-proxy:2375
-    # --- CHANGE HERE ---
-    command: sh -c "pnpm run build && pnpm run start:worker"
+    command: pnpm run start:worker
     networks:
       - agentic_network
 

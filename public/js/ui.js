@@ -1,8 +1,9 @@
-// public/js/ui.js (version mise à jour)
+// public/js/ui.js
 
 const messagesContainer = document.getElementById('messagesContainer');
 const connectionStatusEl = document.getElementById('connectionStatus');
 const tokenStatusIndicator = document.getElementById('tokenStatusIndicator');
+const toolCountEl = document.getElementById('toolCount');
 
 function escapeHtml(text) {
   const div = document.createElement('div');
@@ -14,16 +15,17 @@ function formatMessage(text) {
   const thoughtRegex = /<thought>([\s\S]*?)<\/thought>/g;
   const toolRegex = /<tool_code>([\s\S]*?)<\/tool_code>/g;
 
-  let html = text.replace(thoughtRegex, (match, thought) => {
-    return `<div class="thought-bubble"><strong>Pensée :</strong> ${escapeHtml(thought.trim())}</div>`;
+  let html = escapeHtml(text).replace(thoughtRegex, (match, thought) => {
+    return `<div class="thought-bubble"><strong>Pensée :</strong> ${thought.trim()}</div>`;
   });
 
   html = html.replace(toolRegex, (match, toolCode) => {
     try {
+      // Note: The outer text is already escaped, so we parse the original unescaped code
       const tool = JSON.parse(toolCode);
-      return `<div class="tool-call"><strong>Outil : ${tool.tool}</strong><pre>${escapeHtml(JSON.stringify(tool.parameters, null, 2))}</pre></div>`;
+      return `<div class="tool-call"><strong>Outil : ${escapeHtml(tool.tool)}</strong><pre>${escapeHtml(JSON.stringify(tool.parameters, null, 2))}</pre></div>`;
     } catch (e) {
-      return `<div class="tool-call"><strong>Outil mal formé</strong></div>`;
+      return `<div class="tool-call"><strong>Outil mal formé</strong><pre>${escapeHtml(toolCode)}</pre></div>`;
     }
   });
 
@@ -31,6 +33,7 @@ function formatMessage(text) {
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n/g, '<br>');
 }
+
 
 function getAvatar(sender) {
   switch (sender) {
@@ -48,10 +51,11 @@ function getAvatar(sender) {
 export function addMessage(text, sender) {
   const messageDiv = document.createElement('div');
   messageDiv.className = `message ${sender}`;
+  const rawText = text; // Keep the raw text for parsing
   messageDiv.innerHTML = `
         <div class="message-avatar">${getAvatar(sender)}</div>
         <div class="message-content">
-            <div class="message-text">${formatMessage(text)}</div>
+            <div class="message-text">${formatMessage(rawText)}</div>
         </div>`;
   messagesContainer.appendChild(messageDiv);
   scrollToBottom();
@@ -103,6 +107,13 @@ export function updateTokenStatus(isSet) {
     tokenStatusIndicator.classList.remove('valid');
   }
 }
+
+export function updateToolCount(count) {
+  if (toolCountEl) {
+    toolCountEl.textContent = count;
+  }
+}
+
 
 function scrollToBottom() {
   messagesContainer.scrollTop = messagesContainer.scrollHeight;

@@ -1,12 +1,13 @@
-// public/js/main.js (version mise à jour)
+// public/js/main.js
 
-import { sendGoal } from './api.js';
+import { sendGoal, getToolCount } from './api.js';
 import {
   addMessage,
   showTypingIndicator,
   hideTypingIndicator,
   updateTokenStatus,
   updateUserMessage,
+  updateToolCount,
 } from './ui.js';
 
 // --- État de l'application ---
@@ -44,6 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
     'assistant',
   );
 
+  // Récupérer le nombre d'outils au démarrage
+  fetchAndDisplayToolCount();
+
   // Écouteurs d'événements
   elements.chatForm.addEventListener('submit', handleSendMessage);
   elements.saveTokenBtn.addEventListener('click', saveToken);
@@ -60,6 +64,19 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- Fonctions ---
+
+/**
+ * Récupère et affiche le nombre d'outils.
+ */
+async function fetchAndDisplayToolCount() {
+  try {
+    const count = await getToolCount();
+    updateToolCount(count);
+  } catch (error) {
+    console.error('Échec de la récupération du nombre d\'outils:', error);
+    updateToolCount('N/A');
+  }
+}
 
 /**
  * Gère le changement d'état d'un interrupteur.
@@ -142,12 +159,10 @@ async function handleSendMessage(event) {
       data.response ||
       "L'agent a terminé mais n'a fourni aucune réponse textuelle.";
 
-    // CORRECTION : On cache l'indicateur de frappe et on AJOUTE un nouveau message pour l'assistant
     hideTypingIndicator();
     addMessage(responseText, 'assistant');
   } catch (error) {
     const errorMessage = `❌ Erreur : ${error.message}`;
-    // CORRECTION : On cache l'indicateur et on AJOUTE un message d'erreur
     hideTypingIndicator();
     addMessage(errorMessage, 'assistant');
     console.error(error);
