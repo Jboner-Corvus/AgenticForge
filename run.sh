@@ -16,7 +16,7 @@ COLOR_CYAN='\e[0;36m'
 NC='\e[0m' # No Color
 
 # ==============================================================================
-# Functions for .env file management
+# Functions for .env file management and system checks
 # ==============================================================================
 
 # Function to check for and create .env file if it doesn't exist
@@ -50,6 +50,50 @@ EOF
     fi
 }
 
+# Function to check Docker permissions and prompt for a fix
+check_docker_permissions() {
+    # Vérifie si la commande docker existe
+    if ! command -v docker &> /dev/null; then
+        echo -e "${COLOR_RED}La commande 'docker' est introuvable. Assurez-vous que Docker est installé et dans votre PATH.${NC}"
+        exit 1
+    fi
+
+    # Vérifie si le groupe 'docker' existe
+    if ! getent group docker > /dev/null; then
+        echo -e "${COLOR_YELLOW}Le groupe 'docker' n'existe pas. Tentative de création...${NC}"
+        sudo groupadd docker
+        if [ $? -ne 0 ]; then
+            echo -e "${COLOR_RED}Échec de la création du groupe 'docker'. Veuillez le créer manuellement et réessayer.${NC}"
+            exit 1
+        fi
+    fi
+
+    # Vérifie si l'utilisateur est dans le groupe docker
+    if ! id -nG "$USER" | grep -qw "docker"; then
+        echo -e "${COLOR_RED}ATTENTION : Votre utilisateur '$USER' ne fait pas partie du groupe 'docker'.${NC}"
+        echo -e "${COLOR_YELLOW}Cela est nécessaire pour que l'application puisse communiquer avec Docker sans utiliser 'sudo' à chaque fois.${NC}"
+        read -p "Voulez-vous que le script tente d'ajouter '$USER' au groupe 'docker' ? (o/N) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Oo]$ ]]; then
+            echo -e "${COLOR_YELLOW}Exécution de 'sudo usermod -aG docker ${USER}'...${NC}"
+            echo "Veuillez entrer votre mot de passe si demandé."
+            sudo usermod -aG docker "${USER}"
+            if [ $? -eq 0 ]; then
+                echo -e "${COLOR_GREEN}Utilisateur ajouté au groupe 'docker' avec succès.${NC}"
+                echo -e "${COLOR_RED}IMPORTANT : Vous devez vous déconnecter et vous reconnecter complètement pour que ce changement prenne effet.${NC}"
+                echo -e "${COLOR_YELLOW}Alternativement, vous pouvez exécuter 'newgrp docker' dans votre terminal pour appliquer les changements à cette session, puis relancer ce script.${NC}"
+                read -p "Appuyez sur Entrée pour quitter le script et appliquer les changements."
+                exit 0
+            else
+                echo -e "${COLOR_RED}Échec de l'ajout de l'utilisateur au groupe 'docker'. Veuillez le faire manuellement.${NC}"
+                exit 1
+            fi
+        else
+            echo -e "${COLOR_GREEN}Opération annulée. L'application risque de rencontrer des erreurs de permission Docker.${NC}"
+            read -p "Appuyez sur Entrée pour continuer malgré tout..."
+        fi
+    fi
+}
 
 # ==============================================================================
 # Functions for Menu Actions
@@ -193,6 +237,9 @@ show_menu() {
 # ==============================================================================
 # Main Loop
 # ==============================================================================
+
+# Vérification unique des permissions Docker au démarrage du script
+check_docker_permissions
 
 while true; do
     show_menu
