@@ -1,14 +1,13 @@
 // src/utils/errorUtils.ts
 import { ERROR_STACK_TRACE_MAX_LENGTH } from './constants.js';
 
+// CORRECTION: Retour à la définition de base, sans signature d'index.
 export interface ErrorDetails {
   message: string;
   name: string;
   type?: string;
   details?: unknown;
   stack?: string;
-  // CORRECTION: Remplacement de 'any' par 'unknown' pour satisfaire la règle no-explicit-any d'ESLint.
-  [key: string]: unknown;
 }
 
 export class AppErrorBase extends Error {
@@ -23,6 +22,7 @@ export class AppErrorBase extends Error {
   }
 }
 
+// ... Le reste de la classe reste identique
 export class EnqueueTaskError extends AppErrorBase {
   constructor(message: string, details?: unknown) {
     super(message, 'EnqueueTaskError', details);

@@ -44,7 +44,6 @@ export const createToolTool: Tool<typeof createToolParams> = {
     "Écrit un nouveau fichier d'outil. DOIT être suivi par 'system_restartServer' pour le charger.",
   parameters: createToolParams,
   execute: async (args, ctx: Ctx) => {
-    // CORRECTION LINT: 'description' est maintenant utilisé dans le template.
     const { tool_name, description, parameters_schema, execute_function } =
       args;
     const toolVarName = toCamelCase(tool_name);
@@ -54,13 +53,14 @@ export const createToolTool: Tool<typeof createToolParams> = {
     try {
       ctx.log.warn('AGENT IS CREATING A NEW TOOL.', { tool: tool_name });
 
-      // Remplacement plus simple et direct
-      const toolFileContent = TOOL_TEMPLATE.replace(/%s/g, tool_name) // Nom de l'outil
-        .replace(/%s/g, description) // Description
-        .replace(/%sParams/g, `${toolVarName}Params`)
-        .replace(/%sTool/g, `${toolVarName}Tool`)
-        .replace('z.object(%s)', `z.object(${parameters_schema})`)
-        .replace('execute: %s', `execute: ${execute_function}`);
+      const toolFileContent = TOOL_TEMPLATE.replace(/%s/g, (match) => {
+        if (match === '%sParams') return `${toolVarName}Params`;
+        if (match === '%sTool') return `${toolVarName}Tool`;
+        if (match === 'z.object(%s)') return `z.object(${parameters_schema})`;
+        if (match === 'execute: %s') return `execute: ${execute_function}`;
+        if (match.includes("Description de l'outil")) return description;
+        return tool_name;
+      });
 
       await fs.mkdir(GENERATED_TOOLS_DIR, { recursive: true });
       await fs.writeFile(toolFilePath, toolFileContent, 'utf-8');
@@ -79,8 +79,13 @@ export const createToolTool: Tool<typeof createToolParams> = {
       return `${output}\n\n${successMessage}`;
     } catch (error) {
       const errorMessage = `Échec de la création de l'outil: ${(error as Error).message}`;
-      // CORRECTION APPLIQUÉE : On passe l'objet d'erreur directement.
-      ctx.log.error(errorMessage, getErrDetails(error));
+      // CORRECTION DÉFINITIVE : Séparation du message et de l'objet de données.
+      const errDetails = getErrDetails(error);
+      ctx.log.error(errorMessage, {
+        name: errDetails.name,
+        message: errDetails.message,
+        stack: errDetails.stack,
+      });
       return `Erreur: ${errorMessage}`;
     }
   },

@@ -25,9 +25,12 @@ export const restartServerTool: Tool<typeof restartServerParams> = {
       command,
       (error: ExecException | null, stdout: string, stderr: string) => {
         if (error) {
-          // CORRECTION APPLIQUÉE
+          // CORRECTION DÉFINITIVE : Séparation du message et de l'objet de données.
+          const errDetails = getErrDetails(error);
           ctx.log.error('Failed to execute restart command.', {
-            error: getErrDetails(error),
+            name: errDetails.name,
+            message: errDetails.message,
+            stack: errDetails.stack,
             stdout,
             stderr,
           });

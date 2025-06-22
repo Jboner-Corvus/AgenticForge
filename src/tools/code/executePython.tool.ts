@@ -26,9 +26,14 @@ export const executePythonTool: Tool<typeof executePythonParams> = {
       if (result.stderr) output += `--- STDERR ---\n${result.stderr}\n`;
       return output;
     } catch (error) {
-      // CORRECTION APPLIQUÉE : On passe l'objet d'erreur directement.
-      ctx.log.error('Python sandbox execution failed', getErrDetails(error));
-      return `Error: Failed to execute Python code. ${(error as Error).message}`;
+      // CORRECTION DÉFINITIVE : Séparation du message et de l'objet de données.
+      const errDetails = getErrDetails(error);
+      ctx.log.error('Python sandbox execution failed', {
+        name: errDetails.name,
+        message: errDetails.message,
+        stack: errDetails.stack,
+      });
+      return `Error: Failed to execute Python code. ${errDetails.message}`;
     }
   },
 };
