@@ -1,9 +1,15 @@
 // src/utils/toolLoader.ts
 import { promises as fs } from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url'; // <--- AJOUT IMPORTANT
 import type { Tool } from '../types.js';
 import logger from '../logger.js';
 import { getErrDetails } from './errorUtils.js';
+
+// --- AJOUTS IMPORTANTS POUR LA COMPATIBILITÉ ES MODULES ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// ---------------------------------------------------------
 
 const TOOLS_DIR = path.resolve(process.cwd(), 'src/tools');
 
@@ -40,6 +46,8 @@ async function findToolFiles(dir: string): Promise<string[]> {
  * @returns Une promesse qui se résout avec un tableau de tous les outils chargés.
  */
 export async function loadTools(): Promise<Tool[]> {
+  // --- CORRECTION DE LA LOGIQUE D'ORIGINE ---
+  // La logique `runningInDist` est maintenant fiable grâce à la définition de `__dirname`
   const runningInDist = __dirname.includes('dist');
   const toolsDirRelative = runningInDist
     ? path.join(__dirname, '..', 'tools')

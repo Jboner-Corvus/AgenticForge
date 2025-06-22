@@ -104,47 +104,47 @@ check_docker_permissions() {
 start_services() {
     check_and_create_env
     echo -e "${COLOR_YELLOW}Démarrage des services Docker...${NC}"
-    docker-compose up --build -d
+    docker compose up --build -d
     echo -e "${COLOR_GREEN}Services démarrés.${NC}"
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 restart_services() {
     echo -e "${COLOR_YELLOW}Redémarrage des services Docker...${NC}"
-    docker-compose down
-    docker-compose up --build -d
+    docker compose down
+    docker compose up --build -d
     echo -e "${COLOR_GREEN}Services redémarrés.${NC}"
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 stop_services() {
     echo -e "${COLOR_YELLOW}Arrêt des services Docker...${NC}"
-    docker-compose down
+    docker compose down
     echo -e "${COLOR_GREEN}Services arrêtés.${NC}"
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 show_status() {
     echo -e "${COLOR_CYAN}Statut des conteneurs Docker :${NC}"
-    docker-compose ps
+    docker compose ps
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 show_logs() {
     echo -e "${COLOR_CYAN}Affichage des logs (Ctrl+C pour quitter)...${NC}"
-    docker-compose logs -f
+    docker compose logs -f
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 shell_access() {
     echo -e "${COLOR_YELLOW}Ouverture d'un shell dans le conteneur '${APP_SERVICE_NAME}'...${NC}"
-    docker-compose exec "${APP_SERVICE_NAME}" /bin/bash
+    docker compose exec "${APP_SERVICE_NAME}" /bin/bash
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 rebuild_services() {
     echo -e "${COLOR_YELLOW}Reconstruction des images Docker sans cache...${NC}"
-    docker-compose build --no-cache
+    docker compose build --no-cache
     echo -e "${COLOR_GREEN}Reconstruction terminée. Pensez à redémarrer les services.${NC}"
     read -p "Appuyez sur Entrée pour continuer..."
 }
@@ -155,7 +155,7 @@ clean_docker() {
     echo
     if [[ $REPLY =~ ^[Oo]$ ]]; then
         echo -e "${COLOR_YELLOW}Nettoyage du système Docker...${NC}"
-        docker-compose down -v --remove-orphans
+        docker compose down -v --remove-orphans
         echo -e "${COLOR_GREEN}Nettoyage terminé.${NC}"
     else
         echo -e "${COLOR_GREEN}Opération annulée.${NC}"
@@ -167,19 +167,19 @@ clean_docker() {
 
 lint_code() {
     echo -e "${COLOR_YELLOW}Lancement du linter sur le code source...${NC}"
-    docker-compose exec "${APP_SERVICE_NAME}" npm run lint
+    docker compose exec "${APP_SERVICE_NAME}" npm run lint
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 format_code() {
     echo -e "${COLOR_YELLOW}Formatage du code avec Prettier...${NC}"
-    docker-compose exec "${APP_SERVICE_NAME}" npm run format
+    docker compose exec "${APP_SERVICE_NAME}" npm run format
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 clean_dev() {
     echo -e "${COLOR_YELLOW}Nettoyage de l'environnement de développement (node_modules, dist)...${NC}"
-    docker-compose exec "${APP_SERVICE_NAME}" sh -c "rm -rf node_modules dist && npm install"
+    docker compose exec "${APP_SERVICE_NAME}" sh -c "rm -rf node_modules dist && npm install"
     echo -e "${COLOR_GREEN}Nettoyage et réinstallation des dépendances terminés.${NC}"
     read -p "Appuyez sur Entrée pour continuer..."
 }
@@ -187,19 +187,19 @@ clean_dev() {
 run_tests() {
     echo -e "${COLOR_YELLOW}Lancement des tests...${NC}"
     # Note: The current package.json has no test script defined.
-    docker-compose exec "${APP_SERVICE_NAME}" npm test
+    docker compose exec "${APP_SERVICE_NAME}" npm test
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 type_check() {
     echo -e "${COLOR_YELLOW}Vérification des types avec TypeScript...${NC}"
-    docker-compose exec "${APP_SERVICE_NAME}" npx tsc --noEmit
+    docker compose exec "${APP_SERVICE_NAME}" npx tsc --noEmit
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 audit_dependencies() {
     echo -e "${COLOR_YELLOW}Audit des dépendances NPM...${NC}"
-    docker-compose exec "${APP_SERVICE_NAME}" npm audit
+    docker compose exec "${APP_SERVICE_NAME}" npm audit
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
