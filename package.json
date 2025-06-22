@@ -5,16 +5,16 @@
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
-    "start": "node dist/server.js",
-    "start:worker": "node dist/worker.js",
-    "start:web": "node dist/webServer.js",
+    "start": "node -r tsconfig-paths/register dist/server.js",
+    "start:worker": "node -r tsconfig-paths/register dist/worker.js",
+    "start:web": "node -r tsconfig-paths/register dist/webServer.js",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "dev": "pnpm run build && pnpm exec concurrently \"pnpm run start\" \"pnpm run start:worker\" \"pnpm run start:web\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,js,json,md}\"",
-    "test": "jest",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "clean": "rm -rf dist",
     "prepare": "husky"
   },
@@ -76,42 +76,18 @@
     ]
   },
   "jest": {
-    "preset": "ts-jest",
+    "preset": "ts-jest/presets/default-esm",
     "testEnvironment": "node",
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js",
-      "jsx",
-      "json",
-      "node"
-    ],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
     "transform": {
-      "^.+\\.(ts|tsx)$": [
+      "^.+\\.tsx?$": [
         "ts-jest",
         {
           "useESM": true
         }
       ]
-    },
-    "extensionsToTreatAsEsm": [
-      ".ts",
-      ".tsx"
-    ],
-    "moduleNameMapping": {
-      "^@/(.*)$": "<rootDir>/src/$1",
-      "^(./.*)\\.js$": "$1"
-    },
-    "collectCoverageFrom": [
-      "src/**/*.ts",
-      "!src/types.ts",
-      "!src/server.ts",
-      "!src/worker.ts",
-      "!src/config.ts",
-      "!src/logger.ts",
-      "!src/queue.ts",
-      "!src/**/index.ts",
-      "!src/**/constants.ts"
-    ]
+    }
   }
 }

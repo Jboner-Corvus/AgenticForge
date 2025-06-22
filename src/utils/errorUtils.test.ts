@@ -1,5 +1,5 @@
 // src/utils/errorUtils.test.ts
-import { getErrDetails, AppErrorBase } from './errorUtils.js';
+import { getErrDetails, AppErrorBase } from './errorUtils';
 
 describe('ErrorUtils', () => {
   describe('getErrDetails', () => {

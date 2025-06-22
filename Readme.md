@@ -48,12 +48,12 @@ Un agent IA autonome **100% local** qui forge ses propres outils, écrit du code
 
 Avant de commencer, assurez-vous d'avoir les logiciels suivants installés :
 
--   **Git** : Pour cloner le dépôt. [Télécharger Git](https://git-scm.com/)
--   **Docker Engine & Docker Compose** : Pour exécuter les services groupés.
-    -   [Installer Docker Desktop](https://www.docker.com/products/docker-desktop/) (inclut Docker Compose V2) : Windows | Mac | Linux
-    -   Ou installer séparément : [Docker Engine](https://docs.docker.com/engine/install/) | [Docker Compose](https://docs.docker.com/compose/install/)
--   **Node.js 20+** : Pour l'interface web. [Télécharger Node.js](https://nodejs.org/)
--   **pnpm** : Gestionnaire de paquets. Installer avec `npm install -g pnpm`
+- **Git** : Pour cloner le dépôt. [Télécharger Git](https://git-scm.com/)
+- **Docker Engine & Docker Compose** : Pour exécuter les services groupés.
+  - [Installer Docker Desktop](https://www.docker.com/products/docker-desktop/) (inclut Docker Compose V2) : Windows | Mac | Linux
+  - Ou installer séparément : [Docker Engine](https://docs.docker.com/engine/install/) | [Docker Compose](https://docs.docker.com/compose/install/)
+- **Node.js 20+** : Pour l'interface web. [Télécharger Node.js](https://nodejs.org/)
+- **pnpm** : Gestionnaire de paquets. Installer avec `npm install -g pnpm`
 
 ---
 
@@ -104,8 +104,9 @@ CODE_EXECUTION_TIMEOUT_MS=60000
 ```
 
 **Important** :
--   Définissez un `AUTH_TOKEN` fort (32+ caractères recommandés)
--   Les clés API sont optionnelles si vous utilisez des modèles locaux
+
+- Définissez un `AUTH_TOKEN` fort (32+ caractères recommandés)
+- Les clés API sont optionnelles si vous utilisez des modèles locaux
 
 ---
 
@@ -119,12 +120,12 @@ Assurez-vous que Docker est en cours d'exécution avant de continuer.
 
 ### Exigences Matérielles
 
-| Taille Modèle | Mémoire GPU | Performance |
-| --- | --- | --- |
-| 7B | 8GB VRAM | ⚠️ Tâches basiques seulement |
-| 14B | 12GB VRAM | ✅ La plupart des tâches fonctionnent bien |
-| 32B | 24GB VRAM | 🚀 Excellentes performances |
-| 70B+ | 48GB+ VRAM | 💪 Qualité professionnelle |
+| Taille Modèle | Mémoire GPU | Performance                                |
+| ------------- | ----------- | ------------------------------------------ |
+| 7B            | 8GB VRAM    | ⚠️ Tâches basiques seulement               |
+| 14B           | 12GB VRAM   | ✅ La plupart des tâches fonctionnent bien |
+| 32B           | 24GB VRAM   | 🚀 Excellentes performances                |
+| 70B+          | 48GB+ VRAM  | 💪 Qualité professionnelle                 |
 
 ### Configuration avec Ollama (Recommandé)
 
@@ -162,27 +163,30 @@ Si vous préférez les modèles cloud ou manquez de matériel suffisant :
 
 ### 1. Choisir un Fournisseur API
 
-| Fournisseur | Exemples de Modèles | Lien Clé API |
-|---|---|---|
-| OpenAI | `gpt-4`, `o1` | [platform.openai.com](https://platform.openai.com/signup) |
-| Google | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys) |
-| Anthropic | `claude-4-sonnet`, `claude-4-opus` | [console.anthropic.com](https://console.anthropic.com/) |
-| DeepSeek | `deepseek-chat`, `deepseek-coder` | [platform.deepseek.com](https://platform.deepseek.com) |
+| Fournisseur | Exemples de Modèles                  | Lien Clé API                                              |
+| ----------- | ------------------------------------ | --------------------------------------------------------- |
+| OpenAI      | `gpt-4`, `o1`                        | [platform.openai.com](https://platform.openai.com/signup) |
+| Google      | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)   |
+| Anthropic   | `claude-4-sonnet`, `claude-4-opus`   | [console.anthropic.com](https://console.anthropic.com/)   |
+| DeepSeek    | `deepseek-chat`, `deepseek-coder`    | [platform.deepseek.com](https://platform.deepseek.com)    |
 
 ### 2. Définir votre clé API
 
 **Linux/macOS :**
+
 ```bash
 export LLM_API_KEY="votre_cle_api_ici"
 # Ajoutez à ~/.bashrc ou ~/.zshrc pour la persistance
 ```
 
 **Windows :**
+
 ```cmd
 set LLM_API_KEY=votre_cle_api_ici
 ```
 
 ### 3. Mettre à jour `.env` :
+
 ```env
 LLM_API_KEY="votre_cle_api_ici"
 LLM_MODEL_NAME="gemini-1.5-pro"
@@ -197,11 +201,13 @@ LLM_MODEL_NAME="gemini-1.5-pro"
 Après avoir configuré votre fichier `.env`, utilisez la console de gestion pour démarrer l'application.
 
 Lancez la console interactive :
+
 ```bash
 ./run.sh
 ```
 
 Depuis le menu de la console :
+
 1.  **Démarrer** - Lancer tous les services
 2.  **Statut** - Vérifier la santé des services
 3.  **Logs** - Surveiller les logs en temps réel
@@ -209,16 +215,19 @@ Depuis le menu de la console :
 ### Commandes Docker Manuelles
 
 Démarrer tous les services :
+
 ```bash
 docker-compose up -d
 ```
 
 Vérifier le statut :
+
 ```bash
 docker-compose ps
 ```
 
 Voir les logs :
+
 ```bash
 docker-compose logs -f
 ```
@@ -231,11 +240,11 @@ docker-compose logs -f
 
 Une fois les services en marche :
 
-| Service | URL | Description |
-| --- | --- | --- |
-| **Interface Web** | http://localhost:3000 | Interface utilisateur principale |
-| **Point d'API** | http://localhost:8080/api/v1/agent/stream | Accès API direct |
-| **Vérification Santé** | http://localhost:8080/health | Statut de santé des services |
+| Service                | URL                                       | Description                      |
+| ---------------------- | ----------------------------------------- | -------------------------------- |
+| **Interface Web**      | http://localhost:3000                     | Interface utilisateur principale |
+| **Point d'API**        | http://localhost:8080/api/v1/agent/stream | Accès API direct                 |
+| **Vérification Santé** | http://localhost:8080/health              | Statut de santé des services     |
 
 ### Test Rapide
 
@@ -257,26 +266,31 @@ curl -X POST http://localhost:8080/api/v1/agent/stream \
 Une fois vos services en marche, essayez ces exemples :
 
 ### 🔧 Forge d'Outils
+
 ```
 "J'ai besoin d'un outil pour convertir des fichiers CSV en format JSON. Crée-le puis utilise-le sur mon fichier donnees.csv."
 ```
 
 ### 💻 Génération de Code
+
 ```
 "Écris un script Python qui surveille un répertoire pour les nouveaux fichiers et enregistre leurs détails."
 ```
 
 ### 🌐 Automatisation Web
+
 ```
 "Recherche en ligne les dernières bonnes pratiques TypeScript et crée un document de résumé."
 ```
 
 ### 📊 Analyse de Données
+
 ```
 "Analyse le fichier donnees_ventes.csv dans mon espace de travail et crée une visualisation des tendances."
 ```
 
 ### 🛠️ Tâches Système
+
 ```
 "Crée un script de sauvegarde pour mes fichiers importants et programme son exécution quotidienne."
 ```
@@ -309,13 +323,13 @@ La console interactive fournit un contrôle complet sur votre instance Agentic F
 
 ### Commandes Clés
 
-| Option | Description | Quand l'Utiliser |
-|---|---|---|
-| **1** | Démarrer l'écosystème | Premier lancement ou après arrêt |
-| **2** | Redémarrer les services | Après changements de configuration |
-| **4** | Vérifier le statut | Diagnostics de santé |
-| **5** | Suivre les logs | Surveillance en temps réel |
-| **7** | Reconstruire les images | Après changements majeurs de code |
+| Option | Description             | Quand l'Utiliser                   |
+| ------ | ----------------------- | ---------------------------------- |
+| **1**  | Démarrer l'écosystème   | Premier lancement ou après arrêt   |
+| **2**  | Redémarrer les services | Après changements de configuration |
+| **4**  | Vérifier le statut      | Diagnostics de santé               |
+| **5**  | Suivre les logs         | Surveillance en temps réel         |
+| **7**  | Reconstruire les images | Après changements majeurs de code  |
 
 ---
 
@@ -383,8 +397,8 @@ import { z } from 'zod';
 import type { Tool, Ctx } from '../../types.js';
 
 export const monOutilParams = z.object({
-  entree: z.string().describe('Paramètre d\'entrée'),
-  options: z.number().default(1)
+  entree: z.string().describe("Paramètre d'entrée"),
+  options: z.number().default(1),
 });
 
 export const monOutil: Tool<typeof monOutilParams> = {
@@ -393,16 +407,17 @@ export const monOutil: Tool<typeof monOutilParams> = {
   parameters: monOutilParams,
   execute: async (args, ctx: Ctx) => {
     ctx.log.info('Exécution outil personnalisé', { args });
-    
+
     // Votre logique d'outil ici
     const resultat = await traiterEntree(args.entree, args.options);
-    
+
     return resultat;
-  }
+  },
 };
 ```
 
 N'oubliez pas de l'ajouter à `src/tools/index.ts` :
+
 ```typescript
 import { monOutil } from './custom/monOutil.tool.js';
 
@@ -419,6 +434,7 @@ export const allTools: Tool<any>[] = [
 ### Problèmes Courants
 
 #### ❌ "Docker not found"
+
 ```bash
 # Installer Docker
 curl -fsSL [https://get.docker.com](https://get.docker.com) -o get-docker.sh
@@ -426,11 +442,13 @@ sh get-docker.sh
 ```
 
 #### ❌ "Permission denied" pour run.sh
+
 ```bash
 chmod +x run.sh
 ```
 
 #### ❌ "Port already in use"
+
 ```bash
 # Vérifier ce qui utilise les ports
 netstat -tulpn | grep :8080
@@ -440,11 +458,14 @@ netstat -tulpn | grep :3000
 ```
 
 #### ❌ "Authentification failed"
+
 Vérifiez votre fichier `.env` :
+
 - Assurez-vous que `AUTH_TOKEN` est défini et correspond à ce que vous utilisez
 - Vérifiez que le token n'a pas d'espaces en fin
 
 #### ❌ "Redis connection failed"
+
 ```bash
 # Vérifier les logs Redis
 docker-compose logs redis
@@ -455,6 +476,7 @@ docker-compose up -d
 ```
 
 #### ❌ "LLM connection failed"
+
 - Pour modèles locaux : Assurez-vous qu'Ollama/LM Studio fonctionne
 - Pour modèles API : Vérifiez que votre clé API est correcte
 - Vérifiez le format `LLM_API_BASE_URL` (incluez `http://`)
@@ -482,6 +504,7 @@ Oui ! Avec Ollama ou LM Studio, tout le traitement LLM, la création d'outils et
 ### Q : Comment fonctionne la forge d'outils ?
 
 Quand l'agent rencontre une tâche qu'il ne peut pas gérer avec les outils existants, il :
+
 1.  Analyse l'exigence
 2.  Génère du code TypeScript pour un nouvel outil
 3.  Écrit l'outil sur le système de fichiers
@@ -491,6 +514,7 @@ Quand l'agent rencontre une tâche qu'il ne peut pas gérer avec les outils exis
 ### Q : Est-ce sécurisé ?
 
 Oui, avec des mesures de sécurité intégrées :
+
 - Sandboxing Docker pour l'exécution de code
 - Pas d'accès réseau externe pour les opérations sensibles
 - Timeouts et limites de ressources configurables
@@ -499,6 +523,7 @@ Oui, avec des mesures de sécurité intégrées :
 ### Q : Comment puis-je contribuer ?
 
 Nous accueillons les contributions ! Veuillez :
+
 1.  Forker le dépôt
 2.  Créer une branche de fonctionnalité
 3.  Suivre le style de code existant
@@ -515,20 +540,20 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour les dét
 
 ## Remerciements
 
--   **[FastMCP](https://github.com/punkpeye/fastmcp)** : Framework MCP ultra-performant - la fusée qui propulse Agentic Forge 🚀
--   **[Model Context Protocol (MCP)](https://modelcontextprotocol.io/)** : Protocole révolutionnaire pour l'interaction avec les LLMs
--   **[Docker](https://docker.com)** : Conteneurisation et isolation
--   **[Redis](https://redis.io)** : Structures de données haute performance
--   **[Playwright](https://playwright.dev)** : Automatisation web moderne
--   **Communauté Open Source** : Pour l'inspiration et la collaboration
+- **[FastMCP](https://github.com/punkpeye/fastmcp)** : Framework MCP ultra-performant - la fusée qui propulse Agentic Forge 🚀
+- **[Model Context Protocol (MCP)](https://modelcontextprotocol.io/)** : Protocole révolutionnaire pour l'interaction avec les LLMs
+- **[Docker](https://docker.com)** : Conteneurisation et isolation
+- **[Redis](https://redis.io)** : Structures de données haute performance
+- **[Playwright](https://playwright.dev)** : Automatisation web moderne
+- **Communauté Open Source** : Pour l'inspiration et la collaboration
 
 ---
 
 ## Support
 
--   **Issues** : [GitHub Issues](https://github.com/votre-username/agentic-forge/issues)
--   **Discussions** : [GitHub Discussions](https://github.com/votre-username/agentic-forge/discussions)
--   **Documentation** : [Wiki du Projet](https://github.com/votre-username/agentic-forge/wiki)
+- **Issues** : [GitHub Issues](https://github.com/votre-username/agentic-forge/issues)
+- **Discussions** : [GitHub Discussions](https://github.com/votre-username/agentic-forge/discussions)
+- **Documentation** : [Wiki du Projet](https://github.com/votre-username/agentic-forge/wiki)
 
 ---
 
@@ -536,7 +561,7 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour les dét
 
 **🔨 Un forgeron forge ses marteaux.** **🤖 Agentic Forge forge ses propres capacités.**
 
-*Forgez votre avenir technologique.*
+_Forgez votre avenir technologique._
 
 [![Commencer](https://img.shields.io/badge/🚀_Commencer-brightgreen?style=for-the-badge)](./run.sh)
 
