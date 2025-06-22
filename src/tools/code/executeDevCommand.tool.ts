@@ -3,9 +3,9 @@ import { z } from 'zod';
 import type { Tool, Ctx } from '../../types.js';
 import { runInSandbox } from '../../utils/dockerManager.js';
 import { getErrDetails } from '../../utils/errorUtils.js';
-import { config } from '../../config.js'; // <-- AJOUT
+import { config } from '../../config.js';
 
-const DEV_SANDBOX_IMAGE = 'node:20-alpine';
+const DEV_SANDBOX_IMAGE = 'node:24-alpine'; // CORRECTION: Passage de node:20 à node:24
 
 export const executeDevCommandParams = z.object({
   command: z
@@ -23,7 +23,6 @@ export const executeDevCommandTool: Tool<typeof executeDevCommandParams> = {
   execute: async (args, ctx: Ctx) => {
     ctx.log.info(`Executing dev command in sandbox: "${args.command}"`);
     try {
-      // --- MODIFICATION CI-DESSOUS ---
       // Envelopper la commande dans "sh -c" pour une exécution correcte dans le shell
       // et installer pnpm au préalable.
       const fullCommand = `npm install -g pnpm && ${args.command}`;
@@ -41,7 +40,6 @@ export const executeDevCommandTool: Tool<typeof executeDevCommandParams> = {
           ],
         },
       );
-      // --- FIN DE LA MODIFICATION ---
 
       let output = `Exit Code: ${result.exitCode}\n`;
       if (result.stdout) output += `--- STDOUT ---\n${result.stdout}\n`;

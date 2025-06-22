@@ -54,7 +54,7 @@ export async function runInSandbox(
       Tty: false,
       WorkingDir: options.workingDir,
       HostConfig: {
-        Memory: 512 * 1024 * 1024, // 512MB
+        Memory: 2048 * 1024 * 1024, // CORRECTION: Passage de 512MB à 2048MB (2GB)
         CpuShares: 512,
         NetworkMode: 'bridge',
         Mounts: options.mounts,

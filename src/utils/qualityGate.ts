@@ -1,9 +1,9 @@
 // src/utils/qualityGate.ts
 import { runInSandbox } from './dockerManager.js';
 import logger from '../logger.js';
-import { config } from '../config.js'; // CORRECTION: Le chemin est maintenant '../config.js'
+import { config } from '../config.js';
 
-const DEV_SANDBOX_IMAGE = 'node:20-alpine';
+const DEV_SANDBOX_IMAGE = 'node:24-alpine'; // CORRECTION: Passage de node:20 à node:24
 const mountPoint = {
   Type: 'bind' as const,
   Source: config.HOST_PROJECT_PATH || process.cwd(),
@@ -21,12 +21,13 @@ interface QualityResult {
  */
 export async function runQualityGate(): Promise<QualityResult> {
   const outputMessages: string[] = [];
-  let allChecksPassed = true;
 
+  // CORRECTION: Ajout de 'set -e' pour que le script s'arrête à la première erreur
   const qualityCommand = [
     'sh',
     '-c',
     `
+      set -e 
       echo "--- Installing pnpm..."
       npm install -g pnpm
       
@@ -54,19 +55,19 @@ export async function runQualityGate(): Promise<QualityResult> {
   if (result.stdout) outputMessages.push(`STDOUT:\n${result.stdout}`);
   if (result.stderr) outputMessages.push(`STDERR:\n${result.stderr}`);
 
-  if (result.exitCode !== 0) {
-    allChecksPassed = false;
-    const failureMessage = `Quality Gate FAILED.`;
+  // La vérification du succès est maintenant fiable grâce au 'set -e'
+  const allChecksPassed = result.exitCode === 0;
+
+  if (allChecksPassed) {
+    outputMessages.push('\n--- Quality Gate Passed ---');
+    logger.info('All quality checks passed successfully.');
+  } else {
+    const failureMessage = `Quality Gate FAILED with exit code ${result.exitCode}.`;
     outputMessages.push(failureMessage);
     logger.error(failureMessage, {
       stdout: result.stdout,
       stderr: result.stderr,
     });
-  }
-
-  if (allChecksPassed) {
-    outputMessages.push('\n--- Quality Gate Passed ---');
-    logger.info('All quality checks passed successfully.');
   }
 
   return {
