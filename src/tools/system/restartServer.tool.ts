@@ -1,7 +1,8 @@
-// --- Fichier : src/tools/system/restartServer.tool.ts ---
+// src/tools/system/restartServer.tool.ts
 import { z } from 'zod';
 import type { Tool, Ctx } from '../../types.js';
 import { exec, type ExecException } from 'child_process';
+import { getErrDetails } from '../../utils/errorUtils.js';
 
 export const restartServerParams = z.object({
   reason: z
@@ -24,8 +25,9 @@ export const restartServerTool: Tool<typeof restartServerParams> = {
       command,
       (error: ExecException | null, stdout: string, stderr: string) => {
         if (error) {
+          // CORRECTION APPLIQUÉE
           ctx.log.error('Failed to execute restart command.', {
-            err: { message: error.message, stack: error.stack },
+            error: getErrDetails(error),
             stdout,
             stderr,
           });

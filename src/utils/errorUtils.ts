@@ -1,5 +1,4 @@
 // src/utils/errorUtils.ts
-
 import { ERROR_STACK_TRACE_MAX_LENGTH } from './constants.js';
 
 export interface ErrorDetails {
@@ -8,6 +7,8 @@ export interface ErrorDetails {
   type?: string;
   details?: unknown;
   stack?: string;
+  // CORRECTION: Remplacement de 'any' par 'unknown' pour satisfaire la règle no-explicit-any d'ESLint.
+  [key: string]: unknown;
 }
 
 export class AppErrorBase extends Error {
@@ -87,8 +88,7 @@ export function getErrDetails(error: unknown): ErrorDetails {
       try {
         msgValue = JSON.stringify(error);
       } catch {
-        // _e variable removed as it's unused
-        // msgValue reste 'An unknown error occurred.' ou 'Failed to stringify...'
+        // La valeur par défaut sera utilisée
       }
     }
     if (detailsValue.originalError === error) {
