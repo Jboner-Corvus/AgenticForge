@@ -24,6 +24,10 @@ const schemaDefinition = {
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
   WEBHOOK_SECRET: z.string().optional(),
   MCP_SERVER_URL: z.string().url().optional(),
+  HOST_PROJECT_PATH: z
+    .string()
+    .min(1, 'HOST_PROJECT_PATH is required when running in Docker')
+    .optional(),
 };
 
 // Pass the schema object to z.object().
@@ -37,4 +41,4 @@ if (!parsedConfig.success) {
   );
   throw new Error('Invalid environment variables.');
 }
-export const config = parsedConfig.data;
+export const config = parsedConfig.data; // <-- CORRECTION: 'parsed' a été remplacé par 'parsedConfig'

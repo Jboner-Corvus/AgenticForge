@@ -27,12 +27,9 @@ services:
     ports:
       - "${HOST_PORT:-8080}:8080"
     volumes:
-      # --- CORRECTIONS APPLIQUÉES ICI ---
-      # Lie le répertoire local au répertoire de travail du conteneur.
       - .:/usr/src/app
       - /var/run/docker.sock:/var/run/docker.sock
       - ./workspace:/usr/src/app/workspace
-      # Empêche le node_modules local d'écraser celui du conteneur.
       - /usr/src/app/node_modules
     depends_on:
       redis:
@@ -43,8 +40,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6378
       - DOCKER=true
+      - HOST_PROJECT_PATH=${PWD} # <-- AJOUT
     restart: unless-stopped
-    # Construit l'application avant de la démarrer.
     command: sh -c "pnpm run build && pnpm run start"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
@@ -90,7 +87,6 @@ services:
       dockerfile: Dockerfile
     container_name: agentic_forge_worker
     volumes:
-      # --- CORRECTIONS APPLIQUÉES ICI ---
       - .:/usr/src/app
       - /var/run/docker.sock:/var/run/docker.sock
       - ./workspace:/usr/src/app/workspace
@@ -104,8 +100,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6378
       - DOCKER=true
+      - HOST_PROJECT_PATH=${PWD} # <-- AJOUT
     restart: unless-stopped
-    # Construit l'application avant de démarrer le worker.
     command: sh -c "pnpm run build && pnpm run start:worker"
     healthcheck:
       test: ["CMD", "pgrep", "-f", "worker.js", "||", "exit", "1"]

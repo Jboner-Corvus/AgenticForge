@@ -3,8 +3,8 @@
 # ==============================================================================
 # Configuration & Constants
 # ==============================================================================
-# Service name in docker-compose.yml
-APP_SERVICE_NAME="agentic-forge-app"
+# Service name in docker-compose.yml for Docker-specific commands
+APP_SERVICE_NAME="server"
 
 # Colors for the UI
 COLOR_ORANGE='\e[38;5;208m'
@@ -19,7 +19,7 @@ NC='\e[0m' # No Color
 # Functions for .env file management and system checks
 # ==============================================================================
 
-# Function to check for and create .env file if it doesn't exist
+# ... (check_and_create_env et check_docker_permissions ne changent pas) ...
 check_and_create_env() {
     if [ ! -f .env ]; then
         echo -e "${COLOR_YELLOW}Le fichier .env n'a pas été trouvé. Création d'un nouveau fichier .env...${NC}"
@@ -50,15 +50,11 @@ EOF
     fi
 }
 
-# Function to check Docker permissions and prompt for a fix
 check_docker_permissions() {
-    # Vérifie si la commande docker existe
     if ! command -v docker &> /dev/null; then
         echo -e "${COLOR_RED}La commande 'docker' est introuvable. Assurez-vous que Docker est installé et dans votre PATH.${NC}"
         exit 1
     fi
-
-    # Vérifie si le groupe 'docker' existe
     if ! getent group docker > /dev/null; then
         echo -e "${COLOR_YELLOW}Le groupe 'docker' n'existe pas. Tentative de création...${NC}"
         sudo groupadd docker
@@ -67,8 +63,6 @@ check_docker_permissions() {
             exit 1
         fi
     fi
-
-    # Vérifie si l'utilisateur est dans le groupe docker
     if ! id -nG "$USER" | grep -qw "docker"; then
         echo -e "${COLOR_RED}ATTENTION : Votre utilisateur '$USER' ne fait pas partie du groupe 'docker'.${NC}"
         echo -e "${COLOR_YELLOW}Cela est nécessaire pour que l'application puisse communiquer avec Docker sans utiliser 'sudo' à chaque fois.${NC}"
@@ -95,12 +89,36 @@ check_docker_permissions() {
     fi
 }
 
+
+# ==============================================================================
+# Helper Functions for Checks
+# ==============================================================================
+check_service_is_running() {
+    if [ -z "$(docker compose ps -q ${APP_SERVICE_NAME})" ] || [ "$(docker inspect -f '{{.State.Status}}' $(docker compose ps -q ${APP_SERVICE_NAME}) 2>/dev/null)" != "running" ]; then
+        echo -e "${COLOR_RED}Le service Docker '${APP_SERVICE_NAME}' n'est pas en cours d'exécution.${NC}"
+        echo -e "${COLOR_YELLOW}Veuillez d'abord démarrer les services avec l'option '1'.${NC}"
+        read -p "Appuyez sur Entrée pour retourner au menu..."
+        return 1
+    fi
+    return 0
+}
+
+check_local_prerequisites() {
+    if ! command -v pnpm &> /dev/null; then
+        echo -e "${COLOR_RED}La commande 'pnpm' est introuvable sur votre machine locale.${NC}"
+        echo -e "${COLOR_YELLOW}Veuillez l'installer avec 'npm install -g pnpm' et réessayer.${NC}"
+        read -p "Appuyez sur Entrée pour retourner au menu..."
+        return 1
+    fi
+    return 0
+}
+
+
 # ==============================================================================
 # Functions for Menu Actions
 # ==============================================================================
 
-# --- Docker & Services ---
-
+# --- Docker & Services (Unchanged) ---
 start_services() {
     check_and_create_env
     echo -e "${COLOR_YELLOW}Démarrage des services Docker...${NC}"
@@ -108,7 +126,6 @@ start_services() {
     echo -e "${COLOR_GREEN}Services démarrés.${NC}"
     read -p "Appuyez sur Entrée pour continuer..."
 }
-
 restart_services() {
     echo -e "${COLOR_YELLOW}Redémarrage des services Docker...${NC}"
     docker compose down
@@ -116,39 +133,34 @@ restart_services() {
     echo -e "${COLOR_GREEN}Services redémarrés.${NC}"
     read -p "Appuyez sur Entrée pour continuer..."
 }
-
 stop_services() {
     echo -e "${COLOR_YELLOW}Arrêt des services Docker...${NC}"
     docker compose down
     echo -e "${COLOR_GREEN}Services arrêtés.${NC}"
     read -p "Appuyez sur Entrée pour continuer..."
 }
-
 show_status() {
     echo -e "${COLOR_CYAN}Statut des conteneurs Docker :${NC}"
     docker compose ps
     read -p "Appuyez sur Entrée pour continuer..."
 }
-
 show_logs() {
     echo -e "${COLOR_CYAN}Affichage des logs (Ctrl+C pour quitter)...${NC}"
     docker compose logs -f
     read -p "Appuyez sur Entrée pour continuer..."
 }
-
 shell_access() {
+    check_service_is_running || return
     echo -e "${COLOR_YELLOW}Ouverture d'un shell dans le conteneur '${APP_SERVICE_NAME}'...${NC}"
     docker compose exec "${APP_SERVICE_NAME}" /bin/bash
     read -p "Appuyez sur Entrée pour continuer..."
 }
-
 rebuild_services() {
     echo -e "${COLOR_YELLOW}Reconstruction des images Docker sans cache...${NC}"
     docker compose build --no-cache
     echo -e "${COLOR_GREEN}Reconstruction terminée. Pensez à redémarrer les services.${NC}"
     read -p "Appuyez sur Entrée pour continuer..."
 }
-
 clean_docker() {
     echo -e "${COLOR_RED}ATTENTION : Cette action va supprimer les conteneurs, les volumes et les réseaux orphelins.${NC}"
     read -p "Êtes-vous sûr de vouloir continuer? (o/N) " -n 1 -r
@@ -163,50 +175,56 @@ clean_docker() {
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
-# --- Development & Quality ---
+
+# --- Development & Quality (MODIFIED TO RUN LOCALLY) ---
 
 lint_code() {
-    echo -e "${COLOR_YELLOW}Lancement du linter sur le code source...${NC}"
-    docker compose exec "${APP_SERVICE_NAME}" npm run lint
+    check_local_prerequisites || return
+    echo -e "${COLOR_YELLOW}Lancement du linter sur le code source local...${NC}"
+    pnpm run lint
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 format_code() {
-    echo -e "${COLOR_YELLOW}Formatage du code avec Prettier...${NC}"
-    docker compose exec "${APP_SERVICE_NAME}" npm run format
+    check_local_prerequisites || return
+    echo -e "${COLOR_YELLOW}Formatage du code source local avec Prettier...${NC}"
+    pnpm run format
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 clean_dev() {
-    echo -e "${COLOR_YELLOW}Nettoyage de l'environnement de développement (node_modules, dist)...${NC}"
-    docker compose exec "${APP_SERVICE_NAME}" sh -c "rm -rf node_modules dist && npm install"
+    check_local_prerequisites || return
+    echo -e "${COLOR_YELLOW}Nettoyage de l'environnement de développement local (node_modules, dist)...${NC}"
+    rm -rf node_modules dist
+    pnpm install
     echo -e "${COLOR_GREEN}Nettoyage et réinstallation des dépendances terminés.${NC}"
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 run_tests() {
-    echo -e "${COLOR_YELLOW}Lancement des tests...${NC}"
-    # Note: The current package.json has no test script defined.
-    docker compose exec "${APP_SERVICE_NAME}" npm test
+    check_local_prerequisites || return
+    echo -e "${COLOR_YELLOW}Lancement des tests en local...${NC}"
+    pnpm test
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 type_check() {
-    echo -e "${COLOR_YELLOW}Vérification des types avec TypeScript...${NC}"
-    docker compose exec "${APP_SERVICE_NAME}" npx tsc --noEmit
+    check_local_prerequisites || return
+    echo -e "${COLOR_YELLOW}Vérification des types avec TypeScript en local...${NC}"
+    pnpm exec tsc --noEmit
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 audit_dependencies() {
-    echo -e "${COLOR_YELLOW}Audit des dépendances NPM...${NC}"
-    docker compose exec "${APP_SERVICE_NAME}" npm audit
+    check_local_prerequisites || return
+    echo -e "${COLOR_YELLOW}Audit des dépendances NPM en local...${NC}"
+    pnpm audit
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
 # ==============================================================================
 # UI Functions
 # ==============================================================================
-
 show_menu() {
     clear
     echo -e "${COLOR_ORANGE}"
@@ -221,11 +239,11 @@ show_menu() {
     echo ""
     echo -e "  ${COLOR_CYAN}Docker & Services${NC}"
     printf "   1) ${COLOR_GREEN}🟢 Démarrer${NC}         5) ${COLOR_BLUE}📊 Logs${NC}\n"
-    printf "   2) ${COLOR_YELLOW}🔄 Redémarrer${NC}       6) ${COLOR_BLUE}🐚 Shell${NC}\n"
+    printf "   2) ${COLOR_YELLOW}🔄 Redémarrer${NC}       6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\n"
     printf "   3) ${COLOR_RED}🔴 Arrêter${NC}           7) ${COLOR_BLUE}🔨 Rebuild${NC}\n"
     printf "   4) ${COLOR_CYAN}⚡ Statut${NC}            8) ${COLOR_RED}🧹 Nettoyer Docker${NC}\n"
     echo ""
-    echo -e "  ${COLOR_CYAN}Développement & Qualité${NC}"
+    echo -e "  ${COLOR_CYAN}Développement & Qualité (Local)${NC}"
     printf "  10) ${COLOR_BLUE}🔍 Lint${NC}             13) ${COLOR_BLUE}🧪 Tests${NC}\n"
     printf "  11) ${COLOR_BLUE}✨ Formater${NC}         14) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
     printf "  12) ${COLOR_RED}🧽 Nettoyer Dev${NC}      15) ${COLOR_BLUE}📋 Audit${NC}\n"
@@ -237,7 +255,7 @@ show_menu() {
 # ==============================================================================
 # Main Loop
 # ==============================================================================
-
+# ... (la boucle principale ne change pas) ...
 # Vérification unique des permissions Docker au démarrage du script
 check_docker_permissions
 

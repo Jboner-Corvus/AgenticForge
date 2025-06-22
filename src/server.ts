@@ -212,14 +212,13 @@ async function handleRequest(
     });
     return;
   }
-  
+
   // Endpoint pour compter les outils
   if (url.pathname === '/api/v1/tools/count' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ toolCount: allTools.length }));
     return;
   }
-
 
   // Gérer les routes non trouvées
   res

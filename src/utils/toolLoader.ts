@@ -15,7 +15,10 @@ const __dirname = path.dirname(__filename);
  * @param extension L'extension de fichier à rechercher.
  * @returns Une promesse qui se résout avec une liste de chemins de fichiers.
  */
-async function findToolFiles(dir: string, extension: string): Promise<string[]> {
+async function findToolFiles(
+  dir: string,
+  extension: string,
+): Promise<string[]> {
   let files: string[] = [];
   try {
     const entries = await fs.readdir(dir, { withFileTypes: true });

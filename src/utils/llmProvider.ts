@@ -61,7 +61,6 @@ export async function getLlmResponse(
       return `<tool_code>{"tool": "error", "parameters": {"message": "Invalid response structure from Gemini API. The model may have returned an empty response."}}</tool_code>`;
     }
     return content.trim();
-
   } catch (error) {
     log.error({ err: error }, 'Failed to get response from LLM');
     return `<tool_code>{"tool": "error", "parameters": {"message": "Failed to communicate with the LLM."}}</tool_code>`;

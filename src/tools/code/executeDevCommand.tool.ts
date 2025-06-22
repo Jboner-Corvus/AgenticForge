@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { Tool, Ctx } from '../../types.js';
 import { runInSandbox } from '../../utils/dockerManager.js';
 import { getErrDetails } from '../../utils/errorUtils.js';
+import { config } from '../../config.js'; // <-- AJOUT
 
 const DEV_SANDBOX_IMAGE = 'node:20-alpine';
 
@@ -22,24 +23,31 @@ export const executeDevCommandTool: Tool<typeof executeDevCommandParams> = {
   execute: async (args, ctx: Ctx) => {
     ctx.log.info(`Executing dev command in sandbox: "${args.command}"`);
     try {
-      const commandParts = args.command.split(' ');
-      const result = await runInSandbox(DEV_SANDBOX_IMAGE, commandParts, {
-        workingDir: '/usr/src/app',
-        mounts: [
-          {
-            Type: 'bind',
-            Source: process.cwd(),
-            Target: '/usr/src/app',
-          },
-        ],
-      });
+      // --- MODIFICATION CI-DESSOUS ---
+      // Envelopper la commande dans "sh -c" pour une exécution correcte dans le shell
+      // et installer pnpm au préalable.
+      const fullCommand = `npm install -g pnpm && ${args.command}`;
+      const result = await runInSandbox(
+        DEV_SANDBOX_IMAGE,
+        ['sh', '-c', fullCommand],
+        {
+          workingDir: '/usr/src/app',
+          mounts: [
+            {
+              Type: 'bind',
+              Source: config.HOST_PROJECT_PATH || process.cwd(),
+              Target: '/usr/src/app',
+            },
+          ],
+        },
+      );
+      // --- FIN DE LA MODIFICATION ---
 
       let output = `Exit Code: ${result.exitCode}\n`;
       if (result.stdout) output += `--- STDOUT ---\n${result.stdout}\n`;
       if (result.stderr) output += `--- STDERR ---\n${result.stderr}\n`;
       return output;
     } catch (error) {
-      // CORRECTION DÉFINITIVE : Séparation du message et de l'objet de données.
       const errDetails = getErrDetails(error);
       ctx.log.error('Dev command sandbox execution failed', {
         name: errDetails.name,
