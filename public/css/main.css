@@ -11,6 +11,7 @@
     --accent-primary: #4a90e2; /* Un bleu pour l'accentuation */
     --accent-secondary: #50e3c2; /* Un vert pour les succès/boutons */
     --accent-danger: #e57373;
+    --accent-client: #f2994a; /* Une couleur pour les messages client */
     --font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
@@ -103,6 +104,89 @@ body {
 }
 
 /* ==========================================================================
+   Panneau de Contrôle (Sidebar) - NOUVEAUX STYLES
+   ========================================================================== */
+.control-panel {
+    margin-top: 2rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+}
+
+.control-panel-title {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+}
+
+.control-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.control-label {
+    font-size: 0.9rem;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--bg-tertiary);
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: var(--accent-secondary);
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px var(--accent-secondary);
+}
+
+input:checked + .slider:before {
+    transform: translateX(22px);
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+
+/* ==========================================================================
    Zone de Chat
    ========================================================================== */
 .content-area {
@@ -145,6 +229,17 @@ body {
     align-self: flex-start;
 }
 
+.message.client {
+    align-self: flex-start;
+}
+
+.message.client .message-content {
+    background-color: transparent;
+    border: 1px dashed var(--accent-client);
+    color: var(--accent-client);
+}
+
+
 .message-avatar {
     width: 32px;
     height: 32px;
@@ -163,19 +258,16 @@ body {
     padding: 0.75rem 1rem;
     display: flex;
     flex-direction: column;
-    min-width: 0; /* CORRECTION : Permet au contenu flex de se réduire */
+    min-width: 0; 
 }
 
 .message-text {
-    white-space: pre-wrap;     /* CORRECTION : Respecte les retours à la ligne et permet le retour à la ligne auto */
-    word-wrap: break-word;     /* CORRECTION : Coupe les mots longs */
-    overflow-wrap: break-word; /* Équivalent moderne de word-wrap */
+    white-space: pre-wrap;     
+    word-wrap: break-word;     
+    overflow-wrap: break-word; 
     line-height: 1.6;
 }
 
-/* ==========================================================================
-   Styles spécifiques pour les bulles de pensée et d'appel d'outil
-   ========================================================================== */
 .thought-bubble, .tool-call {
     margin-top: 0.5rem;
     padding: 0.75rem;
@@ -190,10 +282,9 @@ body {
     color: var(--accent-secondary);
 }
 
-/* CORRECTION CRUCIALE pour le bloc de code */
 .tool-call pre {
-    white-space: pre-wrap;   /* Permet au contenu de la balise <pre> de revenir à la ligne */
-    word-break: break-all;   /* Force la coupure des chaînes de caractères très longues sans espaces */
+    white-space: pre-wrap;   
+    word-break: break-all;   
     font-family: 'Fira Code', 'Courier New', Courier, monospace;
     background-color: rgba(0,0,0,0.3);
     padding: 0.5rem;
@@ -217,6 +308,7 @@ body {
     background-color: var(--bg-tertiary);
     border-radius: 12px;
     padding: 0.5rem;
+    gap: 0.5rem;
 }
 
 .input-wrapper {
@@ -237,7 +329,8 @@ body {
 }
 
 .input-actions {
-    margin-left: 0.5rem;
+    display: flex;
+    align-items: center;
 }
 
 .btn {
@@ -259,6 +352,25 @@ body {
     background-color: var(--bg-tertiary);
     cursor: not-allowed;
 }
+
+.btn-icon {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.btn-icon:hover {
+    background-color: var(--border-color);
+    color: var(--text-primary);
+}
+
 
 /* ==========================================================================
    Indicateur de frappe
@@ -284,7 +396,7 @@ body {
 }
 
 /* ==========================================================================
-   Styles pour le formulaire de token (déjà existants, inchangés)
+   Styles pour le formulaire de token
    ========================================================================== */
 .token-controls {
     display: flex;
@@ -348,12 +460,12 @@ body {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background-color: var(--accent-danger); /* Rouge par défaut: token manquant */
+    background-color: var(--accent-danger);
     transition: background-color 0.3s ease;
 }
 
 .status-indicator-token.valid {
-    background-color: var(--accent-primary); /* Vert: token valide */
+    background-color: var(--accent-primary);
     animation: pulse 2s infinite;
 }
 

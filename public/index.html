@@ -40,6 +40,26 @@
             </div>
             <section class="sidebar-content">
                 <p class="sidebar-info">L'agent sélectionne et exécute les outils automatiquement en fonction de votre objectif.</p>
+                
+                <!-- Section des interrupteurs -->
+                <div class="control-panel">
+                    <h3 class="control-panel-title">Capacités de l'Agent</h3>
+                    <div class="control-item">
+                        <label for="toolCreationToggle" class="control-label">Création d'outils</label>
+                        <label class="switch">
+                            <input type="checkbox" id="toolCreationToggle" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="control-item">
+                        <label for="codeExecutionToggle" class="control-label">Exécution de code</label>
+                        <label class="switch">
+                            <input type="checkbox" id="codeExecutionToggle" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+
             </section>
         </aside>
 
@@ -54,6 +74,12 @@
                 </section>
                 <div class="input-area">
                     <form id="chat-form" class="input-container" action="javascript:void(0);">
+                        <div class="input-actions">
+                            <input type="file" id="fileInput" style="display: none;" />
+                            <button type="button" class="btn-icon" id="attachFileBtn" aria-label="Attach file">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49"></path></svg>
+                            </button>
+                        </div>
                         <div class="input-wrapper">
                             <textarea class="input-field" id="messageInput" placeholder="Décrivez votre objectif..." aria-label="Message input field" rows="1"></textarea>
                         </div>
