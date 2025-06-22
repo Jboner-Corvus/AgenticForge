@@ -45,24 +45,24 @@ export async function loadTools(): Promise<Tool[]> {
   const runningInDist = __dirname.includes('dist');
   // Cherche les .js si on est dans /dist, sinon les .ts
   const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
-  
-  // En production, le répertoire des outils est relatif à __dirname dans /dist
-  const toolsDir = runningInDist 
-    ? path.join(__dirname, 'tools') 
+
+  // CORRIGÉ : Le chemin vers le répertoire des outils en production est maintenant correct.
+  const toolsDir = runningInDist
+    ? path.join(__dirname, '..', 'tools') // On remonte d'un niveau pour sortir de 'utils'
     : path.resolve(process.cwd(), 'src/tools');
 
   const toolFiles = await findToolFiles(toolsDir, fileExtension);
   const allTools: Tool[] = [];
 
   logger.info(
-    `Début du chargement dynamique des outils depuis: ${toolsDir} (recherche de *${fileExtension})`
+    `Début du chargement dynamique des outils depuis: ${toolsDir} (recherche de *${fileExtension})`,
   );
 
   for (const file of toolFiles) {
     try {
       // Pour ESM, l'import path doit être un chemin de fichier valide
       const module = await import(path.resolve(file));
-      
+
       for (const exportName in module) {
         const exportedItem = module[exportName];
         if (
@@ -73,7 +73,7 @@ export async function loadTools(): Promise<Tool[]> {
         ) {
           allTools.push(exportedItem as Tool);
           logger.info(
-            `Outil chargé : '${exportedItem.name}' depuis ${path.basename(file)}`
+            `Outil chargé : '${exportedItem.name}' depuis ${path.basename(file)}`,
           );
         }
       }

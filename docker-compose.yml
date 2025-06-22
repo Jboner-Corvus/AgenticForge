@@ -1,62 +1,5 @@
-# ==============================================================================
-# Docker Compose pour Agentic Forge - Solution Complète
-# ==============================================================================
-
 services:
-  # ----------------------------------------------------------------------------
-  # Service 1: Proxy de Socket Docker (TOUTES LES PERMISSIONS)
-  # ----------------------------------------------------------------------------
-  docker-proxy:
-    image: tecnativa/docker-socket-proxy
-    container_name: agentic_forge_docker_proxy
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    environment:
-      # ✅ PERMISSIONS COMPLÈTES POUR AGENTIC FORGE
-      - CONTAINERS=1       # Gestion des conteneurs
-      - IMAGES=1           # Gestion des images
-      - NETWORKS=1         # Gestion des réseaux
-      - VOLUMES=1          # Gestion des volumes
-      - SERVICES=1         # Gestion des services
-      - SWARM=1            # Support Swarm
-      - SYSTEM=1           # Informations système
-      - EVENTS=1           # Événements Docker
-      - PING=1             # Health checks
-      - INFO=1             # Informations Docker
-      - VERSION=1          # Version Docker
-      - BUILD=1            # Construction d'images
-      - COMMIT=1           # Commits de conteneurs
-      - CREATE=1           # ✅ CRÉATION DE CONTENEURS
-      - START=1            # ✅ DÉMARRAGE
-      - STOP=1             # ✅ ARRÊT
-      - RESTART=1          # ✅ REDÉMARRAGE
-      - KILL=1             # ✅ KILL
-      - REMOVE=1           # ✅ SUPPRESSION
-      - EXEC=1             # ✅ EXÉCUTION DANS CONTENEURS
-      - RENAME=1           # Renommage
-      - PAUSE=1            # Pause/Unpause
-      - WAIT=1             # Attente
-      - LOGS=1             # Lecture des logs
-      - STATS=1            # Statistiques
-      - UPDATE=1           # Mise à jour
-      - ATTACH=1           # Attachement
-      - COPY=1             # Copie de fichiers
-      - ARCHIVE=1          # Archives
-      - DIFF=1             # Différences
-      - EXPORT=1           # Export
-      - IMPORT=1           # Import
-      - LOAD=1             # Chargement d'images
-      - SAVE=1             # Sauvegarde d'images
-      - TAG=1              # Tags d'images
-      - PUSH=1             # Push d'images
-      - PULL=1             # ✅ PULL D'IMAGES
-    networks:
-      - agentic_network
-
-  # ----------------------------------------------------------------------------
-  # Service 2: Redis
-  # ----------------------------------------------------------------------------
+  # Base de données Redis
   redis:
     image: redis:7.2-alpine
     container_name: agentic_forge_redis
@@ -75,32 +18,34 @@ services:
     networks:
       - agentic_network
 
-  # ----------------------------------------------------------------------------
-  # Service 3: Serveur Principal
-  # ----------------------------------------------------------------------------
+  # Serveur MCP principal
   server:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: agentic_forge_server
-    restart: unless-stopped
     ports:
       - "${HOST_PORT:-8080}:8080"
     volumes:
+      # --- CORRECTIONS APPLIQUÉES ICI ---
+      # Lie le répertoire local au répertoire de travail du conteneur.
       - .:/usr/src/app
+      - /var/run/docker.sock:/var/run/docker.sock
       - ./workspace:/usr/src/app/workspace
+      # Empêche le node_modules local d'écraser celui du conteneur.
+      - /usr/src/app/node_modules
     depends_on:
       redis:
         condition: service_healthy
-      docker-proxy:
-        condition: service_started
     env_file: .env
     environment:
-      - NODE_ENV=development  # ✅ Changé en development pour plus de logs
+      - NODE_ENV=production
       - REDIS_HOST=redis
       - REDIS_PORT=6378
-      - DOCKER_HOST=tcp://docker-proxy:2375
-    command: pnpm run start
+      - DOCKER=true
+    restart: unless-stopped
+    # Construit l'application avant de la démarrer.
+    command: sh -c "pnpm run build && pnpm run start"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s
@@ -110,15 +55,12 @@ services:
     networks:
       - agentic_network
 
-  # ----------------------------------------------------------------------------
-  # Service 4: Interface Web
-  # ----------------------------------------------------------------------------
+  # Interface Web
   web:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: agentic_forge_web
-    restart: unless-stopped
     ports:
       - "${WEB_PORT:-3000}:3000"
     volumes:
@@ -127,9 +69,10 @@ services:
       - server
     env_file: .env
     environment:
-      - NODE_ENV=development  # ✅ Development mode
+      - NODE_ENV=production
       - WEB_PORT=3000
       - MCP_SERVER_URL=http://server:8080
+    restart: unless-stopped
     command: pnpm run start:web
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
@@ -140,36 +83,39 @@ services:
     networks:
       - agentic_network
 
-  # ----------------------------------------------------------------------------
-  # Service 5: Worker
-  # ----------------------------------------------------------------------------
+  # Worker pour les tâches asynchrones
   worker:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: agentic_forge_worker
-    restart: unless-stopped
     volumes:
+      # --- CORRECTIONS APPLIQUÉES ICI ---
       - .:/usr/src/app
+      - /var/run/docker.sock:/var/run/docker.sock
       - ./workspace:/usr/src/app/workspace
+      - /usr/src/app/node_modules
     depends_on:
       redis:
         condition: service_healthy
-      docker-proxy:
-        condition: service_started
     env_file: .env
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - REDIS_HOST=redis
       - REDIS_PORT=6378
-      - DOCKER_HOST=tcp://docker-proxy:2375
-    command: pnpm run start:worker
+      - DOCKER=true
+    restart: unless-stopped
+    # Construit l'application avant de démarrer le worker.
+    command: sh -c "pnpm run build && pnpm run start:worker"
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "worker.js", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
       - agentic_network
 
-# ==============================================================================
-# Volumes & Réseaux
-# ==============================================================================
 volumes:
   redis_data:
     driver: local

@@ -85,16 +85,16 @@ HOST_PORT=8080
 PORT=8080
 NODE_ENV=development
 LOG_LEVEL=info
-AUTH_TOKEN="Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0"
+AUTH_TOKEN=""
 REDIS_HOST=redis
 REDIS_PORT=6378
 REDIS_HOST_PORT=6378
-REDIS_PASSWORD="pZEtM1nRkKsk8oNXvIZNvIqZnFnKPOE6CYWiixD0rFE"
+REDIS_PASSWORD=""
 # L'URL de base n'est plus nécessaire pour l'API Google, commentez-la ou supprimez-la.
 # LLM_API_BASE_URL=
 WEB_PORT=3000
 # Utilisez votre clé d'API Google Gemini
-LLM_API_KEY="AIzaSyAPwJv45wThrqCfrBlVvCXajBiW8-DlKxM"
+LLM_API_KEY=""
 
 # Spécifiez un modèle Gemini, par exemple "gemini-1.5-pro-latest"
 LLM_MODEL_NAME=gemini-2.5-flash
