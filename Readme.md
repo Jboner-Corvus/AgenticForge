@@ -40,7 +40,7 @@ Un agent IA autonome **100% local** qui forge ses propres outils, écrit du code
 
 ## 🛠️ ⚠️ Travail Actif en Cours
 
-🙏 Ce projet a commencé comme une exploration des agents IA auto-améliorants et a grandi au-delà des attentes. Les contributions, commentaires et patience sont profondément appréciés alors que nous forgeons de l'avant.
+🙏 Ce projet a commencé pour prouver que MCP etait mieux que API et a grandi au-delà des attentes. Les contributions, commentaires et patience sont profondément appréciés alors que nous forgeons de l'avant.
 
 ---
 
@@ -164,9 +164,9 @@ Si vous préférez les modèles cloud ou manquez de matériel suffisant :
 
 | Fournisseur | Exemples de Modèles | Lien Clé API |
 |---|---|---|
-| OpenAI | `gpt-4`, `gpt-3.5-turbo` | [platform.openai.com](https://platform.openai.com/signup) |
-| Google | `gemini-1.5-pro`, `gemini-1.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys) |
-| Anthropic | `claude-3-sonnet`, `claude-3-haiku` | [console.anthropic.com](https://console.anthropic.com/) |
+| OpenAI | `gpt-4`, `o1` | [platform.openai.com](https://platform.openai.com/signup) |
+| Google | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys) |
+| Anthropic | `claude-4-sonnet`, `claude-4-opus` | [console.anthropic.com](https://console.anthropic.com/) |
 | DeepSeek | `deepseek-chat`, `deepseek-coder` | [platform.deepseek.com](https://platform.deepseek.com) |
 
 ### 2. Définir votre clé API
