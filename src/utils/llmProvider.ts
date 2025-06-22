@@ -59,7 +59,8 @@ export async function getLlmResponse(
         { response: data },
         'Invalid response structure from Gemini API',
       );
-      throw new Error('Invalid response structure from Gemini API');
+      // Return an empty tool call to prevent the agent from getting stuck
+      return `<tool_code>{"tool": "error", "parameters": {"message": "Invalid response structure from Gemini API. The model may have returned an empty response."}}</tool_code>`;
     }
     return content.trim();
   } catch (error) {
