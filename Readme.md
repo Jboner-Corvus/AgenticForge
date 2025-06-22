@@ -1,6 +1,6 @@
 # 🔨 Agentic Forge
 
-### Alternative d'Agent IA Privée et Locale
+### Une Alternative a MANUS Privée et Locale
 
 ![Agentic Forge Logo](https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge)
 
