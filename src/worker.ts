@@ -1,12 +1,13 @@
-// src/worker.ts (Formaté et Corrigé)
-import { Worker } from 'bullmq';
+// src/worker.ts (Corrigé pour la gestion des promesses dans les signaux)
+import { Worker, type Job } from 'bullmq';
 import { config } from './config.js';
 import logger from './logger.js';
 import { taskQueue, deadLetterQueue, redisConnection } from './queue.js';
-import { allTools } from './tools/index.js';
+import { getAllTools } from './tools/index.js';
 import { getContentWorkerLogic } from './tools/browser/getContent.tool.js';
 import { navigateWorkerLogic } from './tools/browser/navigate.tool.js';
 import type { AsyncTaskJob, Ctx } from './types.js';
+import { getErrDetails } from './utils/errorUtils.js';
 
 const worker = new Worker(
   taskQueue.name,
@@ -16,6 +17,7 @@ const worker = new Worker(
 
     log.info({ toolArgs: params }, `Processing job for tool: ${toolName}`);
 
+    const allTools = await getAllTools();
     const tool = allTools.find((t) => t.name === toolName);
     if (!tool) {
       throw new Error(`Tool "${toolName}" not found.`);
@@ -46,7 +48,6 @@ const worker = new Worker(
         ctx,
       );
     } else {
-      // CORRIGÉ: `any` a été remplacé par un type plus sûr.
       result = await tool.execute(params as Record<string, unknown>, ctx);
     }
 
@@ -59,16 +60,14 @@ const worker = new Worker(
   },
 );
 
-worker.on('failed', (job, error) => {
+/**
+ * Ce gestionnaire d'événements est déclenché lorsqu'une tâche échoue.
+ */
+worker.on('failed', (job: Job | undefined, error: Error) => {
   const log = logger.child({ jobId: job?.id, toolName: job?.data.toolName });
-  log.error({ err: error }, 'Job failed.');
+  log.error({ err: getErrDetails(error) }, 'Job failed.');
 
-  if (
-    job &&
-    job.opts &&
-    job.opts.attempts &&
-    job.attemptsMade >= job.opts.attempts
-  ) {
+  if (job && job.opts.attempts && job.attemptsMade >= job.opts.attempts) {
     log.warn(`Job failed all attempts. Moving to dead-letter queue.`);
     void (async () => {
       try {
@@ -80,8 +79,37 @@ worker.on('failed', (job, error) => {
   }
 });
 
+/**
+ * Ce gestionnaire est déclenché pour les erreurs critiques du worker lui-même.
+ */
 worker.on('error', (err) => {
-  logger.error({ err }, 'A critical error occurred in the worker.');
+  logger.error(
+    { err: getErrDetails(err) },
+    'A critical error occurred in the worker.',
+  );
 });
 
 logger.info(`🚀 Agentic-MCP worker started. Waiting for jobs...`);
+
+// Ajout d'une fonction pour gérer la fermeture propre du worker
+const gracefulShutdown = async () => {
+  logger.info('Shutting down worker gracefully...');
+  await worker.close();
+  process.exit(0);
+};
+
+// CORRECTION : Les appels à gracefulShutdown sont enveloppés dans une fonction
+// synchrone qui gère les erreurs de la promesse pour éviter les "unhandled rejections".
+process.on('SIGINT', () => {
+  gracefulShutdown().catch((err) => {
+    logger.error({ err: getErrDetails(err) }, 'Error during SIGINT shutdown');
+    process.exit(1);
+  });
+});
+
+process.on('SIGTERM', () => {
+  gracefulShutdown().catch((err) => {
+    logger.error({ err: getErrDetails(err) }, 'Error during SIGTERM shutdown');
+    process.exit(1);
+  });
+});

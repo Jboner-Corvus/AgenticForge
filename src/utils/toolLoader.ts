@@ -9,11 +9,11 @@ import { getErrDetails } from './errorUtils.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Cache pour stocker les outils une fois chargés
+let loadedTools: Tool[] | null = null;
+
 /**
- * Trouve récursivement tous les fichiers d'outils (finissant par .tool.js ou .tool.ts) dans un répertoire.
- * @param dir Le répertoire de départ.
- * @param extension L'extension de fichier à rechercher.
- * @returns Une promesse qui se résout avec une liste de chemins de fichiers.
+ * Trouve récursivement les fichiers d'outils. (Fonction interne)
  */
 async function findToolFiles(
   dir: string,
@@ -41,17 +41,14 @@ async function findToolFiles(
 }
 
 /**
- * Charge dynamiquement tous les outils disponibles.
+ * Charge dynamiquement tous les outils disponibles. (Fonction interne)
  * @returns Une promesse qui se résout avec un tableau de tous les outils chargés.
  */
-export async function loadTools(): Promise<Tool[]> {
+async function _internalLoadTools(): Promise<Tool[]> {
   const runningInDist = __dirname.includes('dist');
-  // Cherche les .js si on est dans /dist, sinon les .ts
   const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
-
-  // CORRIGÉ : Le chemin vers le répertoire des outils en production est maintenant correct.
   const toolsDir = runningInDist
-    ? path.join(__dirname, '..', 'tools') // On remonte d'un niveau pour sortir de 'utils'
+    ? path.join(__dirname, '..', 'tools')
     : path.resolve(process.cwd(), 'src/tools');
 
   const toolFiles = await findToolFiles(toolsDir, fileExtension);
@@ -63,9 +60,7 @@ export async function loadTools(): Promise<Tool[]> {
 
   for (const file of toolFiles) {
     try {
-      // Pour ESM, l'import path doit être un chemin de fichier valide
       const module = await import(path.resolve(file));
-
       for (const exportName in module) {
         const exportedItem = module[exportName];
         if (
@@ -90,4 +85,15 @@ export async function loadTools(): Promise<Tool[]> {
   }
   logger.info(`${allTools.length} outils ont été chargés dynamiquement.`);
   return allTools;
+}
+
+/**
+ * Récupère la liste de tous les outils, en les chargeant s'ils ne le sont pas déjà.
+ * C'est la fonction à utiliser dans toute l'application pour garantir une seule source de vérité.
+ */
+export async function getTools(): Promise<Tool[]> {
+  if (loadedTools === null) {
+    loadedTools = await _internalLoadTools();
+  }
+  return loadedTools;
 }

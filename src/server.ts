@@ -1,15 +1,15 @@
-// src/server.ts (Finalisé avec gestion de session Redis)
+// src/server.ts (Finalisé avec chargement unifié des outils et gestion de session Redis)
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { Redis } from 'ioredis';
 import { config } from './config.js';
 import logger from './logger.js';
-import { loadTools } from './utils/toolLoader.js';
+import { getAllTools, type Tool } from './tools/index.js';
 import { getMasterPrompt } from './prompts/orchestrator.prompt.js';
 import { getLlmResponse } from './utils/llmProvider.js';
 import { getErrDetails } from './utils/errorUtils.js';
-import type { AgentSession, AuthData, History, Tool } from './types.js';
+import type { AgentSession, AuthData, History } from './types.js';
 
 // --- GESTION DE SESSION VIA REDIS ---
 const redis = new Redis({
@@ -75,7 +75,7 @@ const goalHandlerTool: Tool<typeof goalHandlerParams> = {
   execute: async (args, ctx) => {
     if (!ctx.session) throw new Error('AuthData not found in context');
 
-    const allAvailableTools = await loadTools();
+    const allAvailableTools = await getAllTools();
     const session = await getOrCreateSession(ctx.session);
 
     const history: History = session.history;
@@ -152,7 +152,7 @@ const goalHandlerTool: Tool<typeof goalHandlerParams> = {
 
 async function main() {
   try {
-    const allTools = await loadTools();
+    const allTools = await getAllTools();
     const mcpServer = new FastMCP<AuthData>({
       name: 'Agentic-Forge-Server',
       version: '1.0.0',

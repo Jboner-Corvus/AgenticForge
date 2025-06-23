@@ -60,7 +60,8 @@ export async function sendGoal(goal, token, sessionId) {
  * @param {string} sessionId - L'ID de session pour l'authentification. // CORRECTION : Ajout du paramètre
  * @returns {Promise<number | string>} Le nombre d'outils ou 'N/A' en cas d'erreur.
  */
-export async function getToolCount(token, sessionId) { // CORRECTION : Ajout du paramètre
+export async function getToolCount(token, sessionId) {
+  // CORRECTION : Ajout du paramètre
   if (!token) {
     console.warn('getToolCount skipped: no token provided.');
     return 0;
