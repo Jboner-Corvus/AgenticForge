@@ -1,4 +1,4 @@
-// src/server.ts (Finalisé avec chargement unifié des outils et gestion de session Redis)
+// src/server.ts (Version de Diagnostic)
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
@@ -11,57 +11,46 @@ import { getLlmResponse } from './utils/llmProvider.js';
 import { getErrDetails } from './utils/errorUtils.js';
 import type { AgentSession, AuthData, History } from './types.js';
 
-// --- GESTION DE SESSION VIA REDIS ---
+// --- GESTION DE SESSION VIA REDIS (inchangée) ---
 const redis = new Redis({
   host: config.REDIS_HOST,
   port: config.REDIS_PORT,
   password: config.REDIS_PASSWORD,
-  maxRetriesPerRequest: 3, // Éviter les boucles infinies en cas de panne de Redis
+  maxRetriesPerRequest: 3,
 });
-
 redis.on('error', (err) => logger.error({ err }, 'Redis connection error'));
-
-const SESSION_EXPIRATION_SECONDS = 24 * 3600; // 24 heures
-
+const SESSION_EXPIRATION_SECONDS = 24 * 3600;
 async function getOrCreateSession(authData: AuthData): Promise<AgentSession> {
-  const { sessionId } = authData;
-  const sessionKey = `session:${sessionId}`;
-
-  const sessionString = await redis.get(sessionKey);
-
-  if (sessionString) {
-    const session: AgentSession = JSON.parse(sessionString);
-    session.lastActivity = Date.now();
+    const { sessionId } = authData;
+    const sessionKey = `session:${sessionId}`;
+    const sessionString = await redis.get(sessionKey);
+    if (sessionString) {
+        const session: AgentSession = JSON.parse(sessionString);
+        session.lastActivity = Date.now();
+        await redis.set(
+        sessionKey,
+        JSON.stringify(session),
+        'EX',
+        SESSION_EXPIRATION_SECONDS,
+        );
+        return session;
+    }
+    const newSession: AgentSession = {
+        id: sessionId,
+        auth: authData,
+        history: [],
+        createdAt: Date.now(),
+        lastActivity: Date.now(),
+    };
     await redis.set(
-      sessionKey,
-      JSON.stringify(session),
-      'EX',
-      SESSION_EXPIRATION_SECONDS,
+        sessionKey,
+        JSON.stringify(newSession),
+        'EX',
+        SESSION_EXPIRATION_SECONDS,
     );
-    return session;
-  }
-
-  const newSession: AgentSession = {
-    id: sessionId,
-    auth: authData,
-    history: [],
-    createdAt: Date.now(),
-    lastActivity: Date.now(),
-  };
-
-  await redis.set(
-    sessionKey,
-    JSON.stringify(newSession),
-    'EX',
-    SESSION_EXPIRATION_SECONDS,
-  );
-  logger.info(
-    { sessionId, clientIp: authData.clientIp },
-    'New session created in Redis',
-  );
-  return newSession;
+    logger.info({ sessionId }, 'New session created in Redis');
+    return newSession;
 }
-// --- FIN DE LA GESTION DE SESSION ---
 
 const goalHandlerParams = z.object({
   goal: z.string().describe("The user's main objective."),
@@ -74,10 +63,8 @@ const goalHandlerTool: Tool<typeof goalHandlerParams> = {
   parameters: goalHandlerParams,
   execute: async (args, ctx) => {
     if (!ctx.session) throw new Error('AuthData not found in context');
-
     const allAvailableTools = await getAllTools();
     const session = await getOrCreateSession(ctx.session);
-
     const history: History = session.history;
     if (
       history.length === 0 ||
@@ -85,13 +72,11 @@ const goalHandlerTool: Tool<typeof goalHandlerParams> = {
     ) {
       history.push({ role: 'user', content: args.goal });
     }
-
     let finalResponse = 'Agent loop limit reached.';
     for (let i = 0; i < 15; i++) {
       const masterPrompt = getMasterPrompt(history, allAvailableTools);
       const llmResponse = await getLlmResponse(masterPrompt);
       history.push({ role: 'assistant', content: llmResponse });
-
       const toolCallMatch = llmResponse.match(
         /<tool_code>([\s\S]*?)<\/tool_code>/,
       );
@@ -104,12 +89,10 @@ const goalHandlerTool: Tool<typeof goalHandlerParams> = {
       try {
         const toolCall = JSON.parse(toolCallMatch[1].trim());
         const { tool: toolName, parameters } = toolCall;
-
         if (toolName === 'finish') {
           finalResponse = parameters.response || 'Task completed.';
           break;
         }
-
         const toolToExecute = allAvailableTools.find(
           (t) => t.name === toolName,
         );
@@ -136,16 +119,13 @@ const goalHandlerTool: Tool<typeof goalHandlerParams> = {
         });
       }
     }
-
     session.history = history;
-    // Mise à jour de la session dans Redis avec le nouvel historique
     await redis.set(
       `session:${session.id}`,
       JSON.stringify(session),
       'EX',
       SESSION_EXPIRATION_SECONDS,
     );
-
     return { type: 'text', text: finalResponse };
   },
 };
@@ -156,19 +136,23 @@ async function main() {
     const mcpServer = new FastMCP<AuthData>({
       name: 'Agentic-Forge-Server',
       version: '1.0.0',
-      // --- AUTHENTIFICATION SIMPLIFIÉE ET ROBUSTE ---
+      // --- MODIFICATION DE DIAGNOSTIC ---
       authenticate: async (req) => {
         const token = req.headers.authorization?.split(' ')[1];
         if (token !== config.AUTH_TOKEN) {
           throw new Error('Invalid auth token');
         }
 
-        const sessionId = req.headers['x-session-id'] as string | undefined;
+        let sessionId = req.headers['x-session-id'] as string | undefined;
 
+        // Si aucun ID de session n'est fourni, on en crée un temporaire au lieu de générer une erreur.
+        // Cela nous permet de voir si le reste de la chaîne de communication fonctionne.
         if (!sessionId) {
-          // C'est cette erreur que le framework renvoyait.
-          // Le serveur exige maintenant un ID de session, que le frontend corrigé fournit.
-          throw new Error('Bad Request: No valid session ID provided');
+          sessionId = `temp-session-${randomUUID()}`;
+          logger.warn(
+            { tempSessionId: sessionId, clientIp: req.socket.remoteAddress },
+            'DIAGNOSTIC: No session ID provided by client. Created temporary session.',
+          );
         }
 
         return {
@@ -179,7 +163,7 @@ async function main() {
           authenticatedAt: Date.now(),
         };
       },
-      // --- FIN DE L'AUTHENTIFICATION ---
+      // --- FIN DE LA MODIFICATION DE DIAGNOSTIC ---
       health: { enabled: true, path: '/health' },
     });
 
