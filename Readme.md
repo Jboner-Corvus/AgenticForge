@@ -1,22 +1,26 @@
+<div align="center">
+  <img src="assets/title.png" alt="Agentic Forge Logo" width="250">
+  <h1>AgenticForge</h1>
+  <strong>Une alternative à MANUS, privée et locale.</strong>
+  <br>
+  <strong>Français</strong> | <a href="#english">English</a> | <a href="#中文">中文</a> | <a href="#español">Español</a>
+  <p>
+    <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
+    <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
+    <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+    <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis">
+    <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm">
+    <img src="http://googleusercontent.com/image_collection/image_retrieval/2660760821499923368" alt="Model Context Protocol" height="28">
+  </p>
+  <p>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/Licence-MIT-blue.svg" alt="Licence"></a>
+    <a href="https://github.com/your-username/agentic-forge"><img src="https://img.shields.io/github/stars/your-username/agentic-forge?style=social" alt="GitHub stars"></a>
+  </p>
+</div>
+
 <p align="center">
-  <img src="assets/title.png" alt="Agentic Forge Logo" width="250">
+  Un agent IA autonome <strong>100% local</strong> qui forge ses propres outils, écrit du code et exécute des tâches complexes tout en gardant toutes les données sur votre appareil. Basé sur le <strong>protocole MCP (Model Context Protocol)</strong> avec <strong>FastMCP</strong> comme moteur, il est conçu pour les modèles de raisonnement locaux et adaptable à l'API de votre LLM favori, garantissant une confidentialité complète et aucune dépendance au cloud.
 </p>
-
-<h1 align="center">AgenticForge  </h1>
-
-
-![Agentic Forge Logo](https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge)
-
-### Une alternative a MANUS Privée et Locale
-
-
-**Français** | [English](#english) | [中文](#中文) | [Español](#español)
-
-Un agent IA autonome **100% local** qui forge ses propres outils, écrit du code et exécute des tâches complexes tout en gardant toutes les données sur votre appareil. Basé sur le **protocole MCP (Model Context Protocol)** avec **FastMCP** comme fusée propulsive, il est conçu pour les modèles de raisonnement locaux et adaptable à l'API de votre LLM favori, garantissant une confidentialité complète et aucune dépendance cloud.
-
-[![Licence](https://img.shields.io/badge/Licence-MIT-blue.svg)](LICENSE)
-[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://docker.com)
-[![GitHub stars](https://img.shields.io/github/stars/votre-username/agentic-forge?style=social)](https://github.com/votre-username/agentic-forge)
 
 ---
 

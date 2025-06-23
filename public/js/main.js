@@ -1,4 +1,4 @@
-// public/js/main.js (version corrigée avec générateur de session ID compatible)
+// public/js/main.js
 
 import { sendGoal, getToolCount } from './api.js';
 import {
@@ -9,20 +9,16 @@ import {
   updateToolCount,
 } from './ui.js';
 
-// --- Fonction de secours pour générer un UUID ---
 function generateUUID() {
-  // Une méthode simple pour générer un ID unique qui fonctionne partout.
   return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-// --- État de l'application ---
 const state = {
   isProcessing: false,
   sessionId: null,
   authToken: null,
 };
 
-// --- Références DOM ---
 const elements = {
   messageInput: document.getElementById('messageInput'),
   sendBtn: document.getElementById('sendBtn'),
@@ -33,7 +29,6 @@ const elements = {
   fileInput: document.getElementById('fileInput'),
 };
 
-// --- Initialisation de l'application ---
 document.addEventListener('DOMContentLoaded', () => {
   let sessionId = localStorage.getItem('agenticForgeSessionId');
   if (!sessionId) {
@@ -41,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('agenticForgeSessionId', sessionId);
   }
   state.sessionId = sessionId;
-  console.log(`Session ID initialized: ${state.sessionId}`);
 
   const savedToken = localStorage.getItem('agenticForgeAuthToken');
   if (savedToken) {
@@ -71,18 +65,16 @@ document.addEventListener('DOMContentLoaded', () => {
   elements.fileInput.addEventListener('change', handleFileSelect);
 });
 
-// --- Fonctions ---
-
 async function fetchAndDisplayToolCount() {
   if (!state.authToken || !state.sessionId) {
     updateToolCount('N/A');
     return;
   }
   try {
+    // S'assurer de passer le sessionId ici
     const count = await getToolCount(state.authToken, state.sessionId);
     updateToolCount(count);
   } catch (error) {
-    console.error("Échec de la récupération du nombre d'outils:", error);
     addMessage(`Erreur de connexion : ${error.message}`, 'assistant');
     updateToolCount('Erreur');
   }
@@ -137,7 +129,6 @@ async function handleSendMessage(event) {
     const errorMessage = `❌ Erreur : ${error.message}`;
     hideTypingIndicator();
     addMessage(errorMessage, 'assistant');
-    console.error(error);
   } finally {
     state.isProcessing = false;
     updateUI();
