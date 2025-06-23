@@ -1,6 +1,6 @@
 // public/js/api.js (version corrigée et fonctionnelle)
 
-const API_ENDPOINT = '/mcp'; // Un seul endpoint pour toutes les communications
+const API_ENDPOINT = '/mcp';
 
 /**
  * Envoie un objectif à l'agent en utilisant un appel d'outil FastMCP.
@@ -57,14 +57,12 @@ export async function sendGoal(goal, token, sessionId) {
 /**
  * Récupère le nombre d'outils en utilisant la méthode FastMCP `tools/list`.
  * @param {string} token - Le Bearer Token pour l'authentification.
- * @param {string} sessionId - L'ID de session pour l'authentification. // CORRECTION : Ajout du paramètre
- * @returns {Promise<number | string>} Le nombre d'outils ou 'N/A' en cas d'erreur.
+ * @param {string | null} sessionId - L'ID de session pour l'authentification.
+ * @returns {Promise<number>} Le nombre d'outils.
  */
 export async function getToolCount(token, sessionId) {
-  // CORRECTION : Ajout du paramètre
-  if (!token) {
-    console.warn('getToolCount skipped: no token provided.');
-    return 0;
+  if (!token || !sessionId) {
+    throw new Error('Token ou Session ID manquant pour getToolCount.');
   }
 
   const body = {
@@ -77,12 +75,9 @@ export async function getToolCount(token, sessionId) {
   const headers = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
+    // CORRECTION CRUCIALE : Ajout systématique de l'en-tête de session
+    'X-Session-ID': sessionId,
   };
-
-  // CORRECTION : Ajout de l'en-tête de session s'il est fourni
-  if (sessionId) {
-    headers['X-Session-ID'] = sessionId;
-  }
 
   try {
     const response = await fetch(API_ENDPOINT, {
@@ -93,24 +88,20 @@ export async function getToolCount(token, sessionId) {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      console.error(
-        `Erreur API (getToolCount) ${response.status}: ${errorBody}`,
-      );
-      // CORRECTION : Propager l'erreur pour que le message s'affiche dans l'UI
+      // Propager l'erreur pour qu'elle soit affichée dans l'interface
       throw new Error(`Erreur API ${response.status}: ${errorBody}`);
     }
 
     const data = await response.json();
     if (data.error) {
-      console.error(`Erreur MCP (getToolCount): ${data.error.message}`);
-      // CORRECTION : Propager l'erreur pour que le message s'affiche dans l'UI
-      throw new Error(`Erreur MCP: ${JSON.stringify(data.error)}`);
+      // Propager l'erreur MCP pour l'afficher
+      throw new Error(`Erreur MCP: ${data.error.message}`);
     }
 
     return data.result?.tools?.length || 0;
   } catch (error) {
     console.error('Fetch error in getToolCount:', error);
-    // CORRECTION : Relancer l'erreur pour que l'UI puisse la capturer
+    // Relancer l'erreur pour que l'appelant (main.js) puisse la gérer
     throw error;
   }
 }

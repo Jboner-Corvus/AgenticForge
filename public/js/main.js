@@ -31,22 +31,17 @@ const elements = {
   saveTokenBtn: document.getElementById('saveTokenBtn'),
   attachFileBtn: document.getElementById('attachFileBtn'),
   fileInput: document.getElementById('fileInput'),
-  toolCreationToggle: document.getElementById('toolCreationToggle'),
-  codeExecutionToggle: document.getElementById('codeExecutionToggle'),
 };
 
 // --- Initialisation de l'application ---
 document.addEventListener('DOMContentLoaded', () => {
-  // --- LOGIQUE DE SESSION ID CORRIGÉE ---
   let sessionId = localStorage.getItem('agenticForgeSessionId');
   if (!sessionId) {
-    // On utilise notre fonction compatible au lieu de crypto.randomUUID()
     sessionId = generateUUID();
     localStorage.setItem('agenticForgeSessionId', sessionId);
   }
   state.sessionId = sessionId;
   console.log(`Session ID initialized: ${state.sessionId}`);
-  // --- FIN DE LA CORRECTION ---
 
   const savedToken = localStorage.getItem('agenticForgeAuthToken');
   if (savedToken) {

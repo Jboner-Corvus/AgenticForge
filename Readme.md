@@ -2,11 +2,11 @@
   <img src="assets/title.png" alt="Agentic Forge Logo" width="250">
 </p>
 
-<h1 align="center">🔨 AgenticForge</h1>
-...
+<h1 align="center">AgenticForge</h1>
 
 
-### Une Alternative a MANUS Privée et Locale
+
+### 🔨 AgenticForge Une Alternative a MANUS Privée et Locale
 
 ![Agentic Forge Logo](https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge)
 
