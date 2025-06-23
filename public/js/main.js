@@ -159,7 +159,7 @@ function updateUI() {
   if (state.isProcessing) {
     elements.messageInput.placeholder = "L'agent réfléchit...";
   } else if (!state.authToken) {
-    elements.message-input.placeholder =
+    elements.messageInput.placeholder =
       "Veuillez d'abord sauvegarder un token.";
   } else {
     elements.messageInput.placeholder = 'Décrivez votre objectif...';
