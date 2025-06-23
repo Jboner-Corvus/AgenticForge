@@ -1,6 +1,7 @@
 // public/js/api.js
 
-const API_STREAM_URL = '/api/v1/agent/stream';
+// L'URL de l'API pointe maintenant directement vers l'endpoint MCP que nous allons exposer.
+const API_STREAM_URL = '/mcp'; // MODIFIÉ
 const API_TOOLS_COUNT_URL = '/api/v1/tools/count';
 
 /**
@@ -24,14 +25,30 @@ export async function sendGoal(goal, token, sessionId) {
     headers['X-Session-ID'] = sessionId;
   }
 
+  // MODIFIÉ : Construire le corps de la requête au format FastMCP pour appeler un outil.
+  const body = {
+    jsonrpc: '2.0',
+    method: 'tool/call',
+    params: {
+      name: 'internal_goalHandler', // Le nom de l'outil interne qui démarre la boucle de l'agent
+      arguments: {
+        goal: goal,
+        sessionId: sessionId || '', // Le paramètre `sessionId` est attendu par votre outil
+      },
+    },
+    id: `mcp-${Date.now()}`, // Un ID de requête unique
+  };
+
   const response = await fetch(API_STREAM_URL, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ goal }),
+    body: JSON.stringify(body), // Envoyer le corps de requête formaté
   });
 
   if (!response.ok) {
     const errorBody = await response.text();
+    // Affiche le corps de l'erreur pour un meilleur débogage
+    console.error("Corps de l'erreur de l'API:", errorBody);
     throw new Error(`Erreur API ${response.status}: ${errorBody}`);
   }
 
@@ -43,6 +60,7 @@ export async function sendGoal(goal, token, sessionId) {
  * @returns {Promise<number>} Le nombre d'outils.
  */
 export async function getToolCount() {
+  // Cette partie ne change pas car elle ne semble pas utiliser FastMCP
   const response = await fetch(API_TOOLS_COUNT_URL);
 
   if (!response.ok) {
