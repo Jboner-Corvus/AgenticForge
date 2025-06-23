@@ -1,4 +1,10 @@
+<p align="center">
+  <img src="assets/title.png" alt="Agentic Forge Logo" width="250">
+</p>
+
 # 🔨 Agentic Forge
+...
+
 
 ### Une Alternative a MANUS Privée et Locale
 
