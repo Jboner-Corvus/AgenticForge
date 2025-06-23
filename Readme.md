@@ -388,7 +388,6 @@ agentic-forge/
 │   ├── 📄 server.ts          # Serveur principal
 │   ├── 📄 worker.ts          # Worker async
 │   └── 📄 webServer.ts       # Interface web
-├── 📁 workspace/             # Espace de travail isolé
 ├── 📄 docker-compose.yml     # Orchestration services
 ├── 📄 Dockerfile             # Définition conteneur
 ├── 📄 run.sh                 # Console de gestion
