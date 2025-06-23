@@ -1,11 +1,12 @@
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/title-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="assets/title.png">
-    <img src="assets/title.png" alt="AgenticForge" width="600" style="margin-bottom: 10px;">
-  </picture>
-  <a href="https://github.com/Jboner-Corvus/AgenticForge">
-    <img src="https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge" alt="Agentic Forge Logo">
+<p align="center">
+  <img src="assets/title.png" alt="Agentic Forge Logo" width="250">
+</p>
+
+<h1 align="center">AgenticForge  </h1>
+
+
+![Agentic Forge Logo](https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge)
+
   </a>
   <h3 align="center">
       Une alternative privée et locale à MANUS.
