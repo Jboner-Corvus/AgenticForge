@@ -1,42 +1,47 @@
 /**
- * src/types.ts (Corrigé et Linted)
+ * src/types.ts (Formaté)
  *
  * Ce fichier définit les types et interfaces partagés dans l'application.
- * Il a été corrigé pour résoudre les conflits de types et les erreurs de linting.
  */
 import type { ZodObject, ZodRawShape } from 'zod';
-import type {
-  FastMCPSession,
-  Context as FastMCPContext,
-  Tool as FastMCPTool,
-} from 'fastmcp';
+import type { Context as FastMCPContext, Tool as FastMCPTool } from 'fastmcp';
 
 // L'historique de la conversation, utilisé par l'orchestrateur de l'agent.
 export type History = { role: 'user' | 'assistant'; content: string }[];
 
-// Les données d'authentification.
+/**
+ * Les données d'authentification. C'est le type qui sera passé au générique de FastMCP.
+ * Il doit respecter la contrainte `Record<string, unknown>`.
+ */
 export interface AuthData {
-  id: string;
+  id: string; // Un UUID pour l'événement d'authentification lui-même
+  sessionId: string; // L'ID de session persistant
   type: string;
   clientIp?: string;
   authenticatedAt: number;
+  [key: string]: unknown; // CORRIGÉ: any a été remplacé par unknown pour la sécurité du type.
 }
 
-// Session de l'agent (utilisée côté serveur par FastMCP)
-export interface AgentSession extends FastMCPSession {
+/**
+ * Notre objet de session applicatif.
+ * C'est une interface simple, elle n'étend plus FastMCPSession.
+ */
+export interface AgentSession {
+  id: string; // L'ID de session
+  auth: AuthData;
   history: History;
-  [key: string]: unknown;
+  createdAt: number;
+  lastActivity: number;
 }
 
-// Contexte (Ctx) fourni par FastMCP à l'intérieur de la méthode `execute` d'un outil.
-export type Ctx = FastMCPContext<AgentSession>;
+// Contexte (Ctx) fourni par FastMCP. Il contiendra notre AuthData.
+export type Ctx = FastMCPContext<AuthData>;
 
-// Définition d'un outil.
-// CORRECTION : Remplacement de `any` par `ZodRawShape` pour une meilleure sécurité de type.
+// Définition d'un outil. Le contexte est maintenant correctement typé avec AuthData.
 export type Tool<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape>> =
-  FastMCPTool<AgentSession, T>;
+  FastMCPTool<AuthData, T>;
 
-// Types pour les tâches asynchrones via BullMQ.
+// ... (Le reste du fichier est inchangé)
 export interface AsyncTaskJob<TParams = Record<string, unknown>> {
   data: AsyncTaskJobPayload<TParams>;
   id?: string;

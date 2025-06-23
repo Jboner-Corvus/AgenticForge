@@ -1,4 +1,4 @@
-// src/worker.ts
+// src/worker.ts (Formaté et Corrigé)
 import { Worker } from 'bullmq';
 import { config } from './config.js';
 import logger from './logger.js';
@@ -6,7 +6,7 @@ import { taskQueue, deadLetterQueue, redisConnection } from './queue.js';
 import { allTools } from './tools/index.js';
 import { getContentWorkerLogic } from './tools/browser/getContent.tool.js';
 import { navigateWorkerLogic } from './tools/browser/navigate.tool.js';
-import type { AsyncTaskJob, Ctx, AgentSession } from './types.js';
+import type { AsyncTaskJob, Ctx } from './types.js';
 
 const worker = new Worker(
   taskQueue.name,
@@ -25,16 +25,8 @@ const worker = new Worker(
       throw new Error(`Authentication data is missing for job ${job.id}`);
     }
 
-    const mockSession: Partial<AgentSession> = {
-      auth,
-      history: [],
-      sessionId: auth.id,
-      createdAt: auth.authenticatedAt,
-      isClosed: false,
-    };
-
     const ctx: Ctx = {
-      session: mockSession as AgentSession,
+      session: auth,
       log,
       reportProgress: async (p: unknown) =>
         log.debug({ p }, 'Progress report (worker)'),
@@ -54,8 +46,8 @@ const worker = new Worker(
         ctx,
       );
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      result = await tool.execute(params as any, ctx);
+      // CORRIGÉ: `any` a été remplacé par un type plus sûr.
+      result = await tool.execute(params as Record<string, unknown>, ctx);
     }
 
     log.info({ result }, 'Job completed successfully.');

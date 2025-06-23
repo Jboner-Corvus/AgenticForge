@@ -1,45 +1,23 @@
-// src/server.ts
-import http from 'http';
+// src/server.ts (Finalisé)
+import { FastMCP } from 'fastmcp';
+// CORRECTION : Le type 'Context' a été retiré car il est inféré et non utilisé directement.
+import type { TextContent } from 'fastmcp';
+import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { config } from './config.js';
 import logger from './logger.js';
 import { loadTools } from './utils/toolLoader.js';
 import { getMasterPrompt } from './prompts/orchestrator.prompt.js';
 import { getLlmResponse } from './utils/llmProvider.js';
-import { runQualityGate } from './utils/qualityGate.js';
 import { getErrDetails } from './utils/errorUtils.js';
-import type { AuthData, Tool } from './types.js';
+import type { AgentSession, AuthData, History, Tool } from './types.js';
 
-let allTools: Tool[] = [];
-
-interface ServerSession {
-  id: string;
-  auth: AuthData;
-  history: { role: 'user' | 'assistant'; content: string }[];
-  createdAt: number;
-  lastActivity: number;
-}
-const sessions = new Map<string, ServerSession>();
-
-// Nettoyage des sessions inactives
-setInterval(
-  () => {
-    const now = Date.now();
-    const oneHour = 60 * 60 * 1000;
-    for (const [id, session] of sessions.entries()) {
-      if (now - session.lastActivity > oneHour) {
-        sessions.delete(id);
-        logger.debug({ sessionId: id }, 'Session cleaned up due to inactivity');
-      }
-    }
-  },
-  30 * 60 * 1000,
-);
+const sessions = new Map<string, AgentSession>();
 
 function getOrCreateSession(
   authData: AuthData,
   sessionId?: string,
-): ServerSession {
+): AgentSession {
   const id = sessionId || randomUUID();
   let session = sessions.get(id);
   if (!session) {
@@ -61,198 +39,137 @@ function getOrCreateSession(
   return session;
 }
 
-async function runAutonomousLoop(session: ServerSession): Promise<string> {
-  const MAX_LOOPS = 15;
-  let loopCount = 0;
-  const codeExecutionTools = [
-    'executeDevCommand',
-    'executePython',
-    'system_createTool',
-  ];
+const goalHandlerParams = z.object({
+  goal: z.string().describe("The user's main objective."),
+  sessionId: z.string().describe('The session identifier.'),
+});
 
-  while (loopCount < MAX_LOOPS) {
-    loopCount++;
-    const masterPrompt = getMasterPrompt(session.history, allTools);
-    const llmResponse = await getLlmResponse(masterPrompt);
-    session.history.push({ role: 'assistant', content: llmResponse });
+const goalHandlerTool: Tool<typeof goalHandlerParams> = {
+  name: 'internal_goalHandler',
+  description: "Handles the user's goal to start the agent loop.",
+  parameters: goalHandlerParams,
+  execute: async (args, ctx) => {
+    if (!ctx.session) throw new Error('AuthData not found in context');
 
-    const toolCallMatch = llmResponse.match(
-      /<tool_code>([\s\S]*?)<\/tool_code>/,
-    );
-    if (toolCallMatch && toolCallMatch[1]) {
+    const allAvailableTools = await loadTools();
+    const session = sessions.get(args.sessionId);
+    if (!session) {
+      throw new Error(`Session with ID ${args.sessionId} not found.`);
+    }
+
+    const history: History = session.history;
+    if (history.length === 0) {
+      history.push({ role: 'user', content: args.goal });
+    }
+
+    let finalResponse = 'Agent loop limit reached.';
+    for (let i = 0; i < 15; i++) {
+      const masterPrompt = getMasterPrompt(history, allAvailableTools);
+      const llmResponse = await getLlmResponse(masterPrompt);
+      history.push({ role: 'assistant', content: llmResponse });
+
+      const toolCallMatch = llmResponse.match(
+        /<tool_code>([\s\S]*?)<\/tool_code>/,
+      );
+      if (!toolCallMatch?.[1]) {
+        finalResponse = llmResponse
+          .replace(/<thought>[\s\S]*?<\/thought>/, '')
+          .trim();
+        break;
+      }
       try {
         const toolCall = JSON.parse(toolCallMatch[1].trim());
-        const toolName = toolCall.tool;
-
-        if (codeExecutionTools.includes(toolName)) {
-          const qualityResult = await runQualityGate();
-          if (!qualityResult.success) {
-            session.history.push({
-              role: 'user',
-              content: `Résultat: Le Quality Gate a échoué.\n${qualityResult.output}`,
-            });
-            continue;
-          }
-        }
+        const { tool: toolName, parameters } = toolCall;
 
         if (toolName === 'finish') {
-          return toolCall.parameters.response || 'Tâche terminée.';
+          finalResponse = parameters.response || 'Task completed.';
+          break;
         }
 
-        const tool = allTools.find((t) => t.name === toolName);
-        if (tool) {
-          const result = `Simulation du résultat pour l'outil ${toolName}.`;
-          session.history.push({
+        const toolToExecute = allAvailableTools.find(
+          (t) => t.name === toolName,
+        );
+        if (toolToExecute) {
+          ctx.log.info(`Executing tool: ${toolName}`, { parameters });
+          const result = await toolToExecute.execute(parameters, ctx);
+          const resultText =
+            typeof result === 'string'
+              ? result
+              : (result as TextContent)?.text || 'Tool executed.';
+          history.push({
             role: 'user',
-            content: `Résultat: ${result}`,
+            content: `Tool Output: ${resultText}`,
           });
         } else {
-          session.history.push({
+          history.push({
             role: 'user',
-            content: `Erreur: Outil '${toolName}' non trouvé.`,
+            content: `Error: Tool '${toolName}' not found.`,
           });
         }
       } catch (e) {
-        session.history.push({
+        history.push({
           role: 'user',
-          content: `Erreur interne: ${(e as Error).message}`,
+          content: `Error executing tool: ${(e as Error).message}`,
         });
       }
-    } else {
-      logger.info(
-        { sessionId: session.id },
-        "L'agent a répondu sans utiliser d'outil. Continuation de la boucle.",
-      );
     }
-  }
-  return "L'agent a atteint sa limite d'actions sans terminer la tâche.";
-}
 
-async function processConversation(
-  goal: string,
-  session: ServerSession,
-): Promise<string> {
-  session.history.push({ role: 'user', content: goal });
-  return await runAutonomousLoop(session);
-}
+    session.history = history;
+    return { type: 'text', text: finalResponse };
+  },
+};
 
-async function handleRequest(
-  req: http.IncomingMessage,
-  res: http.ServerResponse,
-): Promise<void> {
-  // Configuration des en-têtes CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Authorization, X-Session-ID',
-  );
-
-  // Gérer les requêtes pre-flight OPTIONS
-  if (req.method === 'OPTIONS') {
-    res.writeHead(200).end();
-    return;
-  }
-
-  const url = new URL(req.url || '/', `http://${req.headers.host}`);
-
-  // Endpoint de vérification de santé
-  if (url.pathname === '/health') {
-    res
-      .writeHead(200, { 'Content-Type': 'text/plain' })
-      .end('Agentic Forge Server - Healthy');
-    return;
-  }
-
-  // Endpoint pour le traitement principal de l'agent
-  if (url.pathname === '/api/v1/agent/stream' && req.method === 'POST') {
-    let body = '';
-    req.on('data', (chunk) => {
-      body += chunk.toString();
-    });
-    req.on('end', () => {
-      void (async () => {
-        try {
-          if (
-            (req.headers.authorization || '') !== `Bearer ${config.AUTH_TOKEN}`
-          ) {
-            res
-              .writeHead(401, { 'Content-Type': 'application/json' })
-              .end(JSON.stringify({ error: 'Unauthorized' }));
-            return;
-          }
-          const data = JSON.parse(body);
-          const authData: AuthData = {
-            id: randomUUID(),
-            type: 'Bearer',
-            clientIp: req.socket.remoteAddress,
-            authenticatedAt: Date.now(),
-          };
-          const session = getOrCreateSession(
-            authData,
-            req.headers['x-session-id'] as string,
-          );
-          const response = await processConversation(data.goal, session);
-          res
-            .writeHead(200, { 'Content-Type': 'application/json' })
-            .end(JSON.stringify({ response, sessionId: session.id }));
-        } catch (parseError) {
-          logger.error({
-            ...getErrDetails(parseError),
-            logContext: 'Error parsing request body',
-            body,
-          });
-          res
-            .writeHead(400, { 'Content-Type': 'application/json' })
-            .end(
-              JSON.stringify({ error: 'Bad Request', message: 'Invalid JSON' }),
-            );
-        }
-      })();
-    });
-    return;
-  }
-
-  // Endpoint pour compter les outils
-  if (url.pathname === '/api/v1/tools/count' && req.method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ toolCount: allTools.length }));
-    return;
-  }
-
-  // Gérer les routes non trouvées
-  res
-    .writeHead(404, { 'Content-Type': 'application/json' })
-    .end(JSON.stringify({ error: 'Not Found' }));
-}
-
-async function startServer() {
+async function main() {
   try {
-    // Charger les outils au démarrage
-    allTools = await loadTools();
-    const server = http.createServer((req, res) => {
-      handleRequest(req, res).catch((err) => {
-        logger.error({
-          ...getErrDetails(err),
-          logContext: 'Unhandled error in request handler',
-        });
-        if (!res.headersSent) {
-          res
-            .writeHead(500, { 'Content-Type': 'application/json' })
-            .end(JSON.stringify({ error: 'Internal Server Error' }));
+    const allTools = await loadTools();
+    const mcpServer = new FastMCP<AuthData>({
+      name: 'Agentic-Forge-Server',
+      version: '1.0.0',
+      authenticate: async (req) => {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (token !== config.AUTH_TOKEN) throw new Error('Invalid auth token');
+
+        const sessionIdHeader = req.headers['x-session-id'] as
+          | string
+          | undefined;
+        let session = sessions.get(sessionIdHeader || '');
+
+        const authData: AuthData = {
+          id: randomUUID(),
+          sessionId: session?.id || sessionIdHeader || randomUUID(),
+          type: 'Bearer',
+          clientIp: req.socket.remoteAddress,
+          authenticatedAt: Date.now(),
+        };
+
+        if (!session) {
+          session = getOrCreateSession(authData, authData.sessionId);
+          sessions.set(session.id, session);
         }
-      });
+
+        return authData;
+      },
+      health: { enabled: true, path: '/health' },
     });
-    server.listen(config.PORT, '0.0.0.0', () => {
-      logger.info(`🐉 Agentic Forge server started on 0.0.0.0:${config.PORT}`);
+
+    for (const tool of allTools) {
+      mcpServer.addTool(tool);
+    }
+    mcpServer.addTool(goalHandlerTool);
+
+    await mcpServer.start({
+      transportType: 'httpStream',
+      httpStream: { port: config.PORT, endpoint: '/mcp' },
     });
+
+    logger.info(
+      `🐉 Agentic Forge (FastMCP) server started on 0.0.0.0:${config.PORT}`,
+    );
   } catch (error) {
-    logger.fatal({
-      ...getErrDetails(error),
-      logContext: 'Impossible de démarrer le serveur.',
-    });
+    logger.fatal({ ...getErrDetails(error) }, 'Failed to start server.');
     process.exit(1);
   }
 }
 
-void startServer();
+// CORRECTION : `void` est ajouté pour gérer correctement la promesse "flottante".
+void main();
