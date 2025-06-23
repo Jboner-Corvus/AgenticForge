@@ -2,7 +2,7 @@
   <img src="assets/title.png" alt="Agentic Forge Logo" width="250">
 </p>
 
-# 🔨 Agentic Forge
+<h1 align="center">🔨 AgenticForge</h1>
 ...
 
 
