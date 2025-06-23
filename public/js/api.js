@@ -42,16 +42,21 @@ export async function sendGoal(goal, token, sessionId) {
 }
 
 export async function getToolCount(token, sessionId) {
-  if (!token || !sessionId) {
-    throw new Error('Token ou Session ID manquant pour getToolCount.');
+  if (!token) {
+    throw new Error('Token manquant pour getToolCount.');
   }
 
+  // CORRECTION PRINCIPALE: Ne pas exiger sessionId pour getToolCount
+  // Cette opération peut fonctionner sans session spécifique
   const headers = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
-    // La ligne la plus importante pour corriger l'erreur
-    'X-Session-ID': sessionId,
   };
+  
+  // Ajouter l'ID de session seulement s'il est fourni
+  if (sessionId) {
+    headers['X-Session-ID'] = sessionId;
+  }
 
   const body = {
     jsonrpc: '2.0',

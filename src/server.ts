@@ -1,4 +1,4 @@
-// src/server.ts (Version de Diagnostic)
+// src/server.ts (Version corrigée pour la gestion des sessions)
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
@@ -20,6 +20,7 @@ const redis = new Redis({
 });
 redis.on('error', (err) => logger.error({ err }, 'Redis connection error'));
 const SESSION_EXPIRATION_SECONDS = 24 * 3600;
+
 async function getOrCreateSession(authData: AuthData): Promise<AgentSession> {
     const { sessionId } = authData;
     const sessionKey = `session:${sessionId}`;
@@ -136,7 +137,7 @@ async function main() {
     const mcpServer = new FastMCP<AuthData>({
       name: 'Agentic-Forge-Server',
       version: '1.0.0',
-      // --- MODIFICATION DE DIAGNOSTIC ---
+      // --- MODIFICATION PRINCIPALE: Gestion plus flexible de l'authentification ---
       authenticate: async (req) => {
         const token = req.headers.authorization?.split(' ')[1];
         if (token !== config.AUTH_TOKEN) {
@@ -145,13 +146,14 @@ async function main() {
 
         let sessionId = req.headers['x-session-id'] as string | undefined;
 
-        // Si aucun ID de session n'est fourni, on en crée un temporaire au lieu de générer une erreur.
-        // Cela nous permet de voir si le reste de la chaîne de communication fonctionne.
+        // CORRECTION: Pour certaines opérations (comme tools/list), 
+        // on peut permettre l'accès sans session spécifique
         if (!sessionId) {
+          // Générer un sessionId temporaire pour les opérations qui n'en ont pas besoin
           sessionId = `temp-session-${randomUUID()}`;
-          logger.warn(
+          logger.debug(
             { tempSessionId: sessionId, clientIp: req.socket.remoteAddress },
-            'DIAGNOSTIC: No session ID provided by client. Created temporary session.',
+            'No session ID provided. Created temporary session for this request.',
           );
         }
 
@@ -163,7 +165,7 @@ async function main() {
           authenticatedAt: Date.now(),
         };
       },
-      // --- FIN DE LA MODIFICATION DE DIAGNOSTIC ---
+      // --- FIN DE LA MODIFICATION ---
       health: { enabled: true, path: '/health' },
     });
 

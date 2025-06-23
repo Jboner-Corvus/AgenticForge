@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.authTokenInput.value = savedToken;
     state.authToken = savedToken;
     updateTokenStatus(true);
+    // CORRECTION: Appeler getToolCount même sans sessionId au début
     fetchAndDisplayToolCount();
   } else {
     updateTokenStatus(false);
@@ -66,17 +67,26 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function fetchAndDisplayToolCount() {
-  if (!state.authToken || !state.sessionId) {
+  if (!state.authToken) {
     updateToolCount('N/A');
     return;
   }
   try {
-    // S'assurer de passer le sessionId ici
+    // CORRECTION: Permettre l'appel même sans sessionId
+    // Le serveur peut retourner le compte d'outils généraux
     const count = await getToolCount(state.authToken, state.sessionId);
     updateToolCount(count);
   } catch (error) {
-    addMessage(`Erreur de connexion : ${error.message}`, 'assistant');
-    updateToolCount('Erreur');
+    console.error('Erreur lors de la récupération du nombre d\'outils:', error);
+    // CORRECTION: Ne pas afficher d'erreur si c'est juste un problème de session
+    // Au lieu de cela, essayer d'appeler sans sessionId
+    try {
+      const count = await getToolCount(state.authToken, null);
+      updateToolCount(count);
+    } catch (secondError) {
+      addMessage(`Erreur de connexion : ${secondError.message}`, 'assistant');
+      updateToolCount('Erreur');
+    }
   }
 }
 
@@ -125,6 +135,9 @@ async function handleSendMessage(event) {
       "L'agent a terminé mais n'a fourni aucune réponse textuelle.";
     hideTypingIndicator();
     addMessage(responseText, 'assistant');
+    
+    // CORRECTION: Actualiser le nombre d'outils après une interaction réussie
+    fetchAndDisplayToolCount();
   } catch (error) {
     const errorMessage = `❌ Erreur : ${error.message}`;
     hideTypingIndicator();
