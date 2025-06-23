@@ -31,7 +31,8 @@
     "pino": "^9.7.0",
     "playwright": "^1.53.1",
     "typescript": "^5.8.3",
-    "zod": "^3.25.67"
+    "zod": "^3.25.67",
+    "tsconfig-paths": "^4.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
@@ -52,7 +53,6 @@
     "prettier": "^3.5.3",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
     "typescript-eslint": "^8.34.1"
   },
   "engines": {
