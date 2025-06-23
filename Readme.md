@@ -18,12 +18,6 @@
   </p>
   <br>
   <p align="center">
-    <a href="#-installation-rapide">Installation</a> •
-    <a href="#-fonctionnalités">Fonctionnalités</a> •
-    <a href="#-exemples">Exemples</a> •
-    <a href="#-documentation">Documentation</a>
-  </p>
-  <p align="center">
     <a href="https://github.com/Jboner-Corvus/AgenticForge/blob/main/LICENSE">
       <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square&logo=opensource&logoColor=white" alt="MIT License">
     </a>
