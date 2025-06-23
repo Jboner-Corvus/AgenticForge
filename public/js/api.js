@@ -1,11 +1,9 @@
-// public/js/api.js
+// public/js/api.js (version corrigée et fonctionnelle)
 
-// L'URL de l'API pointe maintenant directement vers l'endpoint MCP que nous allons exposer.
-const API_STREAM_URL = '/mcp'; // MODIFIÉ
-const API_TOOLS_COUNT_URL = '/api/v1/tools/count';
+const API_ENDPOINT = '/mcp'; // Un seul endpoint pour toutes les communications
 
 /**
- * Envoie un objectif à l'agent.
+ * Envoie un objectif à l'agent en utilisant un appel d'outil FastMCP.
  * @param {string} goal - L'objectif de l'utilisateur.
  * @param {string} token - Le Bearer Token fourni par l'utilisateur.
  * @param {string | null} sessionId - L'ID de session, si existant.
@@ -20,55 +18,89 @@ export async function sendGoal(goal, token, sessionId) {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
   };
-
   if (sessionId) {
     headers['X-Session-ID'] = sessionId;
   }
 
-  // MODIFIÉ : Construire le corps de la requête au format FastMCP pour appeler un outil.
   const body = {
     jsonrpc: '2.0',
     method: 'tool/call',
     params: {
-      name: 'internal_goalHandler', // Le nom de l'outil interne qui démarre la boucle de l'agent
+      name: 'internal_goalHandler',
       arguments: {
         goal: goal,
-        sessionId: sessionId || '', // Le paramètre `sessionId` est attendu par votre outil
+        sessionId: sessionId || '',
       },
     },
-    id: `mcp-${Date.now()}`, // Un ID de requête unique
+    id: `mcp-goal-${Date.now()}`,
   };
 
-  const response = await fetch(API_STREAM_URL, {
+  const response = await fetch(API_ENDPOINT, {
     method: 'POST',
-    headers,
-    body: JSON.stringify(body), // Envoyer le corps de requête formaté
+    headers: headers,
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
     const errorBody = await response.text();
-    // Affiche le corps de l'erreur pour un meilleur débogage
     console.error("Corps de l'erreur de l'API:", errorBody);
     throw new Error(`Erreur API ${response.status}: ${errorBody}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  if (data.error) {
+    throw new Error(`Erreur MCP: ${data.error.message}`);
+  }
+  return data.result;
 }
 
 /**
- * Récupère le nombre d'outils détectés depuis le serveur.
- * @returns {Promise<number>} Le nombre d'outils.
+ * Récupère le nombre d'outils en utilisant la méthode FastMCP `tools/list`.
+ * @param {string} token - Le Bearer Token pour l'authentification.
+ * @returns {Promise<number | string>} Le nombre d'outils ou 'N/A' en cas d'erreur.
  */
-export async function getToolCount() {
-  // Cette partie ne change pas car elle ne semble pas utiliser FastMCP
-  const response = await fetch(API_TOOLS_COUNT_URL);
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error(`Erreur API ${response.status}: ${errorBody}`);
-    return 'Erreur';
+export async function getToolCount(token) {
+  if (!token) {
+    console.warn('getToolCount skipped: no token provided.');
+    return 0;
   }
 
-  const data = await response.json();
-  return data.toolCount;
+  const body = {
+    jsonrpc: '2.0',
+    method: 'tools/list',
+    params: {},
+    id: `mcp-tools-${Date.now()}`,
+  };
+
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
+
+  try {
+    const response = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error(
+        `Erreur API (getToolCount) ${response.status}: ${errorBody}`,
+      );
+      return 'N/A';
+    }
+
+    const data = await response.json();
+    if (data.error) {
+      console.error(`Erreur MCP (getToolCount): ${data.error.message}`);
+      return 'N/A';
+    }
+
+    return data.result?.tools?.length || 0;
+  } catch (error) {
+    console.error('Fetch error in getToolCount:', error);
+    return 'N/A';
+  }
 }

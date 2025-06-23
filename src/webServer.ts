@@ -1,18 +1,18 @@
-// src/webServer.ts (version corrigée et nettoyée)
+// src/webServer.ts (version corrigée et finale du proxy)
 
 import * as http from 'http';
-import * as fs from 'fs'; // 'fs' est bien utilisé pour servir les fichiers statiques.
+import * as fs from 'fs';
 import * as path from 'path';
-import { posix } from 'path'; // Utiliser posix pour la manipulation des chemins d'URL
 import { fileURLToPath } from 'url';
 import logger from './logger.js';
 import { config } from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename); // '__dirname' est nécessaire pour localiser le dossier 'public'
+const __dirname = path.dirname(__filename);
 
 const WEB_PORT = parseInt(process.env.WEB_PORT || '3000');
-const MCP_SERVER_URL = config.MCP_SERVER_URL || 'http://localhost:8080';
+// On construit une URL de base SANS chemin pour le proxy.
+const PROXY_TARGET = `http://server:${config.PORT}`;
 
 const mimeTypes: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -24,7 +24,6 @@ const mimeTypes: Record<string, string> = {
 };
 
 const server = http.createServer((req, res) => {
-  // Configuration des en-têtes CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader(
     'Access-Control-Allow-Methods',
@@ -35,9 +34,8 @@ const server = http.createServer((req, res) => {
     'Content-Type, Authorization, X-Session-ID',
   );
 
-  // Réponse immédiate pour les requêtes pre-flight OPTIONS
   if (req.method === 'OPTIONS') {
-    res.writeHead(204); // 204 No Content est plus approprié
+    res.writeHead(204);
     res.end();
     return;
   }
@@ -47,23 +45,17 @@ const server = http.createServer((req, res) => {
     `${req.method} ${incomingUrl.pathname} from ${req.socket.remoteAddress}`,
   );
 
-  // ---- BLOC PROXY ----
+  // ---- BLOC PROXY SIMPLIFIÉ ----
   if (
-    incomingUrl.pathname.startsWith('/api/') ||
+    incomingUrl.pathname.startsWith('/api/') || // Pour la compatibilité si besoin
     incomingUrl.pathname.startsWith('/mcp') ||
     incomingUrl.pathname === '/health'
   ) {
-    if (!MCP_SERVER_URL) {
-      logger.error('Configuration Error: MCP_SERVER_URL is not defined.');
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Internal Server Configuration Error' }));
-      return;
-    }
-
-    const mcpBaseUrl = new URL(MCP_SERVER_URL);
-    const targetUrl = new URL(mcpBaseUrl.origin);
-    targetUrl.pathname = posix.join(mcpBaseUrl.pathname, incomingUrl.pathname);
-    targetUrl.search = incomingUrl.search;
+    // On combine la base du serveur cible avec le chemin de la requête entrante.
+    const targetUrl = new URL(
+      incomingUrl.pathname + incomingUrl.search,
+      PROXY_TARGET,
+    );
 
     logger.info(`Proxying request to: ${targetUrl.href}`);
 
@@ -72,7 +64,7 @@ const server = http.createServer((req, res) => {
       {
         method: req.method,
         headers: { ...req.headers, host: targetUrl.host },
-        timeout: 30000,
+        timeout: 60000, // Augmentation du timeout pour les réponses longues du LLM
       },
       (proxyRes) => {
         res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
@@ -102,11 +94,9 @@ const server = http.createServer((req, res) => {
   try {
     const requestedPath =
       incomingUrl.pathname === '/' ? '/index.html' : incomingUrl.pathname;
-    // Correction ici : le dossier public est au même niveau que le dossier 'dist' où ce fichier sera exécuté.
     const publicDir = path.resolve(__dirname, '..', 'public');
     const fullPath = path.join(publicDir, requestedPath);
 
-    // Sécurité : Vérifier que le chemin ne sort pas du dossier public
     if (!fullPath.startsWith(publicDir)) {
       res.writeHead(403, { 'Content-Type': 'text/plain' });
       res.end('Forbidden');
@@ -120,7 +110,6 @@ const server = http.createServer((req, res) => {
       res.writeHead(200, { 'Content-Type': contentType });
       res.end(content);
     } else {
-      // Pour les applications Single-Page, renvoyer index.html pour n'importe quelle route non trouvée
       const indexPath = path.join(publicDir, 'index.html');
       if (fs.existsSync(indexPath)) {
         const content = fs.readFileSync(indexPath);
