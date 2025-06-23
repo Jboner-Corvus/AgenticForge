@@ -1,9 +1,8 @@
-// src/server.ts (Finalisé)
-import { FastMCP } from 'fastmcp';
-// CORRECTION : Le type 'Context' a été retiré car il est inféré et non utilisé directement.
-import type { TextContent } from 'fastmcp';
+// src/server.ts (Finalisé avec gestion de session Redis)
+import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
+import { Redis } from 'ioredis';
 import { config } from './config.js';
 import logger from './logger.js';
 import { loadTools } from './utils/toolLoader.js';
@@ -12,36 +11,61 @@ import { getLlmResponse } from './utils/llmProvider.js';
 import { getErrDetails } from './utils/errorUtils.js';
 import type { AgentSession, AuthData, History, Tool } from './types.js';
 
-const sessions = new Map<string, AgentSession>();
+// --- GESTION DE SESSION VIA REDIS ---
+const redis = new Redis({
+  host: config.REDIS_HOST,
+  port: config.REDIS_PORT,
+  password: config.REDIS_PASSWORD,
+  maxRetriesPerRequest: 3, // Éviter les boucles infinies en cas de panne de Redis
+});
 
-function getOrCreateSession(
-  authData: AuthData,
-  sessionId?: string,
-): AgentSession {
-  const id = sessionId || randomUUID();
-  let session = sessions.get(id);
-  if (!session) {
-    session = {
-      id,
-      auth: authData,
-      history: [],
-      createdAt: Date.now(),
-      lastActivity: Date.now(),
-    };
-    sessions.set(id, session);
-    logger.info(
-      { sessionId: id, clientIp: authData.clientIp },
-      'New session created',
-    );
-  } else {
+redis.on('error', (err) => logger.error({ err }, 'Redis connection error'));
+
+const SESSION_EXPIRATION_SECONDS = 24 * 3600; // 24 heures
+
+async function getOrCreateSession(authData: AuthData): Promise<AgentSession> {
+  const { sessionId } = authData;
+  const sessionKey = `session:${sessionId}`;
+
+  const sessionString = await redis.get(sessionKey);
+
+  if (sessionString) {
+    const session: AgentSession = JSON.parse(sessionString);
     session.lastActivity = Date.now();
+    await redis.set(
+      sessionKey,
+      JSON.stringify(session),
+      'EX',
+      SESSION_EXPIRATION_SECONDS,
+    );
+    return session;
   }
-  return session;
+
+  const newSession: AgentSession = {
+    id: sessionId,
+    auth: authData,
+    history: [],
+    createdAt: Date.now(),
+    lastActivity: Date.now(),
+  };
+
+  await redis.set(
+    sessionKey,
+    JSON.stringify(newSession),
+    'EX',
+    SESSION_EXPIRATION_SECONDS,
+  );
+  logger.info(
+    { sessionId, clientIp: authData.clientIp },
+    'New session created in Redis',
+  );
+  return newSession;
 }
+// --- FIN DE LA GESTION DE SESSION ---
 
 const goalHandlerParams = z.object({
   goal: z.string().describe("The user's main objective."),
-  sessionId: z.string().describe('The session identifier.'),
+  sessionId: z.string().min(1).describe('The session identifier.'),
 });
 
 const goalHandlerTool: Tool<typeof goalHandlerParams> = {
@@ -52,13 +76,13 @@ const goalHandlerTool: Tool<typeof goalHandlerParams> = {
     if (!ctx.session) throw new Error('AuthData not found in context');
 
     const allAvailableTools = await loadTools();
-    const session = sessions.get(args.sessionId);
-    if (!session) {
-      throw new Error(`Session with ID ${args.sessionId} not found.`);
-    }
+    const session = await getOrCreateSession(ctx.session);
 
     const history: History = session.history;
-    if (history.length === 0) {
+    if (
+      history.length === 0 ||
+      history[history.length - 1].content !== args.goal
+    ) {
       history.push({ role: 'user', content: args.goal });
     }
 
@@ -95,11 +119,10 @@ const goalHandlerTool: Tool<typeof goalHandlerParams> = {
           const resultText =
             typeof result === 'string'
               ? result
-              : (result as TextContent)?.text || 'Tool executed.';
-          history.push({
-            role: 'user',
-            content: `Tool Output: ${resultText}`,
-          });
+              : (result as TextContent)?.text ||
+                JSON.stringify(result) ||
+                'Tool executed with no text output.';
+          history.push({ role: 'user', content: `Tool Output: ${resultText}` });
         } else {
           history.push({
             role: 'user',
@@ -115,6 +138,14 @@ const goalHandlerTool: Tool<typeof goalHandlerParams> = {
     }
 
     session.history = history;
+    // Mise à jour de la session dans Redis avec le nouvel historique
+    await redis.set(
+      `session:${session.id}`,
+      JSON.stringify(session),
+      'EX',
+      SESSION_EXPIRATION_SECONDS,
+    );
+
     return { type: 'text', text: finalResponse };
   },
 };
@@ -125,30 +156,30 @@ async function main() {
     const mcpServer = new FastMCP<AuthData>({
       name: 'Agentic-Forge-Server',
       version: '1.0.0',
+      // --- AUTHENTIFICATION SIMPLIFIÉE ET ROBUSTE ---
       authenticate: async (req) => {
         const token = req.headers.authorization?.split(' ')[1];
-        if (token !== config.AUTH_TOKEN) throw new Error('Invalid auth token');
+        if (token !== config.AUTH_TOKEN) {
+          throw new Error('Invalid auth token');
+        }
 
-        const sessionIdHeader = req.headers['x-session-id'] as
-          | string
-          | undefined;
-        let session = sessions.get(sessionIdHeader || '');
+        const sessionId = req.headers['x-session-id'] as string | undefined;
 
-        const authData: AuthData = {
+        if (!sessionId) {
+          // C'est cette erreur que le framework renvoyait.
+          // Le serveur exige maintenant un ID de session, que le frontend corrigé fournit.
+          throw new Error('Bad Request: No valid session ID provided');
+        }
+
+        return {
           id: randomUUID(),
-          sessionId: session?.id || sessionIdHeader || randomUUID(),
+          sessionId: sessionId,
           type: 'Bearer',
           clientIp: req.socket.remoteAddress,
           authenticatedAt: Date.now(),
         };
-
-        if (!session) {
-          session = getOrCreateSession(authData, authData.sessionId);
-          sessions.set(session.id, session);
-        }
-
-        return authData;
       },
+      // --- FIN DE L'AUTHENTIFICATION ---
       health: { enabled: true, path: '/health' },
     });
 
@@ -171,5 +202,4 @@ async function main() {
   }
 }
 
-// CORRECTION : `void` est ajouté pour gérer correctement la promesse "flottante".
 void main();

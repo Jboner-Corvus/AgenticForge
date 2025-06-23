@@ -48,7 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log(`Session ID initialized: ${state.sessionId}`);
   // --- FIN DE LA CORRECTION ---
 
-
   const savedToken = localStorage.getItem('agenticForgeAuthToken');
   if (savedToken) {
     elements.authTokenInput.value = savedToken;
@@ -133,7 +132,9 @@ async function handleSendMessage(event) {
 
   try {
     const result = await sendGoal(goal, state.authToken, state.sessionId);
-    const responseText = result.content?.[0]?.text || "L'agent a terminé mais n'a fourni aucune réponse textuelle.";
+    const responseText =
+      result.content?.[0]?.text ||
+      "L'agent a terminé mais n'a fourni aucune réponse textuelle.";
     hideTypingIndicator();
     addMessage(responseText, 'assistant');
   } catch (error) {
@@ -157,7 +158,8 @@ function updateUI() {
   if (state.isProcessing) {
     elements.messageInput.placeholder = "L'agent réfléchit...";
   } else if (!state.authToken) {
-    elements.messageInput.placeholder = "Veuillez d'abord sauvegarder un token.";
+    elements.messageInput.placeholder =
+      "Veuillez d'abord sauvegarder un token.";
   } else {
     elements.messageInput.placeholder = 'Décrivez votre objectif...';
   }

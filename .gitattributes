@@ -8,3 +8,4 @@ run.sh linguist-generated
 # If you have a separate folder for deployment scripts or generated files, you can exclude them:
 # deployment_scripts/ linguist-generated
 # generated_files/ linguist-generated
+# test
