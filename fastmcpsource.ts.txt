@@ -1,3 +1,5 @@
+Ceci est le fichier source de fast MCP il est a titre indicatif !
+
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { RequestOptions } from "@modelcontextprotocol/sdk/shared/protocol.js";
