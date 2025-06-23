@@ -57,9 +57,10 @@ export async function sendGoal(goal, token, sessionId) {
 /**
  * Récupère le nombre d'outils en utilisant la méthode FastMCP `tools/list`.
  * @param {string} token - Le Bearer Token pour l'authentification.
+ * @param {string} sessionId - L'ID de session pour l'authentification. // CORRECTION : Ajout du paramètre
  * @returns {Promise<number | string>} Le nombre d'outils ou 'N/A' en cas d'erreur.
  */
-export async function getToolCount(token) {
+export async function getToolCount(token, sessionId) { // CORRECTION : Ajout du paramètre
   if (!token) {
     console.warn('getToolCount skipped: no token provided.');
     return 0;
@@ -77,6 +78,11 @@ export async function getToolCount(token) {
     Authorization: `Bearer ${token}`,
   };
 
+  // CORRECTION : Ajout de l'en-tête de session s'il est fourni
+  if (sessionId) {
+    headers['X-Session-ID'] = sessionId;
+  }
+
   try {
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
@@ -89,18 +95,21 @@ export async function getToolCount(token) {
       console.error(
         `Erreur API (getToolCount) ${response.status}: ${errorBody}`,
       );
-      return 'N/A';
+      // CORRECTION : Propager l'erreur pour que le message s'affiche dans l'UI
+      throw new Error(`Erreur API ${response.status}: ${errorBody}`);
     }
 
     const data = await response.json();
     if (data.error) {
       console.error(`Erreur MCP (getToolCount): ${data.error.message}`);
-      return 'N/A';
+      // CORRECTION : Propager l'erreur pour que le message s'affiche dans l'UI
+      throw new Error(`Erreur MCP: ${JSON.stringify(data.error)}`);
     }
 
     return data.result?.tools?.length || 0;
   } catch (error) {
     console.error('Fetch error in getToolCount:', error);
-    return 'N/A';
+    // CORRECTION : Relancer l'erreur pour que l'UI puisse la capturer
+    throw error;
   }
 }

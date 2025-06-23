@@ -76,19 +76,20 @@ document.addEventListener('DOMContentLoaded', () => {
   elements.fileInput.addEventListener('change', handleFileSelect);
 });
 
-// --- Fonctions (le reste du fichier est inchangé) ---
+// --- Fonctions ---
 
 async function fetchAndDisplayToolCount() {
-  if (!state.authToken) {
+  if (!state.authToken || !state.sessionId) {
     updateToolCount('N/A');
     return;
   }
   try {
-    const count = await getToolCount(state.authToken);
+    const count = await getToolCount(state.authToken, state.sessionId);
     updateToolCount(count);
   } catch (error) {
     console.error("Échec de la récupération du nombre d'outils:", error);
-    updateToolCount('N/A');
+    addMessage(`Erreur de connexion : ${error.message}`, 'assistant');
+    updateToolCount('Erreur');
   }
 }
 
@@ -158,7 +159,7 @@ function updateUI() {
   if (state.isProcessing) {
     elements.messageInput.placeholder = "L'agent réfléchit...";
   } else if (!state.authToken) {
-    elements.messageInput.placeholder =
+    elements.message-input.placeholder =
       "Veuillez d'abord sauvegarder un token.";
   } else {
     elements.messageInput.placeholder = 'Décrivez votre objectif...';
