@@ -7,14 +7,23 @@
 <p align="center">
   <img src="https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge" alt="Agentic Forge Logo">
 </p>
-  
+<p align="center">
+  <strong>🌐 Langues disponibles</strong><br>
+  <a href="README.md">English</a> • 
+  <a href="README_FR.md">Français</a> • 
+  <a href="README_CHS.md">中文</a> • 
+  <a href="README_CHT.md">繁體中文</a> • 
+  <a href="README_JP.md">日本語</a> • 
+  <a href="README_PTBR.md">Português (Brasil)</a> • 
+  <a href="README_ES.md">Español</a>
+</p> 
 <h3 align="center">
       Une alternative privée et locale à MANUS.
 </h3>
 
 <p align="center">
   <em>
-    Un agent IA 100% autonome et local qui forge ses propres outils, écrit du code et exécute des tâches complexes, tout en conservant l'intégralité des données sur votre appareil. Basé sur le protocole MCP (Model Context Protocol) avec FastMCP comme moteur, il est conçu pour les modèles de raisonnement locaux et adaptable à l'API de votre LLM favori, garantissant une confidentialité totale et aucune dépendance au cloud.
+    Un agent IA 100% autonome, gratuit et local qui forge ses propres outils, écrit du code et exécute des tâches complexes, tout en conservant l'intégralité des données sur votre appareil. Basé sur le protocole MCP (Model Context Protocol) avec FastMCP comme moteur, il est conçu pour les modèles de raisonnement locaux et adaptable à l'API de votre LLM favori, garantissant une confidentialité totale et aucune dépendance au cloud.
   </em>
 </p>
 <br>

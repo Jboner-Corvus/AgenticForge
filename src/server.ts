@@ -1,4 +1,4 @@
-// src/server.ts (Version de débogage ultime - Journalisation des en-têtes)
+// src/server.ts (Version finale corrigée)
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { Redis } from 'ioredis';
@@ -9,6 +9,7 @@ import { getMasterPrompt } from './prompts/orchestrator.prompt.js';
 import { getLlmResponse } from './utils/llmProvider.js';
 import { getErrDetails } from './utils/errorUtils.js';
 import type { AgentSession, History, SessionData } from './types.js';
+import type { IncomingMessage } from 'http';
 
 const redis = new Redis({
   host: config.REDIS_HOST,
@@ -58,48 +59,33 @@ async function main() {
     const mcpServer = new FastMCP<SessionData>({
       name: 'Agentic-Forge-Server',
       version: '1.0.0',
-      // =================== MODIFICATION POUR DÉBOGAGE ===================
-      authenticate: async (request) => {
-        // Log de tous les en-têtes reçus par le serveur pour le débogage.
-        logger.info({
-          message: 'En-têtes reçus par la fonction authenticate',
-          headers: request.headers,
-        });
+      // =================== CORRECTION DÉFINITIVE ===================
+      authenticate: async (request: IncomingMessage) => {
+        // Accès correct à l'en-tête pour un objet IncomingMessage de Node.js
+        const sessionIdHeader = request.headers['x-session-id'];
+        const sessionId = Array.isArray(sessionIdHeader)
+          ? sessionIdHeader[0]
+          : sessionIdHeader;
 
-        const sessionId = request.headers['x-session-id'] as string | undefined;
+        logger.info(
+          {
+            sessionId: sessionId || 'Not found',
+            method: request.method,
+            url: request.url,
+          },
+          'Authenticating request',
+        );
 
-        // On garde la vérification pour voir si le log ci-dessus s'affiche avant l'erreur.
+        // Si la session n'est pas valide, on lève une exception
+        // que FastMCP interceptera pour renvoyer une erreur 400.
         if (!sessionId) {
           logger.error(
-            "ERREUR FATALE : L'en-tête x-session-id est manquant ou vide. Renvoi de l'erreur 400.",
+            "FATAL ERROR: 'x-session-id' header is missing or empty. Throwing authentication error.",
           );
-          throw new Response(
-            JSON.stringify({
-              error: {
-                code: -32000,
-                message: 'Bad Request: No valid session ID provided',
-              },
-            }),
-            {
-              status: 400,
-              statusText: 'Bad Request',
-              headers: { 'Content-Type': 'application/json' },
-            },
-          );
+          throw new Error('Bad Request: No valid session ID provided');
         }
 
-        // La vérification du token reste désactivée pour l'instant.
-        /*
-        const authHeader = request.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-          throw new Response(null, { status: 401, statusText: 'Unauthorized: Missing Bearer token' });
-        }
-        const token = authHeader.split(' ')[1];
-        if (token !== config.AUTH_TOKEN) {
-          throw new Response(null, { status: 401, statusText: 'Unauthorized: Invalid token' });
-        }
-        */
-
+        // Le chemin de succès retourne un objet qui correspond à SessionData.
         return {
           sessionId,
           headers: request.headers,
@@ -107,7 +93,7 @@ async function main() {
           authenticatedAt: Date.now(),
         };
       },
-      // =======================================================================
+      // =============================================================
       health: { enabled: true, path: '/health' },
     });
 
