@@ -1,4 +1,4 @@
-// src/webServer.ts (Corrigé)
+// src/webServer.ts (Corrigé et complet)
 import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -28,7 +28,9 @@ const server = http.createServer((req, res) => {
     'GET, POST, PUT, DELETE, OPTIONS',
   );
 
-  // CORRECTION : On standardise le nom de l'en-tête en minuscules.
+  // --- CORRECTION ---
+  // On ajoute 'x-session-id' à la liste des en-têtes autorisés.
+  // C'est la modification cruciale pour résoudre le problème.
   res.setHeader(
     'Access-Control-Allow-Headers',
     'Content-Type, Authorization, x-session-id',
