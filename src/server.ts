@@ -1,4 +1,4 @@
-// src/server.ts (Version Finale avec Connexion Redis Robuste et Correction de Session)
+// src/server.ts (Version finale corrigée et robuste)
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { Redis } from 'ioredis';
@@ -10,7 +10,7 @@ import { getLlmResponse } from './utils/llmProvider.js';
 import type { AgentSession, History, SessionData } from './types.js';
 import type { IncomingMessage, IncomingHttpHeaders } from 'http';
 
-// Configuration Redis (inchangée)
+// --- Configuration de Redis ---
 const redis = new Redis({
   host: config.REDIS_HOST,
   port: config.REDIS_PORT,
@@ -30,8 +30,9 @@ redis.on('error', (err) => logger.error({ err }, 'Erreur de connexion Redis.'));
 
 const SESSION_EXPIRATION_SECONDS = 24 * 3600;
 
-// Fonction pour sauvegarder/mettre à jour la session (inchangée)
-async function saveSession(session: AgentSession) {
+// --- Fonctions de gestion de session (Base de données) ---
+
+async function saveSession(session: AgentSession): Promise<void> {
     await redis.set(
         `session:${session.id}`,
         JSON.stringify(session),
@@ -40,16 +41,12 @@ async function saveSession(session: AgentSession) {
     );
 }
 
-// Fonction pour récupérer la session (inchangée)
 async function getSession(sessionId: string): Promise<AgentSession | null> {
     const sessionString = await redis.get(`session:${sessionId}`);
-    return sessionString ? JSON.parse(sessionString) as AgentSession : null;
+    if (!sessionString) return null;
+    return JSON.parse(sessionString) as AgentSession;
 }
 
-/**
- * NOUVELLE FONCTION: Assainit les en-têtes pour éviter les erreurs de sérialisation.
- * Ne conserve que les en-têtes simples et utiles.
- */
 function sanitizeHeaders(headers: IncomingHttpHeaders): Record<string, string> {
   const serializableHeaders: Record<string, string> = {};
   const allowedHeaders = ['user-agent', 'referer', 'accept-language', 'content-type'];
@@ -64,74 +61,88 @@ function sanitizeHeaders(headers: IncomingHttpHeaders): Record<string, string> {
   return serializableHeaders;
 }
 
+/**
+ * Point d'entrée principal du serveur.
+ */
 async function main() {
   try {
-    const allTools = await getAllTools();
+    const allTools = await getAllTools(); //
+
     const mcpServer = new FastMCP<SessionData>({
       name: 'Agentic-Forge-Server',
       version: '1.0.0',
+      // --- Logique d'Authentification et de Session Centralisée ---
       authenticate: async (request: IncomingMessage): Promise<SessionData> => {
-        // CORRECTION 1: Utiliser 'mcp-session-id' pour correspondre au client.
         const sessionIdHeader = request.headers['mcp-session-id'];
         const sessionId = Array.isArray(sessionIdHeader) ? sessionIdHeader[0] : sessionIdHeader;
 
         if (!sessionId) {
           throw new Error('Bad Request: No valid session ID provided');
         }
-        
-        // CORRECTION 2: Assainir les en-têtes avant de les stocker.
-        const serializableHeaders = sanitizeHeaders(request.headers);
 
-        return {
-          sessionId,
-          headers: serializableHeaders, // Utiliser l'objet assaini
-          clientIp: request.socket?.remoteAddress,
-          authenticatedAt: Date.now(),
-        };
+        // Tenter de récupérer la session existante
+        let agentSession = await getSession(sessionId);
+
+        // Si la session n'existe pas, la créer
+        if (!agentSession) {
+          logger.info({ sessionId }, "Nouvel ID de session détecté. Création d'une session...");
+          const sanitized = sanitizeHeaders(request.headers);
+          const sessionData: SessionData = {
+              sessionId: sessionId,
+              headers: sanitized,
+              clientIp: request.socket?.remoteAddress,
+              authenticatedAt: Date.now(),
+          };
+
+          agentSession = {
+              id: sessionId,
+              auth: sessionData,
+              history: [],
+              createdAt: Date.now(),
+              lastActivity: Date.now(),
+          };
+        } else {
+            // Si elle existe, mettre à jour son activité
+            agentSession.lastActivity = Date.now();
+        }
+
+        // Sauvegarder la session (nouvelle ou mise à jour)
+        await saveSession(agentSession);
+
+        // Retourner la partie "SessionData" de notre session, attendue par FastMCP
+        return agentSession.auth;
       },
       health: { enabled: true, path: '/health' },
     });
-    
-    // ... La logique de getOrCreateSession est déplacée à l'intérieur du goalHandler pour plus de clarté
-    const getOrCreateSession = async (sessionData: SessionData): Promise<AgentSession> => {
-        const existingSession = await getSession(sessionData.sessionId);
-        if (existingSession) {
-            return existingSession;
-        }
 
-        const newSession: AgentSession = {
-            id: sessionData.sessionId,
-            auth: sessionData,
-            history: [],
-            createdAt: Date.now(),
-            lastActivity: Date.now(),
-        };
-        await saveSession(newSession);
-        logger.info({ sessionId: newSession.id }, "Nouvelle session créée et sauvegardée.");
-        return newSession;
-    }
-
-
+    // --- Définition de l'outil de gestion des objectifs ---
     const goalHandlerTool: Tool<z.ZodObject<{ goal: z.ZodString }>> = {
         name: 'internal_goalHandler',
         description: "Handles the user's primary goal.",
         parameters: z.object({ goal: z.string() }),
         execute: async (args, ctx) => {
-            if (!ctx.session) throw new Error('Contexte de session manquant.');
+            if (!ctx.session) {
+              throw new Error('Contexte de session manquant.');
+            }
             
-            const session = await getOrCreateSession(ctx.session);
+            // La session est maintenant garantie d'exister, nous la récupérons simplement.
+            const session = await getSession(ctx.session.sessionId);
+            if (!session) {
+                // Cette erreur est une sécurité, elle ne devrait jamais se produire
+                throw new Error(`Erreur critique: Session ${ctx.session.sessionId} introuvable dans la base de données.`);
+            }
+
             const history: History = session.history;
             
             if (history.length === 0 || history[history.length - 1].content !== args.goal) {
                 history.push({ role: 'user', content: args.goal });
             }
 
-            const masterPrompt = getMasterPrompt(history, allTools);
-            const llmResponse = await getLlmResponse(masterPrompt);
+            const masterPrompt = getMasterPrompt(history, allTools); //
+            const llmResponse = await getLlmResponse(masterPrompt); //
             history.push({ role: 'assistant', content: llmResponse });
             
             session.history = history;
-            session.lastActivity = Date.now();
             await saveSession(session);
 
             const response: TextContent = { type: 'text', text: llmResponse };
@@ -139,16 +150,19 @@ async function main() {
         }
     };
     
+    // Ajout de tous les outils au serveur
     for (const tool of allTools) {
       if(tool.name !== 'internal_goalHandler') mcpServer.addTool(tool);
     }
     mcpServer.addTool(goalHandlerTool);
 
+    // Démarrage du serveur
     await mcpServer.start({
       transportType: 'httpStream',
       httpStream: { port: config.PORT },
     });
     logger.info(`🐉 Agentic Forge server started on 0.0.0.0:${config.PORT}`);
+
   } catch (error) {
     logger.fatal({ err: error }, 'Failed to start server.');
     process.exit(1);
