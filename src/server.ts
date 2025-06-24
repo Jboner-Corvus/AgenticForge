@@ -174,11 +174,11 @@ async function main() {
         }
 
         // 2. COMPATIBILITÉ FASTMCP : Utiliser notre X-Session-ID ou créer un ID
-        let sessionId = request.headers['x-session-id'] as string | undefined;
+        let sessionId = request.headers['mcp-session-id'] as string | undefined;
         
-        // Si pas de X-Session-ID, utiliser mcp-session-id ou créer un nouvel ID
+        // Par sécurité, on vérifie aussi l'ancien header au cas où.
         if (!sessionId) {
-          sessionId = request.headers['mcp-session-id'] as string | undefined;
+          sessionId = request.headers['x-session-id'] as string | undefined;
         }
         
         if (!sessionId) {

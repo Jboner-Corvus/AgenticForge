@@ -12,11 +12,11 @@ const API_ENDPOINT = '/mcp';
 export async function sendGoal(goal, token, sessionId) {
   // VALIDATION STRICTE : Les deux paramètres sont obligatoires
   if (!token) {
-    throw new Error('Le Bearer Token est obligatoire pour sendGoal().');
+    throw new Error("Le Bearer Token est obligatoire pour sendGoal().");
   }
   
   if (!sessionId) {
-    throw new Error('Le Session ID est obligatoire pour sendGoal().');
+    throw new Error("Le Session ID est obligatoire pour sendGoal().");
   }
 
   console.log('🚀 [API] Sending goal with strict session contract', {
@@ -28,7 +28,7 @@ export async function sendGoal(goal, token, sessionId) {
   const headers = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
-    'X-Session-ID': sessionId, // OBLIGATOIRE selon le contrat serveur
+    'mcp-session-id': sessionId, // CORRECTION : Utilisation du header standard de FastMCP
   };
 
   const body = {
@@ -63,7 +63,7 @@ export async function sendGoal(goal, token, sessionId) {
       if (response.status === 400 && errorText.includes('session')) {
         throw new Error('Session invalide ou expirée. Veuillez rafraîchir la page pour créer une nouvelle session.');
       } else if (response.status === 401) {
-        throw new Error('Token d\'authentification invalide. Veuillez vérifier votre Bearer Token.');
+        throw new Error("Token d'authentification invalide. Veuillez vérifier votre Bearer Token.");
       } else {
         throw new Error(`Erreur API ${response.status}: ${errorText}`);
       }
@@ -94,11 +94,11 @@ export async function sendGoal(goal, token, sessionId) {
 export async function getToolCount(token, sessionId) {
   // VALIDATION STRICTE : Les deux paramètres sont obligatoires
   if (!token) {
-    throw new Error('Le Bearer Token est obligatoire pour getToolCount().');
+    throw new Error("Le Bearer Token est obligatoire pour getToolCount().");
   }
   
   if (!sessionId) {
-    throw new Error('Le Session ID est obligatoire pour getToolCount().');
+    throw new Error("Le Session ID est obligatoire pour getToolCount().");
   }
 
   console.log('🔧 [API] Getting tool count with strict session contract', {
@@ -109,7 +109,7 @@ export async function getToolCount(token, sessionId) {
   const headers = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
-    'X-Session-ID': sessionId, // OBLIGATOIRE selon le contrat serveur
+    'mcp-session-id': sessionId, // CORRECTION : Utilisation du header standard de FastMCP
   };
 
   const body = {
@@ -136,9 +136,9 @@ export async function getToolCount(token, sessionId) {
       
       // Analyser le type d'erreur
       if (response.status === 400 && errorText.includes('session')) {
-        throw new Error('Session invalide pour récupérer les outils. Session ID requis.');
+        throw new Error("Session invalide pour récupérer les outils. Session ID requis.");
       } else if (response.status === 401) {
-        throw new Error('Token d\'authentification invalide pour récupérer les outils.');
+        throw new Error("Token d'authentification invalide pour récupérer les outils.");
       } else {
         throw new Error(`Erreur API ${response.status}: ${errorText}`);
       }
