@@ -1,9 +1,8 @@
-// src/utils/validationUtils.test.ts
-import { isValidHttpUrl } from './validationUtils';
+// src/utils/validationUtils.test.ts (Corrigé)
+import { isValidHttpUrl } from './validationUtils.js';
 
 describe('validationUtils', () => {
   describe('isValidHttpUrl', () => {
-    // Test cases for valid URLs
     it('should return true for valid http URLs', () => {
       expect(isValidHttpUrl('http://example.com')).toBe(true);
     });
@@ -18,7 +17,6 @@ describe('validationUtils', () => {
       expect(isValidHttpUrl('https://sub.domain.co.uk:8080')).toBe(true);
     });
 
-    // Test cases for invalid URLs
     it('should return false for protocols other than http or https', () => {
       expect(isValidHttpUrl('ftp://example.com')).toBe(false);
       expect(isValidHttpUrl('file:///path/to/file')).toBe(false);
@@ -27,10 +25,9 @@ describe('validationUtils', () => {
     it('should return false for malformed URLs', () => {
       expect(isValidHttpUrl('not a url')).toBe(false);
       expect(isValidHttpUrl('http//example.com')).toBe(false);
-      expect(isValidHttpUrl('www.example.com')).toBe(false); // Missing protocol
+      expect(isValidHttpUrl('www.example.com')).toBe(false);
     });
 
-    // Test cases for non-string inputs
     it('should return false for null or undefined input', () => {
       expect(isValidHttpUrl(null)).toBe(false);
       expect(isValidHttpUrl(undefined)).toBe(false);

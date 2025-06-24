@@ -49,11 +49,11 @@
 
 服务运行后：
 
-| 服务              | URL                                       | 描述           |
-| ----------------- | ----------------------------------------- | -------------- |
-| **Web界面**       | http://localhost:3000                     | 主用户界面     |
-| **API端点**       | http://localhost:8080/api/v1/agent/stream | 直接API访问    |
-| **健康检查**      | http://localhost:8080/health              | 服务健康状态   |
+| 服务         | URL                                       | 描述         |
+| ------------ | ----------------------------------------- | ------------ |
+| **Web界面**  | http://localhost:3000                     | 主用户界面   |
+| **API端点**  | http://localhost:8080/api/v1/agent/stream | 直接API访问  |
+| **健康检查** | http://localhost:8080/health              | 服务健康状态 |
 
 ### 快速测试
 
@@ -132,13 +132,13 @@ curl -X POST http://localhost:8080/api/v1/agent/stream \
 
 ### 关键命令
 
-| 选项   | 描述           | 何时使用         |
-| ------ | -------------- | ---------------- |
-| **1**  | 启动生态系统   | 首次启动或停止后 |
-| **2**  | 重启服务       | 配置更改后       |
-| **4**  | 检查状态       | 健康诊断         |
-| **5**  | 跟踪日志       | 实时监控         |
-| **7**  | 重建镜像       | 主要代码更改后   |
+| 选项  | 描述         | 何时使用         |
+| ----- | ------------ | ---------------- |
+| **1** | 启动生态系统 | 首次启动或停止后 |
+| **2** | 重启服务     | 配置更改后       |
+| **4** | 检查状态     | 健康诊断         |
+| **5** | 跟踪日志     | 实时监控         |
+| **7** | 重建镜像     | 主要代码更改后   |
 
 ---
 
@@ -205,7 +205,7 @@ import { z } from 'zod';
 import type { Tool, Ctx } from '../../types.js';
 
 export const myToolParams = z.object({
-  input: z.string().describe("输入参数"),
+  input: z.string().describe('输入参数'),
   options: z.number().default(1),
 });
 
@@ -374,12 +374,12 @@ CODE_EXECUTION_TIMEOUT_MS=60000
 
 ### 硬件要求
 
-| 模型大小 | GPU内存    | 性能                |
-| -------- | ---------- | ------------------- |
-| 7B       | 8GB VRAM   | ⚠️ 仅基本任务        |
+| 模型大小 | GPU内存    | 性能                  |
+| -------- | ---------- | --------------------- |
+| 7B       | 8GB VRAM   | ⚠️ 仅基本任务         |
 | 14B      | 12GB VRAM  | ✅ 大多数任务工作良好 |
-| 32B      | 24GB VRAM  | 🚀 出色性能          |
-| 70B+     | 48GB+ VRAM | 💪 专业质量          |
+| 32B      | 24GB VRAM  | 🚀 出色性能           |
+| 70B+     | 48GB+ VRAM | 💪 专业质量           |
 
 ### 使用Ollama设置（推荐）
 
@@ -417,12 +417,12 @@ CODE_EXECUTION_TIMEOUT_MS=60000
 
 ### 1. 选择API提供商
 
-| 提供商    | 模型示例                            | API密钥链接                                                   |
-| --------- | ----------------------------------- | ------------------------------------------------------------- |
-| OpenAI    | `gpt-4`, `o1`                       | [platform.openai.com](https://platform.openai.com/signup)   |
-| Google    | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)     |
-| Anthropic | `claude-4-sonnet`, `claude-4-opus`  | [console.anthropic.com](https://console.anthropic.com/)     |
-| DeepSeek  | `deepseek-chat`, `deepseek-coder`   | [platform.deepseek.com](https://platform.deepseek.com)     |
+| 提供商    | 模型示例                             | API密钥链接                                               |
+| --------- | ------------------------------------ | --------------------------------------------------------- |
+| OpenAI    | `gpt-4`, `o1`                        | [platform.openai.com](https://platform.openai.com/signup) |
+| Google    | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)   |
+| Anthropic | `claude-4-sonnet`, `claude-4-opus`   | [console.anthropic.com](https://console.anthropic.com/)   |
+| DeepSeek  | `deepseek-chat`, `deepseek-coder`    | [platform.deepseek.com](https://platform.deepseek.com)    |
 
 ### 2. 设置您的API密钥
 
@@ -486,4 +486,4 @@ docker-compose ps
 docker-compose logs -f
 ```
 
-**
+\*\*

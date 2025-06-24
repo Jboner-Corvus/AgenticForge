@@ -145,12 +145,12 @@ Make sure Docker is running before continuing.
 
 ### Hardware Requirements
 
-| Model Size | GPU Memory | Performance                        |
-| ---------- | ---------- | ---------------------------------- |
-| 7B         | 8GB VRAM   | ⚠️ Basic tasks only                 |
-| 14B        | 12GB VRAM  | ✅ Most tasks work well             |
-| 32B        | 24GB VRAM  | 🚀 Excellent performance           |
-| 70B+       | 48GB+ VRAM | 💪 Professional quality            |
+| Model Size | GPU Memory | Performance              |
+| ---------- | ---------- | ------------------------ |
+| 7B         | 8GB VRAM   | ⚠️ Basic tasks only      |
+| 14B        | 12GB VRAM  | ✅ Most tasks work well  |
+| 32B        | 24GB VRAM  | 🚀 Excellent performance |
+| 70B+       | 48GB+ VRAM | 💪 Professional quality  |
 
 ### Setup with Ollama (Recommended)
 
@@ -188,12 +188,12 @@ If you prefer cloud models or lack sufficient hardware:
 
 ### 1. Choose an API Provider
 
-| Provider  | Model Examples                   | API Key Link                                              |
-| --------- | -------------------------------- | --------------------------------------------------------- |
-| OpenAI    | `gpt-4`, `o1`                    | [platform.openai.com](https://platform.openai.com/signup) |
+| Provider  | Model Examples                       | API Key Link                                              |
+| --------- | ------------------------------------ | --------------------------------------------------------- |
+| OpenAI    | `gpt-4`, `o1`                        | [platform.openai.com](https://platform.openai.com/signup) |
 | Google    | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)   |
-| Anthropic | `claude-4-sonnet`, `claude-4-opus` | [console.anthropic.com](https://console.anthropic.com/)   |
-| DeepSeek  | `deepseek-chat`, `deepseek-coder` | [platform.deepseek.com](https://platform.deepseek.com)    |
+| Anthropic | `claude-4-sonnet`, `claude-4-opus`   | [console.anthropic.com](https://console.anthropic.com/)   |
+| DeepSeek  | `deepseek-chat`, `deepseek-coder`    | [platform.deepseek.com](https://platform.deepseek.com)    |
 
 ### 2. Set your API key
 
@@ -265,11 +265,11 @@ docker-compose logs -f
 
 Once services are running:
 
-| Service                | URL                                       | Description                      |
-| ---------------------- | ----------------------------------------- | -------------------------------- |
-| **Web Interface**      | http://localhost:3000                     | Main user interface             |
-| **API Endpoint**       | http://localhost:8080/api/v1/agent/stream | Direct API access               |
-| **Health Check**       | http://localhost:8080/health              | Service health status           |
+| Service           | URL                                       | Description           |
+| ----------------- | ----------------------------------------- | --------------------- |
+| **Web Interface** | http://localhost:3000                     | Main user interface   |
+| **API Endpoint**  | http://localhost:8080/api/v1/agent/stream | Direct API access     |
+| **Health Check**  | http://localhost:8080/health              | Service health status |
 
 ### Quick Test
 
@@ -348,13 +348,13 @@ The interactive console provides complete control over your Agentic Forge instan
 
 ### Key Commands
 
-| Option | Description             | When to Use                        |
-| ------ | ----------------------- | ---------------------------------- |
-| **1**  | Start ecosystem         | First launch or after stopping    |
-| **2**  | Restart services        | After configuration changes        |
-| **4**  | Check status            | Health diagnostics                 |
-| **5**  | Follow logs             | Real-time monitoring               |
-| **7**  | Rebuild images          | After major code changes           |
+| Option | Description      | When to Use                    |
+| ------ | ---------------- | ------------------------------ |
+| **1**  | Start ecosystem  | First launch or after stopping |
+| **2**  | Restart services | After configuration changes    |
+| **4**  | Check status     | Health diagnostics             |
+| **5**  | Follow logs      | Real-time monitoring           |
+| **7**  | Rebuild images   | After major code changes       |
 
 ---
 
@@ -421,7 +421,7 @@ import { z } from 'zod';
 import type { Tool, Ctx } from '../../types.js';
 
 export const myToolParams = z.object({
-  input: z.string().describe("Input parameter"),
+  input: z.string().describe('Input parameter'),
   options: z.number().default(1),
 });
 

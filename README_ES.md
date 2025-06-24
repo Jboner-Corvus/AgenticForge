@@ -145,12 +145,12 @@ Asegúrese de que Docker esté ejecutándose antes de continuar.
 
 ### Requisitos de Hardware
 
-| Tamaño del Modelo | Memoria GPU | Rendimiento                        |
-| ----------------- | ----------- | ---------------------------------- |
-| 7B                | 8GB VRAM    | ⚠️ Solo tareas básicas              |
+| Tamaño del Modelo | Memoria GPU | Rendimiento                            |
+| ----------------- | ----------- | -------------------------------------- |
+| 7B                | 8GB VRAM    | ⚠️ Solo tareas básicas                 |
 | 14B               | 12GB VRAM   | ✅ La mayoría de tareas funcionan bien |
-| 32B               | 24GB VRAM   | 🚀 Excelente rendimiento           |
-| 70B+              | 48GB+ VRAM  | 💪 Calidad profesional             |
+| 32B               | 24GB VRAM   | 🚀 Excelente rendimiento               |
+| 70B+              | 48GB+ VRAM  | 💪 Calidad profesional                 |
 
 ### Configuración con Ollama (Recomendado)
 
@@ -188,12 +188,12 @@ Si prefiere modelos en la nube o carece de hardware suficiente:
 
 ### 1. Elegir un Proveedor de API
 
-| Proveedor | Ejemplos de Modelos                  | Enlace de Clave API                                           |
-| --------- | ------------------------------------ | ------------------------------------------------------------- |
-| OpenAI    | `gpt-4`, `o1`                        | [platform.openai.com](https://platform.openai.com/signup)   |
-| Google    | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)     |
-| Anthropic | `claude-4-sonnet`, `claude-4-opus`   | [console.anthropic.com](https://console.anthropic.com/)     |
-| DeepSeek  | `deepseek-chat`, `deepseek-coder`    | [platform.deepseek.com](https://platform.deepseek.com)     |
+| Proveedor | Ejemplos de Modelos                  | Enlace de Clave API                                       |
+| --------- | ------------------------------------ | --------------------------------------------------------- |
+| OpenAI    | `gpt-4`, `o1`                        | [platform.openai.com](https://platform.openai.com/signup) |
+| Google    | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)   |
+| Anthropic | `claude-4-sonnet`, `claude-4-opus`   | [console.anthropic.com](https://console.anthropic.com/)   |
+| DeepSeek  | `deepseek-chat`, `deepseek-coder`    | [platform.deepseek.com](https://platform.deepseek.com)    |
 
 ### 2. Establecer su clave API
 
@@ -265,10 +265,10 @@ docker-compose logs -f
 
 Una vez que los servicios están ejecutándose:
 
-| Servicio           | URL                                       | Descripción                      |
-| ------------------ | ----------------------------------------- | -------------------------------- |
-| **Interfaz Web**   | http://localhost:3000                     | Interfaz principal del usuario   |
-| **Endpoint de API** | http://localhost:8080/api/v1/agent/stream | Acceso directo a la API          |
+| Servicio                  | URL                                       | Descripción                      |
+| ------------------------- | ----------------------------------------- | -------------------------------- |
+| **Interfaz Web**          | http://localhost:3000                     | Interfaz principal del usuario   |
+| **Endpoint de API**       | http://localhost:8080/api/v1/agent/stream | Acceso directo a la API          |
 | **Verificación de Salud** | http://localhost:8080/health              | Estado de salud de los servicios |
 
 ### Prueba Rápida

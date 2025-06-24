@@ -145,12 +145,12 @@ CODE_EXECUTION_TIMEOUT_MS=60000
 
 ### 硬體要求
 
-| 模型大小 | GPU記憶體  | 效能                |
-| -------- | ---------- | ------------------- |
-| 7B       | 8GB VRAM   | ⚠️ 僅基本任務        |
+| 模型大小 | GPU記憶體  | 效能                  |
+| -------- | ---------- | --------------------- |
+| 7B       | 8GB VRAM   | ⚠️ 僅基本任務         |
 | 14B      | 12GB VRAM  | ✅ 大多數任務工作良好 |
-| 32B      | 24GB VRAM  | 🚀 出色效能          |
-| 70B+     | 48GB+ VRAM | 💪 專業品質          |
+| 32B      | 24GB VRAM  | 🚀 出色效能           |
+| 70B+     | 48GB+ VRAM | 💪 專業品質           |
 
 ### 使用Ollama設定（推薦）
 
@@ -188,12 +188,12 @@ CODE_EXECUTION_TIMEOUT_MS=60000
 
 ### 1. 選擇API提供商
 
-| 提供商    | 模型範例                            | API金鑰連結                                                   |
-| --------- | ----------------------------------- | ------------------------------------------------------------- |
-| OpenAI    | `gpt-4`, `o1`                       | [platform.openai.com](https://platform.openai.com/signup)   |
-| Google    | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)     |
-| Anthropic | `claude-4-sonnet`, `claude-4-opus`  | [console.anthropic.com](https://console.anthropic.com/)     |
-| DeepSeek  | `deepseek-chat`, `deepseek-coder`   | [platform.deepseek.com](https://platform.deepseek.com)     |
+| 提供商    | 模型範例                             | API金鑰連結                                               |
+| --------- | ------------------------------------ | --------------------------------------------------------- |
+| OpenAI    | `gpt-4`, `o1`                        | [platform.openai.com](https://platform.openai.com/signup) |
+| Google    | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)   |
+| Anthropic | `claude-4-sonnet`, `claude-4-opus`   | [console.anthropic.com](https://console.anthropic.com/)   |
+| DeepSeek  | `deepseek-chat`, `deepseek-coder`    | [platform.deepseek.com](https://platform.deepseek.com)    |
 
 ### 2. 設定您的API金鑰
 
@@ -265,11 +265,11 @@ docker-compose logs -f
 
 服務運行後：
 
-| 服務              | URL                                       | 描述           |
-| ----------------- | ----------------------------------------- | -------------- |
-| **Web介面**       | http://localhost:3000                     | 主使用者介面   |
-| **API端點**       | http://localhost:8080/api/v1/agent/stream | 直接API存取    |
-| **健康檢查**      | http://localhost:8080/health              | 服務健康狀態   |
+| 服務         | URL                                       | 描述         |
+| ------------ | ----------------------------------------- | ------------ |
+| **Web介面**  | http://localhost:3000                     | 主使用者介面 |
+| **API端點**  | http://localhost:8080/api/v1/agent/stream | 直接API存取  |
+| **健康檢查** | http://localhost:8080/health              | 服務健康狀態 |
 
 ### 快速測試
 
@@ -348,13 +348,13 @@ curl -X POST http://localhost:8080/api/v1/agent/stream \
 
 ### 關鍵命令
 
-| 選項   | 描述           | 何時使用         |
-| ------ | -------------- | ---------------- |
-| **1**  | 啟動生態系統   | 首次啟動或停止後 |
-| **2**  | 重啟服務       | 設定更改後       |
-| **4**  | 檢查狀態       | 健康診斷         |
-| **5**  | 跟蹤日誌       | 即時監控         |
-| **7**  | 重建映像       | 主要程式碼更改後 |
+| 選項  | 描述         | 何時使用         |
+| ----- | ------------ | ---------------- |
+| **1** | 啟動生態系統 | 首次啟動或停止後 |
+| **2** | 重啟服務     | 設定更改後       |
+| **4** | 檢查狀態     | 健康診斷         |
+| **5** | 跟蹤日誌     | 即時監控         |
+| **7** | 重建映像     | 主要程式碼更改後 |
 
 ---
 
@@ -421,7 +421,7 @@ import { z } from 'zod';
 import type { Tool, Ctx } from '../../types.js';
 
 export const myToolParams = z.object({
-  input: z.string().describe("輸入參數"),
+  input: z.string().describe('輸入參數'),
   options: z.number().default(1),
 });
 
@@ -469,4 +469,3 @@ export const allTools: Tool<any>[] = [
 - **開源社群**：提供靈感和協作
 
 ---
-

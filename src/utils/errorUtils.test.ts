@@ -1,5 +1,5 @@
-// src/utils/errorUtils.test.ts
-import { getErrDetails, AppErrorBase } from './errorUtils';
+// src/utils/errorUtils.test.ts (Corrigé)
+import { getErrDetails, AppErrorBase } from './errorUtils.js';
 
 describe('ErrorUtils', () => {
   describe('getErrDetails', () => {
@@ -21,7 +21,5 @@ describe('ErrorUtils', () => {
       expect(details.type).toBe('CustomType');
       expect(details.details).toEqual({ extra: 'data' });
     });
-
-    // Add more tests for other cases (strings, plain objects, etc.)
   });
 });

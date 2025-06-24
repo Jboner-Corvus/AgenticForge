@@ -145,12 +145,12 @@ Certifique-se de que o Docker está executando antes de continuar.
 
 ### Requisitos de Hardware
 
-| Tamanho do Modelo | Memória GPU | Performance                        |
-| ----------------- | ----------- | ---------------------------------- |
-| 7B                | 8GB VRAM    | ⚠️ Apenas tarefas básicas           |
+| Tamanho do Modelo | Memória GPU | Performance                           |
+| ----------------- | ----------- | ------------------------------------- |
+| 7B                | 8GB VRAM    | ⚠️ Apenas tarefas básicas             |
 | 14B               | 12GB VRAM   | ✅ A maioria das tarefas funciona bem |
-| 32B               | 24GB VRAM   | 🚀 Excelente performance           |
-| 70B+              | 48GB+ VRAM  | 💪 Qualidade profissional          |
+| 32B               | 24GB VRAM   | 🚀 Excelente performance              |
+| 70B+              | 48GB+ VRAM  | 💪 Qualidade profissional             |
 
 ### Configuração com Ollama (Recomendado)
 
@@ -188,12 +188,12 @@ Se você prefere modelos em nuvem ou não tem hardware suficiente:
 
 ### 1. Escolher um Provedor de API
 
-| Provedor  | Exemplos de Modelos                  | Link da Chave API                                             |
-| --------- | ------------------------------------ | ------------------------------------------------------------- |
-| OpenAI    | `gpt-4`, `o1`                        | [platform.openai.com](https://platform.openai.com/signup)   |
-| Google    | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)     |
-| Anthropic | `claude-4-sonnet`, `claude-4-opus`   | [console.anthropic.com](https://console.anthropic.com/)     |
-| DeepSeek  | `deepseek-chat`, `deepseek-coder`    | [platform.deepseek.com](https://platform.deepseek.com)     |
+| Provedor  | Exemplos de Modelos                  | Link da Chave API                                         |
+| --------- | ------------------------------------ | --------------------------------------------------------- |
+| OpenAI    | `gpt-4`, `o1`                        | [platform.openai.com](https://platform.openai.com/signup) |
+| Google    | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)   |
+| Anthropic | `claude-4-sonnet`, `claude-4-opus`   | [console.anthropic.com](https://console.anthropic.com/)   |
+| DeepSeek  | `deepseek-chat`, `deepseek-coder`    | [platform.deepseek.com](https://platform.deepseek.com)    |
 
 ### 2. Definir sua chave API
 
@@ -265,11 +265,11 @@ docker-compose logs -f
 
 Uma vez que os serviços estão executando:
 
-| Serviço            | URL                                       | Descrição                    |
-| ------------------ | ----------------------------------------- | ---------------------------- |
-| **Interface Web**  | http://localhost:3000                     | Interface principal do usuário |
-| **Endpoint da API** | http://localhost:8080/api/v1/agent/stream | Acesso direto à API          |
-| **Verificação de Saúde** | http://localhost:8080/health              | Status de saúde dos serviços |
+| Serviço                  | URL                                       | Descrição                      |
+| ------------------------ | ----------------------------------------- | ------------------------------ |
+| **Interface Web**        | http://localhost:3000                     | Interface principal do usuário |
+| **Endpoint da API**      | http://localhost:8080/api/v1/agent/stream | Acesso direto à API            |
+| **Verificação de Saúde** | http://localhost:8080/health              | Status de saúde dos serviços   |
 
 ### Teste Rápido
 
@@ -348,13 +348,13 @@ O console interativo fornece controle completo sobre sua instância do Agentic F
 
 ### Comandos Principais
 
-| Opção  | Descrição               | Quando Usar                      |
-| ------ | ----------------------- | -------------------------------- |
-| **1**  | Iniciar ecossistema     | Primeira inicialização ou após parar |
-| **2**  | Reiniciar serviços      | Após mudanças de configuração    |
-| **4**  | Verificar status        | Diagnósticos de saúde            |
-| **5**  | Seguir logs             | Monitoramento em tempo real      |
-| **7**  | Rebuild imagens         | Após grandes mudanças de código  |
+| Opção | Descrição           | Quando Usar                          |
+| ----- | ------------------- | ------------------------------------ |
+| **1** | Iniciar ecossistema | Primeira inicialização ou após parar |
+| **2** | Reiniciar serviços  | Após mudanças de configuração        |
+| **4** | Verificar status    | Diagnósticos de saúde                |
+| **5** | Seguir logs         | Monitoramento em tempo real          |
+| **7** | Rebuild imagens     | Após grandes mudanças de código      |
 
 ---
 
@@ -421,7 +421,7 @@ import { z } from 'zod';
 import type { Tool, Ctx } from '../../types.js';
 
 export const myToolParams = z.object({
-  input: z.string().describe("Parâmetro de entrada"),
+  input: z.string().describe('Parâmetro de entrada'),
   options: z.number().default(1),
 });
 
