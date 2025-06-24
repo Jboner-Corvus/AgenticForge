@@ -185,7 +185,7 @@ show_menu() {
     echo -e "  ${COLOR_CYAN}Docker & Services${NC}"
     printf "   1) ${COLOR_GREEN}🟢 Démarrer${NC}         5) ${COLOR_BLUE}📊 Logs${NC}\n"
     printf "   2) ${COLOR_YELLOW}🔄 Redémarrer${NC}       6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\n"
-    printf "   3) ${COLOR_RED}🔴 Arrêter${NC}          7) ${COLOR_BLUE}🔨 Rebuild (sans cache) & Lancer${NC}\n"
+    printf "   3) ${COLOR_RED}🔴 Arrêter${NC}          7) ${COLOR_BLUE}🔨 Rebuild (no cache)${NC}\n"
     printf "   4) ${COLOR_CYAN}⚡ Statut${NC}           8) ${COLOR_RED}🧹 Nettoyer Docker${NC}\n"
     echo ""
     echo -e "  ${COLOR_CYAN}Développement & Qualité (Local)${NC}"
