@@ -14,7 +14,8 @@ const app = express();
 const PROXY_TARGET = `http://server:${config.PORT}`;
 
 // Middlewares
-app.use(cors({ exposedHeaders: "x-session-id" }));
+// CORRECTION: Expose the 'mcp-session-id' header instead of 'x-session-id'.
+app.use(cors({ exposedHeaders: "mcp-session-id" }));
 
 // Route de proxy pour MCP et health check
 app.use(['/mcp', '/health'], (req: Request, res: Response) => {
@@ -34,6 +35,11 @@ app.use(['/mcp', '/health'], (req: Request, res: Response) => {
             host: `server:${config.PORT}`,
         } as http.OutgoingHttpHeaders,
     }, (proxyRes) => {
+        // CORRECTION: Forward the 'mcp-session-id' header back to the client.
+        const newSessionId = proxyRes.headers['mcp-session-id'];
+        if (newSessionId) {
+            res.setHeader('mcp-session-id', newSessionId);
+        }
         res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
         proxyRes.pipe(res);
     });

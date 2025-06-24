@@ -16,7 +16,8 @@ export type History = { role: 'user' | 'assistant'; content: string }[];
  */
 export interface SessionData extends Record<string, unknown> {
   sessionId: string;
-  headers: IncomingHttpHeaders;
+  // CORRECTION: Headers will be stored as a simple, serializable record.
+  headers: Record<string, string>; 
   clientIp?: string;
   authenticatedAt: number;
 }
