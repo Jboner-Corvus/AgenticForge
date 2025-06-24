@@ -1,4 +1,4 @@
-// src/utils/webhookUtils.ts
+// src/utils/webhookUtils.ts (Corrigé pour SessionData)
 
 import crypto from 'crypto';
 import logger from '../logger.js';
@@ -16,13 +16,13 @@ import type { TaskOutcome } from './asyncToolHelper.js';
  * Génère une signature HMAC SHA256 pour un payload donné.
  */
 function generateSignature(payload: unknown): string {
-  const secret = config[WEBHOOK_SECRET_ENV_VAR];
+  const secret = config.WEBHOOK_SECRET;
   if (!secret) {
     logger.error(
-      `[WebhookUtils] ${WEBHOOK_SECRET_ENV_VAR} n'est pas défini. Impossible de signer le webhook.`,
+      `[WebhookUtils] WEBHOOK_SECRET n'est pas défini. Impossible de signer le webhook.`,
     );
     throw new Error(
-      `${WEBHOOK_SECRET_ENV_VAR} is not configured. Cannot sign webhook.`,
+      `WEBHOOK_SECRET is not configured. Cannot sign webhook.`,
     );
   }
   const hmac = crypto.createHmac('sha256', secret);
@@ -94,7 +94,7 @@ export async function sendWebhook<P, R>(
     if (throwErr) {
       if (error instanceof WebhookError) throw error;
       throw new WebhookError(
-        `Erreur d'infrastructure lors de l'envoi du webhook à ${url}: ${errDetails.message}`, // Now uses errDetails.message
+        `Erreur d'infrastructure lors de l'envoi du webhook à ${url}: ${errDetails.message}`,
         'WebhookInfrastructureError',
         undefined,
         undefined,

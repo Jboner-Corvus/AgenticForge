@@ -1,6 +1,7 @@
+// src/tools/browser/navigate.tool.ts (Corrigé pour SessionData)
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
-import type { Tool, Ctx, AuthData } from '../../types.js';
+import type { Tool, Ctx, SessionData } from '../../types.js';
 import { taskQueue } from '../../queue.js';
 
 export const navigateParams = z.object({
@@ -42,8 +43,8 @@ export const navigateTool: Tool<typeof navigateParams> = {
     if (!ctx.session) throw new Error('Session not found');
     const job = await taskQueue.add('browser_navigate', {
       params: args,
-      // Correction: caster explicitement le type de `auth`.
-      auth: ctx.session.auth as AuthData | undefined,
+      // Correction: Utilisation correcte du type SessionData
+      auth: ctx.session as SessionData,
       taskId: randomUUID(),
       toolName: 'browser_navigate',
     });

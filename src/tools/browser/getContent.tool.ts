@@ -1,6 +1,7 @@
+// src/tools/browser/getContent.tool.ts (Corrigé pour SessionData)
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
-import type { Tool, Ctx, AuthData } from '../../types.js';
+import type { Tool, Ctx, SessionData } from '../../types.js';
 import { taskQueue } from '../../queue.js';
 
 export const getContentParams = z.object({
@@ -41,8 +42,8 @@ export const getContentTool: Tool<typeof getContentParams> = {
     if (!ctx.session) throw new Error('Session not found');
     const job = await taskQueue.add('browser_getContent', {
       params: args,
-      // CORRECTION: Ajout d'une assertion de type pour résoudre le conflit.
-      auth: ctx.session.auth as AuthData | undefined,
+      // CORRECTION: Utilisation correcte du type SessionData
+      auth: ctx.session as SessionData,
       taskId: randomUUID(),
       toolName: 'browser_getContent',
     });

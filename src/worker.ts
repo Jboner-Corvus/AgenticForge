@@ -1,4 +1,4 @@
-// src/worker.ts (Corrigé pour la gestion des promesses dans les signaux)
+// src/worker.ts (Corrigé pour SessionData)
 import { Worker, type Job } from 'bullmq';
 import { config } from './config.js';
 import logger from './logger.js';
@@ -6,7 +6,7 @@ import { taskQueue, deadLetterQueue, redisConnection } from './queue.js';
 import { getAllTools } from './tools/index.js';
 import { getContentWorkerLogic } from './tools/browser/getContent.tool.js';
 import { navigateWorkerLogic } from './tools/browser/navigate.tool.js';
-import type { AsyncTaskJob, Ctx } from './types.js';
+import type { AsyncTaskJob, Ctx, SessionData } from './types.js';
 import { getErrDetails } from './utils/errorUtils.js';
 
 const worker = new Worker(
@@ -27,8 +27,9 @@ const worker = new Worker(
       throw new Error(`Authentication data is missing for job ${job.id}`);
     }
 
+    // CORRECTION: Utilisation correcte du type SessionData
     const ctx: Ctx = {
-      session: auth,
+      session: auth as SessionData,
       log,
       reportProgress: async (p: unknown) =>
         log.debug({ p }, 'Progress report (worker)'),

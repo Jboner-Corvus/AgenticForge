@@ -1,3 +1,4 @@
+// src/utils/asyncToolHelper.ts (Corrigé pour SessionData)
 import logger from '../logger.js';
 import { taskQueue, type AsyncTaskJobPayload } from '../queue.js';
 import {
@@ -5,11 +6,11 @@ import {
   getErrDetails,
   type ErrorDetails,
 } from './errorUtils.js';
-import type { AuthData } from '../types.js';
+import type { SessionData } from '../types.js';
 
 export interface EnqueueParams<TParams> {
   params: TParams;
-  auth: AuthData | undefined;
+  auth: SessionData | undefined;
   taskId: string;
   toolName: string;
   cbUrl?: string;
