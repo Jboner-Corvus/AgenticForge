@@ -1,6 +1,12 @@
 // public/js/main.js
 import { sendGoal, getTools, testServerHealth } from './api.js';
-import { addMessage, showTypingIndicator, hideTypingIndicator, updateTokenStatus, updateToolCount } from './ui.js';
+import {
+  addMessage,
+  showTypingIndicator,
+  hideTypingIndicator,
+  updateTokenStatus,
+  updateToolCount,
+} from './ui.js';
 
 function generateUUID() {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -35,7 +41,10 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   updateAllUI();
   checkServerHealth();
-  addMessage('🎯 **Agent prêt.** Veuillez entrer votre *Auth Token* pour commencer.', 'assistant');
+  addMessage(
+    '🎯 **Agent prêt.** Veuillez entrer votre *Auth Token* pour commencer.',
+    'assistant',
+  );
 });
 
 function initializeSession() {
@@ -64,7 +73,9 @@ function setupEventListeners() {
   elements.chatForm.addEventListener('submit', handleSendMessage);
   elements.saveTokenBtn.addEventListener('click', handleSaveToken);
   elements.newSessionBtn.addEventListener('click', handleNewSession);
-  elements.clearHistoryBtn.addEventListener('click', () => handleClearHistory(true));
+  elements.clearHistoryBtn.addEventListener('click', () =>
+    handleClearHistory(true),
+  );
 }
 
 async function handleSendMessage(event) {
@@ -80,7 +91,9 @@ async function handleSendMessage(event) {
   showTypingIndicator();
   try {
     const result = await sendGoal(goal, state.authToken, state.sessionId);
-    const responseText = result.text || "L'agent a terminé mais n'a fourni aucune réponse textuelle.";
+    const responseText =
+      result.text ||
+      "L'agent a terminé mais n'a fourni aucune réponse textuelle.";
     hideTypingIndicator();
     addMessage(responseText, 'assistant');
     fetchAndDisplayToolCount();
@@ -128,7 +141,10 @@ function handleNewSession() {
   localStorage.setItem('agenticForgeSessionId', newSessionId);
   state.sessionId = newSessionId;
   updateSessionDisplay();
-  addMessage(`🔄 **Nouvelle Session Créée.**\nID : ${newSessionId.substring(0, 12)}...`, 'assistant');
+  addMessage(
+    `🔄 **Nouvelle Session Créée.**\nID : ${newSessionId.substring(0, 12)}...`,
+    'assistant',
+  );
   handleClearHistory(false);
   fetchAndDisplayToolCount();
 }
@@ -141,16 +157,21 @@ function handleClearHistory(showMessage) {
 }
 
 function updateAllUI() {
-  const canInteract = !!state.authToken && !!state.sessionId && !state.isProcessing && state.serverHealthy;
+  const canInteract =
+    !!state.authToken &&
+    !!state.sessionId &&
+    !state.isProcessing &&
+    state.serverHealthy;
   elements.sendBtn.disabled = !canInteract;
   elements.messageInput.disabled = !canInteract;
 
   if (state.isProcessing) {
     elements.messageInput.placeholder = "🤔 L'agent réfléchit...";
   } else if (!state.serverHealthy) {
-    elements.messageInput.placeholder = "🏥 Serveur hors ligne...";
+    elements.messageInput.placeholder = '🏥 Serveur hors ligne...';
   } else if (!state.authToken) {
-    elements.messageInput.placeholder = "🔑 Veuillez sauvegarder un Bearer Token...";
+    elements.messageInput.placeholder =
+      '🔑 Veuillez sauvegarder un Bearer Token...';
   } else {
     elements.messageInput.placeholder = '💬 Décrivez votre objectif...';
   }
@@ -183,7 +204,9 @@ function updateSessionStatus(status) {
 async function checkServerHealth() {
   try {
     state.serverHealthy = await testServerHealth();
-    elements.connectionHealth.textContent = state.serverHealthy ? '✅ En ligne' : '❌ Hors ligne';
+    elements.connectionHealth.textContent = state.serverHealthy
+      ? '✅ En ligne'
+      : '❌ Hors ligne';
   } catch {
     state.serverHealthy = false;
     elements.connectionHealth.textContent = '❌ Hors ligne';
