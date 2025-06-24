@@ -5,9 +5,7 @@ import logger from '../logger.js';
 import type { ErrorDetails } from './errorUtils.js';
 import { getErrDetails, WebhookError } from './errorUtils.js';
 import { config } from '../config.js';
-import {
-  WEBHOOK_SIGNATURE_HEADER,
-} from './constants.js';
+import { WEBHOOK_SIGNATURE_HEADER } from './constants.js';
 
 import type { TaskOutcome } from './asyncToolHelper.js';
 
@@ -20,9 +18,7 @@ function generateSignature(payload: unknown): string {
     logger.error(
       `[WebhookUtils] WEBHOOK_SECRET n'est pas défini. Impossible de signer le webhook.`,
     );
-    throw new Error(
-      `WEBHOOK_SECRET is not configured. Cannot sign webhook.`,
-    );
+    throw new Error(`WEBHOOK_SECRET is not configured. Cannot sign webhook.`);
   }
   const hmac = crypto.createHmac('sha256', secret);
   hmac.update(JSON.stringify(payload));

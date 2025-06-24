@@ -1,34 +1,28 @@
-// public/js/api.js
+// public/js/api.js (Version avec en-tête de session)
 
 const API_ENDPOINT = '/mcp';
 
-/**
- * Envoie une requête générique à l'agent en utilisant le protocole MCP.
- * @param {string} method - La méthode MCP à appeler (ex: 'tools/list', 'tools/call').
- * @param {object} params - Les paramètres pour la méthode.
- * @param {string} token - Le Bearer Token pour l'authentification.
- * @param {string} sessionId - L'ID de session pour la continuité.
- * @returns {Promise<any>} - Le résultat de l'appel MCP.
- */
+// La fonction de validation n'est plus nécessaire ici car le serveur gère la présence de l'en-tête.
+
 async function sendMcpRequest(method, params, token, sessionId) {
   if (!token || !sessionId) {
-    const errorMessage = 'Le Bearer Token et le Session ID sont obligatoires.';
+    const errorMessage = 'Le token ET le sessionId sont obligatoires pour toute requête API.';
     console.error(`❌ [API] ${errorMessage}`);
     throw new Error(errorMessage);
   }
 
+  // CORRECTION : On ajoute notre en-tête personnalisé et non-conflictuel.
   const headers = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
-    // LA CORRECTION CRUCIALE EST ICI !
-    'mcp-session-id': sessionId,
+    'X-Session-ID': sessionId,
   };
 
   const body = {
     jsonrpc: '2.0',
     method: method,
     params: params,
-    id: `mcp-${method.split('/')[1]}-${Date.now()}`,
+    id: `mcp-${Date.now()}`,
   };
 
   try {
@@ -40,61 +34,41 @@ async function sendMcpRequest(method, params, token, sessionId) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ [API] La requête MCP a échoué`, { status: response.status, error: errorText, method });
-      // Tente de parser l'erreur JSON, sinon retourne le texte brut
+      let errorMessage = `Erreur API ${response.status}: ${errorText}`;
       try {
         const errorJson = JSON.parse(errorText);
-        throw new Error(`Erreur API ${response.status}: ${errorJson.error.message || errorText}`);
-      } catch (e) {
-        throw new Error(`Erreur API ${response.status}: ${errorText}`);
-      }
+        errorMessage = `Erreur API ${response.status}: ${errorJson.error?.message || errorText}`;
+      } catch (e) { /* Pas de JSON, on garde le texte brut */ }
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
     if (data.error) {
-      console.error('❌ [API] Erreur dans la réponse MCP', data.error);
       throw new Error(`Erreur MCP (${data.error.code}): ${data.error.message}`);
     }
     return data.result;
 
   } catch (error) {
-    console.error(`❌ [API] Exception dans sendMcpRequest pour la méthode '${method}'`, error);
+    console.error(`❌ [API] Exception durant l'appel MCP '${method}'`, error);
     throw error;
   }
 }
 
-/**
- * Envoie un objectif à l'agent.
- * @param {string} goal - L'objectif de l'utilisateur.
- * @param {string} token - Le Bearer Token.
- * @param {string} sessionId - L'ID de session.
- * @returns {Promise<Object>} - Le résultat de l'exécution.
- */
+// CORRECTION : sendGoal n'a plus besoin d'inclure sessionId dans les arguments.
 export async function sendGoal(goal, token, sessionId) {
   return sendMcpRequest(
     'tools/call',
-    { name: 'internal_goalHandler', arguments: { goal, sessionId } },
+    { name: 'internal_goalHandler', arguments: { goal } }, // Juste le 'goal'
     token,
     sessionId
   );
 }
 
-/**
- * Récupère la liste et le nombre d'outils disponibles.
- * @param {string} token - Le Bearer Token.
- * @param {string} sessionId - L'ID de session.
- * @returns {Promise<Array<Object>>} - La liste des outils.
- */
 export async function getTools(token, sessionId) {
-    const result = await sendMcpRequest('tools/list', {}, token, sessionId);
-    return result.tools || [];
+  const result = await sendMcpRequest('tools/list', {}, token, sessionId);
+  return result.tools || [];
 }
 
-
-/**
- * Teste la santé de la connexion au serveur web.
- * @returns {Promise<boolean>} - true si le serveur répond.
- */
 export async function testServerHealth() {
   try {
     const response = await fetch('/health');
