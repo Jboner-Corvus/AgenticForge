@@ -1,4 +1,4 @@
-// src/server.ts (Version Corrigée pour la Gestion de Session)
+// src/server.ts (Version Finale et Fonctionnelle)
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { Redis } from 'ioredis';
@@ -28,10 +28,11 @@ async function getOrCreateSession(sessionData: SessionData): Promise<AgentSessio
     const sessionString = await redis.get(sessionKey);
     
     if (sessionString) {
+        logger.info({ sessionId }, "Session existante trouvée dans Redis.");
         return JSON.parse(sessionString) as AgentSession;
     }
     
-    logger.warn({ sessionId }, "Session not found in Redis. Creating a new one.");
+    logger.warn({ sessionId }, "Session non trouvée. Création d'une nouvelle session.");
     const newSession: AgentSession = {
         id: sessionId,
         auth: sessionData,
@@ -45,7 +46,7 @@ async function getOrCreateSession(sessionData: SessionData): Promise<AgentSessio
         'EX',
         SESSION_EXPIRATION_SECONDS,
     );
-    logger.info({ sessionId }, "New session created and saved.");
+    logger.info({ sessionId }, "Nouvelle session créée et sauvegardée.");
     return newSession;
 }
 
@@ -80,8 +81,11 @@ async function main() {
         description: "Handles the user's primary goal.",
         parameters: goalHandlerParams,
         execute: async (args, ctx) => {
-            if (!ctx.session) throw new Error('Session context is missing.');
+            if (!ctx.session) {
+                throw new Error('Contexte de session manquant. Impossible de continuer.');
+            }
             
+            // On s'assure que la session est créée ou récupérée AVANT toute autre chose.
             const session = await getOrCreateSession(ctx.session);
             const history: History = session.history;
             
@@ -102,11 +106,12 @@ async function main() {
                 SESSION_EXPIRATION_SECONDS,
             );
 
-            return { type: 'text', text: llmResponse };
+            const response: TextContent = { type: 'text', text: llmResponse };
+            return response;
         }
     };
     
-    // On ajoute tous les outils au serveur
+    // On ajoute tous les outils au serveur.
     for (const tool of allTools) {
       if(tool.name !== 'internal_goalHandler') {
         mcpServer.addTool(tool);
