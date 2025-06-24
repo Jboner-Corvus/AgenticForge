@@ -1,5 +1,4 @@
 services:
-  # ... (service redis inchangé)
   redis:
     image: redis:7.2-alpine
     container_name: agentic_forge_redis
@@ -18,7 +17,6 @@ services:
     networks:
       - agentic_network
 
-  # Serveur FastMCP principal
   server:
     build:
       context: .
@@ -26,11 +24,11 @@ services:
     container_name: agentic_forge_server
     ports:
       - "${HOST_PORT:-8080}:8080"
+    # CORRECTION : Suppression des volumes de code pour utiliser la version buildée dans l'image
+    # Cela garantit la stabilité et l'isolation de l'environnement.
     volumes:
-      - .:/usr/src/app
       - /var/run/docker.sock:/var/run/docker.sock
       - ./workspace:/usr/src/app/workspace
-      - /usr/src/app/node_modules
     depends_on:
       redis:
         condition: service_healthy
@@ -40,23 +38,19 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6378
       - DOCKER=true
-      - HOST_PROJECT_PATH=${PWD}
+      - HOST_PROJECT_PATH=/usr/src/app # Le chemin à l'intérieur du conteneur
     restart: unless-stopped
-    command: sh -c "pnpm run build && pnpm run start"
-    # --- CORRECTION ---
-    # Remplacement de 'wget' par 'curl' qui est plus commun dans les images de base.
-    # L'option -f fait en sorte que curl retourne un code d'erreur en cas d'échec HTTP (ex: 404, 500).
+    # CORRECTION : La commande exécute directement le code buildé, sans re-builder à chaque fois
+    command: sh -c "pnpm run start"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
-    # --- FIN DE LA CORRECTION ---
     networks:
       - agentic_network
 
-  # ... (services web et worker inchangés)
   web:
     build:
       context: .
@@ -64,6 +58,9 @@ services:
     container_name: agentic_forge_web
     ports:
       - "${WEB_PORT:-3000}:3000"
+    # Le service 'web' n'a besoin que des fichiers statiques 'public'
+    # et n'a pas besoin de monter tout le code source.
+    # On assume que le Dockerfile copie déjà le nécessaire.
     volumes:
       - ./public:/usr/src/app/public
     depends_on:
@@ -90,11 +87,10 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: agentic_forge_worker
+    # CORRECTION : Suppression des volumes de code pour la stabilité
     volumes:
-      - .:/usr/src/app
       - /var/run/docker.sock:/var/run/docker.sock
       - ./workspace:/usr/src/app/workspace
-      - /usr/src/app/node_modules
     depends_on:
       redis:
         condition: service_healthy
@@ -104,9 +100,10 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6378
       - DOCKER=true
-      - HOST_PROJECT_PATH=${PWD}
+      - HOST_PROJECT_PATH=/usr/src/app
     restart: unless-stopped
-    command: sh -c "pnpm run build && pnpm run start:worker"
+    # CORRECTION : La commande exécute directement le code buildé
+    command: sh -c "pnpm run start:worker"
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f 'node -r tsconfig-paths/register dist/worker.js' || exit 1"]
       interval: 30s

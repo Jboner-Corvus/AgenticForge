@@ -5,9 +5,9 @@
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
-    "start": "node -r tsconfig-paths/register dist/server.js",
-    "start:worker": "node -r tsconfig-paths/register dist/worker.js",
-    "start:web": "node -r tsconfig-paths/register dist/webServer.js",
+    "start": "node dist/server.js",
+    "start:worker": "node dist/worker.js",
+    "start:web": "node dist/webServer.js",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "dev": "pnpm run build && pnpm exec concurrently \"pnpm run start\" \"pnpm run start:worker\" \"pnpm run start:web\"",
