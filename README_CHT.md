@@ -470,6 +470,3 @@ export const allTools: Tool<any>[] = [
 
 ---
 
-## 支援
-
-- **問題**：[GitHub Issues](https://github.com/your-username/
