@@ -1,4 +1,4 @@
-// src/server.ts (Version finale corrigée selon la documentation FastMCP)
+// src/server.ts (Version compatible avec le système de sessions FastMCP)
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
@@ -9,17 +9,7 @@ import { getAllTools, type Tool } from './tools/index.js';
 import { getMasterPrompt } from './prompts/orchestrator.prompt.js';
 import { getLlmResponse } from './utils/llmProvider.js';
 import { getErrDetails } from './utils/errorUtils.js';
-import type { AgentSession, History } from './types.js';
-import type { IncomingHttpHeaders } from 'http';
-
-// Interface pour les données de session FastMCP
-interface SessionData {
-  sessionId: string;
-  headers: IncomingHttpHeaders;
-  clientIp?: string;
-  authenticatedAt: number;
-  [key: string]: unknown;
-}
+import type { AgentSession, History, SessionData } from './types.js';
 
 // --- GESTION DE SESSION VIA REDIS ---
 const redis = new Redis({
@@ -31,38 +21,36 @@ const redis = new Redis({
 redis.on('error', (err) => logger.error({ err }, 'Redis connection error'));
 const SESSION_EXPIRATION_SECONDS = 24 * 3600;
 
-async function getOrCreateSession(
-  sessionData: SessionData,
-): Promise<AgentSession> {
-  const { sessionId } = sessionData;
-  const sessionKey = `session:${sessionId}`;
-  const sessionString = await redis.get(sessionKey);
-  if (sessionString) {
-    const session: AgentSession = JSON.parse(sessionString);
-    session.lastActivity = Date.now();
+async function getOrCreateSession(sessionData: SessionData): Promise<AgentSession> {
+    const { sessionId } = sessionData;
+    const sessionKey = `session:${sessionId}`;
+    const sessionString = await redis.get(sessionKey);
+    if (sessionString) {
+        const session: AgentSession = JSON.parse(sessionString);
+        session.lastActivity = Date.now();
+        await redis.set(
+        sessionKey,
+        JSON.stringify(session),
+        'EX',
+        SESSION_EXPIRATION_SECONDS,
+        );
+        return session;
+    }
+    const newSession: AgentSession = {
+        id: sessionId,
+        auth: sessionData,
+        history: [],
+        createdAt: Date.now(),
+        lastActivity: Date.now(),
+    };
     await redis.set(
-      sessionKey,
-      JSON.stringify(session),
-      'EX',
-      SESSION_EXPIRATION_SECONDS,
+        sessionKey,
+        JSON.stringify(newSession),
+        'EX',
+        SESSION_EXPIRATION_SECONDS,
     );
-    return session;
-  }
-  const newSession: AgentSession = {
-    id: sessionId,
-    auth: sessionData,
-    history: [],
-    createdAt: Date.now(),
-    lastActivity: Date.now(),
-  };
-  await redis.set(
-    sessionKey,
-    JSON.stringify(newSession),
-    'EX',
-    SESSION_EXPIRATION_SECONDS,
-  );
-  logger.info({ sessionId }, 'New session created in Redis');
-  return newSession;
+    logger.info({ sessionId }, 'New session created in Redis');
+    return newSession;
 }
 
 const goalHandlerParams = z.object({
@@ -146,21 +134,27 @@ const goalHandlerTool: Tool<typeof goalHandlerParams> = {
 async function main() {
   try {
     const allTools = await getAllTools();
+    
+    logger.info('🔄 Creating FastMCP server compatible with FastMCP session system...');
+    
     const mcpServer = new FastMCP<SessionData>({
       name: 'Agentic-Forge-Server',
       version: '1.0.0',
-      // Authentification selon la vraie documentation FastMCP
+      // STRATÉGIE COMPATIBLE : Laisser FastMCP gérer les sessions, puis ajouter notre logique
       authenticate: async (request) => {
-        logger.info('Authentication request', {
-          headers: Object.keys(request.headers),
+        logger.info('🔐 AUTHENTICATION FUNCTION CALLED!', { 
           method: request.method,
           url: request.url,
+          headers: Object.keys(request.headers),
+          hasAuth: !!request.headers.authorization,
+          hasXSession: !!request.headers['x-session-id'],
+          hasMcpSession: !!request.headers['mcp-session-id']
         });
 
-        // Vérifier le token Bearer
+        // 1. Vérifier le token Bearer
         const authHeader = request.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-          logger.warn('Missing or invalid Authorization header');
+          logger.warn('❌ Missing or invalid Authorization header');
           throw new Response(null, {
             status: 401,
             statusText: 'Unauthorized: Missing Bearer token',
@@ -169,21 +163,30 @@ async function main() {
 
         const token = authHeader.split(' ')[1];
         if (token !== config.AUTH_TOKEN) {
-          logger.warn('Invalid auth token provided');
+          logger.warn('❌ Invalid auth token provided', {
+            provided: token ? token.substring(0, 10) + '...' : 'null',
+            expected: config.AUTH_TOKEN ? config.AUTH_TOKEN.substring(0, 10) + '...' : 'null'
+          });
           throw new Response(null, {
             status: 401,
             statusText: 'Unauthorized: Invalid token',
           });
         }
 
-        // Récupérer ou générer un ID de session
+        // 2. COMPATIBILITÉ FASTMCP : Utiliser notre X-Session-ID ou créer un ID
         let sessionId = request.headers['x-session-id'] as string | undefined;
+        
+        // Si pas de X-Session-ID, utiliser mcp-session-id ou créer un nouvel ID
         if (!sessionId) {
-          sessionId = `session-${randomUUID()}`;
-          logger.info('Generated new session ID', { sessionId });
+          sessionId = request.headers['mcp-session-id'] as string | undefined;
+        }
+        
+        if (!sessionId) {
+          sessionId = `agenticforge-${randomUUID()}`;
+          logger.info('🆕 Generated new session ID for FastMCP compatibility', { sessionId: sessionId.substring(0, 20) + '...' });
         }
 
-        // Retourner les données de session selon le format FastMCP
+        // 3. Créer les données de session
         const sessionData: SessionData = {
           sessionId,
           headers: request.headers,
@@ -191,22 +194,28 @@ async function main() {
           authenticatedAt: Date.now(),
         };
 
-        logger.info('Authentication successful', { sessionId });
+        logger.info('✅ Authentication successful', { 
+          sessionId: sessionId.substring(0, 20) + '...',
+          clientIp: sessionData.clientIp
+        });
+        
         return sessionData;
       },
       health: { enabled: true, path: '/health' },
     });
 
-    // Écouter les événements de connexion pour le debug
+    // Événements de connexion avec logs détaillés
     mcpServer.on('connect', (event) => {
-      logger.info('Client connected', {
+      logger.info('🔗 CLIENT CONNECTED SUCCESSFULLY!', { 
         hasSession: !!event.session,
+        sessionType: typeof event.session,
+        sessionKeys: event.session ? Object.keys(event.session) : []
       });
     });
 
     mcpServer.on('disconnect', (event) => {
-      logger.info('Client disconnected', {
-        hasSession: !!event.session,
+      logger.info('🔌 Client disconnected', { 
+        hasSession: !!event.session
       });
     });
 
@@ -221,8 +230,10 @@ async function main() {
     });
 
     logger.info(
-      `🐉 Agentic Forge (FastMCP) server started on 0.0.0.0:${config.PORT}`,
+      `🐉 Agentic Forge (FastMCP) server started on 0.0.0.0:${config.PORT} with FastMCP-compatible session management`,
     );
+    logger.info('📋 Session strategy: Work WITH FastMCP session system, not against it');
+    
   } catch (error) {
     logger.fatal({ ...getErrDetails(error) }, 'Failed to start server.');
     process.exit(1);

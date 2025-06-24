@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="description" content="Interface de contrôle pour le système d'IA autonome Agentic Forge.">
+    <meta name="description" content="Interface de contrôle pour le système d'IA autonome Agentic Forge avec gestion stricte des sessions.">
     <title>🐉 Agentic Forge - Interface de Contrôle</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐉</text></svg>">
     <link rel="stylesheet" href="/css/main.css">
@@ -26,9 +26,14 @@
                 </button>
             </div>
 
-            <div class="status-item" aria-live="polite">
+            <div class="status-item" id="sessionStatus" aria-live="polite">
+                <div id="sessionStatusIndicator" class="status-indicator-token"></div>
+                <span id="sessionStatusText">Session en cours...</span>
+            </div>
+
+            <div class="status-item" id="connectionStatus" aria-live="polite">
                 <div id="tokenStatusIndicator" class="status-indicator-token"></div>
-                <span id="connectionStatus">Token requis</span>
+                <span id="connectionStatusText">Token requis</span>
             </div>
         </div>
     </header>
@@ -43,12 +48,22 @@
                 <div class="control-panel" style="margin-top: 0; margin-bottom: 1.5rem;">
                     <h3 class="control-panel-title">Statut de l'Agent</h3>
                     <div class="control-item">
+                        <span class="control-label">Session ID</span>
+                        <span id="sessionIdDisplay" class="status-value">--</span>
+                    </div>
+                    <div class="control-item">
                         <span class="control-label">Outils Détectés</span>
                         <span id="toolCount" class="status-value">0</span>
                     </div>
+                    <div class="control-item">
+                        <span class="control-label">Statut Connexion</span>
+                        <span id="connectionHealth" class="status-value">--</span>
+                    </div>
                 </div>
                 
-                <p class="sidebar-info">L'agent sélectionne et exécute les outils automatiquement en fonction de votre objectif.</p>
+                <p class="sidebar-info">
+                    <strong>Mode Session Stricte:</strong> L'agent maintient un contexte de conversation persistant grâce à votre Session ID unique. Toutes les requêtes doivent inclure ce Session ID.
+                </p>
                 
                 <!-- Section des interrupteurs -->
                 <div class="control-panel">
@@ -66,6 +81,21 @@
                             <input type="checkbox" id="codeExecutionToggle" checked>
                             <span class="slider round"></span>
                         </label>
+                    </div>
+                </div>
+
+                <!-- Section Actions Rapides -->
+                <div class="control-panel">
+                    <h3 class="control-panel-title">Actions Rapides</h3>
+                    <div class="control-item">
+                        <button id="newSessionBtn" class="btn" style="width: 100%; margin: 5px 0;">
+                            🔄 Nouvelle Session
+                        </button>
+                    </div>
+                    <div class="control-item">
+                        <button id="clearHistoryBtn" class="btn" style="width: 100%; margin: 5px 0; background-color: #e57373;">
+                            🗑️ Vider l'Historique
+                        </button>
                     </div>
                 </div>
 
@@ -90,10 +120,10 @@
                             </button>
                         </div>
                         <div class="input-wrapper">
-                            <textarea class="input-field" id="messageInput" placeholder="Décrivez votre objectif..." aria-label="Message input field" rows="1"></textarea>
+                            <textarea class="input-field" id="messageInput" placeholder="Session requise - veuillez sauvegarder votre token..." aria-label="Message input field" rows="1"></textarea>
                         </div>
                         <div class="input-actions">
-                            <button type="submit" class="btn" id="sendBtn" aria-label="Send Message">
+                            <button type="submit" class="btn" id="sendBtn" aria-label="Send Message" disabled>
                                 <span>Envoyer</span>
                                 <span aria-hidden="true">→</span>
                             </button>
