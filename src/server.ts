@@ -1,4 +1,4 @@
-// src/server.ts (Version Finale Stabilisée)
+// src/server.ts (Tentative Finale - Authentification Désactivée)
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { Redis } from 'ioredis';
@@ -11,15 +11,13 @@ import { getErrDetails } from './utils/errorUtils.js';
 import type { AgentSession, History, SessionData } from './types.js';
 import type { IncomingMessage } from 'http';
 
-// --- CORRECTION DÉFINITIVE ---
-// On ajoute une stratégie de reconnexion robuste pour stabiliser le serveur.
 const redis = new Redis({
   host: config.REDIS_HOST,
   port: config.REDIS_PORT,
   password: config.REDIS_PASSWORD,
-  maxRetriesPerRequest: null, // Important pour BullMQ
+  maxRetriesPerRequest: null,
   retryStrategy(times) {
-    const delay = Math.min(times * 200, 2000); // Tente de se reconnecter toutes les 2s max
+    const delay = Math.min(times * 200, 2000);
     logger.warn(`Redis: Tentative de reconnexion #${times}. Prochaine dans ${delay}ms.`);
     return delay;
   },
@@ -27,14 +25,14 @@ const redis = new Redis({
 
 redis.on('connect', () => logger.info('✅ Connecté à Redis avec succès.'));
 redis.on('error', (err) => logger.error({ err }, 'Erreur de connexion Redis'));
-// --- FIN DE LA CORRECTION ---
 
 const SESSION_EXPIRATION_SECONDS = 24 * 3600;
 
+// Cette fonction est maintenant appelée manuellement
 async function getOrCreateSession(
-  sessionData: SessionData,
+  sessionId: string,
+  request: IncomingMessage,
 ): Promise<AgentSession> {
-  const { sessionId } = sessionData;
   const sessionKey = `session:${sessionId}`;
   const sessionString = await redis.get(sessionKey);
   if (sessionString) {
@@ -42,7 +40,13 @@ async function getOrCreateSession(
   }
   const newSession: AgentSession = {
     id: sessionId,
-    auth: sessionData,
+    // On crée un objet SessionData manuellement
+    auth: {
+      sessionId,
+      headers: request.headers,
+      clientIp: request.socket?.remoteAddress,
+      authenticatedAt: Date.now(),
+    },
     history: [],
     createdAt: Date.now(),
     lastActivity: Date.now(),
@@ -67,22 +71,9 @@ async function main() {
     const mcpServer = new FastMCP<SessionData>({
       name: 'Agentic-Forge-Server',
       version: '1.0.0',
-      authenticate: async (request: IncomingMessage) => {
-        const sessionIdHeader = request.headers['x-session-id'];
-        const sessionId = Array.isArray(sessionIdHeader) ? sessionIdHeader[0] : sessionIdHeader;
-
-        if (!sessionId) {
-          logger.error({ headers: request.headers }, "SERVER CONTAINER: 'x-session-id' is MISSING. Throwing error.");
-          throw new Error('Bad Request: No valid session ID provided');
-        }
-
-        return {
-          sessionId,
-          headers: request.headers,
-          clientIp: request.socket?.remoteAddress,
-          authenticatedAt: Date.now(),
-        };
-      },
+      // --- CORRECTION RADICALE : ON RETIRE LA FONCTION D'AUTHENTIFICATION ---
+      // Le framework ne tentera plus de valider la session en amont.
+      // Nous le ferons nous-mêmes au début de l'exécution de l'outil.
       health: { enabled: true, path: '/health' },
     });
 
@@ -90,9 +81,19 @@ async function main() {
       name: 'internal_goalHandler',
       description: "Handles the user's goal to start the agent loop.",
       parameters: goalHandlerParams,
+      // La logique de session est déplacée ici
       execute: async (args, ctx) => {
-        if (!ctx.session) throw new Error('Session context is missing.');
-        const session = await getOrCreateSession(ctx.session);
+        // On récupère l'en-tête ici, au sein de l'outil
+        const sessionIdHeader = ctx.rawRequest?.headers['x-session-id'];
+        const sessionId = Array.isArray(sessionIdHeader) ? sessionIdHeader[0] : sessionIdHeader;
+        
+        if (!sessionId || !ctx.rawRequest) {
+            const errorMsg = "Session ID missing inside tool execution. This is a critical failure.";
+            logger.error({ headers: ctx.rawRequest?.headers }, errorMsg);
+            throw new Error(errorMsg);
+        }
+        
+        const session = await getOrCreateSession(sessionId, ctx.rawRequest);
         const history: History = session.history;
         if (
           history.length === 0 ||
@@ -180,5 +181,3 @@ async function main() {
 }
 
 void main();
-
-
