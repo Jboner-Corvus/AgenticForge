@@ -19,7 +19,6 @@ NC='\e[0m' # No Color
 # Functions for .env file management and system checks
 # ==============================================================================
 
-# ... (check_and_create_env et check_docker_permissions ne changent pas) ...
 check_and_create_env() {
     if [ ! -f .env ]; then
         echo -e "${COLOR_YELLOW}Le fichier .env n'a pas été trouvé. Création d'un nouveau fichier .env...${NC}"
@@ -118,7 +117,6 @@ check_local_prerequisites() {
 # Functions for Menu Actions
 # ==============================================================================
 
-# --- Docker & Services (Unchanged) ---
 start_services() {
     check_and_create_env
     echo -e "${COLOR_YELLOW}Démarrage des services Docker...${NC}"
@@ -126,11 +124,11 @@ start_services() {
     echo -e "${COLOR_GREEN}Services démarrés.${NC}"
     read -p "Appuyez sur Entrée pour continuer..."
 }
-restart_services() {
-    echo -e "${COLOR_YELLOW}Redémarrage des services Docker...${NC}"
-    docker compose down
-    docker compose up --build -d
-    echo -e "${COLOR_GREEN}Services redémarrés.${NC}"
+# MODIFICATION: Option 2 utilise la méthode de redémarrage "intelligente".
+apply_changes_and_restart() {
+    echo -e "${COLOR_YELLOW}Application des changements (reconstruction si nécessaire) et redémarrage...${NC}"
+    docker compose up -d --build --force-recreate
+    echo -e "${COLOR_GREEN}Services mis à jour et redémarrés.${NC}"
     read -p "Appuyez sur Entrée pour continuer..."
 }
 stop_services() {
@@ -176,12 +174,13 @@ clean_docker() {
 }
 
 
-# --- Development & Quality (MODIFIED TO RUN LOCALLY) ---
+# --- Development & Quality (Local) ---
 
+# MODIFICATION: Option 10 utilise maintenant lint:fix.
 lint_code() {
     check_local_prerequisites || return
-    echo -e "${COLOR_YELLOW}Lancement du linter sur le code source local...${NC}"
-    pnpm run lint
+    echo -e "${COLOR_YELLOW}Lancement du linter avec correction automatique...${NC}"
+    pnpm run lint:fix
     read -p "Appuyez sur Entrée pour continuer..."
 }
 
@@ -239,13 +238,15 @@ show_menu() {
     echo ""
     echo -e "  ${COLOR_CYAN}Docker & Services${NC}"
     printf "   1) ${COLOR_GREEN}🟢 Démarrer${NC}         5) ${COLOR_BLUE}📊 Logs${NC}\n"
+    # MODIFICATION: Libellé de l'option 2 mis à jour
     printf "   2) ${COLOR_YELLOW}🔄 Redémarrer${NC}       6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\n"
-    printf "   3) ${COLOR_RED}🔴 Arrêter${NC}           7) ${COLOR_BLUE}🔨 Rebuild${NC}\n"
-    printf "   4) ${COLOR_CYAN}⚡ Statut${NC}            8) ${COLOR_RED}🧹 Nettoyer Docker${NC}\n"
+    printf "   3) ${COLOR_RED}🔴 Arrêter${NC}          7) ${COLOR_BLUE}🔨 Rebuild (sans cache)${NC}\n"
+    printf "   4) ${COLOR_CYAN}⚡ Statut${NC}           8) ${COLOR_RED}🧹 Nettoyer Docker${NC}\n"
     echo ""
     echo -e "  ${COLOR_CYAN}Développement & Qualité (Local)${NC}"
-    printf "  10) ${COLOR_BLUE}🔍 Lint${NC}             13) ${COLOR_BLUE}🧪 Tests${NC}\n"
-    printf "  11) ${COLOR_BLUE}✨ Formater${NC}         14) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
+    # MODIFICATION: Libellé de l'option 10 mis à jour
+    printf "  10) ${COLOR_BLUE}🔍 Lint & Fix${NC}        13) ${COLOR_BLUE}🧪 Tests${NC}\n"
+    printf "  11) ${COLOR_BLUE}✨ Formater${NC}          14) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
     printf "  12) ${COLOR_RED}🧽 Nettoyer Dev${NC}      15) ${COLOR_BLUE}📋 Audit${NC}\n"
     echo ""
     printf "  16) ${COLOR_RED}🚪 Quitter${NC}\n"
@@ -255,8 +256,6 @@ show_menu() {
 # ==============================================================================
 # Main Loop
 # ==============================================================================
-# ... (la boucle principale ne change pas) ...
-# Vérification unique des permissions Docker au démarrage du script
 check_docker_permissions
 
 while true; do
@@ -265,13 +264,15 @@ while true; do
 
     case $choice in
         1) start_services ;;
-        2) restart_services ;;
+        # MODIFICATION: L'option 2 appelle la nouvelle fonction
+        2) apply_changes_and_restart ;;
         3) stop_services ;;
         4) show_status ;;
         5) show_logs ;;
         6) shell_access ;;
         7) rebuild_services ;;
         8) clean_docker ;;
+        # MODIFICATION: L'option 10 appelle la fonction mise à jour
         10) lint_code ;;
         11) format_code ;;
         12) clean_dev ;;

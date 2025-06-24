@@ -23,8 +23,11 @@ const mimeTypes: Record<string, string> = {
 
 const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PUT, DELETE, OPTIONS',
+  );
+
   // CORRECTION : On standardise le nom de l'en-tête en minuscules.
   res.setHeader(
     'Access-Control-Allow-Headers',
@@ -38,14 +41,19 @@ const server = http.createServer((req, res) => {
   }
 
   const incomingUrl = new URL(req.url || '/', `http://${req.headers.host}`);
-  logger.info(`${req.method} ${incomingUrl.pathname} from ${req.socket.remoteAddress}`);
+  logger.info(
+    `${req.method} ${incomingUrl.pathname} from ${req.socket.remoteAddress}`,
+  );
 
   if (
     incomingUrl.pathname.startsWith('/api/') ||
     incomingUrl.pathname.startsWith('/mcp') ||
     incomingUrl.pathname === '/health'
   ) {
-    const targetUrl = new URL(incomingUrl.pathname + incomingUrl.search, PROXY_TARGET);
+    const targetUrl = new URL(
+      incomingUrl.pathname + incomingUrl.search,
+      PROXY_TARGET,
+    );
     logger.info(`Proxying request to: ${targetUrl.href}`);
     const proxyReq = http.request(
       targetUrl,
@@ -60,16 +68,25 @@ const server = http.createServer((req, res) => {
       },
     );
     proxyReq.on('error', (err: Error) => {
-      logger.error({ err: err.message, targetUrl: targetUrl.href }, 'Proxy request failed');
+      logger.error(
+        { err: err.message, targetUrl: targetUrl.href },
+        'Proxy request failed',
+      );
       res.writeHead(502, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Bad Gateway', message: 'Could not reach the main API server.' }));
+      res.end(
+        JSON.stringify({
+          error: 'Bad Gateway',
+          message: 'Could not reach the main API server.',
+        }),
+      );
     });
     req.pipe(proxyReq);
     return;
   }
 
   try {
-    const requestedPath = incomingUrl.pathname === '/' ? '/index.html' : incomingUrl.pathname;
+    const requestedPath =
+      incomingUrl.pathname === '/' ? '/index.html' : incomingUrl.pathname;
     const publicDir = path.resolve(__dirname, '..', 'public');
     const fullPath = path.join(publicDir, requestedPath);
     if (!fullPath.startsWith(publicDir)) {

@@ -1,7 +1,6 @@
-// src/server.ts
+// src/server.ts (Version de débogage ultime - Journalisation des en-têtes)
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
-import { randomUUID } from 'crypto';
 import { Redis } from 'ioredis';
 import { config } from './config.js';
 import logger from './logger.js';
@@ -11,27 +10,42 @@ import { getLlmResponse } from './utils/llmProvider.js';
 import { getErrDetails } from './utils/errorUtils.js';
 import type { AgentSession, History, SessionData } from './types.js';
 
-const redis = new Redis({ /* ... */ });
-redis.on('error', (err) => logger.error(`Redis connection error: ${err}`));
+const redis = new Redis({
+  host: config.REDIS_HOST,
+  port: config.REDIS_PORT,
+  password: config.REDIS_PASSWORD,
+  maxRetriesPerRequest: null,
+});
+
+redis.on('error', (err) =>
+  logger.error(`Redis connection error: ${err.message}`),
+);
 const SESSION_EXPIRATION_SECONDS = 24 * 3600;
 
-async function getOrCreateSession(sessionData: SessionData): Promise<AgentSession> {
-    const { sessionId } = sessionData;
-    const sessionKey = `session:${sessionId}`;
-    const sessionString = await redis.get(sessionKey);
-    if (sessionString) {
-        return JSON.parse(sessionString);
-    }
-    const newSession: AgentSession = {
-        id: sessionId,
-        auth: sessionData,
-        history: [],
-        createdAt: Date.now(),
-        lastActivity: Date.now(),
-    };
-    await redis.set(sessionKey, JSON.stringify(newSession), 'EX', SESSION_EXPIRATION_SECONDS);
-    logger.info({ sessionId }, 'New session created in Redis');
-    return newSession;
+async function getOrCreateSession(
+  sessionData: SessionData,
+): Promise<AgentSession> {
+  const { sessionId } = sessionData;
+  const sessionKey = `session:${sessionId}`;
+  const sessionString = await redis.get(sessionKey);
+  if (sessionString) {
+    return JSON.parse(sessionString);
+  }
+  const newSession: AgentSession = {
+    id: sessionId,
+    auth: sessionData,
+    history: [],
+    createdAt: Date.now(),
+    lastActivity: Date.now(),
+  };
+  await redis.set(
+    sessionKey,
+    JSON.stringify(newSession),
+    'EX',
+    SESSION_EXPIRATION_SECONDS,
+  );
+  logger.info({ sessionId }, 'New session created in Redis');
+  return newSession;
 }
 
 const goalHandlerParams = z.object({
@@ -44,7 +58,38 @@ async function main() {
     const mcpServer = new FastMCP<SessionData>({
       name: 'Agentic-Forge-Server',
       version: '1.0.0',
+      // =================== MODIFICATION POUR DÉBOGAGE ===================
       authenticate: async (request) => {
+        // Log de tous les en-têtes reçus par le serveur pour le débogage.
+        logger.info({
+          message: 'En-têtes reçus par la fonction authenticate',
+          headers: request.headers,
+        });
+
+        const sessionId = request.headers['x-session-id'] as string | undefined;
+
+        // On garde la vérification pour voir si le log ci-dessus s'affiche avant l'erreur.
+        if (!sessionId) {
+          logger.error(
+            "ERREUR FATALE : L'en-tête x-session-id est manquant ou vide. Renvoi de l'erreur 400.",
+          );
+          throw new Response(
+            JSON.stringify({
+              error: {
+                code: -32000,
+                message: 'Bad Request: No valid session ID provided',
+              },
+            }),
+            {
+              status: 400,
+              statusText: 'Bad Request',
+              headers: { 'Content-Type': 'application/json' },
+            },
+          );
+        }
+
+        // La vérification du token reste désactivée pour l'instant.
+        /*
         const authHeader = request.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
           throw new Response(null, { status: 401, statusText: 'Unauthorized: Missing Bearer token' });
@@ -53,14 +98,8 @@ async function main() {
         if (token !== config.AUTH_TOKEN) {
           throw new Response(null, { status: 401, statusText: 'Unauthorized: Invalid token' });
         }
-        const sessionId = request.headers['x-session-id'] as string | undefined;
-        if (!sessionId) {
-            throw new Response(JSON.stringify({ error: 'No valid session ID provided' }), {
-              status: 400,
-              statusText: 'Bad Request',
-              headers: { 'Content-Type': 'application/json' },
-            });
-        }
+        */
+
         return {
           sessionId,
           headers: request.headers,
@@ -68,6 +107,7 @@ async function main() {
           authenticatedAt: Date.now(),
         };
       },
+      // =======================================================================
       health: { enabled: true, path: '/health' },
     });
 
@@ -79,7 +119,10 @@ async function main() {
         if (!ctx.session) throw new Error('Session context is missing.');
         const session = await getOrCreateSession(ctx.session);
         const history: History = session.history;
-        if (history.length === 0 || history[history.length - 1].content !== args.goal) {
+        if (
+          history.length === 0 ||
+          history[history.length - 1].content !== args.goal
+        ) {
           history.push({ role: 'user', content: args.goal });
         }
         let finalResponse = "La limite de la boucle de l'agent a été atteinte.";
@@ -87,9 +130,13 @@ async function main() {
           const masterPrompt = getMasterPrompt(history, allTools);
           const llmResponse = await getLlmResponse(masterPrompt);
           history.push({ role: 'assistant', content: llmResponse });
-          const toolCallMatch = llmResponse.match(/<tool_code>([\s\S]*?)<\/tool_code>/);
+          const toolCallMatch = llmResponse.match(
+            /<tool_code>([\s\S]*?)<\/tool_code>/,
+          );
           if (!toolCallMatch?.[1]) {
-            finalResponse = llmResponse.replace(/<thought>[\s\S]*?<\/thought>/, '').trim();
+            finalResponse = llmResponse
+              .replace(/<thought>[\s\S]*?<\/thought>/, '')
+              .trim();
             break;
           }
           try {
@@ -102,18 +149,37 @@ async function main() {
             const toolToExecute = allTools.find((t) => t.name === toolName);
             if (toolToExecute) {
               const result = await toolToExecute.execute(parameters, ctx);
-              const resultText = typeof result === 'string' ? result : (result as TextContent)?.text || JSON.stringify(result) || "L'outil a été exécuté sans sortie de texte.";
-              history.push({ role: 'user', content: `Tool Output: ${resultText}` });
+              const resultText =
+                typeof result === 'string'
+                  ? result
+                  : (result as TextContent)?.text ||
+                    JSON.stringify(result) ||
+                    "L'outil a été exécuté sans sortie de texte.";
+              history.push({
+                role: 'user',
+                content: `Tool Output: ${resultText}`,
+              });
             } else {
-              history.push({ role: 'user', content: `Erreur : Outil '${toolName}' non trouvé.` });
+              history.push({
+                role: 'user',
+                content: `Erreur : Outil '${toolName}' non trouvé.`,
+              });
             }
           } catch (e) {
-            history.push({ role: 'user', content: `Erreur lors de l'exécution de l'outil : ${(e as Error).message}` });
+            history.push({
+              role: 'user',
+              content: `Erreur lors de l'exécution de l'outil : ${(e as Error).message}`,
+            });
           }
         }
         session.history = history;
         session.lastActivity = Date.now();
-        await redis.set(`session:${session.id}`, JSON.stringify(session), 'EX', SESSION_EXPIRATION_SECONDS);
+        await redis.set(
+          `session:${session.id}`,
+          JSON.stringify(session),
+          'EX',
+          SESSION_EXPIRATION_SECONDS,
+        );
         return { type: 'text', text: finalResponse };
       },
     };
@@ -126,11 +192,14 @@ async function main() {
       httpStream: { port: config.PORT },
     });
 
-    logger.info(`🐉 Agentic Forge (FastMCP) server started on 0.0.0.0:${config.PORT} with default endpoint /mcp`);
-    
+    logger.info(
+      `🐉 Agentic Forge (FastMCP) server started on 0.0.0.0:${config.PORT} with default endpoint /mcp`,
+    );
   } catch (error) {
     const errorDetailsString = JSON.stringify(getErrDetails(error), null, 2);
-    logger.fatal(`Failed to start server. Error details: ${errorDetailsString}`);
+    logger.fatal(
+      `Failed to start server. Error details: ${errorDetailsString}`,
+    );
     process.exit(1);
   }
 }

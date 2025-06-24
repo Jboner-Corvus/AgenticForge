@@ -1,147 +1,103 @@
+// ===== public/js/api.js (Version Corrigée et Complète) =====
+
 /**
- * Fichier : public/js/api.js
- * Rôle : Client API complet pour l'interaction avec le serveur.
- * Statut : Aucune modification de la logique d'envoi, mais enrichi pour être plus réaliste.
+ * Fonction de base pour communiquer avec le serveur FastMCP via le webServer.
+ * Elle construit la requête au format JSON-RPC 2.0 attendu par le serveur.
+ * * @param {string} method - La méthode MCP (ex: 'tools/list', 'tools/call').
+ * @param {object} params - Les paramètres pour la méthode.
+ * @param {string} authToken - Le Bearer Token pour l'authentification.
+ * @param {string} sessionId - L'ID de session, qui sera placé dans l'en-tête.
+ * @returns {Promise<any>} - La réponse du serveur.
  */
-document.addEventListener('DOMContentLoaded', () => {
-  const apiClient = {
-    // Méthode de base pour effectuer les appels Fetch
-    async request(endpoint, method = 'GET', body = null) {
-      const sessionId = localStorage.getItem('sessionId');
-      const headers = {
-        'Content-Type': 'application/json',
-      };
+async function sendMcpRequest(method, params, authToken, sessionId) {
+  // Le point critique : on vérifie que le sessionId existe avant d'envoyer.
+  if (!sessionId) {
+    throw new Error("Erreur interne: Tentative d'appel API sans Session ID.");
+  }
 
-      // Le point clé : on ajoute l'en-tête de session s'il existe.
-      if (sessionId) {
-        headers['x-session-id'] = sessionId;
-      }
-
-      const config = {
-        method,
-        headers,
-      };
-
-      if (body) {
-        config.body = JSON.stringify(body);
-      }
-
-      try {
-        const response = await fetch(endpoint, config);
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Une erreur de serveur est survenue.');
-        }
-        return data;
-      } catch (error) {
-        // Gérer les erreurs réseau ou les erreurs jetées
-        console.error(`Erreur API sur ${method} ${endpoint}:`, error);
-        this.displayError(error.message);
-        throw error;
-      }
+  const response = await fetch('/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+      // C'est ici que l'en-tête de session est ajouté.
+      'x-session-id': sessionId,
     },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: `mcp-client-${Date.now()}`,
+      method: method,
+      params: params,
+    }),
+  });
 
-    // --- Fonctions d'API spécifiques ---
+  if (!response.ok) {
+    const errorBody = await response.text();
+    // Tente de parser le JSON pour un message plus clair, sinon utilise le texte brut.
+    try {
+      const errorJson = JSON.parse(errorBody);
+      throw new Error(
+        `Erreur API ${response.status}: ${JSON.stringify(errorJson.error)}`,
+      );
+    } catch {
+      throw new Error(
+        `Erreur API ${response.status}: ${errorBody || response.statusText}`,
+      );
+    }
+  }
 
-    async login(email, password) {
-      try {
-        const data = await this.request('/api/login', 'POST', {
-          email,
-          password,
-        });
-        if (data.sessionId) {
-          localStorage.setItem('sessionId', data.sessionId);
-          console.log('Connexion réussie.');
-          this.updateUIForLoggedInState();
-        }
-      } catch (error) {
-        // L'erreur est déjà affichée par la méthode `request`
-        this.updateUIForLoggedOutState();
-      }
-    },
+  const jsonResponse = await response.json();
+  if (jsonResponse.error) {
+    throw new Error(`Erreur MCP: ${jsonResponse.error.message}`);
+  }
+  return jsonResponse.result;
+}
 
-    async logout() {
-      try {
-        await this.request('/api/logout', 'POST');
-        localStorage.removeItem('sessionId');
-        console.log('Déconnexion réussie.');
-        this.updateUIForLoggedOutState();
-      } catch (error) {
-        // Même si la déconnexion échoue côté serveur, on nettoie le client
-        localStorage.removeItem('sessionId');
-        this.updateUIForLoggedOutState();
-      }
-    },
-
-    async getProfile() {
-      try {
-        const data = await this.request('/api/profile');
-        this.displayProfile(data.user);
-      } catch (error) {
-        // Si l'appel échoue (session invalide), on déconnecte l'utilisateur
-        this.logout();
-      }
-    },
-
-    // --- Fonctions de manipulation du DOM ---
-
-    displayError(message) {
-      const errorElement = document.getElementById('error-message');
-      if (errorElement) {
-        errorElement.textContent = message;
-        errorElement.style.display = 'block';
-      }
-    },
-
-    clearError() {
-      const errorElement = document.getElementById('error-message');
-      if (errorElement) {
-        errorElement.style.display = 'none';
-      }
-    },
-
-    updateUIForLoggedInState() {
-      document.getElementById('login-form').style.display = 'none';
-      document.getElementById('profile-view').style.display = 'block';
-      this.getProfile();
-    },
-
-    updateUIForLoggedOutState() {
-      document.getElementById('login-form').style.display = 'block';
-      document.getElementById('profile-view').style.display = 'none';
-      const profileContent = document.getElementById('profile-content');
-      if (profileContent) profileContent.innerHTML = '';
-    },
-
-    displayProfile(user) {
-      const profileContent = document.getElementById('profile-content');
-      if (profileContent) {
-        profileContent.innerHTML = `
-                <p><strong>ID:</strong> ${user.id}</p>
-                <p><strong>Email:</strong> ${user.email}</p>
-                <p><strong>Membre depuis le:</strong> ${new Date(user.memberSince).toLocaleDateString()}</p>
-           `;
-      }
-    },
-
-    // Initialisation
-    init() {
-      if (localStorage.getItem('sessionId')) {
-        this.updateUIForLoggedInState();
-      } else {
-        this.updateUIForLoggedOutState();
-      }
-      // ... attacher les écouteurs d'événements aux formulaires et boutons ...
-      document.getElementById('login-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        // logique de login...
-      });
-      document.getElementById('logout-button').addEventListener('click', () => {
-        this.logout();
-      });
+/**
+ * Envoie l'objectif de l'utilisateur au backend en appelant l'outil 'internal_goalHandler'.
+ * @param {string} goal - L'objectif décrit par l'utilisateur.
+ * @param {string} authToken - Le token d'authentification.
+ * @param {string} sessionId - L'ID de la session en cours.
+ * @returns {Promise<any>} - Le résultat de l'exécution de l'outil.
+ */
+export async function sendGoal(goal, authToken, sessionId) {
+  const params = {
+    name: 'internal_goalHandler',
+    arguments: {
+      goal: goal,
     },
   };
+  const result = await sendMcpRequest(
+    'tools/call',
+    params,
+    authToken,
+    sessionId,
+  );
+  // La réponse de l'outil est un objet avec une propriété `content`.
+  // Le premier élément de `content` est le texte de la réponse.
+  return result.content[0];
+}
 
-  apiClient.init();
-});
+/**
+ * Récupère la liste des outils disponibles sur le serveur.
+ * @param {string} authToken - Le token d'authentification.
+ * @param {string} sessionId - L'ID de la session en cours.
+ * @returns {Promise<Array>} - Un tableau des outils.
+ */
+export async function getTools(authToken, sessionId) {
+  const result = await sendMcpRequest('tools/list', {}, authToken, sessionId);
+  return result.tools || [];
+}
+
+/**
+ * Teste la santé du serveur en appelant l'endpoint /health.
+ * @returns {Promise<boolean>} - true si le serveur est en ligne, false sinon.
+ */
+export async function testServerHealth() {
+  try {
+    const response = await fetch('/health');
+    return response.ok;
+  } catch (e) {
+    return false;
+  }
+}
