@@ -1,136 +1,106 @@
 // public/js/api.js
 
-const API_ENDPOINT = '/mcp'; // REVENIR à l'endpoint par défaut
+const API_ENDPOINT = '/mcp';
 
 /**
- * Envoie un objectif à l'agent avec token et session ID OBLIGATOIRES
- * @param {string} goal - L'objectif de l'utilisateur
- * @param {string} token - Le Bearer Token (REQUIS)
- * @param {string} sessionId - L'ID de session (REQUIS)
- * @returns {Promise<Object>} - Résultat de l'exécution
+ * Envoie une requête générique à l'agent en utilisant le protocole MCP.
+ * @param {string} method - La méthode MCP à appeler (ex: 'tools/list', 'tools/call').
+ * @param {object} params - Les paramètres pour la méthode.
+ * @param {string} token - Le Bearer Token pour l'authentification.
+ * @param {string} sessionId - L'ID de session pour la continuité.
+ * @returns {Promise<any>} - Le résultat de l'appel MCP.
+ */
+async function sendMcpRequest(method, params, token, sessionId) {
+  if (!token || !sessionId) {
+    const errorMessage = 'Le Bearer Token et le Session ID sont obligatoires.';
+    console.error(`❌ [API] ${errorMessage}`);
+    throw new Error(errorMessage);
+  }
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+    // LA CORRECTION CRUCIALE EST ICI !
+    'mcp-session-id': sessionId,
+  };
+
+  const body = {
+    jsonrpc: '2.0',
+    method: method,
+    params: params,
+    id: `mcp-${method.split('/')[1]}-${Date.now()}`,
+  };
+
+  try {
+    const response = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ [API] La requête MCP a échoué`, { status: response.status, error: errorText, method });
+      // Tente de parser l'erreur JSON, sinon retourne le texte brut
+      try {
+        const errorJson = JSON.parse(errorText);
+        throw new Error(`Erreur API ${response.status}: ${errorJson.error.message || errorText}`);
+      } catch (e) {
+        throw new Error(`Erreur API ${response.status}: ${errorText}`);
+      }
+    }
+
+    const data = await response.json();
+    if (data.error) {
+      console.error('❌ [API] Erreur dans la réponse MCP', data.error);
+      throw new Error(`Erreur MCP (${data.error.code}): ${data.error.message}`);
+    }
+    return data.result;
+
+  } catch (error) {
+    console.error(`❌ [API] Exception dans sendMcpRequest pour la méthode '${method}'`, error);
+    throw error;
+  }
+}
+
+/**
+ * Envoie un objectif à l'agent.
+ * @param {string} goal - L'objectif de l'utilisateur.
+ * @param {string} token - Le Bearer Token.
+ * @param {string} sessionId - L'ID de session.
+ * @returns {Promise<Object>} - Le résultat de l'exécution.
  */
 export async function sendGoal(goal, token, sessionId) {
-  if (!token) throw new Error("Le Bearer Token est obligatoire pour sendGoal().");
-  if (!sessionId) throw new Error("Le Session ID est obligatoire pour sendGoal().");
-
-  console.log('🚀 [API] Sending goal with strict session contract', {
-    goal: goal.substring(0, 50) + '...',
-    sessionId: sessionId.substring(0, 12) + '...'
-  });
-
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-    'mcp-session-id': sessionId,
-  };
-
-  const body = {
-    jsonrpc: '2.0',
-    method: 'tools/call',
-    params: {
-      name: 'internal_goalHandler',
-      arguments: { goal: goal, sessionId: sessionId },
-    },
-    id: `mcp-goal-${Date.now()}`,
-  };
-
-  try {
-    const response = await fetch(API_ENDPOINT, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ [API] Goal request failed', { status: response.status, error: errorText });
-      throw new Error(`Erreur API ${response.status}: ${errorText}`);
-    }
-
-    const data = await response.json();
-    if (data.error) throw new Error(`Erreur MCP: ${data.error.message}`);
-    return data.result;
-  } catch (error) {
-    console.error('❌ [API] Exception in sendGoal', error);
-    throw error;
-  }
+  return sendMcpRequest(
+    'tools/call',
+    { name: 'internal_goalHandler', arguments: { goal, sessionId } },
+    token,
+    sessionId
+  );
 }
 
 /**
- * Récupère le nombre d'outils disponibles
- * @param {string} token - Le Bearer Token (REQUIS)
- * @param {string} sessionId - L'ID de session (REQUIS)
- * @returns {Promise<number>} - Nombre d'outils
+ * Récupère la liste et le nombre d'outils disponibles.
+ * @param {string} token - Le Bearer Token.
+ * @param {string} sessionId - L'ID de session.
+ * @returns {Promise<Array<Object>>} - La liste des outils.
  */
-export async function getToolCount(token, sessionId) {
-  if (!token) throw new Error("Le Bearer Token est obligatoire pour getToolCount().");
-  if (!sessionId) throw new Error("Le Session ID est obligatoire pour getToolCount().");
-
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-    'mcp-session-id': sessionId,
-  };
-
-  const body = {
-    jsonrpc: '2.0',
-    method: 'tools/list',
-    params: {},
-    id: `mcp-tools-${Date.now()}`,
-  };
-
-  try {
-    const response = await fetch(API_ENDPOINT, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ [API] Tool count request failed', { status: response.status, error: errorText });
-      throw new Error(`Erreur API ${response.status}: ${errorText}`);
-    }
-
-    const data = await response.json();
-    if (data.error) throw new Error(`Erreur MCP: ${JSON.stringify(data.error)}`);
-    return data.result?.tools?.length || 0;
-  } catch (error) {
-    console.error('❌ [API] Exception in getToolCount', error);
-    throw error;
-  }
+export async function getTools(token, sessionId) {
+    const result = await sendMcpRequest('tools/list', {}, token, sessionId);
+    return result.tools || [];
 }
 
-// ... le reste des fonctions (testServerHealth, validateSessionContract) reste inchangé
+
 /**
- * Teste la santé de la connexion server
- * @returns {Promise<boolean>} - true si le serveur répond
+ * Teste la santé de la connexion au serveur web.
+ * @returns {Promise<boolean>} - true si le serveur répond.
  */
 export async function testServerHealth() {
   try {
     const response = await fetch('/health');
     return response.ok;
   } catch (error) {
-    console.error('❌ [API] Health check exception', error);
+    console.error('❌ [API] Health check a échoué', error);
     return false;
   }
-}
-
-/**
- * Valide qu'un token et un session ID sont présents et corrects
- * @param {string} token - Le Bearer Token à valider
- * @param {string} sessionId - Le Session ID à valider
- * @returns {Object} - Résultat de la validation
- */
-export function validateSessionContract(token, sessionId) {
-  const validation = { isValid: true, errors: [], warnings: [] };
-  if (!token) {
-    validation.isValid = false;
-    validation.errors.push('Bearer Token manquant');
-  }
-  if (!sessionId) {
-    validation.isValid = false;
-    validation.errors.push('Session ID manquant');
-  }
-  return validation;
 }
