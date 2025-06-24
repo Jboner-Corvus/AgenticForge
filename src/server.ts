@@ -1,4 +1,4 @@
-// src/server.ts (Tentative Finale - Authentification Désactivée)
+// src/server.ts (Version de la Victoire, je l'espère)
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { Redis } from 'ioredis';
@@ -28,11 +28,10 @@ redis.on('error', (err) => logger.error({ err }, 'Erreur de connexion Redis'));
 
 const SESSION_EXPIRATION_SECONDS = 24 * 3600;
 
-// Cette fonction est maintenant appelée manuellement
 async function getOrCreateSession(
-  sessionId: string,
-  request: IncomingMessage,
+  sessionData: SessionData,
 ): Promise<AgentSession> {
+  const { sessionId } = sessionData;
   const sessionKey = `session:${sessionId}`;
   const sessionString = await redis.get(sessionKey);
   if (sessionString) {
@@ -40,13 +39,7 @@ async function getOrCreateSession(
   }
   const newSession: AgentSession = {
     id: sessionId,
-    // On crée un objet SessionData manuellement
-    auth: {
-      sessionId,
-      headers: request.headers,
-      clientIp: request.socket?.remoteAddress,
-      authenticatedAt: Date.now(),
-    },
+    auth: sessionData,
     history: [],
     createdAt: Date.now(),
     lastActivity: Date.now(),
@@ -71,9 +64,31 @@ async function main() {
     const mcpServer = new FastMCP<SessionData>({
       name: 'Agentic-Forge-Server',
       version: '1.0.0',
-      // --- CORRECTION RADICALE : ON RETIRE LA FONCTION D'AUTHENTIFICATION ---
-      // Le framework ne tentera plus de valider la session en amont.
-      // Nous le ferons nous-mêmes au début de l'exécution de l'outil.
+      // --- LA VRAIE CORRECTION EST ICI ---
+      // On retourne à la fonction `authenticate` avec les bons types et la bonne logique.
+      authenticate: async (request: IncomingMessage): Promise<SessionData> => {
+        // Accès correct à l'en-tête (en minuscules)
+        const sessionIdHeader = request.headers['x-session-id'];
+        const sessionId = Array.isArray(sessionIdHeader)
+          ? sessionIdHeader[0]
+          : sessionIdHeader;
+
+        // Si l'ID de session est manquant, on LÈVE une exception.
+        // C'est ce que le framework attend pour renvoyer une erreur 400.
+        if (!sessionId) {
+          logger.error({ headers: request.headers }, "SERVER: 'x-session-id' is MISSING. Throwing error.");
+          throw new Error('Bad Request: No valid session ID provided');
+        }
+
+        // Si tout est bon, on retourne un objet qui correspond au type SessionData.
+        // Cela va compiler et fonctionner.
+        return {
+          sessionId,
+          headers: request.headers,
+          clientIp: request.socket?.remoteAddress,
+          authenticatedAt: Date.now(),
+        };
+      },
       health: { enabled: true, path: '/health' },
     });
 
@@ -81,19 +96,13 @@ async function main() {
       name: 'internal_goalHandler',
       description: "Handles the user's goal to start the agent loop.",
       parameters: goalHandlerParams,
-      // La logique de session est déplacée ici
       execute: async (args, ctx) => {
-        // On récupère l'en-tête ici, au sein de l'outil
-        const sessionIdHeader = ctx.rawRequest?.headers['x-session-id'];
-        const sessionId = Array.isArray(sessionIdHeader) ? sessionIdHeader[0] : sessionIdHeader;
-        
-        if (!sessionId || !ctx.rawRequest) {
-            const errorMsg = "Session ID missing inside tool execution. This is a critical failure.";
-            logger.error({ headers: ctx.rawRequest?.headers }, errorMsg);
-            throw new Error(errorMsg);
+        // Maintenant, ctx.session sera correctement peuplé par le framework.
+        if (!ctx.session) {
+            throw new Error('Critical Error: Session context is missing in tool execution.');
         }
         
-        const session = await getOrCreateSession(sessionId, ctx.rawRequest);
+        const session = await getOrCreateSession(ctx.session);
         const history: History = session.history;
         if (
           history.length === 0 ||

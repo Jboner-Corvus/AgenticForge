@@ -18,7 +18,7 @@
   <a href="README_ES.md">Español</a>
 </p> 
 <h3 align="center">
-      Une alternative privée et locale à MANUS.
+      Une alternative privée et locale à MANUS.
 </h3>
 
 <p align="center">
@@ -85,7 +85,7 @@ Avant de commencer, assurez-vous d'avoir les logiciels suivants installés :
 ## 1. Cloner le dépôt
 
 ```bash
-git clone [https://github.com/votre-username/agentic-forge.git](https://github.com/votre-username/agentic-forge.git)
+git clone https://github.com/votre-username/agentic-forge.git
 cd agentic-forge
 ```
 
