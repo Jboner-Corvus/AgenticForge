@@ -4,142 +4,149 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="description" content="Interface de contrôle pour le système d'IA autonome Agentic Forge avec gestion stricte des sessions.">
+    <meta name="description" content="Interface de contrôle pour le système d'IA autonome Agentic Forge.">
     <title>🐉 Agentic Forge - Interface de Contrôle</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐉</text></svg>">
     <link rel="stylesheet" href="/css/main.css">
+    <style>
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .body-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            flex-grow: 1;
+        }
+        .main-container {
+            flex-grow: 1;
+            overflow: hidden;
+        }
+    </style>
 </head>
 <body>
-
-    <header class="header">
-        <div class="logo">
-            <div class="logo-icon">🐉</div>
-            <h1 class="logo-text">Agentic Forge</h1>
-        </div>
-
-        <div class="status-bar">
-            <div id="token-form" class="token-controls">
-                <label for="authToken" class="token-label">Auth Token:</label>
-                <input type="password" id="authToken" class="token-input" placeholder="Collez votre Bearer Token ici" aria-label="Authentication Token Input">
-                <button type="button" id="saveTokenBtn" class="token-save-btn" aria-label="Save Token">
-                    ✅
-                </button>
+    <div class="body-wrapper">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">🐉</div>
+                <h1 class="logo-text">Agentic Forge</h1>
             </div>
 
-            <div class="status-item" id="sessionStatus" aria-live="polite">
-                <div id="sessionStatusIndicator" class="status-indicator-token"></div>
-                <span id="sessionStatusText">Session en cours...</span>
-            </div>
-
-            <div class="status-item" id="connectionStatus" aria-live="polite">
-                <div id="tokenStatusIndicator" class="status-indicator-token"></div>
-                <span id="connectionStatusText">Token requis</span>
-            </div>
-        </div>
-    </header>
-
-    <div class="main-container">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2 class="sidebar-title">Panneau de Contrôle</h2>
-            </div>
-            <section class="sidebar-content">
-                <div class="control-panel" style="margin-top: 0; margin-bottom: 1.5rem;">
-                    <h3 class="control-panel-title">Statut de l'Agent</h3>
-                    <div class="control-item">
-                        <span class="control-label">Session ID</span>
-                        <span id="sessionIdDisplay" class="status-value">--</span>
-                    </div>
-                    <div class="control-item">
-                        <span class="control-label">Outils Détectés</span>
-                        <span id="toolCount" class="status-value">0</span>
-                    </div>
-                    <div class="control-item">
-                        <span class="control-label">Statut Connexion</span>
-                        <span id="connectionHealth" class="status-value">--</span>
-                    </div>
-                </div>
-                
-                <p class="sidebar-info">
-                    <strong>Mode Session Stricte:</strong> L'agent maintient un contexte de conversation persistant grâce à votre Session ID unique. Toutes les requêtes doivent inclure ce Session ID.
-                </p>
-                
-                <div class="control-panel">
-                    <h3 class="control-panel-title">Capacités de l'Agent</h3>
-                    <div class="control-item">
-                        <label for="toolCreationToggle" class="control-label">Création d'outils</label>
-                        <label class="switch">
-                            <input type="checkbox" id="toolCreationToggle" checked>
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                    <div class="control-item">
-                        <label for="codeExecutionToggle" class="control-label">Exécution de code</label>
-                        <label class="switch">
-                            <input type="checkbox" id="codeExecutionToggle" checked>
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
+            <div class="status-bar">
+                <div id="token-form" class="token-controls">
+                    <label for="authToken" class="token-label">Auth Token:</label>
+                    <input type="password" id="authToken" class="token-input" placeholder="Collez votre Bearer Token ici" aria-label="Authentication Token Input">
+                    <button type="button" id="saveTokenBtn" class="token-save-btn" aria-label="Save Token">✅</button>
                 </div>
 
-                <div class="control-panel">
-                    <h3 class="control-panel-title">Actions Rapides</h3>
-                    <div class="control-item">
-                        <button id="newSessionBtn" class="btn" style="width: 100%; margin: 5px 0;">
-                            🔄 Nouvelle Session
-                        </button>
-                    </div>
-                    <div class="control-item">
-                        <button id="clearHistoryBtn" class="btn" style="width: 100%; margin: 5px 0; background-color: #e57373;">
-                            🗑️ Vider l'Historique
-                        </button>
-                    </div>
+                <div class="status-item" id="sessionStatus" aria-live="polite">
+                    <div id="sessionStatusIndicator" class="status-indicator-token"></div>
+                    <span id="sessionStatusText">Session...</span>
                 </div>
 
-            </section>
-        </aside>
+                <div class="status-item" id="connectionStatus" aria-live="polite">
+                    <div id="tokenStatusIndicator" class="status-indicator-token"></div>
+                    <span id="connectionStatusText">Token requis</span>
+                </div>
+            </div>
+        </header>
 
-        <main class="content-area">
-            <div class="chat-container">
-                <section class="messages-container" id="messagesContainer" aria-live="assertive">
-                    <noscript>
-                        <p class="no-script-warning">
-                            Cette application nécessite JavaScript pour fonctionner.
-                        </p>
-                    </noscript>
+        <div class="main-container">
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h2 class="sidebar-title">Panneau de Contrôle</h2>
+                </div>
+                <section class="sidebar-content">
+                    <div class="control-panel" style="margin-top: 0; margin-bottom: 1.5rem;">
+                        <h3 class="control-panel-title">Statut de l'Agent</h3>
+                        <div class="control-item">
+                            <span class="control-label">Session ID</span>
+                            <span id="sessionIdDisplay" class="status-value">--</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-label">Outils Détectés</span>
+                            <span id="toolCount" class="status-value">0</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="control-label">Statut Connexion</span>
+                            <span id="connectionHealth" class="status-value">--</span>
+                        </div>
+                    </div>
+                    
+                    <p class="sidebar-info">
+                        <strong>Mode Session Stricte:</strong> L'agent maintient un contexte de conversation persistant grâce à votre Session ID unique.
+                    </p>
+                    
+                    <div class="control-panel">
+                        <h3 class="control-panel-title">Capacités de l'Agent</h3>
+                        <div class="control-item">
+                            <label for="toolCreationToggle" class="control-label">Création d'outils</label>
+                            <label class="switch">
+                                <input type="checkbox" id="toolCreationToggle" checked>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="control-item">
+                            <label for="codeExecutionToggle" class="control-label">Exécution de code</label>
+                            <label class="switch">
+                                <input type="checkbox" id="codeExecutionToggle" checked>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="control-panel">
+                        <h3 class="control-panel-title">Actions Rapides</h3>
+                        <div class="control-item">
+                            <button id="newSessionBtn" class="btn" style="width: 100%; margin: 5px 0;">🔄 Nouvelle Session</button>
+                        </div>
+                        <div class="control-item">
+                            <button id="clearHistoryBtn" class="btn" style="width: 100%; margin: 5px 0; background-color: #e57373;">🗑️ Vider l'Historique</button>
+                        </div>
+                    </div>
                 </section>
-                <div class="input-area">
-                    <form id="chat-form" class="input-container" action="javascript:void(0);">
-                        <div class="input-actions">
-                            <input type="file" id="fileInput" style="display: none;" />
-                            <button type="button" class="btn-icon" id="attachFileBtn" aria-label="Attach file">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49"></path></svg>
-                            </button>
-                        </div>
-                        <div class="input-wrapper">
-                            <textarea class="input-field" id="messageInput" placeholder="Session requise - veuillez sauvegarder votre token..." aria-label="Message input field" rows="1"></textarea>
-                        </div>
-                        <div class="input-actions">
-                            <button type="submit" class="btn" id="sendBtn" aria-label="Send Message" disabled>
-                                <span>Envoyer</span>
-                                <span aria-hidden="true">→</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </main>
-    </div>
+            </aside>
 
-    <div id="debug-panel" style="position: fixed; bottom: 0; left: 0; width: 100%; max-height: 200px; background: #111; border-top: 2px solid #444; overflow-y: auto; font-family: monospace; font-size: 12px; padding: 5px; z-index: 100; display: flex; flex-direction: column;">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 5px; border-bottom: 1px solid #333; flex-shrink: 0;">
-            <h4 style="color: #ccc; margin: 0;">Journal de débogage du Frontend</h4>
-            <button id="clearDebugBtn" style="background: #555; border: none; color: white; padding: 2px 8px; cursor: pointer;">Vider</button>
+            <main class="content-area">
+                <div class="chat-container">
+                    <section class="messages-container" id="messagesContainer" aria-live="assertive"></section>
+                    <div class="input-area">
+                        <form id="chat-form" class="input-container" action="javascript:void(0);">
+                            <div class="input-actions">
+                                <button type="button" class="btn-icon" id="attachFileBtn" aria-label="Attach file">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49"></path></svg>
+                                </button>
+                            </div>
+                            <div class="input-wrapper">
+                                <textarea class="input-field" id="messageInput" placeholder="Session requise..." aria-label="Message input field" rows="1"></textarea>
+                            </div>
+                            <div class="input-actions">
+                                <button type="submit" class="btn" id="sendBtn" aria-label="Send Message" disabled>
+                                    <span>Envoyer</span><span aria-hidden="true">→</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
         </div>
-        <div id="debug-log-content" style="flex-grow: 1; overflow-y: auto;"></div>
+    </div>
+    
+    <div id="debug-panel" style="flex-shrink: 0; background: #111; border-top: 2px solid #444; font-family: monospace; font-size: 12px; z-index: 100; display: flex; flex-direction: column; max-height: 25vh; height: 150px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px; background: #222; flex-shrink: 0;">
+            <h4 style="color: #ccc; margin: 0;">Journal de débogage du Frontend</h4>
+            <div>
+                <button id="clearDebugBtn" style="background: #555; border: none; color: white; padding: 2px 8px; cursor: pointer; margin-right: 10px;">Vider</button>
+                <button id="toggleDebugBtn" style="background: #555; border: none; color: white; padding: 2px 8px; cursor: pointer;">Cacher</button>
+            </div>
+        </div>
+        <div id="debug-log-content" style="overflow-y: auto; padding: 5px; flex-grow: 1;"></div>
     </div>
     
     <script type="module" src="/js/main.js" defer></script>
-
 </body>
 </html>
