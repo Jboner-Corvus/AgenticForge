@@ -1,4 +1,4 @@
-// src/server.ts (Version Finale et Fonctionnelle)
+// src/server.ts (Version Finale avec Connexion Redis Robuste)
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { Redis } from 'ioredis';
@@ -10,25 +10,34 @@ import { getLlmResponse } from './utils/llmProvider.js';
 import type { AgentSession, History, SessionData } from './types.js';
 import type { IncomingMessage } from 'http';
 
+// Configuration Redis améliorée pour la robustesse
 const redis = new Redis({
   host: config.REDIS_HOST,
   port: config.REDIS_PORT,
   password: config.REDIS_PASSWORD,
-  maxRetriesPerRequest: null,
-  retryStrategy: times => Math.min(times * 50, 2000),
+  maxRetriesPerRequest: 3, // Limite les tentatives pour éviter les boucles infinies
+  enableReadyCheck: true,
+  retryStrategy(times) {
+    const delay = Math.min(times * 100, 3000); // Réessaie rapidement, puis attend jusqu'à 3s
+    logger.warn(`Redis: Tentative de reconnexion #${times}. Prochaine dans ${delay}ms.`);
+    return delay;
+  },
 });
 
-redis.on('error', (err) => logger.error({ err }, 'Redis Connection Error'));
+redis.on('connect', () => logger.info('✅ Connexion à Redis établie.'));
+redis.on('ready', () => logger.info('✅ Redis est prêt à recevoir des commandes.'));
+redis.on('error', (err) => logger.error({ err }, 'Erreur de connexion Redis.'));
 
 const SESSION_EXPIRATION_SECONDS = 24 * 3600;
 
 async function getOrCreateSession(sessionData: SessionData): Promise<AgentSession> {
     const { sessionId } = sessionData;
     const sessionKey = `session:${sessionId}`;
+    logger.info({ sessionKey }, "Recherche de la session dans Redis...");
     const sessionString = await redis.get(sessionKey);
     
     if (sessionString) {
-        logger.info({ sessionId }, "Session existante trouvée dans Redis.");
+        logger.info({ sessionId }, "Session existante trouvée.");
         return JSON.parse(sessionString) as AgentSession;
     }
     
@@ -46,7 +55,7 @@ async function getOrCreateSession(sessionData: SessionData): Promise<AgentSessio
         'EX',
         SESSION_EXPIRATION_SECONDS,
     );
-    logger.info({ sessionId }, "Nouvelle session créée et sauvegardée.");
+    logger.info({ sessionId }, "Nouvelle session créée et sauvegardée dans Redis.");
     return newSession;
 }
 
@@ -81,11 +90,8 @@ async function main() {
         description: "Handles the user's primary goal.",
         parameters: goalHandlerParams,
         execute: async (args, ctx) => {
-            if (!ctx.session) {
-                throw new Error('Contexte de session manquant. Impossible de continuer.');
-            }
+            if (!ctx.session) throw new Error('Contexte de session manquant.');
             
-            // On s'assure que la session est créée ou récupérée AVANT toute autre chose.
             const session = await getOrCreateSession(ctx.session);
             const history: History = session.history;
             
@@ -111,11 +117,8 @@ async function main() {
         }
     };
     
-    // On ajoute tous les outils au serveur.
     for (const tool of allTools) {
-      if(tool.name !== 'internal_goalHandler') {
-        mcpServer.addTool(tool);
-      }
+      if(tool.name !== 'internal_goalHandler') mcpServer.addTool(tool);
     }
     mcpServer.addTool(goalHandlerTool);
 
