@@ -1,4 +1,4 @@
-// src/webServer.ts (Version Finale et Stable)
+// src/webServer.ts (Version Finale avec Correction du Proxy)
 import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import * as http from 'http';
@@ -11,31 +11,28 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PROXY_TARGET = `http://server:${config.PORT}`;
+const PROXY_TARGET_HOST = 'server';
+const PROXY_TARGET_PORT = config.PORT;
 
 // Middlewares
-// CORRECTION: Expose the 'mcp-session-id' header instead of 'x-session-id'.
 app.use(cors({ exposedHeaders: "mcp-session-id" }));
 
-// Route de proxy pour MCP et health check
-app.use(['/mcp', '/health'], (req: Request, res: Response) => {
-    const targetUrl = `${PROXY_TARGET}${req.originalUrl}`;
-    
-    // Log crucial pour voir ce qui est transféré
-    logger.info({
-        method: req.method,
-        url: req.originalUrl,
-        headers: req.headers,
-    }, "Proxying request to main server");
+// --- NOUVELLE LOGIQUE DE PROXY ---
 
-    const proxyReq = http.request(targetUrl, {
+// Proxy pour l'API MCP
+app.use('/mcp', (req: Request, res: Response) => {
+    const options = {
+        hostname: PROXY_TARGET_HOST,
+        port: PROXY_TARGET_PORT,
+        path: '/', // CORRECTION : On cible la racine pour les appels API
         method: req.method,
         headers: {
             ...req.headers,
-            host: `server:${config.PORT}`,
+            host: `${PROXY_TARGET_HOST}:${PROXY_TARGET_PORT}`,
         } as http.OutgoingHttpHeaders,
-    }, (proxyRes) => {
-        // CORRECTION: Forward the 'mcp-session-id' header back to the client.
+    };
+
+    const proxyReq = http.request(options, (proxyRes) => {
         const newSessionId = proxyRes.headers['mcp-session-id'];
         if (newSessionId) {
             res.setHeader('mcp-session-id', newSessionId);
@@ -45,11 +42,31 @@ app.use(['/mcp', '/health'], (req: Request, res: Response) => {
     });
 
     proxyReq.on('error', (err) => {
-        logger.error({ err, targetUrl }, 'Proxy request failed');
+        logger.error({ err }, 'Erreur du proxy vers /mcp');
         res.status(502).json({ error: 'Bad Gateway' });
     });
 
     req.pipe(proxyReq);
+});
+
+// Proxy pour le Health Check (reste inchangé)
+app.use('/health', (req: Request, res: Response) => {
+    const options = {
+        hostname: PROXY_TARGET_HOST,
+        port: PROXY_TARGET_PORT,
+        path: '/health',
+        method: req.method,
+        headers: req.headers,
+    };
+    const proxyReq = http.request(options, (proxyRes) => {
+        res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
+        proxyRes.pipe(res);
+    });
+    proxyReq.on('error', (err) => {
+        logger.error({ err }, 'Erreur du proxy vers /health');
+        res.status(502).json({ error: 'Bad Gateway' });
+    });
+    proxyReq.end();
 });
 
 
