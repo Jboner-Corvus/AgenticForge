@@ -2,44 +2,33 @@
   <img src="assets/title.png" alt="Agentic Forge Logo" width="250">
 </p>
 
-<h1 align="center">AgenticForge  </h1>
+<h1 align="center">AgenticForge</h1>
 
-![Agentic Forge Logo](https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge)
-
-  </a>
-  <h3 align="center">
+<p align="center">
+  <img src="https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge" alt="Agentic Forge Logo">
+</p>
+  
+<h3 align="center">
       Une alternative privée et locale à MANUS.
-  </h3>
-  <p align="center">
-    <em>
-      Un agent IA 100% autonome et local qui forge ses propres outils, écrit du code et exécute des tâches complexes, tout en conservant l'intégralité des données sur votre appareil. Basé sur le protocole MCP (Model Context Protocol) avec FastMCP comme moteur, il est conçu pour les modèles de raisonnement locaux et adaptable à l'API de votre LLM favori, garantissant une confidentialité totale et aucune dépendance au cloud.
-    </em>
-  </p>
-  <br>
-  <p align="center">
-    <a href="https://github.com/Jboner-Corvus/AgenticForge/blob/main/LICENSE">
-      <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square&logo=opensource&logoColor=white" alt="MIT License">
-    </a>
-    <a href="https://github.com/Jboner-Corvus/AgenticForge/stargazers">
-      <img src="https://img.shields.io/github/stars/Jboner-Corvus/AgenticForge?style=flat-square&logo=github&color=gold" alt="Stars">
-    </a>
-    <a href="https://github.com/Jboner-Corvus/AgenticForge/network/members">
-      <img src="https://img.shields.io/github/forks/Jboner-Corvus/AgenticForge?style=flat-square&logo=git&color=blue" alt="Forks">
-    </a>
-    <a href="https://github.com/Jboner-Corvus/AgenticForge/issues">
-      <img src="https://img.shields.io/github/issues/Jboner-Corvus/AgenticForge?style=flat-square&logo=github" alt="Issues">
-    </a>
-  </p>
-  <p align="center">
-    <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
+</h3>
+
+<p align="center">
+  <em>
+    Un agent IA 100% autonome et local qui forge ses propres outils, écrit du code et exécute des tâches complexes, tout en conservant l'intégralité des données sur votre appareil. Basé sur le protocole MCP (Model Context Protocol) avec FastMCP comme moteur, il est conçu pour les modèles de raisonnement locaux et adaptable à l'API de votre LLM favori, garantissant une confidentialité totale et aucune dépendance au cloud.
+  </em>
+</p>
+<br>
+<p align="center">
+    <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square&logo=opensource&logoColor=white" alt="MIT License"> <img src="https://img.shields.io/github/stars/Jboner-Corvus/AgenticForge?style=flat-square&logo=github&color=gold" alt="Stars"> <img src="https://img.shields.io/github/forks/Jboner-Corvus/AgenticForge?style=flat-square&logo=git&color=blue" alt="Forks"> <img src="https://img.shields.io/github/issues/Jboner-Corvus/AgenticForge?style=flat-square&logo=github" alt="Issues">
+</p>
+<p align="center">
+    <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
     <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
-    <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
-    <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis">
+    <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+    <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis">
     <img src="https://img.shields.io/badge/MCP-000000?style=for-the-badge&logoColor=white" alt="MCP">
     <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm">
-  </p>
-
-</div>
+</p>
 
 ## Pourquoi Agentic Forge ?
 
