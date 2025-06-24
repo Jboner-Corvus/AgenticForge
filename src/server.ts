@@ -1,4 +1,4 @@
-// src/server.ts (Version finale corrigée)
+// src/server.ts (Version Finale Stabilisée)
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { Redis } from 'ioredis';
@@ -11,16 +11,24 @@ import { getErrDetails } from './utils/errorUtils.js';
 import type { AgentSession, History, SessionData } from './types.js';
 import type { IncomingMessage } from 'http';
 
+// --- CORRECTION DÉFINITIVE ---
+// On ajoute une stratégie de reconnexion robuste pour stabiliser le serveur.
 const redis = new Redis({
   host: config.REDIS_HOST,
   port: config.REDIS_PORT,
   password: config.REDIS_PASSWORD,
-  maxRetriesPerRequest: null,
+  maxRetriesPerRequest: null, // Important pour BullMQ
+  retryStrategy(times) {
+    const delay = Math.min(times * 200, 2000); // Tente de se reconnecter toutes les 2s max
+    logger.warn(`Redis: Tentative de reconnexion #${times}. Prochaine dans ${delay}ms.`);
+    return delay;
+  },
 });
 
-redis.on('error', (err) =>
-  logger.error(`Redis connection error: ${err.message}`),
-);
+redis.on('connect', () => logger.info('✅ Connecté à Redis avec succès.'));
+redis.on('error', (err) => logger.error({ err }, 'Erreur de connexion Redis'));
+// --- FIN DE LA CORRECTION ---
+
 const SESSION_EXPIRATION_SECONDS = 24 * 3600;
 
 async function getOrCreateSession(
@@ -59,33 +67,15 @@ async function main() {
     const mcpServer = new FastMCP<SessionData>({
       name: 'Agentic-Forge-Server',
       version: '1.0.0',
-      // =================== CORRECTION DÉFINITIVE ===================
       authenticate: async (request: IncomingMessage) => {
-        // Accès correct à l'en-tête pour un objet IncomingMessage de Node.js
         const sessionIdHeader = request.headers['x-session-id'];
-        const sessionId = Array.isArray(sessionIdHeader)
-          ? sessionIdHeader[0]
-          : sessionIdHeader;
+        const sessionId = Array.isArray(sessionIdHeader) ? sessionIdHeader[0] : sessionIdHeader;
 
-        logger.info(
-          {
-            sessionId: sessionId || 'Not found',
-            method: request.method,
-            url: request.url,
-          },
-          'Authenticating request',
-        );
-
-        // Si la session n'est pas valide, on lève une exception
-        // que FastMCP interceptera pour renvoyer une erreur 400.
         if (!sessionId) {
-          logger.error(
-            "FATAL ERROR: 'x-session-id' header is missing or empty. Throwing authentication error.",
-          );
+          logger.error({ headers: request.headers }, "SERVER CONTAINER: 'x-session-id' is MISSING. Throwing error.");
           throw new Error('Bad Request: No valid session ID provided');
         }
 
-        // Le chemin de succès retourne un objet qui correspond à SessionData.
         return {
           sessionId,
           headers: request.headers,
@@ -93,7 +83,6 @@ async function main() {
           authenticatedAt: Date.now(),
         };
       },
-      // =============================================================
       health: { enabled: true, path: '/health' },
     });
 
@@ -191,3 +180,5 @@ async function main() {
 }
 
 void main();
+
+

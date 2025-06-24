@@ -1,4 +1,4 @@
-// src/webServer.ts (Corrigé et complet)
+// src/webServer.ts (Version de débogage finale)
 import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -27,13 +27,9 @@ const server = http.createServer((req, res) => {
     'Access-Control-Allow-Methods',
     'GET, POST, PUT, DELETE, OPTIONS',
   );
-
-  // --- CORRECTION ---
-  // On ajoute 'x-session-id' à la liste des en-têtes autorisés.
-  // C'est la modification cruciale pour résoudre le problème.
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'Content-Type, Authorization, x-session-id',
+    'Content-Type, Authorization, x-session-id', // On garde l'ancien pour être sûr
   );
 
   if (req.method === 'OPTIONS') {
@@ -56,7 +52,14 @@ const server = http.createServer((req, res) => {
       incomingUrl.pathname + incomingUrl.search,
       PROXY_TARGET,
     );
-    logger.info(`Proxying request to: ${targetUrl.href}`);
+    
+    // --- AJOUT DE LOG CRUCIAL ---
+    // On log les en-têtes qui vont être envoyés au serveur principal.
+    logger.info({
+        proxyTarget: targetUrl.href,
+        headersToForward: req.headers
+    }, "Proxying request with these headers");
+    
     const proxyReq = http.request(
       targetUrl,
       {
