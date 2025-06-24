@@ -31,36 +31,38 @@ const redis = new Redis({
 redis.on('error', (err) => logger.error({ err }, 'Redis connection error'));
 const SESSION_EXPIRATION_SECONDS = 24 * 3600;
 
-async function getOrCreateSession(sessionData: SessionData): Promise<AgentSession> {
-    const { sessionId } = sessionData;
-    const sessionKey = `session:${sessionId}`;
-    const sessionString = await redis.get(sessionKey);
-    if (sessionString) {
-        const session: AgentSession = JSON.parse(sessionString);
-        session.lastActivity = Date.now();
-        await redis.set(
-        sessionKey,
-        JSON.stringify(session),
-        'EX',
-        SESSION_EXPIRATION_SECONDS,
-        );
-        return session;
-    }
-    const newSession: AgentSession = {
-        id: sessionId,
-        auth: sessionData,
-        history: [],
-        createdAt: Date.now(),
-        lastActivity: Date.now(),
-    };
+async function getOrCreateSession(
+  sessionData: SessionData,
+): Promise<AgentSession> {
+  const { sessionId } = sessionData;
+  const sessionKey = `session:${sessionId}`;
+  const sessionString = await redis.get(sessionKey);
+  if (sessionString) {
+    const session: AgentSession = JSON.parse(sessionString);
+    session.lastActivity = Date.now();
     await redis.set(
-        sessionKey,
-        JSON.stringify(newSession),
-        'EX',
-        SESSION_EXPIRATION_SECONDS,
+      sessionKey,
+      JSON.stringify(session),
+      'EX',
+      SESSION_EXPIRATION_SECONDS,
     );
-    logger.info({ sessionId }, 'New session created in Redis');
-    return newSession;
+    return session;
+  }
+  const newSession: AgentSession = {
+    id: sessionId,
+    auth: sessionData,
+    history: [],
+    createdAt: Date.now(),
+    lastActivity: Date.now(),
+  };
+  await redis.set(
+    sessionKey,
+    JSON.stringify(newSession),
+    'EX',
+    SESSION_EXPIRATION_SECONDS,
+  );
+  logger.info({ sessionId }, 'New session created in Redis');
+  return newSession;
 }
 
 const goalHandlerParams = z.object({
@@ -149,10 +151,10 @@ async function main() {
       version: '1.0.0',
       // Authentification selon la vraie documentation FastMCP
       authenticate: async (request) => {
-        logger.info('Authentication request', { 
+        logger.info('Authentication request', {
           headers: Object.keys(request.headers),
           method: request.method,
-          url: request.url 
+          url: request.url,
         });
 
         // Vérifier le token Bearer
@@ -197,14 +199,14 @@ async function main() {
 
     // Écouter les événements de connexion pour le debug
     mcpServer.on('connect', (event) => {
-      logger.info('Client connected', { 
-        hasSession: !!event.session
+      logger.info('Client connected', {
+        hasSession: !!event.session,
       });
     });
 
     mcpServer.on('disconnect', (event) => {
-      logger.info('Client disconnected', { 
-        hasSession: !!event.session
+      logger.info('Client disconnected', {
+        hasSession: !!event.session,
       });
     });
 

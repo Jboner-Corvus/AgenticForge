@@ -4,7 +4,6 @@
 
 <h1 align="center">AgenticForge  </h1>
 
-
 ![Agentic Forge Logo](https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge)
 
   </a>

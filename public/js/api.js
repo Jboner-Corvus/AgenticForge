@@ -11,7 +11,7 @@ export async function sendGoal(goal, token, sessionId) {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
   };
-  
+
   // Ajouter l'ID de session si disponible
   if (sessionId) {
     headers['X-Session-ID'] = sessionId;
@@ -52,7 +52,7 @@ export async function getToolCount(token, sessionId) {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
   };
-  
+
   // Ajouter l'ID de session si disponible
   if (sessionId) {
     headers['X-Session-ID'] = sessionId;

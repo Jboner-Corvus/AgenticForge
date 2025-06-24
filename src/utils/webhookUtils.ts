@@ -7,7 +7,6 @@ import { getErrDetails, WebhookError } from './errorUtils.js';
 import { config } from '../config.js';
 import {
   WEBHOOK_SIGNATURE_HEADER,
-  WEBHOOK_SECRET_ENV_VAR,
 } from './constants.js';
 
 import type { TaskOutcome } from './asyncToolHelper.js';

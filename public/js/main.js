@@ -77,7 +77,7 @@ async function fetchAndDisplayToolCount() {
     const count = await getToolCount(state.authToken, state.sessionId);
     updateToolCount(count);
   } catch (error) {
-    console.error('Erreur lors de la récupération du nombre d\'outils:', error);
+    console.error("Erreur lors de la récupération du nombre d'outils:", error);
     // CORRECTION: Ne pas afficher d'erreur si c'est juste un problème de session
     // Au lieu de cela, essayer d'appeler sans sessionId
     try {
@@ -135,7 +135,7 @@ async function handleSendMessage(event) {
       "L'agent a terminé mais n'a fourni aucune réponse textuelle.";
     hideTypingIndicator();
     addMessage(responseText, 'assistant');
-    
+
     // CORRECTION: Actualiser le nombre d'outils après une interaction réussie
     fetchAndDisplayToolCount();
   } catch (error) {
