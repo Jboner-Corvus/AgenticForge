@@ -1,0 +1,43 @@
+🚀 [MAIN] Agentic Forge UI Initializing...
+
+api.js:27 DEBUG: En-têtes qui vont être envoyés : {Content-Type: 'application/json', Authorization: 'Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0', X-Session-ID: '1750734723152-jru0v4x'}
+
+api.js:29 
+
+            
+
+            
+
+           POST http://192.168.2.56:3000/mcp 400 (Bad Request)
+
+sendMcpRequest @ api.js:29
+
+getTools @ api.js:67
+
+fetchAndDisplayToolCount @ main.js:109
+
+initializeAuthToken @ main.js:63
+
+(anonymous) @ main.js:36
+
+api.js:52 ❌ [API] Exception durant l'appel MCP 'tools/list' Error: Erreur API 400: Bad Request: No valid session ID provided
+
+    at sendMcpRequest (api.js:42:13)
+
+    at async getTools (api.js:67:18)
+
+    at async fetchAndDisplayToolCount (main.js:109:19)
+
+sendMcpRequest @ api.js:52
+
+await in sendMcpRequest
+
+getTools @ api.js:67
+
+fetchAndDisplayToolCount @ main.js:109
+
+initializeAuthToken @ main.js:63
+
+(anonymous) @ main.js:36
+
+main.js:113 ❌ [MAIN] Impossible de récupérer le nombre d'outils: Erreur API 400: Bad Request: No valid session ID provided

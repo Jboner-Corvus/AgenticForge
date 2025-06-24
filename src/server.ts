@@ -1,4 +1,4 @@
-// src/server.ts (Version avec gestion de session par en-tête)
+// src/server.ts
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
@@ -11,13 +11,7 @@ import { getLlmResponse } from './utils/llmProvider.js';
 import { getErrDetails } from './utils/errorUtils.js';
 import type { AgentSession, History, SessionData } from './types.js';
 
-// --- GESTION DE SESSION VIA REDIS ---
-const redis = new Redis({
-  host: config.REDIS_HOST,
-  port: config.REDIS_PORT,
-  password: config.REDIS_PASSWORD,
-  maxRetriesPerRequest: 3,
-});
+const redis = new Redis({ /* ... */ });
 redis.on('error', (err) => logger.error(`Redis connection error: ${err}`));
 const SESSION_EXPIRATION_SECONDS = 24 * 3600;
 
@@ -35,17 +29,11 @@ async function getOrCreateSession(sessionData: SessionData): Promise<AgentSessio
         createdAt: Date.now(),
         lastActivity: Date.now(),
     };
-    await redis.set(
-        sessionKey,
-        JSON.stringify(newSession),
-        'EX',
-        SESSION_EXPIRATION_SECONDS,
-    );
+    await redis.set(sessionKey, JSON.stringify(newSession), 'EX', SESSION_EXPIRATION_SECONDS);
     logger.info({ sessionId }, 'New session created in Redis');
     return newSession;
 }
 
-// CORRECTION : Le sessionId n'est plus un paramètre de l'outil.
 const goalHandlerParams = z.object({
   goal: z.string().describe("The user's main objective."),
 });
@@ -53,11 +41,9 @@ const goalHandlerParams = z.object({
 async function main() {
   try {
     const allTools = await getAllTools();
-    
     const mcpServer = new FastMCP<SessionData>({
       name: 'Agentic-Forge-Server',
       version: '1.0.0',
-      // CORRECTION : La fonction authenticate gère maintenant la session ID.
       authenticate: async (request) => {
         const authHeader = request.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -67,25 +53,20 @@ async function main() {
         if (token !== config.AUTH_TOKEN) {
           throw new Response(null, { status: 401, statusText: 'Unauthorized: Invalid token' });
         }
-
-        // On lit notre en-tête personnalisé X-Session-ID
-        let sessionId = request.headers['x-session-id'] as string | undefined;
+        const sessionId = request.headers['x-session-id'] as string | undefined;
         if (!sessionId) {
-            // Si l'en-tête est manquant, c'est une erreur client.
             throw new Response(JSON.stringify({ error: 'No valid session ID provided' }), {
               status: 400,
               statusText: 'Bad Request',
               headers: { 'Content-Type': 'application/json' },
             });
         }
-        
-        const sessionData: SessionData = {
-          sessionId: sessionId,
+        return {
+          sessionId,
           headers: request.headers,
           clientIp: request.socket?.remoteAddress,
           authenticatedAt: Date.now(),
         };
-        return sessionData;
       },
       health: { enabled: true, path: '/health' },
     });
@@ -94,16 +75,13 @@ async function main() {
       name: 'internal_goalHandler',
       description: "Handles the user's goal to start the agent loop.",
       parameters: goalHandlerParams,
-      // CORRECTION : La fonction execute utilise le sessionId du contexte.
       execute: async (args, ctx) => {
         if (!ctx.session) throw new Error('Session context is missing.');
-        
         const session = await getOrCreateSession(ctx.session);
         const history: History = session.history;
         if (history.length === 0 || history[history.length - 1].content !== args.goal) {
           history.push({ role: 'user', content: args.goal });
         }
-
         let finalResponse = "La limite de la boucle de l'agent a été atteinte.";
         for (let i = 0; i < 15; i++) {
           const masterPrompt = getMasterPrompt(history, allTools);
@@ -130,8 +108,7 @@ async function main() {
               history.push({ role: 'user', content: `Erreur : Outil '${toolName}' non trouvé.` });
             }
           } catch (e) {
-            const error = e as Error;
-            history.push({ role: 'user', content: `Erreur lors de l'exécution de l'outil : ${error.message}` });
+            history.push({ role: 'user', content: `Erreur lors de l'exécution de l'outil : ${(e as Error).message}` });
           }
         }
         session.history = history;

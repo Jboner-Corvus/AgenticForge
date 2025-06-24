@@ -1,21 +1,16 @@
-// public/js/api.js (Version avec en-tête de session)
-
+// public/js/api.js
 const API_ENDPOINT = '/mcp';
-
-// La fonction de validation n'est plus nécessaire ici car le serveur gère la présence de l'en-tête.
 
 async function sendMcpRequest(method, params, token, sessionId) {
   if (!token || !sessionId) {
-    const errorMessage = 'Le token ET le sessionId sont obligatoires pour toute requête API.';
-    console.error(`❌ [API] ${errorMessage}`);
-    throw new Error(errorMessage);
+    throw new Error('Le token ET le sessionId sont obligatoires pour toute requête API.');
   }
 
-  // CORRECTION : On ajoute notre en-tête personnalisé et non-conflictuel.
+  // CORRECTION : On standardise le nom de l'en-tête en minuscules.
   const headers = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
-    'X-Session-ID': sessionId,
+    'x-session-id': sessionId,
   };
 
   const body = {
@@ -38,7 +33,7 @@ async function sendMcpRequest(method, params, token, sessionId) {
       try {
         const errorJson = JSON.parse(errorText);
         errorMessage = `Erreur API ${response.status}: ${errorJson.error?.message || errorText}`;
-      } catch (e) { /* Pas de JSON, on garde le texte brut */ }
+      } catch (e) {}
       throw new Error(errorMessage);
     }
 
@@ -54,19 +49,17 @@ async function sendMcpRequest(method, params, token, sessionId) {
   }
 }
 
-// CORRECTION : sendGoal n'a plus besoin d'inclure sessionId dans les arguments.
 export async function sendGoal(goal, token, sessionId) {
   return sendMcpRequest(
     'tools/call',
-    { name: 'internal_goalHandler', arguments: { goal } }, // Juste le 'goal'
+    { name: 'internal_goalHandler', arguments: { goal } },
     token,
     sessionId
   );
 }
 
 export async function getTools(token, sessionId) {
-  const result = await sendMcpRequest('tools/list', {}, token, sessionId);
-  return result.tools || [];
+  return sendMcpRequest('tools/list', {}, token, sessionId);
 }
 
 export async function testServerHealth() {
@@ -74,7 +67,6 @@ export async function testServerHealth() {
     const response = await fetch('/health');
     return response.ok;
   } catch (error) {
-    console.error('❌ [API] Health check a échoué', error);
     return false;
   }
 }
