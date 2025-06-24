@@ -1,4 +1,4 @@
-// src/server.ts (Version corrigée pour la gestion des sessions)
+// src/server.ts (Version finale corrigée selon la documentation FastMCP)
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
@@ -9,9 +9,19 @@ import { getAllTools, type Tool } from './tools/index.js';
 import { getMasterPrompt } from './prompts/orchestrator.prompt.js';
 import { getLlmResponse } from './utils/llmProvider.js';
 import { getErrDetails } from './utils/errorUtils.js';
-import type { AgentSession, AuthData, History } from './types.js';
+import type { AgentSession, History } from './types.js';
+import type { IncomingHttpHeaders } from 'http';
 
-// --- GESTION DE SESSION VIA REDIS (inchangée) ---
+// Interface pour les données de session FastMCP
+interface SessionData {
+  sessionId: string;
+  headers: IncomingHttpHeaders;
+  clientIp?: string;
+  authenticatedAt: number;
+  [key: string]: unknown;
+}
+
+// --- GESTION DE SESSION VIA REDIS ---
 const redis = new Redis({
   host: config.REDIS_HOST,
   port: config.REDIS_PORT,
@@ -21,8 +31,8 @@ const redis = new Redis({
 redis.on('error', (err) => logger.error({ err }, 'Redis connection error'));
 const SESSION_EXPIRATION_SECONDS = 24 * 3600;
 
-async function getOrCreateSession(authData: AuthData): Promise<AgentSession> {
-    const { sessionId } = authData;
+async function getOrCreateSession(sessionData: SessionData): Promise<AgentSession> {
+    const { sessionId } = sessionData;
     const sessionKey = `session:${sessionId}`;
     const sessionString = await redis.get(sessionKey);
     if (sessionString) {
@@ -38,7 +48,7 @@ async function getOrCreateSession(authData: AuthData): Promise<AgentSession> {
     }
     const newSession: AgentSession = {
         id: sessionId,
-        auth: authData,
+        auth: sessionData,
         history: [],
         createdAt: Date.now(),
         lastActivity: Date.now(),
@@ -63,9 +73,9 @@ const goalHandlerTool: Tool<typeof goalHandlerParams> = {
   description: "Handles the user's goal to start the agent loop.",
   parameters: goalHandlerParams,
   execute: async (args, ctx) => {
-    if (!ctx.session) throw new Error('AuthData not found in context');
+    if (!ctx.session) throw new Error('Session data not found in context');
     const allAvailableTools = await getAllTools();
-    const session = await getOrCreateSession(ctx.session);
+    const session = await getOrCreateSession(ctx.session as SessionData);
     const history: History = session.history;
     if (
       history.length === 0 ||
@@ -134,39 +144,68 @@ const goalHandlerTool: Tool<typeof goalHandlerParams> = {
 async function main() {
   try {
     const allTools = await getAllTools();
-    const mcpServer = new FastMCP<AuthData>({
+    const mcpServer = new FastMCP<SessionData>({
       name: 'Agentic-Forge-Server',
       version: '1.0.0',
-      // --- MODIFICATION PRINCIPALE: Gestion plus flexible de l'authentification ---
-      authenticate: async (req) => {
-        const token = req.headers.authorization?.split(' ')[1];
+      // Authentification selon la vraie documentation FastMCP
+      authenticate: async (request) => {
+        logger.info('Authentication request', { 
+          headers: Object.keys(request.headers),
+          method: request.method,
+          url: request.url 
+        });
+
+        // Vérifier le token Bearer
+        const authHeader = request.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          logger.warn('Missing or invalid Authorization header');
+          throw new Response(null, {
+            status: 401,
+            statusText: 'Unauthorized: Missing Bearer token',
+          });
+        }
+
+        const token = authHeader.split(' ')[1];
         if (token !== config.AUTH_TOKEN) {
-          throw new Error('Invalid auth token');
+          logger.warn('Invalid auth token provided');
+          throw new Response(null, {
+            status: 401,
+            statusText: 'Unauthorized: Invalid token',
+          });
         }
 
-        let sessionId = req.headers['x-session-id'] as string | undefined;
-
-        // CORRECTION: Pour certaines opérations (comme tools/list), 
-        // on peut permettre l'accès sans session spécifique
+        // Récupérer ou générer un ID de session
+        let sessionId = request.headers['x-session-id'] as string | undefined;
         if (!sessionId) {
-          // Générer un sessionId temporaire pour les opérations qui n'en ont pas besoin
-          sessionId = `temp-session-${randomUUID()}`;
-          logger.debug(
-            { tempSessionId: sessionId, clientIp: req.socket.remoteAddress },
-            'No session ID provided. Created temporary session for this request.',
-          );
+          sessionId = `session-${randomUUID()}`;
+          logger.info('Generated new session ID', { sessionId });
         }
 
-        return {
-          id: randomUUID(),
-          sessionId: sessionId,
-          type: 'Bearer',
-          clientIp: req.socket.remoteAddress,
+        // Retourner les données de session selon le format FastMCP
+        const sessionData: SessionData = {
+          sessionId,
+          headers: request.headers,
+          clientIp: request.socket?.remoteAddress,
           authenticatedAt: Date.now(),
         };
+
+        logger.info('Authentication successful', { sessionId });
+        return sessionData;
       },
-      // --- FIN DE LA MODIFICATION ---
       health: { enabled: true, path: '/health' },
+    });
+
+    // Écouter les événements de connexion pour le debug
+    mcpServer.on('connect', (event) => {
+      logger.info('Client connected', { 
+        hasSession: !!event.session
+      });
+    });
+
+    mcpServer.on('disconnect', (event) => {
+      logger.info('Client disconnected', { 
+        hasSession: !!event.session
+      });
     });
 
     for (const tool of allTools) {

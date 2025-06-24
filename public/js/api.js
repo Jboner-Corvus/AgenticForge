@@ -1,4 +1,4 @@
-// public/js/api.js
+// public/js/api.js (Version finale)
 
 const API_ENDPOINT = '/mcp';
 
@@ -11,6 +11,8 @@ export async function sendGoal(goal, token, sessionId) {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
   };
+  
+  // Ajouter l'ID de session si disponible
   if (sessionId) {
     headers['X-Session-ID'] = sessionId;
   }
@@ -46,14 +48,12 @@ export async function getToolCount(token, sessionId) {
     throw new Error('Token manquant pour getToolCount.');
   }
 
-  // CORRECTION PRINCIPALE: Ne pas exiger sessionId pour getToolCount
-  // Cette opération peut fonctionner sans session spécifique
   const headers = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
   };
   
-  // Ajouter l'ID de session seulement s'il est fourni
+  // Ajouter l'ID de session si disponible
   if (sessionId) {
     headers['X-Session-ID'] = sessionId;
   }
