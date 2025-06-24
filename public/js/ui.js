@@ -4,6 +4,22 @@ const messagesContainer = document.getElementById('messagesContainer');
 const connectionStatusEl = document.getElementById('connectionStatus');
 const tokenStatusIndicator = document.getElementById('tokenStatusIndicator');
 const toolCountEl = document.getElementById('toolCount');
+const debugLogContent = document.getElementById('debug-log-content');
+
+// Fonction pour logger les messages dans le panneau de débogage
+export function addDebugLog(message, level = 'info') {
+  if (!debugLogContent) return;
+  const colors = {
+    info: '#87cefa', // LightSkyBlue
+    success: '#98fb98', // PaleGreen
+    error: '#f08080', // LightCoral
+    request: '#d8bfd8', // Thistle
+  };
+  const logEntry = document.createElement('div');
+  const timestamp = new Date().toLocaleTimeString();
+  logEntry.innerHTML = `[<span style="color: #666;">${timestamp}</span>] [<span style="color: ${colors[level] || '#fff'}">${level.toUpperCase()}</span>] ${escapeHtml(message)}`;
+  debugLogContent.prepend(logEntry); // prepend pour voir les derniers logs en haut
+}
 
 function escapeHtml(text) {
   const div = document.createElement('div');
@@ -21,7 +37,6 @@ function formatMessage(text) {
 
   html = html.replace(toolRegex, (match, toolCode) => {
     try {
-      // Note: The outer text is already escaped, so we parse the original unescaped code
       const tool = JSON.parse(toolCode);
       return `<div class="tool-call"><strong>Outil : ${escapeHtml(
         tool.tool,
@@ -47,7 +62,7 @@ function getAvatar(sender) {
     case 'assistant':
       return '🤖';
     case 'client':
-      return '📎'; // Avatar pour les messages côté client (ex: fichier joint)
+      return '📎';
     default:
       return '❔';
   }
@@ -56,7 +71,7 @@ function getAvatar(sender) {
 export function addMessage(text, sender) {
   const messageDiv = document.createElement('div');
   messageDiv.className = `message ${sender}`;
-  const rawText = text; // Keep the raw text for parsing
+  const rawText = text;
   messageDiv.innerHTML = `
         <div class="message-avatar">${getAvatar(sender)}</div>
         <div class="message-content">

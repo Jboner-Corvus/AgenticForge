@@ -44,7 +44,6 @@
                 <h2 class="sidebar-title">Panneau de Contrôle</h2>
             </div>
             <section class="sidebar-content">
-                <!-- Section Statut de l'Agent -->
                 <div class="control-panel" style="margin-top: 0; margin-bottom: 1.5rem;">
                     <h3 class="control-panel-title">Statut de l'Agent</h3>
                     <div class="control-item">
@@ -65,7 +64,6 @@
                     <strong>Mode Session Stricte:</strong> L'agent maintient un contexte de conversation persistant grâce à votre Session ID unique. Toutes les requêtes doivent inclure ce Session ID.
                 </p>
                 
-                <!-- Section des interrupteurs -->
                 <div class="control-panel">
                     <h3 class="control-panel-title">Capacités de l'Agent</h3>
                     <div class="control-item">
@@ -84,7 +82,6 @@
                     </div>
                 </div>
 
-                <!-- Section Actions Rapides -->
                 <div class="control-panel">
                     <h3 class="control-panel-title">Actions Rapides</h3>
                     <div class="control-item">
@@ -133,7 +130,16 @@
             </div>
         </main>
     </div>
+
+    <div id="debug-panel" style="position: fixed; bottom: 0; left: 0; width: 100%; max-height: 200px; background: #111; border-top: 2px solid #444; overflow-y: auto; font-family: monospace; font-size: 12px; padding: 5px; z-index: 100; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 5px; border-bottom: 1px solid #333; flex-shrink: 0;">
+            <h4 style="color: #ccc; margin: 0;">Journal de débogage du Frontend</h4>
+            <button id="clearDebugBtn" style="background: #555; border: none; color: white; padding: 2px 8px; cursor: pointer;">Vider</button>
+        </div>
+        <div id="debug-log-content" style="flex-grow: 1; overflow-y: auto;"></div>
+    </div>
     
     <script type="module" src="/js/main.js" defer></script>
+
 </body>
 </html>
