@@ -1,4 +1,4 @@
-// src/server.ts (Version Finale, Correcte et Propre)
+// src/server.ts (Version Finale et Complète)
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { Redis } from 'ioredis';
@@ -16,39 +16,30 @@ const redis = new Redis({
   password: config.REDIS_PASSWORD,
   maxRetriesPerRequest: 3,
 });
-redis.on('connect', () =>
-  logger.info('✅ [Server] Connexion à Redis établie.'),
-);
-redis.on('error', (err) =>
-  logger.error({ err }, '[Server] Erreur de connexion Redis.'),
-);
+redis.on('connect', () => logger.info('✅ [Server] Connexion à Redis établie.'));
+redis.on('error', (err) => logger.error({ err }, '[Server] Erreur de connexion Redis.'));
 
 const SESSION_EXPIRATION_SECONDS = 24 * 3600;
 
 async function saveSession(session: AgentSession): Promise<void> {
-  await redis.set(
-    `session:${session.id}`,
-    JSON.stringify(session),
-    'EX',
-    SESSION_EXPIRATION_SECONDS,
-  );
+    await redis.set(`session:${session.id}`, JSON.stringify(session), 'EX', SESSION_EXPIRATION_SECONDS);
 }
 
 async function getSession(sessionId: string): Promise<AgentSession | null> {
-  const s = await redis.get(`session:${sessionId}`);
-  return s ? (JSON.parse(s) as AgentSession) : null;
+    const s = await redis.get(`session:${sessionId}`);
+    return s ? JSON.parse(s) as AgentSession : null;
 }
 
 function sanitizeHeaders(headers: IncomingHttpHeaders): Record<string, string> {
-  const serializableHeaders: Record<string, string> = {};
-  const allowed = ['user-agent', 'referer', 'accept-language', 'content-type'];
-  for (const key in headers) {
-    if (allowed.includes(key.toLowerCase())) {
-      const value = headers[key];
-      if (typeof value === 'string') serializableHeaders[key] = value;
+    const serializableHeaders: Record<string, string> = {};
+    const allowed = ['user-agent', 'referer', 'accept-language', 'content-type'];
+    for (const key in headers) {
+        if (allowed.includes(key.toLowerCase())) {
+            const value = headers[key];
+            if (typeof value === 'string') serializableHeaders[key] = value;
+        }
     }
-  }
-  return serializableHeaders;
+    return serializableHeaders;
 }
 
 async function main() {
@@ -59,63 +50,42 @@ async function main() {
       name: 'Agentic-Forge-Server',
       version: '1.0.0',
       authenticate: async (request: IncomingMessage): Promise<SessionData> => {
-        const sessionIdHeader = request.headers['mcp-session-id'];
-        const sessionId = Array.isArray(sessionIdHeader)
-          ? sessionIdHeader[0]
-          : sessionIdHeader;
-        if (!sessionId)
-          throw new Error('Bad Request: No valid session ID provided');
-
-        let agentSession = await getSession(sessionId);
-        if (agentSession) {
-          agentSession.lastActivity = Date.now();
-        } else {
-          const sessionData: SessionData = {
-            sessionId,
-            headers: sanitizeHeaders(request.headers),
-            clientIp: request.socket?.remoteAddress,
-            authenticatedAt: Date.now(),
-          };
-          agentSession = {
-            id: sessionId,
-            auth: sessionData,
-            history: [],
-            createdAt: Date.now(),
-            lastActivity: Date.now(),
-          };
-        }
-        await saveSession(agentSession);
-        return agentSession.auth;
+          const sessionIdHeader = request.headers['mcp-session-id'];
+          const sessionId = Array.isArray(sessionIdHeader) ? sessionIdHeader[0] : sessionIdHeader;
+          if (!sessionId) throw new Error('Bad Request: No valid session ID provided');
+          
+          let agentSession = await getSession(sessionId);
+          if (agentSession) {
+              agentSession.lastActivity = Date.now();
+          } else {
+              const sessionData: SessionData = { sessionId, headers: sanitizeHeaders(request.headers), clientIp: request.socket?.remoteAddress, authenticatedAt: Date.now() };
+              agentSession = { id: sessionId, auth: sessionData, history: [], createdAt: Date.now(), lastActivity: Date.now() };
+          }
+          await saveSession(agentSession);
+          return agentSession.auth;
       },
       health: { enabled: true, path: '/health' },
     });
 
     const goalHandlerTool: Tool<z.ZodObject<{ goal: z.ZodString }>> = {
-      name: 'internal_goalHandler',
-      description: "Handles the user's primary goal.",
-      parameters: z.object({ goal: z.string() }),
-      execute: async (args, ctx) => {
-        if (!ctx.session) throw new Error('Contexte de session manquant.');
-        const session = await getSession(ctx.session.sessionId);
-        if (!session)
-          throw new Error(
-            `Erreur critique: Session ${ctx.session.sessionId} introuvable.`,
-          );
-
-        session.history.push({ role: 'user', content: args.goal });
-        const llmResponse = await getLlmResponse(
-          getMasterPrompt(session.history, allTools),
-        );
-        session.history.push({ role: 'assistant', content: llmResponse });
-        await saveSession(session);
-        return { type: 'text', text: llmResponse } as TextContent;
-      },
+        name: 'internal_goalHandler',
+        description: "Handles the user's primary goal.",
+        parameters: z.object({ goal: z.string() }),
+        execute: async (args, ctx) => {
+            if (!ctx.session) throw new Error('Contexte de session manquant.');
+            const session = await getSession(ctx.session.sessionId);
+            if (!session) throw new Error(`Erreur critique: Session ${ctx.session.sessionId} introuvable.`);
+            
+            session.history.push({ role: 'user', content: args.goal });
+            const llmResponse = await getLlmResponse(getMasterPrompt(session.history, allTools));
+            session.history.push({ role: 'assistant', content: llmResponse });
+            await saveSession(session);
+            return { type: 'text', text: llmResponse } as TextContent;
+        }
     };
-
-    allTools.forEach((tool) => {
-      if (tool.name !== 'internal_goalHandler') {
-        mcpServer.addTool(tool);
-      }
+    
+    allTools.forEach(tool => {
+        if (tool.name !== 'internal_goalHandler') mcpServer.addTool(tool);
     });
     mcpServer.addTool(goalHandlerTool);
 
@@ -123,8 +93,9 @@ async function main() {
       transportType: 'httpStream',
       httpStream: { port: config.PORT },
     });
-
+    
     logger.info(`🐉 Agentic Forge server started on 0.0.0.0:${config.PORT}`);
+
   } catch (error) {
     logger.fatal({ err: error }, 'Failed to start server.');
     process.exit(1);
