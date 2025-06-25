@@ -1,4 +1,4 @@
-// src/worker.ts (Corrigé pour SessionData)
+// src/worker.ts (Corrigé pour utiliser les bons types)
 import { Worker, type Job } from 'bullmq';
 import { config } from './config.js';
 import logger from './logger.js';
@@ -6,14 +6,16 @@ import { taskQueue, deadLetterQueue, redisConnection } from './queue.js';
 import { getAllTools } from './tools/index.js';
 import { getContentWorkerLogic } from './tools/browser/getContent.tool.js';
 import { navigateWorkerLogic } from './tools/browser/navigate.tool.js';
-import type { AsyncTaskJob, Ctx, SessionData } from './types.js';
+import type { AsyncTaskJobPayload, Ctx, SessionData } from './types.js'; // CORRECTION: On importe AsyncTaskJobPayload
 import { getErrDetails } from './utils/errorUtils.js';
 
 const worker = new Worker(
   taskQueue.name,
-  async (job: AsyncTaskJob) => {
-    const { toolName, params, auth } = job.data;
-    const log = logger.child({ jobId: job.id, toolName });
+  // CORRECTION: Le type du paramètre 'job' est maintenant Job<AsyncTaskJobPayload>
+  // C'est le type standard fourni par BullMQ, dont la data est notre payload.
+  async (job: Job<AsyncTaskJobPayload>) => {
+    const { toolName, params, auth, taskId, cbUrl } = job.data;
+    const log = logger.child({ jobId: job.id, toolName, taskId });
 
     log.info({ toolArgs: params }, `Processing job for tool: ${toolName}`);
 
@@ -27,17 +29,15 @@ const worker = new Worker(
       throw new Error(`Authentication data is missing for job ${job.id}`);
     }
 
-    // CORRECTION: Utilisation correcte du type SessionData
     const ctx: Ctx = {
-      session: auth as SessionData,
+      session: auth,
       log,
-      reportProgress: async (p: unknown) =>
-        log.debug({ p }, 'Progress report (worker)'),
-      streamContent: async (c: unknown) =>
-        log.debug({ c }, 'Content stream (worker)'),
+      reportProgress: async (p: unknown) => log.debug({ p }, 'Progress report (worker)'),
+      streamContent: async (c: unknown) => log.debug({ c }, 'Content stream (worker)'),
     };
 
     let result: unknown;
+    // La logique existante pour les workers spécifiques est conservée
     if (toolName === 'browser_getContent') {
       result = await getContentWorkerLogic(
         params as Parameters<typeof getContentWorkerLogic>[0],
@@ -61,28 +61,18 @@ const worker = new Worker(
   },
 );
 
-/**
- * Ce gestionnaire d'événements est déclenché lorsqu'une tâche échoue.
- */
 worker.on('failed', (job: Job | undefined, error: Error) => {
   const log = logger.child({ jobId: job?.id, toolName: job?.data.toolName });
   log.error({ err: getErrDetails(error) }, 'Job failed.');
 
   if (job && job.opts.attempts && job.attemptsMade >= job.opts.attempts) {
     log.warn(`Job failed all attempts. Moving to dead-letter queue.`);
-    void (async () => {
-      try {
-        await deadLetterQueue.add(job.name, job.data, job.opts);
-      } catch (e) {
+    deadLetterQueue.add(job.name, job.data, job.opts).catch(e => {
         log.error({ err: e }, 'Failed to move job to dead-letter queue.');
-      }
-    })();
+    });
   }
 });
 
-/**
- * Ce gestionnaire est déclenché pour les erreurs critiques du worker lui-même.
- */
 worker.on('error', (err) => {
   logger.error(
     { err: getErrDetails(err) },
@@ -92,15 +82,12 @@ worker.on('error', (err) => {
 
 logger.info(`🚀 Agentic-MCP worker started. Waiting for jobs...`);
 
-// Ajout d'une fonction pour gérer la fermeture propre du worker
 const gracefulShutdown = async () => {
   logger.info('Shutting down worker gracefully...');
   await worker.close();
   process.exit(0);
 };
 
-// CORRECTION : Les appels à gracefulShutdown sont enveloppés dans une fonction
-// synchrone qui gère les erreurs de la promesse pour éviter les "unhandled rejections".
 process.on('SIGINT', () => {
   gracefulShutdown().catch((err) => {
     logger.error({ err: getErrDetails(err) }, 'Error during SIGINT shutdown');

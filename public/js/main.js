@@ -45,13 +45,13 @@ const elements = {
 
 // --- GESTION DU LAYOUT ---
 function adjustLayout() {
-    if (!elements.bodyWrapper || !elements.debugPanel) return;
-    const panelHeight = elements.debugPanel.offsetHeight;
-    elements.bodyWrapper.style.paddingBottom = `${panelHeight}px`;
-    elements.debugPanel.style.position = 'fixed';
-    elements.debugPanel.style.bottom = '0';
-    elements.debugPanel.style.left = '0';
-    elements.debugPanel.style.width = '100%';
+  if (!elements.bodyWrapper || !elements.debugPanel) return;
+  const panelHeight = elements.debugPanel.offsetHeight;
+  elements.bodyWrapper.style.paddingBottom = `${panelHeight}px`;
+  elements.debugPanel.style.position = 'fixed';
+  elements.debugPanel.style.bottom = '0';
+  elements.debugPanel.style.left = '0';
+  elements.debugPanel.style.width = '100%';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -61,35 +61,42 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   updateAllUI();
   checkServerHealth();
-  addMessage('🎯 **Agent prêt.** Veuillez entrer votre *Auth Token* pour commencer.', 'assistant');
-  
+  addMessage(
+    '🎯 **Agent prêt.** Veuillez entrer votre *Auth Token* pour commencer.',
+    'assistant',
+  );
+
   adjustLayout();
   window.addEventListener('resize', adjustLayout);
 });
 
 function setupEventListeners() {
-    elements.chatForm.addEventListener('submit', handleSendMessage);
-    elements.saveTokenBtn.addEventListener('click', handleSaveToken);
-    elements.newSessionBtn.addEventListener('click', handleNewSession);
-    elements.clearHistoryBtn.addEventListener('click', () => handleClearHistory(true));
+  elements.chatForm.addEventListener('submit', handleSendMessage);
+  elements.saveTokenBtn.addEventListener('click', handleSaveToken);
+  elements.newSessionBtn.addEventListener('click', handleNewSession);
+  elements.clearHistoryBtn.addEventListener('click', () =>
+    handleClearHistory(true),
+  );
 
-    elements.clearDebugBtn.addEventListener('click', () => {
-        if(elements.debugLogContent) elements.debugLogContent.innerHTML = '';
-        addDebugLog('Journal de débogage vidé.');
-    });
+  elements.clearDebugBtn.addEventListener('click', () => {
+    if (elements.debugLogContent) elements.debugLogContent.innerHTML = '';
+    addDebugLog('Journal de débogage vidé.');
+  });
 
-    elements.toggleDebugBtn.addEventListener('click', () => {
-        const isHidden = elements.debugPanel.style.display === 'none';
-        if (isHidden) {
-            elements.debugPanel.style.display = 'flex';
-            elements.toggleDebugBtn.textContent = 'Cacher';
-        } else {
-            elements.debugPanel.style.display = 'none';
-            elements.toggleDebugBtn.textContent = 'Afficher';
-        }
-        // Force un ajustement de la marge à 0 quand le panneau est caché
-        elements.bodyWrapper.style.paddingBottom = isHidden ? `${elements.debugPanel.offsetHeight}px` : '0px';
-    });
+  elements.toggleDebugBtn.addEventListener('click', () => {
+    const isHidden = elements.debugPanel.style.display === 'none';
+    if (isHidden) {
+      elements.debugPanel.style.display = 'flex';
+      elements.toggleDebugBtn.textContent = 'Cacher';
+    } else {
+      elements.debugPanel.style.display = 'none';
+      elements.toggleDebugBtn.textContent = 'Afficher';
+    }
+    // Force un ajustement de la marge à 0 quand le panneau est caché
+    elements.bodyWrapper.style.paddingBottom = isHidden
+      ? `${elements.debugPanel.offsetHeight}px`
+      : '0px';
+  });
 }
 
 // Le reste des fonctions (initializeSession, handleSendMessage, etc.) sont les mêmes
@@ -126,18 +133,21 @@ function initializeAuthToken() {
 async function handleSendMessage(event) {
   event.preventDefault();
   const goal = elements.messageInput.value.trim();
-  if (!goal || state.isProcessing || !state.authToken || !state.sessionId) return;
+  if (!goal || state.isProcessing || !state.authToken || !state.sessionId)
+    return;
   state.isProcessing = true;
   updateAllUI();
   addMessage(goal, 'user');
   elements.messageInput.value = '';
   showTypingIndicator();
-  
+
   addDebugLog(`Envoi de l'objectif: "${goal}"`, 'request');
   try {
     const result = await sendGoal(goal, state.authToken, state.sessionId);
     addDebugLog(`Réponse API reçue: ${JSON.stringify(result)}`, 'success');
-    const responseText = result.text || "L'agent a terminé mais n'a fourni aucune réponse textuelle.";
+    const responseText =
+      result.text ||
+      "L'agent a terminé mais n'a fourni aucune réponse textuelle.";
     hideTypingIndicator();
     addMessage(responseText, 'assistant');
     fetchAndDisplayToolCount();
@@ -193,7 +203,9 @@ function handleNewSession() {
   state.sessionId = newSessionId;
   updateSessionDisplay();
   addMessage(`🔄 **Nouvelle Session Créée.**`, 'assistant');
-  addDebugLog(`Nouvelle session. Ancien ID: ${oldSessionId}, Nouvel ID: ${newSessionId}`);
+  addDebugLog(
+    `Nouvelle session. Ancien ID: ${oldSessionId}, Nouvel ID: ${newSessionId}`,
+  );
   handleClearHistory(false);
   fetchAndDisplayToolCount();
 }
@@ -207,7 +219,11 @@ function handleClearHistory(showMessage) {
 }
 
 function updateAllUI() {
-  const canInteract = !!state.authToken && !!state.sessionId && !state.isProcessing && state.serverHealthy;
+  const canInteract =
+    !!state.authToken &&
+    !!state.sessionId &&
+    !state.isProcessing &&
+    state.serverHealthy;
   elements.sendBtn.disabled = !canInteract;
   elements.messageInput.disabled = !canInteract;
 
@@ -216,7 +232,8 @@ function updateAllUI() {
   } else if (!state.serverHealthy) {
     elements.messageInput.placeholder = '🏥 Serveur hors ligne...';
   } else if (!state.authToken) {
-    elements.messageInput.placeholder = '🔑 Veuillez sauvegarder un Bearer Token...';
+    elements.messageInput.placeholder =
+      '🔑 Veuillez sauvegarder un Bearer Token...';
   } else {
     elements.messageInput.placeholder = '💬 Décrivez votre objectif...';
   }
@@ -250,12 +267,20 @@ async function checkServerHealth() {
   addDebugLog('Vérification de la santé du serveur...');
   try {
     state.serverHealthy = await testServerHealth();
-    elements.connectionHealth.textContent = state.serverHealthy ? '✅ En ligne' : '❌ Hors ligne';
-    addDebugLog(`Statut du serveur: ${state.serverHealthy ? 'En ligne' : 'Hors ligne'}`, state.serverHealthy ? 'success' : 'error');
+    elements.connectionHealth.textContent = state.serverHealthy
+      ? '✅ En ligne'
+      : '❌ Hors ligne';
+    addDebugLog(
+      `Statut du serveur: ${state.serverHealthy ? 'En ligne' : 'Hors ligne'}`,
+      state.serverHealthy ? 'success' : 'error',
+    );
   } catch (err) {
     state.serverHealthy = false;
     elements.connectionHealth.textContent = '❌ Hors ligne';
-    addDebugLog(`Échec de la vérification de la santé du serveur: ${err.message}`, 'error');
+    addDebugLog(
+      `Échec de la vérification de la santé du serveur: ${err.message}`,
+      'error',
+    );
   }
   updateAllUI();
 }

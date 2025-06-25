@@ -13,10 +13,7 @@
     "dev": "pnpm run build && pnpm exec concurrently \"pnpm run start\" \"pnpm run start:worker\" \"pnpm run start:web\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"**/*.{ts,js,json,md}\"",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "clean": "rm -rf dist",
-    "prepare": "husky"
+    "format": "prettier --write \"**/*.{ts,js,json,md}\""
   },
   "author": "Agentic Forge",
   "license": "MIT",
@@ -50,6 +47,7 @@
     "ts-jest": "^29.1.4",
     "ts-node": "^10.9.2",
     "typescript": "~5.4.5",
+    "typescript-eslint": "^7.8.0",
     "@typescript-eslint/eslint-plugin": "^7.8.0",
     "@typescript-eslint/parser": "^7.8.0"
   }
