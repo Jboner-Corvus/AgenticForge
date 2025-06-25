@@ -1,4 +1,4 @@
-// src/webServer.ts (Version proxy correcte, sans logique FastMCP)
+// src/webServer.ts
 import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import * as http from 'http';
@@ -17,6 +17,7 @@ const PROXY_TARGET_PORT = config.PORT;
 app.use(cors({ exposedHeaders: 'mcp-session-id' }));
 
 app.use(['/mcp', '/health'], (req: Request, res: Response) => {
+  // On ne réécrit PAS le chemin. /mcp est transmis tel quel.
   const targetPath = req.originalUrl;
 
   const options = {
