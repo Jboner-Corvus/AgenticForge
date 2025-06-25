@@ -31,7 +31,7 @@ app.use(['/mcp', '/health'], (req: Request, res: Response) => {
   };
 
   logger.info({ ...options }, 'Proxying request to main server');
-  
+
   const proxyReq = http.request(options, (proxyRes) => {
     const newSessionId = proxyRes.headers['mcp-session-id'];
     if (newSessionId) {
@@ -61,5 +61,7 @@ app.get('*', (req, res) => {
 
 const WEB_SERVER_PORT = 3000;
 app.listen(WEB_SERVER_PORT, '0.0.0.0', () => {
-  logger.info(`🚀 Agentic Forge Web Server is running on port ${WEB_SERVER_PORT}`);
+  logger.info(
+    `🚀 Agentic Forge Web Server is running on port ${WEB_SERVER_PORT}`,
+  );
 });

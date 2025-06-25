@@ -1,7 +1,8 @@
-// src/server.ts (Version finale et correcte)
+// src/server.ts (Version correcte sans la propriété 'host')
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { Redis } from 'ioredis';
+// ... (tous les autres imports restent les mêmes)
 import { config } from './config.js';
 import logger from './logger.js';
 import { getAllTools, type Tool } from './tools/index.js';
@@ -10,7 +11,7 @@ import { getLlmResponse } from './utils/llmProvider.js';
 import type { AgentSession, SessionData } from './types.js';
 import type { IncomingMessage, IncomingHttpHeaders } from 'http';
 
-// ... (Le reste du code reste identique)
+// ... (toute la logique de session et Redis reste la même)
 const redis = new Redis({
   host: config.REDIS_HOST,
   port: config.REDIS_PORT,
@@ -47,7 +48,6 @@ function sanitizeHeaders(headers: IncomingHttpHeaders): Record<string, string> {
   }
   return serializableHeaders;
 }
-// ...
 
 async function main() {
   try {
@@ -57,13 +57,20 @@ async function main() {
       name: 'Agentic-Forge-Server',
       version: '1.0.0',
       authenticate: async (request: IncomingMessage): Promise<SessionData> => {
-        // ... (la logique d'authentification reste identique)
-        const log = logger.child({ op: 'authenticate', sessionId: request.headers['mcp-session-id'] });
-        log.info('Début de l\'authentification de la requête MCP...');
+        // ... (la logique d'authentification reste la même)
+        const log = logger.child({
+          op: 'authenticate',
+          sessionId: request.headers['mcp-session-id'],
+        });
+        log.info("Début de l'authentification de la requête MCP...");
         const sessionIdHeader = request.headers['mcp-session-id'];
-        const sessionId = Array.isArray(sessionIdHeader) ? sessionIdHeader[0] : sessionIdHeader;
+        const sessionId = Array.isArray(sessionIdHeader)
+          ? sessionIdHeader[0]
+          : sessionIdHeader;
         if (!sessionId) {
-          log.warn('Aucun ID de session valide fourni dans l\'en-tête mcp-session-id.');
+          log.warn(
+            "Aucun ID de session valide fourni dans l'en-tête mcp-session-id.",
+          );
           throw new Error('Bad Request: No valid session ID provided');
         }
         let agentSession = await getSession(sessionId);
@@ -71,9 +78,22 @@ async function main() {
           log.info('Session existante trouvée.');
           agentSession.lastActivity = Date.now();
         } else {
-          log.info('Aucune session existante, création d\'une nouvelle session.');
-          const sessionData: SessionData = { sessionId, headers: sanitizeHeaders(request.headers), clientIp: request.socket?.remoteAddress, authenticatedAt: Date.now() };
-          agentSession = { id: sessionId, auth: sessionData, history: [], createdAt: Date.now(), lastActivity: Date.now() };
+          log.info(
+            "Aucune session existante, création d'une nouvelle session.",
+          );
+          const sessionData: SessionData = {
+            sessionId,
+            headers: sanitizeHeaders(request.headers),
+            clientIp: request.socket?.remoteAddress,
+            authenticatedAt: Date.now(),
+          };
+          agentSession = {
+            id: sessionId,
+            auth: sessionData,
+            history: [],
+            createdAt: Date.now(),
+            lastActivity: Date.now(),
+          };
         }
         await saveSession(agentSession);
         log.info('Authentification terminée avec succès.');
@@ -81,21 +101,47 @@ async function main() {
       },
       health: { enabled: true, path: '/health' },
     });
-    
-    // ... (la logique d'ajout des outils reste identique)
-    const goalHandlerTool: Tool<z.ZodObject<{ goal: z.ZodString }>> = { name: 'internal_goalHandler', description: "Handles the user's primary goal.", parameters: z.object({ goal: z.string() }), execute: async (args, ctx) => { if (!ctx.session) throw new Error('Contexte de session manquant.'); const session = await getSession(ctx.session.sessionId); if (!session) throw new Error(`Erreur critique: Session ${ctx.session.sessionId} introuvable.`); session.history.push({ role: 'user', content: args.goal }); const llmResponse = await getLlmResponse(getMasterPrompt(session.history, allTools)); session.history.push({ role: 'assistant', content: llmResponse }); await saveSession(session); return { type: 'text', text: llmResponse } as TextContent; }, }; allTools.forEach((tool) => { if (tool.name !== 'internal_goalHandler') { mcpServer.addTool(tool); } }); mcpServer.addTool(goalHandlerTool);
 
+    // ... (la logique d'ajout des outils reste la même)
+    const goalHandlerTool: Tool<z.ZodObject<{ goal: z.ZodString }>> = {
+      name: 'internal_goalHandler',
+      description: "Handles the user's primary goal.",
+      parameters: z.object({ goal: z.string() }),
+      execute: async (args, ctx) => {
+        if (!ctx.session) throw new Error('Contexte de session manquant.');
+        const session = await getSession(ctx.session.sessionId);
+        if (!session)
+          throw new Error(
+            `Erreur critique: Session ${ctx.session.sessionId} introuvable.`,
+          );
+        session.history.push({ role: 'user', content: args.goal });
+        const llmResponse = await getLlmResponse(
+          getMasterPrompt(session.history, allTools),
+        );
+        session.history.push({ role: 'assistant', content: llmResponse });
+        await saveSession(session);
+        return { type: 'text', text: llmResponse } as TextContent;
+      },
+    };
+    allTools.forEach((tool) => {
+      if (tool.name !== 'internal_goalHandler') {
+        mcpServer.addTool(tool);
+      }
+    });
+    mcpServer.addTool(goalHandlerTool);
 
-    // LA CORRECTION FINALE EST ICI :
+    // On revient à la version qui passe la vérification de types
     await mcpServer.start({
       transportType: 'httpStream',
       httpStream: {
         port: config.PORT,
-        endpoint: '/mcp', // Utilisation de 'endpoint' au lieu de 'path'
+        endpoint: '/mcp',
       },
     });
 
-    logger.info(`🐉 Agentic Forge server started on 0.0.0.0:${config.PORT}, listening at endpoint /mcp`);
+    logger.info(
+      `🐉 Agentic Forge server started on 0.0.0.0:${config.PORT}, listening at endpoint /mcp`,
+    );
   } catch (error) {
     logger.fatal({ err: error }, 'Failed to start server.');
     process.exit(1);

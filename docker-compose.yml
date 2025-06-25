@@ -31,10 +31,24 @@ services:
       redis:
         condition: service_healthy
     env_file: .env
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6378
+      - DOCKER=true
+      - HOST_PROJECT_PATH=/usr/src/app
+      # =================================================================
+      # CORRECTION DÉFINITIVE : Force le serveur à écouter sur 0.0.0.0
+      - HOST=0.0.0.0
+      # =================================================================
     restart: unless-stopped
-    # CORRECTION : La commande se contente de lancer le serveur.
-    # L'installation est désormais gérée par le Dockerfile.
-    command: pnpm run start
+    command: sh -c "pnpm install && pnpm run start"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     networks:
       - agentic_network
 
@@ -48,9 +62,11 @@ services:
     depends_on:
       - server
     env_file: .env
+    environment:
+      - NODE_ENV=production
+      - WEB_PORT=3000
     restart: unless-stopped
-    # CORRECTION : La commande se contente de lancer le serveur web.
-    command: pnpm run start:web
+    command: sh -c "pnpm install && pnpm run start:web" # pnpm install au cas où des dépendances web seraient ajoutées
     networks:
       - agentic_network
 
@@ -66,9 +82,14 @@ services:
       redis:
         condition: service_healthy
     env_file: .env
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6378
+      - DOCKER=true
+      - HOST_PROJECT_PATH=/usr/src/app
     restart: unless-stopped
-    # CORRECTION : La commande se contente de lancer le worker.
-    command: pnpm run start:worker
+    command: sh -c "pnpm install && pnpm run start:worker"
     networks:
       - agentic_network
 
