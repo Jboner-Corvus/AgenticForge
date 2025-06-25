@@ -32,8 +32,10 @@ const worker = new Worker(
     const ctx: Ctx = {
       session: auth,
       log,
-      reportProgress: async (p: unknown) => log.debug({ p }, 'Progress report (worker)'),
-      streamContent: async (c: unknown) => log.debug({ c }, 'Content stream (worker)'),
+      reportProgress: async (p: unknown) =>
+        log.debug({ p }, 'Progress report (worker)'),
+      streamContent: async (c: unknown) =>
+        log.debug({ c }, 'Content stream (worker)'),
     };
 
     let result: unknown;
@@ -67,8 +69,8 @@ worker.on('failed', (job: Job | undefined, error: Error) => {
 
   if (job && job.opts.attempts && job.attemptsMade >= job.opts.attempts) {
     log.warn(`Job failed all attempts. Moving to dead-letter queue.`);
-    deadLetterQueue.add(job.name, job.data, job.opts).catch(e => {
-        log.error({ err: e }, 'Failed to move job to dead-letter queue.');
+    deadLetterQueue.add(job.name, job.data, job.opts).catch((e) => {
+      log.error({ err: e }, 'Failed to move job to dead-letter queue.');
     });
   }
 });
