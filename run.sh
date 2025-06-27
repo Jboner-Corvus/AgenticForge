@@ -78,7 +78,6 @@ start_services() {
     echo -e "${COLOR_GREEN}Services démarrés.${NC}"
 }
 
-# --- MODIFICATION DEMANDÉE (Option 2) ---
 apply_changes_and_restart() {
     echo -e "${COLOR_YELLOW}Arrêt des services en cours...${NC}"
     docker compose down
@@ -108,7 +107,6 @@ shell_access() {
     docker compose exec "${APP_SERVICE_NAME}" /bin/bash
 }
 
-# --- MODIFICATION DEMANDÉE (Option 7) ---
 rebuild_services() {
     echo -e "${COLOR_YELLOW}Reconstruction forcée des images Docker (sans cache)...${NC}"
     docker compose build --no-cache
@@ -128,6 +126,24 @@ clean_docker() {
         echo -e "${COLOR_GREEN}Nettoyage terminé.${NC}"
     fi
 }
+
+# --- NOUVELLE FONCTION ---
+create_session() {
+    echo -e "${COLOR_YELLOW}--- Création d'une nouvelle session Redis ---${NC}"
+    read -p "Entrez l'identifiant de session à créer (ex: user-alice-key): " session_id
+
+    if [ -z "$session_id" ]; then
+        echo -e "${COLOR_RED}L'ID de session ne peut pas être vide.${NC}"
+        return
+    fi
+
+    echo -e "${COLOR_BLUE}Lancement du script de création dans le conteneur 'server'...${NC}"
+    # Exécute le script via pnpm à l'intérieur du conteneur
+    docker compose exec server pnpm run create-session "$session_id"
+    echo -e "${COLOR_GREEN}Opération terminée. Vérifiez les logs ci-dessus pour le résultat.${NC}"
+}
+# --- FIN DE LA NOUVELLE FONCTION ---
+
 
 # --- Développement & Qualité (Local) ---
 
@@ -187,6 +203,7 @@ show_menu() {
     printf "   2) ${COLOR_YELLOW}🔄 Redémarrer${NC}       6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\n"
     printf "   3) ${COLOR_RED}🔴 Arrêter${NC}          7) ${COLOR_BLUE}🔨 Rebuild (no cache)${NC}\n"
     printf "   4) ${COLOR_CYAN}⚡ Statut${NC}           8) ${COLOR_RED}🧹 Nettoyer Docker${NC}\n"
+    printf "   9) ${COLOR_GREEN}🔑 Créer Session${NC}\n" # NOUVELLE LIGNE
     echo ""
     echo -e "  ${COLOR_CYAN}Développement & Qualité (Local)${NC}"
     printf "  10) ${COLOR_BLUE}🔍 Lint & Fix${NC}        13) ${COLOR_BLUE}🧪 Tests${NC}\n"
@@ -215,6 +232,7 @@ while true; do
         6) shell_access ;;
         7) rebuild_services ;;
         8) clean_docker ;;
+        9) create_session ;; # NOUVELLE LIGNE
         10) lint_code ;;
         11) format_code ;;
         12) clean_dev ;;

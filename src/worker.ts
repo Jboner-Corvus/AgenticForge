@@ -6,15 +6,14 @@ import { taskQueue, deadLetterQueue, redisConnection } from './queue.js';
 import { getAllTools } from './tools/index.js';
 import { getContentWorkerLogic } from './tools/browser/getContent.tool.js';
 import { navigateWorkerLogic } from './tools/browser/navigate.tool.js';
-import type { AsyncTaskJobPayload, Ctx, SessionData } from './types.js'; // CORRECTION: On importe AsyncTaskJobPayload
+import type { AsyncTaskJobPayload, Ctx } from './types.js'; // CORRECTION : SessionData retiré
 import { getErrDetails } from './utils/errorUtils.js';
 
 const worker = new Worker(
   taskQueue.name,
-  // CORRECTION: Le type du paramètre 'job' est maintenant Job<AsyncTaskJobPayload>
-  // C'est le type standard fourni par BullMQ, dont la data est notre payload.
   async (job: Job<AsyncTaskJobPayload>) => {
-    const { toolName, params, auth, taskId, cbUrl } = job.data;
+    // CORRECTION : cbUrl retiré de la déstructuration
+    const { toolName, params, auth, taskId } = job.data;
     const log = logger.child({ jobId: job.id, toolName, taskId });
 
     log.info({ toolArgs: params }, `Processing job for tool: ${toolName}`);
@@ -39,7 +38,6 @@ const worker = new Worker(
     };
 
     let result: unknown;
-    // La logique existante pour les workers spécifiques est conservée
     if (toolName === 'browser_getContent') {
       result = await getContentWorkerLogic(
         params as Parameters<typeof getContentWorkerLogic>[0],

@@ -13,7 +13,8 @@
     "dev": "pnpm run build && pnpm exec concurrently \"pnpm run start\" \"pnpm run start:worker\" \"pnpm run start:web\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"**/*.{ts,js,json,md}\""
+    "format": "prettier --write \"**/*.{ts,js,json,md}\"",
+    "create-session": "node dist/scripts/create-session.js"
   },
   "author": "Agentic Forge",
   "license": "MIT",
@@ -36,7 +37,7 @@
     "@types/jest": "^29.5.12",
     "@types/node": "^20.14.2",
     "concurrently": "^8.2.2",
-    "eslint": "^8.57.0",
+    "eslint": "^9.5.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
     "globals": "^15.4.0",
@@ -47,8 +48,8 @@
     "ts-jest": "^29.1.4",
     "ts-node": "^10.9.2",
     "typescript": "~5.4.5",
-    "typescript-eslint": "^7.8.0",
-    "@typescript-eslint/eslint-plugin": "^7.8.0",
-    "@typescript-eslint/parser": "^7.8.0"
+    "typescript-eslint": "^8.0.0-alpha.31",
+    "@typescript-eslint/eslint-plugin": "^7.13.1",
+    "@typescript-eslint/parser": "^7.13.1"
   }
 }
