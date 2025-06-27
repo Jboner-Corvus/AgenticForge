@@ -37,12 +37,9 @@ services:
       - REDIS_PORT=6378
       - DOCKER=true
       - HOST_PROJECT_PATH=/usr/src/app
-      # =================================================================
-      # CORRECTION DÉFINITIVE : Force le serveur à écouter sur 0.0.0.0
       - HOST=0.0.0.0
-      # =================================================================
     restart: unless-stopped
-    command: sh -c "pnpm install && pnpm run start"
+    command: pnpm run start
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -59,14 +56,18 @@ services:
     container_name: agentic_forge_web
     ports:
       - "${WEB_PORT:-3000}:3000"
+    # --- CORRECTION FINALE ---
+    # On force le service web à attendre que le serveur soit "healthy"
     depends_on:
-      - server
+      server:
+        condition: service_healthy
+    # --- FIN DE LA CORRECTION ---
     env_file: .env
     environment:
       - NODE_ENV=production
       - WEB_PORT=3000
     restart: unless-stopped
-    command: sh -c "pnpm install && pnpm run start:web" # pnpm install au cas où des dépendances web seraient ajoutées
+    command: pnpm run start:web
     networks:
       - agentic_network
 
@@ -89,7 +90,7 @@ services:
       - DOCKER=true
       - HOST_PROJECT_PATH=/usr/src/app
     restart: unless-stopped
-    command: sh -c "pnpm install && pnpm run start:worker"
+    command: pnpm run start:worker
     networks:
       - agentic_network
 
