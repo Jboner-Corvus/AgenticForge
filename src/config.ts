@@ -6,6 +6,7 @@ const schemaDefinition = {
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
+  HOST: z.string().default('0.0.0.0'), // CORRECTION : 'HOST' est ajouté ici
   PORT: z.coerce.number().int().positive().default(8080),
   LOG_LEVEL: z
     .enum(['debug', 'info', 'warn', 'error', 'fatal'])
@@ -41,4 +42,4 @@ if (!parsedConfig.success) {
   );
   throw new Error('Invalid environment variables.');
 }
-export const config = parsedConfig.data; // <-- CORRECTION: 'parsed' a été remplacé par 'parsedConfig'
+export const config = parsedConfig.data;

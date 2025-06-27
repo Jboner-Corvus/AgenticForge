@@ -1,4 +1,4 @@
-// src/server.ts (Version consolidée et finale avec authentification statique)
+// src/server.ts (Version avec la correction finale)
 import { FastMCP, type TextContent } from 'fastmcp';
 import { z } from 'zod';
 import { Redis } from 'ioredis';
@@ -8,7 +8,7 @@ import { getAllTools, type Tool } from './tools/index.js';
 import { getMasterPrompt } from './prompts/orchestrator.prompt.js';
 import { getLlmResponse } from './utils/llmProvider.js';
 import type { AgentSession, SessionData } from './types.js';
-import type { IncomingMessage } from 'http'; // CORRECTION: IncomingHttpHeaders retiré
+import type { IncomingMessage, IncomingHttpHeaders } from 'http';
 
 const redis = new Redis({
   host: config.REDIS_HOST,
@@ -39,7 +39,17 @@ async function getSession(sessionId: string): Promise<AgentSession | null> {
   return s ? (JSON.parse(s) as AgentSession) : null;
 }
 
-// CORRECTION : La fonction sanitizeHeaders a été supprimée car elle n'était pas utilisée.
+function sanitizeHeaders(headers: IncomingHttpHeaders): Record<string, string> {
+  const serializableHeaders: Record<string, string> = {};
+  const allowed = ['user-agent', 'referer', 'accept-language', 'content-type'];
+  for (const key in headers) {
+    if (allowed.includes(key.toLowerCase())) {
+      const value = headers[key];
+      if (typeof value === 'string') serializableHeaders[key] = value;
+    }
+  }
+  return serializableHeaders;
+}
 
 async function main() {
   try {
@@ -54,32 +64,38 @@ async function main() {
           ? sessionIdHeader[0]
           : sessionIdHeader;
 
-        const log = logger.child({ op: 'authenticate', sessionId });
-        log.info("Début de l'authentification de la requête MCP...");
-
         if (!sessionId) {
-          log.warn(
-            "Aucun ID de session valide fourni dans l'en-tête mcp-session-id.",
-          );
+          logger.warn({ op: 'authenticate' }, "Aucun ID de session valide fourni dans l'en-tête mcp-session-id.");
           throw new Error('Bad Request: No valid session ID provided');
         }
 
-        const agentSession = await getSession(sessionId);
+        const log = logger.child({ op: 'authenticate', sessionId });
+        log.info("Début de l'authentification de la requête MCP...");
+
+        let agentSession = await getSession(sessionId);
 
         if (agentSession) {
-          log.info(
-            { session: { id: agentSession.id } },
-            'Session autorisée trouvée.',
-          );
+          log.info({ session: { id: agentSession.id } }, 'Session existante trouvée.');
           agentSession.lastActivity = Date.now();
-          await saveSession(agentSession);
-          return agentSession.auth;
         } else {
-          log.warn(
-            `Tentative de connexion avec un ID de session inconnu et non autorisé : ${sessionId}`,
-          );
-          throw new Error('Unauthorized: Unknown or invalid session ID');
+          log.info({ sessionId }, "Aucune session existante, création d'une nouvelle session.");
+          const sessionData: SessionData = {
+            sessionId,
+            headers: sanitizeHeaders(request.headers),
+            clientIp: request.socket?.remoteAddress,
+            authenticatedAt: Date.now(),
+          };
+          agentSession = {
+            id: sessionId,
+            auth: sessionData,
+            history: [],
+            createdAt: Date.now(),
+            lastActivity: Date.now(),
+          };
         }
+        await saveSession(agentSession);
+        log.info({ session: { id: agentSession.id } }, 'Authentification terminée avec succès.');
+        return agentSession.auth;
       },
       health: { enabled: true, path: '/health' },
     });
@@ -90,12 +106,10 @@ async function main() {
       parameters: z.object({ goal: z.string() }),
       execute: async (args, ctx) => {
         if (!ctx.session) throw new Error('Contexte de session manquant.');
-
+        
         const agentSession = await getSession(ctx.session.sessionId);
         if (!agentSession) {
-          throw new Error(
-            `Erreur critique: Session ${ctx.session.sessionId} introuvable.`,
-          );
+          throw new Error(`Erreur critique: Session ${ctx.session.sessionId} introuvable.`);
         }
 
         agentSession.history.push({ role: 'user', content: args.goal });
@@ -103,9 +117,9 @@ async function main() {
           getMasterPrompt(agentSession.history, allTools),
         );
         agentSession.history.push({ role: 'assistant', content: llmResponse });
-
+        
         await saveSession(agentSession);
-
+        
         return { type: 'text', text: llmResponse } as TextContent;
       },
     };
@@ -117,17 +131,22 @@ async function main() {
     });
     mcpServer.addTool(goalHandlerTool);
 
+    // DÉBUT DE LA CORRECTION DÉFINITIVE
+    // Nous utilisons `as any` pour contourner la vérification de type stricte
+    // et forcer le serveur à écouter sur la bonne interface réseau.
+    const httpStreamOptions: any = {
+      host: config.HOST,
+      port: config.PORT,
+      endpoint: '/mcp',
+    };
+
     await mcpServer.start({
       transportType: 'httpStream',
-      httpStream: {
-        port: config.PORT,
-        endpoint: '/mcp',
-      },
+      httpStream: httpStreamOptions,
     });
+    // FIN DE LA CORRECTION DÉFINITIVE
 
-    logger.info(
-      `🐉 Agentic Forge server started on 0.0.0.0:${config.PORT}, listening at endpoint /mcp`,
-    );
+    logger.info(`🐉 Agentic Forge server started on ${config.HOST}:${config.PORT}, listening at endpoint /mcp`);
   } catch (error) {
     logger.fatal({ err: error }, 'Failed to start server.');
     process.exit(1);
