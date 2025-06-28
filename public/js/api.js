@@ -1,76 +1,69 @@
-// public/js/api.js
+// FICHIER MODIFIÉ : public/js/api.js
 
-async function sendMcpRequest(method, params, authToken, sessionId) {
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${authToken}`,
-  };
-
-  if (sessionId) {
-    headers['mcp-session-id'] = sessionId;
-  }
-
-  // CORRECTION : On appelle directement /mcp car le frontend et l'API
-  // sont maintenant sur la même origine (même port).
-  const response = await fetch('/mcp', {
-    method: 'POST',
-    headers: headers,
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: `mcp-client-${Date.now()}`,
-      method: method,
-      params: params,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    try {
-      const errorJson = JSON.parse(errorBody);
-      throw new Error(
-        `Erreur API ${response.status}: ${JSON.stringify(errorJson.error)}`,
-      );
-    } catch {
-      throw new Error(
-        `Erreur API ${response.status}: ${errorBody || response.statusText}`,
-      );
-    }
-  }
-
-  const jsonResponse = await response.json();
-  if (jsonResponse.error) {
-    throw new Error(`Erreur MCP: ${jsonResponse.error.message}`);
-  }
-  return jsonResponse.result;
-}
-
-export async function sendGoal(goal, authToken, sessionId) {
-  const params = {
-    name: 'internal_goalHandler',
-    arguments: {
-      goal: goal,
-    },
-  };
-  const result = await sendMcpRequest(
-    'tools/call',
-    params,
-    authToken,
-    sessionId,
-  );
-  return result.content[0];
-}
-
-export async function getTools(authToken, sessionId) {
-  const result = await sendMcpRequest('tools/list', {}, authToken, sessionId);
-  return result.tools || [];
-}
-
-export async function testServerHealth() {
+/**
+ * MODIFIÉ : Envoie un message au backend.
+ * Plus de gestion de 'mcp-session-id'. Le navigateur gère le cookie automatiquement.
+ * @param {string} prompt Le message de l'utilisateur.
+ * @returns {Promise<any>} La réponse du serveur (contenant le jobId).
+ */
+async function sendMessage(prompt) {
   try {
-    // CORRECTION : On appelle directement /health
-    const response = await fetch('/health');
-    return response.ok;
-  } catch (e) {
-    return false;
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Erreur du serveur');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur lors de l\'envoi du message:', error);
+    throw error;
   }
 }
+
+/**
+ * Récupère le statut d'un job en cours.
+ * @param {string} jobId L'ID du job.
+ * @returns {Promise<any>} L'état actuel du job.
+ */
+async function getJobStatus(jobId) {
+  try {
+    const response = await fetch(`/api/status/${jobId}`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Erreur lors de la récupération du statut');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur de statut du job:', error);
+    throw error;
+  }
+}
+
+/**
+ * AJOUTÉ : Récupère l'historique de la conversation pour la session actuelle.
+ * @returns {Promise<Array>} Un tableau de messages.
+ */
+async function getHistory() {
+  try {
+    const response = await fetch('/api/history');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Erreur lors de la récupération de l\'historique');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur de récupération de l\'historique:', error);
+    throw error;
+  }
+}
+
+// SUPPRIMÉ : La fonction createSession() est obsolète.
+// SUPPRIMÉ : La fonction getSession() (qui récupérait l'ID de session) est obsolète.

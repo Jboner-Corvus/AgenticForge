@@ -1,26 +1,28 @@
-// --- Fichier : src/tools/ai/summarize.tool.ts (Corrigé) ---
+// FICHIER : src/tools/ai/summarize.tool.ts
 import { z } from 'zod';
-import type { Tool, Ctx } from '../../types.js';
+import type { Ctx, Tool } from '../../types.js';
+// Assurez-vous que llmProvider exporte bien callLLM
+import { callLLM } from '../../utils/llmProvider.js'; 
 import { getSummarizerPrompt } from '../../prompts/summarizer.prompt.js';
-import { getLlmResponse } from '../../utils/llmProvider.js';
 
-export const summarizeTextParams = z.object({
-  text: z.string().min(100).describe('The text to be summarized.'),
+const schema = z.object({
+  text: z.string().describe('The text to summarize'),
 });
 
-export const summarizeTextTool: Tool<typeof summarizeTextParams> = {
-  name: 'summarizeText',
-  description: 'Summarizes a long piece of text.',
-  parameters: summarizeTextParams,
+// CORRIGÉ : L'outil utilise le type générique Tool<typeof schema>
+export const summarizeTool: Tool<typeof schema> = {
+  name: 'ai_summarize',
+  description: 'Summarizes a given text.',
+  schema, // 'schema' est une propriété valide pour l'outil
   execute: async (args, ctx: Ctx) => {
-    // Correction: Ctx n'est pas générique
-    ctx.log.info('Summarizing text...');
-    const prompt = getSummarizerPrompt(args.text);
-    const summary = await getLlmResponse(
-      prompt,
-      'You are a text summarization expert.',
+    // Pas besoin d'assertion de type ici, TypeScript infère 'args' depuis le schéma
+    ctx.log.info(args, 'Summarizing text');
+    
+    const result = await callLLM(
+      [{ role: 'user', content: getSummarizerPrompt(args.text) }],
+      [],
     );
-    ctx.log.info('Text summarized successfully.');
-    return summary;
+
+    return result.content;
   },
 };

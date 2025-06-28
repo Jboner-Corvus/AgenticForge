@@ -6,11 +6,12 @@
  * * VERSION PROMETHEUS : Le prompt inclut maintenant la capacité de
  * l'agent à créer ses propres outils.
  */
-import type { Tool, AgentSession } from '../types.js';
+import type { Tool, AgentSession, Message } from '../types.js'; // CORRIGÉ : Ajout de l'import 'Message'
 import { format } from 'util';
 
 const getCurrentDate = () => new Date().toISOString();
 
+// Le préambule reste inchangé
 const PREAMBULE = `You are Agentic-MCP (Prometheus Mode), a fully autonomous AI assistant with the ultimate ability: you can write your own tools. Your purpose is to achieve user goals by any means necessary, including by expanding your own capabilities.
 
 Today's date is: %s.
@@ -30,9 +31,7 @@ If you determine that you lack a specific tool to accomplish a task, you MUST cr
 3.  **Output**: Respond strictly in the required format.
 
 ## Response Format (MANDATORY):
-<thought>
-Your detailed reasoning. If creating a tool, justify its design.
-</thought>
+
 <tool_code>
 {
   "tool": "tool_name",
@@ -47,22 +46,26 @@ const TOOLS_SECTION_HEADER = '## Available Tools:';
 const HISTORY_SECTION_HEADER = '## Conversation History:';
 
 const formatToolForPrompt = (tool: Tool): string => {
-  if (!tool.parameters) {
+  // CORRIGÉ : La propriété correcte pour le schéma Zod est 'schema', pas 'parameters'.
+  if (!tool.schema || !tool.schema.shape) {
     return `### ${tool.name}\nDescription: ${tool.description}\nParameters: None\n`;
   }
-  const params = JSON.stringify(tool.parameters.shape, null, 2);
+  // 'shape' est une propriété des objets Zod qui contient la structure des clés.
+  const params = JSON.stringify(tool.schema.shape, null, 2);
   return `### ${tool.name}\nDescription: ${tool.description}\nParameters (JSON Schema):\n${params}\n`;
 };
 
+// CORRIGÉ : La fonction accepte l'objet 'session' complet pour un accès correct à l'historique.
 export const getMasterPrompt = (
-  history: AgentSession['history'],
+  session: AgentSession,
   tools: Tool[],
 ): string => {
   const formattedTools = tools.map(formatToolForPrompt).join('\n');
   const toolsSection = `${TOOLS_SECTION_HEADER}\n${formattedTools}`;
 
-  const formattedHistory = history
-    .map((h) => `${h.role.toUpperCase()}:\n${h.content}`)
+  // CORRIGÉ : L'historique est dans 'session.data.history' et 'h' est maintenant typé comme 'Message'.
+  const formattedHistory = (session.data.history || [])
+    .map((h: Message) => `${h.role.toUpperCase()}:\n${h.content}`)
     .join('\n\n');
   const historySection = `${HISTORY_SECTION_HEADER}\n${formattedHistory}`;
 

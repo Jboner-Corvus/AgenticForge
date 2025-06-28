@@ -1,16 +1,19 @@
-// ===== src/logger.ts (Final and Robust) =====
-import { pino } from 'pino';
-import { config } from './config.js';
+// FICHIER : src/logger.ts
+import pino from 'pino';
+import pretty from 'pino-pretty';
+import config from './config.js'; // CORRIGÉ : Utilisation de l'import par défaut
 
-const pinoOptions: pino.LoggerOptions = {
-  level: config.LOG_LEVEL,
-  // NOTE: The pino-pretty transport is no longer configured in code
-  // to avoid deployment errors in Docker.
-  // For "pretty" display in local development, you can run
-  // your application and pipe the output to pino-pretty.
-  // Example: `pnpm run dev | pnpm exec pino-pretty`
-};
+const stream = pretty({
+  colorize: true,
+  levelFirst: true,
+  translateTime: 'SYS:standard',
+});
 
-const logger = pino(pinoOptions);
+const logger = pino(
+  {
+    level: config.NODE_ENV === 'development' ? 'debug' : 'info',
+  },
+  stream,
+);
 
 export default logger;

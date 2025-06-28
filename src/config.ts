@@ -1,44 +1,43 @@
-import 'dotenv/config';
+// FICHIER : src/config.ts
+import dotenv from 'dotenv';
 import { z } from 'zod';
 
-// Define the schema structure in a separate object.
-const schemaDefinition = {
-  NODE_ENV: z
-    .enum(['development', 'production', 'test'])
-    .default('development'),
-  PORT: z.coerce.number().int().positive().default(8080),
-  LOG_LEVEL: z
-    .enum(['debug', 'info', 'warn', 'error', 'fatal'])
-    .default('info'),
-  AUTH_TOKEN: z.string().min(1, 'AUTH_TOKEN is required'),
-  REDIS_HOST: z.string().min(1).default('redis'),
-  REDIS_PORT: z.coerce.number().int().positive().default(6378),
-  REDIS_PASSWORD: z.string().min(1, 'REDIS_PASSWORD is required'),
-  LLM_API_BASE_URL: z.string().url().optional(),
-  LLM_API_KEY: z.string().min(1, 'LLM_API_KEY is required'),
-  LLM_MODEL_NAME: z.string().min(1, 'LLM_MODEL_NAME is required'),
-  PYTHON_SANDBOX_IMAGE: z.string().min(1).default('python:3.11-alpine'),
-  BASH_SANDBOX_IMAGE: z.string().min(1).default('alpine:latest'),
-  CODE_EXECUTION_TIMEOUT_MS: z.coerce.number().int().min(1000).default(30000),
-  SEARXNG_URL: z.string().url().optional(),
-  WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
+dotenv.config();
+
+const configSchema = z.object({
+  NODE_ENV: z.string().default('development'),
+  PORT: z.coerce.number().default(3001),
+  REDIS_HOST: z.string().default('localhost'),
+  REDIS_PORT: z.coerce.number().default(6379),
+  WORKER_CONCURRENCY: z.coerce.number().default(5),
+  LLM_MODEL_NAME: z.string().default('gemini-pro'),
+  LLM_API_KEY: z.string().optional(),
+  MCP_WEBHOOK_URL: z.string().url().optional(),
+  MCP_API_KEY: z.string().optional(),
+  HOST_PROJECT_PATH: z.string().optional(),
+  PYTHON_SANDBOX_IMAGE: z.string().optional(),
+  CODE_EXECUTION_TIMEOUT_MS: z.coerce.number().default(60000),
   WEBHOOK_SECRET: z.string().optional(),
-  MCP_SERVER_URL: z.string().url().optional(),
-  HOST_PROJECT_PATH: z
-    .string()
-    .min(1, 'HOST_PROJECT_PATH is required when running in Docker')
-    .optional(),
-};
+});
 
-// Pass the schema object to z.object().
-const envSchema = z.object(schemaDefinition);
+const parsedConfig = configSchema.parse(process.env);
 
-const parsedConfig = envSchema.safeParse(process.env);
-if (!parsedConfig.success) {
-  console.error(
-    '❌ Invalid environment variables:',
-    parsedConfig.error.flatten().fieldErrors,
-  );
-  throw new Error('Invalid environment variables.');
-}
-export const config = parsedConfig.data; // <-- CORRECTION: 'parsed' a été remplacé par 'parsedConfig'
+// Exporter l'objet de configuration complet par défaut
+export default parsedConfig;
+
+// Exporter également chaque constante nommée pour les imports destructurés
+export const {
+  NODE_ENV,
+  PORT,
+  REDIS_HOST,
+  REDIS_PORT,
+  WORKER_CONCURRENCY,
+  LLM_MODEL_NAME,
+  LLM_API_KEY,
+  MCP_WEBHOOK_URL,
+  MCP_API_KEY,
+  HOST_PROJECT_PATH,
+  PYTHON_SANDBOX_IMAGE,
+  CODE_EXECUTION_TIMEOUT_MS,
+  WEBHOOK_SECRET
+} = parsedConfig;
