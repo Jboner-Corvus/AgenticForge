@@ -1,7 +1,7 @@
 // FICHIER : src/redisClient.ts
 import Redis from 'ioredis';
 // CORRIGÉ : Utilisation de l'import par défaut de la configuration.
-import config from './config.js';
+import { config } from './config.js';
 import logger from './logger.js';
 
 const connectionOptions = {

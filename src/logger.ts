@@ -1,7 +1,7 @@
 // FICHIER : src/logger.ts
 import pino from 'pino';
 import pretty from 'pino-pretty';
-import config from './config.js'; // CORRIGÉ : Utilisation de l'import par défaut
+import { config } from './config.js';
 
 const stream = pretty({
   colorize: true,

@@ -37,3 +37,16 @@ export function isValidHttpUrl(
     return false;
   }
 }
+
+export function validateApiKey(apiKey: string | undefined, expectedApiKey: string | undefined): boolean {
+  if (!apiKey || !expectedApiKey) {
+    return false;
+  }
+  return apiKey === expectedApiKey;
+}
+
+export function validateWebhook(payload: string, signature: string, secret: string): boolean {
+  // This is a placeholder. Real validation would involve HMAC verification.
+  // For now, we'll just check if signature and secret are present.
+  return !!payload && !!signature && !!secret;
+}

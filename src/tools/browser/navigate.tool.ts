@@ -2,7 +2,7 @@
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import type { Tool, Ctx, SessionData } from '../../types.js';
-import { taskQueue } from '../../queue.js';
+import { jobQueue } from '../../queue.js';
 
 export const navigateParams = z.object({
   url: z.string().url().describe('The full URL to navigate to.'),

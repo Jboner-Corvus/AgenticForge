@@ -1,7 +1,7 @@
 // FICHIER : src/tools/ai/summarize.tool.ts
 import { z } from 'zod';
 import type { Ctx, Tool } from '../../types.js';
-import { callLLM } from '../../utils/llmProvider.js';
+import { getLlmResponse } from '../../utils/llmProvider.js';
 import { getSummarizerPrompt } from '../../prompts/summarizer.prompt.js';
 
 // 1. Définir le schéma des paramètres avec Zod.
@@ -23,11 +23,10 @@ export const summarizeTool: Tool<typeof parametersSchema> = {
     ctx.log.info({ ...args, sessionId: ctx.session?.sessionId }, 'Summarizing text');
     
     // Le type de 'args' est inféré depuis le schéma : { text: string }
-    const result = await callLLM(
-      [{ role: 'user', content: getSummarizerPrompt(args.text) }],
-      [],
+    const result = await getLlmResponse(
+      [{ role: 'user', parts: [{ text: getSummarizerPrompt(args.text) }] }],
     );
 
-    return result.content;
+    return result;
   },
 };

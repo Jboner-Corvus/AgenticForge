@@ -10,7 +10,7 @@ export interface ErrorDetails {
   stack?: string;
 }
 
-export class AppErrorBase extends Error {
+export class AppError extends Error {
   public type: string;
   public details?: unknown;
 
@@ -23,13 +23,13 @@ export class AppErrorBase extends Error {
 }
 
 // ... Le reste de la classe reste identique
-export class EnqueueTaskError extends AppErrorBase {
+export class EnqueueTaskError extends AppError {
   constructor(message: string, details?: unknown) {
     super(message, 'EnqueueTaskError', details);
   }
 }
 
-export class WebhookError extends AppErrorBase {
+export class WebhookError extends AppError {
   public statusCode?: number;
   public responseBody?: string;
   constructor(
@@ -46,7 +46,7 @@ export class WebhookError extends AppErrorBase {
 }
 
 export function getErrDetails(error: unknown): ErrorDetails {
-  if (error instanceof AppErrorBase) {
+  if (error instanceof AppError) {
     return {
       message: error.message,
       name: error.name,

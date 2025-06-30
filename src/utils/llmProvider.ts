@@ -2,19 +2,14 @@
 
 import { config } from '../config.js';
 import logger from '../logger.js';
-// DANS : src/utils/llmProvider.ts
 
-// AJOUTEZ 'export'
-export async function callLLM(...) {
-  // ...
-}
 interface GeminiContent {
   role: 'user' | 'model';
   parts: { text: string }[];
 }
 
 export async function getLlmResponse(
-  prompt: string,
+  messages: GeminiContent[],
   systemPrompt?: string,
 ): Promise<string> {
   const log = logger.child({ module: 'LLMProvider' });
@@ -23,12 +18,9 @@ export async function getLlmResponse(
 
   const contents: GeminiContent[] = [];
   if (systemPrompt) {
-    prompt = `${systemPrompt}\n\n${prompt}`;
+    contents.push({ role: 'user', parts: [{ text: systemPrompt }] });
   }
-  contents.push({
-    role: 'user',
-    parts: [{ text: prompt }],
-  });
+  contents.push(...messages);
 
   const body = JSON.stringify({ contents });
 

@@ -53,9 +53,7 @@ services:
       - agentic_network
 
   web:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: agentic_forge_server:latest # Utilise l'image construite par le Dockerfile principal
     container_name: agentic_forge_web
     ports:
       - "${WEB_PORT:-3000}:3000"
@@ -66,7 +64,7 @@ services:
       - NODE_ENV=production
       - WEB_PORT=3000
     restart: unless-stopped
-    command: sh -c "pnpm install && pnpm run start:web" # pnpm install au cas où des dépendances web seraient ajoutées
+    command: sh -c "cd /usr/src/app/ui-dist && pnpm run start:web" # Sert les fichiers compilés du frontend
     networks:
       - agentic_network
 
