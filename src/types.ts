@@ -3,8 +3,7 @@ import type { z, ZodObject, ZodRawShape } from 'zod';
 import type {
   Context as FastMCPContext,
   Tool as FastMCPTool,
-  SessionData as FastMCPSessionAuth, // fastmcp nomme son type de session de base ainsi
-  TextContent, AudioContent, ImageContent,
+  SessionData as FastMCPSessionAuth,
 } from 'fastmcp';
 import type { Logger } from 'pino';
 
@@ -13,31 +12,20 @@ export interface Message {
   content: any;
 }
 
-// CORRIGÉ : L'interface SessionData satisfait maintenant la contrainte de fastmcp
 export interface SessionData extends FastMCPSessionAuth {
   history: Message[];
-  goal?: string;
-  [key: string]: any; // Signature d'index requise pour la compatibilité
+  [key: string]: any;
 }
 
 export type Ctx = FastMCPContext<SessionData>;
 
-// CORRIGÉ : Le type Tool est maintenant correctement générique
-export type Tool<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape>> = FastMCPTool<
-  T,
-  SessionData
->;
+// CORRIGÉ : Le type Tool utilise 'parameters' pour le schéma,
+// et non plus 'schema', pour correspondre à fastmcp.
+export type Tool<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape>> = Omit<FastMCPTool<T, SessionData>, 'parameters'> & {
+    parameters?: T;
+};
 
-// Type pour la session globale de l'agent
 export interface AgentSession {
   id: string;
   data: SessionData;
-}
-
-export interface AsyncTaskJobPayload {
-  toolName: string;
-  params: Record<string, unknown>;
-  auth: SessionData;
-  taskId: string;
-  cbUrl?: string;
 }

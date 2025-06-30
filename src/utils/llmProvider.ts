@@ -2,7 +2,12 @@
 
 import { config } from '../config.js';
 import logger from '../logger.js';
+// DANS : src/utils/llmProvider.ts
 
+// AJOUTEZ 'export'
+export async function callLLM(...) {
+  // ...
+}
 interface GeminiContent {
   role: 'user' | 'model';
   parts: { text: string }[];

@@ -2,18 +2,16 @@
 import express from 'express';
 import { FastMCP } from 'fastmcp';
 import { v4 as uuidv4 } from 'uuid';
-import { z } from 'zod';
-import { config } from './config.js';
+import { config } from './config.js'; // CORRIGÉ : Import nommé
 import logger from './logger.js';
 import { getAllTools } from './tools/index.js';
-import type { AgentSession, SessionData, Tool } from './types.js';
+import type { AgentSession, SessionData } from './types.js';
 
 const app = express();
 app.use(express.json());
 
+// CORRIGÉ : 'tools' est une option valide pour le constructeur
 const mcpServer = new FastMCP<SessionData>({
-  orchestrator: { /* ... options ... */ },
-  // CORRIGÉ: La propriété 'tools' est attendue par le constructeur fastmcp
   tools: await getAllTools(),
   logger,
 });
@@ -26,13 +24,12 @@ app.post('/api/chat', async (req, res) => {
         id: sessionId,
         data: {
             history: [],
-            goal: prompt,
-            identities: [{id: 'user', type: 'email'}], // requis par fastmcp
+            identities: [{id: 'user', type: 'email'}],
         }
     };
     
-    // CORRIGÉ: La méthode est 'process', pas 'run'
-    const result = await mcpServer.process(prompt, session.data);
+    // CORRIGÉ : La méthode est bien 'run'
+    const result = await mcpServer.run(prompt, session.data);
     res.json(result);
 });
 
