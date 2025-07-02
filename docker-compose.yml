@@ -2,13 +2,13 @@ services:
   redis:
     image: redis:7.2-alpine
     container_name: agentic_forge_redis
-    command: redis-server --requirepass ${REDIS_PASSWORD} --port 6378
+    command: redis-server --port 6378
     ports:
       - "${REDIS_HOST_PORT:-6378}:6378"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "-p", "6378", "ping"]
+      test: ["CMD", "redis-cli", "-p", "6378", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,19 +30,33 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    env_file: .env
     environment:
       - NODE_ENV=production
-      - REDIS_HOST=redis
-      - REDIS_PORT=6378
       - DOCKER=true
       - HOST_PROJECT_PATH=/usr/src/app
-      # =================================================================
-      # CORRECTION DÉFINITIVE : Force le serveur à écouter sur 0.0.0.0
       - HOST=0.0.0.0
-      # =================================================================
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL}
+      - HOST_PORT=${HOST_PORT}
+      - PORT=${PORT:-3001}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - AUTH_TOKEN=${AUTH_TOKEN}
+      - REDIS_HOST_PORT=${REDIS_HOST_PORT}
+      - WEB_PORT=${WEB_PORT}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_MODEL_NAME=${LLM_MODEL_NAME}
+      - PYTHON_SANDBOX_IMAGE=${PYTHON_SANDBOX_IMAGE}
+      - ASH_SANDBOX_IMAGE=${ASH_SANDBOX_IMAGE}
+      - CODE_EXECUTION_TIMEOUT_MS=${CODE_EXECUTION_TIMEOUT_MS}
+      - SESSION_PORT=${SESSION_PORT}
+      - DOCKER_HOST=${DOCKER_HOST}
+
+      - REDIS_HOST=redis
+      - REDIS_PORT=6378
+      - TOOLS_PATH=/usr/src/app/dist/tools
     restart: unless-stopped
-    command: sh -c "pnpm install && pnpm run start"
+    env_file: ./.env
+    command: pnpm run start
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -55,18 +69,37 @@ services:
   web:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: ui/Dockerfile.web
     container_name: agentic_forge_web
     ports:
       - "${WEB_PORT:-3000}:3000"
     depends_on:
       - server
-    env_file: .env
     environment:
       - NODE_ENV=production
       - WEB_PORT=3000
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL}
+      - HOST_PORT=${HOST_PORT}
+      - PORT=${PORT:-3001}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - AUTH_TOKEN=${AUTH_TOKEN}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_HOST_PORT=${REDIS_HOST_PORT}
+
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_MODEL_NAME=${LLM_MODEL_NAME}
+      - PYTHON_SANDBOX_IMAGE=${PYTHON_SANDBOX_IMAGE}
+      - ASH_SANDBOX_IMAGE=${ASH_SANDBOX_IMAGE}
+      - CODE_EXECUTION_TIMEOUT_MS=${CODE_EXECUTION_TIMEOUT_MS}
+      - SESSION_PORT=${SESSION_PORT}
+      - HOST_PROJECT_PATH=${HOST_PROJECT_PATH}
+      - DOCKER_HOST=${DOCKER_HOST}
+      - TOOLS_PATH=/usr/src/app/dist/tools
     restart: unless-stopped
-    command: sh -c "pnpm install && pnpm run start:web" # pnpm install au cas où des dépendances web seraient ajoutées
+    env_file: ./.env
+    command: sh -c "pnpm --filter ui run start:web"
     networks:
       - agentic_network
 
@@ -81,15 +114,30 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    env_file: .env
     environment:
       - NODE_ENV=production
-      - REDIS_HOST=redis
-      - REDIS_PORT=6378
+      - REDIS_URL=redis://${REDIS_PASSWORD}@redis:6378
       - DOCKER=true
       - HOST_PROJECT_PATH=/usr/src/app
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL}
+      - HOST_PORT=${HOST_PORT}
+      - PORT=${PORT:-3001}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - AUTH_TOKEN=${AUTH_TOKEN}
+      - REDIS_HOST_PORT=${REDIS_HOST_PORT}
+      - WEB_PORT=${WEB_PORT}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_MODEL_NAME=${LLM_MODEL_NAME}
+      - PYTHON_SANDBOX_IMAGE=${PYTHON_SANDBOX_IMAGE}
+      - ASH_SANDBOX_IMAGE=${ASH_SANDBOX_IMAGE}
+      - CODE_EXECUTION_TIMEOUT_MS=${CODE_EXECUTION_TIMEOUT_MS}
+      - SESSION_PORT=${SESSION_PORT}
+      - DOCKER_HOST=${DOCKER_HOST}
+      - TOOLS_PATH=/usr/src/app/dist/tools
     restart: unless-stopped
-    command: sh -c "pnpm install && pnpm run start:worker"
+    env_file: ./.env
+    command: pnpm run start:worker
     networks:
       - agentic_network
 

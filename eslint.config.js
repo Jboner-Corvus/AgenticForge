@@ -1,36 +1,14 @@
-// eslint.config.js (Version finale et propre)
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+import eslint from "@eslint/js";
+import eslintConfigPrettier from "eslint-config-prettier/flat";
+import perfectionist from "eslint-plugin-perfectionist";
+import tseslint from "typescript-eslint";
 
 export default tseslint.config(
+  eslint.configs.recommended,
+  tseslint.configs.recommended,
+  perfectionist.configs["recommended-alphabetical"],
+  eslintConfigPrettier,
   {
-    ignores: ['node_modules/', 'dist/', 'coverage/', 'logs/', 'public/'],
+    ignores: ["**/*.js", "dist/**"],
   },
-  ...tseslint.configs.recommended,
-  {
-    files: ['src/**/*.ts'],
-    languageOptions: {
-      parserOptions: {
-        project: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-    rules: {
-      '@typescript-eslint/no-floating-promises': 'error',
-      // Cette règle ignore les variables préfixées par un underscore
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        { argsIgnorePattern: '^_' },
-      ],
-    },
-  },
-  {
-    languageOptions: {
-      globals: {
-        ...globals.node,
-      },
-    },
-  },
-  eslintPluginPrettierRecommended,
 );
