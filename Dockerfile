@@ -1,5 +1,16 @@
 # Dockerfile Final et Optimisé
 
+# --- Phase 0: Base Dependencies (for pnpm workspace) ---
+FROM node:20-alpine AS base_dependencies
+WORKDIR /usr/src/app
+
+# Installer pnpm
+RUN npm install -g pnpm
+
+# Copier les fichiers de dépendances du monorepo et installer TOUTES les dépendances (dev et prod)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install
+
 # --- Phase 1: Builder pour le Backend (Server/Worker) ---
 FROM node:20-alpine AS backend_builder
 WORKDIR /usr/src/app
@@ -7,9 +18,8 @@ WORKDIR /usr/src/app
 # Installer pnpm
 RUN npm install -g pnpm
 
-# Copier les fichiers de dépendances et installer TOUTES les dépendances (dev et prod)
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install
+# Copier les node_modules depuis l'étape base_dependencies
+COPY --from=base_dependencies /usr/src/app/node_modules ./node_modules
 
 # Copier tout le reste du code source
 COPY . .
@@ -24,9 +34,11 @@ WORKDIR /usr/src/app/ui
 # Installer pnpm
 RUN npm install -g pnpm
 
-# Copier les fichiers de dépendances du frontend et installer TOUTES les dépendances
+# Copier les fichiers de dépendances du frontend
 COPY ui/package.json ui/pnpm-lock.yaml ./
-RUN pnpm install
+
+# Copier node_modules depuis l'étape base_dependencies vers le répertoire node_modules de l'UI
+COPY --from=base_dependencies /usr/src/app/node_modules ./node_modules
 
 # Copier tout le reste du code source du frontend
 COPY ui . .
@@ -56,7 +68,7 @@ COPY --from=backend_builder /usr/src/app/dist/tools ./dist/tools
 COPY --from=backend_builder /usr/src/app/public ./public
 
 # Copier les fichiers compilés du frontend depuis la phase de build
-COPY --from=frontend_builder /usr/src/app/ui/ui/dist ./ui-dist
+COPY --from=frontend_builder /usr/src/app/ui/dist ./ui-dist
 
 # Copier le code source du frontend pour que pnpm puisse le trouver
 COPY ui ./ui
