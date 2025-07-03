@@ -2,6 +2,8 @@ import { config } from '../config.js';
 import logger from '../logger.js';
 // src/utils/qualityGate.ts
 import { runInSandbox } from './dockerManager.js';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 const DEV_SANDBOX_IMAGE = 'node:24-alpine'; // CORRECTION: Passage de node:20 à node:24
 const mountPoint = {
@@ -74,4 +76,119 @@ export async function runQualityGate(): Promise<QualityResult> {
     output: outputMessages.join('\n'),
     success: allChecksPassed,
   };
+}
+
+/**
+ * Exécute un test simple pour un outil donné dans un sandbox Docker.
+ * Tente d'importer l'outil et d'appeler sa méthode `execute`.
+ * @param toolAbsolutePath - Le chemin absolu du fichier de l'outil à tester.
+ * @returns Un objet indiquant si le test a réussi et la sortie combinée.
+ */
+export async function runToolTestsInSandbox(
+  toolAbsolutePath: string,
+): Promise<QualityResult> {
+  const outputMessages: string[] = [];
+  const tempTestFileName = `temp_tool_test_${Date.now()}.js`;
+  const tempTestFilePathInSandbox = `/usr/src/app/workspace/${tempTestFileName}`;
+  const tempTestFilePathOnHost = path.join(
+    mountPoint.Source,
+    'workspace',
+    tempTestFileName,
+  );
+
+  const toolRelativePathInSandbox = path.relative(
+    mountPoint.Target,
+    toolAbsolutePath,
+  );
+
+  // Content of the temporary test script
+  const testScriptContent = `
+    import { fileURLToPath } from 'url';
+    import path from 'path';
+
+    const toolPath = process.argv[2];
+    
+    async function runTest() {
+      try {
+        const module = await import(toolPath);
+        let toolFound = false;
+        for (const exportName in module) {
+          const exportedItem = module[exportName];
+          if (
+            exportedItem &&
+            typeof exportedItem === 'object' &&
+            'name' in exportedItem &&
+            'execute' in exportedItem
+          ) {
+            console.log('Attempting to execute tool: ' + exportedItem.name);
+            // Attempt to execute with an empty object, assuming tools can handle it or have optional parameters
+            await exportedItem.execute({}); 
+            console.log('Tool ' + exportedItem.name + ' executed successfully.');
+            toolFound = true;
+            break;
+          }
+        }
+        if (!toolFound) {
+          console.error('Error: No valid tool found in ' + toolPath);
+          process.exit(1);
+        }
+        process.exit(0);
+      } catch (error) {
+        console.error('Error executing tool ' + toolPath + ':', error);
+        process.exit(1);
+      }
+    }
+
+    runTest();
+  `;
+
+  logger.info(`Running sandbox test for tool: ${toolAbsolutePath}`);
+  outputMessages.push(`--- Running Tool Test for ${path.basename(toolAbsolutePath)} ---`);
+
+  try {
+    // Write the temporary test file
+    await fs.writeFile(tempTestFilePathOnHost, testScriptContent);
+
+    const command = [
+      'node',
+      tempTestFilePathInSandbox,
+      toolRelativePathInSandbox,
+    ];
+
+    const result = await runInSandbox(DEV_SANDBOX_IMAGE, command, {
+      mounts: [mountPoint],
+      workingDir: '/usr/src/app',
+    });
+
+    outputMessages.push(`--- Sandbox Execution Finished ---`);
+    outputMessages.push(`Exit Code: ${result.exitCode}`);
+    if (result.stdout) outputMessages.push(`STDOUT:\n${result.stdout}`);
+    if (result.stderr) outputMessages.push(`STDERR:\n${result.stderr}`);
+
+    const success = result.exitCode === 0;
+    if (success) {
+      outputMessages.push('\n--- Tool Test Passed ---');
+      logger.info(`Tool test for ${path.basename(toolAbsolutePath)} passed.`);
+    } else {
+      const failureMessage = `Tool test for ${path.basename(toolAbsolutePath)} FAILED with exit code ${result.exitCode}.`;
+      outputMessages.push(failureMessage);
+      logger.error(failureMessage, {
+        stderr: result.stderr,
+        stdout: result.stdout,
+      });
+    }
+    return { output: outputMessages.join('\n'), success };
+  } catch (error) {
+    logger.error({ err: error }, 'Error during tool sandbox test');
+    outputMessages.push(`Error during tool sandbox test: ${error}`);
+    return { output: outputMessages.join('\n'), success: false };
+  } finally {
+    // Clean up the temporary test file
+    try {
+      await fs.unlink(tempTestFilePathOnHost);
+      logger.debug(`Cleaned up temporary tool test file: ${tempTestFilePathOnHost}`);
+    } catch (cleanupError) {
+      logger.error({ err: cleanupError }, 'Error cleaning up temporary tool test file');
+    }
+  }
 }

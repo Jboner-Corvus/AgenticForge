@@ -37,8 +37,8 @@ RUN npm install -g pnpm
 # Copier les fichiers de dépendances du frontend
 COPY ui/package.json ui/pnpm-lock.yaml ./
 
-# Copier node_modules depuis l'étape base_dependencies vers le répertoire node_modules de l'UI
-COPY --from=base_dependencies /usr/src/app/node_modules ./node_modules
+# Installer les dépendances du frontend
+RUN pnpm install --filter ui
 
 # Copier tout le reste du code source du frontend
 COPY ui . .
@@ -65,7 +65,7 @@ COPY --from=backend_builder /usr/src/app/dist ./dist
 COPY --from=backend_builder /usr/src/app/dist/tools ./dist/tools
 
 # Copier les fichiers publics nécessaires au webServer (si toujours utilisés par le backend)
-COPY --from=backend_builder /usr/src/app/public ./public
+# COPY --from=backend_builder /usr/src/app/public ./public
 
 # Copier les fichiers compilés du frontend depuis la phase de build
 COPY --from=frontend_builder /usr/src/app/ui/dist ./ui-dist

@@ -8,6 +8,7 @@ import { redis } from './redisClient.js';
 import { Message, SessionData } from './types.js'; // Removed Tool
 import { getTools } from './utils/toolLoader.js'; // Added .js
 import { sendWebhook } from './utils/webhookUtils.js'; // Added .js
+import { summarizeTool } from './tools/ai/summarize.tool.js';
 
 const availableTools = await getTools();
 
@@ -24,6 +25,27 @@ for (const tool of availableTools) {
 
 // Map to store active SessionData by sessionId
 const activeSessions = new Map<string, SessionData>();
+
+async function summarizeHistory(sessionData: SessionData, log: typeof logger) {
+  if (sessionData.history.length > config.HISTORY_MAX_LENGTH) {
+    log.info('History length exceeds max length, summarizing...');
+    const historyToSummarize = sessionData.history.slice(0, -10);
+    const textToSummarize = historyToSummarize.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+    
+    try {
+      const summary = await summarizeTool.execute({ text: textToSummarize }, { log } as any);
+      const summarizedMessage: Message = {
+        content: `Summarized conversation: ${summary}`,
+        role: 'model',
+      };
+      sessionData.history = [summarizedMessage, ...sessionData.history.slice(-10)];
+      log.info('History summarized successfully.');
+    } catch (error) {
+      log.error({ error }, 'Error summarizing history');
+    }
+  }
+}
+
 
 export async function processJob(job: Job): Promise<any> {
   const { prompt, sessionId } = job.data;
@@ -82,6 +104,8 @@ export async function processJob(job: Job): Promise<any> {
 
     // Save updated history to Redis
     await redis.set(historyKey, JSON.stringify(sessionData.history), 'EX', 7 * 24 * 60 * 60);
+
+    await summarizeHistory(sessionData, log);
 
     if (config.MCP_WEBHOOK_URL && config.MCP_API_KEY) {
       const webhookUrl: string = config.MCP_WEBHOOK_URL;

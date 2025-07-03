@@ -26,12 +26,7 @@
     "erasableSyntaxOnly": false,
 
     "paths": {
-      "@/*": ["./src/*"],
-      "@modelcontextprotocol/sdk": ["./node_modules/@modelcontextprotocol/sdk/dist/esm/index.js"],
-      "@modelcontextprotocol/sdk": ["./node_modules/@modelcontextprotocol/sdk/dist/esm/index.js"],
-      "@modelcontextprotocol/sdk/client/*": ["./node_modules/@modelcontextprotocol/sdk/dist/esm/client/*.js"],
-      "@modelcontextprotocol/sdk/shared/*": ["./node_modules/@modelcontextprotocol/sdk/dist/esm/shared/*.js"],
-      "@modelcontextprotocol/sdk/types.js": ["./node_modules/@modelcontextprotocol/sdk/dist/esm/types.js"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"]

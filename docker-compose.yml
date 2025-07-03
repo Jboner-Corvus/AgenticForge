@@ -52,8 +52,10 @@ services:
       - DOCKER_HOST=${DOCKER_HOST}
 
       - REDIS_HOST=redis
+      - REDIS_HOST_PORT=6378
       - REDIS_PORT=6378
       - TOOLS_PATH=/usr/src/app/dist/tools
+    mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
     command: pnpm run start
@@ -97,6 +99,7 @@ services:
       - HOST_PROJECT_PATH=${HOST_PROJECT_PATH}
       - DOCKER_HOST=${DOCKER_HOST}
       - TOOLS_PATH=/usr/src/app/dist/tools
+    mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
     command: sh -c "pnpm --filter ui run start:web"
@@ -135,11 +138,34 @@ services:
       - SESSION_PORT=${SESSION_PORT}
       - DOCKER_HOST=${DOCKER_HOST}
       - TOOLS_PATH=/usr/src/app/dist/tools
+    mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
     command: pnpm run start:worker
     networks:
       - agentic_network
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel_collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver
+      - "13133:13133" # Health Check extension
+      - "8888:8888" # Prometheus metrics
+    depends_on:
+      - redis
+    networks:
+      - agentic_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:13133/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   redis_data:

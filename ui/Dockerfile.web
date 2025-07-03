@@ -8,6 +8,7 @@ RUN npm install -g pnpm
 
 # Copy pnpm workspace configuration and UI package files
 COPY pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml ./
 COPY ui/package.json ui/pnpm-lock.yaml ./ui/
 
 # Install all workspace dependencies

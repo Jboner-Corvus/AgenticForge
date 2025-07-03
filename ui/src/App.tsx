@@ -1,9 +1,24 @@
 
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { getTools, sendMessage, testServerHealth } from './lib/api';
-import { addDebugLog, addMessage, hideTypingIndicator, showTypingIndicator, updateTokenStatus, updateToolCount } from './lib/ui-utils';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+import { Badge } from './components/ui/badge';
+import { Button } from './components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './components/ui/card';
+import { Input } from './components/ui/input';
+import { Label } from './components/ui/label';
+import { Switch } from './components/ui/switch';
+import { Textarea } from './components/ui/textarea';
+
+interface Message {
+  id: string;
+  text: string;
+  sender: 'user' | 'assistant';
+}
 
 function App() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -13,53 +28,29 @@ function App() {
   const [debugPanelVisible, setDebugPanelVisible] = useState(true);
   const [toolCreationEnabled, setToolCreationEnabled] = useState(true);
   const [codeExecutionEnabled, setCodeExecutionEnabled] = useState(true);
-
-  const messageInputRef = useRef<HTMLTextAreaElement>(null);
-  const authTokenInputRef = useRef<HTMLInputElement>(null);
-  const messagesContainerRef = useRef<HTMLElement>(null);
-  const sessionIdDisplayRef = useRef<HTMLSpanElement>(null);
-  const toolCountRef = useRef<HTMLSpanElement>(null);
-  const sessionStatusIndicatorRef = useRef<HTMLDivElement>(null);
-  const sessionStatusTextRef = useRef<HTMLSpanElement>(null);
-  const connectionHealthRef = useRef<HTMLSpanElement>(null);
-  const debugLogContentRef = useRef<HTMLDivElement>(null);
-  const bodyWrapperRef = useRef<HTMLDivElement>(null);
-  const debugPanelRef = useRef<HTMLDivElement>(null);
-  const tokenStatusIndicatorRef = useRef<HTMLDivElement>(null);
-  const connectionStatusTextRef = useRef<HTMLSpanElement>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+  const [toolCount, setToolCount] = useState<number | string>(0);
+  const [sessionStatus, setSessionStatus] = useState<'error' | 'unknown' | 'valid'>('unknown');
+  const [tokenStatus, setTokenStatus] = useState(false);
+  const [messageInputValue, setMessageInputValue] = useState('');
 
   const updateSessionStatus = useCallback((status: 'error' | 'unknown' | 'valid') => {
-    if (sessionStatusIndicatorRef.current && sessionStatusTextRef.current) {
-      const indicator = sessionStatusIndicatorRef.current;
-      const text = sessionStatusTextRef.current;
-      switch (status) {
-        case 'error':
-          indicator.className = 'status-indicator-token';
-          text.textContent = 'Session Erreur';
-          break;
-        case 'valid':
-          indicator.className = 'status-indicator-token valid';
-          text.textContent = 'Session Active';
-          break;
-        default:
-          indicator.className = 'status-indicator-token';
-          text.textContent = 'Session Inconnue';
-      }
-    }
+    setSessionStatus(status);
   }, []);
 
   const fetchAndDisplayToolCount = useCallback(async () => {
     if (!authToken || !sessionId) return;
-    addDebugLog('Récupération de la liste des outils...', debugLogContentRef.current, 'request');
+    setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] [REQUEST] Récupération de la liste des outils...`]);
     try {
       const tools = await getTools() as any[];
-      addDebugLog(`${tools.length} outils trouvés.`, debugLogContentRef.current, 'success');
-      updateToolCount(tools.length, toolCountRef.current);
+      setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] [SUCCESS] ${tools.length} outils trouvés.`]);
+      setToolCount(tools.length);
       updateSessionStatus('valid');
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      addDebugLog(`Erreur getTools: ${message}`, debugLogContentRef.current, 'error');
-      updateToolCount('Erreur', toolCountRef.current);
+      setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] [ERROR] Erreur getTools: ${message}`]);
+      setToolCount('Erreur');
       updateSessionStatus('error');
     }
   }, [authToken, sessionId, updateSessionStatus]);
@@ -69,164 +60,128 @@ function App() {
     if (!currentSessionId) {
       currentSessionId = generateUUID();
       localStorage.setItem('agenticForgeSessionId', currentSessionId);
-      addDebugLog(`Nouvel ID de session généré: ${currentSessionId}`, debugLogContentRef.current);
+      setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Nouvel ID de session généré: ${currentSessionId}`]);
     } else {
-      addDebugLog(`ID de session récupéré: ${currentSessionId}`, debugLogContentRef.current);
+      setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ID de session récupéré: ${currentSessionId}`]);
     }
     setSessionId(currentSessionId);
-    if (sessionIdDisplayRef.current) {
-      sessionIdDisplayRef.current.textContent = `${currentSessionId.substring(0, 12)}...`;
-    }
   }, []);
 
   const checkServerHealth = useCallback(async () => {
-    addDebugLog('Vérification de la santé du serveur...', debugLogContentRef.current);
+    setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Vérification de la santé du serveur...`]);
     try {
       const healthy = await testServerHealth();
       setServerHealthy(healthy);
-      if (connectionHealthRef.current) {
-        connectionHealthRef.current.textContent = healthy ? '✅ En ligne' : '❌ Hors ligne';
-      }
-      addDebugLog(
-        `Statut du serveur: ${healthy ? 'En ligne' : 'Hors ligne'}`, 
-        debugLogContentRef.current,
-        healthy ? 'success' : 'error',
-      );
+      setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] [${healthy ? 'SUCCESS' : 'ERROR'}] Statut du serveur: ${healthy ? 'En ligne' : 'Hors ligne'}`]);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       setServerHealthy(false);
-      if (connectionHealthRef.current) {
-        connectionHealthRef.current.textContent = '❌ Hors ligne';
-      }
-      addDebugLog(
-        `Échec de la vérification de la santé du serveur: ${message}`,
-        debugLogContentRef.current,
-        'error',
-      );
+      setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] [ERROR] Échec de la vérification de la santé du serveur: ${message}`]);
     }
   }, []);
 
   const initializeAuthToken = useCallback(() => {
     const savedToken = localStorage.getItem('agenticForgeAuthToken');
     if (savedToken) {
-      if (authTokenInputRef.current) {
-        authTokenInputRef.current.value = savedToken;
-      }
       setAuthToken(savedToken);
-      addDebugLog('Token chargé depuis localStorage.', debugLogContentRef.current);
-      updateTokenStatus(true, connectionStatusTextRef.current, tokenStatusIndicatorRef.current);
+      setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Token chargé depuis localStorage.`]);
+      setTokenStatus(true);
       fetchAndDisplayToolCount();
     } else {
-      addDebugLog('Aucun token trouvé en local.', debugLogContentRef.current);
-      updateTokenStatus(false, connectionStatusTextRef.current, tokenStatusIndicatorRef.current);
+      setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Aucun token trouvé en local.`]);
+      setTokenStatus(false);
     }
   }, [fetchAndDisplayToolCount]);
 
   // Initialisation de la session et du token au chargement du composant
   useEffect(() => {
-    addDebugLog('Interface initialisée (useEffect).', debugLogContentRef.current);
+    setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Interface initialisée (useEffect).`]);
     initializeSession();
     initializeAuthToken();
     checkServerHealth();
-    addMessage(
-      '🎯 **Agent prêt.** Veuillez entrer votre *Auth Token* pour commencer.',
-      'assistant',
-      messagesContainerRef.current
-    );
+    setMessages(prev => [...prev, {
+      id: `${Date.now()}-${Math.random()}`,
+      text: '🎯 **Agent prêt.** Veuillez entrer votre *Auth Token* pour commencer.',
+      sender: 'assistant',
+    }]);
   }, [checkServerHealth, initializeAuthToken, initializeSession]);
 
-  // Effet pour ajuster le layout en fonction du panneau de débogage
-  useEffect(() => {
-    const adjustLayout = () => {
-      if (bodyWrapperRef.current && debugPanelRef.current) {
-        const panelHeight = debugPanelRef.current.offsetHeight;
-        bodyWrapperRef.current.style.paddingBottom = `${panelHeight}px`;
-      }
-    };
-
-    adjustLayout();
-    window.addEventListener('resize', adjustLayout);
-    return () => window.removeEventListener('resize', adjustLayout);
-  }, [debugPanelVisible]);
-
-  // Mise à jour de l'UI globale
-  useEffect(() => {
-    const canInteract = !!authToken && !!sessionId && !isProcessing && serverHealthy;
-    if (messageInputRef.current) {
-      messageInputRef.current.disabled = !canInteract;
-      if (isProcessing) {
-        messageInputRef.current.placeholder = "🤔 L'agent réfléchit...";
-      } else if (!serverHealthy) {
-        messageInputRef.current.placeholder = '🏥 Serveur hors ligne...';
-      } else if (!authToken) {
-        messageInputRef.current.placeholder = '🔑 Veuillez sauvegarder un Bearer Token...';
-      } else {
-        messageInputRef.current.placeholder = '💬 Décrivez votre objectif...';
-      }
-    }
-    const sendBtn = document.getElementById('sendBtn') as HTMLButtonElement;
-    if (sendBtn) {
-      sendBtn.disabled = !canInteract;
-    }
-  }, [authToken, sessionId, isProcessing, serverHealthy]);
+  
 
   const handleSendMessage = useCallback(async (event: React.FormEvent) => {
     event.preventDefault();
-    const goal = messageInputRef.current?.value.trim();
+    const goal = messageInputValue.trim();
     if (!goal || isProcessing || !authToken || !sessionId) return;
 
     setIsProcessing(true);
-    addMessage(goal, 'user', messagesContainerRef.current);
-    if (messageInputRef.current) {
-      messageInputRef.current.value = '';
-      messageInputRef.current.style.height = 'auto'; // Reset height after sending
-    }
-    showTypingIndicator(messagesContainerRef.current);
+    setMessages(prev => [...prev, {
+      id: `${Date.now()}-${Math.random()}`,
+      text: goal,
+      sender: 'user',
+    }]);
+    setMessageInputValue('');
 
-    addDebugLog(`Envoi de l'objectif: "${goal}"`, debugLogContentRef.current, 'request');
+    setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] [REQUEST] Envoi de l'objectif: "${goal}"`]);
     try {
       const result = await sendMessage(goal) as { text: string };
-      addDebugLog(`Réponse API reçue: ${JSON.stringify(result)}`, debugLogContentRef.current, 'success');
+      setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] [SUCCESS] Réponse API reçue: ${JSON.stringify(result)}`]);
       const responseText = result.text || "L'agent a terminé mais n'a fourni aucune réponse textuelle.";
-      hideTypingIndicator();
-      addMessage(responseText, 'assistant', messagesContainerRef.current);
+      setMessages(prev => [...prev, {
+        id: `${Date.now()}-${Math.random()}`,
+        text: responseText,
+        sender: 'assistant',
+      }]);
       fetchAndDisplayToolCount();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      addDebugLog(`Erreur API: ${message}`, debugLogContentRef.current, 'error');
-      hideTypingIndicator();
-      addMessage(`❌ **Erreur d'exécution :**\n${message}`, 'assistant', messagesContainerRef.current);
+      setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] [ERROR] Erreur API: ${message}`]);
+      setMessages(prev => [...prev, {
+        id: `${Date.now()}-${Math.random()}`,
+        text: `❌ **Erreur d'exécution :**\n${message}`,
+        sender: 'assistant',
+      }]);
       updateSessionStatus('error');
     } finally {
       setIsProcessing(false);
-      messageInputRef.current?.focus();
     }
-  }, [isProcessing, authToken, sessionId, fetchAndDisplayToolCount, updateSessionStatus]);
+  }, [isProcessing, authToken, sessionId, fetchAndDisplayToolCount, updateSessionStatus, messageInputValue]);
+
+  const [tokenInputValue, setTokenInputValue] = useState<string>('');
 
   const handleSaveToken = useCallback(() => {
-    const tokenValue = authTokenInputRef.current?.value.trim() || '';
+    const tokenValue = tokenInputValue.trim();
     setAuthToken(tokenValue);
     if (tokenValue) {
       localStorage.setItem('agenticForgeAuthToken', tokenValue);
-      addMessage('🔑 Token sauvegardé.', 'assistant', messagesContainerRef.current);
-      addDebugLog('Nouveau token sauvegardé.', debugLogContentRef.current);
+      setMessages(prev => [...prev, {
+        id: `${Date.now()}-${Math.random()}`,
+        text: '🔑 Token sauvegardé.',
+        sender: 'assistant',
+      }]);
+      setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Nouveau token sauvegardé.`]);
       fetchAndDisplayToolCount();
     } else {
       localStorage.removeItem('agenticForgeAuthToken');
-      addMessage('🗑️ Token supprimé.', 'assistant', messagesContainerRef.current);
-      addDebugLog('Token supprimé.', debugLogContentRef.current);
-      updateToolCount(0, toolCountRef.current);
+      setMessages(prev => [...prev, {
+        id: `${Date.now()}-${Math.random()}`,
+        text: '🗑️ Token supprimé.',
+        sender: 'assistant',
+      }]);
+      setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Token supprimé.`]);
+      setToolCount(0);
     }
-    updateTokenStatus(!!tokenValue, connectionStatusTextRef.current, tokenStatusIndicatorRef.current);
-  }, [fetchAndDisplayToolCount]);
+    setTokenStatus(!!tokenValue);
+  }, [fetchAndDisplayToolCount, tokenInputValue]);
 
   const handleClearHistory = useCallback((showMessage: boolean) => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.innerHTML = '';
-    }
+    setMessages([]);
     if (showMessage) {
-      addMessage('🗑️ Historique local effacé.', 'assistant', messagesContainerRef.current);
-      addDebugLog('Historique local effacé.', debugLogContentRef.current);
+      setMessages(prev => [...prev, {
+        id: `${Date.now()}-${Math.random()}`,
+        text: '🗑️ Historique local effacé.',
+        sender: 'assistant',
+      }]);
+      setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Historique local effacé.`]);
     }
   }, []);
 
@@ -235,14 +190,12 @@ function App() {
     const newSessionId = generateUUID();
     localStorage.setItem('agenticForgeSessionId', newSessionId);
     setSessionId(newSessionId);
-    if (sessionIdDisplayRef.current) {
-      sessionIdDisplayRef.current.textContent = `${newSessionId.substring(0, 12)}...`;
-    }
-    addMessage(`🔄 **Nouvelle Session Créée.**`, 'assistant', messagesContainerRef.current);
-    addDebugLog(
-      `Nouvelle session. Ancien ID: ${oldSessionId}, Nouvel ID: ${newSessionId}`,
-      debugLogContentRef.current
-    );
+    setMessages(prev => [...prev, {
+      id: `${Date.now()}-${Math.random()}`,
+      text: '🔄 **Nouvelle Session Créée.**',
+      sender: 'assistant',
+    }]);
+    setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] Nouvelle session. Ancien ID: ${oldSessionId}, Nouvel ID: ${newSessionId}`]);
     handleClearHistory(false);
     fetchAndDisplayToolCount();
   }, [sessionId, fetchAndDisplayToolCount, handleClearHistory]);
@@ -252,139 +205,187 @@ function App() {
   }, []);
 
   const clearDebugLog = useCallback(() => {
-    if (debugLogContentRef.current) {
-      debugLogContentRef.current.innerHTML = '';
-    }
-    addDebugLog('Journal de débogage vidé.', debugLogContentRef.current);
+    setDebugLog([`[${new Date().toLocaleTimeString()}] Journal de débogage vidé.`]);
   }, []);
 
-  const handleMessageInputChange = useCallback(() => {
-    if (messageInputRef.current) {
-      messageInputRef.current.style.height = 'auto';
-      messageInputRef.current.style.height = messageInputRef.current.scrollHeight + 'px';
-    }
+  
+
+  
+
+  const handleMessageInputChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessageInputValue(event.target.value);
+    event.target.style.height = 'auto';
+    event.target.style.height = event.target.scrollHeight + 'px';
   }, []);
 
   return (
-    <div className="body-wrapper" ref={bodyWrapperRef}>
-      <header className="header">
-        <div className="logo">
-          <div className="logo-icon">🐉</div>
-          <h1 className="logo-text">Agentic Forge</h1>
+    <div className="min-h-screen flex flex-col bg-gray-900 text-gray-100">
+      <header className="flex items-center justify-between p-4 bg-gray-800 shadow-md">
+        <div className="flex items-center space-x-2">
+          <div className="text-2xl">🐉</div>
+          <h1 className="text-xl font-bold">Agentic Forge</h1>
         </div>
 
-        <div className="status-bar">
+        <div className="flex items-center space-x-4">
           {/* Token Form */}
-          <div className="token-controls" id="token-form">
-            <label className="token-label" htmlFor="authToken">Auth Token:</label>
-            <input aria-label="Authentication Token Input" className="token-input" id="authToken" placeholder="Collez votre Bearer Token ici" ref={authTokenInputRef} type="password" />
-            <button aria-label="Save Token" className="token-save-btn" id="saveTokenBtn" onClick={handleSaveToken} type="button">✅</button>
+          <div className="flex items-center space-x-2">
+            <Label htmlFor="authToken" className="text-sm">Auth Token:</Label>
+            <Input
+              aria-label="Authentication Token Input"
+              id="authToken"
+              placeholder="Collez votre Bearer Token ici"
+              type="password"
+              value={tokenInputValue}
+              onChange={(e) => setTokenInputValue(e.target.value)}
+              className="w-64 bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400"
+            />
+            <Button aria-label="Save Token" onClick={handleSaveToken} type="button" className="bg-green-600 hover:bg-green-700 text-white">✅</Button>
           </div>
 
           {/* Session Status */}
-          <div aria-live="polite" className="status-item" id="sessionStatus">
-            <div className="status-indicator-token" id="sessionStatusIndicator" ref={sessionStatusIndicatorRef}></div>
-            <span id="sessionStatusText" ref={sessionStatusTextRef}>Session...</span>
-          </div>
+          <Badge variant={sessionStatus === 'valid' ? 'default' : 'destructive'}>
+            {sessionStatus === 'error' ? 'Session Erreur' : sessionStatus === 'valid' ? 'Session Active' : 'Session Inconnue'}
+          </Badge>
 
           {/* Connection Status */}
-          <div aria-live="polite" className="status-item" id="connectionStatus">
-            <div className="status-indicator-token" id="tokenStatusIndicator" ref={tokenStatusIndicatorRef}></div>
-            <span id="connectionStatusText" ref={connectionStatusTextRef}>Token requis</span>
-          </div>
+          <Badge variant={tokenStatus ? 'default' : 'destructive'}>
+            {tokenStatus ? 'Token Valide' : 'Token requis'}
+          </Badge>
         </div>
       </header>
 
-      <div className="main-container">
-        <aside className="sidebar">
-          <div className="sidebar-header">
-            <h2 className="sidebar-title">Panneau de Contrôle</h2>
-          </div>
-          <section className="sidebar-content">
-            <div className="control-panel" style={{ marginBottom: '1.5rem', marginTop: 0 }}>
-              <h3 className="control-panel-title">Statut de l'Agent</h3>
-              <div className="control-item">
-                <span className="control-label">Session ID</span>
-                <span className="status-value" id="sessionIdDisplay" ref={sessionIdDisplayRef}>--</span>
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="w-80 p-4 bg-gray-800 border-r border-gray-700 overflow-y-auto flex-shrink-0">
+          <Card className="bg-gray-700 border-gray-600 text-gray-100">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Panneau de Contrôle</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <h3 className="text-md font-medium text-gray-300">Statut de l'Agent</h3>
+                <div className="flex justify-between items-center">
+                  <Label className="text-sm">Session ID</Label>
+                  <span className="text-sm text-gray-400">{sessionId ? `${sessionId.substring(0, 12)}...` : '--'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <Label className="text-sm">Outils Détectés</Label>
+                  <span className="text-sm text-gray-400">{toolCount}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <Label className="text-sm">Statut Connexion</Label>
+                  <span className="text-sm text-gray-400">{serverHealthy ? '✅ En ligne' : '❌ Hors ligne'}</span>
+                </div>
               </div>
-              <div className="control-item">
-                <span className="control-label">Outils Détectés</span>
-                <span className="status-value" id="toolCount" ref={toolCountRef}>0</span>
+              
+              <p className="text-xs text-gray-400 italic">
+                <strong>Mode Session Stricte:</strong> L'agent maintient un contexte de conversation persistant grâce à votre Session ID unique.
+              </p>
+              
+              <div className="space-y-2">
+                <h3 className="text-md font-medium text-gray-300">Capacités de l'Agent</h3>
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="toolCreationToggle" className="text-sm">Création d'outils</Label>
+                  <Switch checked={toolCreationEnabled} id="toolCreationToggle" onCheckedChange={setToolCreationEnabled} />
+                </div>
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="codeExecutionToggle" className="text-sm">Exécution de code</Label>
+                  <Switch checked={codeExecutionEnabled} id="codeExecutionToggle" onCheckedChange={setCodeExecutionEnabled} />
+                </div>
               </div>
-              <div className="control-item">
-                <span className="control-label">Statut Connexion</span>
-                <span className="status-value" id="connectionHealth" ref={connectionHealthRef}>--</span>
-              </div>
-            </div>
-            
-            <p className="sidebar-info">
-              <strong>Mode Session Stricte:</strong> L'agent maintient un contexte de conversation persistant grâce à votre Session ID unique.
-            </p>
-            
-            <div className="control-panel">
-              <h3 className="control-panel-title">Capacités de l'Agent</h3>
-              <div className="control-item">
-                <label className="control-label" htmlFor="toolCreationToggle">Création d'outils</label>
-                <label className="switch">
-                  <input checked={toolCreationEnabled} id="toolCreationToggle" onChange={(e) => setToolCreationEnabled(e.target.checked)} type="checkbox" />
-                  <span className="slider round"></span>
-                </label>
-              </div>
-              <div className="control-item">
-                <label className="control-label" htmlFor="codeExecutionToggle">Exécution de code</label>
-                <label className="switch">
-                  <input checked={codeExecutionEnabled} id="codeExecutionToggle" onChange={(e) => setCodeExecutionEnabled(e.target.checked)} type="checkbox" />
-                  <span className="slider round"></span>
-                </label>
-              </div>
-            </div>
 
-            <div className="control-panel">
-              <h3 className="control-panel-title">Actions Rapides</h3>
-              <div className="control-item">
-                <button className="btn" id="newSessionBtn" onClick={handleNewSession} style={{ margin: '5px 0', width: '100%' }}>🔄 Nouvelle Session</button>
+              <div className="space-y-2">
+                <h3 className="text-md font-medium text-gray-300">Actions Rapides</h3>
+                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={handleNewSession}>🔄 Nouvelle Session</Button>
+                <Button className="w-full bg-red-600 hover:bg-red-700 text-white" onClick={() => handleClearHistory(true)}>🗑️ Vider l'Historique</Button>
               </div>
-              <div className="control-item">
-                <button className="btn" id="clearHistoryBtn" onClick={() => handleClearHistory(true)} style={{ backgroundColor: '#e57373', margin: '5px 0', width: '100%' }}>🗑️ Vider l'Historique</button>
-              </div>
-            </div>
-          </section>
+            </CardContent>
+          </Card>
         </aside>
 
-        <main className="content-area">
-          <div className="chat-container">
-            <section aria-live="assertive" className="messages-container" id="messagesContainer" ref={messagesContainerRef}></section>
-            <div className="input-area">
-              <form className="input-container" id="chat-form" onSubmit={handleSendMessage}>
-                <div className="input-actions">
-                  <button aria-label="Attach file" className="btn-icon" id="attachFileBtn" type="button">
-                    <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49"></path></svg>
-                  </button>
-                </div>
-                <div className="input-wrapper">
-                  <textarea aria-label="Message input field" className="input-field" id="messageInput" onInput={handleMessageInputChange} placeholder="Session requise..." ref={messageInputRef} rows={1}></textarea>
-                </div>
-                <div className="input-actions">
-                  <button aria-label="Send Message" className="btn" disabled id="sendBtn" type="submit">
-                    <span>Envoyer</span><span aria-hidden="true">→</span>
-                  </button>
-                </div>
+        <main className="flex-1 p-4 flex flex-col bg-gray-900">
+          <Card className="flex-1 flex flex-col bg-gray-800 border-gray-700 text-gray-100">
+            <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+              <section aria-live="assertive" className="space-y-4">
+                {messages.map(msg => (
+                  <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[70%] p-3 rounded-lg ${msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-100'}`}>
+                      <div className="message-content prose prose-invert">
+                      {msg.sender === 'assistant' ? (
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {msg.text}
+                        </ReactMarkdown>
+                      ) : (
+                        msg.text
+                      )}
+                    </div>
+                    </div>
+                  </div>
+                ))}
+                {isProcessing && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-700 text-gray-100 p-3 rounded-lg typing-indicator">
+                      <span></span><span></span><span></span>
+                    </div>
+                  </div>
+                )}
+              </section>
+            </CardContent>
+            <div className="p-4 border-t border-gray-700">
+              <form className="flex items-center space-x-2" onSubmit={handleSendMessage}>
+                <Button aria-label="Attach file" type="button" variant="ghost" className="text-gray-400 hover:text-gray-100">
+                  <svg fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49"></path></svg>
+                </Button>
+                <Textarea
+                  aria-label="Message input field"
+                  className="flex-1 bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 resize-none"
+                  id="messageInput"
+                  onInput={handleMessageInputChange}
+                  placeholder={
+                    isProcessing
+                      ? "🤔 L'agent réfléchit..."
+                      : !serverHealthy
+                      ? '🏥 Serveur hors ligne...'
+                      : !authToken
+                      ? '🔑 Veuillez sauvegarder un Bearer Token...'
+                      : '💬 Décrivez votre objectif...'
+                  }
+                  value={messageInputValue}
+                  rows={1}
+                  disabled={!authToken || !sessionId || isProcessing || !serverHealthy}
+                />
+                <Button
+                  aria-label="Send Message"
+                  type="submit"
+                  disabled={!authToken || !sessionId || isProcessing || !serverHealthy}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <span>Envoyer</span><span aria-hidden="true">→</span>
+                </Button>
               </form>
             </div>
-          </div>
+          </Card>
         </main>
       </div>
       
-      <div id="debug-panel" ref={debugPanelRef} style={{ background: '#111', borderTop: '2px solid #444', display: debugPanelVisible ? 'flex' : 'none', flexDirection: 'column', flexShrink: 0, fontFamily: 'monospace', fontSize: '12px', height: '150px', maxHeight: '25vh', zIndex: 100 }}>
-        <div style={{ alignItems: 'center', background: '#222', display: 'flex', flexShrink: 0, justifyContent: 'space-between', padding: '5px' }}>
-            <h4 style={{ color: '#ccc', margin: 0 }}>Journal de débogage du Frontend</h4>
-            <div>
-                <button id="clearDebugBtn" onClick={clearDebugLog} style={{ background: '#555', border: 'none', color: 'white', cursor: 'pointer', marginRight: '10px', padding: '2px 8px' }}>Vider</button>
-                <button id="toggleDebugBtn" onClick={toggleDebugPanel} style={{ background: '#555', border: 'none', color: 'white', cursor: 'pointer', padding: '2px 8px' }}>{debugPanelVisible ? 'Cacher' : 'Afficher'}</button>
-            </div>
-        </div>
-        <div id="debug-log-content" ref={debugLogContentRef} style={{ flexGrow: 1, overflowY: 'auto', padding: '5px' }}></div>
-      </div>
+      <Card id="debug-panel" className="bg-gray-800 border-t border-gray-700 text-gray-100 flex flex-col flex-shrink-0 font-mono text-xs" style={{ height: debugPanelVisible ? '150px' : '0', maxHeight: '25vh', display: 'flex', transition: 'height 0.3s ease-in-out' }}>
+        <CardHeader className="flex flex-row items-center justify-between p-2 border-b border-gray-700">
+          <CardTitle className="text-sm font-semibold">Journal de débogage</CardTitle>
+          <CardDescription className="text-xs text-gray-400">Frontend</CardDescription>
+        </CardHeader>
+        <CardContent className="flex-1 overflow-y-auto p-2">
+          <div id="debug-log-content" className="space-y-1">
+            {debugLog.map((log, index) => (
+              <div key={index}>{log}</div>
+            ))}
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-end p-2 border-t border-gray-700">
+          <Button onClick={clearDebugLog} size="sm" variant="ghost" className="text-gray-400 hover:text-gray-100">Vider</Button>
+          <Button onClick={toggleDebugPanel} size="sm" variant="ghost" className="text-gray-400 hover:text-gray-100">
+            {debugPanelVisible ? 'Cacher' : 'Afficher'}
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

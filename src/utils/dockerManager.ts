@@ -54,7 +54,7 @@ export async function runInSandbox(
       Cmd: command,
       HostConfig: {
         CpuShares: 512,
-        Memory: 2048 * 1024 * 1024, // CORRECTION: Passage de 512MB à 2048MB (2GB)
+        Memory: parseMemoryString(config.CONTAINER_MEMORY_LIMIT),
         Mounts: options.mounts,
         NetworkMode: 'bridge',
       },
@@ -149,5 +149,31 @@ async function pullImageIfNotExists(imageName: string): Promise<void> {
     } else {
       throw error;
     }
+  }
+}
+
+/**
+ * Analyse une chaîne de caractères représentant une taille de mémoire (ex: "2g", "512m")
+ * et la convertit en octets.
+ * @param memoryString - La chaîne de caractères à analyser.
+ * @returns Le nombre d'octets.
+ */
+function parseMemoryString(memoryString: string): number {
+  const unit = memoryString.slice(-1).toLowerCase();
+  const value = parseInt(memoryString.slice(0, -1), 10);
+
+  if (isNaN(value)) {
+    throw new Error(`Invalid memory string: ${memoryString}`);
+  }
+
+  switch (unit) {
+    case 'g':
+      return value * 1024 * 1024 * 1024;
+    case 'm':
+      return value * 1024 * 1024;
+    case 'k':
+      return value * 1024;
+    default:
+      return parseInt(memoryString, 10);
   }
 }

@@ -1,16 +1,20 @@
-import cookieParser from 'cookie-parser'; // AJOUTÉ
-// FICHIER MODIFIÉ : src/webServer.ts
+import cookieParser from 'cookie-parser';
 import express from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 
 import { config } from './config';
 import logger from './logger';
 import { jobQueue } from './queue';
-import { redis } from './redisClient'; // AJOUTÉ
+import { redis } from './redisClient';
 import { AppError, handleError } from './utils/errorUtils';
+import { getTools } from './utils/toolLoader';
 import { validateApiKey, validateWebhook } from './utils/validationUtils';
 import { sendWebhook } from './utils/webhookUtils';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export async function startWebServer() {
   const app = express();
@@ -32,6 +36,19 @@ export async function startWebServer() {
     }
     (req as any).sessionId = sessionId;
     next();
+  });
+
+  app.get('/api/health', (req, res) => {
+    res.status(200).send('OK');
+  });
+
+  app.get('/api/tools', async (req, res, next) => {
+    try {
+      const tools = await getTools();
+      res.status(200).json(tools);
+    } catch (error) {
+      next(error);
+    }
   });
 
   app.post('/api/chat', async (req, res, next) => {

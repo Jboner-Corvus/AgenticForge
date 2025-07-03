@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { Ctx, Tool, SessionData } from '../../types.js';
 
 import { getErrDetails, UserError } from '../../utils/errorUtils.js';
-import { runQualityGate } from '../../utils/qualityGate.js';
+import { runQualityGate, runToolTestsInSandbox } from '../../utils/qualityGate.js';
 
 const GENERATED_TOOLS_DIR = path.resolve(process.cwd(), 'src/tools/generated');
 
@@ -42,7 +42,7 @@ export const createToolParams = z.object({
 
 export const createToolTool: Tool<typeof createToolParams> = {
   description:
-    "Écrit un nouveau fichier d'outil. DOIT être suivi par 'system_restartServer' pour le charger.",
+    "Écrit un nouveau fichier d'outil.",
   execute: async (args, ctx: Ctx) => {
     const { description, execute_function, parameters_schema, tool_name } =
       args;
@@ -74,7 +74,15 @@ export const createToolTool: Tool<typeof createToolParams> = {
         throw new UserError('Le Quality Gate a échoué.');
       }
 
-      const successMessage = `Outil '${tool_name}' créé et validé. Utilisez 'system_restartServer'.`;
+      ctx.log.info('Lancement du test du nouvel outil...');
+      const testResult = await runToolTestsInSandbox(toolFilePath);
+      output += `\n${testResult.output}`;
+
+      if (!testResult.success) {
+        throw new UserError('Le test du nouvel outil a échoué.');
+      }
+
+      const successMessage = `Outil '${tool_name}' créé et validé.`;
       ctx.log.warn(successMessage);
       return `${output}\n\n${successMessage}`;
     } catch (error) {
