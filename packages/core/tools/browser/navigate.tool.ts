@@ -26,7 +26,6 @@ export async function navigateWorkerLogic(
 
     return {
       message: `Successfully navigated to "${title}". URL: ${page.url()}`,
-      screenshots: [{ image: finalScreenshot, step: 'after' }],
     };
   } finally {
     await browser?.close();

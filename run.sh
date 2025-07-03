@@ -132,13 +132,13 @@ clean_docker() {
 # --- Développement & Qualité (Local) ---
 
 lint_code() {
-    echo -e "${COLOR_YELLOW}Lancement du linter avec correction automatique...${NC}"
-    pnpm run lint:fix
+    echo -e "${COLOR_YELLOW}Lancement du linter avec correction automatique pour tous les packages...${NC}"
+    pnpm --recursive run lint -- --fix
 }
 
 format_code() {
-    echo -e "${COLOR_YELLOW}Formatage du code source local avec Prettier...${NC}"
-    pnpm run format
+    echo -e "${COLOR_YELLOW}Formatage du code source local avec Prettier pour tous les packages...${NC}"
+    pnpm --recursive run format
 }
 
 clean_dev() {

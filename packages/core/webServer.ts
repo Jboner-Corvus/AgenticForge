@@ -62,6 +62,9 @@ export async function startWebServer() {
 
       logger.info({ prompt, sessionId }, 'Nouveau message reçu');
 
+      // For SSE, we'll add the job and then immediately return a 200 OK
+      // The actual streaming will happen on a separate endpoint or via a different mechanism
+      // For now, we'll keep the existing job queueing logic.
       const job = await jobQueue.add('process-message', {
         prompt,
         sessionId,
@@ -74,6 +77,49 @@ export async function startWebServer() {
     } catch (error) {
       next(error);
     }
+  });
+
+  app.get('/api/chat/stream/:jobId', async (req, res, next) => {
+    const { jobId } = req.params;
+    const sessionId = (req as any).sessionId;
+
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+
+    const subscriber = redis.duplicate();
+    const channel = `job:${jobId}:events`;
+
+    subscriber.subscribe(channel, (err, count) => {
+      if (err) {
+        logger.error({ err }, 'Failed to subscribe to Redis channel');
+        res.end();
+        return;
+      }
+      logger.info(`Subscribed to ${channel} for SSE.`);
+    });
+
+    subscriber.on('message', (channel, message) => {
+      logger.info({ channel, message }, 'Received message from Redis channel');
+      res.write(`data: ${message}\n\n`);
+    });
+
+    req.on('close', () => {
+      logger.info(`Client disconnected from SSE for job ${jobId}. Unsubscribing.`);
+      subscriber.unsubscribe(channel);
+      subscriber.quit();
+    });
+
+    // Send a heartbeat to keep the connection alive
+    const heartbeatInterval = setInterval(() => {
+      res.write(':heartbeat\n\n');
+    }, 15000);
+
+    req.on('close', () => {
+      clearInterval(heartbeatInterval);
+    });
   });
 
   app.get('/api/history', async (req, res, next) => {

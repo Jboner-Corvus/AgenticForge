@@ -23,7 +23,7 @@ const toolsDir =
   process.env.TOOLS_PATH ||
   (runningInDist
     ? path.join(__dirname, 'tools')
-    : path.resolve(process.cwd(), 'src/tools'));
+    : path.resolve(process.cwd(), 'packages/core/src/tools'));
 const generatedToolsDir = path.join(toolsDir, 'generated');
 
 /**
