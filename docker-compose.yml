@@ -58,7 +58,7 @@ services:
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
-    command: pnpm run start
+    command: pnpm --dir packages/core start
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -71,7 +71,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: ui/Dockerfile.web
+      dockerfile: packages/ui/Dockerfile.web
     container_name: agentic_forge_web
     ports:
       - "${WEB_PORT:-3000}:3000"
@@ -119,7 +119,7 @@ services:
         condition: service_healthy
     environment:
       - NODE_ENV=production
-      - REDIS_URL=redis://${REDIS_PASSWORD}@redis:6378
+      - REDIS_URL=redis://redis:6378
       - DOCKER=true
       - HOST_PROJECT_PATH=/usr/src/app
       - GEMINI_API_KEY=${GEMINI_API_KEY}
@@ -141,7 +141,7 @@ services:
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
-    command: pnpm run start:worker
+    command: pnpm --dir packages/core start:worker
     networks:
       - agentic_network
 

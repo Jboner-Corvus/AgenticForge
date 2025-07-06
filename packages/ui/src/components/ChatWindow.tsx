@@ -4,15 +4,13 @@ import remarkGfm from 'remark-gfm';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Textarea } from './ui/textarea';
-
-interface Message {
-  id: string;
-  text: string;
-  sender: 'user' | 'assistant';
-}
+import { DisplayableItem } from '../lib/types';
+import { ThoughtBubble } from './ThoughtBubble';
+import { ToolCallCard } from './ToolCallCard';
+import { ToolResultDisplay } from './ToolResultDisplay';
 
 interface ChatWindowProps {
-  messages: Message[];
+  displayItems: DisplayableItem[];
   isProcessing: boolean;
   messageInputValue: string;
   serverHealthy: boolean;
@@ -20,10 +18,11 @@ interface ChatWindowProps {
   sessionId: string | null;
   handleMessageInputChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleSendMessage: (event: React.FormEvent) => void;
+  handleInterrupt: () => void;
 }
 
 export function ChatWindow({
-  messages,
+  displayItems,
   isProcessing,
   messageInputValue,
   serverHealthy,
@@ -31,27 +30,41 @@ export function ChatWindow({
   sessionId,
   handleMessageInputChange,
   handleSendMessage,
+  handleInterrupt,
 }: ChatWindowProps) {
   return (
     <main className="flex-1 p-4 flex flex-col bg-gray-900">
       <Card className="flex-1 flex flex-col bg-gray-800 border-gray-700 text-gray-100">
         <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
           <section aria-live="assertive" className="space-y-4">
-            {messages.map(msg => (
-              <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[70%] p-3 rounded-lg ${msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-100'}`}>
-                  <div className="message-content prose prose-invert">
-                  {msg.sender === 'assistant' ? (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {msg.text}
-                    </ReactMarkdown>
-                  ) : (
-                    msg.text
-                  )}
-                </div>
-                </div>
-              </div>
-            ))}
+            {displayItems.map((item, index) => {
+              switch (item.type) {
+                case 'agent_thought':
+                  return <ThoughtBubble key={index} content={item.content} />;
+                case 'tool_call':
+                  return <ToolCallCard key={index} toolName={item.toolName} params={item.params} />;
+                case 'tool_result':
+                  return <ToolResultDisplay key={index} toolName={item.toolName} result={item.result} />;
+                case 'agent_response':
+                  return (
+                    <div key={index} className={`flex ${item.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[70%] p-3 rounded-lg ${item.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-100'}`}>
+                        <div className="message-content prose prose-invert">
+                          {item.sender === 'assistant' ? (
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {item.content}
+                            </ReactMarkdown>
+                          ) : (
+                            item.content
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                default:
+                  return null;
+              }
+            })}
             {isProcessing && (
               <div className="flex justify-start">
                 <div className="bg-gray-700 text-gray-100 p-3 rounded-lg typing-indicator">
@@ -84,14 +97,25 @@ export function ChatWindow({
               rows={1}
               disabled={!authToken || !sessionId || isProcessing || !serverHealthy}
             />
-            <Button
-              aria-label="Send Message"
-              type="submit"
-              disabled={!authToken || !sessionId || isProcessing || !serverHealthy}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <span>Envoyer</span><span aria-hidden="true">→</span>
-            </Button>
+            {isProcessing ? (
+              <Button
+                aria-label="Interrupt"
+                type="button"
+                onClick={handleInterrupt}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                <span>Interrompre</span><span aria-hidden="true">🛑</span>
+              </Button>
+            ) : (
+              <Button
+                aria-label="Send Message"
+                type="submit"
+                disabled={!authToken || !sessionId || isProcessing || !serverHealthy}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <span>Envoyer</span><span aria-hidden="true">→</span>
+              </Button>
+            )}
           </form>
         </div>
       </Card>

@@ -1,26 +1,34 @@
 import { z } from 'zod';
 import { Tool } from 'fastmcp';
-import { redis } from '../../../redisClient.js';
+import { promises as fs } from 'fs';
+import path from 'path';
 
-export const recallTool = new Tool({
-  name: 'system.recall',
-  description: 'Recalls information stored under a specific key from the agent's memory.',
-  schema: z.object({
-    key: z.string().describe('The key to recall the information from.'),
-  }),
-  async execute({ key }, { log }) {
-    try {
-      const value = await redis.get(`memory:${key}`);
-      if (value) {
-        log.info(`Successfully recalled from memory: ${key}`);
-        return { success: true, value, message: `Information recalled from key: ${key}` };
-      } else {
-        log.info(`No information found for key: ${key}`);
-        return { success: false, message: `No information found for key: ${key}` };
-      }
-    } catch (error) {
-      log.error({ error }, 'Error recalling from memory');
-      return { success: false, message: `Failed to recall from memory: ${(error as Error).message}` };
-    }
-  },
+const recallToolSchema = z.object({
+  filePath: z.string().describe("The path to the file to read from."),
 });
+
+export const recallTool = new Tool<typeof recallToolSchema, z.ZodType<any, any, any>>(
+  'system.recall',
+  'Reads content from a file.',
+  recallToolSchema,
+  z.any(),
+  async (params) => {
+    const { filePath } = params;
+    const workspaceDir = path.resolve(process.cwd(), 'workspace');
+    const absolutePath = path.resolve(workspaceDir, filePath);
+
+    if (!absolutePath.startsWith(workspaceDir)) {
+      throw new Error('File path is outside the allowed workspace directory.');
+    }
+
+    try {
+      const content = await fs.readFile(absolutePath, 'utf-8');
+      return { content };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return { error: 'File not found.' };
+      }
+      throw error;
+    }
+  }
+);

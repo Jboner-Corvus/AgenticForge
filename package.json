@@ -10,6 +10,7 @@
     "build": "pnpm --filter=./packages/core build",
     "dev": "pnpm --filter=./packages/core dev",
     "start": "pnpm --filter=./packages/core start",
+    "start:worker": "pnpm --filter=./packages/core start:worker",
     "test": "pnpm --filter=./packages/core test",
     "lint": "pnpm --filter=./packages/core lint",
     "format": "pnpm --filter=./packages/core format"
@@ -17,5 +18,8 @@
   "devDependencies": {
     "prettier": "^3.6.2",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "zustand": "^5.0.6"
   }
 }

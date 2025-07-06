@@ -1,12 +1,10 @@
-// ui/src/lib/api.ts
-
 function getAuthHeaders(authToken: string | null, sessionId: string | null): HeadersInit {
   const headers: HeadersInit = { 'Content-Type': 'application/json' };
   if (authToken) {
     headers['Authorization'] = `Bearer ${authToken}`;
   }
   if (sessionId) {
-    headers['X-Session-ID'] = sessionId; // Header manquant
+    headers['X-Session-ID'] = sessionId;
   }
   return headers;
 }
@@ -46,7 +44,7 @@ export async function sendMessage(prompt: string, authToken: string | null, sess
 
     return jobId;
   } catch (error) {
-    console.error('Erreur lors de l'envoi du message ou de la connexion SSE:', error);
+    console.error("Erreur lors de l'envoi du message ou de la connexion SSE:", error);
     throw error;
   }
 }
@@ -64,8 +62,8 @@ export async function getJobStatus(jobId: string, authToken: string | null, sess
       headers: getAuthHeaders(authToken, sessionId),
     });
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Erreur lors de la récupération du statut');
+      await response.json();
+      throw new Error("Erreur lors de la récupération du statut");
     }
     return await response.json();
   } catch (error) {
@@ -86,12 +84,12 @@ export async function getHistory(authToken: string | null, sessionId: string | n
       headers: getAuthHeaders(authToken, sessionId),
     });
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Erreur lors de la récupération de l'historique');
+      await response.json();
+      throw new Error("Erreur lors de la récupération de l'historique");
     }
     return await response.json();
   } catch (error) {
-    console.error('Erreur de récupération de l'historique:', error);
+    console.error("Erreur de récupération de l'historique:", error);
     throw error;
   }
 }
@@ -122,8 +120,8 @@ export async function getTools(authToken: string | null, sessionId: string | nul
       headers: getAuthHeaders(authToken, sessionId),
     });
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Erreur lors de la récupération des outils');
+      await response.json();
+      throw new Error('Erreur lors de la récupération des outils');
     }
     return await response.json();
   } catch (error) {

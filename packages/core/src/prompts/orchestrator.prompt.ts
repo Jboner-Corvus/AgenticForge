@@ -1,5 +1,5 @@
 import { Tool } from 'fastmcp';
-import { Message } from '../types.js';
+import { Message } from '../../types.js';
 
 interface AgentContext {
   objective: string;

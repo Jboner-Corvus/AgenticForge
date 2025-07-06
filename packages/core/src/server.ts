@@ -1,7 +1,7 @@
 // FICHIER : src/server.ts
-import './tracing.js'; // Initialize OpenTelemetry
-import logger from './logger.js';
-import { startWebServer } from './webServer.js';
+import '../tracing.js'; // Initialize OpenTelemetry
+import logger from '../logger.js';
+import { startWebServer } from '../webServer.js';
 import { startWorker } from './worker.js';
 
 async function startApplication() {
@@ -28,3 +28,4 @@ startApplication().catch((error) => {
   logger.error(error, 'Erreur critique lors du démarrage de l\'application.');
   process.exit(1);
 });
+

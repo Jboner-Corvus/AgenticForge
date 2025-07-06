@@ -2,6 +2,7 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 
 import { config } from './config';
@@ -144,6 +145,41 @@ export async function startWebServer() {
       message: 'Session gérée automatiquement via cookie.',
       sessionId,
     });
+  });
+
+  app.get('/api/memory', async (req, res, next) => {
+    try {
+      const workspaceDir = path.resolve(process.cwd(), 'workspace');
+      const files = await fs.promises.readdir(workspaceDir);
+      const memoryContents = await Promise.all(
+        files.map(async (file) => {
+          const content = await fs.promises.readFile(path.join(workspaceDir, file), 'utf-8');
+          return { fileName: file, content };
+        })
+      );
+      res.status(200).json(memoryContents);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post('/api/interrupt/:jobId', async (req, res, next) => {
+    try {
+      const { jobId } = req.params;
+      const job = await jobQueue.getJob(jobId);
+
+      if (!job) {
+        throw new AppError('Job non trouvé.', 404);
+      }
+
+      // A simple way to interrupt is to publish a message on a specific channel
+      // that the worker is listening to. The worker can then gracefully stop.
+      await redis.publish(`job:${jobId}:interrupt`, 'interrupt');
+
+      res.status(200).json({ message: 'Interruption signal sent.' });
+    } catch (error) {
+      next(error);
+    }
   });
 
   app.get('/api/status/:jobId', async (req, res, next) => {

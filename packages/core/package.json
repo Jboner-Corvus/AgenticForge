@@ -8,9 +8,10 @@
   "type": "module",
   "scripts": {
     "start": "node dist/server.js",
+    "start:dev": "NODE_ENV=development node --loader ts-node/esm src/server.ts",
     "dev": "NODE_ENV=development nodemon --watch src --exec node --loader ts-node/esm src/server.ts",
-    "build": "tsup src/server.ts src/worker.ts src/tools/**/*.ts --format esm --dts --clean",
-    "build:no-dts": "tsup src/server.ts src/worker.ts src/tools/**/*.ts --format esm --clean",
+    "build": "tsup src/server.ts src/worker.ts src/prompts/**/*.ts src/tools/**/*.ts src/utils/**/*.ts --format esm --clean --dts",
+    "start:worker:dev": "NODE_ENV=development node --loader ts-node/esm src/worker.ts",
     "start:worker": "node dist/worker.js",
     "test": "vitest run",
     "lint": "eslint .",
