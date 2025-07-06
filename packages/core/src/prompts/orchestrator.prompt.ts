@@ -17,8 +17,6 @@ export function getOrchestratorPrompt(
     .map((tool) => `- ${tool.name}: ${tool.description}`)
     .join('\n');
 
-  const toolNames = tools.map((tool) => tool.name).join(', ');
-
   const historyContent = context.history
     .map((msg) => `${msg.role}: ${msg.content}`)
     .join('\n');

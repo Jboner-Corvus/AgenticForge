@@ -2,7 +2,7 @@ import React from 'react';
 
 interface ToolCallCardProps {
   toolName: string;
-  params: any;
+  params: Record<string, unknown>;
 }
 
 export const ToolCallCard: React.FC<ToolCallCardProps> = ({ toolName, params }) => {

@@ -80,7 +80,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (!authToken || !sessionId) return;
     addDebugLog(`[${new Date().toLocaleTimeString()}] [REQUEST] Récupération de la liste des outils...`);
     try {
-      const tools = await getTools(authToken, sessionId) as any[];
+      const tools = await getTools(authToken, sessionId) as { name: string }[];
       addDebugLog(`[${new Date().toLocaleTimeString()}] [SUCCESS] ${tools.length} outils trouvés.`);
       setToolCount(tools.length);
       updateSessionStatus('valid');

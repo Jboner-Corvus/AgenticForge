@@ -7,14 +7,20 @@ const recallToolSchema = z.object({
   filePath: z.string().describe('The path to the file to read from.'),
 });
 
-export const recallTool = new Tool<
-  typeof recallToolSchema,
-  z.ZodType<any, any, any>
->(
+const recallOutputSchema = z.union([
+  z.object({
+    content: z.string(),
+  }),
+  z.object({
+    error: z.string(),
+  }),
+]);
+
+export const recallTool = new Tool(
   'system.recall',
   'Reads content from a file.',
   recallToolSchema,
-  z.any(),
+  recallOutputSchema,
   async (params) => {
     const { filePath } = params;
     const workspaceDir = path.resolve(process.cwd(), 'workspace');

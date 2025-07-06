@@ -6,11 +6,17 @@ WORKDIR /usr/src/app
 # Install pnpm globally
 RUN npm install -g pnpm
 
-# Copy all files
-COPY . .
+# Copy manifest files for caching
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY tsconfig.base.json tsconfig.json ./
+COPY packages/core/package.json ./packages/core/
+COPY packages/ui/package.json ./packages/ui/
 
 # Install all dependencies
-RUN pnpm install
+RUN pnpm install --prod=false
+
+# Copy the rest of the code
+COPY . .
 
 # Build the UI
 RUN pnpm --filter ui run build

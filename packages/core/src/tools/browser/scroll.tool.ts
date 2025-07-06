@@ -1,8 +1,13 @@
+import { Job, Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { Context } from 'fastmcp';
 import { z } from 'zod';
 
 import type { SessionData, Tool } from '../../types.js';
+
+interface CustomContext extends Context<SessionData> {
+  taskQueue: Queue;
+}
 
 export const scrollParams = z.object({
   direction: z
@@ -15,7 +20,7 @@ export async function scrollWorkerLogic(args: z.infer<typeof scrollParams>) {
   let browser = null;
   try {
     browser = await chromium.launch();
-    const page = await browser.newPage();
+    await browser.newPage();
 
     // This is a simplified example. In a real scenario, you'd need to pass the current page context.
     // For now, it just simulates the action.
@@ -43,9 +48,9 @@ export async function scrollWorkerLogic(args: z.infer<typeof scrollParams>) {
 export const scrollTool: Tool<typeof scrollParams> = {
   description:
     'Scrolls the current web page in a specified direction (up, down, home, end). This is an async task.',
-  execute: async (args, ctx: Context<SessionData>) => {
+  execute: async (args, ctx: CustomContext): Promise<string> => {
     if (!ctx.session) throw new Error('Session not found');
-    const job = await (ctx as any).taskQueue.add('browser_scroll', {
+    const job: Job = await ctx.taskQueue.add('browser_scroll', {
       auth: ctx.session as SessionData,
       params: args,
       taskId: randomUUID(),

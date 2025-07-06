@@ -3,14 +3,15 @@ import { z } from 'zod';
 
 const getContentToolSchema = z.object({});
 
-export const getContentTool = new Tool<
-  typeof getContentToolSchema,
-  z.ZodType<any, any, any>
->(
+const getContentOutputSchema = z.object({
+  content: z.string(),
+});
+
+export const getContentTool = new Tool(
   'browser.getContent',
   'Gets the content of the current page.',
   getContentToolSchema,
-  z.any(),
+  getContentOutputSchema,
   async () => {
     // This is a placeholder. In a real implementation, you would use a browser
     // automation library like Puppeteer or Playwright to get the page content.

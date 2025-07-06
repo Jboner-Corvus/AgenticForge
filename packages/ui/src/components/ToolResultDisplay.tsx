@@ -2,7 +2,7 @@ import React from 'react';
 
 interface ToolResultDisplayProps {
   toolName: string;
-  result: any;
+  result: Record<string, unknown>;
 }
 
 export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({ toolName, result }) => {

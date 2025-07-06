@@ -8,14 +8,16 @@ const writeToolSchema = z.object({
   filePath: z.string().describe('The path to the file to write to.'),
 });
 
-export const writeTool = new Tool<
-  typeof writeToolSchema,
-  z.ZodType<any, any, any>
->(
+const writeOutputSchema = z.object({
+  message: z.string(),
+  success: z.boolean(),
+});
+
+export const writeTool = new Tool(
   'system.write',
   'Writes content to a file.',
   writeToolSchema,
-  z.any(),
+  writeOutputSchema,
   async (params) => {
     const { content, filePath } = params;
     const workspaceDir = path.resolve(process.cwd(), 'workspace');

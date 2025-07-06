@@ -1,11 +1,9 @@
 console.log('Starting worker...');
 import { Job, Worker } from 'bullmq';
-import { FastMCP, FastMCPSession } from 'fastmcp';
 
 import { config } from '../config.js';
 import logger from '../logger.js';
 console.log('Logger imported');
-import { jobQueue } from '../queue.js';
 import { redis } from '../redisClient.js';
 import { summarizeTool } from '../tools/ai/summarize.tool.js';
 import { getAllTools } from '../tools/index.js';
@@ -29,7 +27,7 @@ interface AgentContext {
   scratchpad: string[];
 }
 
-export async function processJob(job: Job): Promise<any> {
+export async function processJob(job: Job): Promise<string> {
   const { prompt, sessionId } = job.data;
   const log = logger.child({ jobId: job.id, sessionId });
   const historyKey = `session:${sessionId}:history`;
@@ -142,8 +140,9 @@ export async function processJob(job: Job): Promise<any> {
               `Executing tool: ${toolName} with params: ${JSON.stringify(toolParams)}`,
             );
             const toolResult = await toolToExecute.execute(toolParams, {
+              job,
               log,
-            } as any);
+            });
             agentContext.scratchpad.push(
               `Tool result: ${JSON.stringify(toolResult)}`,
             );
@@ -284,9 +283,12 @@ async function summarizeHistory(sessionData: SessionData, log: typeof logger) {
       .join('\n');
 
     try {
-      const summary = await summarizeTool.execute({ text: textToSummarize }, {
-        log,
-      } as any);
+      const summary = await summarizeTool.execute(
+        { text: textToSummarize },
+        {
+          log,
+        },
+      );
       const summarizedMessage: Message = {
         content: `Summarized conversation: ${summary}`,
         role: 'model',

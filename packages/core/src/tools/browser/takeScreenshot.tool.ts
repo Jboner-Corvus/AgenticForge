@@ -1,14 +1,17 @@
+import { Job, Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { Context } from 'fastmcp';
 import { z } from 'zod';
 
 import type { SessionData, Tool } from '../../types.js';
 
+interface CustomContext extends Context<SessionData> {
+  taskQueue: Queue;
+}
+
 export const takeScreenshotParams = z.object({});
 
-export async function takeScreenshotWorkerLogic(
-  args: z.infer<typeof takeScreenshotParams>,
-) {
+export async function takeScreenshotWorkerLogic() {
   const { chromium } = await import('playwright');
   let browser = null;
   try {
@@ -29,9 +32,9 @@ export async function takeScreenshotWorkerLogic(
 export const takeScreenshotTool: Tool<typeof takeScreenshotParams> = {
   description:
     'Takes a screenshot of the current web page. This is an async task.',
-  execute: async (args, ctx: Context<SessionData>) => {
+  execute: async (args, ctx: CustomContext): Promise<string> => {
     if (!ctx.session) throw new Error('Session not found');
-    const job = await (ctx as any).taskQueue.add('browser_takeScreenshot', {
+    const job: Job = await ctx.taskQueue.add('browser_takeScreenshot', {
       auth: ctx.session as SessionData,
       params: args,
       taskId: randomUUID(),

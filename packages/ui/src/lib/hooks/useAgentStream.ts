@@ -27,10 +27,10 @@ export const useAgentStream = () => {
       onThought: (thought: string) => {
         addDisplayItem({ type: 'agent_thought', content: thought });
       },
-      onToolCall: (toolName: string, params: any) => {
+      onToolCall: (toolName: string, params: Record<string, unknown>) => {
         addDisplayItem({ type: 'tool_call', toolName, params });
       },
-      onToolResult: (toolName: string, result: any) => {
+      onToolResult: (toolName: string, result: Record<string, unknown>) => {
         addDisplayItem({ type: 'tool_result', toolName, result });
       },
       onMessage: (message: string) => {

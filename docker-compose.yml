@@ -57,7 +57,7 @@ services:
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
-    command: pnpm --filter @agenticforge/core start
+    command: pnpm run build && pnpm --filter @agenticforge/core start
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -139,7 +139,7 @@ services:
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
-    command: pnpm --filter @agenticforge/core start:worker
+    command: pnpm run build && pnpm --filter @agenticforge/core start:worker
     networks:
       - agentic_network
 
