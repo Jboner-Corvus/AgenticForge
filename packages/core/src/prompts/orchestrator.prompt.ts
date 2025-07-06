@@ -1,10 +1,11 @@
 import { Tool } from 'fastmcp';
+
 import { Message } from '../../types.js';
 
 interface AgentContext {
-  objective: string;
   history: Message[];
   iterations: number;
+  objective: string;
   scratchpad: string[];
 }
 

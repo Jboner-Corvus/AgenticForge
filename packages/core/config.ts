@@ -5,9 +5,9 @@ import { z } from 'zod';
 dotenv.config();
 
 const configSchema = z.object({
-  HISTORY_MAX_LENGTH: z.coerce.number().default(20),
   CODE_EXECUTION_TIMEOUT_MS: z.coerce.number().default(60000),
   CONTAINER_MEMORY_LIMIT: z.string().default('2g'),
+  HISTORY_MAX_LENGTH: z.coerce.number().default(20),
   HOST_PROJECT_PATH: z.string().default('/usr/src/app'),
   LLM_API_KEY: z.string().optional(),
   LLM_MODEL_NAME: z.string().default('gemini-pro'),

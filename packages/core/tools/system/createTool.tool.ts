@@ -3,10 +3,13 @@ import path from 'path';
 // src/tools/system/createTool.tool.ts
 import { z } from 'zod';
 
-import type { Ctx, Tool, SessionData } from '../../types.js';
+import type { Ctx, SessionData, Tool } from '../../types.js';
 
 import { getErrDetails, UserError } from '../../utils/errorUtils.js';
-import { runQualityGate, runToolTestsInSandbox } from '../../utils/qualityGate.js';
+import {
+  runQualityGate,
+  runToolTestsInSandbox,
+} from '../../utils/qualityGate.js';
 
 const GENERATED_TOOLS_DIR = path.resolve(process.cwd(), 'src/tools/generated');
 
@@ -41,8 +44,7 @@ export const createToolParams = z.object({
 });
 
 export const createToolTool: Tool<typeof createToolParams> = {
-  description:
-    "Écrit un nouveau fichier d'outil.",
+  description: "Écrit un nouveau fichier d'outil.",
   execute: async (args, ctx: Ctx) => {
     const { description, execute_function, parameters_schema, tool_name } =
       args;

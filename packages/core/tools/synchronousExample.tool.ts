@@ -1,10 +1,11 @@
 import type { TextContent } from 'fastmcp';
 
+import { Context } from 'fastmcp';
 // --- Fichier : src/tools/synchronousExample.tool.ts ---
 import { z as zod } from 'zod';
 import { z } from 'zod';
-import { Context } from 'fastmcp';
-import type { Tool, SessionData } from '../../types.js';
+
+import type { SessionData, Tool } from '../../types.js';
 
 const SYNC_TOOL_NAME = 'synchronousExampleToolEnhanced';
 

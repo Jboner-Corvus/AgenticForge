@@ -133,7 +133,7 @@ clean_docker() {
 
 lint_code() {
     echo -e "${COLOR_YELLOW}Lancement du linter avec correction automatique pour tous les packages...${NC}"
-    pnpm --recursive run lint -- --fix
+    pnpm --recursive run lint
 }
 
 format_code() {

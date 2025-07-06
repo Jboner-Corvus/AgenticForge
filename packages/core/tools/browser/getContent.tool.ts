@@ -1,21 +1,13 @@
 import { randomUUID } from 'crypto';
+import { Context } from 'fastmcp';
 // src/tools/browser/getContent.tool.ts (Corrigé pour SessionData)
 import { z } from 'zod';
-import { Context } from 'fastmcp';
-import type { Tool, SessionData } from '../../types.js';
+
+import type { SessionData, Tool } from '../../types.js';
 
 export const getContentParams = z.object({
   url: z.string().url().describe('The URL of the page to scrape.'),
 });
-
-async function getPageContent(page: any) {
-  return page.evaluate(() => {
-    document
-      .querySelectorAll('script, style, noscript, svg, header, footer, nav')
-      .forEach((el) => el.remove());
-    return document.body.innerText;
-  });
-}
 
 export async function getContentWorkerLogic(
   args: z.infer<typeof getContentParams>,
@@ -36,6 +28,15 @@ export async function getContentWorkerLogic(
   }
 }
 
+async function getPageContent(page: any) {
+  return page.evaluate(() => {
+    document
+      .querySelectorAll('script, style, noscript, svg, header, footer, nav')
+      .forEach((el) => el.remove());
+    return document.body.innerText;
+  });
+}
+
 export const getContentTool: Tool<typeof getContentParams> = {
   description:
     'Extracts the visible text content from a web page. This is an async task.',
@@ -54,4 +55,3 @@ export const getContentTool: Tool<typeof getContentParams> = {
   name: 'browser_getContent',
   parameters: getContentParams,
 };
-

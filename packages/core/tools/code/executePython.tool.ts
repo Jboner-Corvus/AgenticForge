@@ -1,7 +1,8 @@
+import { Context } from 'fastmcp';
 // src/tools/code/executePython.tool.ts
 import { z } from 'zod';
-import { Context } from 'fastmcp';
-import type { Tool, SessionData } from '../../types.js';
+
+import type { SessionData, Tool } from '../../types.js';
 
 import { config } from '../../config.js';
 import { runInSandbox } from '../../utils/dockerManager.js';
@@ -39,4 +40,3 @@ export const executePythonTool: Tool<typeof executePythonParams> = {
   name: 'executePython',
   parameters: executePythonParams,
 };
-

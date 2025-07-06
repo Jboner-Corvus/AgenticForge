@@ -1,7 +1,8 @@
 import { randomUUID } from 'crypto';
-import { z } from 'zod';
 import { Context } from 'fastmcp';
-import type { Tool, SessionData } from '../../types.js';
+import { z } from 'zod';
+
+import type { SessionData, Tool } from '../../types.js';
 
 export const takeScreenshotParams = z.object({});
 

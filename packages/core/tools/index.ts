@@ -3,16 +3,15 @@
 
 import type { Tool } from '../types.js';
 
-import { getTools } from '../utils/toolLoader.js';
-import { writeTool } from '../src/tools/system/write.tool.js';
-import { recallTool } from '../src/tools/system/recall.tool.js';
+import { getContentTool } from '../src/tools/browser/getContent.tool.js';
+import { getContentTool } from '../src/tools/browser/getContent.tool.js';
+import { navigateTool } from '../src/tools/browser/navigate.tool.js';
+import { navigateTool } from '../src/tools/browser/navigate.tool.js';
 import { scrollTool } from '../src/tools/browser/scroll.tool.js';
 import { takeScreenshotTool } from '../src/tools/browser/takeScreenshot.tool.js';
-import { navigateTool } from '../src/tools/browser/navigate.tool.js';
-import { getContentTool } from '../src/tools/browser/getContent.tool.js';
-
-import { navigateTool } from '../src/tools/browser/navigate.tool.js';
-import { getContentTool } from '../src/tools/browser/getContent.tool.js';
+import { recallTool } from '../src/tools/system/recall.tool.js';
+import { writeTool } from '../src/tools/system/write.tool.js';
+import { getTools } from '../utils/toolLoader.js';
 
 /**
  * Exporte la fonction de chargement dynamique comme unique source de vérité pour les outils.
@@ -21,7 +20,15 @@ import { getContentTool } from '../src/tools/browser/getContent.tool.js';
  */
 export const getAllTools = async (): Promise<Tool[]> => {
   const tools = await getTools();
-  return [...tools, writeTool, recallTool, scrollTool, takeScreenshotTool, navigateTool, getContentTool];
+  return [
+    ...tools,
+    writeTool,
+    recallTool,
+    scrollTool,
+    takeScreenshotTool,
+    navigateTool,
+    getContentTool,
+  ];
 };
 
 // Exporter le type Tool pour la commodité des autres fichiers.

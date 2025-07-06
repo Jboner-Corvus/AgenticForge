@@ -1,9 +1,10 @@
+import { promises as fs } from 'fs';
+import path from 'path';
+
 import { config } from '../config.js';
 import logger from '../logger.js';
 // src/utils/qualityGate.ts
 import { runInSandbox } from './dockerManager.js';
-import { promises as fs } from 'fs';
-import path from 'path';
 
 const DEV_SANDBOX_IMAGE = 'node:24-alpine'; // CORRECTION: Passage de node:20 à node:24
 const mountPoint = {
@@ -143,7 +144,9 @@ export async function runToolTestsInSandbox(
   `;
 
   logger.info(`Running sandbox test for tool: ${toolAbsolutePath}`);
-  outputMessages.push(`--- Running Tool Test for ${path.basename(toolAbsolutePath)} ---`);
+  outputMessages.push(
+    `--- Running Tool Test for ${path.basename(toolAbsolutePath)} ---`,
+  );
 
   try {
     // Write the temporary test file
@@ -186,9 +189,14 @@ export async function runToolTestsInSandbox(
     // Clean up the temporary test file
     try {
       await fs.unlink(tempTestFilePathOnHost);
-      logger.debug(`Cleaned up temporary tool test file: ${tempTestFilePathOnHost}`);
+      logger.debug(
+        `Cleaned up temporary tool test file: ${tempTestFilePathOnHost}`,
+      );
     } catch (cleanupError) {
-      logger.error({ err: cleanupError }, 'Error cleaning up temporary tool test file');
+      logger.error(
+        { err: cleanupError },
+        'Error cleaning up temporary tool test file',
+      );
     }
   }
 }

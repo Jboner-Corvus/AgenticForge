@@ -7,9 +7,13 @@ import logger from './logger.js';
 import { SessionData } from './types.js';
 
 // CORRIGÉ : 'redisConnection' est maintenant exporté
-export const redisConnection = new IORedis(config.REDIS_PORT, config.REDIS_HOST, {
-  maxRetriesPerRequest: null,
-});
+export const redisConnection = new IORedis(
+  config.REDIS_PORT,
+  config.REDIS_HOST,
+  {
+    maxRetriesPerRequest: null,
+  },
+);
 
 // CORRIGÉ : 'taskQueue' est maintenant exporté
 export interface AsyncTaskJobPayload<TParams> {
@@ -22,7 +26,9 @@ export interface AsyncTaskJobPayload<TParams> {
 
 export const jobQueue = new Queue('tasks', { connection: redisConnection });
 // CORRIGÉ : 'deadLetterQueue' est maintenant exporté
-export const deadLetterQueue = new Queue('dead-letters', { connection: redisConnection });
+export const deadLetterQueue = new Queue('dead-letters', {
+  connection: redisConnection,
+});
 
 jobQueue.on('error', (err: Error) => {
   logger.error({ err }, 'Job queue error');

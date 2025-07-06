@@ -1,8 +1,8 @@
+import chokidar from 'chokidar';
 // src/utils/toolLoader.ts
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import chokidar from 'chokidar';
 
 import type { Tool } from '../types.js';
 
@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Cache pour stocker les outils une fois chargés
-let loadedTools: Map<string, Tool> = new Map();
+const loadedTools: Map<string, Tool> = new Map();
 let toolsArray: Tool[] = [];
 let watcher: chokidar.FSWatcher | null = null;
 
@@ -61,6 +61,34 @@ async function _internalLoadTools(): Promise<void> {
   toolsArray = Array.from(loadedTools.values());
 }
 
+/**
+ * Trouve récursivement les fichiers d'outils. (Fonction interne)
+ */
+async function findToolFiles(
+  dir: string,
+  extension: string,
+): Promise<string[]> {
+  let files: string[] = [];
+  try {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        files = files.concat(await findToolFiles(fullPath, extension));
+      } else if (entry.isFile() && entry.name.endsWith(extension)) {
+        files.push(fullPath);
+      }
+    }
+  } catch (error) {
+    logger.error({
+      ...getErrDetails(error),
+      directory: dir,
+      logContext: "Erreur lors du parcours du répertoire d'outils.",
+    });
+  }
+  return files;
+}
+
 async function loadToolFile(file: string): Promise<void> {
   try {
     // Invalidate module cache for dynamic loading
@@ -99,16 +127,20 @@ function unloadToolFile(file: string): void {
     const tool = loadedTools.get(file);
     loadedTools.delete(file);
     toolsArray = Array.from(loadedTools.values());
-    logger.info(`Outil déchargé : '${tool?.name}' depuis ${path.basename(file)}`);
+    logger.info(
+      `Outil déchargé : '${tool?.name}' depuis ${path.basename(file)}`,
+    );
   }
 }
 
 function watchTools(): void {
-  logger.info(`Démarrage de l'observateur de fichiers pour les outils générés dans: ${generatedToolsDir}`);
+  logger.info(
+    `Démarrage de l'observateur de fichiers pour les outils générés dans: ${generatedToolsDir}`,
+  );
   watcher = chokidar.watch(generatedToolsDir, {
     ignored: /(^|\/)\..*|\.d\.ts$/,
-    persistent: true,
     ignoreInitial: true,
+    persistent: true,
   });
 
   watcher.on('add', async (filePath) => {
@@ -130,34 +162,9 @@ function watchTools(): void {
   });
 
   watcher.on('error', (error) => {
-    logger.error({ ...getErrDetails(error), logContext: "Erreur de l'observateur de fichiers d'outils." });
-  });
-}
-
-/**
- * Trouve récursivement les fichiers d'outils. (Fonction interne)
- */
-async function findToolFiles(
-  dir: string,
-  extension: string,
-): Promise<string[]> {
-  let files: string[] = [];
-  try {
-    const entries = await fs.readdir(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        files = files.concat(await findToolFiles(fullPath, extension));
-      } else if (entry.isFile() && entry.name.endsWith(extension)) {
-        files.push(fullPath);
-      }
-    }
-  } catch (error) {
     logger.error({
       ...getErrDetails(error),
-      directory: dir,
-      logContext: "Erreur lors du parcours du répertoire d'outils.",
+      logContext: "Erreur de l'observateur de fichiers d'outils.",
     });
-  }
-  return files;
+  });
 }

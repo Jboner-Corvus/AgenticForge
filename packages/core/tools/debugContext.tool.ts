@@ -1,7 +1,7 @@
 // --- Fichier : src/tools/debugContext.tool.ts (Corrigé) ---
 import { z } from 'zod';
 
-import type { Ctx, Tool, SessionData } from '../types.js';
+import type { Ctx, SessionData, Tool } from '../types.js';
 
 const TOOL_NAME = 'correctDebugContextTool';
 

@@ -7,17 +7,25 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "pnpm --filter=./packages/core build",
+    "build": "pnpm --recursive run build",
     "dev": "pnpm --filter=./packages/core dev",
     "start": "pnpm --filter=./packages/core start",
     "start:worker": "pnpm --filter=./packages/core start:worker",
     "test": "pnpm --filter=./packages/core test",
-    "lint": "pnpm --filter=./packages/core lint",
+    "lint": "pnpm --recursive run lint",
     "format": "pnpm --filter=./packages/core format"
   },
   "devDependencies": {
+    "@eslint/js": "^9.30.0",
+    "@types/node": "^24.0.7",
+    "eslint": "^9.30.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-perfectionist": "^4.15.0",
     "prettier": "^3.6.2",
-    "typescript": "^5.8.3"
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.35.0",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "zustand": "^5.0.6"

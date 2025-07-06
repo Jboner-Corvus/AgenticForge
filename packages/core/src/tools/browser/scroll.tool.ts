@@ -1,15 +1,16 @@
 import { randomUUID } from 'crypto';
-import { z } from 'zod';
 import { Context } from 'fastmcp';
-import type { Tool, SessionData } from '../../types.js';
+import { z } from 'zod';
+
+import type { SessionData, Tool } from '../../types.js';
 
 export const scrollParams = z.object({
-  direction: z.enum(['up', 'down', 'home', 'end']).describe('The direction to scroll.'),
+  direction: z
+    .enum(['up', 'down', 'home', 'end'])
+    .describe('The direction to scroll.'),
 });
 
-export async function scrollWorkerLogic(
-  args: z.infer<typeof scrollParams>,
-) {
+export async function scrollWorkerLogic(args: z.infer<typeof scrollParams>) {
   const { chromium } = await import('playwright');
   let browser = null;
   try {
@@ -19,17 +20,17 @@ export async function scrollWorkerLogic(
     // This is a simplified example. In a real scenario, you'd need to pass the current page context.
     // For now, it just simulates the action.
     switch (args.direction) {
-      case 'up':
-        // Simulate scroll up
-        break;
       case 'down':
         // Simulate scroll down
+        break;
+      case 'end':
+        // Simulate scroll to bottom
         break;
       case 'home':
         // Simulate scroll to top
         break;
-      case 'end':
-        // Simulate scroll to bottom
+      case 'up':
+        // Simulate scroll up
         break;
     }
 

@@ -50,7 +50,6 @@ services:
       - CODE_EXECUTION_TIMEOUT_MS=${CODE_EXECUTION_TIMEOUT_MS}
       - SESSION_PORT=${SESSION_PORT}
       - DOCKER_HOST=${DOCKER_HOST}
-
       - REDIS_HOST=redis
       - REDIS_HOST_PORT=6378
       - REDIS_PORT=6378
@@ -58,7 +57,7 @@ services:
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
-    command: pnpm --dir packages/core start
+    command: pnpm --filter @agenticforge/core start
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -89,7 +88,6 @@ services:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - REDIS_HOST_PORT=${REDIS_HOST_PORT}
-
       - LLM_API_KEY=${LLM_API_KEY}
       - LLM_MODEL_NAME=${LLM_MODEL_NAME}
       - PYTHON_SANDBOX_IMAGE=${PYTHON_SANDBOX_IMAGE}
@@ -102,7 +100,7 @@ services:
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
-    command: sh -c "pnpm --filter ui run start:web"
+    command: pnpm --filter @agenticforge/ui run start:web
     networks:
       - agentic_network
 
@@ -141,7 +139,7 @@ services:
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
-    command: pnpm --dir packages/core start:worker
+    command: pnpm --filter @agenticforge/core start:worker
     networks:
       - agentic_network
 

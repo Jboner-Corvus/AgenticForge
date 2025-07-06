@@ -109,7 +109,7 @@ export async function runInSandbox(
 /**
  * Démultiplexe le flux de logs de Docker en stdout et stderr.
  */
-function demuxStream(stream: Buffer): { stderr: string; stdout: string; } {
+function demuxStream(stream: Buffer): { stderr: string; stdout: string } {
   let stdout = '';
   let stderr = '';
   let offset = 0;
@@ -127,6 +127,32 @@ function demuxStream(stream: Buffer): { stderr: string; stdout: string; } {
     offset += length;
   }
   return { stderr, stdout };
+}
+
+/**
+ * Analyse une chaîne de caractères représentant une taille de mémoire (ex: "2g", "512m")
+ * et la convertit en octets.
+ * @param memoryString - La chaîne de caractères à analyser.
+ * @returns Le nombre d'octets.
+ */
+function parseMemoryString(memoryString: string): number {
+  const unit = memoryString.slice(-1).toLowerCase();
+  const value = parseInt(memoryString.slice(0, -1), 10);
+
+  if (isNaN(value)) {
+    throw new Error(`Invalid memory string: ${memoryString}`);
+  }
+
+  switch (unit) {
+    case 'g':
+      return value * 1024 * 1024 * 1024;
+    case 'k':
+      return value * 1024;
+    case 'm':
+      return value * 1024 * 1024;
+    default:
+      return parseInt(memoryString, 10);
+  }
 }
 
 /**
@@ -149,31 +175,5 @@ async function pullImageIfNotExists(imageName: string): Promise<void> {
     } else {
       throw error;
     }
-  }
-}
-
-/**
- * Analyse une chaîne de caractères représentant une taille de mémoire (ex: "2g", "512m")
- * et la convertit en octets.
- * @param memoryString - La chaîne de caractères à analyser.
- * @returns Le nombre d'octets.
- */
-function parseMemoryString(memoryString: string): number {
-  const unit = memoryString.slice(-1).toLowerCase();
-  const value = parseInt(memoryString.slice(0, -1), 10);
-
-  if (isNaN(value)) {
-    throw new Error(`Invalid memory string: ${memoryString}`);
-  }
-
-  switch (unit) {
-    case 'g':
-      return value * 1024 * 1024 * 1024;
-    case 'm':
-      return value * 1024 * 1024;
-    case 'k':
-      return value * 1024;
-    default:
-      return parseInt(memoryString, 10);
   }
 }

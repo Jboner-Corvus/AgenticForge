@@ -5,8 +5,8 @@ import type {
 } from 'fastmcp';
 // FICHIER : src/types.ts
 import type { z, ZodObject, ZodRawShape } from 'zod';
-import { Queue } from 'bullmq';
 
+import { Queue } from 'bullmq';
 
 export interface AgentSession {
   data: SessionData;
@@ -29,4 +29,5 @@ export interface SessionData {
 
 // CORRIGÉ : Le type Tool utilise 'parameters' pour le schéma,
 // et non plus 'schema', pour correspondre à fastmcp.
-export type Tool<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape>> = FastMCPTool<SessionData, T>;
+export type Tool<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape>> =
+  FastMCPTool<SessionData, T>;

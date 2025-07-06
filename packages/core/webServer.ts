@@ -1,8 +1,8 @@
 import cookieParser from 'cookie-parser';
 import express from 'express';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 
 import { config } from './config';
@@ -85,9 +85,9 @@ export async function startWebServer() {
     const sessionId = (req as any).sessionId;
 
     res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
+      'Content-Type': 'text/event-stream',
     });
 
     const subscriber = redis.duplicate();
@@ -108,7 +108,9 @@ export async function startWebServer() {
     });
 
     req.on('close', () => {
-      logger.info(`Client disconnected from SSE for job ${jobId}. Unsubscribing.`);
+      logger.info(
+        `Client disconnected from SSE for job ${jobId}. Unsubscribing.`,
+      );
       subscriber.unsubscribe(channel);
       subscriber.quit();
     });
@@ -153,9 +155,12 @@ export async function startWebServer() {
       const files = await fs.promises.readdir(workspaceDir);
       const memoryContents = await Promise.all(
         files.map(async (file) => {
-          const content = await fs.promises.readFile(path.join(workspaceDir, file), 'utf-8');
-          return { fileName: file, content };
-        })
+          const content = await fs.promises.readFile(
+            path.join(workspaceDir, file),
+            'utf-8',
+          );
+          return { content, fileName: file };
+        }),
       );
       res.status(200).json(memoryContents);
     } catch (error) {
@@ -204,6 +209,8 @@ export async function startWebServer() {
   app.use(handleError);
 
   app.listen(config.PORT, () => {
-    logger.info(`Serveur AgenticForge (mode scalable) démarré sur http://localhost:${config.PORT}`);
+    logger.info(
+      `Serveur AgenticForge (mode scalable) démarré sur http://localhost:${config.PORT}`,
+    );
   });
 }

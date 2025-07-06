@@ -1,13 +1,16 @@
-import { z } from 'zod';
 import { Tool } from 'fastmcp';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { z } from 'zod';
 
 const recallToolSchema = z.object({
-  filePath: z.string().describe("The path to the file to read from."),
+  filePath: z.string().describe('The path to the file to read from.'),
 });
 
-export const recallTool = new Tool<typeof recallToolSchema, z.ZodType<any, any, any>>(
+export const recallTool = new Tool<
+  typeof recallToolSchema,
+  z.ZodType<any, any, any>
+>(
   'system.recall',
   'Reads content from a file.',
   recallToolSchema,
@@ -30,5 +33,5 @@ export const recallTool = new Tool<typeof recallToolSchema, z.ZodType<any, any, 
       }
       throw error;
     }
-  }
+  },
 );

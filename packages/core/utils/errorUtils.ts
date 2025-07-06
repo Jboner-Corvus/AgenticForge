@@ -6,7 +6,10 @@ abstract class FastMCPError extends Error {
 }
 
 export class AppError extends FastMCPError {
-  public constructor(message: string, public details?: any) {
+  public constructor(
+    message: string,
+    public details?: any,
+  ) {
     super(message);
   }
 }
@@ -16,7 +19,7 @@ export class WebhookError extends AppError {}
 export const handleError = (err: any, message: string) => {
   // TODO: Implement proper error handling
   console.error(message, err);
-}
+};
 
 export interface ErrorDetails {
   message: string;

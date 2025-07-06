@@ -1,6 +1,8 @@
-import { z } from 'zod';
 import { Context } from 'fastmcp';
-import type { Tool, SessionData } from '../../types.js';
+import { z } from 'zod';
+
+import type { SessionData, Tool } from '../../types.js';
+
 import { getSummarizerPrompt } from '../../prompts/summarizer.prompt.js';
 import { getLlmResponse } from '../../utils/llmProvider.js';
 
@@ -16,17 +18,17 @@ export const summarizeTool: Tool<typeof parametersSchema> = {
   execute: async (args, ctx: Context<SessionData>) => {
     // La session est accessible via ctx.session, contenant l'historique et autres données.
     ctx.log.info(args.text, 'Summarizing text');
-    
+
     // Le type de 'args' est inféré depuis le schéma : { text: string }
-    const result = await getLlmResponse(
-      [{ parts: [{text: getSummarizerPrompt(args.text)}], role: 'user' }],
-    );
+    const result = await getLlmResponse([
+      { parts: [{ text: getSummarizerPrompt(args.text) }], role: 'user' },
+    ]);
 
     return result;
   },
-  
+
   name: 'ai_summarize',
-  
+
   // 3. CORRIGÉ : La propriété doit s'appeler 'parameters' et contenir le schéma.
   parameters: parametersSchema,
 };
