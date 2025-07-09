@@ -1,7 +1,7 @@
 // --- Fichier : src/tools/system/finish.tool.ts (Corrigé) ---
 import { z } from 'zod';
 
-import type { Ctx, SessionData, Tool } from '../../types.js';
+import type { Ctx, Tool } from '../../types.js';
 
 export const finishParams = z.object({
   response: z.string().describe('The final, complete answer to the user.'),

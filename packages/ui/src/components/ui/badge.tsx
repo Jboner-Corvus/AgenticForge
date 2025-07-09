@@ -2,7 +2,7 @@ import { Slot } from "@radix-ui/react-slot"
 import { type VariantProps } from "class-variance-authority"
 import * as React from "react"
 
-import { cn, badgeVariants } from "@/lib/utils"
+import { badgeVariants, cn } from "@/lib/utils"
 
 function Badge({
   asChild = false,

@@ -1,7 +1,8 @@
-import { Tool } from 'fastmcp';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
+
+import { Ctx, Tool } from '../../../types.js';
 
 const recallToolSchema = z.object({
   filePath: z.string().describe('The path to the file to read from.'),
@@ -16,13 +17,13 @@ const recallOutputSchema = z.union([
   }),
 ]);
 
-export const recallTool = new Tool(
-  'system.recall',
-  'Reads content from a file.',
-  recallToolSchema,
-  recallOutputSchema,
-  async (params) => {
-    const { filePath } = params;
+export const recallTool: Tool<
+  typeof recallToolSchema,
+  typeof recallOutputSchema
+> = {
+  description: 'Reads content from a file.',
+  execute: async (args: unknown, _ctx: Ctx) => {
+    const { filePath } = args as z.infer<typeof recallToolSchema>;
     const workspaceDir = path.resolve(process.cwd(), 'workspace');
     const absolutePath = path.resolve(workspaceDir, filePath);
 
@@ -37,7 +38,11 @@ export const recallTool = new Tool(
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return { error: 'File not found.' };
       }
+
       throw error;
     }
   },
-);
+  name: 'system.recall',
+  output: recallOutputSchema,
+  parameters: recallToolSchema,
+};

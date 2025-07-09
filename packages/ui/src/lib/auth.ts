@@ -1,13 +1,14 @@
 import type { OAuthClientProvider } from "@modelcontextprotocol/sdk/client/auth.js";
-import {
-  OAuthClientInformationSchema,
-  OAuthTokensSchema,
-} from "@modelcontextprotocol/sdk/shared/auth.js";
 import type {
   OAuthClientInformation,
   OAuthClientMetadata,
   OAuthMetadata,
   OAuthTokens,
+} from "@modelcontextprotocol/sdk/shared/auth.js";
+
+import {
+  OAuthClientInformationSchema,
+  OAuthTokensSchema,
 } from "@modelcontextprotocol/sdk/shared/auth.js";
 
 import { getServerSpecificKey, SESSION_KEYS } from "./constants";

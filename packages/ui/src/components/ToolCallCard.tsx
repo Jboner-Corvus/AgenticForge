@@ -1,20 +1,23 @@
 import React from 'react';
 
+import { Accordion } from './ui/accordion';
+import { Card, CardContent } from './ui/card';
+
 interface ToolCallCardProps {
-  toolName: string;
   params: Record<string, unknown>;
+  toolName: string;
 }
 
-export const ToolCallCard: React.FC<ToolCallCardProps> = ({ toolName, params }) => {
+export const ToolCallCard: React.FC<ToolCallCardProps> = ({ params, toolName }) => {
   return (
-    <div className="flex items-start space-x-2 p-2 my-2 bg-blue-900/50 rounded-lg">
-      <span className="text-2xl">🛠️</span>
-      <div>
-        <p className="font-bold text-blue-300">{toolName}</p>
-        <pre className="text-sm text-gray-300 bg-gray-900 p-2 rounded-md mt-1">
-          {JSON.stringify(params, null, 2)}
-        </pre>
-      </div>
-    </div>
+    <Accordion title={`🛠️ Tool used: ${toolName}`}>
+      <Card className="bg-secondary border-border text-secondary-foreground my-2 animate-fade-in">
+        <CardContent className="p-2">
+          <pre className="text-sm bg-background p-2 rounded-md mt-1">
+            {JSON.stringify(params, null, 2)}
+          </pre>
+        </CardContent>
+      </Card>
+    </Accordion>
   );
 };

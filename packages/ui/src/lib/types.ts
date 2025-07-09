@@ -1,8 +1,8 @@
-export type AgentThought = { type: 'agent_thought'; content: string; };
-export type AgentToolCall = { type: 'tool_call'; toolName: string; params: Record<string, unknown>; };
-export type AgentToolResult = { type: 'tool_result'; toolName: string; result: Record<string, unknown>; };
-export type AgentMessage = { type: 'agent_response'; content: string; sender: 'user' | 'assistant'; };
+export type AgentMessage = { content: string; sender: 'assistant' | 'user'; type: 'agent_response'; };
+export type AgentThought = { content: string; type: 'agent_thought'; };
+export type AgentToolCall = { params: Record<string, unknown>; toolName: string; type: 'tool_call'; };
+export type AgentToolResult = { result: Record<string, unknown>; toolName: string; type: 'tool_result'; };
+export type DisplayableItem = AgentMessage | AgentThought | AgentToolCall | AgentToolResult | JobCompleted | JobFailed;
 export type JobCompleted = { type: 'job_completed'; };
-export type JobFailed = { type: 'job_failed'; };
 
-export type DisplayableItem = AgentThought | AgentToolCall | AgentToolResult | AgentMessage | JobCompleted | JobFailed;
+export type JobFailed = { type: 'job_failed'; };

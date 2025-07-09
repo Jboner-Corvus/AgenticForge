@@ -1,250 +1,38 @@
 console.log('Starting worker...');
-import { Job, Worker } from 'bullmq';
+import { Job, Queue, Worker } from 'bullmq';
 
-import { config } from '../config.js';
-import logger from '../logger.js';
-console.log('Logger imported');
-import { redis } from '../redisClient.js';
-import { summarizeTool } from '../tools/ai/summarize.tool.js';
-import { getAllTools } from '../tools/index.js';
-import { Message, SessionData } from '../types.js';
-import { getLlmResponse } from '../utils/llmProvider.js';
-import { sendWebhook } from '../utils/webhookUtils.js';
-import { getOrchestratorPrompt } from './prompts/orchestrator.prompt.js';
+import { Agent } from './agent.js';
+import { config } from './config.js';
+import logger from './logger.js';
+import { redis } from './redisClient.js';
+import { SessionManager } from './sessionManager.js';
+import { summarizeTool } from './tools/ai/summarize.tool.js';
+import { AgentProgress, Content, Ctx, Message, SessionData } from './types.js';
 
 console.log('Imports complete');
 
-const availableTools = await getAllTools();
-console.log('Tools loaded');
-
-// Map to store active SessionData by sessionId
-const activeSessions = new Map<string, SessionData>();
-
-interface AgentContext {
-  history: Message[];
-  iterations: number;
-  objective: string;
-  scratchpad: string[];
-}
+const jobQueue = new Queue('tasks', { connection: redis });
 
 export async function processJob(job: Job): Promise<string> {
-  const { prompt, sessionId } = job.data;
+  const { sessionId } = job.data;
   const log = logger.child({ jobId: job.id, sessionId });
-  const historyKey = `session:${sessionId}:history`;
-  const channel = `job:${job.id}:events`;
 
-  let sessionData: SessionData;
-  if (activeSessions.has(sessionId)) {
-    sessionData = activeSessions.get(sessionId)!;
-    log.info('Reusing existing session data.');
-  } else {
-    const storedHistory = await redis.get(historyKey);
-    const initialHistory: Message[] = storedHistory
-      ? JSON.parse(storedHistory)
-      : [];
+  const sessionData = await SessionManager.getSession(sessionId);
 
-    sessionData = {
-      history: initialHistory,
-      id: sessionId,
-      identities: [{ id: 'user', type: 'email' }],
-    };
-    activeSessions.set(sessionId, sessionData);
-    log.info('Created new session data.');
-  }
-
-  const subscriber = redis.duplicate();
-  const interruptChannel = `job:${job.id}:interrupt`;
-  let interrupted = false;
-
-  subscriber.subscribe(interruptChannel, (err) => {
-    if (err) {
-      log.error({ err }, 'Failed to subscribe to interrupt channel');
-    }
-  });
-
-  subscriber.on('message', (channel, message) => {
-    if (channel === interruptChannel && message === 'interrupt') {
-      interrupted = true;
-      log.info('Interrupt signal received');
-    }
-  });
-
+  const agent = new Agent(job, sessionData, jobQueue);
   try {
-    // Add user prompt to session history
-    sessionData.history.push({ content: prompt, role: 'user' });
+    const finalResponse = await agent.run();
 
-    const agentContext: AgentContext = {
-      history: sessionData.history,
-      iterations: 0,
-      objective: prompt,
-      scratchpad: [],
-    };
-
-    let finalResponse = '';
-    const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS || 10; // Define max iterations
-
-    while (agentContext.iterations < MAX_ITERATIONS && !interrupted) {
-      agentContext.iterations++;
-      log.info(`Agent iteration: ${agentContext.iterations}`);
-
-      const orchestratorPrompt = getOrchestratorPrompt(
-        agentContext,
-        availableTools,
-      );
-
-      const result = await getLlmResponse([
-        ...agentContext.history.map((msg: Message) => ({
-          parts: [{ text: msg.content }],
-          role: msg.role === 'user' ? 'user' : 'model',
-        })),
-        {
-          parts: [{ text: orchestratorPrompt }],
-          role: 'user',
-        },
-      ]);
-
-      const modelResponseContent = result;
-
-      log.info({ modelResponseContent }, 'Model response');
-      agentContext.scratchpad.push(`Model response: ${modelResponseContent}`);
-      await redis.publish(
-        channel,
-        JSON.stringify({
-          content: modelResponseContent,
-          type: 'agent_response',
-        }),
-      );
-
-      try {
-        const parsedResponse = JSON.parse(modelResponseContent);
-        const { command, thought } = parsedResponse;
-
-        agentContext.scratchpad.push(`Thought: ${thought}`);
-        log.info({ thought }, 'Agent thought');
-        await redis.publish(
-          channel,
-          JSON.stringify({ content: thought, type: 'agent_thought' }),
-        );
-
-        if (command) {
-          log.info({ command }, 'Agent command');
-          const toolName = command.name;
-          const toolParams = command.params;
-
-          const toolToExecute = availableTools.find(
-            (tool) => tool.name === toolName,
-          );
-
-          if (toolToExecute) {
-            log.info(
-              `Executing tool: ${toolName} with params: ${JSON.stringify(toolParams)}`,
-            );
-            const toolResult = await toolToExecute.execute(toolParams, {
-              job,
-              log,
-            });
-            agentContext.scratchpad.push(
-              `Tool result: ${JSON.stringify(toolResult)}`,
-            );
-            agentContext.history.push({
-              content: `Tool result: ${JSON.stringify(toolResult)}`,
-              role: 'model',
-            });
-            await redis.publish(
-              channel,
-              JSON.stringify({
-                result: toolResult,
-                toolName,
-                type: 'tool_result',
-              }),
-            );
-          } else {
-            const errorMessage = `Tool not found: ${toolName}`;
-            log.error(errorMessage);
-            agentContext.scratchpad.push(errorMessage);
-            agentContext.history.push({ content: errorMessage, role: 'model' });
-          }
-        } else {
-          // If no command, assume it's the final answer
-          finalResponse = thought;
-          break;
-        }
-      } catch (parseError) {
-        log.error(
-          { modelResponseContent, parseError },
-          'Error parsing model response as JSON, assuming final answer or error.',
-        );
-        finalResponse = modelResponseContent;
-        break;
-      }
-    }
-
-    if (interrupted) {
-      finalResponse = 'Agent execution interrupted.';
-      await redis.publish(channel, JSON.stringify({ type: 'job_failed' }));
-    } else {
-      await redis.publish(channel, JSON.stringify({ type: 'job_completed' }));
-    }
-
-    const modelMessage: Message = { content: finalResponse, role: 'model' };
-    sessionData.history.push(modelMessage);
-
-    // Save updated history to Redis
-    await redis.set(
-      historyKey,
-      JSON.stringify(sessionData.history),
-      'EX',
-      7 * 24 * 60 * 60,
-    );
+    sessionData.history.push({ content: finalResponse, role: 'model' });
 
     await summarizeHistory(sessionData, log);
 
-    if (config.MCP_WEBHOOK_URL && config.MCP_API_KEY) {
-      const webhookUrl: string = config.MCP_WEBHOOK_URL;
-      await sendWebhook(
-        webhookUrl,
-        {
-          inParams: { prompt, sessionId },
-          msg: 'Job completed successfully.',
-          result: finalResponse ?? '',
-          status: 'completed',
-          taskId: job.id,
-          ts: new Date().toISOString(),
-        },
-        job.id,
-        'process-message',
-        false,
-      );
-    }
+    await SessionManager.saveSession(sessionData, job, jobQueue);
+
     return finalResponse;
   } catch (error) {
-    log.error({ error }, 'Erreur dans le worker');
-    if (config.MCP_WEBHOOK_URL && config.MCP_API_KEY) {
-      const webhookUrl: string = config.MCP_WEBHOOK_URL;
-      await sendWebhook(
-        webhookUrl,
-        {
-          error: {
-            message: (error as Error).message ?? 'Unknown error',
-            name: (error as Error).name ?? 'UnknownError',
-          },
-          inParams: { prompt, sessionId },
-          msg: 'Job failed.',
-          status: 'error',
-          taskId: job.id,
-          ts: new Date().toISOString(),
-        },
-        job.id,
-        'process-message',
-        false,
-      );
-    }
+    log.error({ error }, 'Error in agent execution');
     throw error;
-  } finally {
-    subscriber.unsubscribe(interruptChannel);
-    subscriber.quit();
-    // Optionally close session if it's short-lived, or manage lifecycle elsewhere
-    // For now, keep it active for subsequent messages in the same session
   }
 }
 
@@ -279,16 +67,23 @@ async function summarizeHistory(sessionData: SessionData, log: typeof logger) {
     log.info('History length exceeds max length, summarizing...');
     const historyToSummarize = sessionData.history.slice(0, -10);
     const textToSummarize = historyToSummarize
-      .map((msg) => `${msg.role}: ${msg.content}`)
+      .map((msg: Message) => `${msg.role}: ${msg.content}`)
       .join('\n');
 
     try {
-      const summary = await summarizeTool.execute(
-        { text: textToSummarize },
-        {
-          log,
+      const summary = await summarizeTool.execute({ text: textToSummarize }, {
+        log,
+        reportProgress: async (progress: AgentProgress) => {
+          log.debug(
+            `Summarize progress: ${progress.current}/${progress.total} ${progress.unit || ''}`,
+          );
         },
-      );
+        session: sessionData,
+        streamContent: async (content: Content | Content[]) => {
+          log.debug(`Summarize stream: ${JSON.stringify(content)}`);
+        },
+        taskQueue: jobQueue,
+      } as Ctx);
       const summarizedMessage: Message = {
         content: `Summarized conversation: ${summary}`,
         role: 'model',

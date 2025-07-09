@@ -5,7 +5,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
-export const StdErrNotificationSchema = BaseNotificationSchema.extend({
+export const StdErrNotificationSchema = z.object({
   method: z.literal("notifications/stderr"),
   params: z.object({
     content: z.string(),

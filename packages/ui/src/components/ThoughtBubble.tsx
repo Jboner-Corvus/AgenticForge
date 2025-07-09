@@ -1,14 +1,18 @@
 import React from 'react';
 
+import { Card, CardContent } from './ui/card';
+
 interface ThoughtBubbleProps {
   content: string;
 }
 
 export const ThoughtBubble: React.FC<ThoughtBubbleProps> = ({ content }) => {
   return (
-    <div className="flex items-start space-x-2 p-2 my-2 bg-gray-800 rounded-lg">
-      <span className="text-2xl">💡</span>
-      <p className="text-gray-300">{content}</p>
-    </div>
+    <Card className="bg-secondary border-border text-secondary-foreground my-2 animate-fade-in">
+      <CardContent className="p-2 flex items-center space-x-2">
+        <span className="text-2xl">🧠</span>
+        <p>{content}</p>
+      </CardContent>
+    </Card>
   );
 };

@@ -1,82 +1,58 @@
 import { create } from 'zustand';
-import { DisplayableItem } from './types';
+
 import { getTools } from './api';
+import { DisplayableItem } from './types';
 
 interface AppState {
-  isProcessing: boolean;
-  sessionId: string | null;
-  authToken: string | null;
-  serverHealthy: boolean;
-  debugPanelVisible: boolean;
-  toolCreationEnabled: boolean;
-  codeExecutionEnabled: boolean;
-  displayItems: DisplayableItem[];
-  debugLog: string[];
-  toolCount: number | string;
-  sessionStatus: 'error' | 'unknown' | 'valid';
-  tokenStatus: boolean;
-  messageInputValue: string;
-  jobId: string | null;
-  streamCloseFunc: (() => void) | null;
-
-  setIsProcessing: (isProcessing: boolean) => void;
-  setSessionId: (sessionId: string | null) => void;
-  setAuthToken: (authToken: string | null) => void;
-  setServerHealthy: (serverHealthy: boolean) => void;
-  setDebugPanelVisible: (debugPanelVisible: boolean) => void;
-  setToolCreationEnabled: (toolCreationEnabled: boolean) => void;
-  setCodeExecutionEnabled: (codeExecutionEnabled: boolean) => void;
-  addDisplayItem: (item: DisplayableItem) => void;
-  clearDisplayItems: () => void;
   addDebugLog: (log: string) => void;
+  addDisplayItem: (item: DisplayableItem) => void;
+  authToken: null | string;
   clearDebugLog: () => void;
-  setToolCount: (toolCount: number | string) => void;
-  setSessionStatus: (sessionStatus: 'error' | 'unknown' | 'valid') => void;
-  setTokenStatus: (tokenStatus: boolean) => void;
-  setMessageInputValue: (messageInputValue: string) => void;
-  setJobId: (jobId: string | null) => void;
-  setStreamCloseFunc: (func: (() => void) | null) => void;
-  updateSessionStatus: (status: 'error' | 'unknown' | 'valid') => void;
+  clearDisplayItems: () => void;
+  codeExecutionEnabled: boolean;
+  debugLog: string[];
+  debugPanelVisible: boolean;
+  displayItems: DisplayableItem[];
   fetchAndDisplayToolCount: () => void;
+  isProcessing: boolean;
+  jobId: null | string;
+  messageInputValue: string;
+  serverHealthy: boolean;
+  sessionId: null | string;
+
+  sessionStatus: 'error' | 'unknown' | 'valid';
+  setAuthToken: (authToken: null | string) => void;
+  setCodeExecutionEnabled: (codeExecutionEnabled: boolean) => void;
+  setDebugPanelVisible: (debugPanelVisible: boolean) => void;
+  setIsProcessing: (isProcessing: boolean) => void;
+  setJobId: (jobId: null | string) => void;
+  setMessageInputValue: (messageInputValue: string) => void;
+  setServerHealthy: (serverHealthy: boolean) => void;
+  setSessionId: (sessionId: null | string) => void;
+  setSessionStatus: (sessionStatus: 'error' | 'unknown' | 'valid') => void;
+  setStreamCloseFunc: (func: (() => void) | null) => void;
+  setTokenStatus: (tokenStatus: boolean) => void;
+  setToolCount: (toolCount: number | string) => void;
+  setToolCreationEnabled: (toolCreationEnabled: boolean) => void;
+  streamCloseFunc: (() => void) | null;
+  tokenStatus: boolean;
+  toolCount: number | string;
+  toolCreationEnabled: boolean;
+  updateSessionStatus: (status: 'error' | 'unknown' | 'valid') => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
-  isProcessing: false,
-  sessionId: null,
-  authToken: null,
-  serverHealthy: false,
-  debugPanelVisible: true,
-  toolCreationEnabled: true,
-  codeExecutionEnabled: true,
-  displayItems: [],
-  debugLog: [],
-  toolCount: 0,
-  sessionStatus: 'unknown',
-  tokenStatus: false,
-  messageInputValue: '',
-  jobId: null,
-  streamCloseFunc: null,
-
-  setIsProcessing: (isProcessing) => set({ isProcessing }),
-  setSessionId: (sessionId) => set({ sessionId }),
-  setAuthToken: (authToken) => set({ authToken }),
-  setServerHealthy: (serverHealthy) => set({ serverHealthy }),
-  setDebugPanelVisible: (debugPanelVisible) => set({ debugPanelVisible }),
-  setToolCreationEnabled: (toolCreationEnabled) => set({ toolCreationEnabled }),
-  setCodeExecutionEnabled: (codeExecutionEnabled) => set({ codeExecutionEnabled }),
-  addDisplayItem: (item) => set((state) => ({ displayItems: [...state.displayItems, item] })),
-  clearDisplayItems: () => set({ displayItems: [] }),
   addDebugLog: (log) => set((state) => ({ debugLog: [...state.debugLog, log] })),
+  addDisplayItem: (item) => set((state) => ({ displayItems: [...state.displayItems, item] })),
+  authToken: null,
   clearDebugLog: () => set({ debugLog: [] }),
-  setToolCount: (toolCount) => set({ toolCount }),
-  setSessionStatus: (sessionStatus) => set({ sessionStatus }),
-  setTokenStatus: (tokenStatus) => set({ tokenStatus }),
-  setMessageInputValue: (messageInputValue) => set({ messageInputValue }),
-  setJobId: (jobId) => set({ jobId }),
-  setStreamCloseFunc: (func) => set({ streamCloseFunc: func }),
-  updateSessionStatus: (status) => set({ sessionStatus: status }),
+  clearDisplayItems: () => set({ displayItems: [] }),
+  codeExecutionEnabled: true,
+  debugLog: [],
+  debugPanelVisible: true,
+  displayItems: [],
   fetchAndDisplayToolCount: async () => {
-    const { authToken, sessionId, addDebugLog, setToolCount, updateSessionStatus } = get();
+    const { addDebugLog, authToken, sessionId, setToolCount, updateSessionStatus } = get();
     if (!authToken || !sessionId) return;
     addDebugLog(`[${new Date().toLocaleTimeString()}] [REQUEST] Récupération de la liste des outils...`);
     try {
@@ -91,5 +67,29 @@ export const useStore = create<AppState>((set, get) => ({
       updateSessionStatus('error');
     }
   },
-}));
+  isProcessing: false,
+  jobId: null,
+  messageInputValue: '',
+  serverHealthy: false,
+  sessionId: null,
 
+  sessionStatus: 'unknown',
+  setAuthToken: (authToken) => set({ authToken }),
+  setCodeExecutionEnabled: (codeExecutionEnabled) => set({ codeExecutionEnabled }),
+  setDebugPanelVisible: (debugPanelVisible) => set({ debugPanelVisible }),
+  setIsProcessing: (isProcessing) => set({ isProcessing }),
+  setJobId: (jobId) => set({ jobId }),
+  setMessageInputValue: (messageInputValue) => set({ messageInputValue }),
+  setServerHealthy: (serverHealthy) => set({ serverHealthy }),
+  setSessionId: (sessionId) => set({ sessionId }),
+  setSessionStatus: (sessionStatus) => set({ sessionStatus }),
+  setStreamCloseFunc: (func) => set({ streamCloseFunc: func }),
+  setTokenStatus: (tokenStatus) => set({ tokenStatus }),
+  setToolCount: (toolCount) => set({ toolCount }),
+  setToolCreationEnabled: (toolCreationEnabled) => set({ toolCreationEnabled }),
+  streamCloseFunc: null,
+  tokenStatus: false,
+  toolCount: 0,
+  toolCreationEnabled: true,
+  updateSessionStatus: (status) => set({ sessionStatus: status }),
+}));

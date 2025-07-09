@@ -12,7 +12,14 @@ export default defineConfig({
       },
     },
   },
+  define: {
+    "import.meta.env.VITE_AUTH_TOKEN": JSON.stringify(process.env.AUTH_TOKEN),
+  },
   plugins: [react()],
+  preview: {
+    host: true,
+    port: Number(process.env.WEB_PORT) || 3000,
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -22,9 +29,9 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'http://server:3001',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '/api'),
+        target: 'http://server:3001',
       },
     },
   },

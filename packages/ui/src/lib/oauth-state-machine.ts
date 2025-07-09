@@ -1,3 +1,5 @@
+import type { OAuthProtectedResourceMetadata } from "@modelcontextprotocol/sdk/shared/auth.js";
+
 import {
   discoverOAuthMetadata,
   discoverOAuthProtectedResourceMetadata,
@@ -7,10 +9,10 @@ import {
   startAuthorization,
 } from "@modelcontextprotocol/sdk/client/auth.js";
 import { OAuthMetadataSchema } from "@modelcontextprotocol/sdk/shared/auth.js";
-import type { OAuthProtectedResourceMetadata } from "@modelcontextprotocol/sdk/shared/auth.js";
+
+import type { AuthDebuggerState, OAuthStep } from "./auth-types";
 
 import { DebugInspectorOAuthClientProvider } from "./auth";
-import type { AuthDebuggerState, OAuthStep } from "./auth-types";
 
 export interface StateMachineContext {
   provider: DebugInspectorOAuthClientProvider;

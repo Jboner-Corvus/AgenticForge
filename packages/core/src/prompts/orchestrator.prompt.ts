@@ -1,54 +1,42 @@
-import { Tool } from 'fastmcp';
+import { readFileSync } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { format } from 'util';
 
-import { Message } from '../../types.js';
+// FICHIER : src/prompts/orchestrator.prompt.ts
+import type { AgentSession, Message, Tool } from '../types.js';
 
-interface AgentContext {
-  history: Message[];
-  iterations: number;
-  objective: string;
-  scratchpad: string[];
-}
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const promptFilePath = path.join(__dirname, 'system.prompt.txt');
+const PREAMBULE = readFileSync(promptFilePath, 'utf-8');
 
-export function getOrchestratorPrompt(
-  context: AgentContext,
-  tools: Tool[],
-): string {
-  const toolDescriptions = tools
-    .map((tool) => `- ${tool.name}: ${tool.description}`)
-    .join('\n');
+const TOOLS_SECTION_HEADER = '## Available Tools:';
+const HISTORY_SECTION_HEADER = '## Conversation History:';
 
-  const historyContent = context.history
-    .map((msg) => `${msg.role}: ${msg.content}`)
-    .join('\n');
-
-  const scratchpadContent = context.scratchpad.join('\n');
-
-  return `You are an autonomous agent designed to achieve the following objective:
-${context.objective}
-
-YouYou have access to the following tools:
-${toolDescriptions}
-
-To use a tool, you must respond with a JSON object in the following format:
-{
-  "thought": "Your thought process for the current step.",
-  "command": {
-    "name": "tool_name",
-    "params": { "param1": "value1", "param2": "value2" }
+const formatToolForPrompt = (tool: Tool): string => {
+  // CORRIGÉ : La propriété est 'parameters' et contient le schéma Zod.
+  if (!tool.parameters || !('shape' in tool.parameters)) {
+    return `### ${tool.name}\nDescription: ${tool.description}\nParameters: None\n`;
   }
-}
+  const params = JSON.stringify(tool.parameters.shape, null, 2);
+  return `### ${tool.name}\nDescription: ${tool.description}\nParameters (JSON Schema):\n${params}\n`;
+};
 
-If you have achieved the objective or cannot proceed, respond with a JSON object containing only your final thought:
-{
-  "thought": "Your final answer or a statement that you cannot achieve the objective."
-}
+export const getMasterPrompt = (
+  session: AgentSession,
+  tools: Tool[],
+): string => {
+  const formattedTools = tools.map(formatToolForPrompt).join('\n');
+  const toolsSection = `${TOOLS_SECTION_HEADER}\n${formattedTools}`;
 
-Your current history:
-${historyContent}
+  const formattedHistory = (session.data.history || [])
+    .map((h: Message) => `${h.role.toUpperCase()}:\n${h.content}`)
+    .join('\n\n');
+  const historySection = `${HISTORY_SECTION_HEADER}\n${formattedHistory}`;
 
-Your scratchpad (intermediate thoughts and tool results):
-${scratchpadContent}
-
-Begin!
-`;
-}
+  return `${format(
+    PREAMBULE,
+    new Date().toISOString(),
+  )}\n\n${toolsSection}\n\n${historySection}\n\nASSISTANT's turn. Your response:`;
+};

@@ -1,11 +1,8 @@
-import type { TextContent } from 'fastmcp';
-
 import { Context } from 'fastmcp';
 // --- Fichier : src/tools/synchronousExample.tool.ts ---
 import { z as zod } from 'zod';
-import { z } from 'zod';
 
-import type { SessionData, Tool } from '../../types.js';
+import type { Tool } from '../../types.js';
 
 const SYNC_TOOL_NAME = 'synchronousExampleToolEnhanced';
 
@@ -21,8 +18,8 @@ export const synchronousExampleTool: Tool<typeof synchronousExampleParams> = {
   description: "Exemple d'outil synchrone.",
   execute: async (
     _args: SyncParamsType,
-    _context: Context<SessionData>,
-  ): Promise<TextContent> => {
+    _context: Context<unknown>,
+  ): Promise<{ text: string, type: 'text' }> => {
     // ... la logique reste la même
     return { text: 'Sync example executed.', type: 'text' };
   },

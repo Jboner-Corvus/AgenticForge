@@ -1,37 +1,58 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState, memo, useCallback } from 'react';
+
+import { useDraggableSidebar } from '../lib/hooks/useDraggablePane';
+import { fr } from '../constants/fr';
+import { Accordion } from './ui/accordion';
+import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
-import { Button } from './ui/button';
-// import { getMemory } from '../lib/api';
+import { useToast } from '../lib/hooks/useToast';
+import { generateUUID } from '../lib/utils/uuid';
 
-interface ControlPanelProps {
-  sessionId: string | null;
-  toolCount: number | string;
-  serverHealthy: boolean;
-  toolCreationEnabled: boolean;
-  codeExecutionEnabled: boolean;
-  setToolCreationEnabled: (enabled: boolean) => void;
-  setCodeExecutionEnabled: (enabled: boolean) => void;
-  handleNewSession: () => void;
-  handleClearHistory: (showMessage: boolean) => void;
-  authToken: string | null;
-}
+import { useStore } from '../lib/store';
 
-export function ControlPanel({
-  sessionId,
-  toolCount,
-  serverHealthy,
-  toolCreationEnabled,
-  codeExecutionEnabled,
-  setToolCreationEnabled,
-  setCodeExecutionEnabled,
-  handleNewSession,
-  handleClearHistory,
-  authToken,
-}: ControlPanelProps) {
-  const [activeTab, setActiveTab] = useState('status');
-  const [memory, ] = useState<{ fileName: string; content: string }[]>([]);
+export const ControlPanel = memo(() => {
+  const authToken = useStore((state) => state.authToken);
+  const codeExecutionEnabled = useStore((state) => state.codeExecutionEnabled);
+  const serverHealthy = useStore((state) => state.serverHealthy);
+  const sessionId = useStore((state) => state.sessionId);
+  const toolCount = useStore((state) => state.toolCount);
+  const toolCreationEnabled = useStore((state) => state.toolCreationEnabled);
+  const setCodeExecutionEnabled = useStore((state) => state.setCodeExecutionEnabled);
+  const setToolCreationEnabled = useStore((state) => state.setToolCreationEnabled);
+  const clearDisplayItems = useStore((state) => state.clearDisplayItems);
+  const addDebugLog = useStore((state) => state.addDebugLog);
+  const fetchAndDisplayToolCount = useStore((state) => state.fetchAndDisplayToolCount);
+  const setSessionId = useStore((state) => state.setSessionId);
+  const addDisplayItem = useStore((state) => state.addDisplayItem);
+
+  const { toast } = useToast();
+
+  const handleClearHistory = useCallback((showMessage: boolean) => {
+    clearDisplayItems();
+    if (showMessage) {
+      toast({ description: fr.historyCleared, title: fr.historyCleared });
+      addDebugLog(`[${new Date().toLocaleTimeString()}] Historique local effacé.`);
+    }
+  }, [clearDisplayItems, addDebugLog, toast]);
+
+  const handleNewSession = useCallback(() => {
+    const oldSessionId = sessionId;
+    const newSessionId = generateUUID();
+    localStorage.setItem('agenticForgeSessionId', newSessionId);
+    setSessionId(newSessionId);
+    addDisplayItem({
+      content: fr.newSessionCreated,
+      sender: 'assistant',
+      type: 'agent_response',
+    });
+    addDebugLog(`[${new Date().toLocaleTimeString()}] ${fr.newSession}: Ancien ID: ${oldSessionId}, Nouvel ID: ${newSessionId}`);
+    handleClearHistory(false);
+    fetchAndDisplayToolCount();
+  }, [sessionId, fetchAndDisplayToolCount, handleClearHistory, addDebugLog, addDisplayItem, setSessionId]);
+  const [activeTab, ] = useState('status');
+  const { handleDragStart, width } = useDraggableSidebar(320);
 
   useEffect(() => {
     // if (activeTab === 'memory' && authToken && sessionId) {
@@ -40,85 +61,54 @@ export function ControlPanel({
   }, [activeTab, authToken, sessionId]);
 
   return (
-    <aside className="w-80 p-4 bg-gray-800 border-r border-gray-700 overflow-y-auto flex-shrink-0">
+    <aside
+      className="p-4 bg-gray-800 border-r border-gray-700 overflow-y-auto flex-shrink-0 relative"
+      style={{ width }}
+    >
+      <div className="absolute top-0 right-0 w-2 h-full cursor-col-resize" onMouseDown={handleDragStart} />
       <Card className="bg-gray-700 border-gray-600 text-gray-100">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Panneau de Contrôle</CardTitle>
+          <CardTitle className="text-lg font-semibold">{fr.controlPanel}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex border-b border-gray-600">
-            <button
-              className={`px-4 py-2 text-sm font-medium ${activeTab === 'status' ? 'border-b-2 border-blue-500 text-white' : 'text-gray-400'}`}
-              onClick={() => setActiveTab('status')}
-            >
-              Statut
-            </button>
-            <button
-              className={`px-4 py-2 text-sm font-medium ${activeTab === 'memory' ? 'border-b-2 border-blue-500 text-white' : 'text-gray-400'}`}
-              onClick={() => setActiveTab('memory')}
-            >
-              Mémoire
-            </button>
-          </div>
-
-          {activeTab === 'status' && (
+          <Accordion title={fr.agentStatus}>
             <div className="space-y-2">
-              <h3 className="text-md font-medium text-gray-300">Statut de l'Agent</h3>
               <div className="flex justify-between items-center">
-                <Label className="text-sm">Session ID</Label>
+                <Label className="text-sm">{fr.sessionId}</Label>
                 <span className="text-sm text-gray-400">{sessionId ? `${sessionId.substring(0, 12)}...` : '--'}</span>
               </div>
               <div className="flex justify-between items-center">
-                <Label className="text-sm">Outils Détectés</Label>
+                <Label className="text-sm">{fr.toolsDetected}</Label>
                 <span className="text-sm text-gray-400">{toolCount}</span>
               </div>
               <div className="flex justify-between items-center">
-                <Label className="text-sm">Statut Connexion</Label>
-                <span className="text-sm text-gray-400">{serverHealthy ? '✅ En ligne' : '❌ Hors ligne'}</span>
+                <Label className="text-sm">{fr.connectionStatus}</Label>
+                <span className="text-sm text-gray-400">{serverHealthy ? fr.online : fr.offline}</span>
               </div>
             </div>
-          )}
+          </Accordion>
 
-          {activeTab === 'memory' && (
+          <Accordion title={fr.agentCapabilities}>
             <div className="space-y-2">
-              <h3 className="text-md font-medium text-gray-300">Mémoire de l'Agent</h3>
-              {memory.length > 0 ? (
-                memory.map((item) => (
-                  <div key={item.fileName}>
-                    <h4 className="text-sm font-bold">{item.fileName}</h4>
-                    <pre className="text-xs bg-gray-800 p-2 rounded">{item.content}</pre>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-400">La mémoire est vide.</p>
-              )}
+              <div className="flex justify-between items-center">
+                <Label className="text-sm" htmlFor="toolCreationToggle">{fr.toolCreation}</Label>
+                <Switch checked={toolCreationEnabled} id="toolCreationToggle" onCheckedChange={setToolCreationEnabled} />
+              </div>
+              <div className="flex justify-between items-center">
+                <Label className="text-sm" htmlFor="codeExecutionToggle">{fr.codeExecution}</Label>
+                <Switch checked={codeExecutionEnabled} id="codeExecutionToggle" onCheckedChange={setCodeExecutionEnabled} />
+              </div>
             </div>
-          )}
-          
-          <p className="text-xs text-gray-400 italic">
-            <strong>Mode Session Stricte:</strong> L'agent maintient un contexte de conversation persistant grâce à votre Session ID unique.
-          </p>
-          
-          <div className="space-y-2">
-            <h3 className="text-md font-medium text-gray-300">Capacités de l'Agent</h3>
-            <div className="flex justify-between items-center">
-              <Label htmlFor="toolCreationToggle" className="text-sm">Création d'outils</Label>
-              <Switch checked={toolCreationEnabled} id="toolCreationToggle" onCheckedChange={setToolCreationEnabled} />
-            </div>
-            <div className="flex justify-between items-center">
-              <Label htmlFor="codeExecutionToggle" className="text-sm">Exécution de code</Label>
-              <Switch checked={codeExecutionEnabled} id="codeExecutionToggle" onCheckedChange={setCodeExecutionEnabled} />
-            </div>
-          </div>
+          </Accordion>
 
-          <div className="space-y-2">
-            <h3 className="text-md font-medium text-gray-300">Actions Rapides</h3>
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={handleNewSession}>🔄 Nouvelle Session</Button>
-            <Button className="w-full bg-red-600 hover:bg-red-700 text-white" onClick={() => handleClearHistory(true)}>🗑️ Vider l'Historique</Button>
-          </div>
+          <Accordion title={fr.quickActions}>
+            <div className="space-y-2">
+              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={handleNewSession}>{fr.newSession}</Button>
+              <Button className="w-full bg-red-600 hover:bg-red-700 text-white" onClick={() => handleClearHistory(true)}>{fr.clearHistory}</Button>
+            </div>
+          </Accordion>
         </CardContent>
       </Card>
     </aside>
   );
-}
-
+});

@@ -1,13 +1,8 @@
-import { Job, Queue } from 'bullmq';
+import { Job } from 'bullmq';
 import { randomUUID } from 'crypto';
-import { Context } from 'fastmcp';
 import { z } from 'zod';
 
-import type { SessionData, Tool } from '../../types.js';
-
-interface CustomContext extends Context<SessionData> {
-  taskQueue: Queue;
-}
+import { Ctx, SessionData, Tool } from '../../types.js';
 
 export const scrollParams = z.object({
   direction: z
@@ -48,17 +43,19 @@ export async function scrollWorkerLogic(args: z.infer<typeof scrollParams>) {
 export const scrollTool: Tool<typeof scrollParams> = {
   description:
     'Scrolls the current web page in a specified direction (up, down, home, end). This is an async task.',
-  execute: async (args, ctx: CustomContext): Promise<string> => {
+  execute: async (args: unknown, ctx: Ctx) => {
+    const params = args as z.infer<typeof scrollParams>;
     if (!ctx.session) throw new Error('Session not found');
     const job: Job = await ctx.taskQueue.add('browser_scroll', {
       auth: ctx.session as SessionData,
-      params: args,
+      params: params,
       taskId: randomUUID(),
       toolName: 'browser_scroll',
     });
     ctx.log.info(`Queued browser scroll job. Job ID: ${job.id}`);
-    return `Scrolling ${args.direction}.`;
+    return { message: `Scrolling ${params.direction}.` };
   },
-  name: 'browser_scroll',
+  name: 'browser.scroll',
+  output: z.object({ message: z.string() }), // Assuming a simple output schema
   parameters: scrollParams,
 };

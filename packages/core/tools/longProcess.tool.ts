@@ -1,8 +1,7 @@
-import { Context } from 'fastmcp';
 // ===== src/tools/longProcess.tool.ts =====
 import { z } from 'zod';
 
-import type { SessionData, Tool } from '../../types.js';
+import type { Tool } from '../../types.js';
 
 export const longProcessParams = z.object({
   // ...

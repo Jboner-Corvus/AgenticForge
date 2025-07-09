@@ -5,45 +5,46 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "pnpm exec tsc -b && pnpm exec vite build",
     "lint": "eslint --fix .",
     "preview": "vite preview",
-    "start:web": "vite preview --host 0.0.0.0 --port 3000"
+    "start:web": "vite preview --host 0.0.0.0 --port ${WEB_PORT}"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.13.2",
+    "@modelcontextprotocol/sdk": "^1.15.0",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.5",
     "@testing-library/react": "^16.3.0",
     "@types/jest": "^30.0.0",
-    "class-variance-authority": "^0.7.0",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "jest": "^30.0.3",
+    "jest": "^30.0.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "tailwind-merge": "^2.4.0",
-    "zod": "^3.25.67"
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.25.0"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.27.2",
+    "@babel/preset-env": "^7.28.0",
     "@babel/preset-react": "^7.27.1",
     "@babel/preset-typescript": "^7.27.1",
     "@tailwindcss/postcss": "^4.1.11",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.5.2",
+    "@vitejs/plugin-react": "^4.6.0",
     "autoprefixer": "^10.4.21",
-    "babel-jest": "^30.0.2",
+    "babel-jest": "^30.0.4",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
-    "globals": "^16.2.0",
-    "jest-environment-jsdom": "^30.0.2",
+    "globals": "^16.3.0",
+    "jest-environment-jsdom": "^30.0.4",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.11",
     "ts-jest": "^29.4.0",
-    "vite": "^7.0.0"
+    "vite": "^7.0.3"
   }
 }

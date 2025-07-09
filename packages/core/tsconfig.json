@@ -1,15 +1,29 @@
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": ".",
+    "rootDir": "src",
     "composite": true,
     "target": "es2022",
     "module": "nodenext",
     "lib": ["es2022", "dom"],
     "moduleResolution": "nodenext",
-    "types": ["node"]
+    "types": ["node", "vitest/globals"],
+    "declaration": true,
+    "declarationMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "inlineSources": true,
+    "moduleDetection": "force",
+    "skipLibCheck": true,
+    "strict": true,
+    "sourceMap": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@agenticforge/core/*": ["./src/*"]
+    }
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "**/*.test.ts", "dist"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }

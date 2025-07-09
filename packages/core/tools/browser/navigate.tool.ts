@@ -9,30 +9,6 @@ export const navigateParams = z.object({
   url: z.string().url().describe('The full URL to navigate to.'),
 });
 
-export async function navigateWorkerLogic(
-  args: z.infer<typeof navigateParams>,
-) {
-  const { chromium } = await import('playwright');
-  let browser = null;
-  try {
-    browser = await chromium.launch();
-    const page = await browser.newPage();
-
-    await page.goto(args.url, { waitUntil: 'domcontentloaded' });
-    const title = await page.title();
-
-    // Correction: prendre la capture et la convertir en base64 ensuite.
-    const finalScreenshotBuffer = await page.screenshot();
-    const finalScreenshot = finalScreenshotBuffer.toString('base64');
-
-    return {
-      message: `Successfully navigated to "${title}". URL: ${page.url()}`,
-    };
-  } finally {
-    await browser?.close();
-  }
-}
-
 export const navigateTool: Tool<typeof navigateParams> = {
   description:
     'Navigates a headless browser to a specified URL. This is an async task.',

@@ -1,50 +1,21 @@
-function getAuthHeaders(authToken: string | null, sessionId: string | null): HeadersInit {
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (authToken) {
-    headers['Authorization'] = `Bearer ${authToken}`;
-  }
-  if (sessionId) {
-    headers['X-Session-ID'] = sessionId;
-  }
-  return headers;
-}
-
 /**
- * Envoie un message au backend et gère le streaming des événements.
- * @param {string} prompt Le message de l'utilisateur.
+ * Récupère l'historique de la conversation pour la session actuelle.
  * @param {string | null} authToken Le token d'authentification.
  * @param {string | null} sessionId L'ID de session.
- * @param {(event: MessageEvent) => void} onMessage Callback pour gérer les messages streamés.
- * @returns {Promise<string>} Le jobId de la tâche.
+ * @returns {Promise<Array<unknown>>} Un tableau de messages.
  */
-export async function sendMessage(prompt: string, authToken: string | null, sessionId: string | null, onMessage: (event: MessageEvent) => void): Promise<string> {
+export async function getHistory(authToken: null | string, sessionId: null | string): Promise<Array<unknown>> {
   try {
-    const response = await fetch('/api/chat', {
-      method: 'POST',
+    const response = await fetch('/api/history', {
       headers: getAuthHeaders(authToken, sessionId),
-      body: JSON.stringify({ prompt }),
     });
-
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Erreur du serveur');
+      await response.json();
+      throw new Error(`Erreur lors de la récupération de l'historique`);
     }
-
-    const { jobId } = await response.json();
-
-    // Establish SSE connection for streaming updates
-    const eventSource = new EventSource(`/api/chat/stream/${jobId}`);
-
-    eventSource.onmessage = onMessage;
-
-    eventSource.onerror = (error) => {
-      console.error('EventSource failed:', error);
-      eventSource.close();
-    };
-
-    return jobId;
+    return await response.json();
   } catch (error) {
-    console.error("Erreur lors de l'envoi du message ou de la connexion SSE:", error);
+    console.error(`Erreur de récupération de l'historique:`, error);
     throw error;
   }
 }
@@ -56,40 +27,80 @@ export async function sendMessage(prompt: string, authToken: string | null, sess
  * @param {string | null} sessionId L'ID de session.
  * @returns {Promise<unknown>} L'état actuel du job.
  */
-export async function getJobStatus(jobId: string, authToken: string | null, sessionId: string | null): Promise<unknown> {
+export async function getJobStatus(jobId: string, authToken: null | string, sessionId: null | string): Promise<unknown> {
   try {
     const response = await fetch(`/api/status/${jobId}`, {
       headers: getAuthHeaders(authToken, sessionId),
     });
     if (!response.ok) {
       await response.json();
-      throw new Error("Erreur lors de la récupération du statut");
+      throw new Error(`Erreur lors de la récupération du statut`);
     }
     return await response.json();
   } catch (error) {
-    console.error('Erreur de statut du job:', error);
+    console.error(`Erreur de statut du job:`, error);
     throw error;
   }
 }
 
 /**
- * Récupère l'historique de la conversation pour la session actuelle.
+ * Récupère la liste des outils disponibles.
  * @param {string | null} authToken Le token d'authentification.
  * @param {string | null} sessionId L'ID de session.
- * @returns {Promise<Array<unknown>>} Un tableau de messages.
+ * @returns {Promise<Array<unknown>>} Un tableau d'outils.
  */
-export async function getHistory(authToken: string | null, sessionId: string | null): Promise<Array<unknown>> {
+export async function getTools(authToken: null | string, sessionId: null | string): Promise<Array<unknown>> {
   try {
-    const response = await fetch('/api/history', {
+    const response = await fetch('/api/tools', {
       headers: getAuthHeaders(authToken, sessionId),
     });
     if (!response.ok) {
       await response.json();
-      throw new Error("Erreur lors de la récupération de l'historique");
+      throw new Error(`Erreur lors de la récupération des outils`);
     }
     return await response.json();
   } catch (error) {
-    console.error("Erreur de récupération de l'historique:", error);
+    console.error(`Erreur de récupération des outils:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Envoie un message au backend et gère le streaming des événements.
+ * @param {string} prompt Le message de l'utilisateur.
+ * @param {string | null} authToken Le token d'authentification.
+ * @param {string | null} sessionId L'ID de session.
+ * @param {(event: MessageEvent) => void} onMessage Callback pour gérer les messages streamés.
+ * @returns {Promise<string>} Le jobId de la tâche.
+ */
+export async function sendMessage(prompt: string, authToken: null | string, sessionId: null | string, onMessage: (event: MessageEvent) => void): Promise<string> {
+  try {
+    const response = await fetch('/api/chat', {
+      body: JSON.stringify({ prompt }),
+      headers: getAuthHeaders(authToken, sessionId),
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Erreur du serveur`);
+    }
+
+    const { jobId } = await response.json();
+
+    // Establish SSE connection for streaming updates
+    const eventSource = new EventSource(`/api/chat/stream/${jobId}`);
+
+    eventSource.onmessage = onMessage;
+
+    eventSource.onerror = (error) => {
+      console.error(`EventSource failed:`, error);
+      eventSource.close();
+    };
+
+    return jobId;
+  } catch (error) {
+    console.error(`Erreur lors de l'envoi du message ou de la connexion SSE:`, error);
     throw error;
   }
 }
@@ -103,29 +114,46 @@ export async function testServerHealth(): Promise<boolean> {
     const response = await fetch('/api/health');
     return response.ok;
   } catch (error) {
-    console.error('Erreur lors de la vérification de la santé du serveur:', error);
+    console.error(`Erreur lors de la vérification de la santé du serveur:`, error);
     return false;
   }
 }
 
 /**
- * Récupère la liste des outils disponibles.
+ * Interrompt un job en cours.
+ * @param {string} jobId L'ID du job à interrompre.
  * @param {string | null} authToken Le token d'authentification.
  * @param {string | null} sessionId L'ID de session.
- * @returns {Promise<Array<unknown>>} Un tableau d'outils.
+ * @returns {Promise<void>}
  */
-export async function getTools(authToken: string | null, sessionId: string | null): Promise<Array<unknown>> {
+export async function interrupt(jobId: string, authToken: null | string, sessionId: null | string): Promise<void> {
   try {
-    const response = await fetch('/api/tools', {
+    const response = await fetch(`/api/interrupt/${jobId}`, {
+      method: 'POST',
       headers: getAuthHeaders(authToken, sessionId),
     });
     if (!response.ok) {
-      await response.json();
-      throw new Error('Erreur lors de la récupération des outils');
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Erreur lors de l'interruption du job`);
     }
-    return await response.json();
   } catch (error) {
-    console.error('Erreur de récupération des outils:', error);
+    console.error(`Erreur lors de l'interruption du job:`, error);
     throw error;
   }
+}
+
+function getAuthHeaders(
+  authToken: string | null,
+  sessionId: string | null,
+): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (authToken) {
+    headers['Authorization'] = 'Bearer ' + authToken;
+  }
+  if (sessionId) {
+    headers['X-Session-ID'] = String(sessionId);
+  }
+  return headers;
 }

@@ -1,20 +1,26 @@
 import React from 'react';
 
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+
 interface ToolResultDisplayProps {
-  toolName: string;
   result: Record<string, unknown>;
+  toolName: string;
 }
 
-export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({ toolName, result }) => {
+export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({ toolName }) => {
+  if (toolName === 'finish') {
+    return null;
+  }
+
   return (
-    <div className="flex items-start space-x-2 p-2 my-2 bg-green-900/50 rounded-lg">
-      <span className="text-2xl">✅</span>
-      <div>
-        <p className="font-bold text-green-300">Result from {toolName}</p>
-        <pre className="text-sm text-gray-300 bg-gray-900 p-2 rounded-md mt-1">
-          {JSON.stringify(result, null, 2)}
-        </pre>
-      </div>
-    </div>
+    <Card className="bg-secondary border-border text-secondary-foreground my-2 animate-fade-in">
+      <CardHeader className="flex flex-row items-center space-x-2 p-2">
+        <span className="text-2xl">✅</span>
+        <CardTitle className="text-base font-bold">Result from {toolName}</CardTitle>
+      </CardHeader>
+      <CardContent className="p-2">
+        <p className="text-sm">Tool executed successfully.</p>
+      </CardContent>
+    </Card>
   );
 };

@@ -1,10 +1,9 @@
-import { Context } from 'fastmcp';
 import { promises as fs } from 'fs';
 import path from 'path';
 // ===== src/tools/fs/readFile.tool.ts =====
 import { z } from 'zod';
 
-import type { SessionData, Tool } from '../../types.js';
+import type { Tool } from '../../types.js';
 
 const WORKSPACE_DIR = path.resolve(process.cwd(), 'workspace');
 

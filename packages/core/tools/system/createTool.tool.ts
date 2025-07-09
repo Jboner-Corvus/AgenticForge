@@ -3,7 +3,7 @@ import path from 'path';
 // src/tools/system/createTool.tool.ts
 import { z } from 'zod';
 
-import type { Ctx, SessionData, Tool } from '../../types.js';
+import type { Ctx, Tool } from '../../types.js';
 
 import { getErrDetails, UserError } from '../../utils/errorUtils.js';
 import {

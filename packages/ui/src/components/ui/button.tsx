@@ -2,7 +2,7 @@ import { Slot } from "@radix-ui/react-slot"
 import { type VariantProps } from "class-variance-authority"
 import * as React from "react"
 
-import { cn, buttonVariants } from "@/lib/utils"
+import { buttonVariants, cn } from "@/lib/utils"
 
 function Button({
   asChild = false,
@@ -18,7 +18,7 @@ function Button({
 
   return (
     <Comp
-      className={cn(buttonVariants({ className, size, variant }))}
+      className={cn(buttonVariants({ className, size, variant }), "transition-all duration-200 ease-in-out")}
       data-slot="button"
       {...props}
     />

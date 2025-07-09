@@ -1,5 +1,4 @@
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
@@ -7,8 +6,6 @@
     "types": ["jest", "node"],
     "module": "ESNext",
     "skipLibCheck": true,
-
-    /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
@@ -17,20 +14,22 @@
     "jsx": "react-jsx",
     "allowJs": true,
     "esModuleInterop": true,
-
-    /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-
-    /* Erasable syntax */
     "erasableSyntaxOnly": false,
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
     },
-    "rootDir": "src"
+    "rootDir": "src",
+    "declaration": true,
+    "declarationMap": true,
+    "forceConsistentCasingInFileNames": true,
+    "inlineSources": true,
+    "moduleDetection": "force",
+    "sourceMap": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

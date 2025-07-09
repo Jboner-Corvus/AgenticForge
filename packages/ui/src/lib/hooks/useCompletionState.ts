@@ -2,6 +2,7 @@ import type {
   PromptReference,
   ResourceReference,
 } from "@modelcontextprotocol/sdk/types.js";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface CompletionState {
@@ -114,8 +115,7 @@ export function useCompletionState(
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function debounce<T extends (...args: any[]) => PromiseLike<void>>(
+function debounce<T extends (...args: Parameters<T>) => PromiseLike<void>>(
   func: T,
   wait: number,
 ): (...args: Parameters<T>) => void {

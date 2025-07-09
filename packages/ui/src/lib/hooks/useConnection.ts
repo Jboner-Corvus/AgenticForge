@@ -1,16 +1,27 @@
+import type { SSEClientTransportOptions } from "@modelcontextprotocol/sdk/client/sse.js";
+import type { StreamableHTTPClientTransportOptions } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import type { RequestOptions } from "@modelcontextprotocol/sdk/shared/protocol.js";
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import type {
+  ClientNotification,
+  ClientRequest,
+  Progress,
+  PromptReference,
+  Request,
+  ResourceReference,
+  Result,
+  ServerCapabilities,
+} from "@modelcontextprotocol/sdk/types.js";
+
 import { auth } from "@modelcontextprotocol/sdk/client/auth.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import {
   SSEClientTransport,
   SseError,
 } from "@modelcontextprotocol/sdk/client/sse.js";
-import type { SSEClientTransportOptions } from "@modelcontextprotocol/sdk/client/sse.js";
 import {
   StreamableHTTPClientTransport,
 } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import type { StreamableHTTPClientTransportOptions } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import type { RequestOptions } from "@modelcontextprotocol/sdk/shared/protocol.js";
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import {
   CancelledNotificationSchema,
   CompleteResultSchema,
@@ -24,34 +35,24 @@ import {
   ResourceUpdatedNotificationSchema,
   ToolListChangedNotificationSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import type {
-  ClientNotification,
-  ClientRequest,
-  Progress,
-  PromptReference,
-  Request,
-  ResourceReference,
-  Result,
-  ServerCapabilities,
-} from "@modelcontextprotocol/sdk/types.js";
 import { useState } from "react";
 import { z } from "zod";
 
-import { useToast } from "./useToast";
+import type { InspectorConfig } from "../configurationTypes";
+import type { ConnectionStatus } from "../constants";
+import type { Notification } from "../notificationTypes";
+
+import packageJson from "../../../package.json";
+import { InspectorOAuthClientProvider } from "../auth";
 import {
   getMCPProxyAddress,
   getMCPProxyAuthToken,
   getMCPServerRequestMaxTotalTimeout,
-  resetRequestTimeoutOnProgress,
   getMCPServerRequestTimeout,
+  resetRequestTimeoutOnProgress,
 } from "../mcpUtils";
-
-import packageJson from "../../../package.json";
-import { InspectorOAuthClientProvider } from "../auth";
-import type { InspectorConfig } from "../configurationTypes";
-import type { ConnectionStatus } from "../constants";
 import { StdErrNotificationSchema } from "../notificationTypes";
-import type { Notification } from "../notificationTypes";
+import { useToast } from "./useToast";
 
 interface UseConnectionOptions {
   args: string;
@@ -59,12 +60,10 @@ interface UseConnectionOptions {
   command: string;
   config: InspectorConfig;
   env: Record<string, string>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getRoots?: () => any[];
+  getRoots?: () => string[];
   headerName?: string;
   onNotification?: (notification: Notification) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onPendingRequest?: (request: any, resolve: any, reject: any) => void;
+  onPendingRequest?: (request: Request, resolve: (value: unknown) => void, reject: (reason?: unknown) => void) => void;
   onStdErrNotification?: (notification: Notification) => void;
   sseUrl: string;
   transportType: "sse" | "stdio" | "streamable-http";
@@ -108,7 +107,7 @@ export function useConnection({
     ]);
   };
 
-  const makeRequest = async <T extends z.ZodType>(
+  const makeRequest = async <T extends z.ZodTypeAny>(
     request: ClientRequest,
     schema: T,
     options?: { suppressToast?: boolean } & RequestOptions,
@@ -197,7 +196,7 @@ export function useConnection({
         signal,
         suppressToast: true,
       });
-      return response?.completion.values || [];
+      return response.completion.values || [];
     } catch (e: unknown) {
       // Disable completions silently if the server doesn't support them.
       // See https://github.com/modelcontextprotocol/specification/discussions/122
@@ -259,7 +258,7 @@ export function useConnection({
       if (proxyHealth?.status !== "ok") {
         throw new Error("MCP Proxy Server is not healthy");
       }
-    } catch (e) {
+    } catch (e: unknown) {
       console.error("Couldn't connect to MCP Proxy Server", e);
       throw e;
     }
@@ -291,7 +290,7 @@ export function useConnection({
     return false;
   };
 
-  const connect = async (_e?: unknown, retryCount: number = 0) => {
+  const connect = async (retryCount: number = 0) => {
     const client = new Client<Request, Notification, Result>(
       {
         name: "mcp-inspector",
@@ -309,7 +308,7 @@ export function useConnection({
 
     try {
       await checkProxyHealth();
-    } catch {
+    } catch (e: unknown) {
       setConnectionStatus("error-connecting-to-proxy");
       return;
     }
@@ -436,13 +435,13 @@ export function useConnection({
           ToolListChangedNotificationSchema,
           PromptListChangedNotificationSchema,
         ].forEach((notificationSchema) => {
-          client.setNotificationHandler(notificationSchema, onNotification);
+          client.setNotificationHandler(notificationSchema, (notification: unknown) => onNotification(notification as Notification));
         });
 
         client.fallbackNotificationHandler = (
-          notification: Notification,
+          notification: unknown,
         ): Promise<void> => {
-          onNotification(notification);
+          onNotification(notification as Notification);
           return Promise.resolve();
         };
       }
@@ -450,7 +449,7 @@ export function useConnection({
       if (onStdErrNotification) {
         client.setNotificationHandler(
           StdErrNotificationSchema,
-          onStdErrNotification,
+          (notification: unknown) => onStdErrNotification(notification as Notification),
         );
       }
 
@@ -500,7 +499,7 @@ export function useConnection({
 
         const shouldRetry = await handleAuthError(error);
         if (shouldRetry) {
-          return connect(undefined, retryCount + 1);
+          return connect(retryCount + 1);
         }
         if (is401Error(error)) {
           // Don't set error state if we're about to redirect for auth
@@ -513,9 +512,9 @@ export function useConnection({
       setCompletionsSupported(true); // Reset completions support on new connection
 
       if (onPendingRequest) {
-        client.setRequestHandler(CreateMessageRequestSchema, (request) => {
-          return new Promise((resolve, reject) => {
-            onPendingRequest(request, resolve, reject);
+        client.setRequestHandler(CreateMessageRequestSchema, (request: unknown) => {
+          return new Promise<any>((resolve, reject) => { // Explicitly type the Promise to resolve with any
+            onPendingRequest(request as ClientRequest, resolve, reject);
           });
         });
       }
@@ -528,8 +527,10 @@ export function useConnection({
 
       setMcpClient(client);
       setConnectionStatus("connected");
-    } catch (e) {
-      console.error(e);
+     
+    } catch (e: unknown) {
+      const error = e; // Explicitly assign to a new variable to ensure usage
+      console.error(error);
       setConnectionStatus("error");
     }
   };

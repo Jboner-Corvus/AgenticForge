@@ -3,7 +3,7 @@ node_modules
 .pnpm-store
 
 # Build artifacts (dist sera recréé lors du build)
-dist
+# dist
 coverage
 .nyc_output
 

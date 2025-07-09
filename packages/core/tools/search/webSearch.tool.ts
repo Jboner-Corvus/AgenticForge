@@ -1,8 +1,7 @@
-import { Context } from 'fastmcp';
 // --- Fichier : src/tools/search/webSearch.tool.ts (Corrigé) ---
 import { z } from 'zod';
 
-import type { SessionData, Tool } from '../../types.js';
+import type { Tool } from '../../types.js';
 
 export const webSearchParams = z.object({
   query: z.string().describe('The search query.'),

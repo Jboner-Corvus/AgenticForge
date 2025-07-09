@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Context } from 'fastmcp';
+import { Page } from 'playwright';
 // src/tools/browser/getContent.tool.ts (Corrigé pour SessionData)
 import { z } from 'zod';
 
@@ -28,7 +29,7 @@ export async function getContentWorkerLogic(
   }
 }
 
-async function getPageContent(page: any) {
+async function getPageContent(page: Page) {
   return page.evaluate(() => {
     document
       .querySelectorAll('script, style, noscript, svg, header, footer, nav')

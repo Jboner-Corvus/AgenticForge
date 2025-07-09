@@ -23,7 +23,7 @@ services:
       dockerfile: Dockerfile
     container_name: agentic_forge_server
     ports:
-      - "${HOST_PORT:-8080}:8080"
+      - "${HOST_PORT:-8080}:3001"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./workspace:/usr/src/app/workspace
@@ -33,7 +33,6 @@ services:
     environment:
       - NODE_ENV=production
       - DOCKER=true
-      - HOST_PROJECT_PATH=/usr/src/app
       - HOST=0.0.0.0
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GEMINI_MODEL=${GEMINI_MODEL}
@@ -50,35 +49,36 @@ services:
       - CODE_EXECUTION_TIMEOUT_MS=${CODE_EXECUTION_TIMEOUT_MS}
       - SESSION_PORT=${SESSION_PORT}
       - DOCKER_HOST=${DOCKER_HOST}
-      - REDIS_HOST=redis
-      - REDIS_HOST_PORT=6378
-      - REDIS_PORT=6378
-      - TOOLS_PATH=/usr/src/app/dist/tools
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_HOST_PORT=${REDIS_HOST_PORT}
+      - REDIS_PORT=${REDIS_PORT}
+      - HOST_PROJECT_PATH=${HOST_PROJECT_PATH}
+      - TOOLS_PATH=/usr/src/app/packages/core/dist/tools
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
-    command: pnpm run build && pnpm --filter @agenticforge/core start
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 60s
+      start_period: 10s
     networks:
       - agentic_network
 
   web:
     build:
       context: .
-      dockerfile: packages/ui/Dockerfile.web
+      dockerfile: packages/ui/Dockerfile.web.nginx
     container_name: agentic_forge_web
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      - "${WEB_PORT:-3002}:3000"
     depends_on:
-      - server
+      server:
+        condition: service_healthy
     environment:
       - NODE_ENV=production
-      - WEB_PORT=3000
+      - WEB_PORT=3002
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GEMINI_MODEL=${GEMINI_MODEL}
       - HOST_PORT=${HOST_PORT}
@@ -96,11 +96,10 @@ services:
       - SESSION_PORT=${SESSION_PORT}
       - HOST_PROJECT_PATH=${HOST_PROJECT_PATH}
       - DOCKER_HOST=${DOCKER_HOST}
-      - TOOLS_PATH=/usr/src/app/dist/tools
+      - TOOLS_PATH=/usr/src/app/packages/core/dist/tools
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
-    command: pnpm --filter @agenticforge/ui run start:web
     networks:
       - agentic_network
 
@@ -135,13 +134,19 @@ services:
       - CODE_EXECUTION_TIMEOUT_MS=${CODE_EXECUTION_TIMEOUT_MS}
       - SESSION_PORT=${SESSION_PORT}
       - DOCKER_HOST=${DOCKER_HOST}
-      - TOOLS_PATH=/usr/src/app/dist/tools
+      - TOOLS_PATH=/usr/src/app/packages/core/dist/tools
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
-    command: pnpm run build && pnpm --filter @agenticforge/core start:worker
+    
     networks:
       - agentic_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
@@ -158,12 +163,7 @@ services:
       - redis
     networks:
       - agentic_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:13133/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+    
 
 volumes:
   redis_data:
