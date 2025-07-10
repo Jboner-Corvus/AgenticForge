@@ -2,18 +2,18 @@
 // Ce fichier est maintenant le point d'entrée unique pour obtenir tous les outils dynamiquement.
 
 import type { Tool } from '../types.js';
-
 import { getTools } from '../utils/toolLoader.js';
+// AJOUT : Importer le nouvel outil
+import { browseWebsiteTool } from './browser/browseWebsite.tool.js';
 
-/**
- * Exporte la fonction de chargement dynamique comme unique source de vérité pour les outils.
- * Toute partie de l'application (serveur, worker) qui a besoin de la liste des outils
- * devra appeler cette fonction.
- */
-export const getAllTools = async (): Promise<Tool[]> => {
+export const getAllTools = async (): Promise<Tool<any, any>[]> => {
   const tools = await getTools();
-  return tools;
+  return [
+    ...tools,
+    // AJOUT : Ajouter le nouvel outil à la liste
+    browseWebsiteTool as Tool<any, any>, 
+    // ... (gardez les autres outils s'il y en a)
+  ];
 };
 
-// Exporter le type Tool pour la commodité des autres fichiers.
 export type { Tool };

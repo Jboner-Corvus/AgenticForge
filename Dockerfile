@@ -1,8 +1,10 @@
-FROM node:20-alpine
+# REMPLACEZ l'ancienne ligne "FROM" par celle-ci
+FROM mcr.microsoft.com/playwright:v1.44.0-jammy
+
 WORKDIR /usr/src/app
 
 # Installer pnpm
-RUN npm install -g pnpm && apk add --no-cache curl
+RUN npm install -g pnpm
 
 # Copier les fichiers de manifeste et de configuration
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -11,11 +13,12 @@ COPY packages/core/package.json ./packages/core/
 COPY packages/ui/package.json ./packages/ui/
 
 # Install all dependencies
-RUN pnpm install --prod=false --prod=false
+RUN pnpm install --prod=false
+
+# SUPPRIMEZ la ligne "RUN npx playwright install --with-deps" car la nouvelle image l'inclut déjà
 
 # Copier le reste du code
 COPY . .
-
 # Compiler le projet depuis la racine
 RUN pnpm --filter @agenticforge/core build
 

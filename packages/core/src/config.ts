@@ -21,6 +21,7 @@ const configSchema = z.object({
   QUALITY_GATE_URL: z.string().optional(),
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.coerce.number().default(6379),
+  TAVILY_API_KEY: z.string().optional(), // <-- AJOUTEZ CETTE LIGNE
   WEBHOOK_SECRET: z.string().optional(),
   WORKER_CONCURRENCY: z.coerce.number().default(5),
 });
