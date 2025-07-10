@@ -11,21 +11,27 @@ export const shellParams = z.object({
 export const shellTool: Tool<typeof shellParams> = {
   description: 'Executes a shell command.',
   execute: async (args, ctx: Ctx) => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       exec(args.command, (error, stdout, stderr) => {
-        if (error) {
-          ctx.log.error(
-            { err: error },
-            `Failed to execute shell command: ${args.command}`,
-          );
-          reject(new Error(`Shell command failed: ${error.message}`));
-          return;
+        let output = '';
+        
+        if (stdout) {
+          output += `--- STDOUT ---\n${stdout}\n`;
         }
         if (stderr) {
-          ctx.log.warn(`Shell command stderr: ${stderr}`);
+          output += `--- STDERR ---\n${stderr}\n`;
         }
-        ctx.log.info(`Shell command stdout: ${stdout}`);
-        resolve(stdout);
+        
+        if (error) {
+          output += `--- EXECUTION FAILED ---\nExit Code: ${error.code}\n`;
+          ctx.log.error({ err: error }, `Shell command failed: ${args.command}`);
+        } else {
+          output += `--- SUCCESS ---\nExit Code: 0\n`;
+        }
+        
+        ctx.log.info(`Shell command executed. Full output:\n${output}`);
+        // Nous retournons un objet pour être cohérent avec les autres outils
+        resolve({ output: output.trim() });
       });
     });
   },

@@ -1,9 +1,8 @@
+import { exec } from 'child_process';
 import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-import { config } from '../../config.js';
-import { runInSandbox } from '../../utils/dockerManager.js';
 import { getErrDetails } from '../../utils/errorUtils.js';
 
 export const executePythonParams = z.object({
@@ -11,29 +10,27 @@ export const executePythonParams = z.object({
 });
 
 export const executePythonTool: Tool<typeof executePythonParams> = {
-  description: 'Executes Python 3 code in a secure sandboxed environment.',
+  description: 'Executes Python 3 code locally.',
   execute: async (args: z.infer<typeof executePythonParams>, ctx: Ctx) => {
-    ctx.log.info('Executing Python code in sandbox.', { code: args.code });
-    try {
-      const result = await runInSandbox(config.PYTHON_SANDBOX_IMAGE, [
-        'python',
-        '-c',
-        args.code,
-      ]);
-      let output = `Exit Code: ${result.exitCode}\n`;
-      if (result.stdout) output += `--- STDOUT ---\n${result.stdout}\n`;
-      if (result.stderr) output += `--- STDERR ---\n${result.stderr}\n`;
-      return output;
-    } catch (error) {
-      // CORRECTION DÉFINITIVE : Séparation du message et de l'objet de données.
-      const errDetails = getErrDetails(error);
-      ctx.log.error('Python sandbox execution failed', {
-        message: errDetails.message,
-        name: errDetails.name,
-        stack: errDetails.stack,
+    ctx.log.info('Executing Python code locally.', { code: args.code });
+    return new Promise((resolve) => {
+      exec(`python -c "${args.code.replace(/"/g, '"')}"`, (error, stdout, stderr) => {
+        let output = '';
+        if (error) {
+          output += `Exit Code: ${error.code}\n`;
+          const errDetails = getErrDetails(error);
+          ctx.log.error('Python execution failed', {
+            message: errDetails.message,
+            name: errDetails.name,
+            stack: errDetails.stack,
+          });
+          output += `--- ERROR ---\n${errDetails.message}\n`;
+        }
+        if (stdout) output += `--- STDOUT ---\n${stdout}\n`;
+        if (stderr) output += `--- STDERR ---\n${stderr}\n`;
+        resolve(output);
       });
-      return `Error: Failed to execute Python code. ${errDetails.message}`;
-    }
+    });
   },
   name: 'executePython',
   parameters: executePythonParams,

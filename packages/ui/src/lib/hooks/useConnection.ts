@@ -513,8 +513,11 @@ export function useConnection({
 
       if (onPendingRequest) {
         client.setRequestHandler(CreateMessageRequestSchema, (request: unknown) => {
-          return new Promise<any>((resolve, reject) => { // Explicitly type the Promise to resolve with any
-            onPendingRequest(request as ClientRequest, resolve, reject);
+          return new Promise<Result>((resolve, reject) => {
+            const customResolve = (value: unknown) => {
+              resolve(value as Result);
+            };
+            onPendingRequest(request as ClientRequest, customResolve, reject);
           });
         });
       }

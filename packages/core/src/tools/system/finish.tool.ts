@@ -9,10 +9,12 @@ export const finishParams = z.object({
 
 export const finishTool: Tool<typeof finishParams> = {
   description: "Call this tool when the user's goal is accomplished.",
-  execute: async (args, ctx: Ctx) => {
-    // Correction: Ctx n'est pas générique
-    ctx.log.info(`Goal accomplished: ${args.response}`);
-    return args.response;
+  execute: async (args: string | z.infer<typeof finishParams>, ctx: Ctx) => {
+    // Handle cases where the LLM sends a raw string instead of an object
+    const finalResponse = typeof args === 'string' ? args : args?.response;
+
+    ctx.log.info(`Goal accomplished: ${finalResponse}`);
+    return finalResponse;
   },
   name: 'finish',
   parameters: finishParams,

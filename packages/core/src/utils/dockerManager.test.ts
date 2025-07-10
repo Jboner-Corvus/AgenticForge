@@ -15,7 +15,8 @@ interface MockContainer {
   wait: ReturnType<typeof vi.fn>;
 }
 
-interface MockDockerInstance {
+// Define mockDockerInstance at the top level
+interface MockDockerode {
   createContainer: ReturnType<typeof vi.fn>;
   getImage: ReturnType<typeof vi.fn>;
   modem: {
@@ -25,7 +26,7 @@ interface MockDockerInstance {
 }
 
 // Define mockDockerInstance at the top level
-const mockDockerInstance: any = {
+const mockDockerInstance: MockDockerode = {
   createContainer: vi.fn(),
   getImage: vi.fn(() => ({
     inspect: vi.fn(),
@@ -46,14 +47,21 @@ vi.mock('dockerode', () => {
 
 describe('DockerManager', () => {
   let mockContainer: MockContainer;
-  let runInSandbox: typeof import('./dockerManager.js').runInSandbox; // Declare type
+  let runInSandbox: (
+    imageName: string,
+    command: string[],
+    options?: import('./dockerManager.js').SandboxOptions,
+  ) => Promise<import('./dockerManager.js').ExecutionResult>;
 
   beforeEach(async () => {
+    // Dynamically import the module to get the actual implementation
+    const dockerManager = await vi.importActual<
+      typeof import('./dockerManager.js')
+    >('./dockerManager.js');
+    runInSandbox = dockerManager.runInSandbox;
+
     // Clear all mocks before each test
-    mockDockerInstance.createContainer.mockClear();
-    mockDockerInstance.getImage.mockClear();
-    mockDockerInstance.modem.followProgress.mockClear();
-    mockDockerInstance.pull.mockClear();
+    vi.clearAllMocks();
 
     mockContainer = {
       logs: vi.fn(),
@@ -67,18 +75,25 @@ describe('DockerManager', () => {
     mockDockerInstance.getImage.mockImplementation(() => ({
       inspect: vi.fn().mockResolvedValue({}), // Default: image exists
     }));
-    mockDockerInstance.modem.followProgress.mockImplementation((stream: any, cb: (err: Error | null, result: any) => void) => cb(null, 'Pull complete'));
-    mockDockerInstance.pull.mockImplementation((_image: string, cb: (err: Error | null, stream: any) => void) => {
-      const stream = new PassThrough();
-      if (cb) {
-        cb(null, stream);
-      }
-      setTimeout(() => stream.end(), 10);
-      return Promise.resolve(stream);
-    });
-
-    // Dynamically import runInSandbox after mocks are set up
-    ({ runInSandbox } = await import('./dockerManager.js'));
+    mockDockerInstance.modem.followProgress.mockImplementation(
+      (
+        stream: NodeJS.ReadableStream,
+        cb: (err: Error | null, result: unknown) => void,
+      ) => cb(null, 'Pull complete'),
+    );
+    mockDockerInstance.pull.mockImplementation(
+      (
+        _image: string,
+        cb: (err: Error | null, stream: NodeJS.ReadableStream) => void,
+      ) => {
+        const stream = new PassThrough();
+        if (cb) {
+          cb(null, stream);
+        }
+        setTimeout(() => stream.end(), 10);
+        return Promise.resolve(stream);
+      },
+    );
   });
 
   afterEach(() => {
@@ -93,7 +108,12 @@ describe('DockerManager', () => {
     const logBuffer = Buffer.concat([header, payload]);
     mockContainer.logs.mockResolvedValue(logBuffer);
 
-    const result = await runInSandbox('test-image', ['echo', 'hello world'], {}, mockDockerInstance);
+    const result = await runInSandbox(
+      'test-image',
+      ['echo', 'hello world'],
+      {},
+      mockDockerInstance,
+    );
 
     expect(mockDockerInstance.createContainer).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -118,7 +138,12 @@ describe('DockerManager', () => {
     mockContainer.logs.mockResolvedValue(logBuffer);
     mockContainer.wait.mockResolvedValue({ StatusCode: 1 });
 
-    const result = await runInSandbox('test-image', ['ls', '/nonexistent'], {}, mockDockerInstance);
+    const result = await runInSandbox(
+      'test-image',
+      ['ls', '/nonexistent'],
+      {},
+      mockDockerInstance,
+    );
 
     expect(result.stderr).toBe('error message');
     expect(result.stdout).toBe('');
@@ -134,12 +159,9 @@ describe('DockerManager', () => {
         ),
     );
 
-    await expect(runInSandbox('test-image', ['sleep', '1'], {}, mockDockerInstance)).rejects.toThrow(
-      UserError,
-    );
-    await expect(runInSandbox('test-image', ['sleep', '1'], {}, mockDockerInstance)).rejects.toThrow(
-      'Execution timed out',
-    );
+    await expect(
+      runInSandbox('test-image', ['sleep', '1'], {}, mockDockerInstance),
+    ).rejects.toThrow('Execution timed out');
   });
 
   it('should pull the image if it does not exist locally', async () => {

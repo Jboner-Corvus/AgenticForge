@@ -1,12 +1,9 @@
+import { exec } from 'child_process';
 import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-import { config } from '../../config.js';
-import { runInSandbox } from '../../utils/dockerManager.js';
 import { getErrDetails } from '../../utils/errorUtils.js';
-
-const DEV_SANDBOX_IMAGE = 'node:24-alpine'; // CORRECTION: Passage de node:20 à node:24
 
 export const executeDevCommandParams = z.object({
   command: z
@@ -18,41 +15,27 @@ export const executeDevCommandParams = z.object({
 
 export const executeDevCommandTool: Tool<typeof executeDevCommandParams> = {
   description:
-    'Executes shell commands within a secure sandbox that includes Node.js and pnpm.',
+    'Executes shell commands locally within the project directory.',
   execute: async (args: z.infer<typeof executeDevCommandParams>, ctx: Ctx) => {
-    ctx.log.info(`Executing dev command in sandbox: "${args.command}"`);
-    try {
-      // Envelopper la commande dans "sh -c" pour une exécution correcte dans le shell
-      // et installer pnpm au préalable.
-      const fullCommand = `npm install -g pnpm && ${args.command}`;
-      const result = await runInSandbox(
-        DEV_SANDBOX_IMAGE,
-        ['sh', '-c', fullCommand],
-        {
-          mounts: [
-            {
-              Source: config.HOST_PROJECT_PATH || process.cwd(),
-              Target: '/usr/src/app',
-              Type: 'bind',
-            },
-          ],
-          workingDir: '/usr/src/app',
-        },
-      );
-
-      let output = `Exit Code: ${result.exitCode}\n`;
-      if (result.stdout) output += `--- STDOUT ---\n${result.stdout}\n`;
-      if (result.stderr) output += `--- STDERR ---\n${result.stderr}\n`;
-      return output;
-    } catch (error) {
-      const errDetails = getErrDetails(error);
-      ctx.log.error('Dev command sandbox execution failed', {
-        message: errDetails.message,
-        name: errDetails.name,
-        stack: errDetails.stack,
+    ctx.log.info(`Executing dev command locally: "${args.command}"`);
+    return new Promise((resolve) => {
+      exec(args.command, { cwd: process.cwd() }, (error, stdout, stderr) => {
+        let output = '';
+        if (error) {
+          output += `Exit Code: ${error.code}\n`;
+          const errDetails = getErrDetails(error);
+          ctx.log.error('Dev command execution failed', {
+            message: errDetails.message,
+            name: errDetails.name,
+            stack: errDetails.stack,
+          });
+          output += `--- ERROR ---\n${errDetails.message}\n`;
+        }
+        if (stdout) output += `--- STDOUT ---\n${stdout}\n`;
+        if (stderr) output += `--- STDERR ---\n${stderr}\n`;
+        resolve(output);
       });
-      return `Error: Failed to execute dev command. ${errDetails.message}`;
-    }
+    });
   },
   name: 'executeDevCommand',
   parameters: executeDevCommandParams,

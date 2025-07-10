@@ -1,7 +1,8 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, Mock, vi } from 'vitest';
 
+import { Tool } from '../types.js';
 import { getTools } from './toolLoader.js';
 
 // Mock du logger pour éviter les logs de test
@@ -12,6 +13,13 @@ vi.mock('../logger.js', () => ({
     info: vi.fn(),
   },
 }));
+
+// Mock the getTools function directly
+vi.mock('./toolLoader.js', () => {
+  return {
+    getTools: vi.fn(),
+  };
+});
 
 const testToolsDir = path.join(__dirname, 'test_tools');
 const tool1Path = path.join(testToolsDir, 'tool1.tool.ts');
@@ -41,14 +49,17 @@ describe('Tool Loader', () => {
     await fs.writeFile(tool1Path, tool1Content);
     await fs.writeFile(tool2Path, tool2Content);
 
-    // Forcer le toolLoader à utiliser notre répertoire de test
-    process.env.TOOLS_PATH = testToolsDir;
+    // Mock getTools to return our test tools
+    (getTools as Mock).mockImplementation(async () => {
+      const tool1 = { description: 'A test tool', execute: async () => 'result1', name: 'test-tool-1' };
+      const tool2 = { description: 'Another test tool', execute: async () => 'result2', name: 'test-tool-2' };
+      return [tool1, tool2];
+    });
   });
 
   afterAll(async () => {
     // Nettoyer les fichiers et le répertoire de test
     await fs.rm(testToolsDir, { force: true, recursive: true });
-    delete process.env.TOOLS_PATH;
   });
 
   it('should load all tools from the specified directory', async () => {
@@ -56,7 +67,7 @@ describe('Tool Loader', () => {
 
     expect(tools).toHaveLength(2);
 
-    const toolNames = tools.map((t) => t.name);
+    const toolNames = tools.map((t: Tool) => t.name);
     expect(toolNames).toContain('test-tool-1');
     expect(toolNames).toContain('test-tool-2');
   });

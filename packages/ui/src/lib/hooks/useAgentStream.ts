@@ -81,25 +81,26 @@ export const useAgentStream = () => {
 
     const onMessage = (event: MessageEvent) => {
       const data = JSON.parse(event.data);
-      if (data.type === 'thought') {
+      if (data.type === 'agent_thought') { // This was changed from 'thought'
         callbacks.onThought(data.content);
       } else if (data.type === 'tool_call') {
         callbacks.onToolCall(data.toolName, data.params);
       } else if (data.type === 'tool_result') {
         if (data.toolName === 'finish') {
-          callbacks.onMessage(data.result.response);
+          // The backend sends the final response in the 'result' field
+          // for the 'finish' tool. We need to extract it.
+          const finalResponse = (data.result as string);
+          if (finalResponse) {
+             callbacks.onMessage(finalResponse);
+          }
         } else {
           callbacks.onToolResult(data.toolName, data.result);
         }
       } else if (data.type === 'agent_response') {
         callbacks.onMessage(data.content);
-      }
-      // ▼▼▼ 3. AJOUTEZ CETTE CONDITION ▼▼▼
-      else if (data.type === 'raw_llm_response') {
-        addDebugLog(`[LLM_RAW] ${data.content}`); // Envoie le JSON au debug panel
-      }
-      // ▲▲▲ FIN DE L'AJOUT ▲▲▲
-      else if (data.type === 'error') {
+      } else if (data.type === 'raw_llm_response') {
+        addDebugLog(`[LLM_RAW] ${data.content}`);
+      } else if (data.type === 'error') {
         callbacks.onError(new Error(data.message));
       } else if (data.type === 'close') {
         callbacks.onClose();

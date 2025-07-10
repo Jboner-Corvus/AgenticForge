@@ -25,8 +25,8 @@ const llmResponseSchema = z.object({
 type ChannelData =
   | { content: string; type: 'agent_response' }
   | { content: string; type: 'agent_thought' }
-  | { result: unknown; toolName: string; type: 'tool_result' }
-  | { content: string; type: 'raw_llm_response' };
+  | { content: string; type: 'raw_llm_response' }
+  | { result: unknown; toolName: string; type: 'tool_result' };
 
 interface Command {
   name: string;

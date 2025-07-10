@@ -1,16 +1,32 @@
-import React from 'react';
+// packages/ui/src/components/ToolResultDisplay.tsx
 
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 interface ToolResultDisplayProps {
-  result: Record<string, unknown>;
+  result: unknown;
   toolName: string;
 }
 
-export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({ toolName }) => {
+export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({ result, toolName }) => {
   if (toolName === 'finish') {
-    return null;
+    return null; // N'affiche rien pour l'outil 'finish'
   }
+
+  // Fonction pour formater le résultat en chaîne de caractères
+  const formatResult = (res: any): string => {
+    if (typeof res === 'string') {
+      return res;
+    }
+    // Gère le format { output: "..." } que nous avons défini
+    if (res && typeof res === 'object' && 'output' in res) {
+      return String(res.output);
+    }
+    // Fallback pour d'autres types d'objets
+    return JSON.stringify(res, null, 2);
+  };
+
+  const resultString = formatResult(result);
 
   return (
     <Card className="bg-secondary border-border text-secondary-foreground my-2 animate-fade-in">
@@ -19,7 +35,10 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({ toolName }
         <CardTitle className="text-base font-bold">Result from {toolName}</CardTitle>
       </CardHeader>
       <CardContent className="p-2">
-        <p className="text-sm">Tool executed successfully.</p>
+        {/* La balise <pre> préserve le formatage (espaces, sauts de ligne) */}
+        <pre className="text-sm bg-background p-2 rounded-md whitespace-pre-wrap font-sans">
+          {resultString}
+        </pre>
       </CardContent>
     </Card>
   );

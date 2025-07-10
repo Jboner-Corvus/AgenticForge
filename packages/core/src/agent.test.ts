@@ -1,30 +1,48 @@
 import { Job, Queue } from 'bullmq';
-import { afterEach, beforeEach, describe, expect, it, vi, Mock } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
-import { SessionData } from '../types.js';
-
-import { Agent } from '/home/demon/agentforge/AgenticForge2/packages/core/src/agent.js';
+import { Ctx, SessionData } from '../types.js';
+import { Agent } from './agent.js';
+import { toolRegistry } from './toolRegistry.js';
 import { getLlmResponse } from './utils/llmProvider.js';
 
-// Mock des dépendances externes
 vi.mock('./utils/llmProvider.js', () => ({
   getLlmResponse: vi.fn(),
 }));
 
+vi.mock('./toolRegistry.js');
+
 const mockedGetLlmResponse = getLlmResponse as Mock;
 
-
-vi.mock('../redisClient', () => ({
-  redis: {
-    duplicate: vi.fn(() => ({
-      on: vi.fn(),
-      quit: vi.fn(),
-      subscribe: vi.fn(),
-      unsubscribe: vi.fn(),
-    })),
-    publish: vi.fn(),
+const mockFinishTool = {
+  description: 'Call this tool when the user\'s goal is accomplished.',
+  execute: vi.fn((args) => {
+    const finalResponse = typeof args === 'string' ? args : (args as { text?: string })?.text;
+    return finalResponse;
+  }),
+  name: 'finish',
+  parameters: {
+    response: {
+      description: 'The final, complete answer to the user.',
+      type: 'string',
+    },
   },
-}));
+};
+
+const mockTestTool = {
+  description: 'A test tool.',
+  execute: vi.fn((_args: unknown, _ctx: Ctx) => 'tool result'),
+  name: 'test-tool',
+  parameters: {
+    arg: {
+      description: 'An argument for the test tool.',
+      type: 'string',
+    },
+  },
+};
+
+
+
 
 describe('Agent Integration Tests', () => {
   let agent: Agent;
@@ -50,6 +68,17 @@ describe('Agent Integration Tests', () => {
 
     // Clear mocks before each test to ensure a clean state
     mockedGetLlmResponse.mockClear();
+
+    // Mock toolRegistry methods
+    (toolRegistry.getAll as Mock).mockReturnValue([mockFinishTool, mockTestTool]);
+    (toolRegistry.execute as Mock).mockImplementation(async (name: string, params: unknown, ctx: Ctx) => {
+      if (name === 'finish') {
+        return mockFinishTool.execute(params);
+      } else if (name === 'test-tool') {
+        return mockTestTool.execute(params, ctx);
+      }
+      throw new Error(`Tool not found: ${name}`);
+    });
   });
 
   afterEach(() => {

@@ -20,7 +20,9 @@ const runningInDist = __dirname.includes('dist');
 const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
 const toolsDir =
   process.env.TOOLS_PATH ||
-  path.resolve(__dirname, '..', '..', '..', 'packages/core/src/tools');
+  (runningInDist
+    ? path.join(__dirname, '..', 'tools')
+    : path.resolve(__dirname, '..', '..', 'src', 'tools'));
 const generatedToolsDir = path.join(toolsDir, 'generated');
 
 /**
@@ -45,6 +47,7 @@ async function _internalLoadTools(): Promise<void> {
   const toolFiles = await findToolFiles(toolsDir, fileExtension);
 
   logger.info(`Calculated toolsDir: ${toolsDir}`);
+  logger.info(`Current working directory: ${process.cwd()}`);
   logger.info(`Calculated fileExtension: ${fileExtension}`);
   logger.info(
     `Début du chargement dynamique des outils depuis: ${toolsDir} (recherche de *${fileExtension})`,

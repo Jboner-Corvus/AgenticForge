@@ -18,21 +18,27 @@ export async function processJob(job: Job): Promise<string> {
   const log = logger.child({ jobId: job.id, sessionId });
 
   const sessionData = await SessionManager.getSession(sessionId);
-
   const agent = new Agent(job, sessionData, jobQueue);
+  const channel = `job:${job.id}:events`; // Définir le nom du canal une seule fois
+
   try {
     const finalResponse = await agent.run();
 
     sessionData.history.push({ content: finalResponse, role: 'model' });
 
     await summarizeHistory(sessionData, log);
-
     await SessionManager.saveSession(sessionData, job, jobQueue);
 
     return finalResponse;
   } catch (error) {
     log.error({ error }, 'Error in agent execution');
+    // En cas d'erreur, on peut aussi notifier le front
+    await redis.publish(channel, JSON.stringify({ type: 'error', message: (error as Error).message }));
     throw error;
+  } finally {
+    // AJOUT : Toujours envoyer un événement de fermeture à la fin du traitement
+    log.info(`Publishing 'close' event to channel ${channel}`);
+    await redis.publish(channel, JSON.stringify({ type: 'close', content: 'Stream ended.' }));
   }
 }
 
