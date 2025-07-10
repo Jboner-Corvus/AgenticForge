@@ -14,21 +14,24 @@ export const shellTool: Tool<typeof shellParams> = {
     return new Promise((resolve) => {
       exec(args.command, (error, stdout, stderr) => {
         let output = '';
-        
+
         if (stdout) {
           output += `--- STDOUT ---\n${stdout}\n`;
         }
         if (stderr) {
           output += `--- STDERR ---\n${stderr}\n`;
         }
-        
+
         if (error) {
           output += `--- EXECUTION FAILED ---\nExit Code: ${error.code}\n`;
-          ctx.log.error({ err: error }, `Shell command failed: ${args.command}`);
+          ctx.log.error(
+            { err: error },
+            `Shell command failed: ${args.command}`,
+          );
         } else {
           output += `--- SUCCESS ---\nExit Code: 0\n`;
         }
-        
+
         ctx.log.info(`Shell command executed. Full output:\n${output}`);
         // Nous retournons un objet pour être cohérent avec les autres outils
         resolve({ output: output.trim() });

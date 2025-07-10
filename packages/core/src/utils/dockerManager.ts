@@ -12,23 +12,23 @@ import { UserError } from './errorUtils.js';
 
 const docker = new Docker(); // Se connecte au socket Docker local par défaut
 
+export interface ExecutionResult {
+  exitCode: number;
+  stderr: string;
+  stdout: string;
+}
+
+export interface SandboxOptions {
+  mounts?: DockerMount[];
+  workingDir?: string;
+}
+
 // Définition manuelle du type Mount car il n'est pas exporté par @types/dockerode
 interface DockerMount {
   ReadOnly?: boolean;
   Source: string;
   Target: string;
   Type: 'bind' | 'tmpfs' | 'volume';
-}
-
-interface ExecutionResult {
-  exitCode: number;
-  stderr: string;
-  stdout: string;
-}
-
-interface SandboxOptions {
-  mounts?: DockerMount[];
-  workingDir?: string;
 }
 
 /**
@@ -159,7 +159,10 @@ function parseMemoryString(memoryString: string): number {
 /**
  * Tire une image Docker si elle n'est pas déjà présente localement.
  */
-async function pullImageIfNotExists(imageName: string, dockerClient: Docker): Promise<void> {
+async function pullImageIfNotExists(
+  imageName: string,
+  dockerClient: Docker,
+): Promise<void> {
   try {
     await dockerClient.getImage(imageName).inspect();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

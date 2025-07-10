@@ -14,8 +14,7 @@ export const executeDevCommandParams = z.object({
 });
 
 export const executeDevCommandTool: Tool<typeof executeDevCommandParams> = {
-  description:
-    'Executes shell commands locally within the project directory.',
+  description: 'Executes shell commands locally within the project directory.',
   execute: async (args: z.infer<typeof executeDevCommandParams>, ctx: Ctx) => {
     ctx.log.info(`Executing dev command locally: "${args.command}"`);
     return new Promise((resolve) => {

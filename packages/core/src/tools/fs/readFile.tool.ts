@@ -1,23 +1,39 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-// ===== src/tools/fs/readFile.tool.ts =====
 import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-const WORKSPACE_DIR = path.resolve(process.cwd(), 'workspace');
+import { UserError } from '../../utils/errorUtils.js';
 
-fs.mkdir(WORKSPACE_DIR, { recursive: true }).catch(console.error);
+const WORKSPACE_DIR = path.resolve(process.cwd(), 'workspace');
 
 export const readFileParams = z.object({
   path: z.string().describe('The path to the file inside the workspace.'),
 });
 
 export const readFileTool: Tool<typeof readFileParams> = {
-  description: 'Reads the content of a file from the workspace.',
-  execute: async (_args: z.infer<typeof readFileParams>, _ctx: Ctx) => {
-    // ... reste de la logique inchangée
-    return 'Read file executed.';
+  description: 'Reads the entire content of a file from the workspace.',
+  execute: async (args, ctx: Ctx) => {
+    const absolutePath = path.resolve(WORKSPACE_DIR, args.path);
+
+    if (!absolutePath.startsWith(WORKSPACE_DIR)) {
+      throw new UserError(
+        'File path is outside the allowed workspace directory.',
+      );
+    }
+
+    try {
+      const content = await fs.readFile(absolutePath, 'utf-8');
+      ctx.log.info(`Successfully read file: ${args.path}`);
+      return `Content of ${args.path}:\n\n${content}`;
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
+        throw new UserError(`File not found at path: ${args.path}`);
+      }
+      ctx.log.error({ err: error }, `Failed to read file: ${args.path}`);
+      throw new Error(`Could not read file: ${error.message}`);
+    }
   },
   name: 'readFile',
   parameters: readFileParams,

@@ -55,9 +55,10 @@ describe('DockerManager', () => {
 
   beforeEach(async () => {
     // Dynamically import the module to get the actual implementation
-    const dockerManager = await vi.importActual<
-      typeof import('./dockerManager.js')
-    >('./dockerManager.js');
+    const dockerManager =
+      await vi.importActual<typeof import('./dockerManager.js')>(
+        './dockerManager.js',
+      );
     runInSandbox = dockerManager.runInSandbox;
 
     // Clear all mocks before each test
@@ -112,7 +113,6 @@ describe('DockerManager', () => {
       'test-image',
       ['echo', 'hello world'],
       {},
-      mockDockerInstance,
     );
 
     expect(mockDockerInstance.createContainer).toHaveBeenCalledWith(
@@ -138,12 +138,7 @@ describe('DockerManager', () => {
     mockContainer.logs.mockResolvedValue(logBuffer);
     mockContainer.wait.mockResolvedValue({ StatusCode: 1 });
 
-    const result = await runInSandbox(
-      'test-image',
-      ['ls', '/nonexistent'],
-      {},
-      mockDockerInstance,
-    );
+    const result = await runInSandbox('test-image', ['ls', '/nonexistent'], {});
 
     expect(result.stderr).toBe('error message');
     expect(result.stdout).toBe('');
@@ -160,7 +155,7 @@ describe('DockerManager', () => {
     );
 
     await expect(
-      runInSandbox('test-image', ['sleep', '1'], {}, mockDockerInstance),
+      runInSandbox('test-image', ['sleep', '1'], {}),
     ).rejects.toThrow('Execution timed out');
   });
 
@@ -180,7 +175,7 @@ describe('DockerManager', () => {
     const logBuffer = Buffer.concat([header, payload]);
     mockContainer.logs.mockResolvedValue(logBuffer);
 
-    await runInSandbox('new-image', ['echo', 'test'], {}, mockDockerInstance);
+    await runInSandbox('new-image', ['echo', 'test'], {});
 
     expect(mockDockerInstance.pull).toHaveBeenCalledWith('new-image');
   });

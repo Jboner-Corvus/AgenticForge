@@ -33,12 +33,18 @@ export async function processJob(job: Job): Promise<string> {
   } catch (error) {
     log.error({ error }, 'Error in agent execution');
     // En cas d'erreur, on peut aussi notifier le front
-    await redis.publish(channel, JSON.stringify({ type: 'error', message: (error as Error).message }));
+    await redis.publish(
+      channel,
+      JSON.stringify({ message: (error as Error).message, type: 'error' }),
+    );
     throw error;
   } finally {
     // AJOUT : Toujours envoyer un événement de fermeture à la fin du traitement
     log.info(`Publishing 'close' event to channel ${channel}`);
-    await redis.publish(channel, JSON.stringify({ type: 'close', content: 'Stream ended.' }));
+    await redis.publish(
+      channel,
+      JSON.stringify({ content: 'Stream ended.', type: 'close' }),
+    );
   }
 }
 

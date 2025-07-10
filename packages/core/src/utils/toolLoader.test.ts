@@ -51,8 +51,16 @@ describe('Tool Loader', () => {
 
     // Mock getTools to return our test tools
     (getTools as Mock).mockImplementation(async () => {
-      const tool1 = { description: 'A test tool', execute: async () => 'result1', name: 'test-tool-1' };
-      const tool2 = { description: 'Another test tool', execute: async () => 'result2', name: 'test-tool-2' };
+      const tool1 = {
+        description: 'A test tool',
+        execute: async () => 'result1',
+        name: 'test-tool-1',
+      };
+      const tool2 = {
+        description: 'Another test tool',
+        execute: async () => 'result2',
+        name: 'test-tool-2',
+      };
       return [tool1, tool2];
     });
   });

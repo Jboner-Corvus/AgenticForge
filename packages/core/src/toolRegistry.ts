@@ -26,7 +26,11 @@ class ToolRegistry {
    * @param ctx - Le contexte d'exécution.
    * @returns Le résultat de l'exécution de l'outil.
    */
-  public async execute(name: string, params: unknown, ctx: Ctx): Promise<unknown> {
+  public async execute(
+    name: string,
+    params: unknown,
+    ctx: Ctx,
+  ): Promise<unknown> {
     const tool = this.get(name);
     if (!tool) {
       throw new UserError(`Tool not found: ${name}`);

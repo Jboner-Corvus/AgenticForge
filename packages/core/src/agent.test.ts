@@ -15,9 +15,10 @@ vi.mock('./toolRegistry.js');
 const mockedGetLlmResponse = getLlmResponse as Mock;
 
 const mockFinishTool = {
-  description: 'Call this tool when the user\'s goal is accomplished.',
+  description: "Call this tool when the user's goal is accomplished.",
   execute: vi.fn((args) => {
-    const finalResponse = typeof args === 'string' ? args : (args as { text?: string })?.text;
+    const finalResponse =
+      typeof args === 'string' ? args : (args as { text?: string })?.text;
     return finalResponse;
   }),
   name: 'finish',
@@ -40,9 +41,6 @@ const mockTestTool = {
     },
   },
 };
-
-
-
 
 describe('Agent Integration Tests', () => {
   let agent: Agent;
@@ -70,15 +68,20 @@ describe('Agent Integration Tests', () => {
     mockedGetLlmResponse.mockClear();
 
     // Mock toolRegistry methods
-    (toolRegistry.getAll as Mock).mockReturnValue([mockFinishTool, mockTestTool]);
-    (toolRegistry.execute as Mock).mockImplementation(async (name: string, params: unknown, ctx: Ctx) => {
-      if (name === 'finish') {
-        return mockFinishTool.execute(params);
-      } else if (name === 'test-tool') {
-        return mockTestTool.execute(params, ctx);
-      }
-      throw new Error(`Tool not found: ${name}`);
-    });
+    (toolRegistry.getAll as Mock).mockReturnValue([
+      mockFinishTool,
+      mockTestTool,
+    ]);
+    (toolRegistry.execute as Mock).mockImplementation(
+      async (name: string, params: unknown, ctx: Ctx) => {
+        if (name === 'finish') {
+          return mockFinishTool.execute(params);
+        } else if (name === 'test-tool') {
+          return mockTestTool.execute(params, ctx);
+        }
+        throw new Error(`Tool not found: ${name}`);
+      },
+    );
   });
 
   afterEach(() => {

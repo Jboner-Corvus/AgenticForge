@@ -14,11 +14,10 @@ import { getTools } from './utils/toolLoader.js';
 
 // Schéma Zod pour la réponse du LLM
 const llmResponseSchema = z.object({
-  command: z
-    .object({
-      name: z.string(),
-      params: z.unknown(),
-    }),
+  command: z.object({
+    name: z.string(),
+    params: z.unknown(),
+  }),
   thought: z.string().optional(),
 });
 
@@ -137,10 +136,7 @@ export class Agent {
     };
   }
 
-  private async executeTool(
-    command: Command,
-    log: Logger,
-  ): Promise<unknown> {
+  private async executeTool(command: Command, log: Logger): Promise<unknown> {
     try {
       const toolResult = await toolRegistry.execute(
         command.name,
