@@ -62,11 +62,11 @@ export const ControlPanel = memo(() => {
 
   return (
     <aside
-      className="p-4 bg-gray-800 border-r border-gray-700 overflow-y-auto flex-shrink-0 relative"
+      className="p-4 bg-card border-r border-border overflow-y-auto flex-shrink-0 relative"
       style={{ width }}
     >
       <div className="absolute top-0 right-0 w-2 h-full cursor-col-resize" onMouseDown={handleDragStart} />
-      <Card className="bg-gray-700 border-gray-600 text-gray-100">
+      <Card className="bg-card border-border text-foreground">
         <CardHeader>
           <CardTitle className="text-lg font-semibold">{fr.controlPanel}</CardTitle>
         </CardHeader>
@@ -75,15 +75,15 @@ export const ControlPanel = memo(() => {
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label className="text-sm">{fr.sessionId}</Label>
-                <span className="text-sm text-gray-400">{sessionId ? `${sessionId.substring(0, 12)}...` : '--'}</span>
+                <span className="text-sm text-muted-foreground">{sessionId ? `${sessionId.substring(0, 12)}...` : '--'}</span>
               </div>
               <div className="flex justify-between items-center">
                 <Label className="text-sm">{fr.toolsDetected}</Label>
-                <span className="text-sm text-gray-400">{toolCount}</span>
+                <span className="text-sm text-muted-foreground">{toolCount}</span>
               </div>
               <div className="flex justify-between items-center">
                 <Label className="text-sm">{fr.connectionStatus}</Label>
-                <span className="text-sm text-gray-400">{serverHealthy ? fr.online : fr.offline}</span>
+                <span className="text-sm text-muted-foreground">{serverHealthy ? fr.online : fr.offline}</span>
               </div>
             </div>
           </Accordion>
@@ -103,8 +103,8 @@ export const ControlPanel = memo(() => {
 
           <Accordion title={fr.quickActions}>
             <div className="space-y-2">
-              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={handleNewSession}>{fr.newSession}</Button>
-              <Button className="w-full bg-red-600 hover:bg-red-700 text-white" onClick={() => handleClearHistory(true)}>{fr.clearHistory}</Button>
+              <Button className="w-full" onClick={handleNewSession} variant="secondary">{fr.newSession}</Button>
+              <Button className="w-full" onClick={() => handleClearHistory(true)} variant="destructive">{fr.clearHistory}</Button>
             </div>
           </Accordion>
         </CardContent>

@@ -36,16 +36,16 @@ export default function App() {
 
       <div className="flex flex-1 overflow-hidden">
         <div
-          className={`${
-            isControlPanelVisible
-              ? 'animate-slide-in-from-left'
-              : 'animate-slide-out-to-left'
-          } md:block`}
+          className={`transition-all duration-300 ease-in-out ${
+            isControlPanelVisible ? 'w-1/4' : 'w-0'
+          } overflow-hidden`}
         >
           <ControlPanel />
         </div>
 
-        <ChatWindow />
+        <div className="flex-1">
+          <ChatWindow />
+        </div>
       </div>
 
       <DebugPanel

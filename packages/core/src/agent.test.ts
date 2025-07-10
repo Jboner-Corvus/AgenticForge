@@ -13,18 +13,7 @@ vi.mock('./utils/llmProvider.js', () => ({
 
 const mockedGetLlmResponse = getLlmResponse as Mock;
 
-vi.mock('../tools', () => ({
-  getAllTools: vi.fn().mockResolvedValue([
-    {
-      execute: vi.fn().mockImplementation(async (params: { text: string }) => params.text),
-      name: 'finish',
-    },
-    {
-      execute: vi.fn().mockResolvedValue('tool result'),
-      name: 'test-tool',
-    },
-  ]),
-}));
+
 vi.mock('../redisClient', () => ({
   redis: {
     duplicate: vi.fn(() => ({

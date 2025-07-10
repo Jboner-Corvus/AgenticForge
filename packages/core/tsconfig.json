@@ -17,8 +17,6 @@
     "skipLibCheck": true,
     "strict": true,
     "sourceMap": true,
-    "allowImportingTsExtensions": true,
-    "noEmit": true,
     "baseUrl": ".",
     "paths": {
       "@agenticforge/core/*": ["./src/*"]

@@ -73,7 +73,13 @@ export async function getTools(authToken: null | string, sessionId: null | strin
  * @param {(event: MessageEvent) => void} onMessage Callback pour gérer les messages streamés.
  * @returns {Promise<string>} Le jobId de la tâche.
  */
-export async function sendMessage(prompt: string, authToken: null | string, sessionId: null | string, onMessage: (event: MessageEvent) => void): Promise<string> {
+export async function sendMessage(
+  prompt: string,
+  authToken: null | string,
+  sessionId: null | string,
+  onMessage: (event: MessageEvent) => void,
+  onError: (error: Event) => void,
+): Promise<string> {
   try {
     const response = await fetch('/api/chat', {
       body: JSON.stringify({ prompt }),
@@ -95,6 +101,7 @@ export async function sendMessage(prompt: string, authToken: null | string, sess
 
     eventSource.onerror = (error) => {
       console.error(`EventSource failed:`, error);
+      onError(error);
       eventSource.close();
     };
 

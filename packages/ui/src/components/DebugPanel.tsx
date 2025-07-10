@@ -21,9 +21,12 @@ export const DebugPanel = memo(({
 
   return (
     <Card
-      className="bg-secondary border-t border-border text-secondary-foreground flex flex-col flex-shrink-0 font-mono text-xs relative"
+      className="bg-card border-t border-border text-card-foreground flex flex-col flex-shrink-0 font-mono text-xs relative"
       id="debug-panel"
-      style={{ height: debugPanelVisible ? height : 0, transition: 'height 0.3s ease-in-out' }}
+      style={{
+        height: debugPanelVisible ? height : 0,
+        transition: 'height 0.3s ease-in-out',
+      }}
     >
       <div className="absolute top-0 left-0 w-full h-2 cursor-row-resize" onMouseDown={handleDragStart} />
       <CardHeader className="flex flex-row items-center justify-between p-2 border-b border-border">

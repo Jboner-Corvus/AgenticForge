@@ -20,9 +20,7 @@ const runningInDist = __dirname.includes('dist');
 const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
 const toolsDir =
   process.env.TOOLS_PATH ||
-  (runningInDist
-    ? path.join(__dirname, 'tools')
-    : path.resolve(process.cwd(), 'packages/core/src/tools'));
+  path.resolve(__dirname, '..', '..', '..', 'packages/core/src/tools');
 const generatedToolsDir = path.join(toolsDir, 'generated');
 
 /**

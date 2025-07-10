@@ -10,9 +10,9 @@ export const Accordion: React.FC<AccordionProps> = ({ children, title }) => {
   const [isOpen, setIsOpen] = useState(true);
 
   return (
-    <div className="border-b border-gray-600">
+    <div className="border-b border-border">
       <button
-        className="w-full flex justify-between items-center p-2 text-left font-medium text-gray-300 hover:bg-gray-700"
+        className="w-full flex justify-between items-center p-2 text-left font-medium text-foreground hover:bg-muted"
         onClick={() => setIsOpen(!isOpen)}
       >
         <span>{title}</span>

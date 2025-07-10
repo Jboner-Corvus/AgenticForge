@@ -14,6 +14,7 @@ export const useAgentStream = () => {
     setJobId,
     setMessageInputValue,
     setStreamCloseFunc,
+    addDebugLog, // <-- 1. AJOUTEZ CECI
   } = useStore();
 
   const startAgent = useCallback(async () => {
@@ -31,19 +32,49 @@ export const useAgentStream = () => {
         setStreamCloseFunc(null);
       },
       onError: (error: Error) => {
-        addDisplayItem({ content: `An error occurred: ${error.message}`, sender: 'assistant', type: 'agent_response' });
+        addDisplayItem({
+          content: `An error occurred: ${error.message}`,
+          sender: 'assistant',
+          type: 'agent_response',
+        });
         setIsProcessing(false);
       },
       onMessage: (message: string) => {
-        addDisplayItem({ content: message, sender: 'assistant', type: 'agent_response' });
+        const { displayItems } = useStore.getState();
+        const lastItem = displayItems[displayItems.length - 1];
+        if (
+          lastItem &&
+          lastItem.type === 'agent_response' &&
+          lastItem.sender === 'assistant'
+        ) {
+          // Mettre à jour le dernier message au lieu d'en ajouter un nouveau
+          const newDisplayItems = [...displayItems];
+          newDisplayItems[displayItems.length - 1] = {
+            ...lastItem,
+            content: lastItem.content + message,
+          };
+          useStore.setState({ displayItems: newDisplayItems });
+        } else {
+          addDisplayItem({
+            content: message,
+            sender: 'assistant',
+            type: 'agent_response',
+          });
+        }
       },
       onThought: (thought: string) => {
         addDisplayItem({ content: thought, type: 'agent_thought' });
       },
-      onToolCall: (toolName: string, params: Record<string, unknown>) => {
+      onToolCall: (
+        toolName: string,
+        params: Record<string, unknown>,
+      ) => {
         addDisplayItem({ params, toolName, type: 'tool_call' });
       },
-      onToolResult: (toolName: string, result: Record<string, unknown>) => {
+      onToolResult: (
+        toolName: string,
+        result: Record<string, unknown>,
+      ) => {
         addDisplayItem({ result, toolName, type: 'tool_result' });
       },
     };
@@ -62,7 +93,13 @@ export const useAgentStream = () => {
         }
       } else if (data.type === 'agent_response') {
         callbacks.onMessage(data.content);
-      } else if (data.type === 'error') {
+      }
+      // ▼▼▼ 3. AJOUTEZ CETTE CONDITION ▼▼▼
+      else if (data.type === 'raw_llm_response') {
+        addDebugLog(`[LLM_RAW] ${data.content}`); // Envoie le JSON au debug panel
+      }
+      // ▲▲▲ FIN DE L'AJOUT ▲▲▲
+      else if (data.type === 'error') {
         callbacks.onError(new Error(data.message));
       } else if (data.type === 'close') {
         callbacks.onClose();
@@ -70,13 +107,29 @@ export const useAgentStream = () => {
     };
 
     try {
-      const jobId = await sendMessage(goal, authToken, sessionId, onMessage);
+      const jobId = await sendMessage(
+        goal,
+        authToken,
+        sessionId,
+        onMessage,
+        (error) => callbacks.onError(error as unknown as Error),
+      );
       setJobId(jobId);
       // setStreamCloseFunc(() => close);
     } catch (error) {
       callbacks.onError(error as Error);
     }
-  }, [authToken, sessionId, addDisplayItem, setIsProcessing, setJobId, setStreamCloseFunc, messageInputValue, setMessageInputValue]);
+  }, [
+    authToken,
+    sessionId,
+    addDisplayItem,
+    setIsProcessing,
+    setJobId,
+    setStreamCloseFunc,
+    messageInputValue,
+    setMessageInputValue,
+    addDebugLog, // <-- 2. AJOUTEZ CECI AUX DÉPENDANCES
+  ]);
 
   const interruptAgent = useCallback(async () => {
     const { streamCloseFunc, jobId, authToken, sessionId } = useStore.getState();

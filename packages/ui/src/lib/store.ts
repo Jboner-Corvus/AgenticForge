@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 
 import { getTools } from './api';
-import { DisplayableItem } from './types';
+import { DisplayableItem, NewDisplayableItem } from './types';
+import { generateUUID } from './utils/uuid';
 
 interface AppState {
   addDebugLog: (log: string) => void;
-  addDisplayItem: (item: DisplayableItem) => void;
+  addDisplayItem: (item: NewDisplayableItem) => void;
   authToken: null | string;
   clearDebugLog: () => void;
   clearDisplayItems: () => void;
@@ -43,7 +44,10 @@ interface AppState {
 
 export const useStore = create<AppState>((set, get) => ({
   addDebugLog: (log) => set((state) => ({ debugLog: [...state.debugLog, log] })),
-  addDisplayItem: (item) => set((state) => ({ displayItems: [...state.displayItems, item] })),
+  addDisplayItem: (item) =>
+    set((state) => ({
+      displayItems: [...state.displayItems, { ...item, id: generateUUID() }],
+    })),
   authToken: null,
   clearDebugLog: () => set({ debugLog: [] }),
   clearDisplayItems: () => set({ displayItems: [] }),
@@ -56,7 +60,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (!authToken || !sessionId) return;
     addDebugLog(`[${new Date().toLocaleTimeString()}] [REQUEST] Récupération de la liste des outils...`);
     try {
-      const tools = await getTools(authToken, sessionId) as { name: string }[];
+      const tools = (await getTools(authToken, sessionId)) as { name: string }[];
       addDebugLog(`[${new Date().toLocaleTimeString()}] [SUCCESS] ${tools.length} outils trouvés.`);
       setToolCount(tools.length);
       updateSessionStatus('valid');
