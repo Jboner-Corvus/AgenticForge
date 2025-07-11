@@ -14,13 +14,13 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({ result, to
   }
 
   // Fonction pour formater le résultat en chaîne de caractères
-  const formatResult = (res: any): string => {
+  const formatResult = (res: unknown): string => {
     if (typeof res === 'string') {
       return res;
     }
     // Gère le format { output: "..." } que nous avons défini
     if (res && typeof res === 'object' && 'output' in res) {
-      return String(res.output);
+      return String((res as { output: unknown }).output);
     }
     // Fallback pour d'autres types d'objets
     return JSON.stringify(res, null, 2);

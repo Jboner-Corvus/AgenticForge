@@ -13,6 +13,7 @@ const PREAMBULE = readFileSync(promptFilePath, 'utf-8');
 
 const TOOLS_SECTION_HEADER = '## Available Tools:';
 const HISTORY_SECTION_HEADER = '## Conversation History:';
+const WORKING_CONTEXT_HEADER = '## Working Context:';
 
 const formatToolForPrompt = (tool: Tool): string => {
   // CORRIGÉ : La propriété est 'parameters' et contient le schéma Zod.
@@ -27,6 +28,15 @@ export const getMasterPrompt = (
   session: AgentSession,
   tools: Tool[],
 ): string => {
+  let workingContextSection = '';
+  if (session.data.workingContext) {
+    workingContextSection = `${WORKING_CONTEXT_HEADER}\n${JSON.stringify(
+      session.data.workingContext,
+      null,
+      2,
+    )}\n\n`;
+  }
+
   const formattedTools = tools.map(formatToolForPrompt).join('\n');
   const toolsSection = `${TOOLS_SECTION_HEADER}\n${formattedTools}`;
 
@@ -38,5 +48,5 @@ export const getMasterPrompt = (
   return `${format(
     PREAMBULE,
     new Date().toISOString(),
-  )}\n\n${toolsSection}\n\n${historySection}\n\nASSISTANT's turn. Your response:`;
+  )}\n\n${workingContextSection}${toolsSection}\n\n${historySection}\n\nASSISTANT's turn. Your response:`;
 };

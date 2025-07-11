@@ -58,7 +58,9 @@ describe('Agent Integration Tests', () => {
     subscribe: Mock;
     unsubscribe: Mock;
   };
-  let onMessageCallback: ((channel: string, message: string) => void) | undefined;
+  let onMessageCallback:
+    | ((channel: string, message: string) => void)
+    | undefined;
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -166,7 +168,7 @@ describe('Agent Integration Tests', () => {
     // Vérifie que le message d'erreur a été ajouté à l'historique pour le contexte
     expect(mockSession.history).toContainEqual({
       content:
-        "La réponse du modèle n'a pas pu être analysée. Nouvelle tentative.",
+        'Your last response was not a valid command. You must choose a tool from the list. Please try again.',
       role: 'user',
     });
   });
@@ -216,7 +218,9 @@ describe('Agent Integration Tests', () => {
 
     // Vérifie que l'agent a été interrompu
     expect(finalResponse).toBe('Agent execution interrupted.');
-    expect(mockRedisSubscriber.unsubscribe).toHaveBeenCalledWith(`job:${mockJob.id}:interrupt`);
+    expect(mockRedisSubscriber.unsubscribe).toHaveBeenCalledWith(
+      `job:${mockJob.id}:interrupt`,
+    );
     expect(mockRedisSubscriber.quit).toHaveBeenCalled();
     // Le LLM devrait avoir été appelé au moins une fois avant l'interruption
     expect(mockedGetLlmResponse).toHaveBeenCalledTimes(1);
@@ -234,7 +238,10 @@ describe('Agent Integration Tests', () => {
     // 2. LLM répond avec une commande finish après l'échec de l'outil
     mockedGetLlmResponse.mockResolvedValueOnce(
       JSON.stringify({
-        command: { name: 'finish', params: { text: 'Recovered from tool error' } },
+        command: {
+          name: 'finish',
+          params: { text: 'Recovered from tool error' },
+        },
         thought: 'The tool failed, but I can still finish.',
       }),
     );
@@ -265,7 +272,7 @@ describe('Agent Integration Tests', () => {
 
   it('should return a default message if LLM response has no command or thought', async () => {
     // LLM répond avec un JSON valide mais sans commande ni pensée
-    mockedGetLlmResponse.mockResolvedValueOnce(
+    mockedGetLlmResponse.mockResolvedValue(
       JSON.stringify({
         someOtherKey: 'someValue',
       }),
@@ -273,12 +280,14 @@ describe('Agent Integration Tests', () => {
 
     const finalResponse = await agent.run();
 
-    expect(finalResponse).toBe("I'm not sure how to proceed.");
-    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(1);
+    expect(finalResponse).toBe(
+      'Agent reached maximum iterations without a final answer.',
+    );
+    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(10);
     // L'historique ne devrait pas contenir de nouvelle entrée pour la pensée ou la commande
-    expect(mockSession.history).toEqual([
-      { content: 'Test objective', role: 'user' },
-    ]);
+    expect(mockSession.history).not.toContainEqual({
+      role: 'model',
+    });
   });
 
   it('should handle tool loading failures', async () => {

@@ -10,7 +10,8 @@ export const getTextFromUrlParams = z.object({
 
 // Définition de l'outil
 export const getTextFromUrlTool: Tool<typeof getTextFromUrlParams> = {
-  description: 'Fetches the textual content of a web page after stripping HTML tags. Useful for static pages.',
+  description:
+    'Fetches the textual content of a web page after stripping HTML tags. Useful for static pages.',
   execute: (args, _ctx: Ctx) => {
     return new Promise((resolve) => {
       // Utilise curl pour récupérer le HTML

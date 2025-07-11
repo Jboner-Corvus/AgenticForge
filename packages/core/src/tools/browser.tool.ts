@@ -24,7 +24,8 @@ async function getPageContent(page: Page): Promise<string> {
 
 // Définition de l'outil
 export const browserTool: Tool<typeof browserParams> = {
-  description: 'Navigates to a URL using a headless Chromium browser and returns its textual content. Ideal for modern websites with JavaScript.',
+  description:
+    'Navigates to a URL using a headless Chromium browser and returns its textual content. Ideal for modern websites with JavaScript.',
   execute: async (args, ctx: Ctx) => {
     ctx.log.info(`Navigating to URL: ${args.url}`);
     const browser = await chromium.launch({
@@ -34,10 +35,15 @@ export const browserTool: Tool<typeof browserParams> = {
 
     try {
       const page = await browser.newPage();
-      await page.goto(args.url, { timeout: 90000, waitUntil: 'domcontentloaded' });
+      await page.goto(args.url, {
+        timeout: 90000,
+        waitUntil: 'domcontentloaded',
+      });
 
       const content = await getPageContent(page);
-      ctx.log.info(`Successfully retrieved content from ${args.url}. Length: ${content.length}`);
+      ctx.log.info(
+        `Successfully retrieved content from ${args.url}. Length: ${content.length}`,
+      );
 
       return {
         content: content,

@@ -25,22 +25,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Étape 2 : Installation de pnpm (le gestionnaire de paquets de votre projet)
-      # pnpm est plus rapide et efficace que npm ou yarn
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9 # Spécifiez la version de pnpm si nécessaire
-
-      # Étape 3 : Installation de Node.js
+      # Étape 2 : Installation de Node.js et pnpm
       # Utilise la version 24, comme spécifié dans votre package.json
-      - name: Setup Node.js
+      - name: Set up Node.js and pnpm
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-          cache: 'pnpm' # Active le cache pour les dépendances gérées par pnpm
+          cache: 'pnpm' # This line automatically handles pnpm caching
 
-      # Étape 4 : Installation des dépendances du projet
+      # Étape 3 : Installation des dépendances du projet
       # Cette étape est accélérée par le cache configuré ci-dessus
       - name: Install dependencies
         run: pnpm install

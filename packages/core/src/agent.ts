@@ -14,10 +14,12 @@ import { getTools } from './utils/toolLoader.js';
 
 // Schéma Zod pour la réponse du LLM
 const llmResponseSchema = z.object({
-  command: z.object({
-    name: z.string(),
-    params: z.unknown(),
-  }).optional(),
+  command: z
+    .object({
+      name: z.string(),
+      params: z.unknown(),
+    })
+    .optional(),
   thought: z.string().optional(),
 });
 
@@ -77,10 +79,13 @@ export class Agent {
 
         const parsedResponse = this.parseLlmResponse(llmResponse, iterationLog);
 
-        if (!parsedResponse) {
-          const errorMessage = `La réponse du modèle n'a pas pu être analysée. Nouvelle tentative.`;
+        if (!parsedResponse || !parsedResponse.command) {
+          const errorMessage = `Your last response was not a valid command. You must choose a tool from the list. Please try again.`;
           iterationLog.warn(errorMessage);
-          this.session.history.push({ content: errorMessage, role: 'user' });
+          this.session.history.push({
+            content: errorMessage,
+            role: 'user',
+          });
           continue;
         }
 
@@ -153,10 +158,37 @@ export class Agent {
         toolName: command.name,
         type: 'tool_result',
       });
+
+      // Update working context
+      if (!this.session.workingContext) {
+        this.session.workingContext = {};
+      }
+      this.session.workingContext.lastAction = command.name;
+
+      if (
+        (command.name === 'writeFile' || command.name === 'editFile') &&
+        command.params &&
+        typeof command.params === 'object' &&
+        'path' in command.params &&
+        typeof command.params.path === 'string'
+      ) {
+        this.session.workingContext.currentFile = command.params.path;
+      }
+
       return toolResult;
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       log.error({ error }, `Error executing tool ${command.name}`);
-      return error instanceof Error ? error.message : String(error);
+
+      const thought = `Tool ${command.name} failed with error: ${errorMessage}. I will now attempt to recover.`;
+      this.publishToChannel({ content: thought, type: 'agent_thought' });
+
+      this.session.history.push({
+        content: `Error executing tool ${command.name}: ${errorMessage}`,
+        role: 'tool',
+      });
+      return errorMessage;
     }
   }
 

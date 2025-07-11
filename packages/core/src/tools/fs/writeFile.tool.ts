@@ -6,8 +6,6 @@ import type { Ctx, Tool } from '../../types.js';
 
 import { UserError } from '../../utils/errorUtils.js';
 
-
-
 export const writeFileParams = z.object({
   content: z.string().describe('The full content to write to the file.'),
   path: z
@@ -18,11 +16,14 @@ export const writeFileParams = z.object({
 });
 
 export const writeFileTool: Tool<typeof writeFileParams> = {
-  description: 'Writes content to a file, overwriting it. Creates the file and directories if they do not exist.',
+  description:
+    'Writes content to a file, overwriting it. Creates the file and directories if they do not exist.',
   execute: async (args, ctx: Ctx) => {
     const absolutePath = path.resolve(process.cwd(), 'workspace', args.path);
     if (!absolutePath.startsWith(path.resolve(process.cwd(), 'workspace'))) {
-      throw new UserError('File path is outside the allowed workspace directory.');
+      throw new UserError(
+        'File path is outside the allowed workspace directory.',
+      );
     }
 
     try {
@@ -30,7 +31,12 @@ export const writeFileTool: Tool<typeof writeFileParams> = {
       await fs.mkdir(path.dirname(absolutePath), { recursive: true });
 
       // Vérifier si le fichier existe et si son contenu est identique
-      if (await fs.stat(absolutePath).then(() => true).catch(() => false)) {
+      if (
+        await fs
+          .stat(absolutePath)
+          .then(() => true)
+          .catch(() => false)
+      ) {
         const currentContent = await fs.readFile(absolutePath, 'utf-8');
         if (currentContent === args.content) {
           const message = `File ${args.path} already contains the desired content. No changes made.`;

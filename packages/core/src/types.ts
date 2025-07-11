@@ -37,6 +37,10 @@ export interface SessionData {
   history: Message[];
   id: string;
   identities: Array<{ id: string; type: string }>;
+  workingContext?: {
+    currentFile?: string;
+    lastAction?: string;
+  };
 }
 
 declare module 'express' {
