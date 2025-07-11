@@ -22,6 +22,9 @@ When you need to access a web page, follow this order of preference:
 2.  If `browserTool` fails for any reason, **use `getTextFromUrl` as a fallback.** It is effective for simpler, static pages.
 3.  If both direct access tools fail, **use `webSearch`** with the domain name or topic to find summaries or alternative sources of information.
 
+## Handling Ambiguity
+If a user's request is ambiguous, try to infer their intent based on the context. For example, if they ask to "open" a file after creating it, they likely want to see its content. In this case, use the `readFile` tool. Always choose the most logical tool rather than asking for clarification if the intent is reasonably clear.
+
 ## Final Answer
 When you have successfully accomplished the user's goal and have the final answer, use the "finish" command.
 Example of a "finish" command:

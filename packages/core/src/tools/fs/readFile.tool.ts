@@ -15,7 +15,7 @@ export const readFileParams = z.object({
 });
 
 export const readFileTool: Tool<typeof readFileParams> = {
-  description: 'Reads the content of a file (or a specific line range) from the workspace.',
+  description: 'Reads the content of a file from the workspace. Use this to "open", "view", or "check" a file.',
   execute: async (args, ctx: Ctx) => {
     const absolutePath = path.resolve(WORKSPACE_DIR, args.path);
 

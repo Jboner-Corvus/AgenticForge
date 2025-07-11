@@ -77,10 +77,13 @@ export class Agent {
 
         const parsedResponse = this.parseLlmResponse(llmResponse, iterationLog);
 
-        if (!parsedResponse) {
-          const errorMessage = `La réponse du modèle n'a pas pu être analysée. Nouvelle tentative.`;
+        if (!parsedResponse || !parsedResponse.command) {
+          const errorMessage = `Your last response was not a valid command. You must choose a tool from the list. Please try again.`;
           iterationLog.warn(errorMessage);
-          this.session.history.push({ content: errorMessage, role: 'user' });
+          this.session.history.push({
+            content: errorMessage,
+            role: 'user',
+          });
           continue;
         }
 
