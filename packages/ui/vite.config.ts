@@ -34,11 +34,14 @@ export default defineConfig({
   },
   server: {
     host: true,
+    hmr: {
+      host: '192.168.2.56',
+    },
     proxy: {
       '/api': {
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '/api'),
-        target: 'http://server:3001',
+        target: 'http://192.168.2.56:3001',
       },
     },
   },

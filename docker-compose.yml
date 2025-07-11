@@ -1,175 +1,28 @@
+
+
 services:
-  redis:
-    image: redis:7.2-alpine
-    container_name: agentic_forge_redis
-    command: redis-server --port 6378
-    ports:
-      - "${REDIS_HOST_PORT:-6378}:6378"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "-p", "6378", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    restart: unless-stopped
-    networks:
-      - agentic_network
-
-  server:
+  nginx:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: agentic_forge_server
+      dockerfile: Dockerfile.nginx
     ports:
-      - "${HOST_PORT:-8080}:3001"
+      - "80:80"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./workspace:/usr/src/app/workspace
-    depends_on:
-      redis:
-        condition: service_healthy
-    environment:
-      - NODE_ENV=production
-      - DOCKER=true
-      - HOST=0.0.0.0
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - GEMINI_MODEL=${GEMINI_MODEL}
-      - HOST_PORT=${HOST_PORT}
-      - PORT=${PORT:-3001}
-      - LOG_LEVEL=${LOG_LEVEL}
-      - AUTH_TOKEN=${AUTH_TOKEN}
-      - REDIS_HOST_PORT=${REDIS_HOST_PORT}
-      - WEB_PORT=${WEB_PORT}
-      - LLM_API_KEY=${LLM_API_KEY}
-      - LLM_MODEL_NAME=${LLM_MODEL_NAME}
-      - PYTHON_SANDBOX_IMAGE=${PYTHON_SANDBOX_IMAGE}
-      - ASH_SANDBOX_IMAGE=${ASH_SANDBOX_IMAGE}
-      - CODE_EXECUTION_TIMEOUT_MS=${CODE_EXECUTION_TIMEOUT_MS}
-      - SESSION_PORT=${SESSION_PORT}
-      - DOCKER_HOST=${DOCKER_HOST}
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_HOST_PORT=${REDIS_HOST_PORT}
-      - REDIS_PORT=${REDIS_PORT}
-      - HOST_PROJECT_PATH=${HOST_PROJECT_PATH}
-      - TOOLS_PATH=/usr/src/app/packages/core/dist/tools
-    mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
-    restart: unless-stopped
-    env_file: ./.env
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - agentic_network
-
-  web:
-    build:
-      context: .
-      dockerfile: packages/ui/Dockerfile.web.nginx
-    container_name: agentic_forge_web
-    ports:
-      - "${WEB_PORT:-3002}:3000"
-    depends_on:
-      server:
-        condition: service_healthy
-    environment:
-      - NODE_ENV=production
-      - WEB_PORT=3002
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - GEMINI_MODEL=${GEMINI_MODEL}
-      - HOST_PORT=${HOST_PORT}
-      - PORT=${PORT:-3001}
-      - LOG_LEVEL=${LOG_LEVEL}
-      - AUTH_TOKEN=${AUTH_TOKEN}
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - REDIS_HOST_PORT=${REDIS_HOST_PORT}
-      - LLM_API_KEY=${LLM_API_KEY}
-      - LLM_MODEL_NAME=${LLM_MODEL_NAME}
-      - PYTHON_SANDBOX_IMAGE=${PYTHON_SANDBOX_IMAGE}
-      - ASH_SANDBOX_IMAGE=${ASH_SANDBOX_IMAGE}
-      - CODE_EXECUTION_TIMEOUT_MS=${CODE_EXECUTION_TIMEOUT_MS}
-      - SESSION_PORT=${SESSION_PORT}
-      - HOST_PROJECT_PATH=${HOST_PROJECT_PATH}
-      - DOCKER_HOST=${DOCKER_HOST}
-      - TOOLS_PATH=/usr/src/app/packages/core/dist/tools
-    mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
-    restart: unless-stopped
-    env_file: ./.env
-    networks:
-      - agentic_network
-
-  #  worker:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    container_name: agentic_forge_worker
-#    volumes:
-#      - /var/run/docker.sock:/var/run/docker.sock
-#      - ./workspace:/usr/src/app/workspace
-#    depends_on:
-#      redis:
-#        condition: service_healthy
-#    environment:
-#      - NODE_ENV=production
-#      - REDIS_URL=redis://redis:6378
-#      - DOCKER=true
-#      - HOST_PROJECT_PATH=/usr/src/app
-#      - GEMINI_API_KEY=${GEMINI_API_KEY}
-#      - GEMINI_MODEL=${GEMINI_MODEL}
-#      - HOST_PORT=${HOST_PORT}
-#      - PORT=${PORT:-3001}
-#      - LOG_LEVEL=${LOG_LEVEL}
-#      - AUTH_TOKEN=${AUTH_TOKEN}
-#      - REDIS_HOST_PORT=${REDIS_HOST_PORT}
-#      - WEB_PORT=${WEB_PORT}
-#      - LLM_API_KEY=${LLM_API_KEY}
-#      - LLM_MODEL_NAME=${LLM_MODEL_NAME}
-#      - PYTHON_SANDBOX_IMAGE=${PYTHON_SANDBOX_IMAGE}
-#      - ASH_SANDBOX_IMAGE=${ASH_SANDBOX_IMAGE}
-#      - CODE_EXECUTION_TIMEOUT_MS=${CODE_EXECUTION_TIMEOUT_MS}
-#      - SESSION_PORT=${SESSION_PORT}
-#      - DOCKER_HOST=${DOCKER_HOST}
-#      - TOOLS_PATH=/usr/src/app/packages/core/dist/tools
-#    mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
-#    restart: unless-stopped
-#    env_file: ./.env
-#    
-#    networks:
-#      - agentic_network
-#    healthcheck:
-#      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 5
-#      start_period: 10s
-
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
-    container_name: otel_collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    ports:
-      - "4317:4317" # OTLP gRPC receiver
-      - "4318:4318" # OTLP HTTP receiver
-      - "13133:13133" # Health Check extension
-      - "8888:8888" # Prometheus metrics
+      - ./packages/ui/dist:/usr/share/nginx/html:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Fait en sorte que Redis démarre avant Nginx
     depends_on:
       - redis
-    networks:
-      - agentic_network
-    
 
-volumes:
-  redis_data:
-    driver: local
-
-networks:
-  agentic_network:
-    driver: bridge
-    name: agentic_forge_network
+  redis:
+    # Utilise l'image officielle et légère de Redis
+    image: redis:alpine
+    ports:
+      # Lie le port Redis de votre machine à celui du conteneur.
+      # Ainsi, votre backend local peut toujours s'y connecter sur localhost:6379
+      - "6379:6379"
+    volumes:
+      # Ce volume permet de sauvegarder les données de Redis sur votre machine
+      # pour ne pas les perdre quand le conteneur s'arrête.
+      - ./redis-data:/data

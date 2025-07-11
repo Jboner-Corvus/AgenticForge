@@ -35,3 +35,5 @@ lol
 junit.xml
 Z :
 Z:
+setup_share.py
+*.pid

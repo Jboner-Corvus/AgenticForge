@@ -1,8 +1,5 @@
 // FICHIER : src/config.ts
-import dotenv from 'dotenv';
 import { z } from 'zod';
-
-dotenv.config();
 
 const configSchema = z.object({
   AGENT_MAX_ITERATIONS: z.coerce.number().default(10),

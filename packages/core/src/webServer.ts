@@ -1,4 +1,5 @@
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
@@ -18,8 +19,15 @@ const __dirname = path.dirname(__filename);
 export async function startWebServer() {
   const app = express();
   app.use(express.json());
-  app.use(express.static(path.join(__dirname, '..', 'ui', 'dist')));
   app.use(cookieParser());
+
+  // CORS configuration
+  app.use(cors({
+    origin: 'http://192.168.2.56:5173',
+    credentials: true,
+  }));
+
+  app.use(express.static(path.join(__dirname, '..', 'ui', 'dist')));
 
   app.use(
     (
@@ -258,9 +266,9 @@ export async function startWebServer() {
 
   app.use(handleError);
 
-  app.listen(config.PORT, () => {
+  app.listen(config.PORT, '0.0.0.0', () => {
     logger.info(
-      `Serveur AgenticForge (mode scalable) démarré sur http://localhost:${config.PORT}`,
+      `Serveur AgenticForge (mode scalable) démarré sur http://0.0.0.0:${config.PORT}`,
     );
   });
 }

@@ -31,12 +31,11 @@
     <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square&logo=opensource&logoColor=white" alt="MIT License"> <img src="https://img.shields.io/github/stars/Jboner-Corvus/AgenticForge?style=flat-square&logo=github&color=gold" alt="Stars"> <img src="https://img.shields.io/github/forks/Jboner-Corvus/AgenticForge?style=flat-square&logo=git&color=blue" alt="Forks"> <img src="https://img.shields.io/github/issues/Jboner-Corvus/AgenticForge?style=flat-square&logo=github" alt="Issues">
 </p>
 <p align="center">
-    <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
     <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
     <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
     <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis">
     <img src="https://img.shields.io/badge/MCP-000000?style=for-the-badge&logoColor=white" alt="MCP">
-    <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm">
+    <img src="https://img.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm">
 </p>
 
 ## Why Agentic Forge?
@@ -74,11 +73,9 @@
 Before starting, make sure you have the following software installed:
 
 - **Git**: To clone the repository. [Download Git](https://git-scm.com/)
-- **Docker Engine & Docker Compose**: To run the bundled services.
-  - [Install Docker Desktop](https://www.docker.com/products/docker-desktop/) (includes Docker Compose V2): Windows | Mac | Linux
-  - Or install separately: [Docker Engine](https://docs.docker.com/engine/install/) | [Docker Compose](https://docs.docker.com/compose/install/)
 - **Node.js 20+**: For the web interface. [Download Node.js](https://nodejs.org/)
 - **pnpm**: Package manager. Install with `npm install -g pnpm`
+- **Redis**: To manage task queues and sessions. [Install Redis](https://redis.io/topics/installation)
 
 ---
 
@@ -91,41 +88,36 @@ cd agentic-forge
 
 ## 2. Run the installation script
 
-Make the management script executable and run it.
+Make the management script executable and run it. This will guide you through the setup process.
 
 ```bash
 chmod +x run.sh
 ./run.sh
 ```
 
-On first run, the script will check if a `.env` file exists. If it doesn't exist, it will create it automatically for you.
+On the first run, the script will:
+1.  Check for a `.env` file and create one if it doesn't exist.
+2.  Install all necessary dependencies using `pnpm`.
+3.  Build the project.
 
 ## 3. Configure your environment
 
 Once the `.env` file is created, open it and fill in the values with your own credentials.
 
 ```env
-# Copy this file to .env and fill in the values.
+# Configuration for a LOCAL environment
 HOST_PORT=8080
-PORT=8080
+PORT=3001
+WEB_PORT=3002
+API_URL=http://localhost:3001
 NODE_ENV=development
 LOG_LEVEL=info
-AUTH_TOKEN=""
-REDIS_HOST=redis
-REDIS_PORT=6378
-REDIS_HOST_PORT=6378
+AUTH_TOKEN="votre-token-secret"
+REDIS_HOST=localhost
+REDIS_PORT=6379
 REDIS_PASSWORD=""
-# Base URL is no longer needed for Google API, comment or remove it.
-# LLM_API_BASE_URL=
-WEB_PORT=3000
-# Use your Google Gemini API key
-LLM_API_KEY=""
-
-# Specify a Gemini model, e.g. "gemini-1.5-pro-latest"
-LLM_MODEL_NAME=gemini-2.5-flash
-PYTHON_SANDBOX_IMAGE="python:3.11-slim"
-BASH_SANDBOX_IMAGE="alpine:latest"
-CODE_EXECUTION_TIMEOUT_MS=60000
+LLM_API_KEY="votre-cle-gemini"
+LLM_MODEL_NAME=gemini-1.5-flash
 ```
 
 **Important**:
@@ -135,9 +127,17 @@ CODE_EXECUTION_TIMEOUT_MS=60000
 
 ---
 
-## 4. Start Docker
+## 4. Start the Application
 
-Make sure Docker is running before continuing.
+Use the management console to start the application.
+
+Launch the interactive console:
+
+```bash
+./run.sh
+```
+
+From the console menu, select option **1) 🟢 Démarrer Tous les Services**. This will start the backend server, the UI, the worker, and a local Redis instance.
 
 ---
 
@@ -170,95 +170,6 @@ Make sure Docker is running before continuing.
     LLM_API_BASE_URL="http://localhost:11434"
     ```
 
-### Alternative: LM Studio
-
-1.  Download and install [LM Studio](https://lmstudio.ai/)
-2.  Load a model like `deepseek-r1-distill-qwen-14b`
-3.  Start the local server
-4.  Update `.env`:
-    ```env
-    LLM_API_BASE_URL="http://localhost:1234"
-    ```
-
----
-
-## API Usage Configuration
-
-If you prefer cloud models or lack sufficient hardware:
-
-### 1. Choose an API Provider
-
-| Provider  | Model Examples                       | API Key Link                                              |
-| --------- | ------------------------------------ | --------------------------------------------------------- |
-| OpenAI    | `gpt-4`, `o1`                        | [platform.openai.com](https://platform.openai.com/signup) |
-| Google    | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)   |
-| Anthropic | `claude-4-sonnet`, `claude-4-opus`   | [console.anthropic.com](https://console.anthropic.com/)   |
-| DeepSeek  | `deepseek-chat`, `deepseek-coder`    | [platform.deepseek.com](https://platform.deepseek.com)    |
-
-### 2. Set your API key
-
-**Linux/macOS:**
-
-```bash
-export LLM_API_KEY="your_api_key_here"
-# Add to ~/.bashrc or ~/.zshrc for persistence
-```
-
-**Windows:**
-
-```cmd
-set LLM_API_KEY=your_api_key_here
-```
-
-### 3. Update `.env`:
-
-```env
-LLM_API_KEY="your_api_key_here"
-LLM_MODEL_NAME="gemini-1.5-pro"
-```
-
----
-
-## Start Services and Run
-
-### Using the Management Console (`run.sh`)
-
-After configuring your `.env` file, use the management console to start the application.
-
-Launch the interactive console:
-
-```bash
-./run.sh
-```
-
-From the console menu:
-
-1.  **Start** - Launch all services
-2.  **Status** - Check service health
-3.  **Logs** - Monitor logs in real time
-
-### Manual Docker Commands
-
-Start all services:
-
-```bash
-docker-compose up -d
-```
-
-Check status:
-
-```bash
-docker-compose ps
-```
-
-View logs:
-
-```bash
-docker-compose logs -f
-```
-
-**⚠️ Warning**: Initial startup can take 10-15 minutes as Docker images are downloaded and services initialize. Wait to see `backend: "GET /health HTTP/1.1" 200 OK` in the logs.
-
 ---
 
 ## Access Points
@@ -267,60 +178,22 @@ Once services are running:
 
 | Service           | URL                                       | Description           |
 | ----------------- | ----------------------------------------- | --------------------- |
-| **Web Interface** | http://localhost:3000                     | Main user interface   |
-| **API Endpoint**  | http://localhost:8080/api/v1/agent/stream | Direct API access     |
-| **Health Check**  | http://localhost:8080/health              | Service health status |
+| **Web Interface** | http://localhost:3002                     | Main user interface   |
+| **API Endpoint**  | http://localhost:3001/api/v1/agent/stream | Direct API access     |
+| **Health Check**  | http://localhost:3001/api/health          | Service health status |
 
 ### Quick Test
 
 ```bash
 # Health check
-curl http://localhost:8080/health
+curl http://localhost:3001/api/health
 
 # API test
-curl -X POST http://localhost:8080/api/v1/agent/stream \
+curl -X POST http://localhost:3001/api/v1/agent/stream \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_AUTH_TOKEN" \
   -d '{"goal": "Create a simple Python hello world script"}'
 ```
-
----
-
-## Usage Examples
-
-Once your services are running, try these examples:
-
-### 🔧 Tool Forging
-
-```
-"I need a tool to convert CSV files to JSON format. Create it then use it on my data.csv file."
-```
-
-### 💻 Code Generation
-
-```
-"Write a Python script that monitors a directory for new files and logs their details."
-```
-
-### 🌐 Web Automation
-
-```
-"Search online for the latest TypeScript best practices and create a summary document."
-```
-
-### 📊 Data Analysis
-
-```
-"Analyze the sales_data.csv file in my workspace and create a visualization of trends."
-```
-
-### 🛠️ System Tasks
-
-```
-"Create a backup script for my important files and schedule it to run daily."
-```
-
-**Note**: Be explicit in your requests. Instead of "Do you know X?", ask "Search online for information about X and summarize it."
 
 ---
 
@@ -329,63 +202,38 @@ Once your services are running, try these examples:
 The interactive console provides complete control over your Agentic Forge instance:
 
 ```
-🔨 Agentic Forge - Management Console
-────────────────────────────────────────
+   ╔══════════════════════════════════╗
+   ║      A G E N T I C  F O R G E    ║
+   ╚══════════════════════════════════╝
+           (Mode Local)
+──────────────────────────────────────────
+  Gestion de l'Application (Local)
+   1) 🟢 Démarrer Tous les Services
+   2) 🔄 Redémarrer Tous les Services
+   3) 🔴 Arrêter Tous les Services
+   4) ⚡ Statut des Services
+   5) 📊 Consulter les Logs
+   6) 🧹 Nettoyer (logs, pids)
 
-   Docker & Services
-1) 🟢 Start        5) 📊 Logs
-2) 🔄 Restart      6) 🐚 Shell
-3) 🔴 Stop         7) 🔨 Rebuild
-4) ⚡ Status       8) 🧹 Clean
+  Développement & Qualité
+  10) 🔍 Lint & Fix       12) 🧪 Tests
+  11) ✨ Formater
 
-   Development & Quality
-10) 🔍 Lint        13) 🧪 Tests
-11) ✨ Format      14) 📘 TypeCheck
-12) 🧽 Clean       15) 📋 Audit
-
-16) 🚪 Exit
+  13) 🚪 Quitter
 ```
-
-### Key Commands
-
-| Option | Description      | When to Use                    |
-| ------ | ---------------- | ------------------------------ |
-| **1**  | Start ecosystem  | First launch or after stopping |
-| **2**  | Restart services | After configuration changes    |
-| **4**  | Check status     | Health diagnostics             |
-| **5**  | Follow logs      | Real-time monitoring           |
-| **7**  | Rebuild images   | After major code changes       |
 
 ---
 
 ## Architecture Overview
 
-### 🏗️ Distributed Microservices
+Agentic Forge now runs as a set of local processes on your machine:
 
-- **🧠 Server** (Port 8080): Central orchestration, LLM communication, session management
-- **⚡ Worker**: Async task processing, code execution, web automation
-- **🌐 Web Interface** (Port 3000): Modern React-based UI
-- **💾 Redis** (Port 6378): Task queue, session storage, caching
+- **🧠 Server**: Central orchestration, LLM communication, and session management.
+- **⚡ Worker**: Handles asynchronous tasks like code execution and web automation.
+- **🌐 Web Interface**: The React-based user interface.
+- **💾 Redis**: A local Redis server for task queuing, session storage, and caching.
 
-### 🔄 Tool Forging Process
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant S as Server
-    participant L as LLM
-    participant W as Worker
-    participant F as File System
-
-    U->>S: "Create a CSV analysis tool"
-    S->>L: Generate tool creation plan
-    L->>S: Tool code + specifications
-    S->>F: Write tool to filesystem
-    S->>S: Auto-restart to load tool
-    S->>W: Execute new tool
-    W->>S: Results
-    S->>U: Tool created and executed
-```
+All these processes are managed by the `run.sh` script.
 
 ---
 
@@ -395,95 +243,19 @@ sequenceDiagram
 
 ```
 agentic-forge/
-├── 📁 src/                    # TypeScript source code
-│   ├── 📁 tools/             # Available tools
-│   │   ├── 📁 system/        # System tools (creation, restart)
-│   │   ├── 📁 fs/            # File system operations
-│   │   ├── 📁 code/          # Code execution
-│   │   ├── 📁 browser/       # Web automation
-│   │   └── 📁 generated/     # Auto-generated tools
-│   ├── 📁 prompts/           # LLM prompt templates
-│   ├── 📁 utils/             # Utilities and helpers
-│   ├── 📄 server.ts          # Main server
-│   ├── 📄 worker.ts          # Async worker
-│   └── 📄 webServer.ts       # Web interface
-├── 📄 docker-compose.yml     # Service orchestration
-├── 📄 Dockerfile             # Container definition
+├── 📁 packages/
+│   ├── 📁 core/              # Backend server and worker source code
+│   └── 📁 ui/                # Frontend UI source code
 ├── 📄 run.sh                 # Management console
 └── 📄 README.md              # This documentation
 ```
 
 ### Adding Custom Tools
 
-```typescript
-// src/tools/custom/myTool.tool.ts
-import { z } from 'zod';
-import type { Tool, Ctx } from '../../types.js';
-
-export const myToolParams = z.object({
-  input: z.string().describe('Input parameter'),
-  options: z.number().default(1),
-});
-
-export const myTool: Tool<typeof myToolParams> = {
-  name: 'myCustomTool',
-  description: 'Description of what this tool does',
-  parameters: myToolParams,
-  execute: async (args, ctx: Ctx) => {
-    ctx.log.info('Executing custom tool', { args });
-
-    // Your tool logic here
-    const result = await processInput(args.input, args.options);
-
-    return result;
-  },
-};
-```
-
-Don't forget to add it to `src/tools/index.ts`:
-
-```typescript
-import { myTool } from './custom/myTool.tool.js';
-
-export const allTools: Tool<any>[] = [
-  // ... existing tools
-  myTool,
-];
-```
+The process for adding custom tools remains the same. Create your tool file in `packages/core/src/tools/` and register it in `packages/core/src/tools/index.ts`.
 
 ---
 
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
-
-## Acknowledgments
-
-- **[FastMCP](https://github.com/punkpeye/fastmcp)**: Ultra-performant MCP framework - the rocket that powers Agentic Forge 🚀
-- **[Model Context Protocol (MCP)](https://modelcontextprotocol.io/)**: Revolutionary protocol for LLM interaction
-- **[Docker](https://docker.com)**: Containerization and isolation
-- **[Redis](https://redis.io)**: High-performance data structures
-- **[Playwright](https://playwright.dev)**: Modern web automation
-- **Open Source Community**: For inspiration and collaboration
-
----
-
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/your-username/agentic-forge/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/agentic-forge/discussions)
-- **Documentation**: [Project Wiki](https://github.com/your-username/agentic-forge/wiki)
-
----
-
-<div align="center">
-
-**🔨 A blacksmith forges his hammers.** **🤖 Agentic Forge forges its own capabilities.**
-
-_Forge your technological future._
-
-[![Get Started](https://img.shields.io/badge/🚀_Get_Started-brightgreen?style=for-the-badge)](./run.sh)
-
-</div>

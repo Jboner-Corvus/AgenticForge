@@ -19,7 +19,7 @@ export const listFilesParams = z.object({
 
 export const listFilesTool: Tool<typeof listFilesParams> = {
   description:
-    'Lists files and directories within a specified path in the workspace.',
+    'Lists files and directories within a specified path in the workspace. Use this to "list" or "inspect" a directory.',
   execute: async (args, ctx: Ctx) => {
     const targetDir = path.resolve(WORKSPACE_DIR, args.path);
 

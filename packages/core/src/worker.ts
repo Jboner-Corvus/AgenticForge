@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 console.log('Starting worker...');
 import { Job, Queue, Worker } from 'bullmq';
 
@@ -25,6 +28,14 @@ export async function processJob(job: Job): Promise<string> {
     const finalResponse = await agent.run();
 
     sessionData.history.push({ content: finalResponse, role: 'model' });
+
+    // --- LIGNE À AJOUTER ---
+    // Publier la réponse finale sur le canal pour que le front-end la reçoive.
+    await redis.publish(
+      channel,
+      JSON.stringify({ type: 'agent_response', content: finalResponse }),
+    );
+    // --- FIN DE L'AJOUT ---
 
     await summarizeHistory(sessionData, log);
     await SessionManager.saveSession(sessionData, job, jobQueue);

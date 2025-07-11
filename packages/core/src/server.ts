@@ -1,4 +1,7 @@
 // FICHIER : src/server.ts
+import dotenv from 'dotenv';
+dotenv.config();
+
 import './tracing.js'; // Initialize OpenTelemetry
 import logger from './logger.js';
 import { startWebServer } from './webServer.js';

@@ -9,13 +9,13 @@
   ],
   "type": "module",
   "scripts": {
-    "start": "node dist/server.js",
+    "start": "node -r dotenv/config dist/server.js",
     "start:dev": "NODE_ENV=development node --loader ts-node/esm src/server.ts",
     "dev": "NODE_ENV=development nodemon --watch src --exec node --loader ts-node/esm src/server.ts",
     "build": "pnpm exec tsc",
-    "postbuild": "cp src/prompts/system.prompt.txt dist/",
+    "postbuild": "mkdir -p dist/prompts && cp src/prompts/system.prompt.txt dist/prompts/",
     "start:worker:dev": "NODE_ENV=development node --loader ts-node/esm src/worker.ts",
-    "start:worker": "node dist/src/worker.js",
+    "start:worker": "node -r dotenv/config dist/worker.js",
     "test": "vitest run",
     "lint": "eslint --fix \"src/**/*.ts\"",
     "format": "prettier --write src/ && eslint --fix src/"
@@ -32,7 +32,6 @@
     "bullmq": "^5.56.2",
     "chokidar": "^3.6.0",
     "cookie-parser": "^1.4.7",
-    "dockerode": "^4.0.7",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "fastmcp": "^3.8.4",
@@ -40,7 +39,8 @@
     "pino": "^9.7.0",
     "playwright": "^1.53.2",
     "uuid": "^9.0.1",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "cors": "^2.8.5"
   },
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.15.0",
@@ -49,7 +49,6 @@
     "@types/bull-board": "^2.0.4",
     "@types/chokidar": "^2.1.7",
     "@types/cookie-parser": "^1.4.9",
-    "@types/dockerode": "^3.3.42",
     "@types/express": "^4.17.23",
     "@types/uri-templates": "^0.1.34",
     "@types/uuid": "^10.0.0",
@@ -66,6 +65,7 @@
     "pino-pretty": "^13.0.0",
     "semantic-release": "^24.2.6",
     "tailwindcss": "^4.1.11",
-    "valibot": "^1.1.0"
+    "valibot": "^1.1.0",
+    "@types/cors": "^2.8.17"
   }
 }

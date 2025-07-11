@@ -1,16 +1,20 @@
 /**
  * src/utils/dockerManager.ts
  *
- * Fournit des fonctions pour exécuter du code dans des conteneurs Docker sécurisés (sandbox).
+ * Fournit des fonctions pour exécuter du code localement.
+ * Auparavant, utilisait des conteneurs Docker sécurisés (sandbox).
+ * Cette version a été modifiée pour exécuter les commandes directement sur le système hôte.
+ * ATTENTION : L'exécution de commandes de cette manière sans sandbox est un risque de sécurité.
  */
 
-import Docker from 'dockerode';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
 import { config } from '../config.js';
 import logger from '../logger.js';
 import { UserError } from './errorUtils.js';
 
-const docker = new Docker(); // Se connecte au socket Docker local par défaut
+const execAsync = promisify(exec);
 
 export interface ExecutionResult {
   exitCode: number;
@@ -18,166 +22,73 @@ export interface ExecutionResult {
   stdout: string;
 }
 
+// L'interface SandboxOptions est conservée pour la compatibilité de l'API,
+// mais ses options ne sont plus utilisées.
 export interface SandboxOptions {
-  mounts?: DockerMount[];
+  mounts?: unknown[]; // Type `unknown` car non utilisé
   workingDir?: string;
 }
 
-// Définition manuelle du type Mount car il n'est pas exporté par @types/dockerode
-interface DockerMount {
-  ReadOnly?: boolean;
-  Source: string;
-  Target: string;
-  Type: 'bind' | 'tmpfs' | 'volume';
-}
-
 /**
- * Exécute une commande dans un conteneur Docker jetable.
- * @param imageName - L'image Docker à utiliser.
+ * Exécute une commande localement sur la machine hôte.
+ * @param imageName - Ignoré. Conservé pour la compatibilité.
  * @param command - La commande à exécuter.
- * @param options - Options supplémentaires pour le sandbox (workingDir, mounts).
+ * @param options - Options supplémentaires (seul workingDir est utilisé).
  * @returns Une promesse qui se résout avec le résultat de l'exécution.
  */
 export async function runInSandbox(
-  imageName: string,
+  imageName: string, // Ce paramètre est maintenant ignoré
   command: string[],
   options: SandboxOptions = {},
-  dockerClient: Docker = docker,
 ): Promise<ExecutionResult> {
-  const log = logger.child({ imageName, module: 'DockerManager' });
-  log.info({ command, options }, 'Starting sandboxed execution');
+  const commandString = command.join(' ');
+  const log = logger.child({
+    command: commandString,
+    module: 'LocalExecutionManager',
+  });
+  log.warn('Executing command directly on host. The sandbox is disabled.');
+  log.info({ options }, 'Starting local execution');
 
-  let container: Docker.Container | null = null;
   try {
-    await pullImageIfNotExists(imageName, dockerClient);
-
-    container = await dockerClient.createContainer({
-      Cmd: command,
-      HostConfig: {
-        CpuShares: 512,
-        Memory: parseMemoryString(config.CONTAINER_MEMORY_LIMIT),
-        Mounts: options.mounts,
-        NetworkMode: 'bridge',
-      },
-      Image: imageName,
-      Tty: false,
-      WorkingDir: options.workingDir,
+    const promise = execAsync(commandString, {
+      cwd: options.workingDir,
+      timeout: config.CODE_EXECUTION_TIMEOUT_MS,
     });
 
-    await container.start();
-
-    const waitPromise = container.wait();
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(
-        () => reject(new UserError('Execution timed out')),
-        config.CODE_EXECUTION_TIMEOUT_MS,
-      ),
-    );
-
-    const result = (await Promise.race([waitPromise, timeoutPromise])) as {
-      StatusCode: number;
-    };
-
-    const logStream = await container.logs({
-      follow: false,
-      stderr: true,
-      stdout: true,
-    });
-
-    const { stderr, stdout } = demuxStream(logStream as Buffer);
+    const result = await promise;
 
     log.info(
-      { exitCode: result.StatusCode, stderr, stdout },
-      'Sandboxed execution finished',
+      {
+        exitCode: 0,
+        stderr: result.stderr,
+        stdout: result.stdout,
+      },
+      'Local execution finished',
     );
 
     return {
-      exitCode: result.StatusCode,
-      stderr: stderr,
-      stdout: stdout,
+      exitCode: 0, // `exec` lève une exception en cas d'échec, donc le code est 0 si réussi
+      stderr: result.stderr,
+      stdout: result.stdout,
     };
-  } catch (error) {
-    log.error({ err: error }, 'Error during sandboxed execution');
+  } catch (error: unknown) {
+    log.error({ err: error }, 'Error during local execution');
+
+    // Check if the error is an instance of an ExecException (from child_process)
+    if (error instanceof Error && 'code' in error && 'stderr' in error && 'stdout' in error) {
+      return {
+        exitCode: (error as any).code, // Cast to any for simplicity, or define a specific interface
+        stderr: (error as any).stderr,
+        stdout: (error as any).stdout,
+      };
+    }
+
+    // If it's a timeout error (signal 'SIGTERM')
+    if (error instanceof Error && 'signal' in error && (error as any).signal === 'SIGTERM') {
+      throw new UserError('Execution timed out');
+    }
+
+    // For other errors, we re-throw them
     throw error;
-  } finally {
-    if (container) {
-      await container.remove({ force: true });
-      log.debug('Sandbox container removed.');
-    }
-  }
-}
-
-/**
- * Démultiplexe le flux de logs de Docker en stdout et stderr.
- */
-function demuxStream(stream: Buffer): { stderr: string; stdout: string } {
-  let stdout = '';
-  let stderr = '';
-  let offset = 0;
-
-  while (offset < stream.length) {
-    const type = stream[offset];
-    const length = stream.readUInt32BE(offset + 4);
-    offset += 8;
-    const payload = stream.toString('utf-8', offset, offset + length);
-    if (type === 1) {
-      stdout += payload;
-    } else if (type === 2) {
-      stderr += payload;
-    }
-    offset += length;
-  }
-  return { stderr, stdout };
-}
-
-/**
- * Analyse une chaîne de caractères représentant une taille de mémoire (ex: "2g", "512m")
- * et la convertit en octets.
- * @param memoryString - La chaîne de caractères à analyser.
- * @returns Le nombre d'octets.
- */
-function parseMemoryString(memoryString: string): number {
-  const unit = memoryString.slice(-1).toLowerCase();
-  const value = parseInt(memoryString.slice(0, -1), 10);
-
-  if (isNaN(value)) {
-    throw new Error(`Invalid memory string: ${memoryString}`);
-  }
-
-  switch (unit) {
-    case 'g':
-      return value * 1024 * 1024 * 1024;
-    case 'k':
-      return value * 1024;
-    case 'm':
-      return value * 1024 * 1024;
-    default:
-      return parseInt(memoryString, 10);
-  }
-}
-
-/**
- * Tire une image Docker si elle n'est pas déjà présente localement.
- */
-async function pullImageIfNotExists(
-  imageName: string,
-  dockerClient: Docker,
-): Promise<void> {
-  try {
-    await dockerClient.getImage(imageName).inspect();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    if (error?.statusCode === 404) {
-      logger.info(`Image ${imageName} not found locally, pulling...`);
-      const stream = await dockerClient.pull(imageName);
-      await new Promise((resolve, reject) => {
-        dockerClient.modem.followProgress(stream, (err, res) =>
-          err ? reject(err) : resolve(res),
-        );
-      });
-      logger.info(`Image ${imageName} pulled successfully.`);
-    } else {
-      throw error;
-    }
   }
 }

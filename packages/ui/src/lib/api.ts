@@ -1,3 +1,5 @@
+import { clientConfig } from '../config.js';
+
 /**
  * Récupère l'historique de la conversation pour la session actuelle.
  * @param {string | null} authToken Le token d'authentification.
@@ -6,7 +8,7 @@
  */
 export async function getHistory(authToken: null | string, sessionId: null | string): Promise<Array<unknown>> {
   try {
-    const response = await fetch('/api/history', {
+    const response = await fetch(`${clientConfig.VITE_APP_API_BASE_URL}/api/history`, {
       headers: getAuthHeaders(authToken, sessionId),
     });
     if (!response.ok) {
@@ -29,7 +31,7 @@ export async function getHistory(authToken: null | string, sessionId: null | str
  */
 export async function getJobStatus(jobId: string, authToken: null | string, sessionId: null | string): Promise<unknown> {
   try {
-    const response = await fetch(`/api/status/${jobId}`, {
+    const response = await fetch(`${clientConfig.VITE_APP_API_BASE_URL}/api/status/${jobId}`, {
       headers: getAuthHeaders(authToken, sessionId),
     });
     if (!response.ok) {
@@ -51,7 +53,7 @@ export async function getJobStatus(jobId: string, authToken: null | string, sess
  */
 export async function getTools(authToken: null | string, sessionId: null | string): Promise<Array<unknown>> {
   try {
-    const response = await fetch('/api/tools', {
+    const response = await fetch(`${clientConfig.VITE_APP_API_BASE_URL}/api/tools`, {
       headers: getAuthHeaders(authToken, sessionId),
     });
     if (!response.ok) {
@@ -81,7 +83,7 @@ export async function sendMessage(
   onError: (error: Event) => void,
 ): Promise<string> {
   try {
-    const response = await fetch('/api/chat', {
+    const response = await fetch(`${clientConfig.VITE_APP_API_BASE_URL}/api/chat`, {
       body: JSON.stringify({ prompt }),
       headers: getAuthHeaders(authToken, sessionId),
       method: 'POST',
@@ -95,7 +97,7 @@ export async function sendMessage(
     const { jobId } = await response.json();
 
     // Establish SSE connection for streaming updates
-    const eventSource = new EventSource(`/api/chat/stream/${jobId}`);
+    const eventSource = new EventSource(`${clientConfig.VITE_APP_API_BASE_URL}/api/chat/stream/${jobId}`);
 
     eventSource.onmessage = onMessage;
 
@@ -118,7 +120,7 @@ export async function sendMessage(
  */
 export async function testServerHealth(): Promise<boolean> {
   try {
-    const response = await fetch('/api/health');
+    const response = await fetch(`${clientConfig.VITE_APP_API_BASE_URL}/api/health`);
     return response.ok;
   } catch (error) {
     console.error(`Erreur lors de la vérification de la santé du serveur:`, error);
@@ -135,7 +137,7 @@ export async function testServerHealth(): Promise<boolean> {
  */
 export async function interrupt(jobId: string, authToken: null | string, sessionId: null | string): Promise<void> {
   try {
-    const response = await fetch(`/api/interrupt/${jobId}`, {
+    const response = await fetch(`${clientConfig.VITE_APP_API_BASE_URL}/api/interrupt/${jobId}`, {
       method: 'POST',
       headers: getAuthHeaders(authToken, sessionId),
     });
