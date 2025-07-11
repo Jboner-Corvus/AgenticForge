@@ -13,7 +13,7 @@
     "start:dev": "NODE_ENV=development node --loader ts-node/esm src/server.ts",
     "dev": "NODE_ENV=development nodemon --watch src --exec node --loader ts-node/esm src/server.ts",
     "build": "pnpm exec tsc",
-    "postbuild": "cp -r src/prompts dist/",
+    "postbuild": "cp src/prompts/system.prompt.txt dist/",
     "start:worker:dev": "NODE_ENV=development node --loader ts-node/esm src/worker.ts",
     "start:worker": "node dist/src/worker.js",
     "test": "vitest run",

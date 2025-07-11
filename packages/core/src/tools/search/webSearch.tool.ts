@@ -42,7 +42,10 @@ export const webSearchTool: Tool<typeof webSearchParams> = {
 
       const data = await response.json();
 
-      const summary = `Search Answer: ${data.answer}\n\nResults:\n${data.results.map((r: any) => `- [${r.title}](${r.url}): ${r.content}`).join('\n')}`;
+      const summary = `Search Answer: ${data.answer}
+
+Results:
+${data.results.map((r: { content: string; title: string; url: string; }) => `- [${r.title}](${r.url}): ${r.content}`).join('\n')}`;
 
       return summary;
     } catch (error) {

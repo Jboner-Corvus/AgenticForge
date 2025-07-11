@@ -1,30 +1,29 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
+
 import type { Ctx, Tool } from '../../types.js';
+
 import { UserError } from '../../utils/errorUtils.js';
 
 // Un schéma de paramètres plus puissant pour l'édition
 export const editFileParams = z.object({
-  path: z.string().describe('The path to the file to edit inside the workspace.'),
   content_to_replace: z.string().describe('The exact content or regex pattern to find and replace.'),
-  new_content: z.string().describe('The new content that will replace the old content.'),
   is_regex: z.boolean().optional().default(false).describe('Set to true if content_to_replace is a regex.'),
+  new_content: z.string().describe('The new content that will replace the old content.'),
+  path: z.string().describe('The path to the file to edit inside the workspace.'),
 });
 
 // Le schéma de sortie structuré pour le frontend
 export const editFileOutput = z.object({
-  success: z.boolean(),
   message: z.string(),
-  original_content: z.string().optional(),
   modified_content: z.string().optional(),
+  original_content: z.string().optional(),
+  success: z.boolean(),
 });
 
 export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> = {
-  name: 'editFile',
   description: 'Replaces specific content within an existing file in the workspace. Ideal for targeted changes.',
-  parameters: editFileParams,
-  output: editFileOutput,
   execute: async (args, ctx: Ctx) => {
     const workspaceDir = path.resolve(process.cwd(), 'workspace');
     const absolutePath = path.resolve(workspaceDir, args.path);
@@ -48,8 +47,8 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> = 
 
       if (originalContent === modifiedContent) {
         return {
-          success: true,
           message: `No changes were needed in ${args.path}. The content was already correct.`,
+          success: true,
         };
       }
 
@@ -60,10 +59,10 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> = 
 
       // Retourner une sortie structurée
       return {
-        success: true,
         message: successMessage,
-        original_content: originalContent,
         modified_content: modifiedContent,
+        original_content: originalContent,
+        success: true,
       };
     } catch (error: unknown) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -73,4 +72,7 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> = 
       throw new Error(`Could not edit file: ${(error as Error).message}`);
     }
   },
+  name: 'editFile',
+  output: editFileOutput,
+  parameters: editFileParams,
 };

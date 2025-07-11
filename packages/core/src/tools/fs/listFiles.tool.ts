@@ -38,14 +38,14 @@ export const listFilesTool: Tool<typeof listFilesParams> = {
       return fileList.length > 0
         ? result
         : `Directory 'workspace/${args.path}' is empty.`;
-    } catch (error: any) {
-      if (error.code === 'ENOENT') {
+    } catch (error: unknown) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         throw new UserError(
           `Directory not found at path: workspace/${args.path}`,
         );
       }
       ctx.log.error({ err: error }, `Failed to list files in: ${targetDir}`);
-      throw new Error(`Could not list files: ${error.message}`);
+      throw new Error(`Could not list files: ${(error as Error).message}`);
     }
   },
   name: 'listFiles',

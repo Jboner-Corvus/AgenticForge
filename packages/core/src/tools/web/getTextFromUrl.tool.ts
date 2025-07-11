@@ -1,6 +1,7 @@
-import { z } from 'zod';
 import { exec } from 'child_process';
-import type { Tool, Ctx } from '../../types.js';
+import { z } from 'zod';
+
+import type { Ctx, Tool } from '../../types.js';
 
 // Schéma pour les paramètres
 export const getTextFromUrlParams = z.object({
@@ -9,10 +10,8 @@ export const getTextFromUrlParams = z.object({
 
 // Définition de l'outil
 export const getTextFromUrlTool: Tool<typeof getTextFromUrlParams> = {
-  name: 'getTextFromUrl',
   description: 'Fetches the textual content of a web page after stripping HTML tags. Useful for static pages.',
-  parameters: getTextFromUrlParams,
-  execute: (args, ctx: Ctx) => {
+  execute: (args, _ctx: Ctx) => {
     return new Promise((resolve) => {
       // Utilise curl pour récupérer le HTML
       exec(`curl -sL "${args.url}"`, (error, stdout, stderr) => {
@@ -32,4 +31,6 @@ export const getTextFromUrlTool: Tool<typeof getTextFromUrlParams> = {
       });
     });
   },
+  name: 'getTextFromUrl',
+  parameters: getTextFromUrlParams,
 };

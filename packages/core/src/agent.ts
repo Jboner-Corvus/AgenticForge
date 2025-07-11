@@ -17,7 +17,7 @@ const llmResponseSchema = z.object({
   command: z.object({
     name: z.string(),
     params: z.unknown(),
-  }),
+  }).optional(),
   thought: z.string().optional(),
 });
 
@@ -50,71 +50,76 @@ export class Agent {
 
   public async run(): Promise<string> {
     this.log.info('Agent starting...');
-    await getTools(); // Ensure tools are loaded
-    this.setupInterruptListener();
-
     const { prompt } = this.job.data;
     this.session.history.push({ content: prompt, role: 'user' });
 
-    let iterations = 0;
-    const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS ?? 10;
+    try {
+      await getTools(); // Ensure tools are loaded
+      this.setupInterruptListener();
 
-    while (iterations < MAX_ITERATIONS && !this.interrupted) {
-      iterations++;
-      const iterationLog = this.log.child({ iteration: iterations });
-      iterationLog.info(`Agent iteration starting`);
+      let iterations = 0;
+      const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS ?? 10;
 
-      const orchestratorPrompt = getMasterPrompt(
-        { data: this.session, id: this.session.id },
-        toolRegistry.getAll(),
-      );
+      while (iterations < MAX_ITERATIONS && !this.interrupted) {
+        iterations++;
+        const iterationLog = this.log.child({ iteration: iterations });
+        iterationLog.info(`Agent iteration starting`);
 
-      const llmResponse = await this.getLlmResponse(
-        orchestratorPrompt,
-        iterationLog,
-      );
+        const orchestratorPrompt = getMasterPrompt(
+          { data: this.session, id: this.session.id },
+          toolRegistry.getAll(),
+        );
 
-      const parsedResponse = this.parseLlmResponse(llmResponse, iterationLog);
+        const llmResponse = await this.getLlmResponse(
+          orchestratorPrompt,
+          iterationLog,
+        );
 
-      if (!parsedResponse) {
-        const errorMessage = `La réponse du modèle n'a pas pu être analysée. Nouvelle tentative.`;
-        iterationLog.warn(errorMessage);
-        this.session.history.push({ content: errorMessage, role: 'user' });
-        continue;
-      }
+        const parsedResponse = this.parseLlmResponse(llmResponse, iterationLog);
 
-      const { command, thought } = parsedResponse;
-
-      if (thought) {
-        iterationLog.info({ thought }, 'Agent thought');
-        this.publishToChannel({ content: thought, type: 'agent_thought' });
-      }
-
-      if (command) {
-        const toolResult = await this.executeTool(command, iterationLog);
-
-        if (command.name === 'finish') {
-          iterationLog.info('Agent finishing task.');
-          return toolResult as string;
+        if (!parsedResponse) {
+          const errorMessage = `La réponse du modèle n'a pas pu être analysée. Nouvelle tentative.`;
+          iterationLog.warn(errorMessage);
+          this.session.history.push({ content: errorMessage, role: 'user' });
+          continue;
         }
 
-        this.session.history.push({
-          content: `Tool result: ${JSON.stringify(toolResult)}`,
-          role: 'model',
-        });
-      } else if (thought) {
-        return thought;
-      } else {
-        iterationLog.warn('No command or thought from LLM.');
-        return "I'm not sure how to proceed.";
+        const { command, thought } = parsedResponse;
+
+        if (thought) {
+          iterationLog.info({ thought }, 'Agent thought');
+          this.publishToChannel({ content: thought, type: 'agent_thought' });
+        }
+
+        if (command) {
+          const toolResult = await this.executeTool(command, iterationLog);
+
+          if (command.name === 'finish') {
+            iterationLog.info('Agent finishing task.');
+            return toolResult as string;
+          }
+
+          this.session.history.push({
+            content: `Tool result: ${JSON.stringify(toolResult)}`,
+            role: 'model',
+          });
+        } else if (thought) {
+          return thought;
+        } else {
+          iterationLog.warn('No command or thought from LLM.');
+          return "I'm not sure how to proceed.";
+        }
       }
-    }
 
-    if (this.interrupted) {
-      return 'Agent execution interrupted.';
-    }
+      if (this.interrupted) {
+        return 'Agent execution interrupted.';
+      }
 
-    return 'Agent reached maximum iterations without a final answer.';
+      return 'Agent reached maximum iterations without a final answer.';
+    } catch (error) {
+      this.log.error({ error }, 'Error during agent run');
+      return `Error: ${(error as Error).message}`;
+    }
   }
 
   private createToolContext(log: Logger): Ctx {

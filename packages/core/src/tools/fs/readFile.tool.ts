@@ -1,21 +1,21 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
+
 import type { Ctx, Tool } from '../../types.js';
+
 import { UserError } from '../../utils/errorUtils.js';
 
 const WORKSPACE_DIR = path.resolve(process.cwd(), 'workspace');
 
 export const readFileParams = z.object({
+  end_line: z.number().optional().describe('The line number to stop reading at (inclusive).'),
   path: z.string().describe('The path to the file inside the workspace.'),
   start_line: z.number().optional().describe('The line number to start reading from (1-indexed).'),
-  end_line: z.number().optional().describe('The line number to stop reading at (inclusive).'),
 });
 
 export const readFileTool: Tool<typeof readFileParams> = {
-  name: 'readFile',
   description: 'Reads the content of a file (or a specific line range) from the workspace.',
-  parameters: readFileParams,
   execute: async (args, ctx: Ctx) => {
     const absolutePath = path.resolve(WORKSPACE_DIR, args.path);
 
@@ -37,12 +37,14 @@ export const readFileTool: Tool<typeof readFileParams> = {
       }
 
       return `Content of ${args.path}:\n\n${content}`;
-    } catch (error: any) {
-      if (error.code === 'ENOENT') {
+    } catch (error: unknown) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         throw new UserError(`File not found at path: ${args.path}`);
       }
       ctx.log.error({ err: error }, `Failed to read file: ${args.path}`);
-      throw new Error(`Could not read file: ${error.message}`);
+      throw new Error(`Could not read file: ${(error as Error).message}`);
     }
   },
+  name: 'readFile',
+  parameters: readFileParams,
 };

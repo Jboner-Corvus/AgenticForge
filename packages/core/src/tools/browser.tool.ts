@@ -1,7 +1,9 @@
 // packages/core/src/tools/browser.tool.ts
 import { chromium, Page } from 'playwright';
 import { z } from 'zod';
+
 import type { Ctx, Tool } from '../types.js';
+
 import { UserError } from '../utils/errorUtils.js';
 
 // Schéma pour les paramètres de l'outil
@@ -22,9 +24,7 @@ async function getPageContent(page: Page): Promise<string> {
 
 // Définition de l'outil
 export const browserTool: Tool<typeof browserParams> = {
-  name: 'browser',
   description: 'Navigates to a URL using a headless Chromium browser and returns its textual content. Ideal for modern websites with JavaScript.',
-  parameters: browserParams,
   execute: async (args, ctx: Ctx) => {
     ctx.log.info(`Navigating to URL: ${args.url}`);
     const browser = await chromium.launch({
@@ -34,14 +34,14 @@ export const browserTool: Tool<typeof browserParams> = {
 
     try {
       const page = await browser.newPage();
-      await page.goto(args.url, { waitUntil: 'domcontentloaded', timeout: 90000 });
+      await page.goto(args.url, { timeout: 90000, waitUntil: 'domcontentloaded' });
 
       const content = await getPageContent(page);
       ctx.log.info(`Successfully retrieved content from ${args.url}. Length: ${content.length}`);
 
       return {
-        url: args.url,
         content: content,
+        url: args.url,
       };
     } catch (error) {
       const err = error as Error;
@@ -51,4 +51,6 @@ export const browserTool: Tool<typeof browserParams> = {
       await browser.close();
     }
   },
+  name: 'browser',
+  parameters: browserParams,
 };

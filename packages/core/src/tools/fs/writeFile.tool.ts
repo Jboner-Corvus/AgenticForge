@@ -6,7 +6,7 @@ import type { Ctx, Tool } from '../../types.js';
 
 import { UserError } from '../../utils/errorUtils.js';
 
-const WORKSPACE_DIR = path.resolve(process.cwd(), 'workspace');
+
 
 export const writeFileParams = z.object({
   content: z.string().describe('The full content to write to the file.'),
@@ -18,9 +18,7 @@ export const writeFileParams = z.object({
 });
 
 export const writeFileTool: Tool<typeof writeFileParams> = {
-  name: 'writeFile',
   description: 'Writes content to a file, overwriting it. Creates the file and directories if they do not exist.',
-  parameters: writeFileParams,
   execute: async (args, ctx: Ctx) => {
     const absolutePath = path.resolve(process.cwd(), 'workspace', args.path);
     if (!absolutePath.startsWith(path.resolve(process.cwd(), 'workspace'))) {
@@ -45,9 +43,11 @@ export const writeFileTool: Tool<typeof writeFileParams> = {
       const successMessage = `Successfully wrote content to ${args.path}.`;
       ctx.log.info(successMessage);
       return successMessage;
-    } catch (error: any) {
+    } catch (error: unknown) {
       ctx.log.error({ err: error }, `Failed to write file: ${args.path}`);
-      throw new Error(`Could not write file: ${error.message}`);
+      throw new Error(`Could not write file: ${(error as Error).message}`);
     }
   },
+  name: 'writeFile',
+  parameters: writeFileParams,
 };

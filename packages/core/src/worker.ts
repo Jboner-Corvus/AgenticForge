@@ -29,10 +29,7 @@ export async function processJob(job: Job): Promise<string> {
     await summarizeHistory(sessionData, log);
     await SessionManager.saveSession(sessionData, job, jobQueue);
 
-    await redis.publish(
-      channel,
-      JSON.stringify({ content: finalResponse, type: 'agent_response' }),
-    );
+    
 
     return finalResponse;
   } catch (error) {
