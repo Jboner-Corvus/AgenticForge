@@ -45,7 +45,7 @@ export const webSearchTool: Tool<typeof webSearchParams> = {
       const summary = `Search Answer: ${data.answer}
 
 Results:
-${data.results.map((r: { content: string; title: string; url: string; }) => `- [${r.title}](${r.url}): ${r.content}`).join('\n')}`;
+${data.results.map((r: { content: string; title: string; url: string }) => `- [${r.title}](${r.url}): ${r.content}`).join('\n')}`;
 
       return summary;
     } catch (error) {

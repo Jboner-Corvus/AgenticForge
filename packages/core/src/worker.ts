@@ -29,8 +29,6 @@ export async function processJob(job: Job): Promise<string> {
     await summarizeHistory(sessionData, log);
     await SessionManager.saveSession(sessionData, job, jobQueue);
 
-    
-
     return finalResponse;
   } catch (error) {
     log.error({ error }, 'Error in agent execution');

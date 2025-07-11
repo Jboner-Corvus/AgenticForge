@@ -9,18 +9,27 @@ import { UserError } from '../../utils/errorUtils.js';
 const WORKSPACE_DIR = path.resolve(process.cwd(), 'workspace');
 
 export const readFileParams = z.object({
-  end_line: z.number().optional().describe('The line number to stop reading at (inclusive).'),
+  end_line: z
+    .number()
+    .optional()
+    .describe('The line number to stop reading at (inclusive).'),
   path: z.string().describe('The path to the file inside the workspace.'),
-  start_line: z.number().optional().describe('The line number to start reading from (1-indexed).'),
+  start_line: z
+    .number()
+    .optional()
+    .describe('The line number to start reading from (1-indexed).'),
 });
 
 export const readFileTool: Tool<typeof readFileParams> = {
-  description: 'Reads the content of a file from the workspace. Use this to "open", "view", or "check" a file.',
+  description:
+    'Reads the content of a file from the workspace. Use this to "open", "view", or "check" a file.',
   execute: async (args, ctx: Ctx) => {
     const absolutePath = path.resolve(WORKSPACE_DIR, args.path);
 
     if (!absolutePath.startsWith(WORKSPACE_DIR)) {
-      throw new UserError('File path is outside the allowed workspace directory.');
+      throw new UserError(
+        'File path is outside the allowed workspace directory.',
+      );
     }
 
     try {

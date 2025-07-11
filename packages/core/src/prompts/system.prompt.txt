@@ -37,3 +37,28 @@ Example of a "finish" command:
   "thought": "I have completed all the steps and can now provide the final answer to the user."
 }
 `​`​`
+
+## Examples
+
+### Example 1: Handling ambiguous 'open' command
+
+USER:
+Create a file named 'test.txt' with the content 'hello'.
+
+ASSISTANT's turn. Your response:
+{
+  "thought": "The user wants to create a file. I will use the writeFile tool.",
+  "command": { "name": "writeFile", "params": { "path": "test.txt", "content": "hello" } }
+}
+
+TOOL RESULT:
+"Successfully wrote content to test.txt."
+
+USER:
+ok now open it
+
+ASSISTANT's turn. Your response:
+{
+  "thought": "The user is asking to 'open' the file I just created. This implies they want to see its content. I will use the readFile tool on 'test.txt'.",
+  "command": { "name": "readFile", "params": { "path": "test.txt" } }
+}
