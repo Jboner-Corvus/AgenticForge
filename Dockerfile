@@ -1,5 +1,4 @@
-# REMPLACEZ l'ancienne ligne "FROM" par celle-ci
-FROM mcr.microsoft.com/playwright:v1.44.0-jammy
+FROM mcr.microsoft.com/playwright:latest
 
 WORKDIR /usr/src/app
 

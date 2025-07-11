@@ -1,19 +1,15 @@
-// src/tools/index.ts
-// Ce fichier est maintenant le point d'entrée unique pour obtenir tous les outils dynamiquement.
-
+// packages/core/src/tools/index.ts
 import type { Tool } from '../types.js';
-
 import { getTools } from '../utils/toolLoader.js';
-// AJOUT : Importer le nouvel outil
-import { browseWebsiteTool } from './browser/browseWebsite.tool.js';
+import { browserTool } from './browser.tool.js';
+import { getTextFromUrlTool } from './web/getTextFromUrl.tool.js';
 
 export const getAllTools = async (): Promise<Tool<any, any>[]> => {
   const tools = await getTools();
   return [
     ...tools,
-    // AJOUT : Ajouter le nouvel outil à la liste
-    browseWebsiteTool as Tool<any, any>,
-    // ... (gardez les autres outils s'il y en a)
+    browserTool as Tool<any, any>,
+    getTextFromUrlTool as Tool<any, any>,
   ];
 };
 

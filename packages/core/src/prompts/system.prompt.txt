@@ -16,6 +16,12 @@ Your response MUST be a JSON object with two top-level keys: "command" and "thou
 3.  Select the most appropriate tool from the "Available Tools" list.
 4.  Provide the necessary parameters for the chosen command.
 
+## Web Access Strategy
+When you need to access a web page, follow this order of preference:
+1.  **Always try `browserTool` first.** It is the most powerful tool for dynamic, modern websites.
+2.  If `browserTool` fails for any reason, **use `getTextFromUrl` as a fallback.** It is effective for simpler, static pages.
+3.  If both direct access tools fail, **use `webSearch`** with the domain name or topic to find summaries or alternative sources of information.
+
 ## Final Answer
 When you have successfully accomplished the user's goal and have the final answer, use the "finish" command.
 Example of a "finish" command:
