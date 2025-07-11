@@ -18,20 +18,29 @@ export const writeFileParams = z.object({
 });
 
 export const writeFileTool: Tool<typeof writeFileParams> = {
-  description:
-    'Writes content to a file in the workspace, overwriting it if it already exists.',
+  name: 'writeFile',
+  description: 'Writes content to a file, overwriting it. Creates the file and directories if they do not exist.',
+  parameters: writeFileParams,
   execute: async (args, ctx: Ctx) => {
-    const absolutePath = path.resolve(WORKSPACE_DIR, args.path);
-
-    if (!absolutePath.startsWith(WORKSPACE_DIR)) {
-      throw new UserError(
-        'File path is outside the allowed workspace directory.',
-      );
+    const absolutePath = path.resolve(process.cwd(), 'workspace', args.path);
+    if (!absolutePath.startsWith(path.resolve(process.cwd(), 'workspace'))) {
+      throw new UserError('File path is outside the allowed workspace directory.');
     }
 
     try {
-      // Ensure directory exists
+      // Assurer que le répertoire existe
       await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+
+      // Vérifier si le fichier existe et si son contenu est identique
+      if (await fs.stat(absolutePath).then(() => true).catch(() => false)) {
+        const currentContent = await fs.readFile(absolutePath, 'utf-8');
+        if (currentContent === args.content) {
+          const message = `File ${args.path} already contains the desired content. No changes made.`;
+          ctx.log.info(message);
+          return message;
+        }
+      }
+
       await fs.writeFile(absolutePath, args.content, 'utf-8');
       const successMessage = `Successfully wrote content to ${args.path}.`;
       ctx.log.info(successMessage);
@@ -41,6 +50,4 @@ export const writeFileTool: Tool<typeof writeFileParams> = {
       throw new Error(`Could not write file: ${error.message}`);
     }
   },
-  name: 'writeFile',
-  parameters: writeFileParams,
 };
