@@ -31,6 +31,7 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           version: 9 # Spécifiez la version de pnpm si nécessaire
+          dest: AgenticForge-new # Spécifiez le répertoire de destination
 
       # Étape 3 : Installation de Node.js
       # Utilise la version 24, comme spécifié dans votre package.json
@@ -39,10 +40,12 @@ jobs:
         with:
           node-version: '24'
           cache: 'pnpm' # Active le cache pour les dépendances gérées par pnpm
+          cache-dependency-path: AgenticForge-new/pnpm-lock.yaml # Spécifiez le chemin du fichier de verrouillage
 
       # Étape 4 : Installation des dépendances du projet
       # Cette étape est accélérée par le cache configuré ci-dessus
       - name: Install dependencies
+        working-directory: AgenticForge-new # Spécifiez le répertoire de travail
         run: pnpm install
 
       # Étape 5 : Lancement du linter
