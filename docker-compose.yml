@@ -103,50 +103,50 @@ services:
     networks:
       - agentic_network
 
-  worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: agentic_forge_worker
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./workspace:/usr/src/app/workspace
-    depends_on:
-      redis:
-        condition: service_healthy
-    environment:
-      - NODE_ENV=production
-      - REDIS_URL=redis://redis:6378
-      - DOCKER=true
-      - HOST_PROJECT_PATH=/usr/src/app
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - GEMINI_MODEL=${GEMINI_MODEL}
-      - HOST_PORT=${HOST_PORT}
-      - PORT=${PORT:-3001}
-      - LOG_LEVEL=${LOG_LEVEL}
-      - AUTH_TOKEN=${AUTH_TOKEN}
-      - REDIS_HOST_PORT=${REDIS_HOST_PORT}
-      - WEB_PORT=${WEB_PORT}
-      - LLM_API_KEY=${LLM_API_KEY}
-      - LLM_MODEL_NAME=${LLM_MODEL_NAME}
-      - PYTHON_SANDBOX_IMAGE=${PYTHON_SANDBOX_IMAGE}
-      - ASH_SANDBOX_IMAGE=${ASH_SANDBOX_IMAGE}
-      - CODE_EXECUTION_TIMEOUT_MS=${CODE_EXECUTION_TIMEOUT_MS}
-      - SESSION_PORT=${SESSION_PORT}
-      - DOCKER_HOST=${DOCKER_HOST}
-      - TOOLS_PATH=/usr/src/app/packages/core/dist/tools
-    mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
-    restart: unless-stopped
-    env_file: ./.env
-    
-    networks:
-      - agentic_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+  #  worker:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: agentic_forge_worker
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
+#      - ./workspace:/usr/src/app/workspace
+#    depends_on:
+#      redis:
+#        condition: service_healthy
+#    environment:
+#      - NODE_ENV=production
+#      - REDIS_URL=redis://redis:6378
+#      - DOCKER=true
+#      - HOST_PROJECT_PATH=/usr/src/app
+#      - GEMINI_API_KEY=${GEMINI_API_KEY}
+#      - GEMINI_MODEL=${GEMINI_MODEL}
+#      - HOST_PORT=${HOST_PORT}
+#      - PORT=${PORT:-3001}
+#      - LOG_LEVEL=${LOG_LEVEL}
+#      - AUTH_TOKEN=${AUTH_TOKEN}
+#      - REDIS_HOST_PORT=${REDIS_HOST_PORT}
+#      - WEB_PORT=${WEB_PORT}
+#      - LLM_API_KEY=${LLM_API_KEY}
+#      - LLM_MODEL_NAME=${LLM_MODEL_NAME}
+#      - PYTHON_SANDBOX_IMAGE=${PYTHON_SANDBOX_IMAGE}
+#      - ASH_SANDBOX_IMAGE=${ASH_SANDBOX_IMAGE}
+#      - CODE_EXECUTION_TIMEOUT_MS=${CODE_EXECUTION_TIMEOUT_MS}
+#      - SESSION_PORT=${SESSION_PORT}
+#      - DOCKER_HOST=${DOCKER_HOST}
+#      - TOOLS_PATH=/usr/src/app/packages/core/dist/tools
+#    mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
+#    restart: unless-stopped
+#    env_file: ./.env
+#    
+#    networks:
+#      - agentic_network
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+#      start_period: 10s
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
