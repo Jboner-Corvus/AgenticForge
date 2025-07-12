@@ -3,8 +3,6 @@ node_modules
 dist
 coverage
 .pnpm-store
-pnpm-lock.yaml
-pnpm-lock
 # Fichiers de Log
 logs
 *.log
@@ -35,3 +33,5 @@ lol
 junit.xml
 Z :
 Z:
+worker.pid
+worker.log
