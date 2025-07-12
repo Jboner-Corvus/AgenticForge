@@ -1,8 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-import { Tool } from '../types.js';
 import { toolRegistry } from '../toolRegistry.js';
 import { getTools, _resetTools } from './toolLoader.js';
 

@@ -24,7 +24,6 @@ const toolsDir =
   (runningInDist
     ? path.join(__dirname, '..', 'tools')
     : path.resolve(__dirname, '..', '..', 'src', 'tools'));
-const generatedToolsDir = path.join(toolsDir, 'generated');
 
 /**
  * Récupère la liste de tous les outils, en les chargeant s'ils ne le sont pas déjà.
