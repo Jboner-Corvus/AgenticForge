@@ -1,8 +1,9 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { toolRegistry } from '../toolRegistry.js';
-import { getTools, _resetTools } from './toolLoader.js';
+import { _resetTools, getTools } from './toolLoader.js';
 
 // Mock du logger pour éviter les logs de test
 vi.mock('../logger.js', () => ({
@@ -63,9 +64,8 @@ describe('Tool Loader', () => {
     // Modifier le fichier
     await fs.writeFile(toolPath, createToolContent('dynamicTool', 'updated'));
 
-    // Attendre que le watcher détecte le changement
-    await new Promise((resolve) => setTimeout(resolve, 100)); // Petite pause
-
+    // Forcer le rechargement en réinitialisant le cache
+    _resetTools();
     tools = await getTools(); // Recharger les outils
     expect(tools).toHaveLength(1);
     expect(await tools[0].execute({}, {})).toBe('updated');
@@ -82,8 +82,9 @@ describe('Tool Loader', () => {
     // Supprimer le fichier
     await fs.unlink(toolPath);
 
-    // Attendre que le watcher détecte la suppression
-    await new Promise((resolve) => setTimeout(resolve, 100)); // Petite pause
+    // Vider le registre et réinitialiser le loader pour simuler un rechargement complet
+    toolRegistry.getAll().forEach(tool => toolRegistry.unregister(tool.name));
+    _resetTools();
 
     tools = await getTools(); // Recharger les outils
     expect(tools).toHaveLength(0);

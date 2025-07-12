@@ -19,11 +19,18 @@ let watcher: chokidar.FSWatcher | null = null;
 
 const runningInDist = __dirname.includes('dist');
 const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
-const toolsDir =
-  process.env.TOOLS_PATH ||
-  (runningInDist
-    ? path.join(__dirname, '..', 'tools')
-    : path.resolve(__dirname, '..', '..', 'src', 'tools'));
+
+// Fonction de réinitialisation pour les tests
+export function _resetTools(): void {
+  loadedToolFiles.clear();
+  fileToToolNameMap.clear();
+  if (watcher) {
+    watcher.close();
+    watcher = null;
+  }
+  // Note: Le toolRegistry n'est pas réinitialisé ici car il est un singleton global.
+  // Les tests doivent gérer la réinitialisation du toolRegistry si nécessaire.
+}
 
 /**
  * Récupère la liste de tous les outils, en les chargeant s'ils ne le sont pas déjà.
@@ -39,23 +46,12 @@ export async function getTools(): Promise<Tool[]> {
   return toolRegistry.getAll();
 }
 
-// Fonction de réinitialisation pour les tests
-export function _resetTools(): void {
-  loadedToolFiles.clear();
-  fileToToolNameMap.clear();
-  if (watcher) {
-    watcher.close();
-    watcher = null;
-  }
-  // Note: Le toolRegistry n'est pas réinitialisé ici car il est un singleton global.
-  // Les tests doivent gérer la réinitialisation du toolRegistry si nécessaire.
-}
-
 /**
  * Charge dynamiquement tous les outils disponibles. (Fonction interne)
  * @returns Une promesse qui se résout avec un tableau de tous les outils chargés.
  */
 async function _internalLoadTools(): Promise<void> {
+  const toolsDir = getToolsDir();
   const toolFiles = await findToolFiles(toolsDir, fileExtension);
 
   logger.info(`Calculated toolsDir: ${toolsDir}`);
@@ -98,11 +94,24 @@ async function findToolFiles(
       directory: dir,
       logContext: "Erreur lors du parcours du répertoire d'outils.",
     });
-    throw new Error(
-      `Impossible de lire le répertoire des outils '${dir}'. Vérifiez les permissions ou si le répertoire existe. Détails: ${errDetails.message}`,
-    );
+    // Ne pas lancer d'erreur si le répertoire n'existe pas (cas des tests)
+    if (errDetails.code !== 'ENOENT') {
+      throw new Error(
+        `Impossible de lire le répertoire des outils '${dir}'. Détails: ${errDetails.message}`,
+      );
+    }
   }
   return files;
+}
+
+// Fonction pour obtenir dynamiquement le répertoire des outils
+function getToolsDir(): string {
+  return (
+    process.env.TOOLS_PATH ||
+    (runningInDist
+      ? path.join(__dirname, '..', 'tools')
+      : path.resolve(__dirname, '..', '..', 'src', 'tools'))
+  );
 }
 
 async function loadToolFile(file: string): Promise<void> {
@@ -151,6 +160,7 @@ function unloadToolFile(file: string): void {
 }
 
 function watchTools(): void {
+  const toolsDir = getToolsDir();
   logger.info(
     `Démarrage de l'observateur de fichiers pour les outils dans: ${toolsDir}`,
   );

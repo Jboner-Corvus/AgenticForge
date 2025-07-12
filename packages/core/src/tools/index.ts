@@ -1,6 +1,7 @@
+import { ZodTypeAny } from 'zod';
+
 // packages/core/src/tools/index.ts
 import type { Tool } from '../types.js';
-import { ZodTypeAny } from 'zod';
 
 import { getTools } from '../utils/toolLoader.js';
 

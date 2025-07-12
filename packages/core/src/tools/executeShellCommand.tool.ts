@@ -1,6 +1,8 @@
 import { spawn } from 'child_process';
 import { z } from 'zod';
+
 import type { Ctx, Tool } from '../types.js';
+
 import { redis } from '../redisClient.js'; // Assuming redisClient.ts exports a redis instance
 
 export const executeShellCommandParams = z.object({
@@ -9,8 +11,6 @@ export const executeShellCommandParams = z.object({
 
 export const executeShellCommandTool: Tool<typeof executeShellCommandParams> = {
   description: 'Executes a shell command and streams its output in real-time.',
-  name: 'executeShellCommand',
-  parameters: executeShellCommandParams,
   execute: async (args, ctx: Ctx) => {
     // La fonction execute doit maintenant être une promesse qui gère les streams
     return new Promise((resolve, reject) => {
@@ -23,10 +23,10 @@ export const executeShellCommandTool: Tool<typeof executeShellCommandParams> = {
       });
 
       // Fonction pour envoyer un événement de streaming au frontend
-      const streamToFrontend = (type: 'stdout' | 'stderr', content: string) => {
+      const streamToFrontend = (type: 'stderr' | 'stdout', content: string) => {
         // Publie sur le canal Redis que le frontend écoute
         const channel = `job:${ctx.job!.id}:events`;
-        const data = { type: 'tool_stream', data: { type, content } };
+        const data = { data: { content, type }, type: 'tool_stream' };
         redis.publish(channel, JSON.stringify(data));
       };
       
@@ -61,4 +61,6 @@ export const executeShellCommandTool: Tool<typeof executeShellCommandParams> = {
       });
     });
   },
+  name: 'executeShellCommand',
+  parameters: executeShellCommandParams,
 };
