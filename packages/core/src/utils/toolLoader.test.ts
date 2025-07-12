@@ -10,6 +10,7 @@ vi.mock('../logger.js', () => ({
     debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
@@ -25,6 +26,9 @@ const createToolContent = (name: string, result: string) => `
 
 describe('Tool Loader', () => {
   beforeEach(async () => {
+    // Définir le chemin des outils de test
+    process.env.TOOLS_PATH = testToolsDir;
+
     // Nettoyer avant chaque test
     await fs.rm(testToolsDir, { force: true, recursive: true });
     await fs.mkdir(testToolsDir, { recursive: true });
