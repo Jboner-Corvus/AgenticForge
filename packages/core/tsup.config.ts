@@ -1,8 +1,12 @@
-import { defineConfig } from 'tsup'
+import { defineConfig } from 'tsup';
 
 export default defineConfig({
   clean: true,
   dts: true,
-  entry: ['src/server.ts', 'src/worker.ts', 'src/prompts/**/*.ts', 'src/tools/**/*.ts', 'src/utils/**/*.ts'],
+  entry: ['src/**/*.ts'],
   format: ['esm'],
-})
+  outDir: 'dist',
+  // Utiliser 'copy' pour inclure les fichiers non-ts.
+  // Cela préserve la structure des répertoires.
+  copy: ['src/prompts/system.prompt.txt'],
+});

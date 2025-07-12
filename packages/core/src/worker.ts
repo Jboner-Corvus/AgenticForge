@@ -1,3 +1,13 @@
+import dotenv from 'dotenv';
+dotenv.config();
+console.log('Starting worker...');
+
+// --- AJOUTEZ CES LIGNES POUR LE DÉBOGAGE ---
+console.log(`[DEBUG] REDIS_URL vue par le worker: ${process.env.REDIS_URL}`);
+console.log(`[DEBUG] REDIS_PORT vue par le worker: ${process.env.REDIS_PORT}`);
+console.log('-----------------------------------------');
+// --- FIN DE L'AJOUT ---
+
 console.log('Starting worker...');
 import { Job, Queue, Worker } from 'bullmq';
 
@@ -10,6 +20,7 @@ import { summarizeTool } from './tools/ai/summarize.tool.js';
 import { AgentProgress, Content, Ctx, Message, SessionData } from './types.js';
 
 console.log('Imports complete');
+console.log(`[Worker] Redis URL from redisClient: ${redis.options.host}:${redis.options.port}`);
 
 const jobQueue = new Queue('tasks', { connection: redis });
 

@@ -2,7 +2,6 @@
 import './tracing.js'; // Initialize OpenTelemetry
 import logger from './logger.js';
 import { startWebServer } from './webServer.js';
-import { startWorker } from './worker.js';
 
 async function startApplication() {
   logger.info("Démarrage de l'application AgenticForge...");
@@ -12,11 +11,6 @@ async function startApplication() {
     logger.info('Démarrage du serveur web...');
     await startWebServer();
     logger.info('Serveur web AgenticForge démarré.');
-
-    // Démarrer le worker
-    logger.info('Démarrage du worker...');
-    await startWorker();
-    logger.info('Worker AgenticForge démarré.');
   } catch (error) {
     logger.error(
       { error },

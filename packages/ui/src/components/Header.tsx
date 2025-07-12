@@ -1,29 +1,44 @@
-import { Settings, Menu } from 'lucide-react';
-import React, { memo } from 'react';
+import { Settings, Menu, Sun, Moon, Bell, Maximize, Minimize } from 'lucide-react';
+import React, { memo, useState, useCallback } from 'react';
 
-import { useStore } from '../lib/store';
 import { fr } from '../constants/fr';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Tooltip } from './ui/tooltip';
+import { UserMenu } from './UserMenu';
+import { Logo } from './Logo';
 
 interface HeaderProps {
   setIsControlPanelVisible: (visible: boolean) => void;
   setIsSettingsModalOpen: (open: boolean) => void;
   isControlPanelVisible: boolean;
+  isDarkMode: boolean;
+  toggleDarkMode: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = memo(({
   setIsControlPanelVisible,
   setIsSettingsModalOpen,
   isControlPanelVisible,
+  isDarkMode,
+  toggleDarkMode,
 }) => {
-  const sessionStatus = useStore((state) => state.sessionStatus);
-  const tokenStatus = useStore((state) => state.tokenStatus);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
+  const handleFullscreenToggle = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullScreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullScreen(false);
+      }
+    }
+  }, []);
 
   return (
     <header className="flex items-center justify-between p-4 bg-card border-b border-border">
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-4">
         <div className="md:hidden">
           <Button
             aria-label="Toggle Control Panel"
@@ -34,11 +49,36 @@ export const Header: React.FC<HeaderProps> = memo(({
             <Menu />
           </Button>
         </div>
-        <div className="text-2xl">🐉</div>
-        <h1 className="text-xl font-bold">Agentic Forge</h1>
+        <Logo />
+        {/* Placeholder for main navigation */}
+        <nav className="hidden md:flex space-x-4">
+          <Button variant="ghost">Dashboard</Button>
+          <Button variant="ghost">Projects</Button>
+          <Button variant="ghost">Settings</Button>
+        </nav>
       </div>
 
       <div className="flex items-center space-x-4">
+        <Tooltip text={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
+          <Button
+            aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            onClick={toggleDarkMode}
+            type="button"
+            variant="ghost"
+          >
+            {isDarkMode ? <Sun /> : <Moon />}
+          </Button>
+        </Tooltip>
+        <Tooltip text="Toggle Fullscreen">
+          <Button
+            aria-label="Toggle Fullscreen"
+            onClick={handleFullscreenToggle}
+            type="button"
+            variant="ghost"
+          >
+            {isFullScreen ? <Minimize /> : <Maximize />}
+          </Button>
+        </Tooltip>
         <Tooltip text={fr.settings}>
           <Button
             aria-label="Settings"
@@ -49,26 +89,11 @@ export const Header: React.FC<HeaderProps> = memo(({
             <Settings />
           </Button>
         </Tooltip>
-        <Tooltip
-          text={`Session: ${
-            sessionStatus === 'valid' ? fr.sessionActive : fr.sessionError
-          } | Token: ${tokenStatus ? fr.tokenValid : fr.tokenRequired}`}
-        >
-          <div className="flex items-center space-x-2">
-            <Badge
-              variant={sessionStatus === 'valid' ? 'default' : 'destructive'}
-            >
-              {sessionStatus === 'error'
-                ? fr.sessionError
-                : sessionStatus === 'valid'
-                ? fr.sessionActive
-                : fr.sessionUnknown}
-            </Badge>
-            <Badge variant={tokenStatus ? 'default' : 'destructive'}>
-              {tokenStatus ? fr.tokenValid : fr.tokenRequired}
-            </Badge>
-          </div>
-        </Tooltip>
+        {/* Placeholder for notifications */}
+        <Button variant="ghost" aria-label="Notifications">
+          <Bell className="h-5 w-5" />
+        </Button>
+        <UserMenu />
       </div>
     </header>
   );

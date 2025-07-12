@@ -18,7 +18,7 @@ export const executeDevCommandTool: Tool<typeof executeDevCommandParams> = {
   execute: async (args: z.infer<typeof executeDevCommandParams>, ctx: Ctx) => {
     ctx.log.info(`Executing dev command locally: "${args.command}"`);
     return new Promise((resolve) => {
-      exec(args.command, { cwd: process.cwd() }, (error, stdout, stderr) => {
+      exec(args.command, (error, stdout, stderr) => {
         let output = '';
         if (error) {
           output += `Exit Code: ${error.code}\n`;

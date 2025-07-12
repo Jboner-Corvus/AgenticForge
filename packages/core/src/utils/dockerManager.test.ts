@@ -2,7 +2,7 @@ import { PassThrough } from 'stream';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { config } from '../config.js';
-import { _UserError } from './errorUtils.js';
+import { UserError as _UserError } from './errorUtils.js';
 
 interface ErrorWithStatusCode extends Error {
   statusCode?: number;

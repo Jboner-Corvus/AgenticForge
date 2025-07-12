@@ -4,8 +4,6 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-import { UserError } from '../../utils/errorUtils.js';
-
 export const writeFileParams = z.object({
   content: z.string().describe('The full content to write to the file.'),
   path: z
@@ -19,16 +17,11 @@ export const writeFileTool: Tool<typeof writeFileParams> = {
   description:
     'Writes content to a file, overwriting it. Creates the file and directories if they do not exist.',
   execute: async (args, ctx: Ctx) => {
-    const absolutePath = path.resolve(process.cwd(), 'workspace', args.path);
-    if (!absolutePath.startsWith(path.resolve(process.cwd(), 'workspace'))) {
-      throw new UserError(
-        'File path is outside the allowed workspace directory.',
-      );
-    }
+    const absolutePath = path.resolve(args.path);
 
     try {
       // Assurer que le répertoire existe
-      await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+      await fs.mkdir(path.dirname(absolutePath), { recursive: true }).catch(console.error);
 
       // Vérifier si le fichier existe et si son contenu est identique
       if (

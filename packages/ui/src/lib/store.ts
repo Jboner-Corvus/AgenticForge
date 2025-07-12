@@ -7,6 +7,8 @@ import { generateUUID } from './utils/uuid';
 interface AppState {
   addDebugLog: (log: string) => void;
   addDisplayItem: (item: NewDisplayableItem) => void;
+  agentStatus: string | null;
+  toolStatus: string;
   authToken: null | string;
   clearDebugLog: () => void;
   clearDisplayItems: () => void;
@@ -20,8 +22,11 @@ interface AppState {
   messageInputValue: string;
   serverHealthy: boolean;
   sessionId: null | string;
+  agentProgress: number;
 
   sessionStatus: 'error' | 'unknown' | 'valid';
+  setAgentStatus: (agentStatus: string | null) => void;
+  setToolStatus: (toolStatus: string) => void;
   setAuthToken: (authToken: null | string) => void;
   setCodeExecutionEnabled: (codeExecutionEnabled: boolean) => void;
   setDebugPanelVisible: (debugPanelVisible: boolean) => void;
@@ -29,6 +34,7 @@ interface AppState {
   setJobId: (jobId: null | string) => void;
   setMessageInputValue: (messageInputValue: string) => void;
   setServerHealthy: (serverHealthy: boolean) => void;
+  setAgentProgress: (progress: number) => void;
   setSessionId: (sessionId: null | string) => void;
   setSessionStatus: (sessionStatus: 'error' | 'unknown' | 'valid') => void;
   setStreamCloseFunc: (func: (() => void) | null) => void;
@@ -48,6 +54,8 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({
       displayItems: [...state.displayItems, { ...item, id: generateUUID() }],
     })),
+  agentStatus: null,
+  toolStatus: '',
   authToken: null,
   clearDebugLog: () => set({ debugLog: [] }),
   clearDisplayItems: () => set({ displayItems: [] }),
@@ -71,6 +79,7 @@ export const useStore = create<AppState>((set, get) => ({
       updateSessionStatus('error');
     }
   },
+  agentProgress: 0,
   isProcessing: false,
   jobId: null,
   messageInputValue: '',
@@ -78,6 +87,8 @@ export const useStore = create<AppState>((set, get) => ({
   sessionId: null,
 
   sessionStatus: 'unknown',
+  setAgentStatus: (agentStatus) => set({ agentStatus }),
+  setToolStatus: (toolStatus) => set({ toolStatus }),
   setAuthToken: (authToken) => set({ authToken }),
   setCodeExecutionEnabled: (codeExecutionEnabled) => set({ codeExecutionEnabled }),
   setDebugPanelVisible: (debugPanelVisible) => set({ debugPanelVisible }),
@@ -90,6 +101,7 @@ export const useStore = create<AppState>((set, get) => ({
   setStreamCloseFunc: (func) => set({ streamCloseFunc: func }),
   setTokenStatus: (tokenStatus) => set({ tokenStatus }),
   setToolCount: (toolCount) => set({ toolCount }),
+  setAgentProgress: (agentProgress) => set({ agentProgress }),
   setToolCreationEnabled: (toolCreationEnabled) => set({ toolCreationEnabled }),
   streamCloseFunc: null,
   tokenStatus: false,

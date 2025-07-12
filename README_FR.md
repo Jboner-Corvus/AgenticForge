@@ -100,13 +100,24 @@ chmod +x run.sh
 
 À la première exécution, le script vérifiera si un fichier `.env` existe. S'il n'existe pas, il le créera automatiquement pour vous.
 
+### Activer le Sandboxing (Optionnel)
+
+Pour activer l'exécution de code en environnement isolé (sandboxing), vous devez définir la variable d'environnement `ENABLE_SANDBOXING` à `true` avant de lancer le script `run.sh`:
+
+```bash
+export ENABLE_SANDBOXING=true
+./run.sh
+```
+
+Cela activera le montage du socket Docker nécessaire pour le sandboxing. Par défaut, le sandboxing est désactivé pour des raisons de sécurité.
+
 ## 3. Configurer votre environnement
 
 Une fois le fichier `.env` créé, ouvrez-le et remplissez les valeurs avec vos propres informations d'identification.
 
 ```env
 # Copiez ce fichier en .env et remplissez les valeurs.
-HOST_PORT=8080
+PUBLIC_PORT=8080
 PORT=8080
 NODE_ENV=development
 LOG_LEVEL=info
@@ -115,8 +126,6 @@ REDIS_HOST=redis
 REDIS_PORT=6378
 REDIS_HOST_PORT=6378
 REDIS_PASSWORD=""
-# L'URL de base n'est plus nécessaire pour l'API Google, commentez-la ou supprimez-la.
-# LLM_API_BASE_URL=
 WEB_PORT=3000
 # Utilisez votre clé d'API Google Gemini
 LLM_API_KEY=""
@@ -182,18 +191,13 @@ Assurez-vous que Docker est en cours d'exécution avant de continuer.
 
 ---
 
-## Configuration pour Usage API
+## Configuration pour Usage API (Google Gemini uniquement)
 
 Si vous préférez les modèles cloud ou manquez de matériel suffisant :
 
-### 1. Choisir un Fournisseur API
+### 1. Obtenir une Clé API Google Gemini
 
-| Fournisseur | Exemples de Modèles                  | Lien Clé API                                              |
-| ----------- | ------------------------------------ | --------------------------------------------------------- |
-| OpenAI      | `gpt-4`, `o1`                        | [platform.openai.com](https://platform.openai.com/signup) |
-| Google      | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)   |
-| Anthropic   | `claude-4-sonnet`, `claude-4-opus`   | [console.anthropic.com](https://console.anthropic.com/)   |
-| DeepSeek    | `deepseek-chat`, `deepseek-coder`    | [platform.deepseek.com](https://platform.deepseek.com)    |
+- **Google** : `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)
 
 ### 2. Définir votre clé API
 

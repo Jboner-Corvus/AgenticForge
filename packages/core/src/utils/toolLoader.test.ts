@@ -1,9 +1,10 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { afterAll, beforeAll, describe, expect, it, Mock, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Tool } from '../types.js';
-import { getTools } from './toolLoader.js';
+import { toolRegistry } from '../toolRegistry.js';
+import { getTools, _resetTools } from './toolLoader.js';
 
 // Mock du logger pour éviter les logs de test
 vi.mock('../logger.js', () => ({
@@ -14,79 +15,76 @@ vi.mock('../logger.js', () => ({
   },
 }));
 
-// Mock the getTools function directly
-vi.mock('./toolLoader.js', () => {
-  return {
-    getTools: vi.fn(),
-  };
-});
-
 const testToolsDir = path.join(__dirname, 'test_tools');
-const tool1Path = path.join(testToolsDir, 'tool1.tool.ts');
-const tool2Path = path.join(testToolsDir, 'sub', 'tool2.tool.ts');
 
-const tool1Content = `
-  export const myTool1 = {
-    name: 'test-tool-1',
+const createToolContent = (name: string, result: string) => `
+  export const ${name} = {
+    name: '${name}',
     description: 'A test tool',
-    execute: async () => 'result1',
-  };
-`;
-
-const tool2Content = `
-  export const myTool2 = {
-    name: 'test-tool-2',
-    description: 'Another test tool',
-    execute: async () => 'result2',
+    execute: async () => '${result}',
   };
 `;
 
 describe('Tool Loader', () => {
-  beforeAll(async () => {
-    // Créer un répertoire de test et des fichiers d'outils factices
+  beforeEach(async () => {
+    // Nettoyer avant chaque test
+    await fs.rm(testToolsDir, { force: true, recursive: true });
     await fs.mkdir(testToolsDir, { recursive: true });
-    await fs.mkdir(path.join(testToolsDir, 'sub'), { recursive: true });
-    await fs.writeFile(tool1Path, tool1Content);
-    await fs.writeFile(tool2Path, tool2Content);
-
-    // Mock getTools to return our test tools
-    (getTools as Mock).mockImplementation(async () => {
-      const tool1 = {
-        description: 'A test tool',
-        execute: async () => 'result1',
-        name: 'test-tool-1',
-      };
-      const tool2 = {
-        description: 'Another test tool',
-        execute: async () => 'result2',
-        name: 'test-tool-2',
-      };
-      return [tool1, tool2];
-    });
+    // Réinitialiser le registre des outils et le cache du loader
+    toolRegistry.getAll().forEach(tool => toolRegistry.unregister(tool.name));
+    _resetTools();
   });
 
-  afterAll(async () => {
-    // Nettoyer les fichiers et le répertoire de test
+  afterEach(async () => {
     await fs.rm(testToolsDir, { force: true, recursive: true });
   });
 
   it('should load all tools from the specified directory', async () => {
+    const tool1Path = path.join(testToolsDir, 'tool1.tool.ts');
+    await fs.writeFile(tool1Path, createToolContent('tool1', 'result1'));
+
     const tools = await getTools();
 
-    expect(tools).toHaveLength(2);
-
-    const toolNames = tools.map((t: Tool) => t.name);
-    expect(toolNames).toContain('test-tool-1');
-    expect(toolNames).toContain('test-tool-2');
+    expect(tools).toHaveLength(1);
+    expect(tools[0].name).toBe('tool1');
+    expect(await tools[0].execute({}, {})).toBe('result1');
   });
 
-  it('should return the cached tools on subsequent calls', async () => {
-    // Le premier appel charge les outils
-    await getTools();
+  it('should reload a tool when its file changes', async () => {
+    const toolPath = path.join(testToolsDir, 'dynamicTool.tool.ts');
+    await fs.writeFile(toolPath, createToolContent('dynamicTool', 'initial'));
 
-    // Le second appel devrait utiliser le cache
-    const tools = await getTools();
+    let tools = await getTools();
+    expect(tools).toHaveLength(1);
+    expect(await tools[0].execute({}, {})).toBe('initial');
 
-    expect(tools).toHaveLength(2);
+    // Modifier le fichier
+    await fs.writeFile(toolPath, createToolContent('dynamicTool', 'updated'));
+
+    // Attendre que le watcher détecte le changement
+    await new Promise((resolve) => setTimeout(resolve, 100)); // Petite pause
+
+    tools = await getTools(); // Recharger les outils
+    expect(tools).toHaveLength(1);
+    expect(await tools[0].execute({}, {})).toBe('updated');
+  });
+
+  it('should unload a tool when its file is deleted', async () => {
+    const toolPath = path.join(testToolsDir, 'deletableTool.tool.ts');
+    await fs.writeFile(toolPath, createToolContent('deletableTool', 'toDelete'));
+
+    let tools = await getTools();
+    expect(tools).toHaveLength(1);
+    expect(tools[0].name).toBe('deletableTool');
+
+    // Supprimer le fichier
+    await fs.unlink(toolPath);
+
+    // Attendre que le watcher détecte la suppression
+    await new Promise((resolve) => setTimeout(resolve, 100)); // Petite pause
+
+    tools = await getTools(); // Recharger les outils
+    expect(tools).toHaveLength(0);
   });
 });
+

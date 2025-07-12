@@ -9,7 +9,7 @@ import { getMasterPrompt } from './prompts/orchestrator.prompt.js';
 import { redis } from './redisClient.js';
 import { toolRegistry } from './toolRegistry.js';
 import { AgentProgress, Ctx, Message, SessionData } from './types.js';
-import { getLlmResponse } from './utils/llmProvider.js';
+import { llmProvider } from './utils/llmProvider.js';
 import { getTools } from './utils/toolLoader.js';
 
 // Schéma Zod pour la réponse du LLM
@@ -27,6 +27,7 @@ type ChannelData =
   | { content: string; type: 'agent_response' }
   | { content: string; type: 'agent_thought' }
   | { content: string; type: 'raw_llm_response' }
+  | { data: { args: unknown; name: string; }; type: 'tool.start'; }
   | { result: unknown; toolName: string; type: 'tool_result' };
 
 interface Command {
@@ -72,9 +73,9 @@ export class Agent {
           toolRegistry.getAll(),
         );
 
-        const llmResponse = await this.getLlmResponse(
+                const llmResponse = await llmProvider.getLlmResponse(
+          this.session.history.map(h => ({ parts: [{ text: h.content }], role: h.role as 'model' | 'user' })),
           orchestratorPrompt,
-          iterationLog,
         );
 
         const parsedResponse = this.parseLlmResponse(llmResponse, iterationLog);
@@ -97,10 +98,26 @@ export class Agent {
         }
 
         if (command) {
+          // Envoyer un événement au frontend pour chaque outil sur le point d'être exécuté
+          const eventData: ChannelData = {
+            data: {
+              args: command.params,
+              name: command.name,
+            },
+            type: 'tool.start',
+          };
+          this.publishToChannel(eventData);
+
           const toolResult = await this.executeTool(command, iterationLog);
 
           if (command.name === 'finish') {
-            iterationLog.info('Agent finishing task.');
+            iterationLog.info(
+              'Finish tool detected, stopping agent execution.',
+            );
+            this.publishToChannel({
+              content: toolResult as string,
+              type: 'agent_response',
+            });
             return toolResult as string;
           }
 
@@ -198,7 +215,7 @@ export class Agent {
       role: msg.role as 'model' | 'user',
     }));
 
-    const response = await getLlmResponse([
+    const response = await llmProvider.getLlmResponse([
       ...history,
       { parts: [{ text: prompt }], role: 'user' },
     ]);

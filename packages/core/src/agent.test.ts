@@ -5,11 +5,13 @@ import { Ctx, SessionData } from '../types.js';
 import { Agent } from './agent.js';
 import { redis } from './redisClient.js'; // Import redis
 import { toolRegistry } from './toolRegistry.js';
-import { getLlmResponse } from './utils/llmProvider.js';
+import { llmProvider } from './utils/llmProvider.js';
 import { getTools } from './utils/toolLoader.js';
 
 vi.mock('./utils/llmProvider.js', () => ({
-  getLlmResponse: vi.fn(),
+  llmProvider: {
+    getLlmResponse: vi.fn(),
+  },
 }));
 
 vi.mock('./toolRegistry.js');
@@ -17,7 +19,7 @@ vi.mock('./utils/toolLoader.js'); // Mock toolLoader
 
 vi.mock('./redisClient.js'); // Mock redis
 
-const mockedGetLlmResponse = getLlmResponse as Mock;
+const mockedGetLlmResponse = llmProvider.getLlmResponse as Mock;
 
 const mockFinishTool = {
   description: "Call this tool when the user's goal is accomplished.",
@@ -107,7 +109,7 @@ describe('Agent Integration Tests', () => {
     (toolRegistry.execute as Mock).mockImplementation(
       async (name: string, params: unknown, _ctx: Ctx) => {
         if (name === 'finish') {
-          return mockFinishTool.execute(params);
+          return mockFinishTool.execute(params, {} as Ctx);
         } else if (name === 'test-tool') {
           return mockTestTool.execute(params, _ctx);
         }
@@ -254,7 +256,7 @@ describe('Agent Integration Tests', () => {
         }
         // Fallback pour les autres outils (comme 'finish')
         if (name === 'finish') {
-          return mockFinishTool.execute(params);
+          return mockFinishTool.execute(params, {} as Ctx);
         }
         throw new Error(`Tool not found: ${name}`);
       },
