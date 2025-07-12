@@ -15,7 +15,7 @@ export const executeShellCommandTool: Tool<typeof executeShellCommandParams> = {
     // La fonction execute doit maintenant être une promesse qui gère les streams
     return new Promise((resolve, reject) => {
       ctx.log.info(`Spawning shell command: ${args.command}`);
-      
+
       // Utilise spawn pour lancer la commande
       const child = spawn(args.command, {
         shell: true, // Important pour interpréter les commandes complexes
@@ -29,7 +29,7 @@ export const executeShellCommandTool: Tool<typeof executeShellCommandParams> = {
         const data = { data: { content, type }, type: 'tool_stream' };
         redis.publish(channel, JSON.stringify(data));
       };
-      
+
       // Écoute le flux stdout
       child.stdout.on('data', (data: Buffer) => {
         const chunk = data.toString();
@@ -46,7 +46,10 @@ export const executeShellCommandTool: Tool<typeof executeShellCommandParams> = {
 
       // Gère les erreurs de spawn
       child.on('error', (error) => {
-        ctx.log.error({ err: error }, `Failed to start shell command: ${args.command}`);
+        ctx.log.error(
+          { err: error },
+          `Failed to start shell command: ${args.command}`,
+        );
         reject(new Error(`Failed to start command: ${error.message}`));
       });
 
@@ -55,7 +58,7 @@ export const executeShellCommandTool: Tool<typeof executeShellCommandParams> = {
         const finalMessage = `--- COMMAND FINISHED ---\nExit Code: ${code}`;
         ctx.log.info(finalMessage);
         streamToFrontend('stdout', `\n${finalMessage}`);
-        
+
         // Résout la promesse pour que l'agent puisse continuer
         resolve(`Command finished with exit code ${code}.`);
       });

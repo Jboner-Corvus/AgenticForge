@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
@@ -11,7 +10,7 @@ export const listToolsTool: Tool<typeof listToolsParams> = {
   description: 'Lists all available tools.',
   execute: async (_args, _ctx: Ctx) => {
     const allTools = await getAllTools();
-    const toolNames = allTools.map(tool => tool.name);
+    const toolNames = allTools.map((tool) => tool.name);
     return {
       tools: toolNames,
     };

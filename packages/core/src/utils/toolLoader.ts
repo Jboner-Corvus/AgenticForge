@@ -95,7 +95,7 @@ async function findToolFiles(
       logContext: "Erreur lors du parcours du répertoire d'outils.",
     });
     // Ne pas lancer d'erreur si le répertoire n'existe pas (cas des tests)
-    if (errDetails.code !== 'ENOENT') {
+    if (!errDetails.message.includes('ENOENT')) {
       throw new Error(
         `Impossible de lire le répertoire des outils '${dir}'. Détails: ${errDetails.message}`,
       );

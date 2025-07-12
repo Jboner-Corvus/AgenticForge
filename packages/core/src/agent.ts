@@ -27,7 +27,7 @@ type ChannelData =
   | { content: string; type: 'agent_response' }
   | { content: string; type: 'agent_thought' }
   | { content: string; type: 'raw_llm_response' }
-  | { data: { args: unknown; name: string; }; type: 'tool.start'; }
+  | { data: { args: unknown; name: string }; type: 'tool.start' }
   | { result: unknown; toolName: string; type: 'tool_result' };
 
 interface Command {
@@ -73,8 +73,11 @@ export class Agent {
           toolRegistry.getAll(),
         );
 
-                const llmResponse = await llmProvider.getLlmResponse(
-          this.session.history.map(h => ({ parts: [{ text: h.content }], role: h.role as 'model' | 'user' })),
+        const llmResponse = await llmProvider.getLlmResponse(
+          this.session.history.map((h) => ({
+            parts: [{ text: h.content }],
+            role: h.role as 'model' | 'user',
+          })),
           orchestratorPrompt,
         );
 

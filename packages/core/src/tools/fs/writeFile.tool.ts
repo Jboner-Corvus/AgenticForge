@@ -21,7 +21,9 @@ export const writeFileTool: Tool<typeof writeFileParams> = {
 
     try {
       // Assurer que le répertoire existe
-      await fs.mkdir(path.dirname(absolutePath), { recursive: true }).catch(console.error);
+      await fs
+        .mkdir(path.dirname(absolutePath), { recursive: true })
+        .catch(console.error);
 
       // Vérifier si le fichier existe et si son contenu est identique
       if (

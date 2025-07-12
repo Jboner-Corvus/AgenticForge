@@ -13,7 +13,9 @@ export const redis = new Redis(redisUrl, {
   maxRetriesPerRequest: null, // Permet des tentatives de reconnexion infinies
   retryStrategy: (times) => {
     const delay = Math.min(times * 50, 2000); // Backoff exponentiel, max 2 secondes
-    logger.warn(`[redisClient] Retrying Redis connection (attempt ${times}). Next retry in ${delay}ms.`);
+    logger.warn(
+      `[redisClient] Retrying Redis connection (attempt ${times}). Next retry in ${delay}ms.`,
+    );
     return delay;
   },
 });

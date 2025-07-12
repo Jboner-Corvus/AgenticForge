@@ -20,7 +20,9 @@ import { summarizeTool } from './tools/ai/summarize.tool.js';
 import { AgentProgress, Content, Ctx, Message, SessionData } from './types.js';
 
 console.log('Imports complete');
-console.log(`[Worker] Redis URL from redisClient: ${redis.options.host}:${redis.options.port}`);
+console.log(
+  `[Worker] Redis URL from redisClient: ${redis.options.host}:${redis.options.port}`,
+);
 
 const jobQueue = new Queue('tasks', { connection: redis });
 
