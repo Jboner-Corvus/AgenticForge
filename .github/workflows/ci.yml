@@ -25,16 +25,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Étape 2 : Installation de Node.js et pnpm
-      # Utilise la version 24, comme spécifié dans votre package.json
-      - name: Set up Node.js and pnpm
+      # Étape 2 : Installation de pnpm
+      # Action officielle pour installer pnpm dans le workflow
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      # Étape 3 : Installation de Node.js
+      # Utilise la version 24. 'pnpm' est mis en cache pour accélérer les builds.
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-          cache: 'pnpm' # This line automatically handles pnpm caching
+          cache: 'pnpm'
 
-      # Étape 3 : Installation des dépendances du projet
-      # Cette étape est accélérée par le cache configuré ci-dessus
+      # Étape 4 : Installation des dépendances
+      # Utilise pnpm pour installer les dépendances du projet.
       - name: Install dependencies
         run: pnpm install
 
