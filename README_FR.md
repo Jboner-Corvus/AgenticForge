@@ -33,7 +33,7 @@
 <p align="center">
     <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
     <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
-    <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+    <img src="https://img.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
     <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis">
     <img src="https://img.shields.io/badge/MCP-000000?style=for-the-badge&logoColor=white" alt="MCP">
     <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm">
@@ -89,58 +89,56 @@ git clone https://github.com/votre-username/agentic-forge.git
 cd agentic-forge
 ```
 
-## 2. Lancer le script d'installation
+## 2. Lancer le script de gestion
 
-Rendez le script de gestion exécutable et lancez-le.
+Rendez le script de gestion exécutable (sur Linux/macOS) et lancez-le.
 
 ```bash
+# Sur Linux ou macOS
 chmod +x run.sh
 ./run.sh
-```
 
-À la première exécution, le script vérifiera si un fichier `.env` existe. S'il n'existe pas, il le créera automatiquement pour vous.
-
-### Activer le Sandboxing (Optionnel)
-
-Pour activer l'exécution de code en environnement isolé (sandboxing), vous devez définir la variable d'environnement `ENABLE_SANDBOXING` à `true` avant de lancer le script `run.sh`:
-
-```bash
-export ENABLE_SANDBOXING=true
+# Sur Windows
 ./run.sh
 ```
 
-Cela activera le montage du socket Docker nécessaire pour le sandboxing. Par défaut, le sandboxing est désactivé pour des raisons de sécurité.
+À la première exécution, le script vérifiera si un fichier `.env` existe. S'il n'existe pas, il le créera automatiquement pour vous avec les valeurs par défaut.
 
 ## 3. Configurer votre environnement
 
-Une fois le fichier `.env` créé, ouvrez-le et remplissez les valeurs avec vos propres informations d'identification.
+Ouvrez le fichier `.env` qui a été créé et remplissez les valeurs. Voici un exemple basé sur le fichier généré automatiquement.
 
 ```env
-# Copiez ce fichier en .env et remplissez les valeurs.
+# Fichier .env généré automatiquement. Remplissez les valeurs.
+# Port exposé par le serveur principal
 PUBLIC_PORT=8080
-PORT=8080
+# Port de l'interface web
+WEB_PORT=3002
+
+# --- Configuration Redis ---
+# Le worker local se connectera à Redis via localhost sur ce port.
+# Assurez-vous que ce port correspond à celui exposé dans docker-compose.yml.
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_HOST_PORT=6379
+REDIS_PASSWORD=""
+
+# --- Configuration du LLM et de l'Authentification ---
+LLM_API_KEY="votre_cle_api_gemini"
+LLM_MODEL_NAME=gemini-1.5-flash
+AUTH_TOKEN="un_token_secret_et_long_de_votre_choix"
+
+# --- Configuration Technique ---
 NODE_ENV=development
 LOG_LEVEL=info
-AUTH_TOKEN=""
-REDIS_HOST=redis
-REDIS_PORT=6378
-REDIS_HOST_PORT=6378
-REDIS_PASSWORD=""
-WEB_PORT=3000
-# Utilisez votre clé d'API Google Gemini
-LLM_API_KEY=""
-
-# Spécifiez un modèle Gemini, par exemple "gemini-1.5-pro-latest"
-LLM_MODEL_NAME=gemini-2.5-flash
 PYTHON_SANDBOX_IMAGE="python:3.11-slim"
-BASH_SANDBOX_IMAGE="alpine:latest"
+ASH_SANDBOX_IMAGE="alpine:latest"
 CODE_EXECUTION_TIMEOUT_MS=60000
 ```
 
 **Important** :
-
-- Définissez un `AUTH_TOKEN` fort (32+ caractères recommandés)
-- Les clés API sont optionnelles si vous utilisez des modèles locaux
+- Définissez un `AUTH_TOKEN` fort (32+ caractères recommandés).
+- Les clés API sont optionnelles si vous utilisez des modèles locaux.
 
 ---
 
@@ -191,34 +189,36 @@ Assurez-vous que Docker est en cours d'exécution avant de continuer.
 
 ---
 
-## Configuration pour Usage API (Google Gemini uniquement)
+## Configuration pour Usage API
 
 Si vous préférez les modèles cloud ou manquez de matériel suffisant :
 
-### 1. Obtenir une Clé API Google Gemini
+### 1. Choisir un fournisseur d'API
 
-- **Google** : `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)
+| Fournisseur | Modèles Exemples                     | Lien Clé API                                              |
+| ----------- | ------------------------------------ | --------------------------------------------------------- |
+| OpenAI      | `gpt-4`, `o1`                        | [platform.openai.com](https://platform.openai.com/signup) |
+| Google      | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)   |
+| Anthropic   | `claude-4-sonnet`, `claude-4-opus`   | [console.anthropic.com](https://console.anthropic.com/)   |
+| DeepSeek    | `deepseek-chat`, `deepseek-coder`    | [platform.deepseek.com](https://platform.deepseek.com)    |
 
 ### 2. Définir votre clé API
 
 **Linux/macOS :**
-
 ```bash
 export LLM_API_KEY="votre_cle_api_ici"
 # Ajoutez à ~/.bashrc ou ~/.zshrc pour la persistance
 ```
 
 **Windows :**
-
 ```cmd
 set LLM_API_KEY=votre_cle_api_ici
 ```
 
 ### 3. Mettre à jour `.env` :
-
 ```env
 LLM_API_KEY="votre_cle_api_ici"
-LLM_MODEL_NAME="gemini-1.5-pro"
+LLM_MODEL_NAME="gemini-1.5-pro" # ou un autre modèle de votre choix
 ```
 
 ---
@@ -230,13 +230,11 @@ LLM_MODEL_NAME="gemini-1.5-pro"
 Après avoir configuré votre fichier `.env`, utilisez la console de gestion pour démarrer l'application.
 
 Lancez la console interactive :
-
 ```bash
 ./run.sh
 ```
 
 Depuis le menu de la console :
-
 1.  **Démarrer** - Lancer tous les services
 2.  **Statut** - Vérifier la santé des services
 3.  **Logs** - Surveiller les logs en temps réel
@@ -244,24 +242,21 @@ Depuis le menu de la console :
 ### Commandes Docker Manuelles
 
 Démarrer tous les services :
-
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 Vérifier le statut :
-
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 Voir les logs :
-
 ```bash
-docker-compose logs -f
+docker compose logs -f
 ```
 
-**⚠️ Attention** : Le démarrage initial peut prendre 10-15 minutes car les images Docker sont téléchargées et les services s'initialisent. Attendez de voir `backend: "GET /health HTTP/1.1" 200 OK` dans les logs.
+**⚠️ Attention** : Le démarrage initial peut prendre plusieurs minutes car les images Docker sont téléchargées et les services s'initialisent. Attendez de voir `agentic_forge_server | ... "GET /api/health HTTP/1.1" 200 ...` dans les logs.
 
 ---
 
@@ -269,22 +264,22 @@ docker-compose logs -f
 
 Une fois les services en marche :
 
-| Service                | URL                                       | Description                      |
-| ---------------------- | ----------------------------------------- | -------------------------------- |
-| **Interface Web**      | http://localhost:3000                     | Interface utilisateur principale |
-| **Point d'API**        | http://localhost:8080/api/v1/agent/stream | Accès API direct                 |
-| **Vérification Santé** | http://localhost:8080/health              | Statut de santé des services     |
+| Service                | URL                                                 | Description                      |
+| ---------------------- | --------------------------------------------------- | -------------------------------- |
+| **Interface Web**      | http://localhost:${WEB_PORT:-3002}                  | Interface utilisateur principale |
+| **Point d'API**        | http://localhost:${PUBLIC_PORT:-8080}/api/v1/agent/stream | Accès API direct                 |
+| **Vérification Santé** | http://localhost:${PUBLIC_PORT:-8080}/api/health    | Statut de santé des services     |
 
 ### Test Rapide
 
 ```bash
 # Vérification santé
-curl http://localhost:8080/health
+curl http://localhost:8080/api/health
 
-# Test API
-curl -X POST http://localhost:8080/api/v1/agent/stream \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer VOTRE_AUTH_TOKEN" \
+# Test API (remplacez VOTRE_AUTH_TOKEN)
+curl -X POST http://localhost:8080/api/v1/agent/stream 
+  -H "Content-Type: application/json" 
+  -H "Authorization: Bearer VOTRE_AUTH_TOKEN" 
   -d '{"goal": "Crée un simple script Python hello world"}'
 ```
 
@@ -295,31 +290,26 @@ curl -X POST http://localhost:8080/api/v1/agent/stream \
 Une fois vos services en marche, essayez ces exemples :
 
 ### 🔧 Forge d'Outils
-
 ```
 "J'ai besoin d'un outil pour convertir des fichiers CSV en format JSON. Crée-le puis utilise-le sur mon fichier donnees.csv."
 ```
 
 ### 💻 Génération de Code
-
 ```
 "Écris un script Python qui surveille un répertoire pour les nouveaux fichiers et enregistre leurs détails."
 ```
 
 ### 🌐 Automatisation Web
-
 ```
 "Recherche en ligne les dernières bonnes pratiques TypeScript et crée un document de résumé."
 ```
 
 ### 📊 Analyse de Données
-
 ```
 "Analyse le fichier donnees_ventes.csv dans mon espace de travail et crée une visualisation des tendances."
 ```
 
 ### 🛠️ Tâches Système
-
 ```
 "Crée un script de sauvegarde pour mes fichiers importants et programme son exécution quotidienne."
 ```
@@ -333,21 +323,21 @@ Une fois vos services en marche, essayez ces exemples :
 La console interactive fournit un contrôle complet sur votre instance Agentic Forge :
 
 ```
-🔨 Agentic Forge - Console de Gestion
-────────────────────────────────────────
+   ╔══════════════════════════════════╗
+   ║      A G E N T I C  F O R G E    ║
+   ╚══════════════════════════════════╝
+──────────────────────────────────────────
+  Docker & Services
+   1) 🟢 Démarrer         5) 📊 Logs
+   2) 🔄 Redémarrer       6) 🐚 Shell (Container)
+   3) 🔴 Arrêter          7) 🔨 Rebuild (no cache)
+   4) ⚡ Statut           8) 🧹 Nettoyer Docker
 
-   Docker & Services
-1) 🟢 Démarrer        5) 📊 Logs
-2) 🔄 Redémarrer      6) 🐚 Shell
-3) 🔴 Arrêter         7) 🔨 Rebuild
-4) ⚡ Statut          8) 🧹 Nettoyer
+  Développement
+  10) 🔍 Lint           12) 🧪 Tests
+  11) ✨ Format         13) 📘 TypeCheck
 
-   Développement & Qualité
-10) 🔍 Lint           13) 🧪 Tests
-11) ✨ Formater       14) 📘 TypeCheck
-12) 🧽 Nettoyer       15) 📋 Audit
-
-16) 🚪 Quitter
+  16) 🚪 Quitter
 ```
 
 ### Commandes Clés
@@ -366,10 +356,10 @@ La console interactive fournit un contrôle complet sur votre instance Agentic F
 
 ### 🏗️ Microservices Distribués
 
-- **🧠 Serveur** (Port 8080) : Orchestration centrale, communication LLM, gestion de session
-- **⚡ Worker** : Traitement de tâches async, exécution de code, automatisation web
-- **🌐 Interface Web** (Port 3000) : UI moderne basée sur React
-- **💾 Redis** (Port 6378) : File de tâches, stockage de session, mise en cache
+- **🧠 Serveur** (Port `${PUBLIC_PORT:-8080}`) : Orchestration centrale, communication LLM, gestion de session
+- **⚡ Worker** : Traitement de tâches asynchrones, exécution de code, automatisation web
+- **🌐 Interface Web** (Port `${WEB_PORT:-3002}`) : UI moderne basée sur React
+- **💾 Redis** (Port `6379`) : File de tâches, stockage de session, mise en cache
 
 ### 🔄 Processus de Forge d'Outils
 
@@ -399,28 +389,29 @@ sequenceDiagram
 
 ```
 agentic-forge/
-├── 📁 src/                    # Code source TypeScript
-│   ├── 📁 tools/             # Outils disponibles
-│   │   ├── 📁 system/        # Outils système (création, redémarrage)
-│   │   ├── 📁 fs/            # Opérations système de fichiers
-│   │   ├── 📁 code/          # Exécution de code
-│   │   ├── 📁 browser/       # Automatisation web
-│   │   └── 📁 generated/     # Outils auto-générés
-│   ├── 📁 prompts/           # Templates de prompts LLM
-│   ├── 📁 utils/             # Utilitaires et assistants
-│   ├── 📄 server.ts          # Serveur principal
-│   ├── 📄 worker.ts          # Worker async
-│   └── 📄 webServer.ts       # Interface web
-├── 📄 docker-compose.yml     # Orchestration services
-├── 📄 Dockerfile             # Définition conteneur
-├── 📄 run.sh                 # Console de gestion
-└── 📄 README.md              # Cette documentation
+├── packages/
+│   ├── core/                  # Code source du Backend et du Worker
+│   │   ├── src/
+│   │   │   ├── agent.ts
+│   │   │   ├── server.ts
+│   │   │   ├── worker.ts
+│   │   │   ├── tools/         # Outils disponibles
+│   │   │   ├── prompts/       # Templates de prompts LLM
+│   │   │   └── utils/         # Utilitaires
+│   │   └── package.json
+│   └── ui/                    # Code source du Frontend
+│       ├── src/
+│       └── package.json
+├── .env                       # Fichier de configuration (local)
+├── docker-compose.yml         # Orchestration des services
+├── run.sh                     # Script de gestion
+└── README_FR.md               # Cette documentation
 ```
 
 ### Ajouter des Outils Personnalisés
 
 ```typescript
-// src/tools/custom/monOutil.tool.ts
+// packages/core/src/tools/custom/monOutil.tool.ts
 import { z } from 'zod';
 import type { Tool, Ctx } from '../../types.js';
 
@@ -444,7 +435,7 @@ export const monOutil: Tool<typeof monOutilParams> = {
 };
 ```
 
-N'oubliez pas de l'ajouter à `src/tools/index.ts` :
+N'oubliez pas de l'ajouter à `packages/core/src/tools/index.ts` :
 
 ```typescript
 import { monOutil } from './custom/monOutil.tool.js';
@@ -459,7 +450,7 @@ export const allTools: Tool<any>[] = [
 
 ## Licence
 
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour les détails.
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour les détails.
 
 ---
 
