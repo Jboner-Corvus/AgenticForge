@@ -55,12 +55,7 @@ jobs:
       - name: Run Tests
         run: pnpm run test
 
-      # Étape 7 : Vérification des types TypeScript
-      # Exécute le script "typecheck" pour une validation statique
-      - name: Check Types
-        run: pnpm run typecheck
-
-      # Étape 8 : Compilation du projet
+      # Étape 7 : Compilation du projet
       # S'assure que le projet se compile correctement en TypeScript vers JavaScript
       - name: Build Project
         run: pnpm run build
