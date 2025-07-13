@@ -97,7 +97,7 @@ export function useConnection({
   >([]);
   const [completionsSupported, setCompletionsSupported] = useState(true);
 
-  const pushHistory = (request: object, response?: object) => {
+  const pushHistory = (request: object, response?: unknown) => {
     setRequestHistory((prev) => [
       ...prev,
       {
@@ -139,14 +139,18 @@ export function useConnection({
             onNotification({
               method: "notification/progress",
               params,
-            });
+            } as Notification);
           }
         };
       }
 
       let response;
       try {
-        response = await mcpClient.request(request, schema, mcpRequestOptions);
+        response = await mcpClient.request(
+          request,
+          schema,
+          mcpRequestOptions,
+        );
 
         pushHistory(request, response);
       } catch (error) {
@@ -156,7 +160,7 @@ export function useConnection({
         throw error;
       }
 
-      return response;
+      return response as z.output<T>;
     } catch (e: unknown) {
       if (!options?.suppressToast) {
         const errorString = (e as Error).message ?? String(e);
@@ -196,7 +200,7 @@ export function useConnection({
         signal,
         suppressToast: true,
       });
-      return response.completion.values || [];
+      return (response as z.output<typeof CompleteResultSchema>).completion.values || [];
     } catch (e: unknown) {
       // Disable completions silently if the server doesn't support them.
       // See https://github.com/modelcontextprotocol/specification/discussions/122
@@ -449,7 +453,8 @@ export function useConnection({
       if (onStdErrNotification) {
         client.setNotificationHandler(
           StdErrNotificationSchema,
-          (notification: unknown) => onStdErrNotification(notification as Notification),
+          (notification: unknown) =>
+            onStdErrNotification(notification as Notification),
         );
       }
 
@@ -512,12 +517,12 @@ export function useConnection({
       setCompletionsSupported(true); // Reset completions support on new connection
 
       if (onPendingRequest) {
-        client.setRequestHandler(CreateMessageRequestSchema, (request: unknown) => {
+        client.setRequestHandler(CreateMessageRequestSchema, (request: z.infer<typeof CreateMessageRequestSchema>) => {
           return new Promise<Result>((resolve, reject) => {
             const customResolve = (value: unknown) => {
               resolve(value as Result);
             };
-            onPendingRequest(request as ClientRequest, customResolve, reject);
+            onPendingRequest(request, customResolve, reject);
           });
         });
       }

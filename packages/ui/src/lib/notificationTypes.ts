@@ -12,11 +12,12 @@ export const StdErrNotificationSchema = z.object({
   }),
 });
 
-export const NotificationSchema = ClientNotificationSchema.or(
+export const NotificationSchema = z.union([
+  ClientNotificationSchema,
   StdErrNotificationSchema,
-)
-  .or(ServerNotificationSchema)
-  .or(BaseNotificationSchema);
+  ServerNotificationSchema,
+  BaseNotificationSchema,
+]);
 
 export type Notification = z.infer<typeof NotificationSchema>;
 export type StdErrNotification = z.infer<typeof StdErrNotificationSchema>;
