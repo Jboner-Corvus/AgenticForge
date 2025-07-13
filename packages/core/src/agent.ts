@@ -8,9 +8,9 @@ import logger from './logger.js';
 import { getMasterPrompt } from './prompts/orchestrator.prompt.js';
 import { redis } from './redisClient.js';
 import { toolRegistry } from './toolRegistry.js';
+import { getAllTools } from './tools/index.js';
 import { AgentProgress, Ctx, Message, SessionData } from './types.js';
 import { llmProvider } from './utils/llmProvider.js';
-import { getAllTools } from './tools/index.js';
 
 // Schéma Zod pour la réponse du LLM
 const llmResponseSchema = z.object({

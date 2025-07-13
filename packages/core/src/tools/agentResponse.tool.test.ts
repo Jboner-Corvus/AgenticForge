@@ -1,20 +1,18 @@
-import { describe, it, expect, vi } from 'vitest';
-import { agentResponseTool } from './agentResponse.tool';
-import { Ctx } from '../types';
+import { Job, Queue } from 'bullmq';
+import { describe, expect, it, vi } from 'vitest';
+
+import { Ctx, SessionData } from '../types.js';
+import { agentResponseTool } from './agentResponse.tool.js';
+import logger from '../../logger.js';
 
 describe('agentResponseTool', () => {
   const mockCtx: Ctx = {
-    log: {
-      info: vi.fn(),
-      error: vi.fn(),
-      debug: vi.fn(),
-      warn: vi.fn(),
-    },
-    job: { id: 'test-job-id' } as any,
-    session: {} as any,
-    taskQueue: {} as any,
+    job: { id: 'test-job-id' } as Job,
+    log: logger.default,
     reportProgress: vi.fn(),
+    session: {} as SessionData,
     streamContent: vi.fn(),
+    taskQueue: {} as Queue,
   };
 
   it('should return the response string', async () => {

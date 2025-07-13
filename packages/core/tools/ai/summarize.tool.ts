@@ -12,7 +12,7 @@ const parametersSchema = z.object({
 });
 
 // 2. Définir l'outil en utilisant le type générique Tool<typeof schema>
-export const summarizeTool: Tool<typeof parametersSchema> = {
+export const summarizeTool: Tool<typeof parameters> = {
   description: 'Summarizes a given text.',
   // 4. La fonction 'execute' reçoit 'args' et 'ctx', qui sont automatiquement typés.
   execute: async (args, ctx: Context<SessionData>) => {

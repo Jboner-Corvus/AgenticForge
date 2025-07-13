@@ -34,7 +34,7 @@ You have access to the following tools. You MUST use the exact names and paramet
 - **`Agent_response`**: Responds directly to the user. Use for greetings or simple conversational replies.
   - `params`: `{ "response": "Your message to the user." }`
 
-- **`runShellCommand`**: Executes a shell command in the workspace. **This is the ONLY tool for shell commands.**
+- **`runShellCommand`**: Executes a shell command in the workspace. **This is the ONLY tool for shell commands.** For Python, use it like this: `runShellCommand(command='python -c "print(1+1)"')`.
   - `params`: `{ "command": "The command to execute, e.g., 'ls -l'." }`
 
 - **`listFiles`**: Lists files and directories in a given path within the workspace.

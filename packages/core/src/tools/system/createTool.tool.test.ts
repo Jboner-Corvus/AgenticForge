@@ -1,8 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createToolTool } from './system/createTool.tool';
-import { Ctx } from '../types';
+/// <reference types="vitest/globals" />
 import { promises as fs } from 'fs';
-import path from 'path
+import path from 'path';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Job, Queue } from 'bullmq';
+
+import { Ctx, SessionData } from '../../types.js';
+import { createToolTool } from './createTool.tool.js';
+import { runQualityGate, runToolTestsInSandbox } from '../../utils/qualityGate.js';
 
 vi.mock('fs', () => ({
   promises: {
@@ -11,24 +15,22 @@ vi.mock('fs', () => ({
   },
 }));
 
-vi.mock('../../utils/qualityGate', () => ({
-  runQualityGate: vi.fn(() => Promise.resolve({ success: true, output: 'Quality Gate Passed' })),
-  runToolTestsInSandbox: vi.fn(() => Promise.resolve({ success: true, output: 'Tool Tests Passed' })),
+vi.mock('../../utils/qualityGate.js', () => ({
+  runQualityGate: vi.fn(() => Promise.resolve({ output: 'Quality Gate Passed', success: true })),
+  runToolTestsInSandbox: vi.fn(() => Promise.resolve({ output: 'Tool Tests Passed', success: true })),
 }));
 
+import logger from '../../logger.js';
+
 describe('createToolTool', () => {
+
   const mockCtx: Ctx = {
-    log: {
-      info: vi.fn(),
-      error: vi.fn(),
-      debug: vi.fn(),
-      warn: vi.fn(),
-    },
-    job: { id: 'test-job-id' } as any,
-    session: {} as any,
-    taskQueue: {} as any,
+    job: { id: 'test-job-id' } as Job,
+    log: logger,
     reportProgress: vi.fn(),
+    session: {} as SessionData,
     streamContent: vi.fn(),
+    taskQueue: {} as Queue,
   };
 
   beforeEach(() => {
@@ -37,10 +39,10 @@ describe('createToolTool', () => {
 
   it('should create a new tool file and pass quality gates', async () => {
     const args = {
-      tool_name: 'test-tool',
       description: 'A test tool',
-      parameters: '{ "param1": "z.string()" }',
       execute_function: 'async (args, ctx) => { return "executed"; }',
+      parameters: '{ "param1": "z.string()" }',
+      tool_name: 'test-tool',
     };
 
     const result = await createToolTool.execute(args, mockCtx);
@@ -52,13 +54,13 @@ describe('createToolTool', () => {
   });
 
   it('should return an error if quality gate fails', async () => {
-    (vi.mocked(runQualityGate) as vi.Mock).mockResolvedValueOnce({ success: false, output: 'Quality Gate Failed' });
+    (vi.mocked(runQualityGate) as vi.Mock).mockResolvedValueOnce({ output: 'Quality Gate Failed', success: false });
 
     const args = {
-      tool_name: 'fail-tool',
       description: 'A tool that fails quality gate',
-      parameters: '{}',
       execute_function: 'async (args, ctx) => { return "executed"; }',
+      parameters: '{}',
+      tool_name: 'fail-tool',
     };
 
     const result = await createToolTool.execute(args, mockCtx);
@@ -67,13 +69,13 @@ describe('createToolTool', () => {
   });
 
   it('should return an error if tool tests fail', async () => {
-    (vi.mocked(runToolTestsInSandbox) as vi.Mock).mockResolvedValueOnce({ success: false, output: 'Tool Tests Failed' });
+    (vi.mocked(runToolTestsInSandbox) as vi.Mock).mockResolvedValueOnce({ output: 'Tool Tests Failed', success: false });
 
     const args = {
-      tool_name: 'test-fail-tool',
       description: 'A tool that fails tests',
-      parameters: '{}',
       execute_function: 'async (args, ctx) => { return "executed"; }',
+      parameters: '{}',
+      tool_name: 'test-fail-tool',
     };
 
     const result = await createToolTool.execute(args, mockCtx);

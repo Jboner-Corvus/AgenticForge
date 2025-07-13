@@ -31,7 +31,7 @@ export const %sTool: Tool<typeof %sParams> = {
 const toCamelCase = (str: string) =>
   str.replace(/[-_](.)/g, (_, c) => c.toUpperCase());
 
-export const createToolParams = z.object({
+export const parameters = z.object({
   description: z.string().describe("Description de l'outil."),
   execute_function: z
     .string()
@@ -43,7 +43,7 @@ export const createToolParams = z.object({
     .describe("Nom de l'outil (kebab-case)."),
 });
 
-export const createToolTool: Tool<typeof createToolParams> = {
+export const createToolTool: Tool<typeof parameters> = {
   description: "Écrit un nouveau fichier d'outil.",
   execute: async (args, ctx: Ctx) => {
     const { description, execute_function, parameters, tool_name } =
@@ -99,5 +99,5 @@ export const createToolTool: Tool<typeof createToolParams> = {
     }
   },
   name: 'system_createTool',
-  parameters: createToolParams,
+  parameters,
 };

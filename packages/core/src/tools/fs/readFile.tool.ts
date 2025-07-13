@@ -4,8 +4,6 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-import { UserError } from '../../utils/errorUtils.js';
-
 const WORKSPACE_DIR = path.resolve(process.cwd(), 'workspace');
 
 export const readFileParams = z.object({
@@ -27,7 +25,7 @@ export const readFileOutput = z.union([
   }),
 ]);
 
-export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> = {
+export const readFileTool: Tool<typeof parameters, typeof readFileOutput> = {
   description:
     'Reads the content of a file from the workspace. Use this to "open", "view", or "check" a file.',
   execute: async (args, ctx: Ctx) => {
@@ -51,12 +49,12 @@ export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> = 
       }
 
       return `Content of ${args.path}:\n\n${content}`;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return { "erreur": `File not found at path: ${args.path}` };
       }
       ctx.log.error({ err: error }, `Failed to read file: ${args.path}`);
-      return { "erreur": `Could not read file: ${error.message || error}` };
+      return { "erreur": `Could not read file: ${(error as Error).message || error}` };
     }
   },
   name: 'readFile',

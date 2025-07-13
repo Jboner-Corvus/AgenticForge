@@ -1,20 +1,22 @@
-import { describe, it, expect, vi } from 'vitest';
-import { executeShellCommandTool } from './executeShellCommand.tool';
-import { Ctx } from '../types';
+/// <reference types="vitest/globals" />
+import { describe, expect, it, vi } from 'vitest';
+
+import { Ctx } from '../types.js';
+import { executeShellCommandTool } from './executeShellCommand.tool.js';
 
 describe('executeShellCommandTool', () => {
   const mockCtx: Ctx = {
+    job: { id: 'test-job-id' } as any,
     log: {
-      info: vi.fn(),
-      error: vi.fn(),
       debug: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
       warn: vi.fn(),
     },
-    job: { id: 'test-job-id' } as any,
-    session: {} as any,
-    taskQueue: {} as any,
     reportProgress: vi.fn(),
+    session: {} as any,
     streamContent: vi.fn(),
+    taskQueue: {} as any,
   };
 
   it('should execute a valid command and return success message', async () => {

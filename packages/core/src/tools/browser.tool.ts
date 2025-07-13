@@ -5,7 +5,7 @@ import type { Ctx, Tool } from '../types.js';
 
 import { UserError } from '../utils/errorUtils.js';
 
-export const browserParams = z.object({
+export const parameters = z.object({
   url: z.string().url().describe('The URL to navigate to.'),
 });
 
@@ -27,7 +27,7 @@ async function getPageContent(page: Page): Promise<string> {
   return mainContent.replace(/\s\s+/g, ' ').trim();
 }
 
-export const browserTool: Tool<typeof browserParams, typeof browserOutput> = {
+export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
   description:
     'Navigates to a URL using a headless Chromium browser and returns its textual content. Ideal for modern websites with JavaScript.',
   execute: async (args, ctx: Ctx) => {
@@ -61,5 +61,5 @@ export const browserTool: Tool<typeof browserParams, typeof browserOutput> = {
     }
   },
   name: 'browser',
-  parameters: browserParams,
+  parameters,
 };

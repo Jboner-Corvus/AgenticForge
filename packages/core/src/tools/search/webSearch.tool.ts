@@ -16,7 +16,7 @@ export const webSearchOutput = z.union([
   }),
 ]);
 
-export const webSearchTool: Tool<typeof webSearchParams, typeof webSearchOutput> = {
+export const webSearchTool: Tool<typeof parameters, typeof webSearchOutput> = {
   description:
     'Performs a web search using the Tavily API to find up-to-date information.',
   execute: async (args, ctx: Ctx) => {
@@ -61,5 +61,5 @@ ${data.results.map((r: { content: string; title: string; url: string }) => `- [$
   },
   name: 'webSearch',
 
-  parameters: webSearchParams,
+  parameters,
 };

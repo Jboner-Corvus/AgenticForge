@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../types.js';
 
-export const agentResponseParams = z.object({
+export const parameters = z.object({
   response: z.string().describe('The response to send to the user'),
 });
 
@@ -13,7 +13,7 @@ export const agentResponseOutput = z.union([
   }),
 ]);
 
-export const agentResponseTool: Tool<typeof agentResponseParams, typeof agentResponseOutput> = {
+export const agentResponseTool: Tool<typeof parameters, typeof agentResponseOutput> = {
   description:
     'Use this tool to respond directly to the user when no other tool is appropriate.',
   execute: async (args, ctx: Ctx) => {
@@ -26,5 +26,5 @@ export const agentResponseTool: Tool<typeof agentResponseParams, typeof agentRes
     }
   },
   name: 'Agent_response',
-  parameters: agentResponseParams,
+  parameters,
 };

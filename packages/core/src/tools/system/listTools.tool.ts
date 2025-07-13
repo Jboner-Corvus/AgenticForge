@@ -2,24 +2,34 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-import { getAllTools } from '../index.js';
+import { getAllTools } from '../../tools/index.js';
 
-export const listToolsParams = z.object({});
+export const parameters = z.object({});
 
-export const listToolsTool: Tool<typeof listToolsParams, typeof listToolsOutput> = {
+export const listToolsOutput = z.union([
+  z.object({
+    tools: z.array(z.string()),
+  }),
+  z.object({
+    erreur: z.string(),
+  }),
+]);
+
+export const listToolsTool: Tool<typeof parameters, typeof listToolsOutput> = {
   description: 'Lists all available tools.',
   execute: async (_args, _ctx: Ctx) => {
     try {
       const allTools = await getAllTools();
-      const toolNames = allTools.map((tool) => tool.name);
+      const toolNames = allTools.map((tool: Tool) => tool.name);
       return {
         tools: toolNames,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       _ctx.log.error({ err: error }, `Error in listToolsTool`);
-      return { "erreur": `An unexpected error occurred: ${error.message || error}` };
+      return { "erreur": `An unexpected error occurred: ${(error as Error).message || error}` };
     }
   },
   name: 'listTools',
-  parameters: listToolsParams,
+  output: listToolsOutput,
+  parameters,
 };

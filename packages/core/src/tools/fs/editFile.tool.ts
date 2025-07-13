@@ -4,8 +4,6 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-import { UserError } from '../../utils/errorUtils.js';
-
 // Un schéma de paramètres plus puissant pour l'édition
 export const editFileParams = z.object({
   content_to_replace: z
@@ -32,7 +30,7 @@ export const editFileOutput = z.object({
   success: z.boolean(),
 });
 
-export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
+export const editFileTool: Tool<typeof parameters, typeof editFileOutput> =
   {
     description:
       'Replaces specific content within an existing file in the workspace. Ideal for targeted changes.',
@@ -75,12 +73,12 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
           original_content: originalContent,
           success: true,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
           return { "erreur": `File not found at path: ${args.path}` };
         }
         ctx.log.error({ err: error }, `Failed to edit file: ${args.path}`);
-        return { "erreur": `Could not edit file: ${error.message || error}` };
+        return { "erreur": `Could not edit file: ${(error as Error).message || error}` };
       }
     },
     name: 'editFile',

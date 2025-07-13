@@ -17,7 +17,7 @@ export const executeDevCommandParams = z.object({
     ),
 });
 
-export const executeDevCommandTool: Tool<typeof executeDevCommandParams> = {
+export const executeDevCommandTool: Tool<typeof parameters> = {
   description:
     'Executes shell commands within a secure sandbox that includes Node.js and pnpm.',
   execute: async (args, ctx: Context<SessionData>) => {

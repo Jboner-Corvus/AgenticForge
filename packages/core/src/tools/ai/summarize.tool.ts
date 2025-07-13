@@ -5,7 +5,7 @@ import type { Ctx, Tool } from '../../types.js';
 import { getSummarizerPrompt } from '../../prompts/summarizer.prompt.js';
 import { llmProvider } from '../../utils/llmProvider.js';
 
-const parameters = z.object({
+export const parameters = z.object({
   text: z.string().describe('The text to summarize'),
 });
 
@@ -18,9 +18,9 @@ export const summarizeOutput = z.union([
 
 export const summarizeTool: Tool<typeof parameters, typeof summarizeOutput> = {
   description: 'Summarizes a given text.',
-  execute: async (args: z.infer<typeof parameters>, ctx: Ctx) => {
+  execute: async (args: z.infer<typeof summarizeParams>, ctx: Ctx) => {
     try {
-      const params = args as z.infer<typeof parameters>;
+      const params = args as z.infer<typeof summarizeParams>;
       ctx.log.info(params.text, 'Summarizing text');
 
       const result = await llmProvider.getLlmResponse([
@@ -34,5 +34,5 @@ export const summarizeTool: Tool<typeof parameters, typeof summarizeOutput> = {
     }
   },
   name: 'ai_summarize',
-  parameters: parameters,
+  parameters,
 };

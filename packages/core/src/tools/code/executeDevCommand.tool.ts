@@ -5,7 +5,7 @@ import type { Ctx, Tool } from '../../types.js';
 
 import { getErrDetails } from '../../utils/errorUtils.js';
 
-export const executeDevCommandParams = z.object({
+export const parameters = z.object({
   command: z
     .string()
     .describe(
@@ -20,7 +20,7 @@ export const executeDevCommandOutput = z.union([
   }),
 ]);
 
-export const executeDevCommandTool: Tool<typeof executeDevCommandParams, typeof executeDevCommandOutput> = {
+export const executeDevCommandTool: Tool<typeof parameters, typeof executeDevCommandOutput> = {
   description: 'Executes shell commands locally within the project directory.',
   execute: async (args: z.infer<typeof executeDevCommandParams>, ctx: Ctx) => {
     try {
@@ -51,5 +51,5 @@ export const executeDevCommandTool: Tool<typeof executeDevCommandParams, typeof 
     }
   },
   name: 'executeDevCommand',
-  parameters: executeDevCommandParams,
+  parameters,
 };

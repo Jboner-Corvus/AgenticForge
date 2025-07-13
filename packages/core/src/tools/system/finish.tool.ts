@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-export const finishParams = z.object({
+export const parameters = z.object({
   response: z.string().describe('The final, complete answer to the user.'),
 });
 
@@ -13,7 +13,7 @@ export const finishOutput = z.union([
   }),
 ]);
 
-export const finishTool: Tool<typeof finishParams, typeof finishOutput> = {
+export const finishTool: Tool<typeof parameters, typeof finishOutput> = {
   description: "Call this tool when the user's goal is accomplished.",
   execute: async (args: string | z.infer<typeof finishParams>, ctx: Ctx) => {
     try {
@@ -27,5 +27,5 @@ export const finishTool: Tool<typeof finishParams, typeof finishOutput> = {
     }
   },
   name: 'finish',
-  parameters: finishParams,
+  parameters,
 };

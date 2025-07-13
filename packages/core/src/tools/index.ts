@@ -6,7 +6,7 @@ import type { Tool } from '../types.js';
 import { getTools } from '../utils/toolLoader.js';
 
 export const getAllTools = async (): Promise<
-  Tool<z.AnyZodObject, z.AnyZodObject>[]
+  Tool<z.AnyZodObject, z.ZodTypeAny>[]
 > => {
   return getTools();
 };

@@ -12,7 +12,7 @@ export const executePythonParams = z.object({
   code: z.string().describe('The Python code to execute.'),
 });
 
-export const executePythonTool: Tool<typeof executePythonParams> = {
+export const executePythonTool: Tool<typeof parameters> = {
   description: 'Executes Python 3 code in a secure sandboxed environment.',
   execute: async (args, ctx: Context<SessionData>) => {
     ctx.log.info('Executing Python code in sandbox.', { code: args.code });

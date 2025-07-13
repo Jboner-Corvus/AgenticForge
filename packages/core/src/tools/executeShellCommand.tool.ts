@@ -16,7 +16,7 @@ export const executeShellCommandOutput = z.union([
   }),
 ]);
 
-export const executeShellCommandTool: Tool<typeof executeShellCommandParams, typeof executeShellCommandOutput> = {
+export const executeShellCommandTool: Tool<typeof parameters, typeof executeShellCommandOutput> = {
   description: 'Executes a shell command and streams its output in real-time.',
   execute: async (args, ctx: Ctx) => {
     try {

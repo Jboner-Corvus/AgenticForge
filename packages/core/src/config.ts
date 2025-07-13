@@ -20,7 +20,7 @@ const configSchema = z.object({
   MCP_WEBHOOK_URL: z.string().optional(),
   NODE_ENV: z.string().default('development'),
   PORT: z.coerce.number().default(3001),
-  PYTHON_SANDBOX_IMAGE: z.string().default('python:3.11-slim-bullseye'),
+  
   QUALITY_GATE_API_KEY: z.string().optional(),
   QUALITY_GATE_URL: z.string().optional(),
   REDIS_HOST: z.string().default(process.env.REDIS_HOST || 'localhost'),

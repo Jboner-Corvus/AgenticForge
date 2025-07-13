@@ -4,8 +4,6 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-import { UserError } from '../../utils/errorUtils.js';
-
 const WORKSPACE_DIR = path.resolve(process.cwd(), 'workspace');
 
 export const listFilesParams = z.object({
@@ -24,7 +22,7 @@ export const listFilesOutput = z.union([
   }),
 ]);
 
-export const listFilesTool: Tool<typeof listFilesParams, typeof listFilesOutput> = {
+export const listFilesTool: Tool<typeof parameters, typeof listFilesOutput> = {
   description:
     'Lists files and directories within a specified path in the workspace.',
   execute: async (args, ctx: Ctx) => {
@@ -45,14 +43,15 @@ export const listFilesTool: Tool<typeof listFilesParams, typeof listFilesOutput>
       return fileList.length > 0
         ? result
         : `Directory 'workspace/${args.path}' is empty.`;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return { "erreur": `Directory not found at path: workspace/${args.path}` };
       }
       ctx.log.error({ err: error }, `Failed to list files in: ${targetDir}`);
-      return { "erreur": `Could not list files: ${error.message || error}` };
+      return { "erreur": `Could not list files: ${(error as Error).message || error}` };
     }
   },
   name: 'listFiles',
   parameters: listFilesParams,
 };
+
