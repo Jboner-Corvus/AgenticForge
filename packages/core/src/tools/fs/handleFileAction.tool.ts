@@ -15,29 +15,39 @@ export const handleFileActionParams = z.object({
   path: z.string().describe('The path to the file or directory.'),
 });
 
-export const handleFileActionTool: Tool<typeof handleFileActionParams> = {
+export const handleFileActionOutput = z.union([
+  z.string(),
+  z.object({
+    erreur: z.string(),
+  }),
+]);
+
+export const handleFileActionTool: Tool<typeof handleFileActionParams, typeof handleFileActionOutput> = {
   description:
     'Handles ambiguous file-related actions by dispatching to the appropriate tool.',
   execute: async (args, ctx: Ctx) => {
     const { action, path } = args;
 
-    switch (action.toLowerCase()) {
-      case 'check':
-      case 'open':
-      case 'read':
-      case 'view':
-        ctx.log.info(`Action "${action}" interpreted as "readFile".`);
-        return await readFileTool.execute({ path }, ctx);
+    try {
+      switch (action.toLowerCase()) {
+        case 'check':
+        case 'open':
+        case 'read':
+        case 'view':
+          ctx.log.info(`Action "${action}" interpreted as "readFile".`);
+          return await readFileTool.execute({ path }, ctx);
 
-      case 'inspect':
-      case 'list':
-        ctx.log.info(`Action "${action}" interpreted as "listFiles".`);
-        return await listFilesTool.execute({ path }, ctx);
+        case 'inspect':
+        case 'list':
+          ctx.log.info(`Action "${action}" interpreted as "listFiles".`);
+          return await listFilesTool.execute({ path }, ctx);
 
-      default:
-        throw new Error(
-          `Unsupported file action: "${action}". Please use "open", "read", "view", "check", "list", or "inspect".`,
-        );
+        default:
+          return { "erreur": `Unsupported file action: "${action}". Please use "open", "read", "view", "check", "list", or "inspect".` };
+      }
+    } catch (error: any) {
+      ctx.log.error({ err: error }, `Error in handleFileActionTool`);
+      return { "erreur": `An unexpected error occurred: ${error.message || error}` };
     }
   },
   name: 'handleFileAction',

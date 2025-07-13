@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { Ctx, Tool } from '../../../types.js';
 
-const recallToolSchema = z.object({
+const parameters = z.object({
   filePath: z.string().describe('The path to the file to read from.'),
 });
 
@@ -18,12 +18,12 @@ const recallOutputSchema = z.union([
 ]);
 
 export const recallTool: Tool<
-  typeof recallToolSchema,
+  typeof parameters,
   typeof recallOutputSchema
 > = {
   description: 'Reads content from a file.',
   execute: async (args: unknown, _ctx: Ctx) => {
-    const { filePath } = args as z.infer<typeof recallToolSchema>;
+    const { filePath } = args as z.infer<typeof parameters>;
     const workspaceDir = path.resolve(process.cwd(), 'workspace');
     const absolutePath = path.resolve(workspaceDir, filePath);
 
@@ -44,5 +44,5 @@ export const recallTool: Tool<
   },
   name: 'system.recall',
   output: recallOutputSchema,
-  parameters: recallToolSchema,
+  parameters: parameters,
 };

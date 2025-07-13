@@ -8,7 +8,7 @@ import { getTools } from '../utils/toolLoader.js';
 export const getAllTools = async (): Promise<
   Tool<z.AnyZodObject, z.AnyZodObject>[]
 > => {
-  return getTools() as Promise<Tool<z.AnyZodObject, z.AnyZodObject>[]>;
+  return getTools();
 };
 
 export type { Tool };

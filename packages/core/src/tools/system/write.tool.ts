@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { Ctx, Tool } from '../../../types.js';
 
-const writeToolSchema = z.object({
+const parameters = z.object({
   content: z.string().describe('The content to write to the file.'),
   filePath: z.string().describe('The path to the file to write to.'),
 });
@@ -14,11 +14,11 @@ const writeOutputSchema = z.object({
   success: z.boolean(),
 });
 
-export const writeTool: Tool<typeof writeToolSchema, typeof writeOutputSchema> =
+export const writeTool: Tool<typeof parameters, typeof writeOutputSchema> =
   {
     description: 'Writes content to a file.',
-    execute: async (args: z.infer<typeof writeToolSchema>, _ctx: Ctx) => {
-      const { content, filePath } = args as z.infer<typeof writeToolSchema>;
+    execute: async (args: z.infer<typeof parameters>, _ctx: Ctx) => {
+      const { content, filePath } = args as z.infer<typeof parameters>;
       const workspaceDir = path.resolve(process.cwd(), 'workspace');
       const absolutePath = path.resolve(workspaceDir, filePath);
 
@@ -33,5 +33,5 @@ export const writeTool: Tool<typeof writeToolSchema, typeof writeOutputSchema> =
     },
     name: 'system.write',
     output: writeOutputSchema,
-    parameters: writeToolSchema,
+    parameters: parameters,
   };

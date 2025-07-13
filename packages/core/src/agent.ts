@@ -10,7 +10,7 @@ import { redis } from './redisClient.js';
 import { toolRegistry } from './toolRegistry.js';
 import { AgentProgress, Ctx, Message, SessionData } from './types.js';
 import { llmProvider } from './utils/llmProvider.js';
-import { getTools } from './utils/toolLoader.js';
+import { getAllTools } from './tools/index.js';
 
 // Schéma Zod pour la réponse du LLM
 const llmResponseSchema = z.object({
@@ -57,7 +57,16 @@ export class Agent {
     this.session.history.push({ content: prompt, role: 'user' });
 
     try {
-      await getTools(); // Ensure tools are loaded
+      // [SECTION MODIFIÉE]
+      // Charger TOUS les outils depuis l'agrégateur
+      const allTools = await getAllTools();
+      // S'assurer que le registre est propre et enregistrer chaque outil
+      // (cette partie est gérée par le toolLoader, mais une vérification ne fait pas de mal)
+      allTools.forEach(tool => toolRegistry.register(tool));
+
+      this.log.info({ count: toolRegistry.getAll().length }, 'All tools registered.');
+      // [FIN DE LA SECTION MODIFIÉE]
+
       this.setupInterruptListener();
 
       let iterations = 0;
@@ -237,9 +246,19 @@ export class Agent {
     log: Logger,
   ): null | z.infer<typeof llmResponseSchema> {
     try {
-      const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
-      const textToParse = jsonMatch ? jsonMatch[1] : response;
-      const parsed = JSON.parse(textToParse);
+      const firstBraceIndex = response.indexOf('{');
+      const lastBraceIndex = response.lastIndexOf('}');
+
+      if (firstBraceIndex === -1 || lastBraceIndex === -1) {
+        log.error(
+          { responseText: response },
+          'No JSON object found in LLM response',
+        );
+        return null;
+      }
+
+      const jsonString = response.substring(firstBraceIndex, lastBraceIndex + 1);
+      const parsed = JSON.parse(jsonString);
       const validation = llmResponseSchema.safeParse(parsed);
       if (validation.success) {
         return validation.data;

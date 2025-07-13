@@ -123,9 +123,6 @@ LLM_API_KEY=""
 
 # Specify a Gemini model, e.g. "gemini-1.5-pro-latest"
 LLM_MODEL_NAME=gemini-2.5-flash
-PYTHON_SANDBOX_IMAGE="python:3.11-slim"
-BASH_SANDBOX_IMAGE="alpine:latest"
-CODE_EXECUTION_TIMEOUT_MS=60000
 ```
 
 **Important**:

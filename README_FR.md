@@ -131,9 +131,6 @@ AUTH_TOKEN="un_token_secret_et_long_de_votre_choix"
 # --- Configuration Technique ---
 NODE_ENV=development
 LOG_LEVEL=info
-PYTHON_SANDBOX_IMAGE="python:3.11-slim"
-ASH_SANDBOX_IMAGE="alpine:latest"
-CODE_EXECUTION_TIMEOUT_MS=60000
 ```
 
 **Important** :

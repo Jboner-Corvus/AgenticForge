@@ -14,7 +14,7 @@ interface AppState {
   clearDisplayItems: () => void;
   codeExecutionEnabled: boolean;
   debugLog: string[];
-  debugPanelVisible: boolean;
+  
   displayItems: DisplayableItem[];
   fetchAndDisplayToolCount: () => void;
   isProcessing: boolean;
@@ -29,7 +29,7 @@ interface AppState {
   setToolStatus: (toolStatus: string) => void;
   setAuthToken: (authToken: null | string) => void;
   setCodeExecutionEnabled: (codeExecutionEnabled: boolean) => void;
-  setDebugPanelVisible: (debugPanelVisible: boolean) => void;
+  
   setIsProcessing: (isProcessing: boolean) => void;
   setJobId: (jobId: null | string) => void;
   setMessageInputValue: (messageInputValue: string) => void;
@@ -61,7 +61,7 @@ export const useStore = create<AppState>((set, get) => ({
   clearDisplayItems: () => set({ displayItems: [] }),
   codeExecutionEnabled: true,
   debugLog: [],
-  debugPanelVisible: true,
+  
   displayItems: [],
   fetchAndDisplayToolCount: async () => {
     const { addDebugLog, authToken, sessionId, setToolCount, updateSessionStatus } = get();
@@ -91,7 +91,7 @@ export const useStore = create<AppState>((set, get) => ({
   setToolStatus: (toolStatus) => set({ toolStatus }),
   setAuthToken: (authToken) => set({ authToken }),
   setCodeExecutionEnabled: (codeExecutionEnabled) => set({ codeExecutionEnabled }),
-  setDebugPanelVisible: (debugPanelVisible) => set({ debugPanelVisible }),
+  
   setIsProcessing: (isProcessing) => set({ isProcessing }),
   setJobId: (jobId) => set({ jobId }),
   setMessageInputValue: (messageInputValue) => set({ messageInputValue }),

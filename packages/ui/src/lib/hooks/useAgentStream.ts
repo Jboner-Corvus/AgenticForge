@@ -58,6 +58,11 @@ interface CloseMessage {
   type: 'close';
 }
 
+interface QuotaExceededMessage {
+  type: 'quota_exceeded';
+  message: string;
+}
+
 type AgentMessage =
   | ToolStreamMessage
   | AgentThoughtMessage
@@ -67,7 +72,8 @@ type AgentMessage =
   | RawLlmResponseMessage
   | ErrorMessage
   | ToolStartMessage
-  | CloseMessage;
+  | CloseMessage
+  | QuotaExceededMessage;
 
 export const useAgentStream = () => {
   const {
@@ -194,6 +200,8 @@ export const useAgentStream = () => {
       } else if (data.type === 'raw_llm_response') {
         addDebugLog(`[LLM_RAW] ${data.content}`);
       } else if (data.type === 'error') {
+        callbacks.onError(new Error(data.message));
+      } else if (data.type === 'quota_exceeded') {
         callbacks.onError(new Error(data.message));
       } else if (data.type === 'tool.start') {
         callbacks.onToolCall(data.data.name, data.data.args);

@@ -13,28 +13,42 @@ export const executeDevCommandParams = z.object({
     ),
 });
 
-export const executeDevCommandTool: Tool<typeof executeDevCommandParams> = {
+export const executeDevCommandOutput = z.union([
+  z.string(),
+  z.object({
+    erreur: z.string(),
+  }),
+]);
+
+export const executeDevCommandTool: Tool<typeof executeDevCommandParams, typeof executeDevCommandOutput> = {
   description: 'Executes shell commands locally within the project directory.',
   execute: async (args: z.infer<typeof executeDevCommandParams>, ctx: Ctx) => {
-    ctx.log.info(`Executing dev command locally: "${args.command}"`);
-    return new Promise((resolve) => {
-      exec(args.command, (error, stdout, stderr) => {
-        let output = '';
-        if (error) {
-          output += `Exit Code: ${error.code}\n`;
-          const errDetails = getErrDetails(error);
-          ctx.log.error('Dev command execution failed', {
-            message: errDetails.message,
-            name: errDetails.name,
-            stack: errDetails.stack,
-          });
-          output += `--- ERROR ---\n${errDetails.message}\n`;
-        }
-        if (stdout) output += `--- STDOUT ---\n${stdout}\n`;
-        if (stderr) output += `--- STDERR ---\n${stderr}\n`;
-        resolve(output);
+    try {
+      ctx.log.info(`Executing dev command locally: "${args.command}"`);
+      return await new Promise((resolve) => {
+        exec(args.command, (error, stdout, stderr) => {
+          let output = '';
+          if (error) {
+            output += `Exit Code: ${error.code}\n`;
+            const errDetails = getErrDetails(error);
+            ctx.log.error('Dev command execution failed', {
+              message: errDetails.message,
+              name: errDetails.name,
+              stack: errDetails.stack,
+            });
+            output += `--- ERROR ---\n${errDetails.message}\n`;
+            resolve({ "erreur": output });
+          } else {
+            if (stdout) output += `--- STDOUT ---\n${stdout}\n`;
+            if (stderr) output += `--- STDERR ---\n${stderr}\n`;
+            resolve(output);
+          }
+        });
       });
-    });
+    } catch (error: any) {
+      ctx.log.error({ err: error }, `Error in executeDevCommandTool`);
+      return { "erreur": `An unexpected error occurred: ${error.message || error}` };
+    }
   },
   name: 'executeDevCommand',
   parameters: executeDevCommandParams,

@@ -13,7 +13,14 @@ export const writeFileParams = z.object({
     ),
 });
 
-export const writeFileTool: Tool<typeof writeFileParams> = {
+export const writeFileOutput = z.union([
+  z.string(),
+  z.object({
+    erreur: z.string(),
+  }),
+]);
+
+export const writeFileTool: Tool<typeof writeFileParams, typeof writeFileOutput> = {
   description:
     'Writes content to a file, overwriting it. Creates the file and directories if they do not exist.',
   execute: async (args, ctx: Ctx) => {
@@ -44,9 +51,9 @@ export const writeFileTool: Tool<typeof writeFileParams> = {
       const successMessage = `Successfully wrote content to ${args.path}.`;
       ctx.log.info(successMessage);
       return successMessage;
-    } catch (error: unknown) {
+    } catch (error: any) {
       ctx.log.error({ err: error }, `Failed to write file: ${args.path}`);
-      throw new Error(`Could not write file: ${(error as Error).message}`);
+      return { "erreur": `Could not write file: ${error.message || error}` };
     }
   },
   name: 'writeFile',

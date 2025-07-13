@@ -41,9 +41,7 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
       const absolutePath = path.resolve(workspaceDir, args.path);
 
       if (!absolutePath.startsWith(workspaceDir)) {
-        throw new UserError(
-          'File path is outside the allowed workspace directory.',
-        );
+        return { "erreur": 'File path is outside the allowed workspace directory.' };
       }
 
       try {
@@ -51,11 +49,9 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
         let modifiedContent: string;
 
         if (args.is_regex) {
-          // Remplacement via une expression régulière
-          const regex = new RegExp(args.content_to_replace, 'g'); // 'g' pour remplacer toutes les occurrences
+          const regex = new RegExp(args.content_to_replace, 'g');
           modifiedContent = originalContent.replace(regex, args.new_content);
         } else {
-          // Remplacement de toutes les occurrences de la chaîne
           modifiedContent = originalContent
             .split(args.content_to_replace)
             .join(args.new_content);
@@ -73,19 +69,18 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
         const successMessage = `Successfully edited content in ${args.path}.`;
         ctx.log.info(successMessage);
 
-        // Retourner une sortie structurée
         return {
           message: successMessage,
           modified_content: modifiedContent,
           original_content: originalContent,
           success: true,
         };
-      } catch (error: unknown) {
+      } catch (error: any) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-          throw new UserError(`File not found at path: ${args.path}`);
+          return { "erreur": `File not found at path: ${args.path}` };
         }
         ctx.log.error({ err: error }, `Failed to edit file: ${args.path}`);
-        throw new Error(`Could not edit file: ${(error as Error).message}`);
+        return { "erreur": `Could not edit file: ${error.message || error}` };
       }
     },
     name: 'editFile',

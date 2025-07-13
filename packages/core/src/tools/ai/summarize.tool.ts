@@ -5,26 +5,34 @@ import type { Ctx, Tool } from '../../types.js';
 import { getSummarizerPrompt } from '../../prompts/summarizer.prompt.js';
 import { llmProvider } from '../../utils/llmProvider.js';
 
-// 1. Définir le schéma des paramètres avec Zod.
-const parametersSchema = z.object({
+const parameters = z.object({
   text: z.string().describe('The text to summarize'),
 });
 
-// 2. Définir l'outil en utilisant le type générique Tool<typeof schema>
-export const summarizeTool: Tool<typeof parametersSchema, z.ZodString> = {
+export const summarizeOutput = z.union([
+  z.string(),
+  z.object({
+    erreur: z.string(),
+  }),
+]);
+
+export const summarizeTool: Tool<typeof parameters, typeof summarizeOutput> = {
   description: 'Summarizes a given text.',
-  execute: async (args: z.infer<typeof parametersSchema>, ctx: Ctx) => {
-    const params = args as z.infer<typeof parametersSchema>;
-    // La session est accessible via ctx.session, contenant l'historique et autres données.
-    ctx.log.info(params.text, 'Summarizing text');
+  execute: async (args: z.infer<typeof parameters>, ctx: Ctx) => {
+    try {
+      const params = args as z.infer<typeof parameters>;
+      ctx.log.info(params.text, 'Summarizing text');
 
-    // Le type de 'args' est inféré depuis le schéma : { text: string }
-    const result = await llmProvider.getLlmResponse([
-      { parts: [{ text: getSummarizerPrompt(params.text) }], role: 'user' },
-    ]);
+      const result = await llmProvider.getLlmResponse([
+        { parts: [{ text: getSummarizerPrompt(params.text) }], role: 'user' },
+      ]);
 
-    return result;
+      return result;
+    } catch (error: any) {
+      ctx.log.error({ err: error }, `Error in summarizeTool`);
+      return { "erreur": `An unexpected error occurred: ${error.message || error}` };
+    }
   },
   name: 'ai_summarize',
-  parameters: parametersSchema,
+  parameters: parameters,
 };

@@ -44,11 +44,21 @@ export async function processJob(job: Job): Promise<string> {
 
     return finalResponse;
   } catch (error) {
+    const errorMessage = (error as Error).message;
     log.error({ error }, 'Error in agent execution');
+
+    let eventType = 'error';
+    let eventMessage = errorMessage;
+
+    if (errorMessage.includes('Quota exceeded')) {
+      eventType = 'quota_exceeded';
+      eventMessage = 'API quota exceeded. Please try again later.';
+    }
+
     // En cas d'erreur, on peut aussi notifier le front
     await redis.publish(
       channel,
-      JSON.stringify({ message: (error as Error).message, type: 'error' }),
+      JSON.stringify({ message: eventMessage, type: eventType }),
     );
     throw error;
   } finally {
