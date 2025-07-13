@@ -1,9 +1,41 @@
+import type { Queue } from 'bullmq'; // Import Queue type
+
 import { promises as fs } from 'fs';
 import path from 'path';
-import { afterAll, beforeAll, describe, expect, it, Mock, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Tool } from '../types.js';
-import { getTools } from './toolLoader.js';
+import type logger from '../logger.js'; // Import logger type
+import type { Ctx as _Ctx } from '../types.js';
+
+import { toolRegistry } from '../toolRegistry.js';
+import { _resetTools, getTools } from './toolLoader.js';
+
+// Mock pour logger
+const mockLogger: Partial<typeof logger> = {
+  child: vi.fn().mockReturnThis(),
+  debug: vi.fn(),
+  error: vi.fn(),
+  fatal: vi.fn(),
+  info: vi.fn(),
+  level: 'info',
+  silent: vi.fn(),
+  trace: vi.fn(),
+  warn: vi.fn(),
+};
+
+// Mock pour Queue
+const mockQueue: Partial<Queue> = {
+  add: vi.fn(),
+};
+
+// Mock complet et typé pour le contexte Ctx
+const mockCtx: _Ctx = {
+  log: mockLogger as typeof logger,
+  reportProgress: vi.fn(),
+  session: undefined,
+  streamContent: vi.fn(),
+  taskQueue: mockQueue as Queue,
+};
 
 // Mock du logger pour éviter les logs de test
 vi.mock('../logger.js', () => ({
@@ -11,82 +43,85 @@ vi.mock('../logger.js', () => ({
     debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
-// Mock the getTools function directly
-vi.mock('./toolLoader.js', () => {
-  return {
-    getTools: vi.fn(),
-  };
-});
-
 const testToolsDir = path.join(__dirname, 'test_tools');
-const tool1Path = path.join(testToolsDir, 'tool1.tool.ts');
-const tool2Path = path.join(testToolsDir, 'sub', 'tool2.tool.ts');
 
-const tool1Content = `
-  export const myTool1 = {
-    name: 'test-tool-1',
+const createToolContent = (name: string, result: string) => `
+  export const ${name} = {
+    name: '${name}',
     description: 'A test tool',
-    execute: async () => 'result1',
-  };
-`;
-
-const tool2Content = `
-  export const myTool2 = {
-    name: 'test-tool-2',
-    description: 'Another test tool',
-    execute: async () => 'result2',
+    execute: async (args, context) => '${result}', // Ajout des arguments pour correspondre à l'interface Tool
   };
 `;
 
 describe('Tool Loader', () => {
-  beforeAll(async () => {
-    // Créer un répertoire de test et des fichiers d'outils factices
-    await fs.mkdir(testToolsDir, { recursive: true });
-    await fs.mkdir(path.join(testToolsDir, 'sub'), { recursive: true });
-    await fs.writeFile(tool1Path, tool1Content);
-    await fs.writeFile(tool2Path, tool2Content);
+  beforeEach(async () => {
+    // Définir le chemin des outils de test
+    process.env.TOOLS_PATH = testToolsDir;
 
-    // Mock getTools to return our test tools
-    (getTools as Mock).mockImplementation(async () => {
-      const tool1 = {
-        description: 'A test tool',
-        execute: async () => 'result1',
-        name: 'test-tool-1',
-      };
-      const tool2 = {
-        description: 'Another test tool',
-        execute: async () => 'result2',
-        name: 'test-tool-2',
-      };
-      return [tool1, tool2];
-    });
+    // Nettoyer avant chaque test
+    await fs.rm(testToolsDir, { force: true, recursive: true });
+    await fs.mkdir(testToolsDir, { recursive: true });
+    // Réinitialiser le registre des outils et le cache du loader
+    toolRegistry.getAll().forEach((tool) => toolRegistry.unregister(tool.name));
+    _resetTools();
   });
 
-  afterAll(async () => {
-    // Nettoyer les fichiers et le répertoire de test
+  afterEach(async () => {
     await fs.rm(testToolsDir, { force: true, recursive: true });
   });
 
   it('should load all tools from the specified directory', async () => {
+    const tool1Path = path.join(testToolsDir, 'tool1.tool.ts');
+    await fs.writeFile(tool1Path, createToolContent('tool1', 'result1'));
+
     const tools = await getTools();
 
-    expect(tools).toHaveLength(2);
-
-    const toolNames = tools.map((t: Tool) => t.name);
-    expect(toolNames).toContain('test-tool-1');
-    expect(toolNames).toContain('test-tool-2');
+    expect(tools).toHaveLength(1);
+    expect(tools[0].name).toBe('tool1');
+    expect(await tools[0].execute({}, mockCtx)).toBe('result1');
   });
 
-  it('should return the cached tools on subsequent calls', async () => {
-    // Le premier appel charge les outils
-    await getTools();
+  it('should reload a tool when its file changes', async () => {
+    const toolPath = path.join(testToolsDir, 'dynamicTool.tool.ts');
+    await fs.writeFile(toolPath, createToolContent('dynamicTool', 'initial'));
 
-    // Le second appel devrait utiliser le cache
-    const tools = await getTools();
+    let tools = await getTools();
+    expect(tools).toHaveLength(1);
+    expect(await tools[0].execute({}, mockCtx)).toBe('initial');
 
-    expect(tools).toHaveLength(2);
+    // Modifier le fichier
+    await fs.writeFile(toolPath, createToolContent('dynamicTool', 'updated'));
+
+    // Forcer le rechargement en réinitialisant le cache
+    _resetTools();
+    tools = await getTools(); // Recharger les outils
+    expect(tools).toHaveLength(1);
+    expect(await tools[0].execute({}, mockCtx)).toBe('updated');
+  });
+
+  it('should unload a tool when its file is deleted', async () => {
+    const toolPath = path.join(testToolsDir, 'deletableTool.tool.ts');
+    await fs.writeFile(
+      toolPath,
+      createToolContent('deletableTool', 'toDelete'),
+    );
+
+    let tools = await getTools();
+    expect(tools).toHaveLength(1);
+    expect(tools[0].name).toBe('deletableTool');
+
+    // Supprimer le fichier
+    await fs.unlink(toolPath);
+
+    // Vider le registre et réinitialiser le loader pour simuler un rechargement complet
+    toolRegistry.getAll().forEach((tool) => toolRegistry.unregister(tool.name));
+    _resetTools();
+
+    tools = await getTools(); // Recharger les outils
+    expect(tools).toHaveLength(0);
   });
 });

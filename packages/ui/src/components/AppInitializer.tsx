@@ -23,15 +23,15 @@ export const AppInitializer = () => {
     if (!currentSessionId) {
       currentSessionId = generateUUID();
       localStorage.setItem('agenticForgeSessionId', currentSessionId);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] ${fr.newSessionGenerated}: ${currentSessionId}`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${fr.newSessionGenerated}: ${currentSessionId}`);
     } else {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] ${fr.sessionRetrieved}: ${currentSessionId}`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${fr.sessionRetrieved}: ${currentSessionId}`);
     }
     setSessionId(currentSessionId);
   }, [addDebugLog, setSessionId]);
 
   const checkServerHealth = useCallback(async () => {
-    addDebugLog(`[${new Date().toLocaleTimeString()}] ${fr.checkingServerHealth}`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${fr.checkingServerHealth}`);
     try {
       const healthy = await testServerHealth();
       setServerHealthy(healthy);
@@ -48,17 +48,17 @@ export const AppInitializer = () => {
 
     if (viteAuthToken) {
       setAuthToken(viteAuthToken);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] ${fr.tokenLoadedFromEnv}.`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${fr.tokenLoadedFromEnv}.`);
       setTokenStatus(true);
       fetchAndDisplayToolCount();
     } else {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] ${fr.noTokenFound}.`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${fr.noTokenFound}.`);
       setTokenStatus(false);
     }
   }, [addDebugLog, setAuthToken, setTokenStatus, fetchAndDisplayToolCount]);
 
   useEffect(() => {
-    addDebugLog(`[${new Date().toLocaleTimeString()}] ${fr.interfaceInitialized}.`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${fr.interfaceInitialized}.`);
     initializeSession();
     initializeAuthToken();
     checkServerHealth();
@@ -66,6 +66,7 @@ export const AppInitializer = () => {
       content: fr.agentReady,
       sender: 'assistant',
       type: 'agent_response',
+      timestamp: new Date().toISOString(),
     });
   }, [checkServerHealth, initializeAuthToken, initializeSession, addDebugLog, addDisplayItem]);
 

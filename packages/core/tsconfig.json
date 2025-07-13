@@ -2,7 +2,6 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "src",
-    "composite": true,
     "target": "es2022",
     "module": "nodenext",
     "lib": ["es2022", "dom"],
@@ -13,7 +12,6 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "inlineSources": true,
-    "moduleDetection": "force",
     "skipLibCheck": true,
     "strict": true,
     "sourceMap": true,
@@ -22,6 +20,6 @@
       "@agenticforge/core/*": ["./src/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "src/**/*.ts", "src/**/*.js"],
   "exclude": ["node_modules", "dist"]
 }

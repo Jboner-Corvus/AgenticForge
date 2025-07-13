@@ -8,7 +8,8 @@ import type { AgentSession, Message, Tool } from '../types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const promptFilePath = path.join(__dirname, 'system.prompt.txt');
+
+const promptFilePath = path.resolve(__dirname, 'system.prompt.txt');
 const PREAMBULE = readFileSync(promptFilePath, 'utf-8');
 
 const TOOLS_SECTION_HEADER = '## Available Tools:';

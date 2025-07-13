@@ -7,7 +7,10 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
+import { Key, Server, Hammer, Code } from 'lucide-react';
 import { useToast } from '../lib/hooks/useToast';
+import { Tooltip } from './ui/tooltip';
+import { Badge } from './ui/badge';
 import { generateUUID } from '../lib/utils/uuid';
 
 import { useStore } from '../lib/store';
@@ -46,6 +49,7 @@ export const ControlPanel = memo(() => {
       content: fr.newSessionCreated,
       sender: 'assistant',
       type: 'agent_response',
+      timestamp: new Date().toISOString(),
     });
     addDebugLog(`[${new Date().toLocaleTimeString()}] ${fr.newSession}: Ancien ID: ${oldSessionId}, Nouvel ID: ${newSessionId}`);
     handleClearHistory(false);
@@ -74,16 +78,18 @@ export const ControlPanel = memo(() => {
           <Accordion title={fr.agentStatus}>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label className="text-sm">{fr.sessionId}</Label>
+                <Label className="text-sm flex items-center"><Key className="mr-2 h-4 w-4" />{fr.sessionId}</Label>
                 <span className="text-sm text-muted-foreground">{sessionId ? `${sessionId.substring(0, 12)}...` : '--'}</span>
               </div>
               <div className="flex justify-between items-center">
-                <Label className="text-sm">{fr.toolsDetected}</Label>
+                <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4" />{fr.toolsDetected}</Label>
                 <span className="text-sm text-muted-foreground">{toolCount}</span>
               </div>
               <div className="flex justify-between items-center">
-                <Label className="text-sm">{fr.connectionStatus}</Label>
-                <span className="text-sm text-muted-foreground">{serverHealthy ? fr.online : fr.offline}</span>
+                <Label className="text-sm flex items-center"><Server className="mr-2 h-4 w-4" />{fr.connectionStatus}</Label>
+                <Badge variant={serverHealthy ? 'default' : 'destructive'}>
+                  {serverHealthy ? fr.online : fr.offline}
+                </Badge>
               </div>
             </div>
           </Accordion>
@@ -91,11 +97,15 @@ export const ControlPanel = memo(() => {
           <Accordion title={fr.agentCapabilities}>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label className="text-sm" htmlFor="toolCreationToggle">{fr.toolCreation}</Label>
+                <Tooltip text="Allow the agent to create new tools based on its needs.">
+                  <Label className="text-sm flex items-center" htmlFor="toolCreationToggle"><Hammer className="mr-2 h-4 w-4" />{fr.toolCreation}</Label>
+                </Tooltip>
                 <Switch checked={toolCreationEnabled} id="toolCreationToggle" onCheckedChange={setToolCreationEnabled} />
               </div>
               <div className="flex justify-between items-center">
-                <Label className="text-sm" htmlFor="codeExecutionToggle">{fr.codeExecution}</Label>
+                <Tooltip text="Allow the agent to execute code directly in the environment.">
+                  <Label className="text-sm flex items-center" htmlFor="codeExecutionToggle"><Code className="mr-2 h-4 w-4" />{fr.codeExecution}</Label>
+                </Tooltip>
                 <Switch checked={codeExecutionEnabled} id="codeExecutionToggle" onCheckedChange={setCodeExecutionEnabled} />
               </div>
             </div>

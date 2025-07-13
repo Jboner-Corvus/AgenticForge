@@ -14,16 +14,23 @@ const __dirname = path.dirname(__filename);
 
 // Cache pour stocker les chemins des fichiers d'outils chargés pour éviter les doublons
 const loadedToolFiles = new Set<string>();
+const fileToToolNameMap = new Map<string, string>();
 let watcher: chokidar.FSWatcher | null = null;
 
 const runningInDist = __dirname.includes('dist');
 const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
-const toolsDir =
-  process.env.TOOLS_PATH ||
-  (runningInDist
-    ? path.join(__dirname, '..', 'tools')
-    : path.resolve(__dirname, '..', '..', 'src', 'tools'));
-const generatedToolsDir = path.join(toolsDir, 'generated');
+
+// Fonction de réinitialisation pour les tests
+export function _resetTools(): void {
+  loadedToolFiles.clear();
+  fileToToolNameMap.clear();
+  if (watcher) {
+    watcher.close();
+    watcher = null;
+  }
+  // Note: Le toolRegistry n'est pas réinitialisé ici car il est un singleton global.
+  // Les tests doivent gérer la réinitialisation du toolRegistry si nécessaire.
+}
 
 /**
  * Récupère la liste de tous les outils, en les chargeant s'ils ne le sont pas déjà.
@@ -44,6 +51,7 @@ export async function getTools(): Promise<Tool[]> {
  * @returns Une promesse qui se résout avec un tableau de tous les outils chargés.
  */
 async function _internalLoadTools(): Promise<void> {
+  const toolsDir = getToolsDir();
   const toolFiles = await findToolFiles(toolsDir, fileExtension);
 
   logger.info(`Calculated toolsDir: ${toolsDir}`);
@@ -80,13 +88,30 @@ async function findToolFiles(
       }
     }
   } catch (error) {
+    const errDetails = getErrDetails(error);
     logger.error({
-      ...getErrDetails(error),
+      ...errDetails,
       directory: dir,
       logContext: "Erreur lors du parcours du répertoire d'outils.",
     });
+    // Ne pas lancer d'erreur si le répertoire n'existe pas (cas des tests)
+    if (!errDetails.message.includes('ENOENT')) {
+      throw new Error(
+        `Impossible de lire le répertoire des outils '${dir}'. Détails: ${errDetails.message}`,
+      );
+    }
   }
   return files;
+}
+
+// Fonction pour obtenir dynamiquement le répertoire des outils
+function getToolsDir(): string {
+  return (
+    process.env.TOOLS_PATH ||
+    (runningInDist
+      ? path.join(__dirname, '..', 'tools')
+      : path.resolve(__dirname, '..', '..', 'src', 'tools'))
+  );
 }
 
 async function loadToolFile(file: string): Promise<void> {
@@ -109,6 +134,7 @@ async function loadToolFile(file: string): Promise<void> {
       ) {
         toolRegistry.register(exportedItem as Tool);
         loadedToolFiles.add(file);
+        fileToToolNameMap.set(file, exportedItem.name);
         logger.info(
           `Outil chargé : '${exportedItem.name}' depuis ${path.basename(file)}`,
         );
@@ -124,19 +150,21 @@ async function loadToolFile(file: string): Promise<void> {
 }
 
 function unloadToolFile(file: string): void {
-  // Cette fonction est plus complexe avec un registre.
-  // Pour l'instant, nous nous contentons de supprimer le fichier du cache.
-  // Une implémentation plus robuste nécessiterait de mapper les fichiers aux outils.
+  const toolName = fileToToolNameMap.get(file);
+  if (toolName) {
+    toolRegistry.unregister(toolName);
+    fileToToolNameMap.delete(file);
+  }
   loadedToolFiles.delete(file);
   logger.info(`Fichier d'outil déchargé (chemin) : ${path.basename(file)}`);
-  // Note: L'outil lui-même n'est pas retiré du registre pour le moment pour la simplicité.
 }
 
 function watchTools(): void {
+  const toolsDir = getToolsDir();
   logger.info(
-    `Démarrage de l'observateur de fichiers pour les outils générés dans: ${generatedToolsDir}`,
+    `Démarrage de l'observateur de fichiers pour les outils dans: ${toolsDir}`,
   );
-  watcher = chokidar.watch(generatedToolsDir, {
+  watcher = chokidar.watch(toolsDir, {
     ignored: /(^|\/)\..*|\.d\.ts$/,
     ignoreInitial: true,
     persistent: true,

@@ -70,6 +70,18 @@ class ToolRegistry {
     }
     this.tools.set(tool.name, tool);
   }
+
+  /**
+   * Désenregistre un outil par son nom.
+   * @param name - Le nom de l'outil à retirer.
+   */
+  public unregister(name: string): void {
+    if (this.tools.delete(name)) {
+      logger.info(`Outil désenregistré : "${name}"`);
+    } else {
+      logger.warn(`Tentative de désenregistrer un outil inconnu : "${name}"`);
+    }
+  }
 }
 
 // Exporte l'instance unique du registre

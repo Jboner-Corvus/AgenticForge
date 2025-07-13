@@ -12,10 +12,11 @@
     "start": "node dist/server.js",
     "start:dev": "NODE_ENV=development node --loader ts-node/esm src/server.ts",
     "dev": "NODE_ENV=development nodemon --watch src --exec node --loader ts-node/esm src/server.ts",
-    "build": "pnpm exec tsc",
-    "postbuild": "cp src/prompts/system.prompt.txt dist/",
+    "build": "NODE_OPTIONS=--max-old-space-size=8192 pnpm exec tsup && cp src/prompts/system.prompt.txt dist/",
+    "clean": "rm -rf dist",
+    
     "start:worker:dev": "NODE_ENV=development node --loader ts-node/esm src/worker.ts",
-    "start:worker": "node dist/src/worker.js",
+    "start:worker": "node dist/worker.js",
     "test": "vitest run",
     "lint": "eslint --fix \"src/**/*.ts\"",
     "format": "prettier --write src/ && eslint --fix src/"

@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 interface ToolResultDisplayProps {
   result: unknown;
   toolName: string;
+  timestamp: string;
 }
 
-export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({ result, toolName }) => {
+export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({ result, toolName, timestamp }) => {
   if (toolName === 'finish') {
     return null; // N'affiche rien pour l'outil 'finish'
   }
@@ -39,6 +40,9 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({ result, to
         <pre className="text-sm bg-background p-2 rounded-md whitespace-pre-wrap font-sans">
           {resultString}
         </pre>
+        <div className="text-xs text-muted-foreground mt-1">
+          {timestamp}
+        </div>
       </CardContent>
     </Card>
   );

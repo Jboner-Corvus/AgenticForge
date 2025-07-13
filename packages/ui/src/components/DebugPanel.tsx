@@ -1,8 +1,9 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useDraggablePane } from '../lib/hooks/useDraggablePane';
 import { fr } from '../constants/fr';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 interface DebugPanelProps {
   clearDebugLog: () => void;
@@ -18,6 +19,18 @@ export const DebugPanel = memo(({
   toggleDebugPanel,
 }: DebugPanelProps) => {
   const { handleDragStart, height } = useDraggablePane(150);
+  const [filter, setFilter] = useState('');
+
+  const filteredDebugLog = debugLog.filter(log =>
+    log.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  const getLogClassName = (log: string) => {
+    if (log.includes('[ERROR]')) return 'text-red-500';
+    if (log.includes('[SUCCESS]')) return 'text-green-500';
+    if (log.includes('[INFO]')) return 'text-blue-500';
+    return '';
+  };
 
   return (
     <Card
@@ -34,9 +47,16 @@ export const DebugPanel = memo(({
         <CardDescription className="text-xs text-muted-foreground">{fr.frontend}</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto p-2">
+        <Input
+          type="text"
+          placeholder="Filter logs..."
+          className="mb-2 text-xs"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        />
         <div className="space-y-1" id="debug-log-content">
-          {debugLog.map((log, index) => (
-            <div key={index}>{log}</div>
+          {filteredDebugLog.map((log, index) => (
+            <div key={index} className={getLogClassName(log)}>{log}</div>
           ))}
         </div>
       </CardContent>
