@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
 
+import { produce } from 'immer';
+
 import { sendMessage, interrupt } from '../api';
 import { useStore } from '../store';
 import { generateUUID } from '../utils/uuid';
@@ -49,18 +51,17 @@ export const useAgentStream = () => {
       },
       onMessage: (message: string) => {
         addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Agent response: ${message}`);
-        useStore.setState(state => {
+        useStore.setState(produce(state => {
           const lastItem = state.displayItems[state.displayItems.length - 1];
           // S'assurer que le dernier item existe, est une réponse de l'agent et vient de l'assistant
           if (lastItem && lastItem.type === 'agent_response' && lastItem.sender === 'assistant') {
-            const newDisplayItems = [...state.displayItems];
             // Mettre à jour le contenu du dernier item
-            newDisplayItems[newDisplayItems.length - 1] = { ...lastItem, content: lastItem.content + message };
-            return { displayItems: newDisplayItems };
+            lastItem.content += message;
+          } else {
+            // Sinon, créer un nouvel item
+            state.displayItems.push({ content: message, sender: 'assistant', type: 'agent_response', id: generateUUID(), timestamp: new Date().toISOString() });
           }
-          // Sinon, créer un nouvel item
-          return { displayItems: [...state.displayItems, { content: message, sender: 'assistant', type: 'agent_response', id: generateUUID(), timestamp: new Date().toISOString() }] };
-        });
+        }));
         setAgentProgress(Math.min(99, useStore.getState().agentProgress + 5));
       },
       onThought: (thought: string) => {
@@ -97,13 +98,13 @@ export const useAgentStream = () => {
 
           // Crée ou met à jour un item de type "tool_result"
           if (lastItem && lastItem.type === 'tool_result' && lastItem.toolName === 'executeShellCommand') {
-              const newDisplayItems = [...displayItems];
-              const currentResult = (lastItem.result as { output: string }).output || '';
-              newDisplayItems[displayItems.length - 1] = {
-                  ...lastItem,
-                  result: { output: currentResult + content },
-              };
-              useStore.setState({ displayItems: newDisplayItems });
+              useStore.setState(produce(state => {
+                  const currentResult = (lastItem.result as { output: string }).output || '';
+                  state.displayItems[state.displayItems.length - 1] = {
+                      ...lastItem,
+                      result: { output: currentResult + content },
+                  };
+              }));
           } else {
               // Si c'est le premier morceau, créez un nouvel item
               addDisplayItem({

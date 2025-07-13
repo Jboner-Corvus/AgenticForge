@@ -1,12 +1,46 @@
 import { Job, Queue } from 'bullmq';
+import { Logger } from 'pino'; // Import Logger from pino
 import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
-import { Ctx, SessionData } from '../types.js';
+// Define local interfaces for SessionData and AgentProgress for testing
+export interface AgentProgress {
+  current: number;
+  total: number;
+  unit?: string;
+}
+
+export interface Message {
+  content: string;
+  role: 'model' | 'tool' | 'user';
+}
+
+export interface SessionData {
+  [key: string]: unknown;
+  history: Message[];
+  id: string;
+  identities: Array<{ id: string; type: string }>;
+  workingContext?: {
+    currentFile?: string;
+    lastAction?: string;
+  };
+}
+
 import { Agent } from './agent.js';
+import logger from './logger.js'; // Import logger
 import { redis } from './redisClient.js'; // Import redis
 import { toolRegistry } from './toolRegistry.js';
 import { llmProvider } from './utils/llmProvider.js';
 import { getTools } from './utils/toolLoader.js';
+
+// Define a local mock Ctx interface for testing
+interface MockCtx {
+  job: Job;
+  log: Logger;
+  reportProgress?: (progress: AgentProgress) => Promise<void>;
+  session: SessionData;
+
+  taskQueue: Queue;
+}
 
 vi.mock('./utils/llmProvider.js', () => ({
   llmProvider: {
@@ -23,7 +57,7 @@ const mockedGetLlmResponse = llmProvider.getLlmResponse as Mock;
 
 const mockFinishTool = {
   description: "Call this tool when the user's goal is accomplished.",
-  execute: vi.fn((args, _ctx: Ctx) => {
+  execute: vi.fn((args, _ctx: MockCtx) => {
     const finalResponse =
       typeof args === 'string' ? args : (args as { text?: string })?.text;
     return finalResponse;
@@ -39,7 +73,7 @@ const mockFinishTool = {
 
 const mockTestTool = {
   description: 'A test tool.',
-  execute: vi.fn((_args: unknown, _ctx: Ctx) => 'tool result'),
+  execute: vi.fn((_args: unknown, _ctx: MockCtx) => 'tool result'),
   name: 'test-tool',
   parameters: {
     arg: {
@@ -72,6 +106,7 @@ describe('Agent Integration Tests', () => {
     } as Job;
 
     mockSession = {
+      data: {}, // Add data property to match SessionData structure
       history: [],
       id: 'test-session-1',
       identities: [],
@@ -96,6 +131,16 @@ describe('Agent Integration Tests', () => {
     (redis.duplicate as Mock).mockReturnValue(mockRedisSubscriber);
     (redis.publish as Mock).mockResolvedValue(1); // Mock publish to avoid errors
 
+    // Create a mock Ctx object
+    const _mockCtx: MockCtx = {
+      job: mockJob,
+      log: logger.child({ jobId: mockJob.id, sessionId: mockSession.id }), // Use the imported logger
+      reportProgress: vi.fn(),
+      session: mockSession,
+
+      taskQueue: mockQueue, // Ensure taskQueue is included
+    };
+
     agent = new Agent(mockJob, mockSession, mockQueue);
 
     // Clear mocks before each test to ensure a clean state
@@ -107,11 +152,11 @@ describe('Agent Integration Tests', () => {
       mockTestTool,
     ]);
     (toolRegistry.execute as Mock).mockImplementation(
-      async (name: string, params: unknown, _ctx: Ctx) => {
+      async (name: string, params: unknown, ctx: MockCtx) => {
         if (name === 'finish') {
-          return mockFinishTool.execute(params, {} as Ctx);
+          return mockFinishTool.execute(params, ctx);
         } else if (name === 'test-tool') {
-          return mockTestTool.execute(params, _ctx);
+          return mockTestTool.execute(params, ctx);
         }
         throw new Error(`Tool not found: ${name}`);
       },
@@ -250,13 +295,13 @@ describe('Agent Integration Tests', () => {
 
     // Mock toolRegistry.execute pour lancer une erreur pour 'test-tool'
     (toolRegistry.execute as Mock).mockImplementationOnce(
-      async (name: string, params: unknown, _ctx: Ctx) => {
+      async (name: string, params: unknown, _ctx: MockCtx) => {
         if (name === 'test-tool') {
           throw new Error(errorMessage);
         }
         // Fallback pour les autres outils (comme 'finish')
         if (name === 'finish') {
-          return mockFinishTool.execute(params, {} as Ctx);
+          return mockFinishTool.execute(params, _ctx);
         }
         throw new Error(`Tool not found: ${name}`);
       },

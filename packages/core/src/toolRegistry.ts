@@ -1,3 +1,5 @@
+import { z } from 'zod'; // Import z from zod
+
 import logger from './logger.js';
 import { Ctx, Tool } from './types.js';
 import { UserError } from './utils/errorUtils.js';
@@ -38,7 +40,7 @@ class ToolRegistry {
     ctx.log.info(
       `Executing tool: ${name} with params: ${JSON.stringify(params)}`,
     );
-    return tool.execute(params, ctx);
+    return tool.execute(params as z.infer<Tool['parameters']>, ctx);
   }
 
   /**

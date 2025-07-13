@@ -96,7 +96,7 @@ export const createToolTool: Tool<typeof createToolParams> = {
         name: errDetails.name,
         stack: errDetails.stack,
       });
-      return `Erreur: ${errorMessage}`;
+      throw new UserError(errorMessage);
     }
   },
   name: 'system_createTool',

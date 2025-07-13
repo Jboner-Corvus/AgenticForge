@@ -11,7 +11,7 @@ const parametersSchema = z.object({
 });
 
 // 2. Définir l'outil en utilisant le type générique Tool<typeof schema>
-export const summarizeTool: Tool = {
+export const summarizeTool: Tool<typeof parametersSchema, z.ZodString> = {
   description: 'Summarizes a given text.',
   execute: async (args: z.infer<typeof parametersSchema>, ctx: Ctx) => {
     const params = args as z.infer<typeof parametersSchema>;

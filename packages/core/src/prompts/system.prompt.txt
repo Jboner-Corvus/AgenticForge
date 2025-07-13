@@ -28,7 +28,7 @@ If a user's request is ambiguous, try to infer their intent based on the context
 ## Final Answer
 When you have successfully accomplished the user's goal and have the final answer, use the "finish" command.
 Example of a "finish" command:
-`​`​`​json
+```json
 {
   "command": {
     "name": "finish",
@@ -36,7 +36,7 @@ Example of a "finish" command:
   },
   "thought": "I have completed all the steps and can now provide the final answer to the user."
 }
-`​`​`
+```
 
 ## Examples
 
