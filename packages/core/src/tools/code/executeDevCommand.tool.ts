@@ -5,7 +5,7 @@ import type { Ctx, Tool } from '../../types.js';
 
 import { getErrDetails } from '../../utils/errorUtils.js';
 
-export const parameters = z.object({
+export const executeDevCommandParams = z.object({
   command: z
     .string()
     .describe(
@@ -20,7 +20,10 @@ export const executeDevCommandOutput = z.union([
   }),
 ]);
 
-export const executeDevCommandTool: Tool<typeof parameters, typeof executeDevCommandOutput> = {
+export const executeDevCommandTool: Tool<
+  typeof executeDevCommandParams,
+  typeof executeDevCommandOutput
+> = {
   description: 'Executes shell commands locally within the project directory.',
   execute: async (args: z.infer<typeof executeDevCommandParams>, ctx: Ctx) => {
     try {
@@ -37,7 +40,7 @@ export const executeDevCommandTool: Tool<typeof parameters, typeof executeDevCom
               stack: errDetails.stack,
             });
             output += `--- ERROR ---\n${errDetails.message}\n`;
-            resolve({ "erreur": output });
+            resolve({ erreur: output });
           } else {
             if (stdout) output += `--- STDOUT ---\n${stdout}\n`;
             if (stderr) output += `--- STDERR ---\n${stderr}\n`;
@@ -45,11 +48,13 @@ export const executeDevCommandTool: Tool<typeof parameters, typeof executeDevCom
           }
         });
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       ctx.log.error({ err: error }, `Error in executeDevCommandTool`);
-      return { "erreur": `An unexpected error occurred: ${error.message || error}` };
+      return {
+        erreur: `An unexpected error occurred: ${error instanceof Error ? error.message : String(error)}`,
+      };
     }
   },
   name: 'executeDevCommand',
-  parameters,
+  parameters: executeDevCommandParams,
 };

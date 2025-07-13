@@ -23,23 +23,33 @@ export const editFileParams = z.object({
 });
 
 // Le schéma de sortie structuré pour le frontend
-export const editFileOutput = z.object({
-  message: z.string(),
-  modified_content: z.string().optional(),
-  original_content: z.string().optional(),
-  success: z.boolean(),
-});
+export const editFileOutput = z.union([
+  z.object({
+    message: z.string(),
+    modified_content: z.string().optional(),
+    original_content: z.string().optional(),
+    success: z.boolean(),
+  }),
+  z.object({
+    erreur: z.string(),
+  }),
+]);
 
-export const editFileTool: Tool<typeof parameters, typeof editFileOutput> =
+export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
   {
     description:
       'Replaces specific content within an existing file in the workspace. Ideal for targeted changes.',
-    execute: async (args, ctx: Ctx) => {
+    execute: async (
+      args,
+      ctx: Ctx,
+    ): Promise<string | void | z.infer<typeof editFileOutput>> => {
       const workspaceDir = path.resolve(process.cwd(), 'workspace');
       const absolutePath = path.resolve(workspaceDir, args.path);
 
       if (!absolutePath.startsWith(workspaceDir)) {
-        return { "erreur": 'File path is outside the allowed workspace directory.' };
+        return {
+          erreur: 'File path is outside the allowed workspace directory.',
+        } as z.infer<typeof editFileOutput>;
       }
 
       try {
@@ -75,10 +85,14 @@ export const editFileTool: Tool<typeof parameters, typeof editFileOutput> =
         };
       } catch (error: unknown) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-          return { "erreur": `File not found at path: ${args.path}` };
+          return { erreur: `File not found at path: ${args.path}` } as z.infer<
+            typeof editFileOutput
+          >;
         }
         ctx.log.error({ err: error }, `Failed to edit file: ${args.path}`);
-        return { "erreur": `Could not edit file: ${(error as Error).message || error}` };
+        return {
+          erreur: `Could not edit file: ${(error as Error).message || error}`,
+        } as z.infer<typeof editFileOutput>;
       }
     },
     name: 'editFile',

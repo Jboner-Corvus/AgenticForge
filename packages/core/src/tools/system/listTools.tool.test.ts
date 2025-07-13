@@ -1,8 +1,8 @@
 /// <reference types="vitest/globals" />
 import { Job, Queue } from 'bullmq';
 import { describe, expect, it, vi } from 'vitest';
-import { pino } from 'pino';
 
+import logger from '../../logger.js';
 import { getAllTools } from '../../tools/index.js';
 import { Ctx, SessionData, Tool } from '../../types.js';
 import { listToolsTool } from './listTools.tool.js';
@@ -11,21 +11,20 @@ vi.mock('../../tools/index.js', () => ({
   getAllTools: vi.fn(),
 }));
 
-const mockLogger = pino({ enabled: false });
+vi.mock('../../logger.js', () => ({
+  default: {
+    child: vi.fn().mockReturnThis(),
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+  },
+}));
 
 describe('listToolsTool', () => {
   const mockCtx: Ctx = {
     job: { id: 'test-job-id' } as Job,
-    log: {
-      debug: vi.fn(),
-      error: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      fatal: vi.fn(),
-      trace: vi.fn(),
-      silent: vi.fn(),
-      level: 'info',
-    } as unknown as typeof mockLogger,
+    log: logger,
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),
@@ -33,7 +32,7 @@ describe('listToolsTool', () => {
   };
 
   it('should list all available tool names', async () => {
-    (getAllTools as any).mockResolvedValueOnce([
+    vi.mocked(getAllTools).mockResolvedValueOnce([
       { name: 'tool1' },
       { name: 'tool2' },
     ] as Tool[]);
@@ -43,7 +42,7 @@ describe('listToolsTool', () => {
   });
 
   it('should return an empty array if no tools are available', async () => {
-    (getAllTools as any).mockResolvedValueOnce([]);
+    vi.mocked(getAllTools).mockResolvedValueOnce([]);
 
     const result = await listToolsTool.execute({}, mockCtx);
     expect(result).toEqual({ tools: [] });
@@ -51,7 +50,7 @@ describe('listToolsTool', () => {
 
   it('should return an error if getAllTools fails', async () => {
     const errorMessage = 'Failed to get tools';
-    (getAllTools as any).mockRejectedValueOnce(new Error(errorMessage));
+    vi.mocked(getAllTools).mockRejectedValueOnce(new Error(errorMessage));
 
     const result = await listToolsTool.execute({}, mockCtx);
     if (typeof result === 'object' && result && 'erreur' in result) {

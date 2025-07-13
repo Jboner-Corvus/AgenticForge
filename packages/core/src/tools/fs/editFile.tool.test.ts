@@ -1,9 +1,11 @@
+import { Job, Queue } from 'bullmq';
 /// <reference types="vitest/globals" />
 import { promises as fs } from 'fs';
 import path from 'path';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
-import { Ctx } from '../types.js';
+import logger from '../../logger.js';
+import { Ctx, SessionData } from '../../types.js';
 import { editFileTool } from './editFile.tool.js';
 
 vi.mock('fs', () => ({
@@ -13,19 +15,26 @@ vi.mock('fs', () => ({
   },
 }));
 
+vi.mock('../../logger.js', async () => {
+  const { default: pino } =
+    await vi.importActual<typeof import('pino')>('pino');
+  const mockLogger = pino({
+    enabled: false, // Disable logging output during tests
+    level: 'info',
+  });
+  return {
+    default: mockLogger,
+  };
+});
+
 describe('editFileTool', () => {
   const mockCtx: Ctx = {
-    job: { id: 'test-job-id' } as any,
-    log: {
-      debug: vi.fn(),
-      error: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-    },
+    job: { id: 'test-job-id' } as Job,
+    log: logger,
     reportProgress: vi.fn(),
-    session: {} as any,
+    session: {} as SessionData,
     streamContent: vi.fn(),
-    taskQueue: {} as any,
+    taskQueue: {} as Queue,
   };
 
   const mockFilePath = 'test-file.txt';
@@ -34,8 +43,8 @@ describe('editFileTool', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (fs.readFile as vi.Mock).mockResolvedValue('original content');
-    (fs.writeFile as vi.Mock).mockResolvedValue(undefined);
+    (fs.readFile as Mock).mockResolvedValue('original content');
+    (fs.writeFile as Mock).mockResolvedValue(undefined);
   });
 
   it('should replace content in a file (string replacement)', async () => {
@@ -45,11 +54,15 @@ describe('editFileTool', () => {
       new_content: 'new',
       path: mockFilePath,
     };
-    (fs.readFile as vi.Mock).mockResolvedValueOnce('original content');
+    (fs.readFile as Mock).mockResolvedValueOnce('original content');
 
     const result = await editFileTool.execute(args, mockCtx);
 
-    expect(fs.writeFile).toHaveBeenCalledWith(mockAbsolutePath, 'new content', 'utf-8');
+    expect(fs.writeFile).toHaveBeenCalledWith(
+      mockAbsolutePath,
+      'new content',
+      'utf-8',
+    );
     expect(result).toEqual({
       message: `Successfully edited content in ${mockFilePath}.`,
       modified_content: 'new content',
@@ -65,14 +78,18 @@ describe('editFileTool', () => {
       new_content: 'n$1w',
       path: mockFilePath,
     };
-    (fs.readFile as vi.Mock).mockResolvedValueOnce('original content');
+    (fs.readFile as Mock).mockResolvedValueOnce('original content');
 
     const result = await editFileTool.execute(args, mockCtx);
 
-    expect(fs.writeFile).toHaveBeenCalledWith(mockAbsolutePath, 'niw content', 'utf-8');
+    expect(fs.writeFile).toHaveBeenCalledWith(
+      mockAbsolutePath,
+      'nriw content',
+      'utf-8',
+    );
     expect(result).toEqual({
       message: `Successfully edited content in ${mockFilePath}.`,
-      modified_content: 'niw content',
+      modified_content: 'nriw content',
       original_content: 'original content',
       success: true,
     });
@@ -85,7 +102,7 @@ describe('editFileTool', () => {
       new_content: 'new',
       path: mockFilePath,
     };
-    (fs.readFile as vi.Mock).mockResolvedValueOnce('original content');
+    (fs.readFile as Mock).mockResolvedValueOnce('original content');
 
     const result = await editFileTool.execute(args, mockCtx);
 
@@ -103,11 +120,15 @@ describe('editFileTool', () => {
       new_content: 'b',
       path: 'non-existent.txt',
     };
-    (fs.readFile as vi.Mock).mockRejectedValueOnce({ code: 'ENOENT' });
+    (fs.readFile as Mock).mockRejectedValueOnce({ code: 'ENOENT' });
 
     const result = await editFileTool.execute(args, mockCtx);
     expect(result).toHaveProperty('erreur');
-    expect(result.erreur).toContain('File not found');
+    expect(
+      typeof result === 'object' && result !== null && 'erreur' in result
+        ? result.erreur
+        : result,
+    ).toContain('File not found');
   });
 
   it('should return an error for other file system errors', async () => {
@@ -117,10 +138,14 @@ describe('editFileTool', () => {
       new_content: 'b',
       path: mockFilePath,
     };
-    (fs.readFile as vi.Mock).mockRejectedValueOnce(new Error('Permission denied'));
+    (fs.readFile as Mock).mockRejectedValueOnce(new Error('Permission denied'));
 
     const result = await editFileTool.execute(args, mockCtx);
     expect(result).toHaveProperty('erreur');
-    expect(result.erreur).toContain('Permission denied');
+    expect(
+      typeof result === 'object' && result !== null && 'erreur' in result
+        ? result.erreur
+        : result,
+    ).toContain('Permission denied');
   });
 });

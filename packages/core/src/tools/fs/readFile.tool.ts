@@ -25,38 +25,43 @@ export const readFileOutput = z.union([
   }),
 ]);
 
-export const readFileTool: Tool<typeof parameters, typeof readFileOutput> = {
-  description:
-    'Reads the content of a file from the workspace. Use this to "open", "view", or "check" a file.',
-  execute: async (args, ctx: Ctx) => {
-    const absolutePath = path.resolve(WORKSPACE_DIR, args.path);
+export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> =
+  {
+    description:
+      'Reads the content of a file from the workspace. Use this to "open", "view", or "check" a file.',
+    execute: async (args, ctx: Ctx) => {
+      const absolutePath = path.resolve(WORKSPACE_DIR, args.path);
 
-    if (!absolutePath.startsWith(WORKSPACE_DIR)) {
-      return { "erreur": 'File path is outside the allowed workspace directory.' };
-    }
-
-    try {
-      const content = await fs.readFile(absolutePath, 'utf-8');
-      ctx.log.info(`Successfully read file: ${args.path}`);
-
-      // Logique pour extraire une plage de lignes
-      if (args.start_line !== undefined) {
-        const lines = content.split('\n');
-        const start = args.start_line - 1;
-        const end = args.end_line ?? start + 1; // Si end_line n'est pas fourni, ne lit qu'une seule ligne.
-        const snippet = lines.slice(start, end).join('\n');
-        return `Content of ${args.path} (lines ${args.start_line}-${end}):\n\n${snippet}`;
+      if (!absolutePath.startsWith(WORKSPACE_DIR)) {
+        return {
+          erreur: 'File path is outside the allowed workspace directory.',
+        };
       }
 
-      return `Content of ${args.path}:\n\n${content}`;
-    } catch (error: unknown) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return { "erreur": `File not found at path: ${args.path}` };
+      try {
+        const content = await fs.readFile(absolutePath, 'utf-8');
+        ctx.log.info(`Successfully read file: ${args.path}`);
+
+        // Logique pour extraire une plage de lignes
+        if (args.start_line !== undefined) {
+          const lines = content.split('\n');
+          const start = args.start_line - 1;
+          const end = args.end_line ?? start + 1; // Si end_line n'est pas fourni, ne lit qu'une seule ligne.
+          const snippet = lines.slice(start, end).join('\n');
+          return `Content of ${args.path} (lines ${args.start_line}-${end}):\n\n${snippet}`;
+        }
+
+        return `Content of ${args.path}:\n\n${content}`;
+      } catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          return { erreur: `File not found at path: ${args.path}` };
+        }
+        ctx.log.error({ err: error }, `Failed to read file: ${args.path}`);
+        return {
+          erreur: `Could not read file: ${(error as Error).message || error}`,
+        };
       }
-      ctx.log.error({ err: error }, `Failed to read file: ${args.path}`);
-      return { "erreur": `Could not read file: ${(error as Error).message || error}` };
-    }
-  },
-  name: 'readFile',
-  parameters: readFileParams,
-};
+    },
+    name: 'readFile',
+    parameters: readFileParams,
+  };

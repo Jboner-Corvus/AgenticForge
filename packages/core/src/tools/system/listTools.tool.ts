@@ -26,7 +26,9 @@ export const listToolsTool: Tool<typeof parameters, typeof listToolsOutput> = {
       };
     } catch (error: unknown) {
       _ctx.log.error({ err: error }, `Error in listToolsTool`);
-      return { "erreur": `An unexpected error occurred: ${(error as Error).message || error}` };
+      return {
+        erreur: `An unexpected error occurred: ${(error as Error).message || error}`,
+      };
     }
   },
   name: 'listTools',

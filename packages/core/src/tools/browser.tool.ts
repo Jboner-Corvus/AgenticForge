@@ -3,8 +3,6 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../types.js';
 
-import { UserError } from '../utils/errorUtils.js';
-
 export const parameters = z.object({
   url: z.string().url().describe('The URL to navigate to.'),
 });
@@ -52,10 +50,10 @@ export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
         content: content,
         url: args.url,
       };
-    } catch (error: any) {
-      const err = error as Error;
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
       ctx.log.error({ err }, `Failed to browse ${args.url}`);
-      return { "erreur": `Error while Browse ${args.url}: ${err.message || err}` };
+      return { erreur: `Error while Browse ${args.url}: ${err.message}` };
     } finally {
       await browser.close();
     }

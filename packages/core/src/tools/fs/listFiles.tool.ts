@@ -22,14 +22,17 @@ export const listFilesOutput = z.union([
   }),
 ]);
 
-export const listFilesTool: Tool<typeof parameters, typeof listFilesOutput> = {
+export const listFilesTool: Tool<
+  typeof listFilesParams,
+  typeof listFilesOutput
+> = {
   description:
     'Lists files and directories within a specified path in the workspace.',
   execute: async (args, ctx: Ctx) => {
     const targetDir = path.resolve(WORKSPACE_DIR, args.path);
 
     if (!targetDir.startsWith(WORKSPACE_DIR)) {
-      return { "erreur": 'Path is outside the allowed workspace directory.' };
+      return { erreur: 'Path is outside the allowed workspace directory.' };
     }
 
     try {
@@ -45,13 +48,16 @@ export const listFilesTool: Tool<typeof parameters, typeof listFilesOutput> = {
         : `Directory 'workspace/${args.path}' is empty.`;
     } catch (error: unknown) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return { "erreur": `Directory not found at path: workspace/${args.path}` };
+        return {
+          erreur: `Directory not found at path: workspace/${args.path}`,
+        };
       }
       ctx.log.error({ err: error }, `Failed to list files in: ${targetDir}`);
-      return { "erreur": `Could not list files: ${(error as Error).message || error}` };
+      return {
+        erreur: `Could not list files: ${(error as Error).message || error}`,
+      };
     }
   },
   name: 'listFiles',
   parameters: listFilesParams,
 };
-

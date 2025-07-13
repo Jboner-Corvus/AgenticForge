@@ -53,7 +53,9 @@ export const writeFileTool: Tool<typeof parameters, typeof writeFileOutput> = {
       return successMessage;
     } catch (error: unknown) {
       ctx.log.error({ err: error }, `Failed to write file: ${args.path}`);
-      return { "erreur": `Could not write file: ${(error as Error).message || error}` };
+      return {
+        erreur: `Could not write file: ${(error as Error).message || error}`,
+      };
     }
   },
   name: 'writeFile',

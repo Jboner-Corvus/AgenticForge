@@ -62,9 +62,12 @@ export class Agent {
       const allTools = await getAllTools();
       // S'assurer que le registre est propre et enregistrer chaque outil
       // (cette partie est gérée par le toolLoader, mais une vérification ne fait pas de mal)
-      allTools.forEach(tool => toolRegistry.register(tool));
+      allTools.forEach((tool) => toolRegistry.register(tool));
 
-      this.log.info({ count: toolRegistry.getAll().length }, 'All tools registered.');
+      this.log.info(
+        { count: toolRegistry.getAll().length },
+        'All tools registered.',
+      );
       // [FIN DE LA SECTION MODIFIÉE]
 
       this.setupInterruptListener();
@@ -257,7 +260,10 @@ export class Agent {
         return null;
       }
 
-      const jsonString = response.substring(firstBraceIndex, lastBraceIndex + 1);
+      const jsonString = response.substring(
+        firstBraceIndex,
+        lastBraceIndex + 1,
+      );
       const parsed = JSON.parse(jsonString);
       const validation = llmResponseSchema.safeParse(parsed);
       if (validation.success) {

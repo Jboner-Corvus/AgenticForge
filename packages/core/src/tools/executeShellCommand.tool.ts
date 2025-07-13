@@ -16,7 +16,10 @@ export const executeShellCommandOutput = z.union([
   }),
 ]);
 
-export const executeShellCommandTool: Tool<typeof parameters, typeof executeShellCommandOutput> = {
+export const executeShellCommandTool: Tool<
+  typeof executeShellCommandParams,
+  typeof executeShellCommandOutput
+> = {
   description: 'Executes a shell command and streams its output in real-time.',
   execute: async (args, ctx: Ctx) => {
     try {
@@ -28,7 +31,10 @@ export const executeShellCommandTool: Tool<typeof parameters, typeof executeShel
           stdio: 'pipe',
         });
 
-        const streamToFrontend = (type: 'stderr' | 'stdout', content: string) => {
+        const streamToFrontend = (
+          type: 'stderr' | 'stdout',
+          content: string,
+        ) => {
           const channel = `job:${ctx.job!.id}:events`;
           const data = { data: { content, type }, type: 'tool_stream' };
           redis.publish(channel, JSON.stringify(data));
@@ -51,7 +57,7 @@ export const executeShellCommandTool: Tool<typeof parameters, typeof executeShel
             { err: error },
             `Failed to start shell command: ${args.command}`,
           );
-          resolve({ "erreur": `Failed to start command: ${error.message}` });
+          resolve({ erreur: `Failed to start command: ${error.message}` });
         });
 
         child.on('close', (code) => {
@@ -60,15 +66,17 @@ export const executeShellCommandTool: Tool<typeof parameters, typeof executeShel
           streamToFrontend('stdout', `\n${finalMessage}`);
 
           if (code !== 0) {
-            resolve({ "erreur": `Command finished with exit code ${code}.` });
+            resolve({ erreur: `Command finished with exit code ${code}.` });
           } else {
             resolve(`Command finished with exit code ${code}.`);
           }
         });
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       ctx.log.error({ err: error }, `Error in executeShellCommandTool`);
-      return { "erreur": `An unexpected error occurred: ${error.message || error}` };
+      return {
+        erreur: `An unexpected error occurred: ${error instanceof Error ? error.message : String(error)}`,
+      };
     }
   },
   name: 'runShellCommand',

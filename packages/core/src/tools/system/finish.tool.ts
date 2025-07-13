@@ -13,17 +13,30 @@ export const finishOutput = z.union([
   }),
 ]);
 
-export const finishTool: Tool<typeof parameters, typeof finishOutput> = {
+type FinishTool = {
+  execute: (
+    args: string | z.infer<typeof parameters>,
+    ctx: Ctx,
+  ) => Promise<{ erreur: string } | string>;
+} & Tool<typeof parameters, typeof finishOutput>;
+
+export const finishTool: FinishTool = {
   description: "Call this tool when the user's goal is accomplished.",
-  execute: async (args: string | z.infer<typeof finishParams>, ctx: Ctx) => {
+  execute: async (args: string | z.infer<typeof parameters>, ctx: Ctx) => {
     try {
-      const finalResponse = typeof args === 'string' ? args : args?.response;
+      if (!args) {
+        throw new Error('Invalid arguments provided to finishTool.');
+      }
+      const finalResponse = typeof args === 'string' ? args : args.response;
 
       ctx.log.info(`Goal accomplished: ${finalResponse}`);
       return finalResponse;
-    } catch (error: any) {
+    } catch (error: unknown) {
       ctx.log.error({ err: error }, `Error in finishTool`);
-      return { "erreur": `An unexpected error occurred: ${error.message || error}` };
+      const message = error instanceof Error ? error.message : String(error);
+      return {
+        erreur: `An unexpected error occurred: ${message}`,
+      };
     }
   },
   name: 'finish',
