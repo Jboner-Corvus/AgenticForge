@@ -186,7 +186,7 @@ function watchTools(): void {
     unloadToolFile(filePath);
   });
 
-  watcher.on('error', (error: Error) => {
+  watcher.on('error', (error: unknown) => {
     logger.error({
       ...getErrDetails(error),
       logContext: "Erreur de l'observateur de fichiers d'outils.",

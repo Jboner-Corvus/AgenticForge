@@ -11,7 +11,7 @@ export const getContentParams = z.object({
 });
 
 export async function getContentWorkerLogic(
-  args: z.infer<typeof getContentParams>,
+  args: z.infer<typeof parameters>,
 ) {
   const { chromium } = await import('playwright');
   let browser = null;

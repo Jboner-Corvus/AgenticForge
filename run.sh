@@ -72,9 +72,6 @@ AUTH_TOKEN="un_token_secret_et_long_de_votre_choix"
 # --- Configuration Technique ---
 NODE_ENV=development
 LOG_LEVEL=info
-PYTHON_SANDBOX_IMAGE="python:3.11-slim"
-ASH_SANDBOX_IMAGE="alpine:latest"
-CODE_EXECUTION_TIMEOUT_MS=60000
 EOF
         echo -e "${COLOR_GREEN}✓ Le fichier .env a été créé. Veuillez le remplir avec vos informations.${NC}"
     fi
@@ -176,10 +173,6 @@ start_services() {
 
     echo -e "${COLOR_YELLOW}Démarrage des services Docker...${NC}"
     DOCKER_COMPOSE_FILES="docker-compose.yml"
-    if [ "$ENABLE_SANDBOXING" = "true" ]; then
-        echo -e "${COLOR_YELLOW}Sandboxing activé. Utilisation de docker-compose.sandboxed.yml.${NC}"
-        DOCKER_COMPOSE_FILES="$DOCKER_COMPOSE_FILES -f docker-compose.sandboxed.yml"
-    fi
     docker compose -f $DOCKER_COMPOSE_FILES up -d
     
     # Utilisation de la nouvelle fonction de vérification robuste

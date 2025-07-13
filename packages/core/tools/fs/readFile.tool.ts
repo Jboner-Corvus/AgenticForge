@@ -13,7 +13,7 @@ export const readFileParams = z.object({
   path: z.string().describe('The path to the file inside the workspace.'),
 });
 
-export const readFileTool: Tool<typeof readFileParams> = {
+export const readFileTool: Tool<typeof parameters> = {
   description: 'Reads the content of a file from the workspace.',
   execute: async () => {
     // ... reste de la logique inchangée

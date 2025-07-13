@@ -9,7 +9,7 @@ export const navigateParams = z.object({
   url: z.string().url().describe('The full URL to navigate to.'),
 });
 
-export const navigateTool: Tool<typeof navigateParams> = {
+export const navigateTool: Tool<typeof parameters> = {
   description:
     'Navigates a headless browser to a specified URL. This is an async task.',
   execute: async (args, ctx: Context<SessionData>) => {

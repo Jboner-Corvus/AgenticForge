@@ -4,15 +4,15 @@ import { SettingsModal } from './components/SettingsModal';
 import { AppInitializer } from './components/AppInitializer';
 import { ControlPanel } from './components/ControlPanel';
 import { ChatWindow } from './components/ChatWindow';
-import { DebugPanel } from './components/DebugPanel';
+
 import { useStore } from './lib/store';
 import { LoadingSpinner } from './components/LoadingSpinner';
 
 export default function App() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isControlPanelVisible, setIsControlPanelVisible] = useState(true);
-  const [debugLog, setDebugLog] = useState<string[]>([]);
-  const [debugPanelVisible, setDebugPanelVisible] = useState(false);
+  
+  
   const isProcessing = useStore((state) => state.isProcessing);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedMode = localStorage.getItem('darkMode');
@@ -32,13 +32,9 @@ export default function App() {
     setIsDarkMode((prevMode: boolean) => !prevMode);
   }, []);
 
-  const clearDebugLog = useCallback(() => {
-    setDebugLog([]);
-  }, []);
+  
 
-  const toggleDebugPanel = useCallback(() => {
-    setDebugPanelVisible((prev) => !prev);
-  }, []);
+  
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -71,12 +67,7 @@ export default function App() {
         </div>
       </div>
 
-      <DebugPanel
-        clearDebugLog={clearDebugLog}
-        debugLog={debugLog}
-        debugPanelVisible={debugPanelVisible}
-        toggleDebugPanel={toggleDebugPanel}
-      />
+      
     </div>
   );
 }

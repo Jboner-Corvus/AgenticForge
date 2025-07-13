@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-export const writeFileParams = z.object({
+export const parameters = z.object({
   content: z.string().describe('The full content to write to the file.'),
   path: z
     .string()
@@ -13,7 +13,14 @@ export const writeFileParams = z.object({
     ),
 });
 
-export const writeFileTool: Tool<typeof writeFileParams> = {
+export const writeFileOutput = z.union([
+  z.string(),
+  z.object({
+    erreur: z.string(),
+  }),
+]);
+
+export const writeFileTool: Tool<typeof parameters, typeof writeFileOutput> = {
   description:
     'Writes content to a file, overwriting it. Creates the file and directories if they do not exist.',
   execute: async (args, ctx: Ctx) => {
@@ -46,9 +53,11 @@ export const writeFileTool: Tool<typeof writeFileParams> = {
       return successMessage;
     } catch (error: unknown) {
       ctx.log.error({ err: error }, `Failed to write file: ${args.path}`);
-      throw new Error(`Could not write file: ${(error as Error).message}`);
+      return {
+        erreur: `Could not write file: ${(error as Error).message || error}`,
+      };
     }
   },
   name: 'writeFile',
-  parameters: writeFileParams,
+  parameters,
 };

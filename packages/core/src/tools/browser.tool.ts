@@ -1,35 +1,36 @@
-// packages/core/src/tools/browser.tool.ts
 import { chromium, Page } from 'playwright';
 import { z } from 'zod';
 
 import type { Ctx, Tool } from '../types.js';
 
-import { UserError } from '../utils/errorUtils.js';
-
-// Schéma pour les paramètres de l'outil
-export const browserParams = z.object({
+export const parameters = z.object({
   url: z.string().url().describe('The URL to navigate to.'),
 });
 
-// Fonction pour extraire et nettoyer le contenu de la page
+export const browserOutput = z.union([
+  z.object({
+    content: z.string(),
+    url: z.string(),
+  }),
+  z.object({
+    erreur: z.string(),
+  }),
+]);
+
 async function getPageContent(page: Page): Promise<string> {
   const mainContent = await page.evaluate(() => {
-    // Tente de trouver le contenu principal, sinon prend le body
     const main = document.querySelector('main') || document.body;
     return main.innerText;
   });
-  // Nettoie les espaces multiples et les lignes vides
   return mainContent.replace(/\s\s+/g, ' ').trim();
 }
 
-// Définition de l'outil
-export const browserTool: Tool<typeof browserParams> = {
+export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
   description:
     'Navigates to a URL using a headless Chromium browser and returns its textual content. Ideal for modern websites with JavaScript.',
   execute: async (args, ctx: Ctx) => {
     ctx.log.info(`Navigating to URL: ${args.url}`);
     const browser = await chromium.launch({
-      // Les arguments '--no-sandbox' sont souvent nécessaires dans un environnement Docker
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
@@ -49,14 +50,14 @@ export const browserTool: Tool<typeof browserParams> = {
         content: content,
         url: args.url,
       };
-    } catch (error) {
-      const err = error as Error;
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
       ctx.log.error({ err }, `Failed to browse ${args.url}`);
-      throw new UserError(`Error while Browse ${args.url}: ${err.message}`);
+      return { erreur: `Error while Browse ${args.url}: ${err.message}` };
     } finally {
       await browser.close();
     }
   },
   name: 'browser',
-  parameters: browserParams,
+  parameters,
 };

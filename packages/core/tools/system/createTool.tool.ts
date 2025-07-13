@@ -58,7 +58,7 @@ export const createToolTool: Tool<typeof createToolParams> = {
       const toolFileContent = TOOL_TEMPLATE.replace(/%s/g, (match) => {
         if (match === '%sParams') return `${toolVarName}Params`;
         if (match === '%sTool') return `${toolVarName}Tool`;
-        if (match === 'z.object(%s)') return `z.object(${parameters_schema})`;
+        if (match === 'z.object(%s)') return `z.object(${parameters})`;
         if (match === 'execute: %s') return `execute: ${execute_function}`;
         if (match.includes("Description de l'outil")) return description;
         return tool_name;

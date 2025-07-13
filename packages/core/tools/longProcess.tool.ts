@@ -6,7 +6,7 @@ import type { Tool } from '../../types.js';
 export const longProcessParams = z.object({
   // ...
 });
-export const longProcessTool: Tool<typeof longProcessParams> = {
+export const longProcessTool: Tool<typeof parameters> = {
   annotations: { streamingHint: true },
   description: 'Simulateur de tâche longue asynchrone.',
   execute: async (): Promise<string> => {

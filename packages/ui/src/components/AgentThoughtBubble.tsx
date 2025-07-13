@@ -4,7 +4,7 @@ import { Lightbulb } from 'lucide-react';
 
 interface ThoughtBubbleProps {
   content: string;
-  timestamp: string;
+  timestamp?: string;
 }
 
 export const AgentThoughtBubble: React.FC<ThoughtBubbleProps> = ({ content, timestamp }) => {
@@ -27,9 +27,11 @@ export const AgentThoughtBubble: React.FC<ThoughtBubbleProps> = ({ content, time
           ) : (
             <p className="text-sm italic">L'agent réfléchit... (cliquer pour voir)</p>
           )}
-          <div className="text-xs text-muted-foreground mt-1">
-            {timestamp}
-          </div>
+          {timestamp && (
+            <div className="text-xs text-muted-foreground mt-1">
+              {timestamp}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

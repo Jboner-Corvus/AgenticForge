@@ -50,7 +50,7 @@ declare module 'express' {
 }
 
 export interface Tool<
-  T extends ZodTypeAny = ZodTypeAny,
+  T extends z.AnyZodObject = z.AnyZodObject,
   U extends ZodTypeAny = ZodTypeAny,
 > {
   description: string;

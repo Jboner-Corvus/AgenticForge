@@ -4,8 +4,6 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-import { UserError } from '../../utils/errorUtils.js';
-
 const WORKSPACE_DIR = path.resolve(process.cwd(), 'workspace');
 
 export const listFilesParams = z.object({
@@ -17,14 +15,24 @@ export const listFilesParams = z.object({
     ),
 });
 
-export const listFilesTool: Tool<typeof listFilesParams> = {
+export const listFilesOutput = z.union([
+  z.string(),
+  z.object({
+    erreur: z.string(),
+  }),
+]);
+
+export const listFilesTool: Tool<
+  typeof listFilesParams,
+  typeof listFilesOutput
+> = {
   description:
     'Lists files and directories within a specified path in the workspace.',
   execute: async (args, ctx: Ctx) => {
     const targetDir = path.resolve(WORKSPACE_DIR, args.path);
 
     if (!targetDir.startsWith(WORKSPACE_DIR)) {
-      throw new UserError('Path is outside the allowed workspace directory.');
+      return { erreur: 'Path is outside the allowed workspace directory.' };
     }
 
     try {
@@ -40,12 +48,14 @@ export const listFilesTool: Tool<typeof listFilesParams> = {
         : `Directory 'workspace/${args.path}' is empty.`;
     } catch (error: unknown) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        throw new UserError(
-          `Directory not found at path: workspace/${args.path}`,
-        );
+        return {
+          erreur: `Directory not found at path: workspace/${args.path}`,
+        };
       }
       ctx.log.error({ err: error }, `Failed to list files in: ${targetDir}`);
-      throw new Error(`Could not list files: ${(error as Error).message}`);
+      return {
+        erreur: `Could not list files: ${(error as Error).message || error}`,
+      };
     }
   },
   name: 'listFiles',

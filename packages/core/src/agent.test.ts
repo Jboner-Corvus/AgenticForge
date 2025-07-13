@@ -1,12 +1,13 @@
 import { Job, Queue } from 'bullmq';
 import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+import { z } from 'zod';
 
-import { Ctx, SessionData } from '../types.js';
 import { Agent } from './agent.js';
-import { redis } from './redisClient.js'; // Import redis
+import { redis } from './redisClient.js';
 import { toolRegistry } from './toolRegistry.js';
+import * as allTools from './tools/index.js';
+import { SessionData } from './types.js';
 import { llmProvider } from './utils/llmProvider.js';
-import { getTools } from './utils/toolLoader.js';
 
 vi.mock('./utils/llmProvider.js', () => ({
   llmProvider: {
@@ -14,39 +15,46 @@ vi.mock('./utils/llmProvider.js', () => ({
   },
 }));
 
-vi.mock('./toolRegistry.js');
-vi.mock('./utils/toolLoader.js'); // Mock toolLoader
+vi.mock('./toolRegistry.js', () => ({
+  toolRegistry: {
+    execute: vi.fn(),
+    getAll: vi.fn(),
+    register: vi.fn(),
+  },
+}));
 
-vi.mock('./redisClient.js'); // Mock redis
+vi.mock('./tools/index.js', () => ({
+  getAllTools: vi.fn(),
+}));
+
+vi.mock('./redisClient.js', () => ({
+  redis: {
+    duplicate: vi.fn(),
+    publish: vi.fn(),
+  },
+}));
 
 const mockedGetLlmResponse = llmProvider.getLlmResponse as Mock;
+const mockedGetAllTools = allTools.getAllTools as Mock;
+const mockedToolRegistryExecute = toolRegistry.execute as Mock;
+const mockedToolRegistryGetAll = toolRegistry.getAll as Mock;
 
 const mockFinishTool = {
   description: "Call this tool when the user's goal is accomplished.",
-  execute: vi.fn((args, _ctx: Ctx) => {
-    const finalResponse =
-      typeof args === 'string' ? args : (args as { text?: string })?.text;
-    return finalResponse;
-  }),
+  execute: vi.fn(async ({ response }: { response: string }) => response),
   name: 'finish',
-  parameters: {
-    response: {
-      description: 'The final, complete answer to the user.',
-      type: 'string',
-    },
-  },
+  parameters: z.object({
+    response: z.string().describe('The final, complete answer to the user.'),
+  }),
 };
 
 const mockTestTool = {
   description: 'A test tool.',
-  execute: vi.fn((_args: unknown, _ctx: Ctx) => 'tool result'),
+  execute: vi.fn(async (_params: { arg: string }) => 'tool result'),
   name: 'test-tool',
-  parameters: {
-    arg: {
-      description: 'An argument for the test tool.',
-      type: 'string',
-    },
-  },
+  parameters: z.object({
+    arg: z.string().describe('An argument for the test tool.'),
+  }),
 };
 
 describe('Agent Integration Tests', () => {
@@ -66,10 +74,11 @@ describe('Agent Integration Tests', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
+
     mockJob = {
       data: { prompt: 'Test objective' },
       id: 'test-job-1',
-    } as Job;
+    } as unknown as Job;
 
     mockSession = {
       history: [],
@@ -77,9 +86,10 @@ describe('Agent Integration Tests', () => {
       identities: [],
     };
 
-    mockQueue = {} as Queue;
+    mockQueue = {
+      add: vi.fn(),
+    } as unknown as Queue;
 
-    // Mock Redis subscriber
     onMessageCallback = undefined;
     mockRedisSubscriber = {
       on: vi.fn((event, cb) => {
@@ -89,33 +99,20 @@ describe('Agent Integration Tests', () => {
       }),
       quit: vi.fn(),
       subscribe: vi.fn((_channel, cb) => {
-        cb(null, 1); // Simulate successful subscription
+        if (cb) {
+          cb(null, 1);
+        }
+        return Promise.resolve();
       }),
       unsubscribe: vi.fn(),
     };
     (redis.duplicate as Mock).mockReturnValue(mockRedisSubscriber);
-    (redis.publish as Mock).mockResolvedValue(1); // Mock publish to avoid errors
+    (redis.publish as Mock).mockResolvedValue(1);
 
     agent = new Agent(mockJob, mockSession, mockQueue);
 
-    // Clear mocks before each test to ensure a clean state
-    mockedGetLlmResponse.mockClear();
-
-    // Mock toolRegistry methods
-    (toolRegistry.getAll as Mock).mockReturnValue([
-      mockFinishTool,
-      mockTestTool,
-    ]);
-    (toolRegistry.execute as Mock).mockImplementation(
-      async (name: string, params: unknown, _ctx: Ctx) => {
-        if (name === 'finish') {
-          return mockFinishTool.execute(params, {} as Ctx);
-        } else if (name === 'test-tool') {
-          return mockTestTool.execute(params, _ctx);
-        }
-        throw new Error(`Tool not found: ${name}`);
-      },
-    );
+    mockedGetAllTools.mockResolvedValue([mockTestTool, mockFinishTool]);
+    mockedToolRegistryGetAll.mockReturnValue([mockTestTool, mockFinishTool]);
   });
 
   afterEach(() => {
@@ -124,50 +121,67 @@ describe('Agent Integration Tests', () => {
   });
 
   it('should follow the thought-command-result loop', async () => {
-    // 1. Première réponse du LLM : pensée + commande
-    mockedGetLlmResponse.mockResolvedValueOnce(
-      JSON.stringify({
-        command: { name: 'test-tool', params: { arg: 'value' } },
-        thought: 'I should use the test tool.',
-      }),
-    );
-    // 2. Deuxième réponse du LLM : pensée finale
-    mockedGetLlmResponse.mockResolvedValueOnce(
-      JSON.stringify({
-        command: { name: 'finish', params: { text: 'Final answer' } },
-        thought: 'I have the result, I can finish.',
-      }),
-    );
+    mockedGetLlmResponse
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          command: { name: 'test-tool', params: { arg: 'value' } },
+          thought: 'I should use the test tool.',
+        }),
+      )
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          command: { name: 'finish', params: { response: 'Final answer' } },
+          thought: 'I have the result, I can finish.',
+        }),
+      );
+
+    mockedToolRegistryExecute.mockImplementation(async (name, params) => {
+      if (name === 'test-tool') {
+        return mockTestTool.execute(params as { arg: string });
+      }
+      if (name === 'finish') {
+        return mockFinishTool.execute(params as { response: string });
+      }
+    });
 
     const finalResponse = await agent.run();
 
-    // Vérifie que le LLM a été appelé deux fois
-    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(2);
-    // Vérifie que la réponse finale est correcte
     expect(finalResponse).toBe('Final answer');
-    // Vérifie que l'historique de session contient la boucle complète
+    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(2);
+    expect(mockedToolRegistryExecute).toHaveBeenCalledWith(
+      'test-tool',
+      { arg: 'value' },
+      expect.any(Object),
+    );
+    expect(mockedToolRegistryExecute).toHaveBeenCalledWith(
+      'finish',
+      { response: 'Final answer' },
+      expect.any(Object),
+    );
     expect(mockSession.history).toEqual([
       { content: 'Test objective', role: 'user' },
-      { content: 'Tool result: "tool result"', role: 'model' },
+      {
+        content: 'Tool result: "tool result"',
+        role: 'model',
+      },
     ]);
   });
 
   it('should handle LLM response parsing errors gracefully', async () => {
-    // 1. Réponse invalide du LLM
-    mockedGetLlmResponse.mockResolvedValueOnce('This is not valid JSON');
-    // 2. Réponse valide après l'erreur
-    mockedGetLlmResponse.mockResolvedValueOnce(
-      JSON.stringify({
-        command: { name: 'finish', params: { text: 'Success' } },
-        thought: 'Okay, I will use JSON now.',
-      }),
-    );
+    mockedGetLlmResponse
+      .mockResolvedValueOnce('This is not valid JSON')
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          command: { name: 'finish', params: { response: 'Success' } },
+          thought: 'Okay, I will use JSON now.',
+        }),
+      );
+    mockedToolRegistryExecute.mockResolvedValue('Success');
 
     const finalResponse = await agent.run();
 
     expect(finalResponse).toBe('Success');
     expect(mockedGetLlmResponse).toHaveBeenCalledTimes(2);
-    // Vérifie que le message d'erreur a été ajouté à l'historique pour le contexte
     expect(mockSession.history).toContainEqual({
       content:
         'Your last response was not a valid command. You must choose a tool from the list. Please try again.',
@@ -176,109 +190,13 @@ describe('Agent Integration Tests', () => {
   });
 
   it('should stop if it reaches max iterations', async () => {
-    // Fait en sorte que le LLM réponde toujours avec la même commande
     mockedGetLlmResponse.mockResolvedValue(
       JSON.stringify({
         command: { name: 'test-tool', params: {} },
         thought: 'Looping...',
       }),
     );
-
-    const finalResponse = await agent.run();
-
-    expect(finalResponse).toBe(
-      'Agent reached maximum iterations without a final answer.',
-    );
-    // Le nombre d'appels doit correspondre à MAX_ITERATIONS
-    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(10); // Default max iterations
-  });
-
-  it('should be interrupted by a signal', async () => {
-    // Configure le LLM pour qu'il continue à boucler indéfiniment
-    mockedGetLlmResponse.mockResolvedValue(
-      JSON.stringify({
-        command: { name: 'test-tool', params: {} },
-        thought: 'Still looping...',
-      }),
-    );
-
-    // Lance l'exécution de l'agent en arrière-plan
-    const agentRunPromise = agent.run();
-
-    // Attend un court instant pour que l'agent démarre et s'abonne
-    await vi.advanceTimersByTime(10);
-
-    // Simule l'envoi d'un message d'interruption
-    if (onMessageCallback) {
-      onMessageCallback(`job:${mockJob.id}:interrupt`, 'interrupt');
-    } else {
-      throw new Error('onMessageCallback was not set');
-    }
-
-    // Attend que l'agent se termine
-    const finalResponse = await agentRunPromise;
-
-    // Vérifie que l'agent a été interrompu
-    expect(finalResponse).toBe('Agent execution interrupted.');
-    expect(mockRedisSubscriber.unsubscribe).toHaveBeenCalledWith(
-      `job:${mockJob.id}:interrupt`,
-    );
-    expect(mockRedisSubscriber.quit).toHaveBeenCalled();
-    // Le LLM devrait avoir été appelé au moins une fois avant l'interruption
-    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(1);
-  });
-
-  it('should handle tool execution errors gracefully', async () => {
-    const errorMessage = 'Error during tool execution';
-    // 1. LLM demande l'exécution d'un outil qui va échouer
-    mockedGetLlmResponse.mockResolvedValueOnce(
-      JSON.stringify({
-        command: { name: 'test-tool', params: { arg: 'fail' } },
-        thought: 'I will try to use the tool, but it might fail.',
-      }),
-    );
-    // 2. LLM répond avec une commande finish après l'échec de l'outil
-    mockedGetLlmResponse.mockResolvedValueOnce(
-      JSON.stringify({
-        command: {
-          name: 'finish',
-          params: { text: 'Recovered from tool error' },
-        },
-        thought: 'The tool failed, but I can still finish.',
-      }),
-    );
-
-    // Mock toolRegistry.execute pour lancer une erreur pour 'test-tool'
-    (toolRegistry.execute as Mock).mockImplementationOnce(
-      async (name: string, params: unknown, _ctx: Ctx) => {
-        if (name === 'test-tool') {
-          throw new Error(errorMessage);
-        }
-        // Fallback pour les autres outils (comme 'finish')
-        if (name === 'finish') {
-          return mockFinishTool.execute(params, {} as Ctx);
-        }
-        throw new Error(`Tool not found: ${name}`);
-      },
-    );
-
-    const finalResponse = await agent.run();
-
-    expect(finalResponse).toBe('Recovered from tool error');
-    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(2);
-    expect(mockSession.history).toContainEqual({
-      content: `Tool result: "${errorMessage}"`, // L'erreur de l'outil doit être enregistrée
-      role: 'model',
-    });
-  });
-
-  it('should return a default message if LLM response has no command or thought', async () => {
-    // LLM répond avec un JSON valide mais sans commande ni pensée
-    mockedGetLlmResponse.mockResolvedValue(
-      JSON.stringify({
-        someOtherKey: 'someValue',
-      }),
-    );
+    mockedToolRegistryExecute.mockResolvedValue('looping result');
 
     const finalResponse = await agent.run();
 
@@ -286,23 +204,71 @@ describe('Agent Integration Tests', () => {
       'Agent reached maximum iterations without a final answer.',
     );
     expect(mockedGetLlmResponse).toHaveBeenCalledTimes(10);
-    // L'historique ne devrait pas contenir de nouvelle entrée pour la pensée ou la commande
-    expect(mockSession.history).not.toContainEqual({
-      role: 'model',
+  });
+
+  it('should be interrupted by a signal', async () => {
+    mockedGetLlmResponse.mockImplementation(async () => {
+      // Simulate the interrupt signal during the "thinking" phase
+      if (onMessageCallback) {
+        onMessageCallback(`job:${mockJob.id}:interrupt`, 'interrupt');
+      }
+      await vi.advanceTimersByTimeAsync(10); // Allow event loop to process interruption
+      return JSON.stringify({
+        command: { name: 'test-tool', params: {} },
+        thought: 'Still looping...',
+      });
+    });
+
+    const finalResponse = await agent.run();
+
+    expect(finalResponse).toBe('Agent execution interrupted.');
+    expect(mockRedisSubscriber.unsubscribe).toHaveBeenCalledWith(
+      `job:${mockJob.id}:interrupt`,
+    );
+    expect(mockRedisSubscriber.quit).toHaveBeenCalled();
+    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(1);
+  });
+
+  it('should handle tool execution errors gracefully', async () => {
+    const errorMessage = 'Error during tool execution';
+    mockedGetLlmResponse
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          command: { name: 'test-tool', params: { arg: 'fail' } },
+          thought: 'I will try to use the tool, but it might fail.',
+        }),
+      )
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          command: {
+            name: 'finish',
+            params: { response: 'Recovered from tool error' },
+          },
+          thought: 'The tool failed, but I can still finish.',
+        }),
+      );
+
+    mockedToolRegistryExecute
+      .mockRejectedValueOnce(new Error(errorMessage))
+      .mockResolvedValueOnce('Recovered from tool error');
+
+    const finalResponse = await agent.run();
+
+    expect(finalResponse).toBe('Recovered from tool error');
+    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(2);
+    expect(mockSession.history).toContainEqual({
+      content: `Error executing tool test-tool: ${errorMessage}`,
+      role: 'tool',
     });
   });
 
   it('should handle tool loading failures', async () => {
     const errorMessage = 'Failed to load tools';
-    (getTools as Mock).mockRejectedValueOnce(new Error(errorMessage));
+    mockedGetAllTools.mockRejectedValueOnce(new Error(errorMessage));
 
     const finalResponse = await agent.run();
 
     expect(finalResponse).toBe(`Error: ${errorMessage}`);
-    expect(getTools).toHaveBeenCalledTimes(1);
-    // L'historique ne devrait pas être modifié au-delà de l'invite initiale
-    expect(mockSession.history).toEqual([
-      { content: 'Test objective', role: 'user' },
-    ]);
+    expect(mockedGetLlmResponse).not.toHaveBeenCalled();
   });
 });

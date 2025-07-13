@@ -13,7 +13,7 @@ export const listFilesParams = z.object({
   path: z.string().default('.').describe('The subdirectory to list.'),
 });
 
-export const listFilesTool: Tool<typeof listFilesParams> = {
+export const listFilesTool: Tool<typeof parameters> = {
   description: 'Lists files and directories within the workspace.',
   execute: async () => {
     // ... reste de la logique inchangée

@@ -4,8 +4,6 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-import { UserError } from '../../utils/errorUtils.js';
-
 // Un schéma de paramètres plus puissant pour l'édition
 export const editFileParams = z.object({
   content_to_replace: z
@@ -25,25 +23,33 @@ export const editFileParams = z.object({
 });
 
 // Le schéma de sortie structuré pour le frontend
-export const editFileOutput = z.object({
-  message: z.string(),
-  modified_content: z.string().optional(),
-  original_content: z.string().optional(),
-  success: z.boolean(),
-});
+export const editFileOutput = z.union([
+  z.object({
+    message: z.string(),
+    modified_content: z.string().optional(),
+    original_content: z.string().optional(),
+    success: z.boolean(),
+  }),
+  z.object({
+    erreur: z.string(),
+  }),
+]);
 
 export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
   {
     description:
       'Replaces specific content within an existing file in the workspace. Ideal for targeted changes.',
-    execute: async (args, ctx: Ctx) => {
+    execute: async (
+      args,
+      ctx: Ctx,
+    ): Promise<string | void | z.infer<typeof editFileOutput>> => {
       const workspaceDir = path.resolve(process.cwd(), 'workspace');
       const absolutePath = path.resolve(workspaceDir, args.path);
 
       if (!absolutePath.startsWith(workspaceDir)) {
-        throw new UserError(
-          'File path is outside the allowed workspace directory.',
-        );
+        return {
+          erreur: 'File path is outside the allowed workspace directory.',
+        } as z.infer<typeof editFileOutput>;
       }
 
       try {
@@ -51,11 +57,9 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
         let modifiedContent: string;
 
         if (args.is_regex) {
-          // Remplacement via une expression régulière
-          const regex = new RegExp(args.content_to_replace, 'g'); // 'g' pour remplacer toutes les occurrences
+          const regex = new RegExp(args.content_to_replace, 'g');
           modifiedContent = originalContent.replace(regex, args.new_content);
         } else {
-          // Remplacement de toutes les occurrences de la chaîne
           modifiedContent = originalContent
             .split(args.content_to_replace)
             .join(args.new_content);
@@ -73,7 +77,6 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
         const successMessage = `Successfully edited content in ${args.path}.`;
         ctx.log.info(successMessage);
 
-        // Retourner une sortie structurée
         return {
           message: successMessage,
           modified_content: modifiedContent,
@@ -82,10 +85,14 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
         };
       } catch (error: unknown) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-          throw new UserError(`File not found at path: ${args.path}`);
+          return { erreur: `File not found at path: ${args.path}` } as z.infer<
+            typeof editFileOutput
+          >;
         }
         ctx.log.error({ err: error }, `Failed to edit file: ${args.path}`);
-        throw new Error(`Could not edit file: ${(error as Error).message}`);
+        return {
+          erreur: `Could not edit file: ${(error as Error).message || error}`,
+        } as z.infer<typeof editFileOutput>;
       }
     },
     name: 'editFile',

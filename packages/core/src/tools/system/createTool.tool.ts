@@ -5,11 +5,23 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-import { getErrDetails, UserError } from '../../utils/errorUtils.js';
+import { getErrDetails } from '../../utils/errorUtils.js';
 import {
   runQualityGate,
   runToolTestsInSandbox,
 } from '../../utils/qualityGate.js';
+
+export const parameters = z.object({
+  description: z.string().describe("Description de l'outil."),
+  execute_function: z
+    .string()
+    .describe("Code TypeScript pour la fonction 'execute'."),
+  parameters: z.string().describe('Schéma Zod pour les paramètres.'),
+  tool_name: z
+    .string()
+    .regex(/^[a-z0-9-]+/)
+    .describe("Nom de l'outil (kebab-case)."),
+});
 
 const GENERATED_TOOLS_DIR = path.resolve(process.cwd(), 'src/tools/generated');
 
@@ -31,23 +43,10 @@ export const %sTool: Tool<typeof %sParams> = {
 const toCamelCase = (str: string) =>
   str.replace(/[-_](.)/g, (_, c) => c.toUpperCase());
 
-export const createToolParams = z.object({
-  description: z.string().describe("Description de l'outil."),
-  execute_function: z
-    .string()
-    .describe("Code TypeScript pour la fonction 'execute'."),
-  parameters_schema: z.string().describe('Schéma Zod pour les paramètres.'),
-  tool_name: z
-    .string()
-    .regex(/^[a-z0-9-]+/)
-    .describe("Nom de l'outil (kebab-case)."),
-});
-
-export const createToolTool: Tool<typeof createToolParams> = {
+export const createToolTool: Tool<typeof parameters> = {
   description: "Écrit un nouveau fichier d'outil.",
   execute: async (args, ctx: Ctx) => {
-    const { description, execute_function, parameters_schema, tool_name } =
-      args;
+    const { description, execute_function, parameters, tool_name } = args;
     const toolVarName = toCamelCase(tool_name);
     const toolFileName = `${toolVarName}.tool.ts`;
     const toolFilePath = path.join(GENERATED_TOOLS_DIR, toolFileName);
@@ -58,7 +57,7 @@ export const createToolTool: Tool<typeof createToolParams> = {
       const toolFileContent = TOOL_TEMPLATE.replace(/%s/g, (match) => {
         if (match === '%sParams') return `${toolVarName}Params`;
         if (match === '%sTool') return `${toolVarName}Tool`;
-        if (match === 'z.object(%s)') return `z.object(${parameters_schema})`;
+        if (match === 'z.object(%s)') return `z.object(${parameters})`;
         if (match === 'execute: %s') return `execute: ${execute_function}`;
         if (match.includes("Description de l'outil")) return description;
         return tool_name;
@@ -73,7 +72,7 @@ export const createToolTool: Tool<typeof createToolParams> = {
       output += `\n${qualityResult.output}`;
 
       if (!qualityResult.success) {
-        throw new UserError('Le Quality Gate a échoué.');
+        return { erreur: `Le Quality Gate a échoué: ${qualityResult.output}` };
       }
 
       ctx.log.info('Lancement du test du nouvel outil...');
@@ -81,7 +80,9 @@ export const createToolTool: Tool<typeof createToolParams> = {
       output += `\n${testResult.output}`;
 
       if (!testResult.success) {
-        throw new UserError('Le test du nouvel outil a échoué.');
+        return {
+          erreur: `Le test du nouvel outil a échoué: ${testResult.output}`,
+        };
       }
 
       const successMessage = `Outil '${tool_name}' créé et validé.`;
@@ -89,16 +90,15 @@ export const createToolTool: Tool<typeof createToolParams> = {
       return `${output}\n\n${successMessage}`;
     } catch (error) {
       const errorMessage = `Échec de la création de l'outil: ${(error as Error).message}`;
-      // CORRECTION DÉFINITIVE : Séparation du message et de l'objet de données.
       const errDetails = getErrDetails(error);
       ctx.log.error(errorMessage, {
         message: errDetails.message,
         name: errDetails.name,
         stack: errDetails.stack,
       });
-      return `Erreur: ${errorMessage}`;
+      return { erreur: errorMessage };
     }
   },
   name: 'system_createTool',
-  parameters: createToolParams,
+  parameters,
 };

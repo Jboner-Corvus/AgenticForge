@@ -7,7 +7,7 @@ export const webSearchParams = z.object({
   query: z.string().describe('The search query.'),
 });
 
-export const webSearchTool: Tool<typeof webSearchParams> = {
+export const webSearchTool: Tool<typeof parameters> = {
   description: 'Performs a web search using the local SearXNG instance.',
   execute: async () => {
     // ... reste de la logique inchangée

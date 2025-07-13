@@ -123,9 +123,6 @@ LLM_API_KEY=""
 
 # Geminiモデルを指定してください、例："gemini-1.5-pro-latest"
 LLM_MODEL_NAME=gemini-2.5-flash
-PYTHON_SANDBOX_IMAGE="python:3.11-slim"
-BASH_SANDBOX_IMAGE="alpine:latest"
-CODE_EXECUTION_TIMEOUT_MS=60000
 ```
 
 **重要**：

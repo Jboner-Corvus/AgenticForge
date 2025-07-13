@@ -14,7 +14,7 @@ export const writeFileParams = z.object({
   path: z.string().describe('The path to the file inside the workspace.'),
 });
 
-export const writeFileTool: Tool<typeof writeFileParams> = {
+export const writeFileTool: Tool<typeof parameters> = {
   description: 'Writes content to a file in the workspace.',
   execute: async () => {
     // ... reste de la logique inchangée

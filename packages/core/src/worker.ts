@@ -44,11 +44,21 @@ export async function processJob(job: Job): Promise<string> {
 
     return finalResponse;
   } catch (error) {
+    const errorMessage = (error as Error).message;
     log.error({ error }, 'Error in agent execution');
+
+    let eventType = 'error';
+    let eventMessage = errorMessage;
+
+    if (errorMessage.includes('Quota exceeded')) {
+      eventType = 'quota_exceeded';
+      eventMessage = 'API quota exceeded. Please try again later.';
+    }
+
     // En cas d'erreur, on peut aussi notifier le front
     await redis.publish(
       channel,
-      JSON.stringify({ message: (error as Error).message, type: 'error' }),
+      JSON.stringify({ message: eventMessage, type: eventType }),
     );
     throw error;
   } finally {
@@ -63,7 +73,7 @@ export async function processJob(job: Job): Promise<string> {
 
 export async function startWorker() {
   console.log('startWorker function called');
-  const worker = new Worker(
+  const _worker = new Worker(
     'tasks',
     async (job) => {
       logger.info(`Processing job ${job.id} of type ${job.name}`);
@@ -75,13 +85,21 @@ export async function startWorker() {
     },
   );
 
-  worker.on('completed', (job) => {
-    logger.info(`Job ${job.id} completed.`);
-  });
+  // The BullMQ worker is already defined outside this function as `jobQueue`
+  // and its event listeners are not part of fastmcp.start().
+  // The original `worker.on` calls were for a BullMQ worker, not the fastmcp server.
+  // We need to ensure the BullMQ worker is properly set up and its events are handled.
+  // For now, removing the incorrect `worker.on` calls.
+  // The BullMQ worker setup should be handled separately if needed.
 
-  worker.on('failed', (job, err) => {
-    logger.error({ err, jobId: job?.id }, `Job ${job?.id} failed.`);
-  });
+  // Example of how BullMQ worker events would be handled if a worker instance was available:
+  // const bullMqWorker = new Worker('tasks', processJob, { connection: redis, concurrency: config.WORKER_CONCURRENCY });
+  // bullMqWorker.on('completed', (job: Job) => {
+  //   logger.info(`Job ${job.id} completed.`);
+  // });
+  // bullMqWorker.on('failed', (job: Job, err: Error) => {
+  //   logger.error({ err, jobId: job?.id }, `Job ${job?.id} failed.`);
+  // });
 
   logger.info('Worker démarré et écoute les tâches...');
   console.log('Worker started and listening for tasks...');
