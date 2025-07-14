@@ -1,21 +1,20 @@
 import { create } from 'zustand';
 
 import { getTools } from './api';
-import { DisplayableItem, NewDisplayableItem } from './types';
+import { ChatMessage, NewChatMessage } from '../types/chat';
 import { generateUUID } from './utils/uuid';
 
 interface AppState {
   addDebugLog: (log: string) => void;
-  addDisplayItem: (item: NewDisplayableItem) => void;
+  addMessage: (item: NewChatMessage) => void;
   agentStatus: string | null;
   toolStatus: string;
   authToken: null | string;
   clearDebugLog: () => void;
-  clearDisplayItems: () => void;
+  clearMessages: () => void;
   codeExecutionEnabled: boolean;
   debugLog: string[];
-  
-  displayItems: DisplayableItem[];
+  messages: ChatMessage[];
   fetchAndDisplayToolCount: () => void;
   isProcessing: boolean;
   jobId: null | string;
@@ -50,19 +49,15 @@ interface AppState {
 
 export const useStore = create<AppState>((set, get) => ({
   addDebugLog: (log) => set((state) => ({ debugLog: [...state.debugLog, log] })),
-  addDisplayItem: (item) =>
-    set((state) => ({
-      displayItems: [...state.displayItems, { ...item, id: generateUUID() }],
-    })),
+  addMessage: (message) =>    set((state) => ({      messages: [...state.messages, { ...message, id: generateUUID() }],    })),
   agentStatus: null,
   toolStatus: '',
   authToken: null,
   clearDebugLog: () => set({ debugLog: [] }),
-  clearDisplayItems: () => set({ displayItems: [] }),
+  clearMessages: () => set({ messages: [] }),
   codeExecutionEnabled: true,
   debugLog: [],
-  
-  displayItems: [],
+  messages: [],
   fetchAndDisplayToolCount: async () => {
     const { addDebugLog, authToken, sessionId, setToolCount, updateSessionStatus } = get();
     if (!authToken || !sessionId) return;

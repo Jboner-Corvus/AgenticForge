@@ -9,7 +9,7 @@ import { getMasterPrompt } from './prompts/orchestrator.prompt.js';
 import { redis } from './redisClient.js';
 import { toolRegistry } from './toolRegistry.js';
 import { getAllTools } from './tools/index.js';
-import { AgentProgress, Ctx, Message, SessionData } from './types.js';
+import { AgentProgress, Ctx, SessionData } from './types.js';
 import { llmProvider } from './utils/llmProvider.js';
 
 // Schéma Zod pour la réponse du LLM
@@ -37,7 +37,6 @@ interface Command {
 }
 
 export class Agent {
-  private readonly interruptChannel: string;
   private interrupted = false;
   private readonly job: Job;
   private readonly log: Logger;
@@ -49,7 +48,6 @@ export class Agent {
     this.session = session;
     this.log = logger.child({ jobId: job.id, sessionId: session.id });
     this.taskQueue = taskQueue;
-    this.interruptChannel = `job:${job.id}:interrupt`;
   }
 
   public async run(): Promise<string> {
@@ -58,25 +56,31 @@ export class Agent {
     this.session.history.push({ content: prompt, role: 'user' });
 
     try {
-      // [SECTION MODIFIÉE]
-      // Charger TOUS les outils depuis l'agrégateur
+      this.log.info('Loading all tools');
       const allTools = await getAllTools();
-      // S'assurer que le registre est propre et enregistrer chaque outil
-      // (cette partie est gérée par le toolLoader, mais une vérification ne fait pas de mal)
       allTools.forEach((tool) => toolRegistry.register(tool));
-
       this.log.info(
         { count: toolRegistry.getAll().length },
-        'All tools registered.',
+        'All tools are available in the registry.',
       );
-      // [FIN DE LA SECTION MODIFIÉE]
 
       this.setupInterruptListener();
 
       let iterations = 0;
       const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS ?? 10;
 
-      while (iterations < MAX_ITERATIONS && !this.interrupted) {
+      while (iterations < MAX_ITERATIONS) {
+        // Check if the job has been stopped or interrupted.
+        if (this.interrupted) {
+          this.log.info('Job has been interrupted.');
+          break;
+        }
+        if (await this.job.isFailed()) {
+          this.log.info('Job has failed.');
+          this.interrupted = true;
+          break;
+        }
+
         iterations++;
         const iterationLog = this.log.child({ iteration: iterations });
         iterationLog.info(`Agent iteration starting`);
@@ -123,7 +127,6 @@ export class Agent {
         }
 
         if (command) {
-          // Envoyer un événement au frontend pour chaque outil sur le point d'être exécuté
           const eventData: ChannelData = {
             data: {
               args: command.params,
@@ -188,7 +191,6 @@ export class Agent {
         type: 'tool_result',
       });
 
-      // Update working context
       if (!this.session.workingContext) {
         this.session.workingContext = {};
       }
@@ -221,51 +223,41 @@ export class Agent {
     }
   }
 
-  private async getLlmResponse(prompt: string, log: Logger): Promise<string> {
-    const history = this.session.history.map((msg: Message) => ({
-      parts: [{ text: msg.content }],
-      role: msg.role as 'model' | 'user',
-    }));
-
-    const response = await llmProvider.getLlmResponse([
-      ...history,
-      { parts: [{ text: prompt }], role: 'user' },
-    ]);
-
-    log.info({ modelResponseContent: response }, 'Model response');
-    this.publishToChannel({
-      content: response,
-      type: 'raw_llm_response', // Utilisez le nouveau type pour le debug
-    });
-
-    return response;
-  }
-
   private parseLlmResponse(
     response: string,
     log: Logger,
   ): null | z.infer<typeof llmResponseSchema> {
     try {
-      const firstBraceIndex = response.indexOf('{');
-      const lastBraceIndex = response.lastIndexOf('}');
+      const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/;
+      const match = response.match(jsonBlockRegex);
 
-      if (firstBraceIndex === -1 || lastBraceIndex === -1) {
+      if (!match || !match[1]) {
         log.error(
           { responseText: response },
-          'No JSON object found in LLM response',
+          'No JSON code block found in LLM response.',
         );
-        return null;
+        const firstBraceIndex = response.indexOf('{');
+        const lastBraceIndex = response.lastIndexOf('}');
+        if (firstBraceIndex === -1 || lastBraceIndex === -1) {
+          return null;
+        }
+        const jsonString = response.substring(
+          firstBraceIndex,
+          lastBraceIndex + 1,
+        );
+        const parsed = JSON.parse(jsonString);
+        const validation = llmResponseSchema.safeParse(parsed);
+        return validation.success ? validation.data : null;
       }
 
-      const jsonString = response.substring(
-        firstBraceIndex,
-        lastBraceIndex + 1,
-      );
+      const jsonString = match[1];
       const parsed = JSON.parse(jsonString);
       const validation = llmResponseSchema.safeParse(parsed);
+
       if (validation.success) {
         return validation.data;
       }
+
       log.error(
         {
           error: validation.error.flatten(),
@@ -290,21 +282,21 @@ export class Agent {
 
   private setupInterruptListener() {
     const subscriber = redis.duplicate();
-    subscriber.subscribe(this.interruptChannel, (error, count) => {
-      if (error) {
-        this.log.error(error, 'Failed to subscribe to interrupt channel');
+    const channel = `job:${this.job.id}:interrupt`;
+
+    subscriber.subscribe(channel, (err, count) => {
+      if (err) {
+        this.log.error(err, `Failed to subscribe to ${channel}`);
         return;
       }
-      this.log.info(
-        `Subscribed to interrupt channel: ${this.interruptChannel} (count: ${count})`,
-      );
+      this.log.info(`Subscribed to ${channel}, number of subscriptions: ${count}`);
     });
 
-    subscriber.on('message', (channel: string, message: string) => {
-      if (channel === this.interruptChannel && message === 'interrupt') {
-        this.log.info('Agent interrupted by user.');
+    subscriber.on('message', (ch, message) => {
+      if (ch === channel) {
+        this.log.info(`Received interrupt signal: ${message}`);
         this.interrupted = true;
-        subscriber.unsubscribe(this.interruptChannel);
+        subscriber.unsubscribe(channel);
         subscriber.quit();
       }
     });

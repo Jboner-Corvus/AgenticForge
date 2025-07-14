@@ -8,5 +8,5 @@ export default defineConfig({
   outDir: 'dist',
   // Utiliser 'copy' pour inclure les fichiers non-ts.
   // Cela préserve la structure des répertoires.
-  copy: ['src/prompts/system.prompt.txt'],
+  copy: ['src/prompts/**/*', 'src/tools/**/*.tool.ts'],
 });

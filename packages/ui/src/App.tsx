@@ -1,21 +1,27 @@
-import { useState, useCallback, useEffect } from 'react';
-import { Header } from './components/Header';
-import { SettingsModal } from './components/SettingsModal';
+// packages/ui/src/App.tsx
+
+import { useCallback, useEffect, useState } from 'react';
 import { AppInitializer } from './components/AppInitializer';
 import { ControlPanel } from './components/ControlPanel';
-import { Message } from './components/Message';
-import { ChatMessage } from './types/chat'; // Import ChatMessage type
-
-import { useStore } from './lib/store';
+import { Header } from './components/Header';
 import { LoadingSpinner } from './components/LoadingSpinner';
+import { Message } from './components/Message';
+import { SettingsModal } from './components/SettingsModal';
+import { useAgentStream } from './lib/hooks/useAgentStream';
+import { useStore } from './lib/store';
+import { ChatMessage } from './types/chat';
 
 export default function App() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isControlPanelVisible, setIsControlPanelVisible] = useState(true);
-  const [messages, setMessages] = useState<ChatMessage[]>([]); // Use ChatMessage[] for messages
-  const [input, setInput] = useState('');
 
+  const messages = useStore((state) => state.messages);
+  const input = useStore((state) => state.messageInputValue);
+  const setInput = useStore((state) => state.setMessageInputValue);
   const isProcessing = useStore((state) => state.isProcessing);
+
+  const { startAgent } = useAgentStream();
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedMode = localStorage.getItem('darkMode');
     return savedMode ? JSON.parse(savedMode) : window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -34,16 +40,9 @@ export default function App() {
     setIsDarkMode((prevMode: boolean) => !prevMode);
   }, []);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (input.trim()) {
-      setMessages((prevMessages) => [...prevMessages, { type: 'user', content: input }]);
-      setInput('');
-      setTimeout(() => {
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { type: 'agent_response', content: `Echo: ${input}` },
-        ]);
-      }, 1000);
+      await startAgent();
     }
   };
 
@@ -75,14 +74,17 @@ export default function App() {
         <div className="flex-1 flex flex-col">
           {isProcessing && <LoadingSpinner />}
           <div className="flex-1 p-4 overflow-y-auto">
-            {messages.map((msg, index) => (
-              <Message key={index} message={msg} />
+            {messages.map((msg: ChatMessage) => (
+              <Message key={msg.id} message={msg} />
             ))}
           </div>
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex items-center">
+          <div className="p-4 border-t border-border flex items-center">
+            <label htmlFor="chat-input" className="sr-only">Type your message</label>
             <input
+              id="chat-input"
+              name="chat-input"
               type="text"
-              className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+              className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring dark:bg-card"
               placeholder="Type your message..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -93,7 +95,7 @@ export default function App() {
               }}
             />
             <button
-              className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="ml-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring"
               onClick={handleSendMessage}
             >
               Send

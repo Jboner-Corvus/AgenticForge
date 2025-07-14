@@ -1,93 +1,45 @@
 import { useCallback } from 'react';
-
 import { produce } from 'immer';
-
 import { sendMessage, interrupt } from '../api';
 import { useStore } from '../store';
-import { generateUUID } from '../utils/uuid';
-import { DisplayableItem, UserMessage, AgentToolResult } from '../types';
+import {  NewChatMessage,  AgentToolResult,  ChatMessage,} from '../../types/chat';
 
-interface ToolStreamMessage {
-  type: 'tool_stream';
-  data: {
-    content: string;
+// Define the structure of messages coming from the stream
+interface StreamMessage {
+  type:
+    | 'tool_stream'
+    | 'agent_thought'
+    | 'tool_call'
+    | 'tool_result'
+    | 'agent_response'
+    | 'raw_llm_response'
+    | 'error'
+    | 'tool.start'
+    | 'close'
+    | 'quota_exceeded';
+  content?: string;
+  toolName?: string;
+  params?: Record<string, unknown>;
+  result?: Record<string, unknown>;
+  message?: string;
+  data?: {
+    name?: string;
+    args?: Record<string, unknown>;
+    content?: string;
   };
 }
-
-interface AgentThoughtMessage {
-  type: 'agent_thought';
-  content: string;
-}
-
-interface ToolCallMessage {
-  type: 'tool_call';
-  toolName: string;
-  params: Record<string, unknown>;
-}
-
-interface ToolResultMessage {
-  type: 'tool_result';
-  toolName: string;
-  result: Record<string, unknown>;
-}
-
-interface AgentResponseMessage {
-  type: 'agent_response';
-  content: string;
-}
-
-interface RawLlmResponseMessage {
-  type: 'raw_llm_response';
-  content: string;
-}
-
-interface ErrorMessage {
-  type: 'error';
-  message: string;
-}
-
-interface ToolStartMessage {
-  type: 'tool.start';
-  data: {
-    name: string;
-    args: Record<string, unknown>;
-  };
-}
-
-interface CloseMessage {
-  type: 'close';
-}
-
-interface QuotaExceededMessage {
-  type: 'quota_exceeded';
-  message: string;
-}
-
-type AgentMessage =
-  | ToolStreamMessage
-  | AgentThoughtMessage
-  | ToolCallMessage
-  | ToolResultMessage
-  | AgentResponseMessage
-  | RawLlmResponseMessage
-  | ErrorMessage
-  | ToolStartMessage
-  | CloseMessage
-  | QuotaExceededMessage;
 
 export const useAgentStream = () => {
   const {
-    addDisplayItem,
+    addMessage,
     authToken,
     messageInputValue,
     sessionId,
     setIsProcessing,
-    // jobId,
     setJobId,
     setMessageInputValue,
     setStreamCloseFunc,
     setAgentStatus,
-    setToolStatus,
     addDebugLog,
     setAgentProgress,
   } = useStore();
@@ -96,7 +48,11 @@ export const useAgentStream = () => {
     if (!messageInputValue.trim()) return;
 
     setIsProcessing(true);
-    addDisplayItem({ content: messageInputValue, sender: 'user', type: 'user_message', timestamp: new Date().toISOString() } as UserMessage);
+    const userMessage: NewChatMessage = {
+      type: 'user',
+      content: messageInputValue,
+    };
+    addMessage(userMessage);
     const goal = messageInputValue;
     setMessageInputValue('');
 
@@ -106,108 +62,116 @@ export const useAgentStream = () => {
         setJobId(null);
         setStreamCloseFunc(null);
         setAgentStatus(null);
-        setToolStatus('');
       },
-      onError: (error: unknown) => { // Changed type to unknown
-        addDisplayItem({
-          content: `An error occurred: ${(error as Error).message}`,
-          sender: 'assistant',
-          type: 'agent_response',
-          timestamp: new Date().toISOString(),
-        } as DisplayableItem); // Added cast
-        addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] ${(error as Error).message}`);
+      onError: (error: Error) => {
+        const errorMessage: NewChatMessage = {
+          type: 'error',
+          content: `An error occurred: ${error.message}`,
+        };
+        addMessage(errorMessage);
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] ${error.message}`);
         setIsProcessing(false);
       },
-      onMessage: (message: string) => {
-        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Agent response: ${message}`);
-        useStore.setState(produce(state => {
-          const lastItem: DisplayableItem | undefined = state.displayItems[state.displayItems.length - 1]; // Changed type to DisplayableItem
-          // S'assurer que le dernier item existe, est une réponse de l'agent et vient de l'assistant
-          if (lastItem && lastItem.type === 'agent_response' && lastItem.sender === 'assistant') {
-            // Mettre à jour le contenu du dernier item
-            lastItem.content += message;
+      onMessage: (content: string) => {
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Agent response: ${content}`);
+        useStore.setState(produce((state: { messages: ChatMessage[] }) => {
+          const lastMessage = state.messages[state.messages.length - 1];
+          if (lastMessage && lastMessage.type === 'agent_response') {
+            lastMessage.content += content;
           } else {
-            // Sinon, créer un nouvel item
-            state.displayItems.push({ content: message, sender: 'assistant', type: 'agent_response', id: generateUUID(), timestamp: new Date().toISOString() } as DisplayableItem); // Added cast
+            const agentMessage: NewChatMessage = {
+              type: 'agent_response',
+              content,
+            };
+            state.messages.push(agentMessage as ChatMessage);
           }
         }));
         setAgentProgress(Math.min(99, useStore.getState().agentProgress + 5));
       },
       onThought: (thought: string) => {
         addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Agent thought: ${thought}`);
-        addDisplayItem({ content: thought, type: 'agent_thought', timestamp: new Date().toISOString() } as DisplayableItem); // Added cast
+        const thoughtMessage: NewChatMessage = {
+          type: 'agent_thought',
+          content: thought,
+        };
+        addMessage(thoughtMessage);
       },
-      onToolCall: (
-        toolName: string,
-        params: Record<string, unknown>,
-      ) => {
+      onToolCall: (toolName: string, params: Record<string, unknown>) => {
         addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Tool call: ${toolName} with params ${JSON.stringify(params)}`);
         setAgentStatus(`Executing tool: ${toolName}...`);
-        addDisplayItem({ params, toolName, type: 'tool_call', timestamp: new Date().toISOString() } as DisplayableItem); // Added cast
+        const toolCallMessage: NewChatMessage = {
+          type: 'tool_call',
+          toolName,
+          params,
+        };
+        addMessage(toolCallMessage);
       },
-      onToolResult: (
-        toolName: string,
-        result: Record<string, unknown>,
-      ) => {
+      onToolResult: (toolName: string, result: Record<string, unknown>) => {
         addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Tool result for ${toolName}: ${JSON.stringify(result)}`);
         setAgentStatus(null);
-        setToolStatus('');
-        addDisplayItem({ result, toolName, type: 'tool_result', timestamp: new Date().toISOString() } as DisplayableItem); // Added cast
+        const toolResultMessage: NewChatMessage = {
+          type: 'tool_result',
+          toolName,
+          result,
+        };
+        addMessage(toolResultMessage);
       },
     };
 
     const onMessage = (event: MessageEvent) => {
-      const data: AgentMessage = JSON.parse(event.data);
-      if (data.type === 'tool_stream') {
-          const { content } = data.data; // type est 'stdout' ou 'stderr'
-          
-          // Logique pour ajouter le contenu au dernier message
-          const { displayItems } = useStore.getState();
-          const lastItem: DisplayableItem | undefined = displayItems[displayItems.length - 1]; // Changed type to DisplayableItem
+      const data: StreamMessage = JSON.parse(event.data);
 
-          // Crée ou met à jour un item de type "tool_result"
-          if (lastItem && lastItem.type === 'tool_result' && lastItem.toolName === 'executeShellCommand') {
-              useStore.setState(produce(state => {
-                  const currentResult = (lastItem as AgentToolResult).result.output || '';
-                  state.displayItems[state.displayItems.length - 1] = {
-                      ...lastItem,
-                      result: { output: currentResult + content },
-                  } as DisplayableItem; // Added cast
-              }));
-          } else {
-              // Si c'est le premier morceau, créez un nouvel item
-              addDisplayItem({
-                  toolName: 'executeShellCommand',
+      switch (data.type) {
+        case 'tool_stream':
+          if (data.data?.content) {
+            useStore.setState(produce((state: { messages: ChatMessage[] }) => {
+              const lastMessage = state.messages[state.messages.length - 1];
+              if (lastMessage?.type === 'tool_result' && lastMessage.toolName === 'executeShellCommand') {
+                const toolResult = lastMessage as AgentToolResult;
+                toolResult.result.output += data.data?.content;
+              } else {
+                const newToolResult: NewChatMessage = {
                   type: 'tool_result',
-                  result: { output: content },
-                  timestamp: new Date().toISOString(),
-              } as DisplayableItem); // Added cast
+                  toolName: 'executeShellCommand',
+                  result: { output: data.data?.content },
+                };
+                addMessage(newToolResult);
+              }
+            }));
           }
-
-      } else if (data.type === 'agent_thought') { // This was changed from 'thought'
-        callbacks.onThought(data.content);
-      } else if (data.type === 'tool_call') {
-        callbacks.onToolCall(data.toolName, data.params);
-      } else if (data.type === 'tool_result') {
-        if (data.toolName === 'finish') {
-          // The backend sends the final response in the 'result' field
-          // for the 'finish' tool. We need to extract it.
-        } else {
-          callbacks.onToolResult(data.toolName, data.result);
-        }
-      } else if (data.type === 'agent_response') {
-        callbacks.onMessage(data.content);
-      } else if (data.type === 'raw_llm_response') {
-        addDebugLog(`[LLM_RAW] ${data.content}`);
-      } else if (data.type === 'error') {
-        callbacks.onError(new Error(data.message));
-      } else if (data.type === 'quota_exceeded') {
-        callbacks.onError(new Error(data.message));
-      } else if (data.type === 'tool.start') {
-        callbacks.onToolCall(data.data.name, data.data.args);
-      } else if (data.type === 'close') {
-        callbacks.onClose();
-        setAgentProgress(100);
+          break;
+        case 'agent_thought':
+          if (data.content) callbacks.onThought(data.content);
+          break;
+        case 'tool_call':
+          if (data.toolName && data.params) callbacks.onToolCall(data.toolName, data.params);
+          break;
+        case 'tool_result':
+          if (data.toolName && data.result && data.toolName !== 'finish') {
+            callbacks.onToolResult(data.toolName, data.result);
+          }
+          break;
+        case 'agent_response':
+          if (data.content) callbacks.onMessage(data.content);
+          break;
+        case 'raw_llm_response':
+          if (data.content) addDebugLog(`[LLM_RAW] ${data.content}`);
+          break;
+        case 'error':
+          if (data.message) callbacks.onError(new Error(data.message));
+          break;
+        case 'quota_exceeded':
+            if (data.message) callbacks.onError(new Error(data.message));
+            break;
+        case 'tool.start':
+          if (data.data?.name && data.data?.args) {
+            callbacks.onToolCall(data.data.name, data.data.args);
+          }
+          break;
+        case 'close':
+          callbacks.onClose();
+          setAgentProgress(100);
+          break;
       }
     };
 
@@ -220,21 +184,19 @@ export const useAgentStream = () => {
         (error) => callbacks.onError(error instanceof Error ? error : new Error(String(error))),
       );
       setJobId(jobId);
-      // setStreamCloseFunc(() => close);
     } catch (error) {
       callbacks.onError(error instanceof Error ? error : new Error(String(error)));
     }
   }, [
     authToken,
     sessionId,
-    addDisplayItem,
+    addMessage,
     setIsProcessing,
     setJobId,
     setStreamCloseFunc,
     messageInputValue,
     setMessageInputValue,
     setAgentStatus,
-    setToolStatus,
     addDebugLog,
     setAgentProgress,
   ]);

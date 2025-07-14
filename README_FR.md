@@ -59,7 +59,7 @@
 
 ## Démo
 
-> **"Peux-tu créer un outil pour analyser mes fichiers CSV, puis l'utiliser pour générer un rapport à partir de donnees_ventes.csv ?"**
+> **"Peux-tu créer un outil pour analyser une une cotation boursiere pour en faire le trading?"**
 
 ---
 

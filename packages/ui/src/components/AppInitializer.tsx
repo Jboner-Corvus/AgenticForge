@@ -11,7 +11,7 @@ function generateUUID() {
 
 export const AppInitializer = () => {
   const addDebugLog = useStore((state) => state.addDebugLog);
-  const addDisplayItem = useStore((state) => state.addDisplayItem);
+  const addMessage = useStore((state) => state.addMessage);
   const setAuthToken = useStore((state) => state.setAuthToken);
   const setServerHealthy = useStore((state) => state.setServerHealthy);
   const setSessionId = useStore((state) => state.setSessionId);
@@ -62,13 +62,8 @@ export const AppInitializer = () => {
     initializeSession();
     initializeAuthToken();
     checkServerHealth();
-    addDisplayItem({
-      content: fr.agentReady,
-      sender: 'assistant',
-      type: 'agent_response',
-      timestamp: new Date().toISOString(),
-    });
-  }, [checkServerHealth, initializeAuthToken, initializeSession, addDebugLog, addDisplayItem]);
+    addMessage({      type: 'agent_response',      content: fr.agentReady,    });
+  }, [checkServerHealth, initializeAuthToken, initializeSession, addDebugLog, addMessage]);
 
   return null; // This component doesn't render anything visible
 };

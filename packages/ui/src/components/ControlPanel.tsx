@@ -24,37 +24,32 @@ export const ControlPanel = memo(() => {
   const toolCreationEnabled = useStore((state) => state.toolCreationEnabled);
   const setCodeExecutionEnabled = useStore((state) => state.setCodeExecutionEnabled);
   const setToolCreationEnabled = useStore((state) => state.setToolCreationEnabled);
-  const clearDisplayItems = useStore((state) => state.clearDisplayItems);
+  const clearMessages = useStore((state) => state.clearMessages);
   const addDebugLog = useStore((state) => state.addDebugLog);
   const fetchAndDisplayToolCount = useStore((state) => state.fetchAndDisplayToolCount);
   const setSessionId = useStore((state) => state.setSessionId);
-  const addDisplayItem = useStore((state) => state.addDisplayItem);
+  const addMessage = useStore((state) => state.addMessage);
 
   const { toast } = useToast();
 
   const handleClearHistory = useCallback((showMessage: boolean) => {
-    clearDisplayItems();
+    clearMessages();
     if (showMessage) {
       toast({ description: fr.historyCleared, title: fr.historyCleared });
       addDebugLog(`[${new Date().toLocaleTimeString()}] Historique local effacé.`);
     }
-  }, [clearDisplayItems, addDebugLog, toast]);
+  }, [clearMessages, addDebugLog, toast]);
 
   const handleNewSession = useCallback(() => {
     const oldSessionId = sessionId;
     const newSessionId = generateUUID();
     localStorage.setItem('agenticForgeSessionId', newSessionId);
     setSessionId(newSessionId);
-    addDisplayItem({
-      content: fr.newSessionCreated,
-      sender: 'assistant',
-      type: 'agent_response',
-      timestamp: new Date().toISOString(),
-    });
+    addMessage({      type: 'agent_response',      content: fr.newSessionCreated,    });
     addDebugLog(`[${new Date().toLocaleTimeString()}] ${fr.newSession}: Ancien ID: ${oldSessionId}, Nouvel ID: ${newSessionId}`);
     handleClearHistory(false);
     fetchAndDisplayToolCount();
-  }, [sessionId, fetchAndDisplayToolCount, handleClearHistory, addDebugLog, addDisplayItem, setSessionId]);
+  }, [sessionId, fetchAndDisplayToolCount, handleClearHistory, addDebugLog, addMessage, setSessionId]);
   const [activeTab, ] = useState('status');
   const { handleDragStart, width } = useDraggableSidebar(320);
 

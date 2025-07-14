@@ -1,5 +1,5 @@
 import React from 'react';
-import { AgentMessage as AgentMessageType } from '../types/chat';
+import { AgentResponseMessage as AgentMessageType } from '../types/chat';
 
 export const AgentMessage: React.FC<{ content: AgentMessageType['content'] }> = ({ content }) => (
   <div className="flex justify-start">

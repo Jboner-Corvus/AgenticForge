@@ -54,17 +54,9 @@ describe('finishTool', () => {
     // which is not possible with strict static types.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const invalidArgs = null as any;
-    const result = await finishTool.execute(invalidArgs, mockCtx);
-
-    // Check that the result is an error object
-    expect(result).toHaveProperty('erreur');
-    if (typeof result === 'object' && result && 'erreur' in result) {
-      expect(result.erreur).toContain(
-        'An unexpected error occurred: Invalid arguments provided to finishTool.',
-      );
-    } else {
-      expect.fail('Expected an error object with an "erreur" property');
-    }
+    await expect(finishTool.execute(invalidArgs, mockCtx)).rejects.toThrow(
+      'An unexpected error occurred in finishTool: Invalid arguments provided to finishTool. A final answer is required.',
+    );
 
     // Verify that the error was logged
     expect(mockCtx.log.error).toHaveBeenCalled();

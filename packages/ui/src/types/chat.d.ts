@@ -1,41 +1,52 @@
-export interface UserMessage {
+interface BaseMessage {
+  id: string;
+}
+
+export interface UserMessage extends BaseMessage {
   type: 'user';
   content: string;
 }
 
-export interface AgentMessage {
+export interface AgentResponseMessage extends BaseMessage {
   type: 'agent_response';
   content: string;
 }
 
-export interface ToolStartMessage {
-  type: 'tool.start';
-  data: {
-    name: string;
-    args: unknown;
-  };
+export interface ToolCallMessage extends BaseMessage {
+  type: 'tool_call';
+  toolName: string;
+  params: Record<string, unknown>;
 }
 
-export interface ToolResultMessage {
+export interface ToolResultMessage extends BaseMessage {
   type: 'tool_result';
   toolName: string;
   result: unknown;
 }
 
-export interface ThoughtMessage {
+export interface AgentToolResult extends ToolResultMessage {
+  result: {
+    output: string;
+  };
+}
+
+export interface ThoughtMessage extends BaseMessage {
   type: 'agent_thought';
   content: string;
 }
 
-export interface ErrorMessage {
+export interface ErrorMessage extends BaseMessage {
   type: 'error';
   content: string;
 }
 
 export type ChatMessage =
   | UserMessage
-  | AgentMessage
-  | ToolStartMessage
+  | AgentResponseMessage
+  | ToolCallMessage
   | ToolResultMessage
+  | AgentToolResult
   | ThoughtMessage
   | ErrorMessage;
+
+export type NewChatMessage =  | { type: 'user'; content: string }  | { type: 'agent_response'; content: string }  | { type: 'tool_call'; toolName: string; params: Record<string, unknown> }  | { type: 'tool_result'; toolName: string; result: unknown }  | { type: 'agent_thought'; content: string }  | { type: 'error'; content: string };

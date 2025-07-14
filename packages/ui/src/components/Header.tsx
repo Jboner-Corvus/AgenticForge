@@ -4,7 +4,7 @@ import React, { memo, useState, useCallback } from 'react';
 import { fr } from '../constants/fr';
 import { Button } from './ui/button';
 import { Tooltip } from './ui/tooltip';
-import { UserMenu } from './UserMenu';
+
 import { Logo } from './Logo';
 
 interface HeaderProps {
@@ -50,12 +50,6 @@ export const Header: React.FC<HeaderProps> = memo(({
           </Button>
         </div>
         <Logo />
-        {/* Placeholder for main navigation */}
-        <nav className="hidden md:flex space-x-4">
-          <Button variant="ghost">Dashboard</Button>
-          <Button variant="ghost">Projects</Button>
-          <Button variant="ghost">Settings</Button>
-        </nav>
       </div>
 
       <div className="flex items-center space-x-4">
@@ -93,7 +87,6 @@ export const Header: React.FC<HeaderProps> = memo(({
         <Button variant="ghost" aria-label="Notifications">
           <Bell className="h-5 w-5" />
         </Button>
-        <UserMenu />
       </div>
     </header>
   );

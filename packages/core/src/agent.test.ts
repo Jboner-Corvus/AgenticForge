@@ -41,7 +41,9 @@ const mockedToolRegistryGetAll = toolRegistry.getAll as Mock;
 
 const mockFinishTool = {
   description: "Call this tool when the user's goal is accomplished.",
-  execute: vi.fn(async ({ response }: { response: string }) => ({ answer: response })),
+  execute: vi.fn(async ({ response }: { response: string }) => ({
+    answer: response,
+  })),
   name: 'finish',
   parameters: z.object({
     response: z.string().describe('The final, complete answer to the user.'),
@@ -56,7 +58,6 @@ const mockTestTool = {
     arg: z.string().describe('An argument for the test tool.'),
   }),
 };
-
 
 describe('Agent Integration Tests', () => {
   let agent: Agent;
@@ -79,6 +80,7 @@ describe('Agent Integration Tests', () => {
     mockJob = {
       data: { prompt: 'Test objective' },
       id: 'test-job-1',
+      isFailed: vi.fn().mockResolvedValue(false),
     } as unknown as Job;
 
     mockSession = {
@@ -131,7 +133,10 @@ describe('Agent Integration Tests', () => {
       )
       .mockResolvedValueOnce(
         JSON.stringify({
-          command: { name: 'finish', params: { response: 'intermediate step' } },
+          command: {
+            name: 'finish',
+            params: { response: 'intermediate step' },
+          },
           thought: 'I have the result, I should finish now.',
         }),
       )

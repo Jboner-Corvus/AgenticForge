@@ -1,13 +1,18 @@
+// packages/ui/vite.config.ts
+
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { defineConfig } from "vite";
-            import tailwindcss from "tailwindcss";
-      import autoprefixer from "autoprefixer";
+import tailwindcss from "tailwindcss";
+import autoprefixer from "autoprefixer";
 
 // https://vitejs.dev/config/
+// This configuration is now simplified for a production-only workflow.
+// The development server and proxy settings have been removed to eliminate ambiguity,
+// as Nginx handles all routing in the production Docker environment.
 export default defineConfig({
   build: {
-    minify: false,
+    minify: true, // Enabled for production
     rollupOptions: {
       output: {
         manualChunks: undefined,
@@ -19,27 +24,10 @@ export default defineConfig({
       plugins: [tailwindcss, autoprefixer],
     },
   },
-  define: {
-    "import.meta.env.VITE_AUTH_TOKEN": JSON.stringify(process.env.AUTH_TOKEN),
-  },
   plugins: [react()],
-  preview: {
-    host: true,
-    port: Number(process.env.WEB_PORT) || 3000,
-  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-    },
-  },
-  server: {
-    host: true,
-    proxy: {
-      '/api': {
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api'),
-        target: 'http://server:3001',
-      },
     },
   },
 });
