@@ -41,7 +41,7 @@ const mockedToolRegistryGetAll = toolRegistry.getAll as Mock;
 
 const mockFinishTool = {
   description: "Call this tool when the user's goal is accomplished.",
-  execute: vi.fn(async ({ response }: { response: string }) => response),
+  execute: vi.fn(async ({ response }: { response: string }) => ({ answer: response })),
   name: 'finish',
   parameters: z.object({
     response: z.string().describe('The final, complete answer to the user.'),
@@ -56,6 +56,7 @@ const mockTestTool = {
     arg: z.string().describe('An argument for the test tool.'),
   }),
 };
+
 
 describe('Agent Integration Tests', () => {
   let agent: Agent;
@@ -130,8 +131,14 @@ describe('Agent Integration Tests', () => {
       )
       .mockResolvedValueOnce(
         JSON.stringify({
-          command: { name: 'finish', params: { response: 'Final answer' } },
-          thought: 'I have the result, I can finish.',
+          command: { name: 'finish', params: { response: 'intermediate step' } },
+          thought: 'I have the result, I should finish now.',
+        }),
+      )
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          answer: 'Final answer',
+          thought: 'I have finished.',
         }),
       );
 
@@ -147,7 +154,7 @@ describe('Agent Integration Tests', () => {
     const finalResponse = await agent.run();
 
     expect(finalResponse).toBe('Final answer');
-    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(2);
+    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(3);
     expect(mockedToolRegistryExecute).toHaveBeenCalledWith(
       'test-tool',
       { arg: 'value' },
@@ -155,13 +162,17 @@ describe('Agent Integration Tests', () => {
     );
     expect(mockedToolRegistryExecute).toHaveBeenCalledWith(
       'finish',
-      { response: 'Final answer' },
+      { response: 'intermediate step' },
       expect.any(Object),
     );
     expect(mockSession.history).toEqual([
       { content: 'Test objective', role: 'user' },
       {
         content: 'Tool result: "tool result"',
+        role: 'model',
+      },
+      {
+        content: 'Tool result: {"answer":"intermediate step"}',
         role: 'model',
       },
     ]);
@@ -172,7 +183,7 @@ describe('Agent Integration Tests', () => {
       .mockResolvedValueOnce('This is not valid JSON')
       .mockResolvedValueOnce(
         JSON.stringify({
-          command: { name: 'finish', params: { response: 'Success' } },
+          answer: 'Success',
           thought: 'Okay, I will use JSON now.',
         }),
       );
@@ -184,7 +195,7 @@ describe('Agent Integration Tests', () => {
     expect(mockedGetLlmResponse).toHaveBeenCalledTimes(2);
     expect(mockSession.history).toContainEqual({
       content:
-        'Your last response was not a valid command. You must choose a tool from the list. Please try again.',
+        'Your last response was not a valid command. You must choose a tool from the list or provide a final answer. Please try again.',
       role: 'user',
     });
   });
@@ -240,10 +251,7 @@ describe('Agent Integration Tests', () => {
       )
       .mockResolvedValueOnce(
         JSON.stringify({
-          command: {
-            name: 'finish',
-            params: { response: 'Recovered from tool error' },
-          },
+          answer: 'Recovered from tool error',
           thought: 'The tool failed, but I can still finish.',
         }),
       );

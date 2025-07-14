@@ -14,6 +14,7 @@ import { llmProvider } from './utils/llmProvider.js';
 
 // Schéma Zod pour la réponse du LLM
 const llmResponseSchema = z.object({
+  answer: z.string().optional(),
   command: z
     .object({
       name: z.string(),
@@ -95,8 +96,8 @@ export class Agent {
 
         const parsedResponse = this.parseLlmResponse(llmResponse, iterationLog);
 
-        if (!parsedResponse || !parsedResponse.command) {
-          const errorMessage = `Your last response was not a valid command. You must choose a tool from the list. Please try again.`;
+        if (!parsedResponse) {
+          const errorMessage = `Your last response was not a valid command. You must choose a tool from the list or provide a final answer. Please try again.`;
           iterationLog.warn(errorMessage);
           this.session.history.push({
             content: errorMessage,
@@ -105,11 +106,20 @@ export class Agent {
           continue;
         }
 
-        const { command, thought } = parsedResponse;
+        const { answer, command, thought } = parsedResponse;
 
         if (thought) {
           iterationLog.info({ thought }, 'Agent thought');
           this.publishToChannel({ content: thought, type: 'agent_thought' });
+        }
+
+        if (answer) {
+          iterationLog.info({ answer }, 'Agent final answer');
+          this.publishToChannel({
+            content: answer,
+            type: 'agent_response',
+          });
+          return answer;
         }
 
         if (command) {
@@ -125,25 +135,12 @@ export class Agent {
 
           const toolResult = await this.executeTool(command, iterationLog);
 
-          if (command.name === 'finish') {
-            iterationLog.info(
-              'Finish tool detected, stopping agent execution.',
-            );
-            this.publishToChannel({
-              content: toolResult as string,
-              type: 'agent_response',
-            });
-            return toolResult as string;
-          }
-
           this.session.history.push({
             content: `Tool result: ${JSON.stringify(toolResult)}`,
             role: 'model',
           });
-        } else if (thought) {
-          return thought;
         } else {
-          iterationLog.warn('No command or thought from LLM.');
+          iterationLog.warn('No command or answer from LLM.');
           return "I'm not sure how to proceed.";
         }
       }
