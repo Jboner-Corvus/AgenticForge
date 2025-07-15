@@ -9,6 +9,15 @@ export const parameters = z.object({
 // The output is always a string, as errors will be thrown.
 export const finishOutput = z.string();
 
+export class FinishToolSignal extends Error {
+  public readonly response: string;
+  constructor(response: string) {
+    super(response);
+    this.name = 'FinishToolSignal';
+    this.response = response;
+  }
+}
+
 // Simplified Tool type, execute now returns a simple Promise<string>
 type FinishTool = {
   execute: (
@@ -29,7 +38,7 @@ export const finishTool: FinishTool = {
       const finalResponse = typeof args === 'string' ? args : args.response;
 
       ctx.log.info(`Goal accomplished: ${finalResponse}`);
-      return finalResponse;
+      throw new FinishToolSignal(finalResponse);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       ctx.log.error({ err: error }, `Error in finishTool: ${message}`);

@@ -1,7 +1,7 @@
 import { chromium, Page } from 'playwright';
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../types.js';
+import type { Ctx, Tool } from '../../types.js';
 
 export const parameters = z.object({
   url: z.string().url().describe('The URL to navigate to.'),
@@ -28,7 +28,7 @@ async function getPageContent(page: Page): Promise<string> {
 export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
   description:
     'Navigates to a URL using a headless Chromium browser and returns its textual content. Ideal for modern websites with JavaScript.',
-  execute: async (args, ctx: Ctx) => {
+  execute: async (args: z.infer<typeof parameters>, ctx: Ctx) => {
     ctx.log.info(`Navigating to URL: ${args.url}`);
     const browser = await chromium.launch({
       args: ['--no-sandbox', '--disable-setuid-sandbox'],

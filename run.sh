@@ -188,7 +188,7 @@ start_services() {
     
     # Passage explicite des variables d'environnement au worker pour garantir la bonne configuration.
     REDIS_URL="redis://127.0.0.1:${REDIS_PORT_STD}" \
-nohup pnpm --filter @agenticforge/core start:worker > worker.log 2>&1 &
+nohup pnpm --filter @agenticforge/core start:worker:dev > worker.log 2>&1 &
     
     WORKER_PID=$!
     echo $WORKER_PID > worker.pid

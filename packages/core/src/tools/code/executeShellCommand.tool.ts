@@ -1,9 +1,9 @@
 import { spawn } from 'child_process';
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../types.js';
+import type { Ctx, Tool } from '../../types.js';
 
-import { redis } from '../redisClient.js';
+import { redis } from '../../redisClient.js';
 
 export const executeShellCommandParams = z.object({
   command: z.string().describe('The shell command to execute.'),
@@ -21,7 +21,10 @@ export const executeShellCommandTool: Tool<
   typeof executeShellCommandOutput
 > = {
   description: 'Executes a shell command and streams its output in real-time.',
-  execute: async (args, ctx: Ctx) => {
+  execute: async (
+    args: z.infer<typeof executeShellCommandParams>,
+    ctx: Ctx,
+  ) => {
     try {
       return await new Promise((resolve) => {
         ctx.log.info(`Spawning shell command: ${args.command}`);
@@ -79,6 +82,6 @@ export const executeShellCommandTool: Tool<
       };
     }
   },
-  name: 'runShellCommand',
+  name: 'run_shell_command',
   parameters: executeShellCommandParams,
 };

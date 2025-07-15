@@ -73,12 +73,12 @@ export default function App() {
 
         <div className="flex-1 flex flex-col">
           {isProcessing && <LoadingSpinner />}
-          <div className="flex-1 p-4 overflow-y-auto">
+          <div className="flex-1 p-6 overflow-y-auto space-y-4">
             {messages.map((msg: ChatMessage) => (
               <Message key={msg.id} message={msg} />
             ))}
           </div>
-          <div className="p-4 border-t border-border flex items-center">
+          <div className="p-6 border-t border-border flex items-center">
             <label htmlFor="chat-input" className="sr-only">Type your message</label>
             <input
               id="chat-input"

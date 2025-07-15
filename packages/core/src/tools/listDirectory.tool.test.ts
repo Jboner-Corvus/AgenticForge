@@ -5,8 +5,8 @@ import path from 'path';
 import { describe, expect, it, Mock, vi } from 'vitest';
 
 import logger from '../../logger.js';
-import { Ctx, SessionData } from '../../types.js';
-import { listFilesTool } from './listFiles.tool.js';
+import { Ctx, SessionData } from '../../src/types.js';
+import { listFilesTool as listDirectoryTool } from './fs/listDirectory.tool.js';
 
 vi.mock('fs', () => ({
   promises: {
@@ -24,9 +24,8 @@ vi.mock('../../logger.js', () => ({
   },
 }));
 
-describe('listFilesTool', () => {
+describe('listDirectoryTool', () => {
   const mockCtx: Ctx = {
-    job: { id: 'test-job-id' } as Job,
     log: logger,
     reportProgress: vi.fn(),
     session: {} as SessionData,
@@ -47,7 +46,7 @@ describe('listFilesTool', () => {
     ];
     (fs.readdir as Mock).mockResolvedValueOnce(mockEntries);
 
-    const result = await listFilesTool.execute({ path: '.' }, mockCtx);
+    const result = await listDirectoryTool.execute({ path: '.' }, mockCtx);
     expect(result).toContain('file1.txt');
     expect(result).toContain('folder1/');
     expect(mockCtx.log.info).toHaveBeenCalledWith(
@@ -58,7 +57,7 @@ describe('listFilesTool', () => {
   it('should return a message for an empty directory', async () => {
     (fs.readdir as Mock).mockResolvedValueOnce([]);
 
-    const result = await listFilesTool.execute(
+    const result = await listDirectoryTool.execute(
       { path: 'empty_folder' },
       mockCtx,
     );
@@ -68,7 +67,7 @@ describe('listFilesTool', () => {
   it('should return an error if directory not found', async () => {
     (fs.readdir as Mock).mockRejectedValueOnce({ code: 'ENOENT' });
 
-    const result = await listFilesTool.execute(
+    const result = await listDirectoryTool.execute(
       { path: 'nonexistent_folder' },
       mockCtx,
     );
@@ -83,7 +82,7 @@ describe('listFilesTool', () => {
   it('should return an error for other file system errors', async () => {
     (fs.readdir as Mock).mockRejectedValueOnce(new Error('Permission denied'));
 
-    const result = await listFilesTool.execute({ path: '.' }, mockCtx);
+    const result = await listDirectoryTool.execute({ path: '.' }, mockCtx);
     expect(typeof result).toBe('object');
     if (typeof result === 'object' && result !== null && 'erreur' in result) {
       expect(result.erreur).toContain('Permission denied');

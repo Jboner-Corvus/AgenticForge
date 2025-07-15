@@ -15,12 +15,12 @@ export const AgentResponseBubble: React.FC<AgentResponseBubbleProps> = ({
   timestamp,
 }) => {
   return (
-    <div className="flex justify-start items-start gap-4 animate-fade-in" key={id}>
+    <div className="flex justify-start items-start gap-4 animate-slide-up" key={id}>
       <Avatar className="h-8 w-8">
         <AvatarImage src="/avatars/agent.png" alt="Agent Avatar" />
         <AvatarFallback>AI</AvatarFallback>
       </Avatar>
-      <div className="max-w-[70%] p-3 rounded-lg bg-card text-card-foreground">
+      <div className="max-w-[70%] p-3 rounded-lg bg-secondary text-secondary-foreground shadow-md">
         <div className="message-content prose prose-invert">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {content}

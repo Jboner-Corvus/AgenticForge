@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import logger from '../../logger.js';
 import { Ctx, SessionData } from '../types.js';
-import { agentResponseTool } from './agentResponse.tool.js';
+import { agentResponseTool } from './system/agentResponse.tool.js';
 
 vi.mock('../../logger.js', () => ({
   default: {
@@ -18,7 +18,6 @@ vi.mock('../../logger.js', () => ({
 
 describe('agentResponseTool', () => {
   const mockCtx: Ctx = {
-    job: { id: 'test-job-id' } as Job,
     log: logger,
     reportProgress: vi.fn(),
     session: {} as SessionData,

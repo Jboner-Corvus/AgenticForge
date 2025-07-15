@@ -7,6 +7,13 @@ import { z, ZodTypeAny } from 'zod';
 
 import logger from './logger.js';
 
+export interface MinimalJob {
+  id?: string;
+  data: any;
+  name: string;
+  isFailed(): Promise<boolean>;
+}
+
 export interface AgentProgress {
   current: number;
   total: number;
@@ -19,7 +26,7 @@ export interface AgentSession {
 }
 
 export type Ctx = {
-  job?: Job;
+  job?: MinimalJob;
   log: typeof logger;
   reportProgress?: (progress: AgentProgress) => Promise<void>;
   session?: SessionData;

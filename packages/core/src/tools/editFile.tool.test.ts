@@ -5,8 +5,8 @@ import path from 'path';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
 import logger from '../../logger.js';
-import { Ctx, SessionData } from '../../types.js';
-import { editFileTool } from './editFile.tool.js';
+import { Ctx, SessionData } from '../../src/types.js';
+import { editFileTool } from './fs/editFile.tool.js';
 
 vi.mock('fs', () => ({
   promises: {
@@ -29,7 +29,6 @@ vi.mock('../../logger.js', async () => {
 
 describe('editFileTool', () => {
   const mockCtx: Ctx = {
-    job: { id: 'test-job-id' } as Job,
     log: logger,
     reportProgress: vi.fn(),
     session: {} as SessionData,

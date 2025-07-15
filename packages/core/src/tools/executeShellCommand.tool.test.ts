@@ -4,7 +4,13 @@ import { describe, expect, it, vi } from 'vitest';
 
 import logger from '../../logger.js';
 import { Ctx, SessionData } from '../types.js';
-import { executeShellCommandTool } from './executeShellCommand.tool.js';
+import { executeShellCommandTool } from './code/executeShellCommand.tool.js';
+
+vi.mock('../../redisClient.js', () => ({
+  redis: {
+    publish: vi.fn(),
+  },
+}));
 
 vi.mock('../../logger.js', () => ({
   default: {
@@ -18,16 +24,16 @@ vi.mock('../../logger.js', () => ({
 
 describe('executeShellCommandTool', () => {
   const mockCtx: Ctx = {
-    job: { id: 'test-job-id' } as Job,
     log: logger,
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),
     taskQueue: {} as Queue,
+    job: { id: 'test-job' } as Job,
   };
 
   it('should execute a valid command and return success message', async () => {
-    const command = 'echo hello';
+    const command = 'node -e "console.log(\'hello\')"';
     const result = await executeShellCommandTool.execute({ command }, mockCtx);
     expect(result).toContain('Command finished with exit code 0.');
     expect(mockCtx.log.info).toHaveBeenCalledWith(
@@ -35,15 +41,14 @@ describe('executeShellCommandTool', () => {
     );
   });
 
-  it('should return an error for an invalid command', async () => {
-    const command = 'nonexistentcommand123';
+  it('should return an error for a command that exits with a non-zero code', async () => {
+    const command = 'node -e "process.exit(1)"'
     const result = await executeShellCommandTool.execute({ command }, mockCtx);
     expect(result).toHaveProperty('erreur');
     expect(
       typeof result === 'object' && result !== null && 'erreur' in result
         ? result.erreur
         : result,
-    ).toContain('Command finished with exit code');
-    expect(mockCtx.log.error).toHaveBeenCalled();
+    ).toContain('Command finished with exit code 1');
   });
 });

@@ -13,11 +13,12 @@ export const listFilesParams = z.object({
   path: z.string().default('.').describe('The subdirectory to list.'),
 });
 
-export const listFilesTool: Tool<typeof parameters> = {
+export const listFilesTool: Tool<typeof listFilesParams> = {
   description: 'Lists files and directories within the workspace.',
-  execute: async () => {
-    // ... reste de la logique inchangée
-    return 'List files executed.';
+  execute: async ({ input }: { input: { path: string } }) => {
+    const { path: dirPath } = input;
+    const files = await fs.readdir(path.join(WORKSPACE_DIR, dirPath));
+    return files.join('\n');
   },
   name: 'listFiles',
   parameters: listFilesParams,

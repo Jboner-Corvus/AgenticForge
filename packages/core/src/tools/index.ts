@@ -12,3 +12,4 @@ export const getAllTools = async (): Promise<
 };
 
 export type { Tool };
+export { FinishToolSignal } from './system/finish.tool.js';

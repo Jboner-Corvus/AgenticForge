@@ -52,12 +52,12 @@ export const listFilesTool: Tool<
           erreur: `Directory not found at path: workspace/${args.path}`,
         };
       }
-      ctx.log.error({ err: error }, `Failed to list files in: ${targetDir}`);
+      ctx.log.error(`Failed to list files in: ${targetDir}. Error: ${(error as Error).message}`);
       return {
         erreur: `Could not list files: ${(error as Error).message || error}`,
       };
     }
   },
-  name: 'listFiles',
+  name: 'list_directory',
   parameters: listFilesParams,
 };

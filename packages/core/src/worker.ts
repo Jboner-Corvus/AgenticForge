@@ -17,7 +17,10 @@ import logger from './logger.js';
 import { redis } from './redisClient.js';
 import { SessionManager } from './sessionManager.js';
 import { summarizeTool } from './tools/ai/summarize.tool.js';
-import { AgentProgress, Content, Ctx, Message, SessionData } from './types.js';
+import { getAllTools } from './tools/index.js'; // Import getAllTools
+import { AgentProgress, Content, Ctx, Message, SessionData, Tool } from './types.js';
+import { AppError, UserError } from './utils/errorUtils.js';
+import { z } from 'zod';
 
 console.log('Imports complete');
 console.log(
@@ -26,12 +29,15 @@ console.log(
 
 const jobQueue = new Queue('tasks', { connection: redis });
 
-export async function processJob(job: Job): Promise<string> {
+export async function processJob(
+  job: Job,
+  tools: Tool<z.AnyZodObject, z.ZodTypeAny>[],
+): Promise<string> {
   const { sessionId } = job.data;
   const log = logger.child({ jobId: job.id, sessionId });
 
   const sessionData = await SessionManager.getSession(sessionId);
-  const agent = new Agent(job, sessionData, jobQueue);
+  const agent = new Agent(job, sessionData, jobQueue, tools);
   const channel = `job:${job.id}:events`; // Définir le nom du canal une seule fois
 
   try {
@@ -44,15 +50,26 @@ export async function processJob(job: Job): Promise<string> {
 
     return finalResponse;
   } catch (error) {
-    const errorMessage = (error as Error).message;
+    const log = logger.child({ jobId: job.id, sessionId });
     log.error({ error }, 'Error in agent execution');
 
     let eventType = 'error';
-    let eventMessage = errorMessage;
+    let eventMessage: string;
 
-    if (errorMessage.includes('Quota exceeded')) {
-      eventType = 'quota_exceeded';
-      eventMessage = 'API quota exceeded. Please try again later.';
+    if (error instanceof AppError || error instanceof UserError) {
+      eventMessage = error.message;
+    } else if (error instanceof Error) {
+      eventMessage = error.message;
+      if (eventMessage.includes('Quota exceeded')) {
+        eventType = 'quota_exceeded';
+        eventMessage = 'API quota exceeded. Please try again later.';
+      } else if (eventMessage.includes('Gemini API request failed with status 500')) {
+        eventMessage = 'An internal error occurred with the LLM API. Please try again later or check your API key.';
+      } else if (eventMessage.includes('is not found for API version v1')) {
+        eventMessage = 'The specified LLM model was not found or is not supported. Please check your LLM_MODEL_NAME in .env.';
+      }
+    } else {
+      eventMessage = 'An unknown error occurred during agent execution.';
     }
 
     // En cas d'erreur, on peut aussi notifier le front
@@ -73,11 +90,12 @@ export async function processJob(job: Job): Promise<string> {
 
 export async function startWorker() {
   console.log('startWorker function called');
+  const tools = await getAllTools(); // Load all tools
   const _worker = new Worker(
     'tasks',
     async (job) => {
       logger.info(`Processing job ${job.id} of type ${job.name}`);
-      return processJob(job);
+      return processJob(job, tools);
     },
     {
       concurrency: config.WORKER_CONCURRENCY,

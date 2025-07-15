@@ -125,26 +125,15 @@ describe('Agent Integration Tests', () => {
 
   it('should follow the thought-command-result loop', async () => {
     mockedGetLlmResponse
+      mockedGetLlmResponse
       .mockResolvedValueOnce(
-        JSON.stringify({
-          command: { name: 'test-tool', params: { arg: 'value' } },
-          thought: 'I should use the test tool.',
-        }),
+        '\n```json\n{\n          "command": { "name": "test-tool", "params": { "arg": "value" } },\n          "thought": "I should use the test tool."\n}\n```\n'
       )
       .mockResolvedValueOnce(
-        JSON.stringify({
-          command: {
-            name: 'finish',
-            params: { response: 'intermediate step' },
-          },
-          thought: 'I have the result, I should finish now.',
-        }),
+        '\n```json\n{\n          "command": {\n            "name": "finish",\n            "params": { "response": "intermediate step" }\n          },\n          "thought": "I have the result, I should finish now."\n}\n```\n'
       )
       .mockResolvedValueOnce(
-        JSON.stringify({
-          answer: 'Final answer',
-          thought: 'I have finished.',
-        }),
+        '\n```json\n{\n          "answer": "Final answer",\n          "thought": "I have finished."\n}\n```\n'
       );
 
     mockedToolRegistryExecute.mockImplementation(async (name, params) => {
@@ -173,11 +162,26 @@ describe('Agent Integration Tests', () => {
     expect(mockSession.history).toEqual([
       { content: 'Test objective', role: 'user' },
       {
+        content:
+          '\n```json\n{\n          "command": { "name": "test-tool", "params": { "arg": "value" } },\n          "thought": "I should use the test tool."\n}\n```\n',
+        role: 'model',
+      },
+      {
         content: 'Tool result: "tool result"',
+        role: 'tool',
+      },
+      {
+        content:
+          '\n```json\n{\n          "command": {\n            "name": "finish",\n            "params": { "response": "intermediate step" }\n          },\n          "thought": "I have the result, I should finish now."\n}\n```\n',
         role: 'model',
       },
       {
         content: 'Tool result: {"answer":"intermediate step"}',
+        role: 'tool',
+      },
+      {
+        content:
+          '\n```json\n{\n          "answer": "Final answer",\n          "thought": "I have finished."\n}\n```\n',
         role: 'model',
       },
     ]);
@@ -187,10 +191,7 @@ describe('Agent Integration Tests', () => {
     mockedGetLlmResponse
       .mockResolvedValueOnce('This is not valid JSON')
       .mockResolvedValueOnce(
-        JSON.stringify({
-          answer: 'Success',
-          thought: 'Okay, I will use JSON now.',
-        }),
+        '\n```json\n{\n  "answer": "Success",\n  "thought": "Okay, I will use JSON now."\n}\n```\n'
       );
     mockedToolRegistryExecute.mockResolvedValue('Success');
 
@@ -200,18 +201,21 @@ describe('Agent Integration Tests', () => {
     expect(mockedGetLlmResponse).toHaveBeenCalledTimes(2);
     expect(mockSession.history).toContainEqual({
       content:
-        'Your last response was not a valid command. You must choose a tool from the list or provide a final answer. Please try again.',
+        'Your last response was not a valid command. You must choose a tool from the list or provide a final answer. Please try again. Last response: This is not valid JSON',
       role: 'user',
     });
   });
 
   it('should stop if it reaches max iterations', async () => {
-    mockedGetLlmResponse.mockResolvedValue(
-      JSON.stringify({
-        command: { name: 'test-tool', params: {} },
-        thought: 'Looping...',
-      }),
-    );
+    let i = 0;
+    mockedGetLlmResponse.mockImplementation(() => {
+      i++;
+      return Promise.resolve(
+        '\n```json\n{\n  "command": { "name": "test-tool", "params": { "count": ' +
+          i +
+          ' } },\n  "thought": "Looping..."\n}\n```\n',
+      );
+    });
     mockedToolRegistryExecute.mockResolvedValue('looping result');
 
     const finalResponse = await agent.run();
@@ -229,10 +233,7 @@ describe('Agent Integration Tests', () => {
         onMessageCallback(`job:${mockJob.id}:interrupt`, 'interrupt');
       }
       await vi.advanceTimersByTimeAsync(10); // Allow event loop to process interruption
-      return JSON.stringify({
-        command: { name: 'test-tool', params: {} },
-        thought: 'Still looping...',
-      });
+      return `\n\`\`\`json\n{\n  "command": { "name": "test-tool", "params": {} },\n  "thought": "Still looping..."\n}\n\`\`\`\n`;
     });
 
     const finalResponse = await agent.run();
@@ -249,16 +250,10 @@ describe('Agent Integration Tests', () => {
     const errorMessage = 'Error during tool execution';
     mockedGetLlmResponse
       .mockResolvedValueOnce(
-        JSON.stringify({
-          command: { name: 'test-tool', params: { arg: 'fail' } },
-          thought: 'I will try to use the tool, but it might fail.',
-        }),
+        `\n\`\`\`json\n{\n  "command": { "name": "test-tool", "params": { "arg": "fail" } },\n  "thought": "I will try to use the tool, but it might fail."\n}\n\`\`\`\n`
       )
       .mockResolvedValueOnce(
-        JSON.stringify({
-          answer: 'Recovered from tool error',
-          thought: 'The tool failed, but I can still finish.',
-        }),
+        `\n\`\`\`json\n{\n  "answer": "Recovered from tool error",\n  "thought": "The tool failed, but I can still finish."\n}\n\`\`\`\n`
       );
 
     mockedToolRegistryExecute

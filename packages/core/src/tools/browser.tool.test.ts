@@ -5,7 +5,7 @@ import { describe, expect, it, Mock, vi } from 'vitest';
 
 import logger from '../logger.js';
 import { Ctx, SessionData } from '../types.js';
-import { browserTool } from './browser.tool.js';
+import { browserTool } from './web/browser.tool.js';
 
 vi.mock('playwright', () => ({
   chromium: {
@@ -31,7 +31,6 @@ vi.mock('../logger.js', () => ({
 
 describe('browserTool', () => {
   const mockCtx: Ctx = {
-    job: { id: 'test-job-id' } as Job,
     log: logger,
     reportProgress: vi.fn(),
     session: {} as SessionData,

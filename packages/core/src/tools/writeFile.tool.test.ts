@@ -5,8 +5,8 @@ import path from 'path';
 import { describe, expect, it, Mock, vi } from 'vitest';
 
 import logger from '../../logger.js';
-import { Ctx, SessionData } from '../../types.js';
-import { writeFileTool } from './writeFile.tool.js';
+import { Ctx, SessionData } from '../../src/types.js';
+import { writeFile as writeFileTool } from './fs/writeFile.tool.js';
 
 vi.mock('fs', () => ({
   promises: {
@@ -29,7 +29,6 @@ vi.mock('../../logger.js', () => ({
 
 describe('writeFileTool', () => {
   const mockCtx: Ctx = {
-    job: { id: 'test-job-id' } as Job,
     log: logger,
     reportProgress: vi.fn(),
     session: {} as SessionData,
@@ -60,7 +59,7 @@ describe('writeFileTool', () => {
       content,
       'utf-8',
     );
-    expect(result).toBe(`Successfully wrote content to ${filePath}.`);
+    expect(result).toEqual({ message: `Successfully wrote content to ${filePath}.` });
   });
 
   it('should overwrite content in an existing file', async () => {
@@ -76,7 +75,7 @@ describe('writeFileTool', () => {
       content,
       'utf-8',
     );
-    expect(result).toBe(`Successfully wrote content to ${filePath}.`);
+    expect(result).toEqual({ message: `Successfully wrote content to ${filePath}.` });
   });
 
   it('should not write if content is identical', async () => {
@@ -88,9 +87,9 @@ describe('writeFileTool', () => {
       mockCtx,
     );
     expect(fs.writeFile).not.toHaveBeenCalled();
-    expect(result).toBe(
-      `File ${filePath} already contains the desired content. No changes made.`,
-    );
+    expect(result).toEqual({
+      message: `File ${filePath} already contains the desired content. No changes made.`,
+    });
   });
 
   it('should return an error if file writing fails', async () => {

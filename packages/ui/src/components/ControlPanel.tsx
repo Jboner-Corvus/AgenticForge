@@ -65,7 +65,7 @@ export const ControlPanel = memo(() => {
       style={{ width }}
     >
       <div className="absolute top-0 right-0 w-2 h-full cursor-col-resize" onMouseDown={handleDragStart} />
-      <Card className="bg-card border-border text-foreground">
+      <Card className="bg-card border-border text-foreground shadow-lg">
         <CardHeader>
           <CardTitle className="text-lg font-semibold">{fr.controlPanel}</CardTitle>
         </CardHeader>
@@ -82,7 +82,7 @@ export const ControlPanel = memo(() => {
               </div>
               <div className="flex justify-between items-center">
                 <Label className="text-sm flex items-center"><Server className="mr-2 h-4 w-4" />{fr.connectionStatus}</Label>
-                <Badge variant={serverHealthy ? 'default' : 'destructive'}>
+                <Badge variant={serverHealthy ? 'success' : 'destructive'}>
                   {serverHealthy ? fr.online : fr.offline}
                 </Badge>
               </div>
