@@ -1,4 +1,5 @@
-FROM mcr.microsoft.com/playwright:v1.53.2-jammy
+# Stage 1: Builder
+FROM mcr.microsoft.com/playwright:v1.53.2-jammy AS builder
 
 WORKDIR /usr/src/app
 
@@ -10,15 +11,26 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY tsconfig.base.json tsconfig.json ./
 COPY packages/ packages/
 
-# Install all dependencies
+# Installer toutes les dépendances
 RUN pnpm install --prod=false
-
-# SUPPRIMEZ la ligne "RUN npx playwright install --with-deps" car la nouvelle image l'inclut déjà
 
 # Copier le reste du code
 COPY . .
-# Compiler le projet depuis la racine
-RUN pnpm --filter @agenticforge/core build
+
+# Construire le projet
+RUN pnpm build
+
+# Stage 2: Production
+FROM mcr.microsoft.com/playwright:v1.53.2-jammy
+
+WORKDIR /usr/src/app
+
+# Copier les dépendances de production depuis le builder
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY --from=builder /usr/src/app/packages ./packages
+
+# Copier les fichiers de package.json pour exécuter les commandes
+COPY package.json .
 
 EXPOSE 8080 3000
 
