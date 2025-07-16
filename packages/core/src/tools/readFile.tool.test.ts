@@ -26,6 +26,7 @@ vi.mock('../../logger.js', () => ({
 describe('readFileTool', () => {
   const mockCtx: Ctx = {
     log: logger,
+    llm: {} as any,
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),

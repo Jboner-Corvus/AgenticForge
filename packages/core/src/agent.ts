@@ -10,7 +10,8 @@ import { redis } from './redisClient.js';
 import { toolRegistry } from './toolRegistry.js';
 import { getAllTools, FinishToolSignal } from './tools/index.js';
 import { AgentProgress, Ctx, SessionData, Tool } from './types.js';
-import { llmProvider, LLMContent } from './utils/llmProvider.js';
+import { llmProvider } from './utils/llmProvider.js';
+import { LLMContent } from './llm-types.js';
 
 // Schéma Zod pour la réponse du LLM
 const llmResponseSchema = z.object({
@@ -223,6 +224,7 @@ export class Agent {
     return {
       job: this.job,
       log,
+      llm: llmProvider,
       reportProgress: async (progress: AgentProgress) => {
         log.debug(
           `Tool progress: ${progress.current}/${progress.total} ${

@@ -1,12 +1,6 @@
-// src/utils/llmProvider.ts (version corrigée et robuste)
-
 import { config } from '../config.js';
 import logger from '../logger.js';
-
-export interface LLMContent {
-  parts: { text: string }[];
-  role: 'model' | 'user';
-}
+import { LLMContent } from '../llm-types.js';
 
 interface LLMProvider {
   getLlmResponse(

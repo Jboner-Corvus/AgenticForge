@@ -39,6 +39,7 @@ describe('createToolTool', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCtx = {
+      llm: {} as any,
       log: logger,
       reportProgress: vi.fn(),
       session: {} as SessionData,

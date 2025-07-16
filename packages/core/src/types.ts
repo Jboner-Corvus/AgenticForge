@@ -25,9 +25,12 @@ export interface AgentSession {
   id: string;
 }
 
+import type { LLMContent } from './llm-types.js';
+
 export type Ctx = {
   job?: MinimalJob;
   log: typeof logger;
+  llm: ILlmProvider; // <-- AJOUTEZ OU MODIFIEZ CETTE LIGNE
   reportProgress?: (progress: AgentProgress) => Promise<void>;
   session?: SessionData;
   streamContent?: (content: Content | Content[]) => Promise<void>;
@@ -38,6 +41,14 @@ export interface Message {
   content: string;
   role: 'model' | 'tool' | 'user';
 }
+
+interface ILlmProvider {
+  getLlmResponse(
+    messages: LLMContent[],
+    systemPrompt?: string,
+  ): Promise<string>;
+}
+
 
 export interface SessionData {
   [key: string]: unknown;

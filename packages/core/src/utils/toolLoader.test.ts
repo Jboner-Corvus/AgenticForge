@@ -30,6 +30,7 @@ const mockQueue: Partial<Queue> = {
 
 // Mock complet et typé pour le contexte Ctx
 const mockCtx: _Ctx = {
+  llm: {} as any,
   log: mockLogger as typeof logger,
   reportProgress: vi.fn(),
   session: undefined,

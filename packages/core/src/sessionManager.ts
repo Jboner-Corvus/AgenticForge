@@ -6,6 +6,7 @@ import logger from './logger.js';
 import { redis } from './redisClient.js';
 import { summarizeTool } from './tools/ai/summarize.tool.js';
 import { AgentProgress, Ctx, Message, SessionData } from './types.js';
+import { llmProvider } from './utils/llmProvider.js';
 
 const SESSION_EXPIRATION = 7 * 24 * 60 * 60; // 7 days
 
@@ -61,6 +62,7 @@ export class SessionManager {
     return {
       job,
       log,
+      llm: llmProvider,
       reportProgress: async (progress: AgentProgress) => {
         log.debug(
           `Tool progress: ${progress.current}/${progress.total} ${

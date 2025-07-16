@@ -34,6 +34,7 @@ describe('webSearchTool', () => {
 
     mockCtx = {
       job: { id: 'test-job-id' } as Job,
+      llm: {} as any,
       log: logger,
       reportProgress: vi.fn(),
       session: {} as SessionData,

@@ -29,6 +29,7 @@ vi.mock('../../logger.js', () => ({
 
 describe('writeFileTool', () => {
   const mockCtx: Ctx = {
+    llm: {} as any,
     log: logger,
     reportProgress: vi.fn(),
     session: {} as SessionData,

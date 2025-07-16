@@ -1,33 +1,33 @@
+// FICHIER : packages/core/tools/ai/generate.tool.ts
+
 import { z } from 'zod';
-import { Tool } from '../../types.js';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { Tool, Ctx } from '../../types.js'; // Assurez-vous que Ctx est bien importé ici
 
-const execAsync = promisify(exec);
+export const generateParams = z.object({
+  prompt: z.string().describe('Le texte à envoyer au modèle AI pour génération.'),
+});
 
-const generateTool: Tool<typeof z.any, typeof z.any> = {
+const generateTool: Tool<typeof generateParams, string> = {
   name: 'generate',
-  description: 'Generates content using the Gemini API.',
-  inputSchema: z.object({
-    prompt: z.string(),
-  }),
-  outputSchema: z.any(),
-  async execute({ input }) {
-    const { prompt } = input;
-    const scriptPath = 'packages/core/tools/ai/generate.py';
-    const command = `python3 ${scriptPath} "${prompt}"`;
-
+  description: 'Génère du texte basé sur un prompt donné en utilisant le modèle AI configuré.',
+  execute: async (args, ctx: Ctx) => {
     try {
-      const { stdout, stderr } = await execAsync(command);
-      if (stderr) {
-        throw new Error(stderr);
-      }
-      return stdout;
+      // Appelle directement la méthode de génération de texte du fournisseur LLM.
+      // Ctx.llm est l'instance du GeminiProvider déjà configuré.
+      const llmResponse = await ctx.llm.getLlmResponse([
+        { parts: [{ text: args.prompt }], role: 'user' },
+      ]);
+      return llmResponse;
+
     } catch (error) {
-      console.error(error);
-      throw error;
+      ctx.log.error(
+        `[generateTool] Erreur lors de la génération de texte via LLM direct: ${(error as Error).message}`,
+        { prompt: args.prompt, error: (error as Error).stack }
+      );
+      return `Erreur: Échec de la génération de texte avec le modèle AI. Détails: ${(error as Error).message}`;
     }
   },
+  parameters: generateParams,
 };
 
 export default generateTool;

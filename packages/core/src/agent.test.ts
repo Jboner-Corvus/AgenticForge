@@ -41,8 +41,8 @@ const mockedToolRegistryGetAll = toolRegistry.getAll as Mock;
 
 const mockFinishTool = {
   description: "Call this tool when the user's goal is accomplished.",
-  execute: vi.fn(async ({ response }: { response: string }) => ({
-    answer: response,
+  execute: vi.fn(async (args: { [x: string]: any; }) => ({
+    answer: args.response,
   })),
   name: 'finish',
   parameters: z.object({
@@ -52,7 +52,7 @@ const mockFinishTool = {
 
 const mockTestTool = {
   description: 'A test tool.',
-  execute: vi.fn(async (_params: { arg: string }) => 'tool result'),
+  execute: vi.fn(async (_params: { [x: string]: any; }) => 'tool result'),
   name: 'test-tool',
   parameters: z.object({
     arg: z.string().describe('An argument for the test tool.'),
@@ -112,7 +112,7 @@ describe('Agent Integration Tests', () => {
     (redis.duplicate as Mock).mockReturnValue(mockRedisSubscriber);
     (redis.publish as Mock).mockResolvedValue(1);
 
-    agent = new Agent(mockJob, mockSession, mockQueue);
+    agent = new Agent(mockJob, mockSession, mockQueue, [mockTestTool, mockFinishTool]);
 
     mockedGetAllTools.mockResolvedValue([mockTestTool, mockFinishTool]);
     mockedToolRegistryGetAll.mockReturnValue([mockTestTool, mockFinishTool]);

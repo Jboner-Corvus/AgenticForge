@@ -32,6 +32,7 @@ vi.mock('../logger.js', () => ({
 describe('browserTool', () => {
   const mockCtx: Ctx = {
     log: logger,
+    llm: {} as any,
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),

@@ -23,6 +23,7 @@ vi.mock('../../logger.js', () => ({
 
 describe('listToolsTool', () => {
   const mockCtx: Ctx = {
+    llm: {} as any,
     log: logger,
     reportProgress: vi.fn(),
     session: {} as SessionData,

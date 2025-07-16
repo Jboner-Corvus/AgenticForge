@@ -19,6 +19,7 @@ vi.mock('../../logger.js', () => ({
 describe('agentResponseTool', () => {
   const mockCtx: Ctx = {
     log: logger,
+    llm: {} as any,
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),
