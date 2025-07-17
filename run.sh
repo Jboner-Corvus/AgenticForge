@@ -171,6 +171,9 @@ start_services() {
         fi
     fi
 
+    echo -e "${COLOR_YELLOW}Construction du package 'core' (si nécessaire)...${NC}"
+    pnpm --filter @agenticforge/core build
+
     echo -e "${COLOR_YELLOW}Démarrage des services Docker...${NC}"
     DOCKER_COMPOSE_FILES="docker-compose.yml"
     docker compose -f $DOCKER_COMPOSE_FILES up -d
@@ -181,14 +184,11 @@ start_services() {
         return 1
     fi
     
-    echo -e "${COLOR_YELLOW}Construction du package 'core' (si nécessaire)...${NC}"
-    pnpm --filter @agenticforge/core build
-    
     echo -e "${COLOR_YELLOW}Démarrage du worker local...${NC}"
     
     # Passage explicite des variables d'environnement au worker pour garantir la bonne configuration.
-    REDIS_URL="redis://127.0.0.1:${REDIS_PORT_STD}" \
-nohup pnpm --filter @agenticforge/core start:worker:dev > worker.log 2>&1 &
+    NODE_ENV=production REDIS_URL="redis://127.0.0.1:${REDIS_PORT_STD}" \
+nohup pnpm --filter @agenticforge/core start:worker > worker.log 2>&1 &
     
     WORKER_PID=$!
     echo $WORKER_PID > worker.pid

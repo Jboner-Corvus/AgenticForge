@@ -14,9 +14,10 @@ export const Logo: React.FC = () => {
         strokeLinejoin="round"
         className="text-primary"
       >
-        <path d="M12 2L2 7l10 5 10-5-10-5z" />
-        <path d="M2 17l10 5 10-5" />
-        <path d="M2 12l10 5 10-5" />
+        <path d="M14 2L18 6L14 10L10 6L14 2Z" />
+        <path d="M10 6L6 2L2 6L6 10L10 6Z" />
+        <path d="M14 10L18 14L14 18L10 14L14 10Z" />
+        <path d="M10 14L6 18L2 14L6 10L10 14Z" />
       </svg>
       <span className="text-xl font-bold">Agentic Forge</span>
     </div>

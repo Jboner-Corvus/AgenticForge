@@ -16,7 +16,7 @@ export const AgentThoughtBubble: React.FC<ThoughtBubbleProps> = ({ content, time
 
   return (
     <Card
-      className="bg-muted border-border text-muted-foreground my-2 animate-fade-in cursor-pointer hover:bg-accent"
+      className="bg-muted/30 border-border text-muted-foreground my-2 animate-fade-in cursor-pointer hover:bg-muted/60"
       onClick={toggleExpansion}
     >
       <CardContent className="p-2 flex items-center space-x-2">
@@ -25,7 +25,7 @@ export const AgentThoughtBubble: React.FC<ThoughtBubbleProps> = ({ content, time
           {isExpanded ? (
             <p className="text-sm">{content}</p>
           ) : (
-            <p className="text-sm italic">L'agent réfléchit... (cliquer pour voir)</p>
+            <p className="text-sm italic">The agent is thinking... (click to expand)</p>
           )}
           {timestamp && (
             <div className="text-xs text-muted-foreground mt-1">

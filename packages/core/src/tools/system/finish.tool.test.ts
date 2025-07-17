@@ -2,8 +2,8 @@ import { Job, Queue } from 'bullmq';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import logger from '../../logger.js';
-import { Ctx, SessionData } from '../../types.js';
-import { finishTool } from './finish.tool.js';
+import { Ctx, ILlmProvider, SessionData } from '../../types.js';
+import { finishTool, FinishToolSignal } from './finish.tool.js';
 
 // Mock the logger
 vi.mock('../../logger.js', () => ({
@@ -23,7 +23,7 @@ describe('finishTool', () => {
     vi.clearAllMocks();
     mockCtx = {
       job: { id: 'test-job-id' } as Job,
-      llm: {} as any,
+      llm: {} as ILlmProvider,
       log: logger,
       reportProgress: vi.fn(),
       session: {} as SessionData,
@@ -32,19 +32,21 @@ describe('finishTool', () => {
     };
   });
 
-  it('should return the final response string when called with an object', async () => {
+  it('should throw a FinishToolSignal with the final response when called with an object', async () => {
     const response = 'Goal achieved!';
-    const result = await finishTool.execute({ response }, mockCtx);
-    expect(result).toBe(response);
+    await expect(finishTool.execute({ response }, mockCtx)).rejects.toThrow(
+      new FinishToolSignal(response),
+    );
     expect(mockCtx.log.info).toHaveBeenCalledWith(
       `Goal accomplished: ${response}`,
     );
   });
 
-  it('should return the final response string when called with a string', async () => {
+  it('should throw a FinishToolSignal with the final response when called with a string', async () => {
     const response = 'Direct goal achieved!';
-    const result = await finishTool.execute(response, mockCtx);
-    expect(result).toBe(response);
+    await expect(finishTool.execute(response, mockCtx)).rejects.toThrow(
+      new FinishToolSignal(response),
+    );
     expect(mockCtx.log.info).toHaveBeenCalledWith(
       `Goal accomplished: ${response}`,
     );
@@ -53,8 +55,8 @@ describe('finishTool', () => {
   it('should return an error message if args are invalid', async () => {
     // Using `any` here is intentional to test the runtime handling of invalid arguments,
     // which is not possible with strict static types.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const invalidArgs = null as any;
+
+    const invalidArgs = null as unknown as { response: string };
     await expect(finishTool.execute(invalidArgs, mockCtx)).rejects.toThrow(
       'An unexpected error occurred in finishTool: Invalid arguments provided to finishTool. A final answer is required.',
     );

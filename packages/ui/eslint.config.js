@@ -11,8 +11,6 @@ export default tseslint.config([
     extends: [
       js.configs.recommended,
       ...tseslint.configs.recommended,
-      reactHooks.configs['recommended-latest'],
-      reactRefresh.configs.vite,
     ],
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -23,8 +21,15 @@ export default tseslint.config([
         project: './tsconfig.eslint.json',
       },
     },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
     rules: {
-      "@typescript-eslint/no-unused-vars": "off",
+      '@typescript-eslint/no-unused-vars': 'off',
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+      'react-refresh/only-export-components': 'warn',
     },
   },
 ])

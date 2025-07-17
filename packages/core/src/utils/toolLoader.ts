@@ -75,7 +75,11 @@ async function findToolFiles(
   let files: string[] = [];
   logger.info(`[findToolFiles] Scanning directory: ${dir}`);
   try {
+    logger.info(`[findToolFiles] About to read directory: ${dir}`);
     const entries = await fs.readdir(dir, { withFileTypes: true });
+    logger.info(
+      `[findToolFiles] Found entries: ${entries.map((e) => e.name).join(', ')}`,
+    );
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {

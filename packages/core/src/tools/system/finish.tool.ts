@@ -9,6 +9,14 @@ export const parameters = z.object({
 // The output is always a string, as errors will be thrown.
 export const finishOutput = z.string();
 
+// Simplified Tool type, execute now returns a simple Promise<string>
+type FinishTool = {
+  execute: (
+    args: string | z.infer<typeof parameters>,
+    ctx: Ctx,
+  ) => Promise<string>;
+} & Tool<typeof parameters, typeof finishOutput>;
+
 export class FinishToolSignal extends Error {
   public readonly response: string;
   constructor(response: string) {
@@ -17,14 +25,6 @@ export class FinishToolSignal extends Error {
     this.response = response;
   }
 }
-
-// Simplified Tool type, execute now returns a simple Promise<string>
-type FinishTool = {
-  execute: (
-    args: string | z.infer<typeof parameters>,
-    ctx: Ctx,
-  ) => Promise<string>;
-} & Tool<typeof parameters, typeof finishOutput>;
 
 export const finishTool: FinishTool = {
   description: "Call this tool when the user's goal is accomplished.",
@@ -40,9 +40,11 @@ export const finishTool: FinishTool = {
       ctx.log.info(`Goal accomplished: ${finalResponse}`);
       throw new FinishToolSignal(finalResponse);
     } catch (error: unknown) {
+      if (error instanceof FinishToolSignal) {
+        throw error;
+      }
       const message = error instanceof Error ? error.message : String(error);
       ctx.log.error({ err: error }, `Error in finishTool: ${message}`);
-      // Throw an error instead of returning an error object
       throw new Error(`An unexpected error occurred in finishTool: ${message}`);
     }
   },

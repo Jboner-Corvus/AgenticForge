@@ -1,11 +1,11 @@
-import { Job, Queue } from 'bullmq';
+import { Queue } from 'bullmq';
 /// <reference types="vitest/globals" />
 import { promises as fs } from 'fs';
 import path from 'path';
 import { describe, expect, it, Mock, vi } from 'vitest';
 
 import logger from '../../logger.js';
-import { Ctx, SessionData } from '../../src/types.js';
+import { Ctx, ILlmProvider, SessionData } from '../../src/types.js';
 import { listFilesTool as listDirectoryTool } from './fs/listDirectory.tool.js';
 
 vi.mock('fs', () => ({
@@ -26,8 +26,8 @@ vi.mock('../../logger.js', () => ({
 
 describe('listDirectoryTool', () => {
   const mockCtx: Ctx = {
+    llm: {} as ILlmProvider,
     log: logger,
-    llm: {} as any,
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),

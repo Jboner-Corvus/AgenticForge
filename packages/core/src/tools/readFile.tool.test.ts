@@ -1,10 +1,10 @@
 /// <reference types="vitest/globals" />
-import { Job, Queue } from 'bullmq';
+import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
 import { describe, expect, it, Mock, vi } from 'vitest';
 
 import logger from '../../logger.js';
-import { Ctx, SessionData } from '../../src/types.js';
+import { Ctx, ILlmProvider, SessionData } from '../../src/types.js';
 import { readFileTool } from './fs/readFile.tool.js';
 
 vi.mock('fs', () => ({
@@ -25,8 +25,8 @@ vi.mock('../../logger.js', () => ({
 
 describe('readFileTool', () => {
   const mockCtx: Ctx = {
+    llm: {} as ILlmProvider,
     log: logger,
-    llm: {} as any,
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),
@@ -51,7 +51,7 @@ describe('readFileTool', () => {
 
   it('should read a specific range of lines', async () => {
     const result = await readFileTool.execute(
-      { end_line: 4, path: mockFilePath, start_line: 2 } as any,
+      { end_line: 4, path: mockFilePath, start_line: 2 },
       mockCtx,
     );
     expect(result).toBe(
@@ -61,7 +61,7 @@ describe('readFileTool', () => {
 
   it('should read a single line if only start_line is provided', async () => {
     const result = await readFileTool.execute(
-      { path: mockFilePath, start_line: 3 } as any,
+      { path: mockFilePath, start_line: 3 },
       mockCtx,
     );
     expect(result).toBe(`Content of ${mockFilePath} (lines 3-3):\n\nLine 3`);

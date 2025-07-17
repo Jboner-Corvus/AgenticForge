@@ -1,0 +1,45 @@
+
+export const theme = {
+  colors: {
+    primary: 'hsl(240, 5.9%, 10%)',
+    secondary: 'hsl(240, 4.8%, 95.9%)',
+    accent: 'hsl(240, 5.9%, 10%)',
+    background: 'hsl(0, 0%, 100%)',
+    text: 'hsl(240, 5.9%, 10%)',
+    border: 'hsl(240, 5.9%, 90%)',
+    success: 'hsl(142.1, 76.2%, 36.3%)',
+    warning: 'hsl(47.9, 95.8%, 53.1%)',
+    error: 'hsl(0, 84.2%, 60.2%)',
+    info: 'hsl(217.2, 91.2%, 59.8%)',
+  },
+  fonts: {
+    body: 'Inter, sans-serif',
+    heading: 'Inter, sans-serif',
+  },
+  fontSizes: {
+    xs: '0.75rem',
+    sm: '0.875rem',
+    md: '1rem',
+    lg: '1.125rem',
+    xl: '1.25rem',
+    '2xl': '1.5rem',
+    '3xl': '1.875rem',
+    '4xl': '2.25rem',
+    '5xl': '3rem',
+    '6xl': '4rem',
+  },
+  spacing: {
+    xs: '0.25rem',
+    sm: '0.5rem',
+    md: '1rem',
+    lg: '1.5rem',
+    xl: '2rem',
+    '2xl': '3rem',
+  },
+  radii: {
+    sm: '0.25rem',
+    md: '0.5rem',
+    lg: '1rem',
+    full: '9999px',
+  },
+};

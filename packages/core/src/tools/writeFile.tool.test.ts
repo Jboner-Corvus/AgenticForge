@@ -1,11 +1,11 @@
-import { Job, Queue } from 'bullmq';
+import { Queue } from 'bullmq';
 /// <reference types="vitest/globals" />
 import { promises as fs } from 'fs';
 import path from 'path';
 import { describe, expect, it, Mock, vi } from 'vitest';
 
 import logger from '../../logger.js';
-import { Ctx, SessionData } from '../../src/types.js';
+import { Ctx, ILlmProvider, SessionData } from '../../src/types.js';
 import { writeFile as writeFileTool } from './fs/writeFile.tool.js';
 
 vi.mock('fs', () => ({
@@ -29,7 +29,7 @@ vi.mock('../../logger.js', () => ({
 
 describe('writeFileTool', () => {
   const mockCtx: Ctx = {
-    llm: {} as any,
+    llm: {} as ILlmProvider,
     log: logger,
     reportProgress: vi.fn(),
     session: {} as SessionData,
@@ -60,7 +60,9 @@ describe('writeFileTool', () => {
       content,
       'utf-8',
     );
-    expect(result).toEqual({ message: `Successfully wrote content to ${filePath}.` });
+    expect(result).toEqual({
+      message: `Successfully wrote content to ${filePath}.`,
+    });
   });
 
   it('should overwrite content in an existing file', async () => {
@@ -76,7 +78,9 @@ describe('writeFileTool', () => {
       content,
       'utf-8',
     );
-    expect(result).toEqual({ message: `Successfully wrote content to ${filePath}.` });
+    expect(result).toEqual({
+      message: `Successfully wrote content to ${filePath}.`,
+    });
   });
 
   it('should not write if content is identical', async () => {

@@ -5,7 +5,7 @@ import path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type logger from '../logger.js'; // Import logger type
-import type { Ctx as _Ctx } from '../types.js';
+import type { Ctx as _Ctx, ILlmProvider } from '../types.js';
 
 import { toolRegistry } from '../toolRegistry.js';
 import { _resetTools, getTools } from './toolLoader.js';
@@ -30,7 +30,7 @@ const mockQueue: Partial<Queue> = {
 
 // Mock complet et typé pour le contexte Ctx
 const mockCtx: _Ctx = {
-  llm: {} as any,
+  llm: {} as ILlmProvider,
   log: mockLogger as typeof logger,
   reportProgress: vi.fn(),
   session: undefined,

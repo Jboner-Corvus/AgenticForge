@@ -1,10 +1,10 @@
-import { Job, Queue } from 'bullmq';
+import { Queue } from 'bullmq';
 import { chromium } from 'playwright';
 /// <reference types="vitest/globals" />
 import { describe, expect, it, Mock, vi } from 'vitest';
 
 import logger from '../logger.js';
-import { Ctx, SessionData } from '../types.js';
+import { Ctx, ILlmProvider, SessionData } from '../types.js';
 import { browserTool } from './web/browser.tool.js';
 
 vi.mock('playwright', () => ({
@@ -31,8 +31,8 @@ vi.mock('../logger.js', () => ({
 
 describe('browserTool', () => {
   const mockCtx: Ctx = {
+    llm: {} as ILlmProvider,
     log: logger,
-    llm: {} as any,
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),

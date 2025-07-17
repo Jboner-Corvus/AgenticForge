@@ -61,8 +61,8 @@ export class SessionManager {
   ): Ctx {
     return {
       job,
-      log,
       llm: llmProvider,
+      log,
       reportProgress: async (progress: AgentProgress) => {
         log.debug(
           `Tool progress: ${progress.current}/${progress.total} ${

@@ -4,7 +4,7 @@ import { ChildProcess, exec, ExecException } from 'child_process';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import logger from '../../logger.js';
-import { Ctx, SessionData } from '../../types.js';
+import { Ctx, ILlmProvider, SessionData } from '../../types.js';
 import { executeDevCommandTool } from './executeDevCommand.tool.js';
 
 vi.mock('../../logger.js', () => ({
@@ -24,8 +24,8 @@ vi.mock('child_process', () => ({
 describe('executeDevCommandTool', () => {
   const mockCtx: Ctx = {
     job: { id: 'test-job-id' } as Job,
+    llm: {} as ILlmProvider,
     log: logger,
-    llm: {} as any,
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),

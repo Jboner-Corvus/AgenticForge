@@ -4,14 +4,14 @@ import { Logger } from 'pino';
 import { z } from 'zod';
 
 import { config } from './config.js';
+import { LLMContent } from './llm-types.js';
 import logger from './logger.js';
 import { getMasterPrompt } from './prompts/orchestrator.prompt.js';
 import { redis } from './redisClient.js';
 import { toolRegistry } from './toolRegistry.js';
-import { getAllTools, FinishToolSignal } from './tools/index.js';
+import { FinishToolSignal } from './tools/index.js';
 import { AgentProgress, Ctx, SessionData, Tool } from './types.js';
 import { llmProvider } from './utils/llmProvider.js';
-import { LLMContent } from './llm-types.js';
 
 // Schéma Zod pour la réponse du LLM
 const llmResponseSchema = z.object({
@@ -51,14 +51,13 @@ export class Agent {
     job: Job,
     session: SessionData,
     taskQueue: Queue,
-    tools: Tool<z.AnyZodObject, z.ZodTypeAny>[],
+    tools?: Tool<z.AnyZodObject, z.ZodTypeAny>[],
   ) {
     this.job = job;
     this.session = session;
     this.log = logger.child({ jobId: job.id, sessionId: session.id });
     this.taskQueue = taskQueue;
-    this.tools = tools;
-    this.tools.forEach((tool) => toolRegistry.register(tool));
+    this.tools = tools ?? [];
   }
 
   public async run(): Promise<string> {
@@ -98,9 +97,15 @@ export class Agent {
           toolRegistry.getAll(),
         );
 
+        iterationLog.info({ history: this.session.history }, 'Session history');
+
         const messagesForLlm: LLMContent[] = this.session.history
           .map((message): LLMContent | null => {
             const role = message.role === 'tool' ? 'user' : message.role;
+            this.log.info(
+              { mappedRole: role, role: message.role },
+              'Mapping role',
+            );
             if (role === 'user' || role === 'model') {
               return {
                 parts: [{ text: message.content }],
@@ -115,6 +120,7 @@ export class Agent {
           messagesForLlm,
           orchestratorPrompt,
         );
+        this.log.info({ llmResponse }, 'Raw LLM response');
 
         if (typeof llmResponse !== 'string') {
           const errorMessage = 'The `generate` tool did not return a string.';
@@ -223,8 +229,8 @@ export class Agent {
   private createToolContext(log: Logger): Ctx {
     return {
       job: this.job,
-      log,
       llm: llmProvider,
+      log,
       reportProgress: async (progress: AgentProgress) => {
         log.debug(
           `Tool progress: ${progress.current}/${progress.total} ${
@@ -242,6 +248,7 @@ export class Agent {
 
   private async executeTool(command: Command, log: Logger): Promise<unknown> {
     try {
+      log.info({ command }, 'Executing tool');
       const toolResult = await toolRegistry.execute(
         command.name,
         command.params,
@@ -280,14 +287,21 @@ export class Agent {
         params: command.params,
         toolName: command.name,
       };
-      log.error({ error: errorDetails }, `Error executing tool ${command.name}`);
+      log.error(
+        { error: errorDetails },
+        `Error executing tool ${command.name}`,
+      );
 
       const thought = `Tool ${command.name} failed with error: ${errorMessage}. Parameters: ${JSON.stringify(command.params)}. I will now attempt to recover.`;
       this.publishToChannel({ content: thought, type: 'agent_thought' });
 
       // Publish a structured tool_result with the error
       this.publishToChannel({
-        result: { error: errorMessage, params: command.params, toolName: command.name },
+        result: {
+          error: errorMessage,
+          params: command.params,
+          toolName: command.name,
+        },
         toolName: command.name,
         type: 'tool_result',
       });

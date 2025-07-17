@@ -4,11 +4,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppInitializer } from './components/AppInitializer';
 import { ControlPanel } from './components/ControlPanel';
 import { Header } from './components/Header';
-import { LoadingSpinner } from './components/LoadingSpinner';
+import { Skeleton } from './components/ui/skeleton';
 import { Message } from './components/Message';
 import { SettingsModal } from './components/SettingsModal';
 import { useAgentStream } from './lib/hooks/useAgentStream';
 import { useStore } from './lib/store';
+import { Typography } from './components/Typography';
+import { Toaster } from './components/ui/sonner';
 import { ChatMessage } from './types/chat';
 
 export default function App() {
@@ -72,7 +74,17 @@ export default function App() {
         </div>
 
         <div className="flex-1 flex flex-col">
-          {isProcessing && <LoadingSpinner />}
+          {isProcessing && (
+          <div className="p-6">
+            <div className="flex items-center space-x-4">
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-[250px]" />
+                <Skeleton className="h-4 w-[200px]" />
+              </div>
+            </div>
+          </div>
+          )}
           <div className="flex-1 p-6 overflow-y-auto space-y-4">
             {messages.map((msg: ChatMessage) => (
               <Message key={msg.id} message={msg} />
@@ -98,11 +110,12 @@ export default function App() {
               className="ml-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring"
               onClick={handleSendMessage}
             >
-              Send
+              <Typography variant="p" className="font-semibold">Send</Typography>
             </button>
           </div>
         </div>
       </div>
+      <Toaster />
     </div>
   );
 }

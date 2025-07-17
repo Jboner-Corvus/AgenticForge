@@ -1,6 +1,7 @@
 // packages/ui/vite.config.ts
 
 import react from "@vitejs/plugin-react";
+import reactRefresh from "@vitejs/plugin-react-refresh";
 import path from "path";
 import { defineConfig } from "vite";
 import tailwindcss from "tailwindcss";
@@ -24,7 +25,7 @@ export default defineConfig({
       plugins: [tailwindcss, autoprefixer],
     },
   },
-  plugins: [react()],
+  plugins: [react(), reactRefresh()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

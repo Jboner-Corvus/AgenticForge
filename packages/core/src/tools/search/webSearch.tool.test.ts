@@ -1,9 +1,9 @@
-import { Job, Queue } from 'bullmq';
+import { Queue } from 'bullmq';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { config } from '../../config.js';
 import logger from '../../logger.js';
-import { Ctx, SessionData } from '../../types.js';
+import { Ctx, ILlmProvider, SessionData } from '../../types.js';
 import { webSearchTool } from './webSearch.tool.js';
 
 // Mock external dependencies
@@ -33,8 +33,8 @@ describe('webSearchTool', () => {
     vi.spyOn(global, 'fetch').mockRestore(); // Restore fetch mock
 
     mockCtx = {
-      job: { id: 'test-job-id' } as Job,
-      llm: {} as any,
+      job: { data: {}, id: 'test-job-id', isFailed: vi.fn(), name: 'test-job' },
+      llm: {} as ILlmProvider,
       log: logger,
       reportProgress: vi.fn(),
       session: {} as SessionData,

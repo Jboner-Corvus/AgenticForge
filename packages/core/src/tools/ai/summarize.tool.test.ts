@@ -26,8 +26,8 @@ vi.mock('../../logger.js', () => ({
 describe('summarizeTool', () => {
   const mockCtx: Ctx = {
     job: { id: 'test-job-id' } as Job,
-    log: logger,
     llm: llmProvider,
+    log: logger,
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),

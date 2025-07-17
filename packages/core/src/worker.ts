@@ -10,6 +10,7 @@ console.log('-----------------------------------------');
 
 console.log('Starting worker...');
 import { Job, Queue, Worker } from 'bullmq';
+import { z } from 'zod';
 
 import { Agent } from './agent.js';
 import { config } from './config.js';
@@ -18,9 +19,15 @@ import { redis } from './redisClient.js';
 import { SessionManager } from './sessionManager.js';
 import { summarizeTool } from './tools/ai/summarize.tool.js';
 import { getAllTools } from './tools/index.js'; // Import getAllTools
-import { AgentProgress, Content, Ctx, Message, SessionData, Tool } from './types.js';
+import {
+  AgentProgress,
+  Content,
+  Ctx,
+  Message,
+  SessionData,
+  Tool,
+} from './types.js';
 import { AppError, UserError } from './utils/errorUtils.js';
-import { z } from 'zod';
 
 console.log('Imports complete');
 console.log(
@@ -63,10 +70,14 @@ export async function processJob(
       if (eventMessage.includes('Quota exceeded')) {
         eventType = 'quota_exceeded';
         eventMessage = 'API quota exceeded. Please try again later.';
-      } else if (eventMessage.includes('Gemini API request failed with status 500')) {
-        eventMessage = 'An internal error occurred with the LLM API. Please try again later or check your API key.';
+      } else if (
+        eventMessage.includes('Gemini API request failed with status 500')
+      ) {
+        eventMessage =
+          'An internal error occurred with the LLM API. Please try again later or check your API key.';
       } else if (eventMessage.includes('is not found for API version v1')) {
-        eventMessage = 'The specified LLM model was not found or is not supported. Please check your LLM_MODEL_NAME in .env.';
+        eventMessage =
+          'The specified LLM model was not found or is not supported. Please check your LLM_MODEL_NAME in .env.';
       }
     } else {
       eventMessage = 'An unknown error occurred during agent execution.';

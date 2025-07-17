@@ -1,10 +1,10 @@
 /// <reference types="vitest/globals" />
-import { Job, Queue } from 'bullmq';
+import { Queue } from 'bullmq';
 import { describe, expect, it, vi } from 'vitest';
 
 import logger from '../../logger.js';
 import { getAllTools } from '../../tools/index.js';
-import { Ctx, SessionData, Tool } from '../../types.js';
+import { Ctx, ILlmProvider, SessionData, Tool } from '../../types.js';
 import { listToolsTool } from './listTools.tool.js';
 
 vi.mock('../../tools/index.js', () => ({
@@ -23,7 +23,7 @@ vi.mock('../../logger.js', () => ({
 
 describe('listToolsTool', () => {
   const mockCtx: Ctx = {
-    llm: {} as any,
+    llm: {} as ILlmProvider,
     log: logger,
     reportProgress: vi.fn(),
     session: {} as SessionData,

@@ -3,7 +3,7 @@ import { Job, Queue } from 'bullmq';
 import { describe, expect, it, vi } from 'vitest';
 
 import logger from '../../logger.js';
-import { Ctx, SessionData } from '../types.js';
+import { Ctx, ILlmProvider, SessionData } from '../types.js';
 import { executeShellCommandTool } from './code/executeShellCommand.tool.js';
 
 vi.mock('../../redisClient.js', () => ({
@@ -24,13 +24,13 @@ vi.mock('../../logger.js', () => ({
 
 describe('executeShellCommandTool', () => {
   const mockCtx: Ctx = {
+    job: { id: 'test-job' } as Job,
+    llm: {} as ILlmProvider,
     log: logger,
-    llm: {} as any,
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),
     taskQueue: {} as Queue,
-    job: { id: 'test-job' } as Job,
   };
 
   it('should execute a valid command and return success message', async () => {
@@ -43,7 +43,7 @@ describe('executeShellCommandTool', () => {
   });
 
   it('should return an error for a command that exits with a non-zero code', async () => {
-    const command = 'node -e "process.exit(1)"'
+    const command = 'node -e "process.exit(1)"';
     const result = await executeShellCommandTool.execute({ command }, mockCtx);
     expect(result).toHaveProperty('erreur');
     expect(

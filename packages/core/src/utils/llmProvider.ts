@@ -1,6 +1,6 @@
 import { config } from '../config.js';
-import logger from '../logger.js';
 import { LLMContent } from '../llm-types.js';
+import logger from '../logger.js';
 
 interface LLMProvider {
   getLlmResponse(
@@ -20,20 +20,20 @@ class GeminiProvider implements LLMProvider {
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${config.LLM_MODEL_NAME}:generateContent?key=${config.LLM_API_KEY}`;
 
-    const contents: LLMContent[] = [];
+    const requestBody: {
+      contents: LLMContent[];
+      system_instruction?: { parts: { text: string }[] };
+    } = {
+      contents: messages,
+    };
 
-    // Handle system prompt by prepending it to the first user message
-    // or creating a new user message if the history is empty.
     if (systemPrompt) {
-      if (messages.length > 0 && messages[0].role === 'user') {
-        messages[0].parts[0].text = `${systemPrompt}\n\n${messages[0].parts[0].text}`;
-      } else {
-        contents.push({ parts: [{ text: systemPrompt }], role: 'user' });
-      }
+      requestBody.system_instruction = {
+        parts: [{ text: systemPrompt }],
+      };
     }
-    contents.push(...messages);
 
-    const body = JSON.stringify({ contents });
+    const body = JSON.stringify(requestBody);
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -59,10 +59,7 @@ class GeminiProvider implements LLMProvider {
           }
           const errorBody = await response.text();
           const errorMessage = `Gemini API request failed with status ${response.status}: ${errorBody}`;
-          log.error(
-            { errorBody, status: response.status },
-            errorMessage,
-          );
+          log.error({ errorBody, status: response.status }, errorMessage);
           return `{"tool": "error", "parameters": {"message": "${errorMessage}"}}`;
         }
 

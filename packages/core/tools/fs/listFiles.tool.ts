@@ -17,8 +17,23 @@ export const listFilesTool: Tool<typeof listFilesParams> = {
   description: 'Lists files and directories within the workspace.',
   execute: async ({ input }: { input: { path: string } }) => {
     const { path: dirPath } = input;
-    const files = await fs.readdir(path.join(WORKSPACE_DIR, dirPath));
-    return files.join('\n');
+    const targetPath = path.resolve(WORKSPACE_DIR, dirPath);
+    console.log('Listing files in:', targetPath);
+
+    if (!targetPath.startsWith(WORKSPACE_DIR)) {
+      throw new Error('Access to paths outside the workspace is not allowed.');
+    }
+
+    try {
+      const files = await fs.readdir(targetPath);
+      return files.join('\n');
+    } catch (error: any) {
+      console.error('Error in listFiles:', error);
+      if (error.code === 'ENOENT') {
+        return `Error: Directory not found at ${targetPath}`;
+      }
+      throw error;
+    }
   },
   name: 'listFiles',
   parameters: listFilesParams,
