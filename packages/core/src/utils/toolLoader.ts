@@ -1,3 +1,4 @@
+console.log('<<<<< LOADING toolLoader.ts >>>>>');
 import * as chokidar from 'chokidar';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -109,12 +110,15 @@ async function findToolFiles(
 
 // Fonction pour obtenir dynamiquement le répertoire des outils
 function getToolsDir(): string {
-  return (
+  console.log('Running in dist:', runningInDist);
+  console.log('__dirname:', __dirname);
+  const toolsPath =
     process.env.TOOLS_PATH ||
     (runningInDist
-      ? path.join(__dirname, '..', 'tools')
-      : path.resolve(__dirname, '..', '..', 'src', 'tools'))
-  );
+      ? path.join(__dirname, 'tools')
+      : path.resolve(__dirname, '..', 'tools'));
+  console.log('Constructed tools path:', toolsPath);
+  return toolsPath;
 }
 
 async function loadToolFile(file: string): Promise<void> {
@@ -127,7 +131,10 @@ async function loadToolFile(file: string): Promise<void> {
     }
 
     const module = await import(`${path.resolve(file)}?update=${Date.now()}`);
+    console.log(`Module loaded for ${file}:`, module); // Added log
+
     for (const exportName in module) {
+      console.log(`Checking export: ${exportName}`); // Added log
       const exportedItem = module[exportName];
       if (
         exportedItem &&
@@ -135,12 +142,15 @@ async function loadToolFile(file: string): Promise<void> {
         'name' in exportedItem &&
         'execute' in exportedItem
       ) {
+        console.log(`Registering tool: ${exportedItem.name}`); // Added log
         toolRegistry.register(exportedItem as Tool);
         loadedToolFiles.add(file);
         fileToToolNameMap.set(file, exportedItem.name);
         logger.info(
           `Outil chargé : '${exportedItem.name}' depuis ${path.basename(file)}`,
         );
+      } else {
+        console.log(`Skipping export: ${exportName}`); // Added log
       }
     }
   } catch (error) {

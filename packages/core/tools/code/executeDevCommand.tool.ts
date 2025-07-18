@@ -1,7 +1,6 @@
-import { Context } from 'fastmcp';
 import { z } from 'zod';
 
-import type { SessionData, Tool } from '../../types.js';
+import type { Ctx, Tool } from '../../types.js';
 
 import { config } from '../../config.js';
 import { runInSandbox } from '../../utils/dockerManager.js';

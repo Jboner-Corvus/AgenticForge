@@ -4,8 +4,12 @@ import path from 'path';
 import { z } from 'zod';
 
 // Résout correctement le chemin vers le fichier .env à la racine du projet.
-const envPath = path.resolve(process.cwd(), '.env');
-dotenv.config({ path: envPath });
+const envPath = path.resolve(process.cwd(), '../../.env');
+const result = dotenv.config({ path: envPath });
+
+if (result.error) {
+  console.warn('Could not find .env file, using environment variables only.');
+}
 
 const configSchema = z.object({
   AGENT_MAX_ITERATIONS: z.coerce.number().default(10),
@@ -23,9 +27,11 @@ const configSchema = z.object({
 
   QUALITY_GATE_API_KEY: z.string().optional(),
   QUALITY_GATE_URL: z.string().optional(),
-  REDIS_HOST: z.string().default(process.env.REDIS_HOST || 'localhost'),
+  REDIS_HOST: z.string().default('localhost'),
+  REDIS_PASSWORD: z.string().optional(),
   // CORRECTION : La valeur par défaut est maintenant alignée sur la configuration de Docker.
-  REDIS_PORT: z.coerce.number().default(Number(process.env.REDIS_PORT) || 6379),
+  REDIS_PORT: z.coerce.number().default(6379),
+  REDIS_URL: z.string().optional(),
   TAVILY_API_KEY: z.string().optional(),
   WEBHOOK_SECRET: z.string().optional(),
   WORKER_CONCURRENCY: z.coerce.number().default(5),
@@ -42,5 +48,9 @@ console.log(
   'LLM_API_KEY from process.env:',
   process.env.LLM_API_KEY ? '*****' : 'Not set',
 );
+
+console.log('Resolved .env path:', envPath);
+console.log('REDIS_HOST from process.env (after dotenv.config):', process.env.REDIS_HOST);
+console.log('REDIS_PORT from process.env (after dotenv.config):', process.env.REDIS_PORT);
 
 export const config = configSchema.parse(process.env);

@@ -89,122 +89,141 @@ export class Agent {
         }
 
         iterations++;
-        const iterationLog = this.log.child({ iteration: iterations });
-        iterationLog.info(`Agent iteration starting`);
+        try {
+          const iterationLog = this.log.child({ iteration: iterations });
+          iterationLog.info(`Agent iteration starting`);
 
-        const orchestratorPrompt = getMasterPrompt(
-          { data: this.session, id: this.session.id },
-          toolRegistry.getAll(),
-        );
+          const orchestratorPrompt = getMasterPrompt(
+            { data: this.session, id: this.session.id },
+            toolRegistry.getAll(),
+          );
 
-        iterationLog.info({ history: this.session.history }, 'Session history');
+          iterationLog.info({ history: this.session.history }, 'Session history');
 
-        const messagesForLlm: LLMContent[] = this.session.history
-          .map((message): LLMContent | null => {
-            const role = message.role === 'tool' ? 'user' : message.role;
-            this.log.info(
-              { mappedRole: role, role: message.role },
-              'Mapping role',
-            );
-            if (role === 'user' || role === 'model') {
-              return {
-                parts: [{ text: message.content }],
-                role,
-              };
+          const messagesForLlm: LLMContent[] = this.session.history
+            .map((message): LLMContent | null => {
+              const role = message.role === 'tool' ? 'user' : message.role;
+              this.log.info(
+                { mappedRole: role, role: message.role },
+                'Mapping role',
+              );
+              if (role === 'user' || role === 'model') {
+                return {
+                  parts: [{ text: message.content }],
+                  role,
+                };
+              }
+              return null;
+            })
+            .filter((m): m is LLMContent => m !== null);
+
+          const llmResponse = await llmProvider.getLlmResponse(
+            messagesForLlm,
+            orchestratorPrompt,
+          );
+          this.log.info({ llmResponse }, 'Raw LLM response');
+
+          if (typeof llmResponse !== 'string') {
+            const errorMessage = 'The `generate` tool did not return a string.';
+            iterationLog.error(errorMessage);
+            this.session.history.push({
+              content: errorMessage,
+              role: 'user',
+            });
+            continue;
+          }
+
+          // Add the LLM's raw response to the history with 'model' role
+          this.session.history.push({
+            content: llmResponse,
+            role: 'model',
+          });
+
+          const parsedResponse = this.parseLlmResponse(llmResponse, iterationLog);
+
+          if (!parsedResponse) {
+            const errorMessage = `Your last response was not a valid command. You must choose a tool from the list or provide a final answer. Please try again. Last response: ${llmResponse}`;
+            iterationLog.warn(errorMessage);
+            this.session.history.push({
+              content: errorMessage,
+              role: 'user',
+            });
+            continue;
+          }
+
+          const { answer, command, thought } = parsedResponse;
+
+          if (thought) {
+            iterationLog.info({ thought }, 'Agent thought');
+            this.publishToChannel({ content: thought, type: 'agent_thought' });
+          }
+
+          if (answer) {
+            iterationLog.info({ answer }, 'Agent final answer');
+            this.publishToChannel({
+              content: answer,
+              type: 'agent_response',
+            });
+            return answer;
+          }
+
+          if (command) {
+            if (
+              this.lastCommand &&
+              JSON.stringify(this.lastCommand) === JSON.stringify(command)
+            ) {
+              this.loopCounter++;
+            } else {
+              this.loopCounter = 0;
             }
-            return null;
-          })
-          .filter((m): m is LLMContent => m !== null);
+            this.lastCommand = command;
 
-        const llmResponse = await llmProvider.getLlmResponse(
-          messagesForLlm,
-          orchestratorPrompt,
-        );
-        this.log.info({ llmResponse }, 'Raw LLM response');
+            if (this.loopCounter > 3) {
+              this.log.warn('Loop detected. Breaking.');
+              return 'Agent stuck in a loop.';
+            }
 
-        if (typeof llmResponse !== 'string') {
-          const errorMessage = 'The `generate` tool did not return a string.';
-          iterationLog.error(errorMessage);
-          this.session.history.push({
-            content: errorMessage,
-            role: 'user',
-          });
-          continue;
-        }
+            if (command.name === 'finish' && !command.params) {
+              command.params = { response: 'Goal achieved.' };
+            }
 
-        // Add the LLM's raw response to the history with 'model' role
-        this.session.history.push({
-          content: llmResponse,
-          role: 'model',
-        });
+            const eventData: ChannelData = {
+              data: {
+                args: command.params,
+                name: command.name,
+              },
+              type: 'tool.start',
+            };
+            this.publishToChannel(eventData);
 
-        const parsedResponse = this.parseLlmResponse(llmResponse, iterationLog);
+            const toolResult = await this.executeTool(command, iterationLog);
+            const summarizedResult = this.summarizeToolResult(toolResult);
 
-        if (!parsedResponse) {
-          const errorMessage = `Your last response was not a valid command. You must choose a tool from the list or provide a final answer. Please try again. Last response: ${llmResponse}`;
-          iterationLog.warn(errorMessage);
-          this.session.history.push({
-            content: errorMessage,
-            role: 'user',
-          });
-          continue;
-        }
-
-        const { answer, command, thought } = parsedResponse;
-
-        if (thought) {
-          iterationLog.info({ thought }, 'Agent thought');
-          this.publishToChannel({ content: thought, type: 'agent_thought' });
-        }
-
-        if (answer) {
-          iterationLog.info({ answer }, 'Agent final answer');
-          this.publishToChannel({
-            content: answer,
-            type: 'agent_response',
-          });
-          return answer;
-        }
-
-        if (command) {
-          if (
-            this.lastCommand &&
-            JSON.stringify(this.lastCommand) === JSON.stringify(command)
-          ) {
-            this.loopCounter++;
+            this.session.history.push({
+              content: `Tool result: ${JSON.stringify(summarizedResult)}`,
+              role: 'tool',
+            });
           } else {
-            this.loopCounter = 0;
+            iterationLog.warn('No command or answer from LLM.');
+            return "I'm not sure how to proceed.";
           }
-          this.lastCommand = command;
-
-          if (this.loopCounter > 3) {
-            this.log.warn('Loop detected. Breaking.');
-            return 'Agent stuck in a loop.';
-          }
-
-          if (command.name === 'finish' && !command.params) {
-            command.params = { response: 'Goal achieved.' };
-          }
-
-          const eventData: ChannelData = {
-            data: {
-              args: command.params,
-              name: command.name,
+        } catch (error) {
+          const err = error as Error;
+          this.log.error(
+            {
+              err: {
+                message: err.message,
+                stack: err.stack,
+                name: err.name,
+              },
             },
-            type: 'tool.start',
-          };
-          this.publishToChannel(eventData);
-
-          const toolResult = await this.executeTool(command, iterationLog);
-          const summarizedResult = this.summarizeToolResult(toolResult);
-
+            'Error during agent iteration',
+          );
           this.session.history.push({
-            content: `Tool result: ${JSON.stringify(summarizedResult)}`,
-            role: 'tool',
+            content: `An unexpected error occurred: ${err.message}`,
+            role: 'user',
           });
-        } else {
-          iterationLog.warn('No command or answer from LLM.');
-          return "I'm not sure how to proceed.";
+          break;
         }
       }
 

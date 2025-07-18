@@ -44,6 +44,7 @@ services:
       - WEB_PORT=${WEB_PORT}
       - LLM_API_KEY=${LLM_API_KEY}
       - LLM_MODEL_NAME=${LLM_MODEL_NAME}
+      - GEMINI_API_KEY=${LLM_API_KEY}
       - SESSION_PORT=${SESSION_PORT}
       - HOST_PROJECT_PATH=${HOST_PROJECT_PATH}
       - TOOLS_PATH=/usr/src/app/packages/core/dist/tools

@@ -1,10 +1,9 @@
 import { randomUUID } from 'crypto';
-import { Context } from 'fastmcp';
 import { Page } from 'playwright';
 // src/tools/browser/getContent.tool.ts (Corrigé pour SessionData)
 import { z } from 'zod';
 
-import type { SessionData, Tool } from '../../types.js';
+import type { Ctx, Tool } from '../../types.js';
 
 export const getContentParams = z.object({
   url: z.string().url().describe('The URL of the page to scrape.'),

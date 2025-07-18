@@ -10,7 +10,7 @@ interface LLMProvider {
 }
 
 class GeminiProvider implements LLMProvider {
-  async getLlmResponse(
+  public async getLlmResponse(
     messages: LLMContent[],
     systemPrompt?: string,
   ): Promise<string> {
@@ -18,19 +18,27 @@ class GeminiProvider implements LLMProvider {
     const maxRetries = 5;
     const initialDelay = 1000; // 1 seconde
 
+    if (!config.LLM_API_KEY) {
+      const errorMessage = 'LLM_API_KEY is not configured.';
+      log.error(errorMessage);
+      return `{"tool": "error", "parameters": {"message": "${errorMessage}"}}`;
+    }
+
     const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${config.LLM_MODEL_NAME}:generateContent?key=${config.LLM_API_KEY}`;
+
+    const systemInstruction = systemPrompt
+      ? { parts: [{ text: systemPrompt }] }
+      : undefined;
 
     const requestBody: {
       contents: LLMContent[];
-      system_instruction?: { parts: { text: string }[] };
+      systemInstruction?: { parts: { text: string }[] };
     } = {
       contents: messages,
     };
 
-    if (systemPrompt) {
-      requestBody.system_instruction = {
-        parts: [{ text: systemPrompt }],
-      };
+    if (systemInstruction) {
+      requestBody.systemInstruction = systemInstruction;
     }
 
     const body = JSON.stringify(requestBody);
@@ -38,13 +46,19 @@ class GeminiProvider implements LLMProvider {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         log.debug(
-          { apiUrl, attempt, model: config.LLM_MODEL_NAME },
+          {
+            apiUrl,
+            model: config.LLM_MODEL_NAME,
+            apiKey: '*****' + config.LLM_API_KEY.slice(-4),
+          },
           'Sending request to Google Gemini API v1',
         );
 
         const response = await fetch(apiUrl, {
           body,
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+          },
           method: 'POST',
         });
 

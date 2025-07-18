@@ -1,7 +1,7 @@
 // FICHIER : packages/core/tools/ai/generate.tool.ts
 
 import { z } from 'zod';
-import { Tool, Ctx } from '../../types.js'; // Assurez-vous que Ctx est bien importé ici
+import { Tool } from '../../types.js';
 
 export const generateParams = z.object({
   prompt: z.string().describe('Le texte à envoyer au modèle AI pour génération.'),

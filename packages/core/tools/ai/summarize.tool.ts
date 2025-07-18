@@ -1,10 +1,9 @@
-import { Context } from 'fastmcp';
 import { z } from 'zod';
 
-import type { SessionData, Tool } from '../../types.js';
+import type { Ctx, Tool } from '../../types.js';
 
 import { getSummarizerPrompt } from '../../prompts/summarizer.prompt.js';
-import { getLlmResponse } from '../../utils/llmProvider.js';
+import { llmProvider } from '../../utils/llmProvider.js';
 
 // 1. Définir le schéma des paramètres avec Zod.
 const parametersSchema = z.object({
@@ -12,15 +11,15 @@ const parametersSchema = z.object({
 });
 
 // 2. Définir l'outil en utilisant le type générique Tool<typeof schema>
-export const summarizeTool: Tool<typeof parameters> = {
+export const summarizeTool: Tool<typeof parametersSchema> = {
   description: 'Summarizes a given text.',
   // 4. La fonction 'execute' reçoit 'args' et 'ctx', qui sont automatiquement typés.
-  execute: async (args, ctx: Context<SessionData>) => {
+  execute: async (args, ctx: Ctx) => {
     // La session est accessible via ctx.session, contenant l'historique et autres données.
     ctx.log.info(args.text, 'Summarizing text');
 
     // Le type de 'args' est inféré depuis le schéma : { text: string }
-    const result = await getLlmResponse([
+    const result = await llmProvider.getLlmResponse([
       { parts: [{ text: getSummarizerPrompt(args.text) }], role: 'user' },
     ]);
 

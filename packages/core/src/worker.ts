@@ -40,6 +40,7 @@ export async function processJob(
   job: Job,
   tools: Tool<z.AnyZodObject, z.ZodTypeAny>[],
 ): Promise<string> {
+  logger.info(`[processJob] Received job ${job.id}`);
   const { sessionId } = job.data;
   const log = logger.child({ jobId: job.id, sessionId });
 
@@ -101,8 +102,12 @@ export async function processJob(
 
 export async function startWorker() {
   console.log('startWorker function called');
+  logger.info('Starting worker...');
   const tools = await getAllTools(); // Load all tools
-  const _worker = new Worker(
+  logger.info(`Found ${tools.length} tools.`);
+
+  logger.info('Creating worker...');
+  const worker = new Worker(
     'tasks',
     async (job) => {
       logger.info(`Processing job ${job.id} of type ${job.name}`);
@@ -114,23 +119,15 @@ export async function startWorker() {
     },
   );
 
-  // The BullMQ worker is already defined outside this function as `jobQueue`
-  // and its event listeners are not part of fastmcp.start().
-  // The original `worker.on` calls were for a BullMQ worker, not the fastmcp server.
-  // We need to ensure the BullMQ worker is properly set up and its events are handled.
-  // For now, removing the incorrect `worker.on` calls.
-  // The BullMQ worker setup should be handled separately if needed.
+  worker.on('completed', (job: Job) => {
+    logger.info(`Job ${job.id} completed.`);
+  });
 
-  // Example of how BullMQ worker events would be handled if a worker instance was available:
-  // const bullMqWorker = new Worker('tasks', processJob, { connection: redis, concurrency: config.WORKER_CONCURRENCY });
-  // bullMqWorker.on('completed', (job: Job) => {
-  //   logger.info(`Job ${job.id} completed.`);
-  // });
-  // bullMqWorker.on('failed', (job: Job, err: Error) => {
-  //   logger.error({ err, jobId: job?.id }, `Job ${job?.id} failed.`);
-  // });
+  worker.on('failed', (job: Job | undefined, err: Error) => {
+    logger.error({ err, jobId: job?.id }, `Job ${job?.id} failed.`);
+  });
 
-  logger.info('Worker démarré et écoute les tâches...');
+  logger.info('Worker started and listening for tasks...');
   console.log('Worker started and listening for tasks...');
 }
 

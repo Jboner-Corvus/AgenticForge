@@ -3,6 +3,9 @@
 # ==============================================================================
 # Configuration & Constantes
 # ==============================================================================
+# Obtenir le répertoire où se trouve le script pour rendre les chemins robustes
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+
 # Nom du service dans docker-compose.yml pour les commandes spécifiques à Docker
 APP_SERVICE_NAME="server"
 # Port Redis standardisé pour tout l'environnement
@@ -132,25 +135,29 @@ check_redis_availability() {
 # Charge les variables du fichier .env pour les rendre disponibles dans ce script.
 load_env_vars() {
     if [ -f .env ]; then
-        export $(grep -v '^#' .env | xargs)
+        set -a # Exporte automatiquement les variables
+        source .env
+        set +a # Arrête l'exportation automatique
     else
         echo -e "${COLOR_RED}✗ Le fichier .env est introuvable. Lancement de la création...${NC}"
         check_and_create_env
-        export $(grep -v '^#' .env | xargs)
+        set -a
+        source .env
+        set +a
     fi
 }
 
 # Arrête proprement le processus worker local.
 stop_worker() {
     echo -e "${COLOR_YELLOW}Arrêt du worker local...${NC}"
-    if [ -f worker.pid ]; then
-        WORKER_PID=$(cat worker.pid)
+    if [ -f "${SCRIPT_DIR}/worker.pid" ]; then
+        WORKER_PID=$(cat "${SCRIPT_DIR}/worker.pid")
         if kill $WORKER_PID 2>/dev/null; then
             echo -e "${COLOR_GREEN}✓ Worker (PID ${WORKER_PID}) arrêté.${NC}"
         else
             echo -e "${COLOR_YELLOW}Impossible d'arrêter le worker (PID ${WORKER_PID}). Il n'était peut-être pas en cours d'exécution.${NC}"
         fi
-        rm worker.pid
+        rm "${SCRIPT_DIR}/worker.pid"
     else
         echo -e "${COLOR_YELLOW}Fichier worker.pid non trouvé. Le worker est déjà arrêté.${NC}"
     fi
@@ -158,6 +165,7 @@ stop_worker() {
 
 # Démarre tous les services dans le bon ordre.
 start_services() {
+    cd "${SCRIPT_DIR}"
     check_and_create_env
     load_env_vars
     stop_worker # S'assurer que l'ancien worker est bien arrêté.
@@ -172,10 +180,11 @@ start_services() {
     fi
 
     echo -e "${COLOR_YELLOW}Construction du package 'core' (si nécessaire)...${NC}"
+    cd "${SCRIPT_DIR}"
     pnpm --filter @agenticforge/core build
 
     echo -e "${COLOR_YELLOW}Démarrage des services Docker...${NC}"
-    DOCKER_COMPOSE_FILES="docker-compose.yml"
+    DOCKER_COMPOSE_FILES="${SCRIPT_DIR}/docker-compose.yml"
     docker compose -f $DOCKER_COMPOSE_FILES up -d
     
     # Utilisation de la nouvelle fonction de vérification robuste
@@ -184,21 +193,22 @@ start_services() {
         return 1
     fi
     
+    echo "DEBUG: REDIS_HOST in run.sh before worker launch: $REDIS_HOST"
+    echo "DEBUG: REDIS_PORT in run.sh before worker launch: $REDIS_PORT"
     echo -e "${COLOR_YELLOW}Démarrage du worker local...${NC}"
     
     # Passage explicite des variables d'environnement au worker pour garantir la bonne configuration.
-    NODE_ENV=production REDIS_URL="redis://127.0.0.1:${REDIS_PORT_STD}" \
-nohup pnpm --filter @agenticforge/core start:worker > worker.log 2>&1 &
+    NODE_ENV=production nohup pnpm --filter @agenticforge/core start:worker > "${SCRIPT_DIR}/worker.log" 2>&1 &
     
     WORKER_PID=$!
-    echo $WORKER_PID > worker.pid
+    echo $WORKER_PID > "${SCRIPT_DIR}/worker.pid"
     echo -e "${COLOR_GREEN}✓ Worker lancé avec le PID: ${WORKER_PID}. Logs dans 'worker.log'.${NC}"
 }
 
 # Arrête tous les services.
 stop_services() {
     echo -e "${COLOR_YELLOW}Arrêt des services Docker...${NC}"
-    docker compose down
+    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" down
     stop_worker
     echo -e "${COLOR_GREEN}✓ Services arrêtés.${NC}"
 }
@@ -213,28 +223,28 @@ restart_services() {
 # Affiche le statut des conteneurs.
 show_status() {
     echo -e "${COLOR_CYAN}--- Statut des conteneurs Docker ---${NC}"
-    docker compose ps
+    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" ps
 }
 
 # Affiche les logs pour un service donné.
 show_logs() {
     if [ "$1" == "worker" ]; then
         echo -e "${COLOR_CYAN}--- Logs du Worker (tail -f) ---${NC}"
-        if [ -f worker.log ]; then
-            tail -n 30 worker.log
+        if [ -f "${SCRIPT_DIR}/worker.log" ]; then
+            tail -n 100 "${SCRIPT_DIR}/worker.log"
         else
             echo -e "${COLOR_RED}✗ Le fichier worker.log n'existe pas.${NC}"
         fi
     else
-        echo -e "${COLOR_CYAN}--- Logs Docker (docker compose logs -f) ---${NC}"
-        docker compose logs -f
+        echo -e "${COLOR_CYAN}--- Affichage des 100 dernières lignes des logs Docker ---${NC}"
+        docker compose -f "${SCRIPT_DIR}/docker-compose.yml" logs --tail="100"
     fi
 }
 
 # Ouvre un shell dans le conteneur du serveur.
 shell_access() {
     echo -e "${COLOR_YELLOW}Ouverture d'un shell dans le conteneur '${APP_SERVICE_NAME}'...${NC}"
-    docker compose exec "${APP_SERVICE_NAME}" /bin/bash
+    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" exec "${APP_SERVICE_NAME}" /bin/bash
 }
 
 # Reconstruit les images Docker sans utiliser le cache.
@@ -243,7 +253,7 @@ rebuild_services() {
     stop_services
 
     echo -e "${COLOR_YELLOW}Reconstruction forcée des images Docker (sans cache)...${NC}"
-    docker compose build --no-cache
+    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" build --no-cache
     echo -e "${COLOR_GREEN}✓ Reconstruction terminée.${NC}"
     
     echo -e "${COLOR_YELLOW}Redémarrage des services avec les nouvelles images...${NC}"
@@ -255,7 +265,7 @@ clean_docker() {
     echo -e "${COLOR_RED}ATTENTION : Cette action va supprimer les conteneurs, volumes ET réseaux non utilisés.${NC}"
     
         echo -e "${COLOR_YELLOW}Arrêt et suppression des conteneurs et volumes du projet...${NC}"
-        docker compose down -v --remove-orphans
+        docker compose -f "${SCRIPT_DIR}/docker-compose.yml" down -v --remove-orphans
         echo -e "${COLOR_YELLOW}Suppression des réseaux Docker non utilisés (prune)...${NC}"
         docker network prune -f
         echo -e "${COLOR_GREEN}✓ Nettoyage terminé.${NC}"

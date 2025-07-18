@@ -1,11 +1,23 @@
 import { Redis } from 'ioredis';
 
+import { config } from './config.js';
 import logger from './logger.js';
 
-const redisUrl =
-  process.env.REDIS_URL ||
-  `redis://${process.env.REDIS_PASSWORD ? ':' + process.env.REDIS_PASSWORD + '@' : ''}${process.env.REDIS_HOST || '127.0.0.1'}:${process.env.REDIS_PORT || '6379'}`;
+// Détermine l'hôte Redis en fonction de l'environnement d'exécution.
+// Si le worker est local (pas dans Docker), il doit utiliser 'localhost'.
+// Si le worker est dans Docker, il doit utiliser le nom de service 'redis'.
+const redisHost = process.env.DOCKER === 'true' ? config.REDIS_HOST : 'localhost';
 
+console.log('--- In redisClient.ts ---');
+console.log('process.env.DOCKER:', process.env.DOCKER);
+console.log('process.env.REDIS_HOST:', process.env.REDIS_HOST);
+console.log('config.REDIS_HOST:', config.REDIS_HOST);
+console.log('Chosen redisHost:', redisHost);
+console.log('config.REDIS_PORT:', config.REDIS_PORT);
+
+const redisUrl = `redis://${redisHost}:${config.REDIS_PORT}`;
+
+console.log('Constructed Redis URL:', redisUrl);
 logger.info(`[redisClient] Constructed Redis URL: ${redisUrl}`);
 
 // Utiliser l'URL construite pour la connexion
