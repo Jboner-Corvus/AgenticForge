@@ -341,52 +341,72 @@ export class Agent {
       log.warn('LLM response is empty.');
       return null;
     }
+
+    // 1. Try to parse the entire response as JSON
+    try {
+      const parsed = JSON.parse(response);
+      const validation = llmResponseSchema.safeParse(parsed);
+      if (validation.success) {
+        return validation.data;
+      }
+    } catch (e) {
+      // Not a valid JSON object, proceed to next method
+    }
+
+    // 2. If parsing the whole response fails, look for a JSON block
     try {
       const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/;
       const match = response.match(jsonBlockRegex);
 
-      if (!match || !match[1]) {
-        log.error(
-          { responseText: response },
-          'No JSON code block found in LLM response.',
-        );
-        const firstBraceIndex = response.indexOf('{');
-        const lastBraceIndex = response.lastIndexOf('}');
-        if (firstBraceIndex === -1 || lastBraceIndex === -1) {
-          return null;
+      if (match && match[1]) {
+        const jsonString = match[1];
+        const parsed = JSON.parse(jsonString);
+        const validation = llmResponseSchema.safeParse(parsed);
+        if (validation.success) {
+          return validation.data;
         }
+        log.error(
+          {
+            error: validation.error.flatten(),
+            responseText: response,
+          },
+          'LLM response validation failed against Zod schema',
+        );
+      }
+    } catch (error) {
+      log.error(
+        { error, responseText: response },
+        'Failed to parse LLM response as JSON from code block',
+      );
+    }
+
+    // 3. Fallback to finding the first and last curly braces
+    try {
+      const firstBraceIndex = response.indexOf('{');
+      const lastBraceIndex = response.lastIndexOf('}');
+      if (firstBraceIndex !== -1 && lastBraceIndex !== -1) {
         const jsonString = response.substring(
           firstBraceIndex,
           lastBraceIndex + 1,
         );
         const parsed = JSON.parse(jsonString);
         const validation = llmResponseSchema.safeParse(parsed);
-        return validation.success ? validation.data : null;
+        if (validation.success) {
+          return validation.data;
+        }
       }
-
-      const jsonString = match[1];
-      const parsed = JSON.parse(jsonString);
-      const validation = llmResponseSchema.safeParse(parsed);
-
-      if (validation.success) {
-        return validation.data;
-      }
-
-      log.error(
-        {
-          error: validation.error.flatten(),
-          responseText: response,
-        },
-        'LLM response validation failed against Zod schema',
-      );
-      return null;
     } catch (error) {
       log.error(
         { error, responseText: response },
-        'Failed to parse LLM response as JSON',
+        'Failed to parse LLM response as JSON from substring',
       );
-      return null;
     }
+
+    log.error(
+      { responseText: response },
+      'No valid JSON found in LLM response after all parsing attempts.',
+    );
+    return null;
   }
 
   private publishToChannel(data: ChannelData) {

@@ -37,10 +37,13 @@ class ToolRegistry {
     if (!tool) {
       throw new UserError(`Tool not found: ${name}`);
     }
+    
+    const parsedParams = tool.parameters.parse(params);
+
     ctx.log.info(
-      `Executing tool: ${name} with params: ${JSON.stringify(params)}`,
+      `Executing tool: ${name} with params: ${JSON.stringify(parsedParams)}`,
     );
-    return tool.execute(params as z.infer<typeof tool.parameters>, ctx);
+    return tool.execute(parsedParams, ctx);
   }
 
   /**

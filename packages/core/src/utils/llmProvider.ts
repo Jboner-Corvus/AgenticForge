@@ -15,8 +15,6 @@ class GeminiProvider implements LLMProvider {
     systemPrompt?: string,
   ): Promise<string> {
     const log = logger.child({ module: 'GeminiProvider' });
-    const maxRetries = 5;
-    const initialDelay = 1000; // 1 seconde
 
     if (!config.LLM_API_KEY) {
       const errorMessage = 'LLM_API_KEY is not configured.';
@@ -26,82 +24,45 @@ class GeminiProvider implements LLMProvider {
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${config.LLM_MODEL_NAME}:generateContent?key=${config.LLM_API_KEY}`;
 
-    const systemInstruction = systemPrompt
-      ? { parts: [{ text: systemPrompt }] }
-      : undefined;
+    if (systemPrompt) {
+      messages.unshift({
+        role: 'user',
+        parts: [{ text: systemPrompt }],
+      });
+    }
 
-    const requestBody: {
-      contents: LLMContent[];
-      systemInstruction?: { parts: { text: string }[] };
-    } = {
+    const requestBody = {
       contents: messages,
     };
 
-    if (systemInstruction) {
-      requestBody.systemInstruction = systemInstruction;
-    }
-
     const body = JSON.stringify(requestBody);
 
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        log.debug(
-          {
-            apiUrl,
-            model: config.LLM_MODEL_NAME,
-            apiKey: '*****' + config.LLM_API_KEY.slice(-4),
-          },
-          'Sending request to Google Gemini API v1',
-        );
+    const response = await fetch(apiUrl, {
+      body,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+    });
 
-        const response = await fetch(apiUrl, {
-          body,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          method: 'POST',
-        });
-
-        if (!response.ok) {
-          if (response.status >= 500 && attempt < maxRetries) {
-            const delay = initialDelay * Math.pow(2, attempt - 1);
-            log.warn(
-              `Gemini API request failed with status ${response.status}. Retrying in ${delay}ms...`,
-            );
-            await new Promise((resolve) => setTimeout(resolve, delay));
-            continue;
-          }
-          const errorBody = await response.text();
-          const errorMessage = `Gemini API request failed with status ${response.status}: ${errorBody}`;
-          log.error({ errorBody, status: response.status }, errorMessage);
-          return `{"tool": "error", "parameters": {"message": "${errorMessage}"}}`;
-        }
-
-        const data = await response.json();
-
-        const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!content) {
-          log.error(
-            { response: data },
-            'Invalid response structure from Gemini API',
-          );
-          return `{"tool": "error", "parameters": {"message": "Invalid response structure from Gemini API. The model may have returned an empty response."}}`;
-        }
-        return content.trim();
-      } catch (error) {
-        log.error({ err: error }, 'Failed to get response from LLM');
-        if (attempt < maxRetries) {
-          const delay = initialDelay * Math.pow(2, attempt - 1);
-          log.warn(`Retrying in ${delay}ms...`);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-        } else {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-          return `{"tool": "error", "parameters": {"message": "Failed to communicate with the LLM after multiple retries: ${errorMessage}"}}`;
-        }
-      }
+    if (!response.ok) {
+      const errorBody = await response.text();
+      const errorMessage = `Gemini API request failed with status ${response.status}: ${errorBody}`;
+      log.error({ errorBody, status: response.status }, errorMessage);
+      return `{"tool": "error", "parameters": {"message": "${errorMessage}"}}`;
     }
-    return `{"tool": "error", "parameters": {"message": "LLM request failed after multiple retries."}}`;
+
+    const data = await response.json();
+
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!content) {
+      log.error(
+        { response: data },
+        'Invalid response structure from Gemini API',
+      );
+      return `{"tool": "error", "parameters": {"message": "Invalid response structure from Gemini API. The model may have returned an empty response."}}`;
+    }
+    return content.trim();
   }
 }
 
