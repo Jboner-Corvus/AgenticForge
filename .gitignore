@@ -35,3 +35,5 @@ Z :
 Z:
 worker.pid
 worker.log
+rapport.txt
+rapport-final.txt
