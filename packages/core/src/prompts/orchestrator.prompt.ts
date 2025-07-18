@@ -1,3 +1,14 @@
+// ATTENTION : Ce fichier est critique pour le fonctionnement de l'agent.
+// Il construit le prompt système qui instruit le LLM sur son comportement,
+// les outils disponibles et le format de réponse attendu.
+//
+// TOUTE MODIFICATION ICI PEUT IMPACTER DIRECTEMENT LA PERFORMANCE ET LA FIABILITÉ DE L'AGENT.
+//
+// Spécifiquement, les instructions dans `system.prompt.txt` et la manière dont les
+// outils sont formatés dictent la structure JSON que le LLM doit retourner.
+// Cette structure est validée par `llmResponseSchema` dans `packages/core/src/agent.ts`.
+// Assurez-vous que les deux fichiers restent synchronisés.
+
 import { readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

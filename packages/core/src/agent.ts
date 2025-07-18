@@ -14,6 +14,11 @@ import { AgentProgress, Ctx, SessionData, Tool } from './types.js';
 import { llmProvider } from './utils/llmProvider.js';
 
 // Schéma Zod pour la réponse du LLM
+// IMPORTANT : Ce schéma définit la structure JSON attendue de la part du LLM.
+// Si vous modifiez ce schéma (par exemple, en ajoutant un nouveau champ),
+// vous DEVEZ impérativement mettre à jour le prompt système dans
+// `packages/core/src/prompts/orchestrator.prompt.ts` pour instruire le LLM
+// sur le nouveau format. Une désynchronisation ici provoquera des erreurs de parsing.
 const llmResponseSchema = z.object({
   answer: z.string().optional(),
   command: z
@@ -333,6 +338,23 @@ export class Agent {
     }
   }
 
+  /**
+   * Analyse la réponse textuelle du LLM pour en extraire un objet JSON valide.
+   * Cette fonction est conçue pour être robuste face aux variations de formatage du LLM.
+   *
+   * ATTENTION : NE PAS rendre cette fonction plus stricte. La flexibilité du parsing
+   * est une fonctionnalité essentielle pour éviter les erreurs lorsque le LLM ne retourne
+   * pas un JSON parfaitement formaté. La sortie du LLM est par nature non déterministe.
+   *
+   * La stratégie de parsing est la suivante, par ordre de priorité :
+   * 1. Essayer de parser la chaîne de caractères entière comme un objet JSON brut.
+   * 2. Si cela échoue, chercher un bloc de code Markdown (```json ... ```) et l'extraire.
+   * 3. En dernier recours, chercher le contenu entre la première et la dernière accolade (`{...}`).
+   *
+   * @param response La réponse brute du LLM.
+   * @param log Le logger pour tracer les erreurs.
+   * @returns Un objet validé par `llmResponseSchema` ou `null` si aucune méthode de parsing n'a réussi.
+   */
   private parseLlmResponse(
     response: string,
     log: Logger,

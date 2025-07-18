@@ -1,13 +1,19 @@
+// ATTENTION : Ce fichier est le point d'entrée du worker de l'agent.
+// Son rôle principal est d'écouter la file d'attente (queue) sur Redis
+// et de traiter les "jobs" (tâches) qui y sont ajoutés.
+//
+// SI LE WORKER NE DÉMARRE PAS OU NE TRAITE PAS DE TÂCHES :
+// 1. VÉRIFIEZ LA CONNEXION À REDIS : Assurez-vous que les variables d'environnement
+//    (REDIS_HOST, REDIS_PORT, etc.) sont correctement configurées et accessibles.
+//    Le client Redis est configuré dans `redisClient.ts`.
+// 2. VÉRIFIEZ LE NOM DE LA QUEUE : Le nom de la queue ('tasks' par défaut) doit
+//    correspondre exactement à celui utilisé par l'application qui ajoute les jobs.
+//
+// Toute modification dans ce fichier peut affecter la capacité du système à
+// traiter des tâches en arrière-plan.
+
 import dotenv from 'dotenv';
 dotenv.config();
-console.log('Starting worker...');
-
-// --- AJOUTEZ CES LIGNES POUR LE DÉBOGAGE ---
-console.log(`[DEBUG] REDIS_URL vue par le worker: ${process.env.REDIS_URL}`);
-console.log(`[DEBUG] REDIS_PORT vue par le worker: ${process.env.REDIS_PORT}`);
-console.log('-----------------------------------------');
-// --- FIN DE L'AJOUT ---
-
 console.log('Starting worker...');
 import { Job, Queue, Worker } from 'bullmq';
 import { z } from 'zod';
