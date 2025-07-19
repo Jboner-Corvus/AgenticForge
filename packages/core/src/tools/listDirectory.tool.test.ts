@@ -25,6 +25,7 @@ vi.mock('../../logger.js', () => ({
 }));
 
 describe('listDirectoryTool', () => {
+  const WORKSPACE_DIR = 'Z:/AgenticForge4/packages/workspace';
   const mockCtx: Ctx = {
     llm: {} as ILlmProvider,
     log: logger,
@@ -33,8 +34,6 @@ describe('listDirectoryTool', () => {
     streamContent: vi.fn(),
     taskQueue: {} as Queue,
   };
-
-  const mockWorkspaceDir = path.resolve(process.cwd(), 'workspace');
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -51,7 +50,7 @@ describe('listDirectoryTool', () => {
     expect(result).toContain('file1.txt');
     expect(result).toContain('folder1/');
     expect(mockCtx.log.info).toHaveBeenCalledWith(
-      `Listed files in directory: ${mockWorkspaceDir}`,
+      `Listed files in directory: Z:/AgenticForge4/workspace`,
     );
   });
 

@@ -43,7 +43,7 @@ describe('readFileTool', () => {
 
   it('should read the entire content of a file', async () => {
     const result = await readFileTool.execute({ path: mockFilePath }, mockCtx);
-    expect(result).toBe(`Content of ${mockFilePath}:\n\n${mockFileContent}`);
+    expect(result).toBe(mockFileContent);
     expect(mockCtx.log.info).toHaveBeenCalledWith(
       `Successfully read file: ${mockFilePath}`,
     );
@@ -55,7 +55,9 @@ describe('readFileTool', () => {
       mockCtx,
     );
     expect(result).toBe(
-      `Content of ${mockFilePath} (lines 2-4):\n\nLine 2\nLine 3\nLine 4`,
+      `Line 2
+Line 3
+Line 4`,
     );
   });
 
@@ -64,7 +66,7 @@ describe('readFileTool', () => {
       { path: mockFilePath, start_line: 3 },
       mockCtx,
     );
-    expect(result).toBe(`Content of ${mockFilePath} (lines 3-3):\n\nLine 3`);
+    expect(result).toBe(`Line 3`);
   });
 
   it('should return an error if file not found', async () => {

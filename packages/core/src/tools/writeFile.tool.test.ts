@@ -52,11 +52,11 @@ describe('writeFileTool', () => {
       mockCtx,
     );
     expect(fs.mkdir).toHaveBeenCalledWith(
-      path.dirname(path.resolve(filePath)),
+      path.join(process.cwd(), 'workspace', path.dirname(filePath)),
       { recursive: true },
     );
     expect(fs.writeFile).toHaveBeenCalledWith(
-      path.resolve(filePath),
+      path.join(process.cwd(), 'workspace', filePath),
       content,
       'utf-8',
     );
@@ -74,7 +74,7 @@ describe('writeFileTool', () => {
       mockCtx,
     );
     expect(fs.writeFile).toHaveBeenCalledWith(
-      path.resolve(filePath),
+      path.join(process.cwd(), 'workspace', filePath),
       content,
       'utf-8',
     );

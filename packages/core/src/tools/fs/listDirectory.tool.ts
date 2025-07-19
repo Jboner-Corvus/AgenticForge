@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-const WORKSPACE_DIR = path.resolve(process.cwd(), 'AgenticForge4/packages/core/workspace');
+const WORKSPACE_DIR = path.resolve(__dirname, '../../../../packages/workspace');
 
 export const listFilesParams = z.object({
   path: z

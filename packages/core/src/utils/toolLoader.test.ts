@@ -2,6 +2,7 @@ import type { Queue } from 'bullmq'; // Import Queue type
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import { LogFn } from 'pino';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type logger from '../logger.js'; // Import logger type
@@ -13,14 +14,13 @@ import { _resetTools, getTools } from './toolLoader.js';
 // Mock pour logger
 const mockLogger: Partial<typeof logger> = {
   child: vi.fn().mockReturnThis(),
-  debug: vi.fn(),
-  error: vi.fn(),
-  fatal: vi.fn(),
-  info: vi.fn(),
-  level: 'info',
-  silent: vi.fn(),
-  trace: vi.fn(),
-  warn: vi.fn(),
+  debug: vi.fn() as unknown as LogFn,
+  error: vi.fn() as unknown as LogFn,
+  fatal: vi.fn() as unknown as LogFn,
+  info: vi.fn() as unknown as LogFn,
+  silent: vi.fn() as unknown as LogFn,
+  trace: vi.fn() as unknown as LogFn,
+  warn: vi.fn() as unknown as LogFn,
 };
 
 // Mock pour Queue

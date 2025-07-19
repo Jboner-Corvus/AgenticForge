@@ -16,8 +16,6 @@
 // Une description imprécise ou un schéma de paramètres incorrect mènera quasi-certainement
 // à des erreurs d'exécution ou à un mauvais choix d'outil par l'agent.
 
-
-
 import logger from './logger.js';
 import { Ctx, Tool } from './types.js';
 import { UserError } from './utils/errorUtils.js';
@@ -55,7 +53,7 @@ class ToolRegistry {
     if (!tool) {
       throw new UserError(`Tool not found: ${name}`);
     }
-    
+
     const parsedParams = tool.parameters.parse(params);
 
     ctx.log.info(

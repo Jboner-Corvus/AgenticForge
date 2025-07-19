@@ -34,8 +34,12 @@ const configSchema = z.object({
   REDIS_URL: z.string().optional(),
   TAVILY_API_KEY: z.string().optional(),
   WEBHOOK_SECRET: z.string().optional(),
-  WORKSPACE_PATH: z.string().default('/home/demon/agentforge/AgenticForge2/AgenticForge4/packages/core/workspace'),
   WORKER_CONCURRENCY: z.coerce.number().default(5),
+  WORKSPACE_PATH: z
+    .string()
+    .default(
+      '/home/demon/agentforge/AgenticForge2/AgenticForge4/packages/core/workspace',
+    ),
 });
 
 console.log('GEMINI_MODEL from process.env:', process.env.GEMINI_MODEL);
@@ -51,8 +55,14 @@ console.log(
 );
 
 console.log('Resolved .env path:', envPath);
-console.log('REDIS_HOST from process.env (after dotenv.config):', process.env.REDIS_HOST);
-console.log('REDIS_PORT from process.env (after dotenv.config):', process.env.REDIS_PORT);
+console.log(
+  'REDIS_HOST from process.env (after dotenv.config):',
+  process.env.REDIS_HOST,
+);
+console.log(
+  'REDIS_PORT from process.env (after dotenv.config):',
+  process.env.REDIS_PORT,
+);
 
 console.log('Current working directory:', process.cwd());
 export const config = configSchema.parse(process.env);

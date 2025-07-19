@@ -9,10 +9,10 @@ const logger = pino({
     transport: {
       options: {
         colorize: true,
-        levelFirst: true,
-        translateTime: 'SYS:standard',
-        singleLine: false,
         depth: 5,
+        levelFirst: true,
+        singleLine: false,
+        translateTime: 'SYS:standard',
       },
       target: 'pino-pretty',
     },

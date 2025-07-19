@@ -16,7 +16,8 @@ import logger from './logger.js';
 // Détermine l'hôte Redis en fonction de l'environnement d'exécution.
 // Si le worker est local (pas dans Docker), il doit utiliser 'localhost'.
 // Si le worker est dans Docker, il doit utiliser le nom de service 'redis'.
-const redisHost = process.env.DOCKER === 'true' ? config.REDIS_HOST : 'localhost';
+const redisHost =
+  process.env.DOCKER === 'true' ? config.REDIS_HOST : 'localhost';
 const redisUrl = `redis://${redisHost}:${config.REDIS_PORT}`;
 
 logger.info(`[redisClient] Resolved redisHost: ${redisHost}`);

@@ -103,7 +103,10 @@ export class Agent {
             toolRegistry.getAll(),
           );
 
-          iterationLog.info({ history: this.session.history }, 'Session history');
+          iterationLog.info(
+            { history: this.session.history },
+            'Session history',
+          );
 
           const messagesForLlm: LLMContent[] = this.session.history
             .map((message): LLMContent | null => {
@@ -144,7 +147,10 @@ export class Agent {
             role: 'model',
           });
 
-          const parsedResponse = this.parseLlmResponse(llmResponse, iterationLog);
+          const parsedResponse = this.parseLlmResponse(
+            llmResponse,
+            iterationLog,
+          );
 
           if (!parsedResponse) {
             const errorMessage = `Your last response was not a valid command. You must choose a tool from the list or provide a final answer. Please try again. Last response: ${llmResponse}`;
@@ -378,7 +384,7 @@ export class Agent {
       if (validation.success) {
         return validation.data;
       }
-            } catch {
+    } catch {
       // Not a valid JSON object, proceed to next method
     }
 
