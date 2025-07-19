@@ -43,18 +43,24 @@ export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
     ctx.log.info(`Navigating to URL: ${args.url}`);
     await sendEvent(ctx, 'browser.navigating', { url: args.url });
 
-    const browser = await chromium.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-
+    let browser;
     try {
+      ctx.log.info('Launching browser...');
+      browser = await chromium.launch({
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+      ctx.log.info('Browser launched.');
+
       const page = await browser.newPage();
+      ctx.log.info('New page created.');
       await sendEvent(ctx, 'browser.page.created', {});
 
+      ctx.log.info(`Going to ${args.url}...`);
       await page.goto(args.url, {
-        timeout: 90000,
+        timeout: 30000, // 30 seconds
         waitUntil: 'domcontentloaded',
       });
+      ctx.log.info(`Page loaded: ${args.url}`);
       await sendEvent(ctx, 'browser.page.loaded', { url: args.url });
 
       const content = await getPageContent(page);
@@ -78,7 +84,15 @@ export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
       });
       return { erreur: `Error while Browse ${args.url}: ${err.message}` };
     } finally {
-      await browser.close();
+      if (browser) {
+        try {
+          ctx.log.info('Closing browser...');
+          await browser.close();
+          ctx.log.info('Browser closed.');
+        } catch (e) {
+          ctx.log.error(e, 'Failed to close browser');
+        }
+      }
       await sendEvent(ctx, 'browser.closed', {});
     }
   },

@@ -36,7 +36,7 @@ const configSchema = z.object({
   TAVILY_API_KEY: z.string().optional(),
   WEBHOOK_SECRET: z.string().optional(),
   WORKER_CONCURRENCY: z.coerce.number().default(5),
-  WORKSPACE_PATH: z.string().default(path.join(os.homedir(), 'workspace')),
+  WORKSPACE_PATH: z.string().default(path.resolve(process.cwd(), 'AgenticForge4', 'workspace')),
 });
 
 console.log('Resolved .env path:', envPath);

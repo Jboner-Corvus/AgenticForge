@@ -1,6 +1,7 @@
 import { spawn } from 'child_process';
 import { z } from 'zod';
 
+import { config } from '../../config.js';
 import type { Ctx, Tool } from '../../types.js';
 
 import { redis } from '../../redisClient.js';
@@ -30,6 +31,7 @@ export const executeShellCommandTool: Tool<
         ctx.log.info(`Spawning shell command: ${args.command}`);
 
         const child = spawn(args.command, {
+          cwd: config.WORKSPACE_PATH,
           shell: true,
           stdio: 'pipe',
         });
