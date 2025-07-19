@@ -1,4 +1,5 @@
 import { promises as fs } from 'fs';
+import os from 'os';
 import path from 'path';
 import { z } from 'zod';
 
@@ -43,7 +44,7 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
       args,
       ctx: Ctx,
     ): Promise<string | void | z.infer<typeof editFileOutput>> => {
-      const workspaceDir = path.resolve(process.cwd(), 'workspace');
+      const workspaceDir = path.join(os.homedir(), 'workspace');
       const absolutePath = path.resolve(workspaceDir, args.path);
 
       if (!absolutePath.startsWith(workspaceDir)) {

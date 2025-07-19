@@ -10,6 +10,7 @@ interface AppState {
   agentStatus: string | null;
   toolStatus: string;
   authToken: null | string;
+  browserStatus: string;
   clearDebugLog: () => void;
   clearMessages: () => void;
   codeExecutionEnabled: boolean;
@@ -27,6 +28,7 @@ interface AppState {
   setAgentStatus: (agentStatus: string | null) => void;
   setToolStatus: (toolStatus: string) => void;
   setAuthToken: (authToken: null | string) => void;
+  setBrowserStatus: (status: string) => void;
   setCodeExecutionEnabled: (codeExecutionEnabled: boolean) => void;
   
   setIsProcessing: (isProcessing: boolean) => void;
@@ -53,6 +55,7 @@ export const useStore = create<AppState>((set, get) => ({
   agentStatus: null,
   toolStatus: '',
   authToken: null,
+  browserStatus: 'idle',
   clearDebugLog: () => set({ debugLog: [] }),
   clearMessages: () => set({ messages: [] }),
   codeExecutionEnabled: true,
@@ -85,6 +88,7 @@ export const useStore = create<AppState>((set, get) => ({
   setAgentStatus: (agentStatus) => set({ agentStatus }),
   setToolStatus: (toolStatus) => set({ toolStatus }),
   setAuthToken: (authToken) => set({ authToken }),
+  setBrowserStatus: (status) => set({ browserStatus: status }),
   setCodeExecutionEnabled: (codeExecutionEnabled) => set({ codeExecutionEnabled }),
   
   setIsProcessing: (isProcessing) => set({ isProcessing }),

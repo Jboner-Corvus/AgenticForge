@@ -1,13 +1,11 @@
 import { promises as fs } from 'fs';
+import os from 'os';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const WORKSPACE_DIR = path.resolve(__dirname, '../../../../workspace');
+const WORKSPACE_DIR = path.join(os.homedir(), 'workspace');
 
 export const listFilesParams = z.object({
   path: z

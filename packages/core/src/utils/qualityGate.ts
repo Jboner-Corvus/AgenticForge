@@ -1,17 +1,19 @@
 import { promises as fs } from 'fs';
+import os from 'os';
 import path from 'path';
 
-import { config } from '../config.js';
+// import { config } from '../config.js';
 import logger from '../logger.js';
 // src/utils/qualityGate.ts
 // import { runInSandbox } from './dockerManager.js';
 
 // const DEV_SANDBOX_IMAGE = 'node:24-alpine'; // CORRECTION: Passage de node:20 à node:24
-const mountPoint = {
-  Source: config.HOST_PROJECT_PATH || process.cwd(),
-  Target: '/usr/src/app',
-  Type: 'bind' as const,
-};
+// const mountPoint = {
+//   Source: config.HOST_PROJECT_PATH || process.cwd(),
+//   Target: '/usr/src/app',
+//   Type: 'bind' as const,
+// };
+const WORKSPACE_DIR = path.join(os.homedir(), 'workspace');
 
 interface QualityResult {
   output: string;
@@ -92,11 +94,7 @@ export async function runToolTestsInSandbox(
   const outputMessages: string[] = [];
   const tempTestFileName = `temp_tool_test_${Date.now()}.js`;
   // const tempTestFilePathInSandbox = `/usr/src/app/workspace/${tempTestFileName}`;
-  const tempTestFilePathOnHost = path.join(
-    mountPoint.Source,
-    'workspace',
-    tempTestFileName,
-  );
+  const tempTestFilePathOnHost = path.join(WORKSPACE_DIR, tempTestFileName);
 
   // const toolRelativePathInSandbox = path.relative(
   //   mountPoint.Target,

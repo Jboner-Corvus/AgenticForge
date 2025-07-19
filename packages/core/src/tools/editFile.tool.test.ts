@@ -1,6 +1,7 @@
 import { Queue } from 'bullmq';
 /// <reference types="vitest/globals" />
 import { promises as fs } from 'fs';
+import os from 'os';
 import path from 'path';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
@@ -16,7 +17,8 @@ vi.mock('fs', () => ({
 }));
 
 vi.mock('../logger.ts', async () => {
-  const { default: pino } = await vi.importActual<typeof import('pino')>('pino');
+  const { default: pino } =
+    await vi.importActual<typeof import('pino')>('pino');
   const mockLogger = pino({
     enabled: false, // Disable logging output during tests
     level: 'info',
@@ -37,7 +39,7 @@ describe('editFileTool', () => {
   };
 
   const mockFilePath = 'test-file.txt';
-  const mockWorkspaceDir = path.resolve(process.cwd(), 'workspace');
+  const mockWorkspaceDir = path.resolve(os.homedir(), 'workspace');
   const mockAbsolutePath = path.resolve(mockWorkspaceDir, mockFilePath);
 
   beforeEach(() => {

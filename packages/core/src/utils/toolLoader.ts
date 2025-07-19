@@ -124,7 +124,10 @@ async function loadToolFile(file: string): Promise<void> {
     }
 
     const module = await import(`${path.resolve(file)}?update=${Date.now()}`);
-    logger.info({ file, moduleExports: Object.keys(module) }, `[loadToolFile] Loaded module`);
+    logger.info(
+      { file, moduleExports: Object.keys(module) },
+      `[loadToolFile] Loaded module`,
+    );
 
     for (const exportName in module) {
       const exportedItem = module[exportName];
@@ -134,12 +137,18 @@ async function loadToolFile(file: string): Promise<void> {
         'name' in exportedItem &&
         'execute' in exportedItem
       ) {
-        logger.info({ toolName: exportedItem.name, file }, `[loadToolFile] Registering tool`);
+        logger.info(
+          { file, toolName: exportedItem.name },
+          `[loadToolFile] Registering tool`,
+        );
         toolRegistry.register(exportedItem as Tool);
         loadedToolFiles.add(file);
         fileToToolNameMap.set(file, exportedItem.name);
       } else {
-        logger.warn({ exportName, file }, `[loadToolFile] Skipping non-tool export`);
+        logger.warn(
+          { exportName, file },
+          `[loadToolFile] Skipping non-tool export`,
+        );
       }
     }
   } catch (error) {

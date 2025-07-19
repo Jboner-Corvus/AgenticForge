@@ -2,8 +2,6 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-import { config } from '../../config.js';
-
 export const webSearchParams = z.object({
   query: z.string().describe('The search query.'),
 });
@@ -20,44 +18,36 @@ export const webSearchTool: Tool<
   typeof webSearchOutput
 > = {
   description:
-    'Performs a web search using the Tavily API to find up-to-date information.',
+    'Performs a web search using the DuckDuckGo API to find up-to-date information.',
   execute: async (args, ctx: Ctx) => {
     try {
-      if (!config.TAVILY_API_KEY) {
-        const errorMessage = 'Tavily API key is not configured.';
-        ctx.log.error(errorMessage);
-        return { erreur: errorMessage };
-      }
-
       ctx.log.info(`Performing web search for: "${args.query}"`);
 
-      const response = await fetch('https://api.tavily.com/search', {
-        body: JSON.stringify({
-          api_key: config.TAVILY_API_KEY,
-          include_answer: true,
-          max_results: 5,
-          query: args.query,
-          search_depth: 'basic',
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        method: 'POST',
-      });
+      const response = await fetch(
+        `https://api.duckduckgo.com/?q=${encodeURIComponent(args.query)}&format=json`,
+      );
 
       if (!response.ok) {
         const errorBody = await response.text();
-        const errorMessage = `Tavily API request failed: ${errorBody}`;
+        const errorMessage = `DuckDuckGo API request failed: ${errorBody}`;
         ctx.log.error({ errorBody }, errorMessage);
         return { erreur: errorMessage };
       }
 
       const data = await response.json();
 
-      const summary = `Search Answer: ${data.answer}
+      if (!data.AbstractText || data.AbstractText.length === 0) {
+        return 'No direct answer found for this query.';
+      }
+
+      const results = data.RelatedTopics.map(
+        (r: { FirstURL: string; Text: string }) =>
+          `- [${r.Text}](${r.FirstURL})`,
+      );
+      const summary = `Search Answer: ${data.AbstractText}
 
 Results:
-${data.results.map((r: { content: string; title: string; url: string }) => `- [${r.title}](${r.url}): ${r.content}`).join('\n')}`;
+${results.join('\n')}`;
 
       return summary;
     } catch (error: unknown) {

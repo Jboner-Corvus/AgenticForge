@@ -16,7 +16,13 @@ interface StreamMessage {
     | 'error'
     | 'tool.start'
     | 'close'
-    | 'quota_exceeded';
+    | 'quota_exceeded'
+    | 'browser.navigating'
+    | 'browser.page.created'
+    | 'browser.page.loaded'
+    | 'browser.content.extracted'
+    | 'browser.error'
+    | 'browser.closed';
   content?: string;
   toolName?: string;
   params?: Record<string, unknown>;
@@ -26,6 +32,9 @@ interface StreamMessage {
     name?: string;
     args?: Record<string, unknown>;
     content?: string;
+    url?: string;
+    length?: number;
+    message?: string;
   };
 }
 
@@ -42,6 +51,7 @@ export const useAgentStream = () => {
     setAgentStatus,
     addDebugLog,
     setAgentProgress,
+    setBrowserStatus,
   } = useStore();
 
   const startAgent = useCallback(async () => {
@@ -168,6 +178,24 @@ export const useAgentStream = () => {
             callbacks.onToolCall(data.data.name, data.data.args);
           }
           break;
+        case 'browser.navigating':
+          setBrowserStatus(`Navigating to ${data.data?.url}`);
+          break;
+        case 'browser.page.created':
+          setBrowserStatus('Page created');
+          break;
+        case 'browser.page.loaded':
+          setBrowserStatus(`Page loaded: ${data.data?.url}`);
+          break;
+        case 'browser.content.extracted':
+          setBrowserStatus(`Content extracted: ${data.data?.length} bytes`);
+          break;
+        case 'browser.error':
+          setBrowserStatus(`Error: ${data.data?.message}`);
+          break;
+        case 'browser.closed':
+          setBrowserStatus('Browser closed');
+          break;
         case 'close':
           callbacks.onClose();
           setAgentProgress(100);
@@ -199,6 +227,7 @@ export const useAgentStream = () => {
     setAgentStatus,
     addDebugLog,
     setAgentProgress,
+    setBrowserStatus,
   ]);
 
   const interruptAgent = useCallback(async () => {

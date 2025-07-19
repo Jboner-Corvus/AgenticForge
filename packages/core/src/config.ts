@@ -1,5 +1,6 @@
 // FICHIER : packages/core/src/config.ts
 import dotenv from 'dotenv';
+import os from 'os';
 import path from 'path';
 import { z } from 'zod';
 
@@ -35,12 +36,8 @@ const configSchema = z.object({
   TAVILY_API_KEY: z.string().optional(),
   WEBHOOK_SECRET: z.string().optional(),
   WORKER_CONCURRENCY: z.coerce.number().default(5),
-  WORKSPACE_PATH: z
-    .string()
-    .default(path.resolve(process.cwd(), 'workspace')),
+  WORKSPACE_PATH: z.string().default(path.join(os.homedir(), 'workspace')),
 });
-
-
 
 console.log('Resolved .env path:', envPath);
 console.log(
