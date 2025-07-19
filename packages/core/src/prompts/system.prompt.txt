@@ -67,3 +67,19 @@ ASSISTANT's turn. Your response:
   }
 }
 ```
+
+USER:
+Execute the shell command `ls -la` in the working directory.
+
+ASSISTANT's turn. Your response:
+```json
+{
+  "thought": "The user wants to execute a shell command. The `run_shell_command` tool is the correct choice for this. I will set the command to `ls -la`.",
+  "command": {
+    "name": "run_shell_command",
+    "params": {
+      "command": "ls -la"
+    }
+  }
+}
+```

@@ -9,18 +9,17 @@ export const executeShellCommandParams = z.object({
   command: z.string().describe('The shell command to execute.'),
 });
 
-export const executeShellCommandOutput = z.union([
-  z.string(),
-  z.object({
-    erreur: z.string(),
-  }),
-]);
+export const executeShellCommandOutput = z.object({
+  stdout: z.string(),
+  stderr: z.string(),
+  exitCode: z.number(),
+});
 
 export const executeShellCommandTool: Tool<
   typeof executeShellCommandParams,
   typeof executeShellCommandOutput
 > = {
-  description: 'Executes a shell command and streams its output in real-time.',
+  description: 'Executes ANY shell command on the system and streams its output in real-time. Use this tool for tasks requiring direct operating system interaction, such as listing files, running scripts, or managing processes. Be cautious, as this tool can perform powerful and potentially dangerous operations.',
   execute: async (
     args: z.infer<typeof executeShellCommandParams>,
     ctx: Ctx,
@@ -34,6 +33,9 @@ export const executeShellCommandTool: Tool<
           stdio: 'pipe',
         });
 
+        let stdout = '';
+        let stderr = '';
+
         const streamToFrontend = (
           type: 'stderr' | 'stdout',
           content: string,
@@ -45,12 +47,14 @@ export const executeShellCommandTool: Tool<
 
         child.stdout.on('data', (data: Buffer) => {
           const chunk = data.toString();
+          stdout += chunk;
           ctx.log.info(`[stdout] ${chunk}`);
           streamToFrontend('stdout', chunk);
         });
 
         child.stderr.on('data', (data: Buffer) => {
           const chunk = data.toString();
+          stderr += chunk;
           ctx.log.error(`[stderr] ${chunk}`);
           streamToFrontend('stderr', chunk);
         });
@@ -60,7 +64,11 @@ export const executeShellCommandTool: Tool<
             { err: error },
             `Failed to start shell command: ${args.command}`,
           );
-          resolve({ erreur: `Failed to start command: ${error.message}` });
+          resolve({
+            stdout,
+            stderr: stderr + `Failed to start command: ${error.message}`,
+            exitCode: 1, // Indicate an error exit code
+          });
         });
 
         child.on('close', (code) => {
@@ -68,11 +76,11 @@ export const executeShellCommandTool: Tool<
           ctx.log.info(finalMessage);
           streamToFrontend('stdout', `\n${finalMessage}`);
 
-          if (code !== 0) {
-            resolve({ erreur: `Command finished with exit code ${code}.` });
-          } else {
-            resolve(`Command finished with exit code ${code}.`);
-          }
+          resolve({
+            stdout,
+            stderr,
+            exitCode: code ?? 1, // Use 1 if code is null (e.g., killed by signal)
+          });
         });
       });
     } catch (error: unknown) {

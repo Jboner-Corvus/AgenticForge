@@ -15,6 +15,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 console.log('Starting worker...');
+console.log(`[Worker] process.env.DOCKER: ${process.env.DOCKER}`);
 import { Job, Queue, Worker } from 'bullmq';
 import { z } from 'zod';
 
