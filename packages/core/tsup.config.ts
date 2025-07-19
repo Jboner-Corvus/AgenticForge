@@ -9,4 +9,5 @@ export default defineConfig({
   // Utiliser 'copy' pour inclure les fichiers non-ts.
   // Cela préserve la structure des répertoires.
   copy: ['src/prompts/**/*', 'src/tools/**/*', 'src/utils/**/*'],
+  external: ['chromium-bidi'],
 });

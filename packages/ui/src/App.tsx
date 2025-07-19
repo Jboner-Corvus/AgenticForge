@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AppInitializer } from './components/AppInitializer';
+import { AgentVisualizer } from './components/AgentVisualizer';
 import { ControlPanel } from './components/ControlPanel';
 import { Header } from './components/Header';
 import { Skeleton } from './components/ui/skeleton';
@@ -114,6 +115,7 @@ export default function App() {
             </button>
           </div>
         </div>
+        <AgentVisualizer />
       </div>
       <Toaster />
     </div>

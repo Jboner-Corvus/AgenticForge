@@ -1,6 +1,7 @@
 import { Queue } from 'bullmq';
 /// <reference types="vitest/globals" />
 import { promises as fs } from 'fs';
+import os from 'os';
 import path from 'path';
 import { describe, expect, it, Mock, vi } from 'vitest';
 
@@ -52,11 +53,11 @@ describe('writeFileTool', () => {
       mockCtx,
     );
     expect(fs.mkdir).toHaveBeenCalledWith(
-      path.join(process.cwd(), 'workspace', path.dirname(filePath)),
+      path.join(os.homedir(), 'workspace', path.dirname(filePath)),
       { recursive: true },
     );
     expect(fs.writeFile).toHaveBeenCalledWith(
-      path.join(process.cwd(), 'workspace', filePath),
+      path.join(os.homedir(), 'workspace', filePath),
       content,
       'utf-8',
     );
@@ -74,7 +75,7 @@ describe('writeFileTool', () => {
       mockCtx,
     );
     expect(fs.writeFile).toHaveBeenCalledWith(
-      path.join(process.cwd(), 'workspace', filePath),
+      path.join(os.homedir(), 'workspace', filePath),
       content,
       'utf-8',
     );

@@ -36,12 +36,14 @@ describe('executeShellCommandTool', () => {
   it('should execute a valid command and return success message', async () => {
     const command = 'node -e "console.log(\'hello\')"';
     const result = await executeShellCommandTool.execute({ command }, mockCtx);
-    
+
     // CORRECTION : Vérifie que le résultat est un objet avec un code de sortie de 0 et la bonne sortie standard.
-    expect(result).toEqual(expect.objectContaining({
-      exitCode: 0,
-      stdout: expect.stringContaining('hello'),
-    }));
+    expect(result).toEqual(
+      expect.objectContaining({
+        exitCode: 0,
+        stdout: expect.stringContaining('hello'),
+      }),
+    );
 
     expect(mockCtx.log.info).toHaveBeenCalledWith(
       `Spawning shell command: ${command}`,
@@ -54,8 +56,10 @@ describe('executeShellCommandTool', () => {
 
     // CORRECTION : Vérifie que le résultat est un objet avec un code de sortie non nul.
     // L'outil ne renvoie pas de propriété 'erreur' dans ce cas.
-    expect(result).toEqual(expect.objectContaining({
-      exitCode: 1,
-    }));
+    expect(result).toEqual(
+      expect.objectContaining({
+        exitCode: 1,
+      }),
+    );
   });
 });

@@ -1,10 +1,11 @@
 import { promises as fs } from 'fs';
+import os from 'os';
 import path from 'path';
 import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-const WORKSPACE_DIR = path.resolve(__dirname, '../../../../packages/workspace');
+const WORKSPACE_DIR = path.join(os.homedir(), 'workspace');
 
 export const listFilesParams = z.object({
   path: z
@@ -22,7 +23,7 @@ export const listFilesOutput = z.union([
   }),
 ]);
 
-export const listFilesTool: Tool<
+export const listDirectoryTool: Tool<
   typeof listFilesParams,
   typeof listFilesOutput
 > = {
@@ -61,6 +62,6 @@ export const listFilesTool: Tool<
       };
     }
   },
-  name: 'listFiles',
+  name: 'list_directory',
   parameters: listFilesParams,
 };

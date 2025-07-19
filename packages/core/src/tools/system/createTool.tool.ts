@@ -26,17 +26,17 @@ export const parameters = z.object({
 const GENERATED_TOOLS_DIR = path.resolve(process.cwd(), 'src/tools/generated');
 
 const TOOL_TEMPLATE = `
-// Outil généré par l'agent : %s
+// Outil généré par l'agent : {{tool_name}}
 import { z } from 'zod';
 import type { Tool, Ctx } from '../../types.js';
 
-export const %sParams = z.object(%s);
+export const {{toolVarName}}Params = z.object({{parameters}});
 
-export const %sTool: Tool<typeof %sParams> = {
-  name: '%s',
-  description: '%s',
-  parameters: %sParams,
-  execute: %s,
+export const {{toolVarName}}Tool: Tool<typeof {{toolVarName}}Params> = {
+  name: '{{tool_name}}',
+  description: '{{description}}',
+  parameters: {{toolVarName}}Params,
+  execute: {{execute_function}},
 };
 `;
 
@@ -54,14 +54,15 @@ export const createToolTool: Tool<typeof parameters> = {
     try {
       ctx.log.warn('AGENT IS CREATING A NEW TOOL.', { tool: tool_name });
 
-      const toolFileContent = TOOL_TEMPLATE.replace(/%s/g, (match) => {
-        if (match === '%sParams') return `${toolVarName}Params`;
-        if (match === '%sTool') return `${toolVarName}Tool`;
-        if (match === 'z.object(%s)') return `z.object(${parameters})`;
-        if (match === 'execute: %s') return `execute: ${execute_function}`;
-        if (match.includes("Description de l'outil")) return description;
-        return tool_name;
-      });
+      const toolFileContent = TOOL_TEMPLATE.replace('{{tool_name}}', tool_name)
+        .replace('{{toolVarName}}Params', `${toolVarName}Params`)
+        .replace('{{parameters}}', parameters)
+        .replace('{{toolVarName}}Tool', `${toolVarName}Tool`)
+        .replace('{{toolVarName}}Params', `${toolVarName}Params`)
+        .replace('{{tool_name}}', tool_name)
+        .replace('{{description}}', description)
+        .replace('{{toolVarName}}Params', `${toolVarName}Params`)
+        .replace('{{execute_function}}', execute_function);
 
       await fs.mkdir(GENERATED_TOOLS_DIR, { recursive: true });
       await fs.writeFile(toolFilePath, toolFileContent, 'utf-8');

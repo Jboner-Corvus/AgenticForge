@@ -3,6 +3,8 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
+import { redis } from '../../redisClient.js';
+
 export const parameters = z.object({
   url: z.string().url().describe('The URL to navigate to.'),
 });
@@ -25,26 +27,49 @@ async function getPageContent(page: Page): Promise<string> {
   return mainContent.replace(/\s\s+/g, ' ').trim();
 }
 
+const sendEvent = async (ctx: Ctx, type: string, data: unknown) => {
+  if (ctx.job?.id) {
+    const channel = `job:${ctx.job.id}:events`;
+    const event = JSON.stringify({ data, type });
+    await redis.publish(channel, event);
+    ctx.log.info({ channel, event }, 'Published event to Redis');
+  }
+};
+
 export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
   description:
     'Navigates to a URL using a headless Chromium browser and returns its textual content. Ideal for modern websites with JavaScript.',
   execute: async (args: z.infer<typeof parameters>, ctx: Ctx) => {
     ctx.log.info(`Navigating to URL: ${args.url}`);
-    const browser = await chromium.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    await sendEvent(ctx, 'browser.navigating', { url: args.url });
 
+    let browser;
     try {
+      ctx.log.info('Launching browser...');
+      browser = await chromium.launch({
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+      ctx.log.info('Browser launched.');
+
       const page = await browser.newPage();
+      ctx.log.info('New page created.');
+      await sendEvent(ctx, 'browser.page.created', {});
+
+      ctx.log.info(`Going to ${args.url}...`);
       await page.goto(args.url, {
-        timeout: 90000,
+        timeout: 30000, // 30 seconds
         waitUntil: 'domcontentloaded',
       });
+      ctx.log.info(`Page loaded: ${args.url}`);
+      await sendEvent(ctx, 'browser.page.loaded', { url: args.url });
 
       const content = await getPageContent(page);
       ctx.log.info(
         `Successfully retrieved content from ${args.url}. Length: ${content.length}`,
       );
+      await sendEvent(ctx, 'browser.content.extracted', {
+        length: content.length,
+      });
 
       return {
         content: content,
@@ -53,9 +78,22 @@ export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error(String(error));
       ctx.log.error({ err }, `Failed to browse ${args.url}`);
+      await sendEvent(ctx, 'browser.error', {
+        message: err.message,
+        url: args.url,
+      });
       return { erreur: `Error while Browse ${args.url}: ${err.message}` };
     } finally {
-      await browser.close();
+      if (browser) {
+        try {
+          ctx.log.info('Closing browser...');
+          await browser.close();
+          ctx.log.info('Browser closed.');
+        } catch (e) {
+          ctx.log.error(e, 'Failed to close browser');
+        }
+      }
+      await sendEvent(ctx, 'browser.closed', {});
     }
   },
   name: 'browser',
