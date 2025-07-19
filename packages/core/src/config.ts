@@ -37,9 +37,7 @@ const configSchema = z.object({
   WORKER_CONCURRENCY: z.coerce.number().default(5),
   WORKSPACE_PATH: z
     .string()
-    .default(
-      '/home/demon/agentforge/AgenticForge2/AgenticForge4/packages/core/workspace',
-    ),
+    .default(path.resolve(process.cwd(), 'workspace')),
 });
 
 
