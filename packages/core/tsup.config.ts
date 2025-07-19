@@ -2,8 +2,8 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig({
   clean: true,
-  dts: { exclude: ['**/*.test.ts'] },
-  entry: ['src/**/*.ts', '!src/**/*.test.ts'],
+  dts: true,
+  entry: ['src/**/*.ts', '!src/**/*.test.ts', 'src/types.ts'],
   format: ['esm'],
   outDir: 'dist',
   // Utiliser 'copy' pour inclure les fichiers non-ts.
