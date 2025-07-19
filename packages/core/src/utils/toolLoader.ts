@@ -76,18 +76,12 @@ async function findToolFiles(
   let files: string[] = [];
   logger.info(`[findToolFiles] Scanning directory: ${dir}`);
   try {
-    logger.info(`[findToolFiles] About to read directory: ${dir}`);
     const entries = await fs.readdir(dir, { withFileTypes: true });
-    logger.info(
-      `[findToolFiles] Found entries: ${entries.map((e) => e.name).join(', ')}`,
-    );
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        logger.info(`[findToolFiles] Found directory: ${fullPath}`);
         files = files.concat(await findToolFiles(fullPath, extension));
       } else if (entry.isFile() && entry.name.endsWith(extension)) {
-        logger.info(`[findToolFiles] Found tool file: ${fullPath}`);
         files.push(fullPath);
       }
     }
@@ -98,7 +92,6 @@ async function findToolFiles(
       directory: dir,
       logContext: "Erreur lors du parcours du répertoire d'outils.",
     });
-    // Ne pas lancer d'erreur si le répertoire n'existe pas (cas des tests)
     if (!errDetails.message.includes('ENOENT')) {
       throw new Error(
         `Impossible de lire le répertoire des outils '${dir}'. Détails: ${errDetails.message}`,
@@ -131,10 +124,9 @@ async function loadToolFile(file: string): Promise<void> {
     }
 
     const module = await import(`${path.resolve(file)}?update=${Date.now()}`);
-    console.log(`Module loaded for ${file}:`, module); // Added log
+    logger.info({ file, moduleExports: Object.keys(module) }, `[loadToolFile] Loaded module`);
 
     for (const exportName in module) {
-      console.log(`Checking export: ${exportName}`); // Added log
       const exportedItem = module[exportName];
       if (
         exportedItem &&
@@ -142,22 +134,19 @@ async function loadToolFile(file: string): Promise<void> {
         'name' in exportedItem &&
         'execute' in exportedItem
       ) {
-        console.log(`Registering tool: ${exportedItem.name}`); // Added log
+        logger.info({ toolName: exportedItem.name, file }, `[loadToolFile] Registering tool`);
         toolRegistry.register(exportedItem as Tool);
         loadedToolFiles.add(file);
         fileToToolNameMap.set(file, exportedItem.name);
-        logger.info(
-          `Outil chargé : '${exportedItem.name}' depuis ${path.basename(file)}`,
-        );
       } else {
-        console.log(`Skipping export: ${exportName}`); // Added log
+        logger.warn({ exportName, file }, `[loadToolFile] Skipping non-tool export`);
       }
     }
   } catch (error) {
     logger.error({
       ...getErrDetails(error),
       file,
-      logContext: `Échec du chargement dynamique du fichier d'outil.`,
+      logContext: `[loadToolFile] Failed to dynamically load tool file.`,
     });
   }
 }
