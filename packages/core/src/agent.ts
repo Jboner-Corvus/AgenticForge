@@ -202,10 +202,17 @@ export class Agent {
             this.publishToChannel(eventData);
 
             const toolResult = await this.executeTool(command, iterationLog);
-            const summarizedResult = this.summarizeToolResult(toolResult);
+            let resultForHistory: unknown = toolResult;
+
+            // Special handling for readFile to avoid summarizing its content
+            if (command.name === 'readFile') {
+              resultForHistory = toolResult; // Use the raw content
+            } else {
+              resultForHistory = this.summarizeToolResult(toolResult);
+            }
 
             this.session.history.push({
-              content: `Tool result: ${JSON.stringify(summarizedResult)}`,
+              content: `Tool result: ${JSON.stringify(resultForHistory)}`,
               role: 'tool',
             });
           } else {
@@ -218,8 +225,8 @@ export class Agent {
             {
               err: {
                 message: err.message,
-                stack: err.stack,
                 name: err.name,
+                stack: err.stack,
               },
             },
             'Error during agent iteration',
@@ -228,7 +235,7 @@ export class Agent {
             content: `An unexpected error occurred: ${err.message}`,
             role: 'user',
           });
-          break;
+          throw err;
         }
       }
 
@@ -371,7 +378,7 @@ export class Agent {
       if (validation.success) {
         return validation.data;
       }
-    } catch (e) {
+            } catch {
       // Not a valid JSON object, proceed to next method
     }
 

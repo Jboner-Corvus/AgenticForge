@@ -5,11 +5,11 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-import { getErrDetails, UserError } from '../../utils/errorUtils.js';
+import { getErrDetails, UserError } from '../../utils/errorUtils.ts';
 import {
   runQualityGate,
   runToolTestsInSandbox,
-} from '../../utils/qualityGate.js';
+} from '../../utils/qualityGate.ts';
 
 const GENERATED_TOOLS_DIR = path.resolve(process.cwd(), 'src/tools/generated');
 

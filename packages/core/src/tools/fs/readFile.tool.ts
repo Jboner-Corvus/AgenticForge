@@ -2,9 +2,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
 
+import { config } from '../../config.js'; // Import config
 import type { Ctx, Tool } from '../../types.js';
-
-const WORKSPACE_DIR = path.resolve(process.cwd(), 'workspace');
 
 export const readFileParams = z.object({
   end_line: z
@@ -30,9 +29,9 @@ export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> =
     description:
       'Reads the content of a file from the workspace. Use this to "open", "view", or "check" a file.',
     execute: async (args, ctx: Ctx) => {
-      const absolutePath = path.resolve(WORKSPACE_DIR, args.path);
+      const absolutePath = path.join(config.WORKSPACE_PATH, args.path);
 
-      if (!absolutePath.startsWith(WORKSPACE_DIR)) {
+      if (!absolutePath.startsWith(config.WORKSPACE_PATH)) {
         return {
           erreur: 'File path is outside the allowed workspace directory.',
         };
@@ -46,12 +45,12 @@ export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> =
         if (args.start_line !== undefined) {
           const lines = content.split('\n');
           const start = args.start_line - 1;
-          const end = args.end_line ?? start + 1; // Si end_line n'est pas fourni, ne lit qu'une seule ligne.
+          const end = args.end_line ?? start + 1; // If end_line is not provided, read only one line.
           const snippet = lines.slice(start, end).join('\n');
-          return `Content of ${args.path} (lines ${args.start_line}-${end}):\n\n${snippet}`;
+          return snippet; // Return only the snippet
         }
 
-        return `Content of ${args.path}:\n\n${content}`;
+        return content; // Return only the content
       } catch (error: unknown) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
           return { erreur: `File not found at path: ${args.path}` };

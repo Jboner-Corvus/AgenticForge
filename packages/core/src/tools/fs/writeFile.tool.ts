@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
 
+import { config } from '../../config.js'; // Import config
 import type { Ctx, Tool } from '../../types.js';
 
 export const writeFileParams = z.object({
@@ -30,7 +31,7 @@ export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
   description:
     'Writes content to a file, overwriting it. Creates the file and directories if they do not exist.',
   execute: async (args, ctx: Ctx) => {
-    const absolutePath = path.resolve(args.path);
+    const absolutePath = path.join(config.WORKSPACE_PATH, args.path);
 
     try {
       // Assurer que le répertoire existe

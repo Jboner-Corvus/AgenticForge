@@ -30,7 +30,7 @@ usage() {
     echo "Commandes disponibles:"
     echo "  start             : Démarre tous les services (Docker et worker local)."
     echo "  stop              : Arrête tous les services (Docker et worker local)."
-    echo "  restart           : Redémarre tous les services."
+    echo "  restart [worker]  : Redémarre tous les services ou seulement le worker."
     echo "  status            : Affiche le statut des conteneurs Docker."
     echo "  logs [service]    : Affiche les logs. 'service' peut être 'worker' ou 'docker'."
     echo "  rebuild           : Force la reconstruction des images Docker et redémarre."
@@ -163,6 +163,21 @@ stop_worker() {
     fi
 }
 
+# Démarre le worker en arrière-plan.
+start_worker() {
+    echo -e "${COLOR_YELLOW}Démarrage du worker local en arrière-plan...${NC}"
+    cd "${SCRIPT_DIR}/packages/core"
+    
+    # Exécute le worker avec tsx et enregistre la sortie et le PID.
+    # L'utilisation de --enable-source-maps est recommandée pour un meilleur débogage.
+    NODE_OPTIONS='--enable-source-maps' pnpm exec tsx watch src/worker.ts > "${SCRIPT_DIR}/worker.log" 2>&1 &
+    
+    WORKER_PID=$!
+    echo $WORKER_PID > "${SCRIPT_DIR}/worker.pid"
+    echo -e "${COLOR_GREEN}✓ Worker démarré avec le PID ${WORKER_PID}. Logs disponibles dans worker.log.${NC}"
+    cd "${SCRIPT_DIR}" # Revenir au répertoire du script
+}
+
 # Démarre tous les services dans le bon ordre.
 start_services() {
     cd "${SCRIPT_DIR}"
@@ -193,16 +208,7 @@ start_services() {
         return 1
     fi
     
-    echo "DEBUG: REDIS_HOST in run.sh before worker launch: $REDIS_HOST"
-    echo "DEBUG: REDIS_PORT in run.sh before worker launch: $REDIS_PORT"
-    echo -e "${COLOR_YELLOW}Démarrage du worker local...${NC}"
-    
-    # Passage explicite des variables d'environnement au worker pour garantir la bonne configuration.
-    NODE_ENV=production nohup pnpm --filter @agenticforge/core start:worker > "${SCRIPT_DIR}/worker.log" 2>&1 &
-    
-    WORKER_PID=$!
-    echo $WORKER_PID > "${SCRIPT_DIR}/worker.pid"
-    echo -e "${COLOR_GREEN}✓ Worker lancé avec le PID: ${WORKER_PID}. Logs dans 'worker.log'.${NC}"
+    start_worker
 }
 
 # Arrête tous les services.
@@ -214,10 +220,17 @@ stop_services() {
 }
 
 # Redémarre tous les services.
-restart_services() {
+restart_all_services() {
     echo -e "${COLOR_YELLOW}Redémarrage complet de tous les services...${NC}"
     stop_services
     start_services
+}
+
+# Redémarre uniquement le worker.
+restart_worker() {
+    echo -e "${COLOR_YELLOW}Redémarrage du worker...${NC}"
+    stop_worker
+    start_worker
 }
 
 # Affiche le statut des conteneurs.
@@ -231,13 +244,13 @@ show_logs() {
     if [ "$1" == "worker" ]; then
         echo -e "${COLOR_CYAN}--- Logs du Worker (tail -f) ---${NC}"
         if [ -f "${SCRIPT_DIR}/worker.log" ]; then
-            tail -n 100 "${SCRIPT_DIR}/worker.log"
+            tail -f "${SCRIPT_DIR}/worker.log"
         else
             echo -e "${COLOR_RED}✗ Le fichier worker.log n'existe pas.${NC}"
         fi
     else
-        echo -e "${COLOR_CYAN}--- Affichage des 100 dernières lignes des logs Docker ---${NC}"
-        docker compose -f "${SCRIPT_DIR}/docker-compose.yml" logs --tail="100"
+        echo -e "${COLOR_CYAN}--- Affichage des logs Docker en continu (tail -f) ---${NC}"
+        docker compose -f "${SCRIPT_DIR}/docker-compose.yml" logs -f
     fi
 }
 
@@ -310,9 +323,10 @@ show_menu() {
     echo -e "──────────────────────────────────────────"
     echo -e "  ${COLOR_CYAN}Docker & Services${NC}"
     printf "   1) ${COLOR_GREEN}🟢 Démarrer${NC}         5) ${COLOR_BLUE}📊 Logs${NC}\n"
-    printf "   2) ${COLOR_YELLOW}🔄 Redémarrer${NC}       6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\n"
+    printf "   2) ${COLOR_YELLOW}🔄 Redémarrer tout${NC}  6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\n"
     printf "   3) ${COLOR_RED}🔴 Arrêter${NC}          7) ${COLOR_BLUE}🔨 Rebuild (no cache)${NC}\n"
     printf "   4) ${COLOR_CYAN}⚡ Statut${NC}           8) ${COLOR_RED}🧹 Nettoyer Docker${NC}\n"
+    printf "   9) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}\n"
     echo ""
     echo -e "  ${COLOR_CYAN}Développement${NC}"
     printf "  10) ${COLOR_BLUE}🔍 Lint${NC}           12) ${COLOR_BLUE}🧪 Tests${NC}\n"
@@ -331,7 +345,12 @@ if [ "$#" -gt 0 ]; then
     case "$1" in
         start) start_services ;;
         stop) stop_services ;;
-        restart) restart_services ;;
+        restart)
+            case "$2" in
+                worker) restart_worker ;;
+                *) restart_all_services ;;
+            esac
+            ;;
         status) show_status ;;
         logs) show_logs "$2" ;;
         rebuild) rebuild_services ;;
@@ -360,13 +379,14 @@ while true; do
 
     case $choice in
         1) start_services ;;
-        2) restart_services ;;
+        2) restart_all_services ;;
         3) stop_services ;;
         4) show_status ;;
         5) read -p "Quel service? (worker/docker) [docker]: " log_choice; show_logs ${log_choice:-docker} ;;
         6) shell_access ;;
         7) rebuild_services ;;
         8) clean_docker ;;
+        9) restart_worker ;;
         10) run_lint ;;
         11) run_format ;;
         12) run_tests ;;

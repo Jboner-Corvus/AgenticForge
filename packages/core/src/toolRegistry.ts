@@ -16,7 +16,7 @@
 // Une description imprécise ou un schéma de paramètres incorrect mènera quasi-certainement
 // à des erreurs d'exécution ou à un mauvais choix d'outil par l'agent.
 
-import { z } from 'zod';
+
 
 import logger from './logger.js';
 import { Ctx, Tool } from './types.js';

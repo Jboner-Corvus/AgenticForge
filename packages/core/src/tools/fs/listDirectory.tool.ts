@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-const WORKSPACE_DIR = path.resolve(process.cwd(), 'workspace');
+const WORKSPACE_DIR = path.resolve(process.cwd(), 'AgenticForge4/packages/core/workspace');
 
 export const listFilesParams = z.object({
   path: z
@@ -29,7 +29,8 @@ export const listFilesTool: Tool<
   description:
     'Lists files and directories within a specified path in the workspace.',
   execute: async (args, ctx: Ctx) => {
-    const targetDir = path.resolve(WORKSPACE_DIR, args.path);
+    const { path: listPath } = args;
+    const targetDir = path.resolve(WORKSPACE_DIR, listPath);
 
     if (!targetDir.startsWith(WORKSPACE_DIR)) {
       return { erreur: 'Path is outside the allowed workspace directory.' };
@@ -41,15 +42,15 @@ export const listFilesTool: Tool<
         entry.isDirectory() ? `${entry.name}/` : entry.name,
       );
 
-      const result = `Directory listing for 'workspace/${args.path}':\n- ${fileList.join('\n- ')}`;
+      const result = `Directory listing for 'workspace/${listPath}':\n- ${fileList.join('\n- ')}`;
       ctx.log.info(`Listed files in directory: ${targetDir}`);
       return fileList.length > 0
         ? result
-        : `Directory 'workspace/${args.path}' is empty.`;
+        : `Directory 'workspace/${listPath}' is empty.`;
     } catch (error: unknown) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return {
-          erreur: `Directory not found at path: workspace/${args.path}`,
+          erreur: `Directory not found at path: workspace/${listPath}`,
         };
       }
       ctx.log.error(
@@ -60,6 +61,6 @@ export const listFilesTool: Tool<
       };
     }
   },
-  name: 'list_directory',
+  name: 'listFiles',
   parameters: listFilesParams,
 };

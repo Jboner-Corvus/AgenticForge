@@ -26,8 +26,8 @@ class GeminiProvider implements LLMProvider {
 
     if (systemPrompt) {
       messages.unshift({
-        role: 'user',
         parts: [{ text: systemPrompt }],
+        role: 'user',
       });
     }
 

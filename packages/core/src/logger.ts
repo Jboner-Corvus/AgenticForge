@@ -11,6 +11,8 @@ const logger = pino({
         colorize: true,
         levelFirst: true,
         translateTime: 'SYS:standard',
+        singleLine: false,
+        depth: 5,
       },
       target: 'pino-pretty',
     },

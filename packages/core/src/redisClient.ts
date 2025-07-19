@@ -19,6 +19,7 @@ import logger from './logger.js';
 const redisHost = process.env.DOCKER === 'true' ? config.REDIS_HOST : 'localhost';
 const redisUrl = `redis://${redisHost}:${config.REDIS_PORT}`;
 
+logger.info(`[redisClient] Resolved redisHost: ${redisHost}`);
 logger.info(`[redisClient] Connecting to Redis at: ${redisUrl}`);
 
 // Utiliser l'URL construite pour la connexion
