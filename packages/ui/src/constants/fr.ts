@@ -24,6 +24,7 @@ export const fr = {
   tokenValid: "Token Valide",
   tokenRequired: "Token requis",
   settings: "Settings",
+  notifications: "Notifications",
   authToken: "Auth Token:",
   authTokenPlaceholder: "Collez votre Bearer Token ici",
   saveToken: "Save Token",

@@ -3,6 +3,9 @@
 # ==============================================================================
 # Configuration & Constantes
 # ==============================================================================
+# Obtenir le répertoire où se trouve le script pour rendre les chemins robustes
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+
 # Nom du service dans docker-compose.yml pour les commandes spécifiques à Docker
 APP_SERVICE_NAME="server"
 # Port Redis standardisé pour tout l'environnement
@@ -27,7 +30,7 @@ usage() {
     echo "Commandes disponibles:"
     echo "  start             : Démarre tous les services (Docker et worker local)."
     echo "  stop              : Arrête tous les services (Docker et worker local)."
-    echo "  restart           : Redémarre tous les services."
+    echo "  restart [worker]  : Redémarre tous les services ou seulement le worker."
     echo "  status            : Affiche le statut des conteneurs Docker."
     echo "  logs [service]    : Affiche les logs. 'service' peut être 'worker' ou 'docker'."
     echo "  rebuild           : Force la reconstruction des images Docker et redémarre."
@@ -132,32 +135,52 @@ check_redis_availability() {
 # Charge les variables du fichier .env pour les rendre disponibles dans ce script.
 load_env_vars() {
     if [ -f .env ]; then
-        export $(grep -v '^#' .env | xargs)
+        set -a # Exporte automatiquement les variables
+        source .env
+        set +a # Arrête l'exportation automatique
     else
         echo -e "${COLOR_RED}✗ Le fichier .env est introuvable. Lancement de la création...${NC}"
         check_and_create_env
-        export $(grep -v '^#' .env | xargs)
+        set -a
+        source .env
+        set +a
     fi
 }
 
 # Arrête proprement le processus worker local.
 stop_worker() {
     echo -e "${COLOR_YELLOW}Arrêt du worker local...${NC}"
-    if [ -f worker.pid ]; then
-        WORKER_PID=$(cat worker.pid)
+    if [ -f "${SCRIPT_DIR}/worker.pid" ]; then
+        WORKER_PID=$(cat "${SCRIPT_DIR}/worker.pid")
         if kill $WORKER_PID 2>/dev/null; then
             echo -e "${COLOR_GREEN}✓ Worker (PID ${WORKER_PID}) arrêté.${NC}"
         else
             echo -e "${COLOR_YELLOW}Impossible d'arrêter le worker (PID ${WORKER_PID}). Il n'était peut-être pas en cours d'exécution.${NC}"
         fi
-        rm worker.pid
+        rm "${SCRIPT_DIR}/worker.pid"
     else
         echo -e "${COLOR_YELLOW}Fichier worker.pid non trouvé. Le worker est déjà arrêté.${NC}"
     fi
 }
 
+# Démarre le worker en arrière-plan.
+start_worker() {
+    echo -e "${COLOR_YELLOW}Démarrage du worker local en arrière-plan...${NC}"
+    cd "${SCRIPT_DIR}/packages/core"
+    
+    # Exécute le worker avec tsx et enregistre la sortie et le PID.
+    # L'utilisation de --enable-source-maps est recommandée pour un meilleur débogage.
+    NODE_OPTIONS='--enable-source-maps' pnpm exec tsx watch src/worker.ts > "${SCRIPT_DIR}/worker.log" 2>&1 &
+    
+    WORKER_PID=$!
+    echo $WORKER_PID > "${SCRIPT_DIR}/worker.pid"
+    echo -e "${COLOR_GREEN}✓ Worker démarré avec le PID ${WORKER_PID}. Logs disponibles dans worker.log.${NC}"
+    cd "${SCRIPT_DIR}" # Revenir au répertoire du script
+}
+
 # Démarre tous les services dans le bon ordre.
 start_services() {
+    cd "${SCRIPT_DIR}"
     check_and_create_env
     load_env_vars
     stop_worker # S'assurer que l'ancien worker est bien arrêté.
@@ -171,8 +194,12 @@ start_services() {
         fi
     fi
 
+    echo -e "${COLOR_YELLOW}Construction du package 'core' (si nécessaire)...${NC}"
+    cd "${SCRIPT_DIR}"
+    pnpm --filter @agenticforge/core build
+
     echo -e "${COLOR_YELLOW}Démarrage des services Docker...${NC}"
-    DOCKER_COMPOSE_FILES="docker-compose.yml"
+    DOCKER_COMPOSE_FILES="${SCRIPT_DIR}/docker-compose.yml"
     docker compose -f $DOCKER_COMPOSE_FILES up -d
     
     # Utilisation de la nouvelle fonction de vérification robuste
@@ -181,60 +208,56 @@ start_services() {
         return 1
     fi
     
-    echo -e "${COLOR_YELLOW}Construction du package 'core' (si nécessaire)...${NC}"
-    pnpm --filter @agenticforge/core build
-    
-    echo -e "${COLOR_YELLOW}Démarrage du worker local...${NC}"
-    
-    # Passage explicite des variables d'environnement au worker pour garantir la bonne configuration.
-    REDIS_URL="redis://127.0.0.1:${REDIS_PORT_STD}" \
-nohup pnpm --filter @agenticforge/core start:worker > worker.log 2>&1 &
-    
-    WORKER_PID=$!
-    echo $WORKER_PID > worker.pid
-    echo -e "${COLOR_GREEN}✓ Worker lancé avec le PID: ${WORKER_PID}. Logs dans 'worker.log'.${NC}"
+    start_worker
 }
 
 # Arrête tous les services.
 stop_services() {
     echo -e "${COLOR_YELLOW}Arrêt des services Docker...${NC}"
-    docker compose down
+    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" down
     stop_worker
     echo -e "${COLOR_GREEN}✓ Services arrêtés.${NC}"
 }
 
 # Redémarre tous les services.
-restart_services() {
+restart_all_services() {
     echo -e "${COLOR_YELLOW}Redémarrage complet de tous les services...${NC}"
     stop_services
     start_services
 }
 
+# Redémarre uniquement le worker.
+restart_worker() {
+    echo -e "${COLOR_YELLOW}Redémarrage du worker...${NC}"
+    stop_worker
+    start_worker
+}
+
 # Affiche le statut des conteneurs.
 show_status() {
     echo -e "${COLOR_CYAN}--- Statut des conteneurs Docker ---${NC}"
-    docker compose ps
+    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" ps
 }
 
 # Affiche les logs pour un service donné.
 show_logs() {
     if [ "$1" == "worker" ]; then
         echo -e "${COLOR_CYAN}--- Logs du Worker (tail -f) ---${NC}"
-        if [ -f worker.log ]; then
-            tail -n 30 worker.log
+        if [ -f "${SCRIPT_DIR}/worker.log" ]; then
+            tail -f "${SCRIPT_DIR}/worker.log"
         else
             echo -e "${COLOR_RED}✗ Le fichier worker.log n'existe pas.${NC}"
         fi
     else
-        echo -e "${COLOR_CYAN}--- Logs Docker (docker compose logs -f) ---${NC}"
-        docker compose logs -f
+        echo -e "${COLOR_CYAN}--- Affichage des logs Docker en continu (tail -f) ---${NC}"
+        docker compose -f "${SCRIPT_DIR}/docker-compose.yml" logs -f
     fi
 }
 
 # Ouvre un shell dans le conteneur du serveur.
 shell_access() {
     echo -e "${COLOR_YELLOW}Ouverture d'un shell dans le conteneur '${APP_SERVICE_NAME}'...${NC}"
-    docker compose exec "${APP_SERVICE_NAME}" /bin/bash
+    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" exec "${APP_SERVICE_NAME}" /bin/bash
 }
 
 # Reconstruit les images Docker sans utiliser le cache.
@@ -243,7 +266,7 @@ rebuild_services() {
     stop_services
 
     echo -e "${COLOR_YELLOW}Reconstruction forcée des images Docker (sans cache)...${NC}"
-    docker compose build --no-cache
+    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" build --no-cache
     echo -e "${COLOR_GREEN}✓ Reconstruction terminée.${NC}"
     
     echo -e "${COLOR_YELLOW}Redémarrage des services avec les nouvelles images...${NC}"
@@ -255,7 +278,7 @@ clean_docker() {
     echo -e "${COLOR_RED}ATTENTION : Cette action va supprimer les conteneurs, volumes ET réseaux non utilisés.${NC}"
     
         echo -e "${COLOR_YELLOW}Arrêt et suppression des conteneurs et volumes du projet...${NC}"
-        docker compose down -v --remove-orphans
+        docker compose -f "${SCRIPT_DIR}/docker-compose.yml" down -v --remove-orphans
         echo -e "${COLOR_YELLOW}Suppression des réseaux Docker non utilisés (prune)...${NC}"
         docker network prune -f
         echo -e "${COLOR_GREEN}✓ Nettoyage terminé.${NC}"
@@ -300,9 +323,10 @@ show_menu() {
     echo -e "──────────────────────────────────────────"
     echo -e "  ${COLOR_CYAN}Docker & Services${NC}"
     printf "   1) ${COLOR_GREEN}🟢 Démarrer${NC}         5) ${COLOR_BLUE}📊 Logs${NC}\n"
-    printf "   2) ${COLOR_YELLOW}🔄 Redémarrer${NC}       6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\n"
+    printf "   2) ${COLOR_YELLOW}🔄 Redémarrer tout${NC}  6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\n"
     printf "   3) ${COLOR_RED}🔴 Arrêter${NC}          7) ${COLOR_BLUE}🔨 Rebuild (no cache)${NC}\n"
     printf "   4) ${COLOR_CYAN}⚡ Statut${NC}           8) ${COLOR_RED}🧹 Nettoyer Docker${NC}\n"
+    printf "   9) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}\n"
     echo ""
     echo -e "  ${COLOR_CYAN}Développement${NC}"
     printf "  10) ${COLOR_BLUE}🔍 Lint${NC}           12) ${COLOR_BLUE}🧪 Tests${NC}\n"
@@ -321,7 +345,12 @@ if [ "$#" -gt 0 ]; then
     case "$1" in
         start) start_services ;;
         stop) stop_services ;;
-        restart) restart_services ;;
+        restart)
+            case "$2" in
+                worker) restart_worker ;;
+                *) restart_all_services ;;
+            esac
+            ;;
         status) show_status ;;
         logs) show_logs "$2" ;;
         rebuild) rebuild_services ;;
@@ -350,13 +379,14 @@ while true; do
 
     case $choice in
         1) start_services ;;
-        2) restart_services ;;
+        2) restart_all_services ;;
         3) stop_services ;;
         4) show_status ;;
         5) read -p "Quel service? (worker/docker) [docker]: " log_choice; show_logs ${log_choice:-docker} ;;
         6) shell_access ;;
         7) rebuild_services ;;
         8) clean_docker ;;
+        9) restart_worker ;;
         10) run_lint ;;
         11) run_format ;;
         12) run_tests ;;

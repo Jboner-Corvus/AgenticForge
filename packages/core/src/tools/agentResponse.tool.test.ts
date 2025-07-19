@@ -1,12 +1,12 @@
 /// <reference types="vitest/globals" />
-import { Job, Queue } from 'bullmq';
+import { Queue } from 'bullmq';
 import { describe, expect, it, vi } from 'vitest';
 
-import logger from '../../logger.js';
-import { Ctx, SessionData } from '../types.js';
-import { agentResponseTool } from './agentResponse.tool.js';
+import logger from '../logger.ts';
+import { Ctx, ILlmProvider, SessionData } from '../types.js';
+import { agentResponseTool } from './system/agentResponse.tool.js';
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../logger.ts', () => ({
   default: {
     child: vi.fn().mockReturnThis(),
     debug: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock('../../logger.js', () => ({
 
 describe('agentResponseTool', () => {
   const mockCtx: Ctx = {
-    job: { id: 'test-job-id' } as Job,
+    llm: {} as ILlmProvider,
     log: logger,
     reportProgress: vi.fn(),
     session: {} as SessionData,

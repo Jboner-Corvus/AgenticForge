@@ -2,7 +2,7 @@ import type { Content, Context as FastMCPContext } from 'fastmcp';
 
 export type { Content };
 
-import { Job, Queue } from 'bullmq';
+import { Queue } from 'bullmq';
 import { z, ZodTypeAny } from 'zod';
 
 import logger from './logger.js';
@@ -19,7 +19,8 @@ export interface AgentSession {
 }
 
 export type Ctx = {
-  job?: Job;
+  job?: MinimalJob;
+  llm: ILlmProvider; // <-- AJOUTEZ OU MODIFIEZ CETTE LIGNE
   log: typeof logger;
   reportProgress?: (progress: AgentProgress) => Promise<void>;
   session?: SessionData;
@@ -27,9 +28,25 @@ export type Ctx = {
   taskQueue: Queue;
 } & Omit<FastMCPContext<SessionData>, 'reportProgress' | 'streamContent'>;
 
+import type { LLMContent } from './llm-types.js';
+
+export interface ILlmProvider {
+  getLlmResponse(
+    messages: LLMContent[],
+    systemPrompt?: string,
+  ): Promise<string>;
+}
+
 export interface Message {
   content: string;
   role: 'model' | 'tool' | 'user';
+}
+
+export interface MinimalJob {
+  data: unknown;
+  id?: string;
+  isFailed(): Promise<boolean>;
+  name: string;
 }
 
 export interface SessionData {

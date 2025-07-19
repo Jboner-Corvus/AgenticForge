@@ -41,8 +41,9 @@ export default tseslint.config(
           "caughtErrorsIgnorePattern": "^_",
           "varsIgnorePattern": "^_"
         }
-      ]
-    }
+      ],
+      "react-refresh/only-export-components": "off"
+    },
   },
   {
     files: ["packages/ui/**/*.js", "packages/ui/**/*.ts", "packages/ui/**/*.tsx"],

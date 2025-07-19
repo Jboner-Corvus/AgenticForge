@@ -30,6 +30,11 @@ export async function startWebServer() {
       let sessionId = req.cookies.agenticforge_session_id;
 
       if (!sessionId) {
+        // Try to get session ID from a custom header for non-browser clients (e.g., curl)
+        sessionId = req.headers['x-agenticforge-session-id'] as string;
+      }
+
+      if (!sessionId) {
         sessionId = uuidv4();
         res.cookie('agenticforge_session_id', sessionId, {
           httpOnly: true,

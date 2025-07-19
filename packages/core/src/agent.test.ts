@@ -5,9 +5,9 @@ import { z } from 'zod';
 import { Agent } from './agent.js';
 import { redis } from './redisClient.js';
 import { toolRegistry } from './toolRegistry.js';
-import * as allTools from './tools/index.js';
-import { SessionData } from './types.js';
+import { Ctx, SessionData } from './types.js';
 import { llmProvider } from './utils/llmProvider.js';
+import { getTools } from './utils/toolLoader.js';
 
 vi.mock('./utils/llmProvider.js', () => ({
   llmProvider: {
@@ -23,8 +23,8 @@ vi.mock('./toolRegistry.js', () => ({
   },
 }));
 
-vi.mock('./tools/index.js', () => ({
-  getAllTools: vi.fn(),
+vi.mock('./utils/toolLoader.js', () => ({
+  getTools: vi.fn(),
 }));
 
 vi.mock('./redisClient.js', () => ({
@@ -35,26 +35,40 @@ vi.mock('./redisClient.js', () => ({
 }));
 
 const mockedGetLlmResponse = llmProvider.getLlmResponse as Mock;
-const mockedGetAllTools = allTools.getAllTools as Mock;
+const mockedGetTools = getTools as Mock;
 const mockedToolRegistryExecute = toolRegistry.execute as Mock;
 const mockedToolRegistryGetAll = toolRegistry.getAll as Mock;
 
+const mockFinishToolParams = z.object({
+  response: z.string().describe('The final, complete answer to the user.'),
+});
+
 const mockFinishTool = {
   description: "Call this tool when the user's goal is accomplished.",
-  execute: vi.fn(async ({ response }: { response: string }) => response),
+  execute: vi.fn(
+    async (args: z.infer<typeof mockFinishToolParams>, _ctx: Ctx) => {
+      return {
+        answer: args.response,
+      };
+    },
+  ),
   name: 'finish',
-  parameters: z.object({
-    response: z.string().describe('The final, complete answer to the user.'),
-  }),
+  parameters: mockFinishToolParams,
 };
+
+const mockTestToolParams = z.object({
+  arg: z.string().describe('An argument for the test tool.'),
+});
 
 const mockTestTool = {
   description: 'A test tool.',
-  execute: vi.fn(async (_params: { arg: string }) => 'tool result'),
+  execute: vi.fn(
+    async (_args: z.infer<typeof mockTestToolParams>, _ctx: Ctx) => {
+      return 'tool result';
+    },
+  ),
   name: 'test-tool',
-  parameters: z.object({
-    arg: z.string().describe('An argument for the test tool.'),
-  }),
+  parameters: mockTestToolParams,
 };
 
 describe('Agent Integration Tests', () => {
@@ -78,6 +92,7 @@ describe('Agent Integration Tests', () => {
     mockJob = {
       data: { prompt: 'Test objective' },
       id: 'test-job-1',
+      isFailed: vi.fn().mockResolvedValue(false),
     } as unknown as Job;
 
     mockSession = {
@@ -111,7 +126,7 @@ describe('Agent Integration Tests', () => {
 
     agent = new Agent(mockJob, mockSession, mockQueue);
 
-    mockedGetAllTools.mockResolvedValue([mockTestTool, mockFinishTool]);
+    mockedGetTools.mockResolvedValue([mockTestTool, mockFinishTool]);
     mockedToolRegistryGetAll.mockReturnValue([mockTestTool, mockFinishTool]);
   });
 
@@ -123,31 +138,28 @@ describe('Agent Integration Tests', () => {
   it('should follow the thought-command-result loop', async () => {
     mockedGetLlmResponse
       .mockResolvedValueOnce(
-        JSON.stringify({
-          command: { name: 'test-tool', params: { arg: 'value' } },
-          thought: 'I should use the test tool.',
-        }),
+        '\n```json\n{\n          "command": { "name": "test-tool", "params": { "arg": "value" } },\n          "thought": "I should use the test tool."\n}\n```\n',
       )
       .mockResolvedValueOnce(
-        JSON.stringify({
-          command: { name: 'finish', params: { response: 'Final answer' } },
-          thought: 'I have the result, I can finish.',
-        }),
+        '\n```json\n{\n          "command": {\n            "name": "finish",\n            "params": { "response": "intermediate step" }\n          },\n          "thought": "I have the result, I should finish now."\n}\n```\n',
+      )
+      .mockResolvedValueOnce(
+        '\n```json\n{\n          "answer": "Final answer",\n          "thought": "I have finished."\n}\n```\n',
       );
 
-    mockedToolRegistryExecute.mockImplementation(async (name, params) => {
+    mockedToolRegistryExecute.mockImplementation(async (name, params, ctx) => {
       if (name === 'test-tool') {
-        return mockTestTool.execute(params as { arg: string });
+        return mockTestTool.execute(params as { arg: string }, ctx);
       }
       if (name === 'finish') {
-        return mockFinishTool.execute(params as { response: string });
+        return mockFinishTool.execute(params as { response: string }, ctx);
       }
     });
 
     const finalResponse = await agent.run();
 
     expect(finalResponse).toBe('Final answer');
-    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(2);
+    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(3);
     expect(mockedToolRegistryExecute).toHaveBeenCalledWith(
       'test-tool',
       { arg: 'value' },
@@ -155,13 +167,32 @@ describe('Agent Integration Tests', () => {
     );
     expect(mockedToolRegistryExecute).toHaveBeenCalledWith(
       'finish',
-      { response: 'Final answer' },
+      { response: 'intermediate step' },
       expect.any(Object),
     );
     expect(mockSession.history).toEqual([
       { content: 'Test objective', role: 'user' },
       {
+        content:
+          '\n```json\n{\n          "command": { "name": "test-tool", "params": { "arg": "value" } },\n          "thought": "I should use the test tool."\n}\n```\n',
+        role: 'model',
+      },
+      {
         content: 'Tool result: "tool result"',
+        role: 'tool',
+      },
+      {
+        content:
+          '\n```json\n{\n          "command": {\n            "name": "finish",\n            "params": { "response": "intermediate step" }\n          },\n          "thought": "I have the result, I should finish now."\n}\n```\n',
+        role: 'model',
+      },
+      {
+        content: 'Tool result: {"answer":"intermediate step"}',
+        role: 'tool',
+      },
+      {
+        content:
+          '\n```json\n{\n          "answer": "Final answer",\n          "thought": "I have finished."\n}\n```\n',
         role: 'model',
       },
     ]);
@@ -171,10 +202,7 @@ describe('Agent Integration Tests', () => {
     mockedGetLlmResponse
       .mockResolvedValueOnce('This is not valid JSON')
       .mockResolvedValueOnce(
-        JSON.stringify({
-          command: { name: 'finish', params: { response: 'Success' } },
-          thought: 'Okay, I will use JSON now.',
-        }),
+        '\n```json\n{\n  "answer": "Success",\n  "thought": "Okay, I will use JSON now."\n}\n```\n',
       );
     mockedToolRegistryExecute.mockResolvedValue('Success');
 
@@ -184,18 +212,21 @@ describe('Agent Integration Tests', () => {
     expect(mockedGetLlmResponse).toHaveBeenCalledTimes(2);
     expect(mockSession.history).toContainEqual({
       content:
-        'Your last response was not a valid command. You must choose a tool from the list. Please try again.',
+        'Your last response was not a valid command. You must choose a tool from the list or provide a final answer. Please try again. Last response: This is not valid JSON',
       role: 'user',
     });
   });
 
   it('should stop if it reaches max iterations', async () => {
-    mockedGetLlmResponse.mockResolvedValue(
-      JSON.stringify({
-        command: { name: 'test-tool', params: {} },
-        thought: 'Looping...',
-      }),
-    );
+    let i = 0;
+    mockedGetLlmResponse.mockImplementation(() => {
+      i++;
+      return Promise.resolve(
+        '\n```json\n{\n  "command": { "name": "test-tool", "params": { "count": ' +
+          i +
+          ' } },\n  "thought": "Looping..."\n}\n```\n',
+      );
+    });
     mockedToolRegistryExecute.mockResolvedValue('looping result');
 
     const finalResponse = await agent.run();
@@ -213,10 +244,7 @@ describe('Agent Integration Tests', () => {
         onMessageCallback(`job:${mockJob.id}:interrupt`, 'interrupt');
       }
       await vi.advanceTimersByTimeAsync(10); // Allow event loop to process interruption
-      return JSON.stringify({
-        command: { name: 'test-tool', params: {} },
-        thought: 'Still looping...',
-      });
+      return `\n\`\`\`json\n{\n  "command": { "name": "test-tool", "params": {} },\n  "thought": "Still looping..."\n}\n\`\`\`\n`;
     });
 
     const finalResponse = await agent.run();
@@ -233,19 +261,10 @@ describe('Agent Integration Tests', () => {
     const errorMessage = 'Error during tool execution';
     mockedGetLlmResponse
       .mockResolvedValueOnce(
-        JSON.stringify({
-          command: { name: 'test-tool', params: { arg: 'fail' } },
-          thought: 'I will try to use the tool, but it might fail.',
-        }),
+        `\n\`\`\`json\n{\n  "command": { "name": "test-tool", "params": { "arg": "fail" } },\n  "thought": "I will try to use the tool, but it might fail."\n}\n\`\`\`\n`,
       )
       .mockResolvedValueOnce(
-        JSON.stringify({
-          command: {
-            name: 'finish',
-            params: { response: 'Recovered from tool error' },
-          },
-          thought: 'The tool failed, but I can still finish.',
-        }),
+        `\n\`\`\`json\n{\n  "answer": "Recovered from tool error",\n  "thought": "The tool failed, but I can still finish."\n}\n\`\`\`\n`,
       );
 
     mockedToolRegistryExecute
@@ -264,7 +283,9 @@ describe('Agent Integration Tests', () => {
 
   it('should handle tool loading failures', async () => {
     const errorMessage = 'Failed to load tools';
-    mockedGetAllTools.mockRejectedValueOnce(new Error(errorMessage));
+    mockedToolRegistryGetAll.mockImplementationOnce(() => {
+      throw new Error(errorMessage);
+    });
 
     const finalResponse = await agent.run();
 

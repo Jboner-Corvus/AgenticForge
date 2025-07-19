@@ -1,22 +1,19 @@
-import { useEffect, useState, memo, useCallback } from 'react';
+import { memo, useCallback } from 'react';
 
 import { useDraggableSidebar } from '../lib/hooks/useDraggablePane';
 import { fr } from '../constants/fr';
-import { Accordion } from './ui/accordion';
 import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
-import { Key, Server, Hammer, Code } from 'lucide-react';
+import { Key, Server, Hammer, Code, Settings, Trash2 } from 'lucide-react';
 import { useToast } from '../lib/hooks/useToast';
-import { Tooltip } from './ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { Badge } from './ui/badge';
 import { generateUUID } from '../lib/utils/uuid';
-
 import { useStore } from '../lib/store';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 export const ControlPanel = memo(() => {
-  const authToken = useStore((state) => state.authToken);
   const codeExecutionEnabled = useStore((state) => state.codeExecutionEnabled);
   const serverHealthy = useStore((state) => state.serverHealthy);
   const sessionId = useStore((state) => state.sessionId);
@@ -24,101 +21,108 @@ export const ControlPanel = memo(() => {
   const toolCreationEnabled = useStore((state) => state.toolCreationEnabled);
   const setCodeExecutionEnabled = useStore((state) => state.setCodeExecutionEnabled);
   const setToolCreationEnabled = useStore((state) => state.setToolCreationEnabled);
-  const clearDisplayItems = useStore((state) => state.clearDisplayItems);
+  const clearMessages = useStore((state) => state.clearMessages);
   const addDebugLog = useStore((state) => state.addDebugLog);
   const fetchAndDisplayToolCount = useStore((state) => state.fetchAndDisplayToolCount);
   const setSessionId = useStore((state) => state.setSessionId);
-  const addDisplayItem = useStore((state) => state.addDisplayItem);
+  const addMessage = useStore((state) => state.addMessage);
 
   const { toast } = useToast();
 
   const handleClearHistory = useCallback((showMessage: boolean) => {
-    clearDisplayItems();
+    clearMessages();
     if (showMessage) {
       toast({ description: fr.historyCleared, title: fr.historyCleared });
-      addDebugLog(`[${new Date().toLocaleTimeString()}] Historique local effacé.`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] Local history cleared.`);
     }
-  }, [clearDisplayItems, addDebugLog, toast]);
+  }, [clearMessages, addDebugLog, toast]);
 
   const handleNewSession = useCallback(() => {
     const oldSessionId = sessionId;
     const newSessionId = generateUUID();
     localStorage.setItem('agenticForgeSessionId', newSessionId);
     setSessionId(newSessionId);
-    addDisplayItem({
-      content: fr.newSessionCreated,
-      sender: 'assistant',
-      type: 'agent_response',
-      timestamp: new Date().toISOString(),
-    });
-    addDebugLog(`[${new Date().toLocaleTimeString()}] ${fr.newSession}: Ancien ID: ${oldSessionId}, Nouvel ID: ${newSessionId}`);
+    addMessage({ type: 'agent_response', content: fr.newSessionCreated });
+    addDebugLog(`[${new Date().toLocaleTimeString()}] ${fr.newSession}: Old ID: ${oldSessionId}, New ID: ${newSessionId}`);
     handleClearHistory(false);
     fetchAndDisplayToolCount();
-  }, [sessionId, fetchAndDisplayToolCount, handleClearHistory, addDebugLog, addDisplayItem, setSessionId]);
-  const [activeTab, ] = useState('status');
-  const { handleDragStart, width } = useDraggableSidebar(320);
+  }, [sessionId, fetchAndDisplayToolCount, handleClearHistory, addDebugLog, addMessage, setSessionId]);
 
-  useEffect(() => {
-    // if (activeTab === 'memory' && authToken && sessionId) {
-    //   getMemory(authToken, sessionId).then(setMemory);
-    // }
-  }, [activeTab, authToken, sessionId]);
+  const { handleDragStart, width } = useDraggableSidebar(320);
 
   return (
     <aside
-      className="p-4 bg-card border-r border-border overflow-y-auto flex-shrink-0 relative"
+      className="p-4 bg-gradient-to-b from-background to-secondary/50 border-r border-border overflow-y-auto flex-shrink-0 relative pt-8"
       style={{ width }}
     >
       <div className="absolute top-0 right-0 w-2 h-full cursor-col-resize" onMouseDown={handleDragStart} />
-      <Card className="bg-card border-border text-foreground">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">{fr.controlPanel}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <Accordion title={fr.agentStatus}>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label className="text-sm flex items-center"><Key className="mr-2 h-4 w-4" />{fr.sessionId}</Label>
-                <span className="text-sm text-muted-foreground">{sessionId ? `${sessionId.substring(0, 12)}...` : '--'}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4" />{fr.toolsDetected}</Label>
-                <span className="text-sm text-muted-foreground">{toolCount}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <Label className="text-sm flex items-center"><Server className="mr-2 h-4 w-4" />{fr.connectionStatus}</Label>
-                <Badge variant={serverHealthy ? 'default' : 'destructive'}>
-                  {serverHealthy ? fr.online : fr.offline}
-                </Badge>
-              </div>
+      <Tabs defaultValue="status" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="status">Status</TabsTrigger>
+          <TabsTrigger value="capabilities">Capabilities</TabsTrigger>
+          <TabsTrigger value="actions">Actions</TabsTrigger>
+        </TabsList>
+        <TabsContent value="status" className="mt-4">
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <Label className="text-sm flex items-center"><Key className="mr-2 h-4 w-4" />{fr.sessionId}</Label>
+              <span className="text-sm text-muted-foreground">{sessionId ? `${sessionId.substring(0, 12)}...` : '--'}</span>
             </div>
-          </Accordion>
-
-          <Accordion title={fr.agentCapabilities}>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Tooltip text="Allow the agent to create new tools based on its needs.">
-                  <Label className="text-sm flex items-center" htmlFor="toolCreationToggle"><Hammer className="mr-2 h-4 w-4" />{fr.toolCreation}</Label>
-                </Tooltip>
-                <Switch checked={toolCreationEnabled} id="toolCreationToggle" onCheckedChange={setToolCreationEnabled} />
-              </div>
-              <div className="flex justify-between items-center">
-                <Tooltip text="Allow the agent to execute code directly in the environment.">
-                  <Label className="text-sm flex items-center" htmlFor="codeExecutionToggle"><Code className="mr-2 h-4 w-4" />{fr.codeExecution}</Label>
-                </Tooltip>
-                <Switch checked={codeExecutionEnabled} id="codeExecutionToggle" onCheckedChange={setCodeExecutionEnabled} />
-              </div>
+            <div className="flex justify-between items-center">
+              <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4" />{fr.toolsDetected}</Label>
+              <span className="text-sm text-muted-foreground">{toolCount}</span>
             </div>
-          </Accordion>
-
-          <Accordion title={fr.quickActions}>
-            <div className="space-y-2">
-              <Button className="w-full" onClick={handleNewSession} variant="secondary">{fr.newSession}</Button>
-              <Button className="w-full" onClick={() => handleClearHistory(true)} variant="destructive">{fr.clearHistory}</Button>
+            <div className="flex justify-between items-center">
+              <Label className="text-sm flex items-center"><Server className="mr-2 h-4 w-4" />{fr.connectionStatus}</Label>
+              <Badge variant={serverHealthy ? 'success' : 'destructive'}>
+                {serverHealthy ? fr.online : fr.offline}
+              </Badge>
             </div>
-          </Accordion>
-        </CardContent>
-      </Card>
+          </div>
+        </TabsContent>
+        <TabsContent value="capabilities" className="mt-4">
+          <div className="space-y-4">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm flex items-center" htmlFor="toolCreationToggle"><Hammer className="mr-2 h-4 w-4" />{fr.toolCreation}</Label>
+                    <Switch checked={toolCreationEnabled} id="toolCreationToggle" onCheckedChange={setToolCreationEnabled} />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Allow the agent to create new tools based on its needs.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm flex items-center" htmlFor="codeExecutionToggle"><Code className="mr-2 h-4 w-4" />{fr.codeExecution}</Label>
+                    <Switch checked={codeExecutionEnabled} id="codeExecutionToggle" onCheckedChange={setCodeExecutionEnabled} />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Allow the agent to execute code directly in the environment.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </TabsContent>
+        <TabsContent value="actions" className="mt-4">
+          <div className="space-y-2">
+            <Button className="w-full flex items-center justify-center" onClick={handleNewSession} variant="secondary">
+              <Settings className="mr-2 h-4 w-4" />
+              {fr.newSession}
+            </Button>
+            <Button className="w-full flex items-center justify-center" onClick={() => handleClearHistory(true)} variant="destructive">
+              <Trash2 className="mr-2 h-4 w-4" />
+              {fr.clearHistory}
+            </Button>
+          </div>
+        </TabsContent>
+      </Tabs>
     </aside>
   );
 });

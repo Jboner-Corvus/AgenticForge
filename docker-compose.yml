@@ -33,8 +33,6 @@ services:
       - NODE_ENV=production
       - DOCKER=true
       - HOST=0.0.0.0
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - GEMINI_MODEL=${GEMINI_MODEL}
       - PUBLIC_PORT=${PUBLIC_PORT}
       - PORT=${PORT:-3001}
       - LOG_LEVEL=${LOG_LEVEL}
@@ -44,6 +42,7 @@ services:
       - WEB_PORT=${WEB_PORT}
       - LLM_API_KEY=${LLM_API_KEY}
       - LLM_MODEL_NAME=${LLM_MODEL_NAME}
+      - GEMINI_API_KEY=${LLM_API_KEY}
       - SESSION_PORT=${SESSION_PORT}
       - HOST_PROJECT_PATH=${HOST_PROJECT_PATH}
       - TOOLS_PATH=/usr/src/app/packages/core/dist/tools
@@ -72,8 +71,6 @@ services:
     environment:
       - NODE_ENV=production
       - WEB_PORT=3002
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - GEMINI_MODEL=${GEMINI_MODEL}
       - HOST_PORT=${HOST_PORT}
       - PORT=${PORT:-3001}
       - LOG_LEVEL=${LOG_LEVEL}

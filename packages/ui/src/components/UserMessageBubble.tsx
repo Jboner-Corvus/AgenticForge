@@ -11,9 +11,9 @@ export const UserMessageBubble: React.FC<UserMessageBubbleProps> = ({
   timestamp,
 }) => {
   return (
-    <div className="flex justify-end items-end space-x-2">
+    <div className="flex justify-end items-end space-x-2 animate-slide-up">
       <div className="flex flex-col items-end">
-        <div className="bg-blue-500 text-white p-3 rounded-lg max-w-xs break-words">
+        <div className="bg-primary text-primary-foreground p-3 rounded-lg max-w-xs break-words shadow-md">
           {content}
         </div>
         <span className="text-xs text-muted-foreground mt-1">{timestamp}</span>

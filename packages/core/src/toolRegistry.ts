@@ -1,4 +1,20 @@
-import { z } from 'zod';
+// ATTENTION : Ce fichier définit le registre central (ToolRegistry)
+// qui gère tous les outils disponibles pour l'agent.
+//
+// L'instance unique `toolRegistry` est la source de vérité pour l'ensemble de l'application.
+//
+// L'enregistrement des outils se fait via la méthode `toolRegistry.register(tool)`.
+// Cette opération est généralement effectuée au démarrage de l'application (voir `tools/index.ts`).
+//
+// CHAQUE OUTIL DOIT AVOIR :
+// 1. `name` (string): Un nom unique.
+// 2. `description` (string): Une description claire et précise. C'est CRUCIAL, car
+//    le LLM se base sur cette description pour décider quel outil utiliser.
+// 3. `parameters` (z.object): Un schéma Zod qui valide les paramètres de l'outil.
+//    Ce schéma est également fourni au LLM pour qu'il sache comment formater les arguments.
+//
+// Une description imprécise ou un schéma de paramètres incorrect mènera quasi-certainement
+// à des erreurs d'exécution ou à un mauvais choix d'outil par l'agent.
 
 import logger from './logger.js';
 import { Ctx, Tool } from './types.js';
@@ -37,10 +53,13 @@ class ToolRegistry {
     if (!tool) {
       throw new UserError(`Tool not found: ${name}`);
     }
+
+    const parsedParams = tool.parameters.parse(params);
+
     ctx.log.info(
-      `Executing tool: ${name} with params: ${JSON.stringify(params)}`,
+      `Executing tool: ${name} with params: ${JSON.stringify(parsedParams)}`,
     );
-    return tool.execute(params as z.infer<typeof tool.parameters>, ctx);
+    return tool.execute(parsedParams, ctx);
   }
 
   /**

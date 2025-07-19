@@ -89,7 +89,9 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
             typeof editFileOutput
           >;
         }
-        ctx.log.error({ err: error }, `Failed to edit file: ${args.path}`);
+        ctx.log.error(
+          `Failed to edit file: ${args.path}. Error: ${(error as Error).message}`,
+        );
         return {
           erreur: `Could not edit file: ${(error as Error).message || error}`,
         } as z.infer<typeof editFileOutput>;

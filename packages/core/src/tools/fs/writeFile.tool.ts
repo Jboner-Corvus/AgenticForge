@@ -4,7 +4,9 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../types.js';
 
-export const parameters = z.object({
+import { config } from '../../config.js'; // Import config
+
+export const writeFileParams = z.object({
   content: z.string().describe('The full content to write to the file.'),
   path: z
     .string()
@@ -13,18 +15,24 @@ export const parameters = z.object({
     ),
 });
 
+export const WriteFileSuccessOutput = z.object({
+  message: z.string(),
+});
+
+export const WriteFileErrorOutput = z.object({
+  erreur: z.string(),
+});
+
 export const writeFileOutput = z.union([
-  z.string(),
-  z.object({
-    erreur: z.string(),
-  }),
+  WriteFileSuccessOutput,
+  WriteFileErrorOutput,
 ]);
 
-export const writeFileTool: Tool<typeof parameters, typeof writeFileOutput> = {
+export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
   description:
     'Writes content to a file, overwriting it. Creates the file and directories if they do not exist.',
   execute: async (args, ctx: Ctx) => {
-    const absolutePath = path.resolve(args.path);
+    const absolutePath = path.join(config.WORKSPACE_PATH, args.path);
 
     try {
       // Assurer que le répertoire existe
@@ -43,14 +51,15 @@ export const writeFileTool: Tool<typeof parameters, typeof writeFileOutput> = {
         if (currentContent === args.content) {
           const message = `File ${args.path} already contains the desired content. No changes made.`;
           ctx.log.info(message);
-          return message;
+          return { message: message };
         }
       }
 
       await fs.writeFile(absolutePath, args.content, 'utf-8');
+
       const successMessage = `Successfully wrote content to ${args.path}.`;
       ctx.log.info(successMessage);
-      return successMessage;
+      return { message: successMessage };
     } catch (error: unknown) {
       ctx.log.error({ err: error }, `Failed to write file: ${args.path}`);
       return {
@@ -59,5 +68,5 @@ export const writeFileTool: Tool<typeof parameters, typeof writeFileOutput> = {
     }
   },
   name: 'writeFile',
-  parameters,
+  parameters: writeFileParams,
 };

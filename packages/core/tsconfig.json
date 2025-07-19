@@ -16,10 +16,11 @@
     "strict": true,
     "sourceMap": true,
     "baseUrl": ".",
+    "allowImportingTsExtensions": true,
     "paths": {
       "@agenticforge/core/*": ["./src/*"]
     }
   },
-  "include": ["src", "src/**/*.ts", "src/**/*.js"],
+  "include": ["src", "src/**/*.ts", "src/**/*.js", "src/types.js"],
   "exclude": ["node_modules", "dist"]
 }

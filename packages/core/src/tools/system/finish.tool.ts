@@ -6,37 +6,46 @@ export const parameters = z.object({
   response: z.string().describe('The final, complete answer to the user.'),
 });
 
-export const finishOutput = z.union([
-  z.string(),
-  z.object({
-    erreur: z.string(),
-  }),
-]);
+// The output is always a string, as errors will be thrown.
+export const finishOutput = z.string();
 
+// Simplified Tool type, execute now returns a simple Promise<string>
 type FinishTool = {
   execute: (
     args: string | z.infer<typeof parameters>,
     ctx: Ctx,
-  ) => Promise<{ erreur: string } | string>;
+  ) => Promise<string>;
 } & Tool<typeof parameters, typeof finishOutput>;
+
+export class FinishToolSignal extends Error {
+  public readonly response: string;
+  constructor(response: string) {
+    super(response);
+    this.name = 'FinishToolSignal';
+    this.response = response;
+  }
+}
 
 export const finishTool: FinishTool = {
   description: "Call this tool when the user's goal is accomplished.",
   execute: async (args: string | z.infer<typeof parameters>, ctx: Ctx) => {
     try {
       if (!args) {
-        throw new Error('Invalid arguments provided to finishTool.');
+        throw new Error(
+          'Invalid arguments provided to finishTool. A final answer is required.',
+        );
       }
       const finalResponse = typeof args === 'string' ? args : args.response;
 
       ctx.log.info(`Goal accomplished: ${finalResponse}`);
-      return finalResponse;
+      throw new FinishToolSignal(finalResponse);
     } catch (error: unknown) {
-      ctx.log.error({ err: error }, `Error in finishTool`);
+      if (error instanceof FinishToolSignal) {
+        throw error;
+      }
       const message = error instanceof Error ? error.message : String(error);
-      return {
-        erreur: `An unexpected error occurred: ${message}`,
-      };
+      ctx.log.error({ err: error }, `Error in finishTool: ${message}`);
+      throw new Error(`An unexpected error occurred in finishTool: ${message}`);
     }
   },
   name: 'finish',

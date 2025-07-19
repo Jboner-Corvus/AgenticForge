@@ -1,9 +1,9 @@
-import { Job, Queue } from 'bullmq';
+import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import logger from '../../logger.js';
-import { Ctx, SessionData } from '../../types.js';
+import { Ctx, ILlmProvider, SessionData } from '../../types.js';
 import {
   runQualityGate,
   runToolTestsInSandbox,
@@ -39,7 +39,7 @@ describe('createToolTool', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCtx = {
-      job: { id: 'test-job-id' } as Job,
+      llm: {} as ILlmProvider,
       log: logger,
       reportProgress: vi.fn(),
       session: {} as SessionData,

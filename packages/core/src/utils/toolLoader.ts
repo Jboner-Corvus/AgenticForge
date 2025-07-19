@@ -1,3 +1,4 @@
+console.log('<<<<< LOADING toolLoader.ts >>>>>');
 import * as chokidar from 'chokidar';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -17,7 +18,7 @@ const loadedToolFiles = new Set<string>();
 const fileToToolNameMap = new Map<string, string>();
 let watcher: chokidar.FSWatcher | null = null;
 
-const runningInDist = __dirname.includes('dist');
+const runningInDist = process.env.NODE_ENV === 'production';
 const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
 
 // Fonction de réinitialisation pour les tests
@@ -51,21 +52,17 @@ export async function getTools(): Promise<Tool[]> {
  * @returns Une promesse qui se résout avec un tableau de tous les outils chargés.
  */
 async function _internalLoadTools(): Promise<void> {
+  logger.info('[_internalLoadTools] Starting to load tools dynamically.');
   const toolsDir = getToolsDir();
+  logger.info(`[_internalLoadTools] Tools directory: ${toolsDir}`);
   const toolFiles = await findToolFiles(toolsDir, fileExtension);
-
-  logger.info(`Calculated toolsDir: ${toolsDir}`);
-  logger.info(`Current working directory: ${process.cwd()}`);
-  logger.info(`Calculated fileExtension: ${fileExtension}`);
-  logger.info(
-    `Début du chargement dynamique des outils depuis: ${toolsDir} (recherche de *${fileExtension})`,
-  );
+  logger.info(`[_internalLoadTools] Found tool files: ${toolFiles.join(', ')}`);
 
   for (const file of toolFiles) {
     await loadToolFile(file);
   }
   logger.info(
-    `${toolRegistry.getAll().length} outils ont été chargés dynamiquement.`,
+    `${toolRegistry.getAll().length} tools have been loaded dynamically.`,
   );
 }
 
@@ -77,13 +74,20 @@ async function findToolFiles(
   extension: string,
 ): Promise<string[]> {
   let files: string[] = [];
+  logger.info(`[findToolFiles] Scanning directory: ${dir}`);
   try {
+    logger.info(`[findToolFiles] About to read directory: ${dir}`);
     const entries = await fs.readdir(dir, { withFileTypes: true });
+    logger.info(
+      `[findToolFiles] Found entries: ${entries.map((e) => e.name).join(', ')}`,
+    );
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
+        logger.info(`[findToolFiles] Found directory: ${fullPath}`);
         files = files.concat(await findToolFiles(fullPath, extension));
       } else if (entry.isFile() && entry.name.endsWith(extension)) {
+        logger.info(`[findToolFiles] Found tool file: ${fullPath}`);
         files.push(fullPath);
       }
     }
@@ -106,12 +110,15 @@ async function findToolFiles(
 
 // Fonction pour obtenir dynamiquement le répertoire des outils
 function getToolsDir(): string {
-  return (
+  console.log('Running in dist:', runningInDist);
+  console.log('__dirname:', __dirname);
+  const toolsPath =
     process.env.TOOLS_PATH ||
     (runningInDist
-      ? path.join(__dirname, '..', 'tools')
-      : path.resolve(__dirname, '..', '..', 'src', 'tools'))
-  );
+      ? path.join(__dirname, 'tools')
+      : path.resolve(__dirname, '..', 'tools'));
+  console.log('Constructed tools path:', toolsPath);
+  return toolsPath;
 }
 
 async function loadToolFile(file: string): Promise<void> {
@@ -124,7 +131,10 @@ async function loadToolFile(file: string): Promise<void> {
     }
 
     const module = await import(`${path.resolve(file)}?update=${Date.now()}`);
+    console.log(`Module loaded for ${file}:`, module); // Added log
+
     for (const exportName in module) {
+      console.log(`Checking export: ${exportName}`); // Added log
       const exportedItem = module[exportName];
       if (
         exportedItem &&
@@ -132,12 +142,15 @@ async function loadToolFile(file: string): Promise<void> {
         'name' in exportedItem &&
         'execute' in exportedItem
       ) {
+        console.log(`Registering tool: ${exportedItem.name}`); // Added log
         toolRegistry.register(exportedItem as Tool);
         loadedToolFiles.add(file);
         fileToToolNameMap.set(file, exportedItem.name);
         logger.info(
           `Outil chargé : '${exportedItem.name}' depuis ${path.basename(file)}`,
         );
+      } else {
+        console.log(`Skipping export: ${exportName}`); // Added log
       }
     }
   } catch (error) {
