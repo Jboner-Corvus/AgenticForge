@@ -23,7 +23,7 @@ const llmResponseSchema = z.object({
   answer: z.string().optional(),
   command: z
     .object({
-      "name": "listFiles",
+      name: z.string(),
       params: z.unknown(),
     })
     .optional(),
