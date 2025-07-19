@@ -42,17 +42,7 @@ const configSchema = z.object({
     ),
 });
 
-console.log('GEMINI_MODEL from process.env:', process.env.GEMINI_MODEL);
-console.log('LLM_MODEL_NAME from process.env:', process.env.LLM_MODEL_NAME);
-// Also log the API keys to ensure they are correct
-console.log(
-  'GEMINI_API_KEY from process.env:',
-  process.env.GEMINI_API_KEY ? '*****' : 'Not set',
-);
-console.log(
-  'LLM_API_KEY from process.env:',
-  process.env.LLM_API_KEY ? '*****' : 'Not set',
-);
+
 
 console.log('Resolved .env path:', envPath);
 console.log(

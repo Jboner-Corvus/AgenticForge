@@ -16,6 +16,7 @@
     "strict": true,
     "sourceMap": true,
     "baseUrl": ".",
+    "allowImportingTsExtensions": true,
     "paths": {
       "@agenticforge/core/*": ["./src/*"]
     }

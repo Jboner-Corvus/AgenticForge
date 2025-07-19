@@ -3,8 +3,8 @@ import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
 import { describe, expect, it, Mock, vi } from 'vitest';
 
-import logger from '../../logger.js';
 import { Ctx, ILlmProvider, SessionData } from '../../src/types.js';
+import logger from '../logger.ts';
 import { readFileTool } from './fs/readFile.tool.js';
 
 vi.mock('fs', () => ({
@@ -13,7 +13,7 @@ vi.mock('fs', () => ({
   },
 }));
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../logger.ts', () => ({
   default: {
     child: vi.fn().mockReturnThis(),
     debug: vi.fn(),

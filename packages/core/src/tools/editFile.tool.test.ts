@@ -4,8 +4,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
-import logger from '../../logger.js';
 import { Ctx, ILlmProvider, SessionData } from '../../src/types.js';
+import logger from '../logger.ts';
 import { editFileTool } from './fs/editFile.tool.js';
 
 vi.mock('fs', () => ({
@@ -15,9 +15,8 @@ vi.mock('fs', () => ({
   },
 }));
 
-vi.mock('../../logger.js', async () => {
-  const { default: pino } =
-    await vi.importActual<typeof import('pino')>('pino');
+vi.mock('../logger.ts', async () => {
+  const { default: pino } = await vi.importActual<typeof import('pino')>('pino');
   const mockLogger = pino({
     enabled: false, // Disable logging output during tests
     level: 'info',

@@ -2,11 +2,11 @@
 import { Queue } from 'bullmq';
 import { describe, expect, it, vi } from 'vitest';
 
-import logger from '../../logger.js';
+import logger from '../logger.ts';
 import { Ctx, ILlmProvider, SessionData } from '../types.js';
 import { agentResponseTool } from './system/agentResponse.tool.js';
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../logger.ts', () => ({
   default: {
     child: vi.fn().mockReturnThis(),
     debug: vi.fn(),
