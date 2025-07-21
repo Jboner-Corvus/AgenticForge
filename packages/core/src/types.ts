@@ -1,17 +1,9 @@
-import type { Content, Context as FastMCPContext } from 'fastmcp';
-
-export type { Content };
+import type { Context as FastMCPContext } from 'fastmcp';
 
 import { Queue } from 'bullmq';
 import { z, ZodTypeAny } from 'zod';
 
 import logger from './logger.js';
-
-export interface AgentProgress {
-  current: number;
-  total: number;
-  unit?: string;
-}
 
 export interface AgentSession {
   data: SessionData;
@@ -22,9 +14,13 @@ export type Ctx = {
   job?: MinimalJob;
   llm: ILlmProvider; // <-- AJOUTEZ OU MODIFIEZ CETTE LIGNE
   log: typeof logger;
-  reportProgress?: (progress: AgentProgress) => Promise<void>;
+  reportProgress?: (progress: {
+    current: number;
+    total: number;
+    unit?: string;
+  }) => Promise<void>;
   session?: SessionData;
-  streamContent?: (content: Content | Content[]) => Promise<void>;
+  streamContent?: (content: any | any[]) => Promise<void>;
   taskQueue: Queue;
 } & Omit<FastMCPContext<SessionData>, 'reportProgress' | 'streamContent'>;
 

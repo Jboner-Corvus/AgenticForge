@@ -93,6 +93,7 @@ describe('Agent Integration Tests', () => {
       data: { prompt: 'Test objective' },
       id: 'test-job-1',
       isFailed: vi.fn().mockResolvedValue(false),
+      updateProgress: vi.fn(),
     } as unknown as Job;
 
     mockSession = {

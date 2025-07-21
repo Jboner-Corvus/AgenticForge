@@ -50,4 +50,13 @@ export type ToolList = {
 
 export type DisplayableItem = NewDisplayableItem & { id: string };
 
+export type NewChatMessage =
+  | { type: 'user'; content: string }
+  | { type: 'agent_response'; content: string }
+  | { type: 'agent_thought'; content: string }
+  | { type: 'tool_call'; toolName: string; params: Record<string, unknown> }
+  | { type: 'tool_result'; toolName: string; result: Record<string, unknown> }
+  | { type: 'error'; content: string }
+  | { type: 'agent_canvas_output'; content: string; contentType: 'html' | 'markdown' | 'url' | 'text' };
+
 export type ChatMessage = DisplayableItem;
