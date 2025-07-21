@@ -35,6 +35,16 @@ The JSON object MUST contain one of the following top-level keys: `command` or `
 "answer": "Your final response to the user."
 }
 
+## When displaying content in the canvas:
+
+{
+"thought": "I want to display HTML content in the canvas.",
+"canvas": {
+"contentType": "html",
+"content": "<h1>Hello World</h1>"
+}
+}
+
 # Example
 
 USER:

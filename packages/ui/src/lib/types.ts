@@ -26,6 +26,13 @@ export type UserMessage = {
   timestamp: string;
 };
 
+export type AgentCanvasOutput = {
+  content: string;
+  contentType: 'html' | 'markdown' | 'url' | 'text';
+  type: 'agent_canvas_output';
+  timestamp: string;
+};
+
 export type NewDisplayableItem =
   | AgentMessage
   | AgentThought
@@ -34,7 +41,8 @@ export type NewDisplayableItem =
   | JobCompleted
   | JobFailed
   | ToolList
-  | UserMessage;
+  | UserMessage
+  | AgentCanvasOutput;
 
 export type Tool = {
   name: string;

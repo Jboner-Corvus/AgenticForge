@@ -21,6 +21,12 @@ import { getMasterPrompt } from './orchestrator.prompt.js';
 // sur le nouveau format. Une désynchronisation ici provoquera des erreurs de parsing.
 const llmResponseSchema = z.object({
   answer: z.string().optional(),
+  canvas: z
+    .object({
+      content: z.string(),
+      contentType: z.enum(['html', 'markdown', 'url', 'text']),
+    })
+    .optional(),
   command: z
     .object({
       name: z.string(),
@@ -32,6 +38,7 @@ const llmResponseSchema = z.object({
 
 type ChannelData =
   | { content: string; type: 'agent_response' }
+  | { content: string; contentType: 'html' | 'markdown' | 'url' | 'text'; type: 'agent_canvas_output' }
   | { content: string; type: 'agent_thought' }
   | { content: string; type: 'raw_llm_response' }
   | { data: { args: unknown; name: string }; type: 'tool.start' }
@@ -163,11 +170,20 @@ export class Agent {
             continue;
           }
 
-          const { answer, command, thought } = parsedResponse;
+          const { answer, canvas, command, thought } = parsedResponse;
 
           if (thought) {
             iterationLog.info({ thought }, 'Agent thought');
             this.publishToChannel({ content: thought, type: 'agent_thought' });
+          }
+
+          if (canvas) {
+            iterationLog.info({ canvas }, 'Agent canvas output');
+            this.publishToChannel({
+              content: canvas.content,
+              contentType: canvas.contentType,
+              type: 'agent_canvas_output',
+            });
           }
 
           if (answer) {

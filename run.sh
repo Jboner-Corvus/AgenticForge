@@ -190,7 +190,7 @@ start_worker() {
     cd "${SCRIPT_DIR}/packages/core"
     
     # Exécute le worker avec tsx et enregistre la sortie et le PID.
-    NODE_OPTIONS='--enable-source-maps' DOCKER=true pnpm exec tsx watch src/worker.ts > "${SCRIPT_DIR}/worker.log" 2>&1 &
+    NODE_OPTIONS='--enable-source-maps' pnpm exec tsx watch src/worker.ts > "${SCRIPT_DIR}/worker.log" 2>&1 &
     
     local WORKER_PID=$!
     echo $WORKER_PID > "$PID_FILE"
