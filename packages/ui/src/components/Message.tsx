@@ -20,6 +20,9 @@ export const Message: React.FC<{ message: ChatMessage }> = ({ message }) => {
       return <AgentThoughtBubble content={message.content} />;
     case 'error':
       return <ErrorMessage content={message.content} />;
+    case 'agent_canvas_output':
+      // This message type is handled by the canvas itself, so we don't render it here.
+      return null;
     default:
       // Ensures that we handle all message types, or TypeScript will complain.
       

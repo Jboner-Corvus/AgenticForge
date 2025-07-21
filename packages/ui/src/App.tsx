@@ -103,22 +103,20 @@ export default function App() {
         </div>
 
         <div className="flex-1 flex flex-col">
-          {isProcessing && (
-          <div className="p-6">
-            <div className="flex items-center space-x-4">
-              <Skeleton className="h-12 w-12 rounded-full" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-[250px]" />
-                <Skeleton className="h-4 w-[200px]" />
-              </div>
-            </div>
-          </div>
-          )}
-          <div className="flex-1 p-6 overflow-y-auto space-y-4">
-            {messages.map((msg: ChatMessage) => (
-              <Message key={msg.id} message={msg} />
-            ))}
-          </div>
+  <div className="flex-1 p-6 overflow-y-auto space-y-4">
+    {isProcessing && (
+      <div className="flex items-center space-x-4">
+        <Skeleton className="h-12 w-12 rounded-full" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-[250px]" />
+          <Skeleton className="h-4 w-[200px]" />
+        </div>
+      </div>
+    )}
+    {messages.map((msg: ChatMessage) => (
+      <Message key={msg.id} message={msg} />
+    ))}
+  </div>
 
           <div className="p-6 border-t border-border flex flex-col gap-4">
             <h2 className="text-lg font-semibold">Agent Output Canvas</h2>

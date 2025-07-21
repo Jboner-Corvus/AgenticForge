@@ -62,7 +62,10 @@ interface AppState {
 
 export const useStore = create<AppState>((set, get) => ({
   addDebugLog: (log) => set((state) => ({ debugLog: [...state.debugLog, log] })),
-  addMessage: (message) =>    set((state) => ({      messages: [...state.messages, { ...message, id: generateUUID() }],    })),
+  addMessage: (message) =>
+    set((state) => ({
+      messages: [...state.messages, { ...message, id: generateUUID() }],
+    })),
   agentStatus: null,
   toolStatus: '',
   authToken: null,

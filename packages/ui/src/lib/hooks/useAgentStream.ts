@@ -86,18 +86,11 @@ export const useAgentStream = () => {
       },
       onMessage: (content: string) => {
         addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Agent response: ${content}`);
-        useStore.setState(produce((state: { messages: ChatMessage[] }) => {
-          const lastMessage = state.messages[state.messages.length - 1];
-          if (lastMessage && lastMessage.type === 'agent_response') {
-            lastMessage.content += content;
-          } else {
-            const agentMessage: NewChatMessage = {
-              type: 'agent_response',
-              content,
-            };
-            state.messages.push(agentMessage as ChatMessage);
-          }
-        }));
+        const agentMessage: NewChatMessage = {
+          type: 'agent_response',
+          content,
+        };
+        addMessage(agentMessage);
         setAgentProgress(Math.min(99, useStore.getState().agentProgress + 5));
       },
       onThought: (thought: string) => {
@@ -164,7 +157,13 @@ export const useAgentStream = () => {
           }
           break;
         case 'agent_response':
-          if (data.content) callbacks.onMessage(data.content);
+          if (data.content) {
+            if (data.content === 'Agent displayed content on the canvas.') {
+              callbacks.onClose();
+            } else {
+              callbacks.onMessage(data.content);
+            }
+          }
           break;
         case 'raw_llm_response':
           if (data.content) addDebugLog(`[LLM_RAW] ${data.content}`);
@@ -210,8 +209,10 @@ export const useAgentStream = () => {
           }
           break;
         case 'close':
-          callbacks.onClose();
-          setAgentProgress(100);
+          setTimeout(() => {
+            callbacks.onClose();
+            setAgentProgress(100);
+          }, 500); // Add a small delay to allow UI to update
           break;
       }
     };

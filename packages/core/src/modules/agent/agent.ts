@@ -147,6 +147,9 @@ export class Agent {
             contentType: canvas.contentType,
             type: 'agent_canvas_output',
           });
+          if (!command) {
+            return 'Agent displayed content on the canvas.';
+          }
         }
 
         if (answer) {
@@ -186,10 +189,8 @@ export class Agent {
         }
       } catch (error) {
         if (error instanceof FinishToolSignal) {
-          this.log.info(
-            { answer: error.message },
-            'Agent finished by tool signal.',
-          );
+          this.log.info({ answer: error.message }, 'Agent finished by tool signal.');
+          this.publishToChannel({ content: error.message, type: 'agent_response' });
           return error.message;
         }
 
@@ -225,9 +226,6 @@ export class Agent {
         session: this.session,
         taskQueue: this.taskQueue,
       });
-      if (result instanceof FinishToolSignal) {
-        throw result;
-      }
       return result;
     } catch (error) {
       if (error instanceof FinishToolSignal) {
@@ -260,6 +258,13 @@ export class Agent {
   }
 
   private publishToChannel(data: ChannelData) {
+    const channel = `job:${this.job.id}:events`;
+    const message = JSON.stringify(data);
+
+    // Publie le message sur le bon canal Redis pour le streaming SSE
+    redis.publish(channel, message);
+
+    // Conserve la mise à jour de la progression si elle est utilisée ailleurs
     this.job.updateProgress(data);
   }
 
