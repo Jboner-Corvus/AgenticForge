@@ -23,8 +23,9 @@ interface StreamMessage {
     | 'browser.content.extracted'
     | 'browser.error'
     | 'browser.closed'
-    | 'displayOutput'; // Add the new displayOutput type
+    | 'agent_canvas_output'; // Corrected event name
   content?: string;
+  contentType?: 'html' | 'markdown' | 'url' | 'text'; // Add contentType for canvas output
   toolName?: string;
   params?: Record<string, unknown>;
   result?: Record<string, unknown>;
@@ -36,11 +37,6 @@ interface StreamMessage {
     url?: string;
     length?: number;
     message?: string;
-  };
-  // Add payload for displayOutput tool
-  payload?: {
-    type: 'html' | 'markdown' | 'url' | 'text';
-    content: string;
   };
 }
 
@@ -202,15 +198,15 @@ export const useAgentStream = () => {
         case 'browser.closed':
           setBrowserStatus('Browser closed');
           break;
-        case 'displayOutput': // Handle the new displayOutput event
-          if (data.payload) {
+        case 'agent_canvas_output': // Handle the new displayOutput event
+          if (data.content && data.contentType) {
             const canvasOutputMessage: NewChatMessage = {
               type: 'agent_canvas_output',
-              content: data.payload.content,
-              contentType: data.payload.type,
+              content: data.content,
+              contentType: data.contentType,
             };
             addMessage(canvasOutputMessage);
-            addDebugLog(`[DISPLAY_OUTPUT] Type: ${data.payload.type}, Content length: ${data.payload.content.length}`);
+            addDebugLog(`[DISPLAY_OUTPUT] Type: ${data.contentType}, Content length: ${data.content.length}`);
           }
           break;
         case 'close':

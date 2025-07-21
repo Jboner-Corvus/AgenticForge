@@ -3,7 +3,7 @@ import { Content } from 'fastmcp';
 
 import { config } from '../../config.js';
 import logger from '../../logger.js';
-import { AgentProgress, Ctx, Message, SessionData } from '../../types.js';
+import { Ctx, Message, SessionData } from '../../types.js';
 import { llmProvider } from '../../utils/llmProvider.js';
 import { redis } from '../redis/redisClient.js';
 import { summarizeTool } from '../tools/definitions/ai/summarize.tool.js';
@@ -63,7 +63,11 @@ export class SessionManager {
       job,
       llm: llmProvider,
       log,
-      reportProgress: async (progress: AgentProgress) => {
+      reportProgress: async (progress: {
+        current: number;
+        total: number;
+        unit?: string;
+      }) => {
         log.debug(
           `Tool progress: ${progress.current}/${progress.total} ${
             progress.unit || ''

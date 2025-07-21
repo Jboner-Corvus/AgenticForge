@@ -18,6 +18,7 @@ console.log('<<<<< STARTING worker.ts >>>>>');
 console.log('Starting worker...');
 console.log(`[Worker] process.env.DOCKER: ${process.env.DOCKER}`);
 import { Job, Queue, Worker } from 'bullmq';
+import { Content } from 'fastmcp';
 import { z } from 'zod';
 
 import { config } from './config.js';
@@ -27,14 +28,7 @@ import { redis } from './modules/redis/redisClient.js';
 import { SessionManager } from './modules/session/sessionManager.js';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.js';
 import { getAllTools } from './modules/tools/definitions/index.js'; // Import getAllTools
-import {
-  AgentProgress,
-  Content,
-  Ctx,
-  Message,
-  SessionData,
-  Tool,
-} from './types.js';
+import { Ctx, Message, SessionData, Tool } from './types.js';
 import { AppError, UserError } from './utils/errorUtils.js';
 
 console.log('Imports complete');
@@ -152,7 +146,11 @@ async function summarizeHistory(sessionData: SessionData, log: typeof logger) {
     try {
       const summary = await summarizeTool.execute({ text: textToSummarize }, {
         log,
-        reportProgress: async (progress: AgentProgress) => {
+        reportProgress: async (progress: {
+          current: number;
+          total: number;
+          unit?: string;
+        }) => {
           log.debug(
             `Summarize progress: ${progress.current}/${progress.total} ${progress.unit || ''}`,
           );
