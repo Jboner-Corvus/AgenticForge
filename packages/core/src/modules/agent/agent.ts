@@ -37,8 +37,12 @@ const llmResponseSchema = z.object({
 });
 
 type ChannelData =
+  | {
+      content: string;
+      contentType: 'html' | 'markdown' | 'text' | 'url';
+      type: 'agent_canvas_output';
+    }
   | { content: string; type: 'agent_response' }
-  | { content: string; contentType: 'html' | 'markdown' | 'url' | 'text'; type: 'agent_canvas_output' }
   | { content: string; type: 'agent_thought' }
   | { content: string; type: 'raw_llm_response' }
   | { data: { args: unknown; name: string }; type: 'tool.start' }

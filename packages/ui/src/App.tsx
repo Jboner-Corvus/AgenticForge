@@ -28,14 +28,16 @@ export default function App() {
   const setInput = useStore((state) => state.setMessageInputValue);
   const isProcessing = useStore((state) => state.isProcessing);
 
-  const { startAgent, lastMessage } = useAgentStream();
+  const { startAgent } = useAgentStream();
 
   useEffect(() => {
+    const lastMessage = useStore.getState().messages[useStore.getState().messages.length - 1];
     if (lastMessage && lastMessage.type === 'agent_canvas_output') {
       const canvasOutput = lastMessage as AgentCanvasOutput;
-      useStore.getState().setCanvasContent(canvasOutput.content, canvasOutput.contentType);
+      useStore.getState().setCanvasContent(canvasOutput.content);
+      useStore.getState().setCanvasType(canvasOutput.contentType);
     }
-  }, [lastMessage]);
+  }, [messages]);
 
   const canvasContent = useStore((state) => state.canvasContent);
   const canvasType = useStore((state) => state.canvasType);

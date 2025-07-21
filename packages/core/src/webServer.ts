@@ -38,18 +38,24 @@ export async function startWebServer() {
   app.use(cookieParser());
 
   // Middleware d'authentification par clé API
-  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    // Exempter la route de health check
-    if (req.path === '/api/health') {
-      return next();
-    }
+  app.use(
+    (
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction,
+    ) => {
+      // Exempter la route de health check
+      if (req.path === '/api/health') {
+        return next();
+      }
 
-    const apiKey = req.headers.authorization;
-    if (config.AUTH_API_KEY && apiKey !== `Bearer ${config.AUTH_API_KEY}`) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-    next();
-  });
+      const apiKey = req.headers.authorization;
+      if (config.AUTH_API_KEY && apiKey !== `Bearer ${config.AUTH_API_KEY}`) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      next();
+    },
+  );
 
   app.use(
     (
@@ -285,6 +291,33 @@ export async function startWebServer() {
         const returnvalue = job.returnvalue;
 
         res.status(200).json({ jobId, progress, returnvalue, state });
+      } catch (error) {
+        _next(error);
+      }
+    },
+  );
+
+  app.get(
+    '/api/display',
+    async (
+      req: express.Request,
+      res: express.Response,
+      _next: express.NextFunction,
+    ) => {
+      try {
+        const filePath = path.join(__dirname, '..', 'workspace', 'index.html');
+        const content = await fs.promises.readFile(filePath, 'utf-8');
+        const _sessionId = req.sessionId;
+        const channel = `job:display:events`;
+        const message = {
+          payload: {
+            content,
+            type: 'html',
+          },
+          type: 'displayOutput',
+        };
+        await redis.publish(channel, JSON.stringify(message));
+        res.status(200).json({ message: 'Display event sent.' });
       } catch (error) {
         _next(error);
       }
