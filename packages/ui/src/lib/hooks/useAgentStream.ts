@@ -204,8 +204,12 @@ export const useAgentStream = () => {
           break;
         case 'displayOutput': // Handle the new displayOutput event
           if (data.payload) {
-            useStore.getState().setCanvasContent(data.payload.content);
-            useStore.getState().setCanvasType(data.payload.type);
+            const canvasOutputMessage: NewChatMessage = {
+              type: 'agent_canvas_output',
+              content: data.payload.content,
+              contentType: data.payload.type,
+            };
+            addMessage(canvasOutputMessage);
             addDebugLog(`[DISPLAY_OUTPUT] Type: ${data.payload.type}, Content length: ${data.payload.content.length}`);
           }
           break;

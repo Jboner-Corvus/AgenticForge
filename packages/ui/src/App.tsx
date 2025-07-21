@@ -15,7 +15,6 @@ import { Typography } from './components/Typography';
 import { Toaster } from './components/ui/sonner';
 import { ChatMessage } from './types/chat';
 import AgentOutputCanvas from './components/AgentOutputCanvas'; // Import the new component
-import { AgentCanvasOutput } from './lib/types';
 
 export default function App() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -33,9 +32,8 @@ export default function App() {
   useEffect(() => {
     const lastMessage = useStore.getState().messages[useStore.getState().messages.length - 1];
     if (lastMessage && lastMessage.type === 'agent_canvas_output') {
-      const canvasOutput = lastMessage as AgentCanvasOutput;
-      useStore.getState().setCanvasContent(canvasOutput.content);
-      useStore.getState().setCanvasType(canvasOutput.contentType);
+      useStore.getState().setCanvasContent(lastMessage.content);
+      useStore.getState().setCanvasType(lastMessage.contentType);
     }
   }, [messages]);
 
