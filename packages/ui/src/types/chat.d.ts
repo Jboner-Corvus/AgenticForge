@@ -40,12 +40,6 @@ export interface ErrorMessage extends BaseMessage {
   content: string;
 }
 
-export interface AgentCanvasOutputMessage extends BaseMessage {
-  type: 'agent_canvas_output';
-  content: string;
-  contentType: 'html' | 'markdown' | 'url' | 'text';
-}
-
 export type ChatMessage =
   | UserMessage
   | AgentResponseMessage
@@ -53,7 +47,6 @@ export type ChatMessage =
   | ToolResultMessage
   | AgentToolResult
   | ThoughtMessage
-  | ErrorMessage
-  | AgentCanvasOutputMessage;
+  | ErrorMessage;
 
 export type NewChatMessage =  | { type: 'user'; content: string }  | { type: 'agent_response'; content: string }  | { type: 'tool_call'; toolName: string; params: Record<string, unknown> }  | { type: 'tool_result'; toolName: string; result: unknown }  | { type: 'agent_thought'; content: string }  | { type: 'error'; content: string };
