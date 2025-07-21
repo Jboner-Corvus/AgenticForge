@@ -1,3 +1,4 @@
+console.log('<<<<< STARTING worker.ts >>>>>');
 // ATTENTION : Ce fichier est le point d'entrée du worker de l'agent.
 // Son rôle principal est d'écouter la file d'attente (queue) sur Redis
 // et de traiter les "jobs" (tâches) qui y sont ajoutés.
@@ -12,20 +13,20 @@
 // Toute modification dans ce fichier peut affecter la capacité du système à
 // traiter des tâches en arrière-plan.
 
-import dotenv from 'dotenv';
-dotenv.config();
+// import dotenv from 'dotenv';
+// dotenv.config();
 console.log('Starting worker...');
 console.log(`[Worker] process.env.DOCKER: ${process.env.DOCKER}`);
 import { Job, Queue, Worker } from 'bullmq';
 import { z } from 'zod';
 
-import { Agent } from './agent.js';
 import { config } from './config.js';
 import logger from './logger.js';
-import { redis } from './redisClient.js';
-import { SessionManager } from './sessionManager.js';
-import { summarizeTool } from './tools/ai/summarize.tool.js';
-import { getAllTools } from './tools/index.js'; // Import getAllTools
+import { Agent } from './modules/agent/agent.js';
+import { redis } from './modules/redis/redisClient.js';
+import { SessionManager } from './modules/session/sessionManager.js';
+import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.js';
+import { getAllTools } from './modules/tools/definitions/index.js'; // Import getAllTools
 import {
   AgentProgress,
   Content,
@@ -110,7 +111,9 @@ export async function processJob(
 export async function startWorker() {
   console.log('startWorker function called');
   logger.info('Starting worker...');
+  console.log('[worker] Before getAllTools call');
   const tools = await getAllTools(); // Load all tools
+  console.log('[worker] After getAllTools call');
   logger.info(`Found ${tools.length} tools.`);
 
   logger.info('Creating worker...');

@@ -6,7 +6,7 @@
     "module": "nodenext",
     "lib": ["es2022", "dom"],
     "moduleResolution": "nodenext",
-    "types": ["node", "vitest/globals"],
+    "types": ["node", "vitest/globals", "express"],
     "declaration": true,
     "declarationMap": true,
     "esModuleInterop": true,
@@ -16,9 +16,10 @@
     "strict": true,
     "sourceMap": true,
     "baseUrl": ".",
-    "allowImportingTsExtensions": true,
+    "allowJs": true,
     "paths": {
-      "@agenticforge/core/*": ["./src/*"]
+      "@agenticforge/core/*": ["./src/*"],
+      "types": ["./src/types.ts"]
     }
   },
   "include": ["src", "src/**/*.ts", "src/**/*.js", "src/types.js"],

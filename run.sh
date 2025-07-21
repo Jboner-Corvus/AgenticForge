@@ -4,7 +4,7 @@
 # Configuration & Constantes
 # ==============================================================================
 # Obtenir le répertoire où se trouve le script pour rendre les chemins robustes
-SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
 # Nom du service dans docker-compose.yml pour les commandes spécifiques à Docker
 APP_SERVICE_NAME="server"
@@ -28,19 +28,20 @@ usage() {
     echo "Utilisation: $0 [commande]"
     echo ""
     echo "Commandes disponibles:"
-    echo "  start             : Démarre tous les services (Docker et worker local)."
-    echo "  stop              : Arrête tous les services (Docker et worker local)."
-    echo "  restart [worker]  : Redémarre tous les services ou seulement le worker."
-    echo "  status            : Affiche le statut des conteneurs Docker."
-    echo "  logs [service]    : Affiche les logs. 'service' peut être 'worker' ou 'docker'."
-    echo "  rebuild           : Force la reconstruction des images Docker et redémarre."
-    echo "  clean-docker      : Nettoie le système Docker (supprime conteneurs, volumes, etc.)."
-    echo "  shell             : Ouvre un shell dans le conteneur du serveur."
-    echo "  lint              : Lance le linter sur le code."
-    echo "  format            : Formate le code."
-    echo "  test              : Lance les tests."
-    echo "  typecheck         : Vérifie les types TypeScript."
-    echo "  menu              : Affiche le menu interactif (défaut)."
+    echo "   start          : Démarre tous les services (Docker et worker local)."
+    echo "   stop           : Arrête tous les services (Docker et worker local)."
+    echo "   restart [worker]: Redémarre tous les services ou seulement le worker."
+    echo "   status         : Affiche le statut des conteneurs Docker."
+    echo "   logs           : Affiche les 100 dernières lignes des logs du worker."
+    echo "   rebuild        : Force la reconstruction des images Docker et redémarre."
+    echo "   clean-docker   : Nettoie le système Docker (supprime conteneurs, volumes, etc.)."
+    echo "   shell          : Ouvre un shell dans le conteneur du serveur."
+    echo "   lint           : Lance le linter sur le code."
+    echo "   format         : Formate le code."
+    echo "   test           : Lance les tests."
+    echo "   typecheck      : Vérifie les types TypeScript."
+    echo "   all-checks     : Lance toutes les vérifications (TypeCheck, Lint, Test, Format)."
+    echo "   menu           : Affiche le menu interactif (défaut)."
     exit 1
 }
 
@@ -69,7 +70,7 @@ REDIS_PASSWORD=""
 
 # --- Configuration du LLM et de l'Authentification ---
 LLM_API_KEY="votre_cle_api_gemini"
-LLM_MODEL_NAME=gemini-1.5-flash
+LLM_MODEL_NAME=gemini-2.5-flash
 AUTH_TOKEN="un_token_secret_et_long_de_votre_choix"
 
 # --- Configuration Technique ---
@@ -136,13 +137,13 @@ check_redis_availability() {
 load_env_vars() {
     if [ -f .env ]; then
         set -a # Exporte automatiquement les variables
-        source .env
+        . "${SCRIPT_DIR}/.env" # Use . (dot) for POSIX compliance
         set +a # Arrête l'exportation automatique
     else
         echo -e "${COLOR_RED}✗ Le fichier .env est introuvable. Lancement de la création...${NC}"
         check_and_create_env
         set -a
-        source .env
+        . "${SCRIPT_DIR}/.env" # Use . (dot) for POSIX compliance
         set +a
     fi
 }
@@ -150,30 +151,49 @@ load_env_vars() {
 # Arrête proprement le processus worker local.
 stop_worker() {
     echo -e "${COLOR_YELLOW}Arrêt du worker local...${NC}"
+    # Attempt to kill processes by name first for robustness
+    pkill -f "tsx watch src/worker.ts" 2>/dev/null
+    pkill -f "node --loader ts-node/esm src/worker.ts" 2>/dev/null
+    pkill -f "node dist/worker.js" 2>/dev/null
+
     if [ -f "${SCRIPT_DIR}/worker.pid" ]; then
         WORKER_PID=$(cat "${SCRIPT_DIR}/worker.pid")
         if kill $WORKER_PID 2>/dev/null; then
             echo -e "${COLOR_GREEN}✓ Worker (PID ${WORKER_PID}) arrêté.${NC}"
         else
-            echo -e "${COLOR_YELLOW}Impossible d'arrêter le worker (PID ${WORKER_PID}). Il n'était peut-être pas en cours d'exécution.${NC}"
+            echo -e "${COLOR_YELLOW}Impossible d'arrêter le worker (PID ${WORKER_PID}). Il n'était peut-être pas en cours d'exécution ou a déjà été tué.${NC}"
         fi
-        rm "${SCRIPT_DIR}/worker.pid"
+        rm -f "${SCRIPT_DIR}/worker.pid" # Use -f to avoid error if file doesn't exist
     else
-        echo -e "${COLOR_YELLOW}Fichier worker.pid non trouvé. Le worker est déjà arrêté.${NC}"
+        echo -e "${COLOR_YELLOW}Fichier worker.pid non trouvé. Le worker est déjà arrêté ou a été tué par pkill.${NC}"
     fi
 }
 
 # Démarre le worker en arrière-plan.
 start_worker() {
+    local PID_FILE="${SCRIPT_DIR}/worker.pid"
+
+    if [ -f "$PID_FILE" ]; then
+        local PID
+        PID=$(cat "$PID_FILE")
+        # kill -0 PID vérifie si le processus existe
+        if kill -0 "$PID" > /dev/null 2>&1; then
+            echo -e "${COLOR_YELLOW}✓ Le worker est déjà en cours d'exécution (PID: ${PID}).${NC}"
+            return 0
+        else
+            echo -e "${COLOR_RED}✗ Fichier PID trouvé (stale), mais le processus n'existe pas. Nettoyage...${NC}"
+            rm "$PID_FILE"
+        fi
+    fi
+
     echo -e "${COLOR_YELLOW}Démarrage du worker local en arrière-plan...${NC}"
     cd "${SCRIPT_DIR}/packages/core"
     
     # Exécute le worker avec tsx et enregistre la sortie et le PID.
-    # L'utilisation de --enable-source-maps est recommandée pour un meilleur débogage.
     NODE_OPTIONS='--enable-source-maps' pnpm exec tsx watch src/worker.ts > "${SCRIPT_DIR}/worker.log" 2>&1 &
     
-    WORKER_PID=$!
-    echo $WORKER_PID > "${SCRIPT_DIR}/worker.pid"
+    local WORKER_PID=$!
+    echo $WORKER_PID > "$PID_FILE"
     echo -e "${COLOR_GREEN}✓ Worker démarré avec le PID ${WORKER_PID}. Logs disponibles dans worker.log.${NC}"
     cd "${SCRIPT_DIR}" # Revenir au répertoire du script
 }
@@ -229,6 +249,7 @@ restart_all_services() {
 # Redémarre uniquement le worker.
 restart_worker() {
     echo -e "${COLOR_YELLOW}Redémarrage du worker...${NC}"
+    load_env_vars
     stop_worker
     start_worker
 }
@@ -239,18 +260,13 @@ show_status() {
     docker compose -f "${SCRIPT_DIR}/docker-compose.yml" ps
 }
 
-# Affiche les logs pour un service donné.
+# Affiche les 100 dernières lignes des logs du worker.
 show_logs() {
-    if [ "$1" == "worker" ]; then
-        echo -e "${COLOR_CYAN}--- Logs du Worker (tail -f) ---${NC}"
-        if [ -f "${SCRIPT_DIR}/worker.log" ]; then
-            tail -f "${SCRIPT_DIR}/worker.log"
-        else
-            echo -e "${COLOR_RED}✗ Le fichier worker.log n'existe pas.${NC}"
-        fi
+    echo -e "${COLOR_CYAN}--- Logs du Worker (100 dernières lignes) ---${NC}"
+    if [ -f "${SCRIPT_DIR}/worker.log" ]; then
+        tail -100 "${SCRIPT_DIR}/worker.log"
     else
-        echo -e "${COLOR_CYAN}--- Affichage des logs Docker en continu (tail -f) ---${NC}"
-        docker compose -f "${SCRIPT_DIR}/docker-compose.yml" logs -f
+        echo -e "${COLOR_RED}✗ Le fichier worker.log n'existe pas.${NC}"
     fi
 }
 
@@ -310,6 +326,19 @@ run_typecheck() {
     pnpm --filter=@agenticforge/core exec tsc --noEmit
 }
 
+run_all_checks() {
+    echo -e "${COLOR_YELLOW}Lancement de toutes les vérifications (TypeCheck, Lint, Test, Format)...${NC}"
+    run_typecheck && \
+    run_lint && \
+    run_tests && \
+    run_format
+    if [ $? -eq 0 ]; then
+        echo -e "${COLOR_GREEN}✓ Toutes les vérifications ont réussi.${NC}"
+    else
+        echo -e "${COLOR_RED}✗ Certaines vérifications ont échoué. Veuillez consulter les logs ci-dessus.${NC}"
+    fi
+}
+
 # ==============================================================================
 # UI du Menu
 # ==============================================================================
@@ -317,20 +346,21 @@ show_menu() {
     clear
     echo -e "${COLOR_ORANGE}"
     echo '   ╔══════════════════════════════════╗'
-    echo '   ║      A G E N T I C  F O R G E    ║'
+    echo '   ║       A G E N T I C  F O R G E   ║'
     echo '   ╚══════════════════════════════════╝'
     echo -e "${NC}"
     echo -e "──────────────────────────────────────────"
-    echo -e "  ${COLOR_CYAN}Docker & Services${NC}"
-    printf "   1) ${COLOR_GREEN}🟢 Démarrer${NC}         5) ${COLOR_BLUE}📊 Logs${NC}\n"
-    printf "   2) ${COLOR_YELLOW}🔄 Redémarrer tout${NC}  6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\n"
-    printf "   3) ${COLOR_RED}🔴 Arrêter${NC}          7) ${COLOR_BLUE}🔨 Rebuild (no cache)${NC}\n"
-    printf "   4) ${COLOR_CYAN}⚡ Statut${NC}           8) ${COLOR_RED}🧹 Nettoyer Docker${NC}\n"
+    echo -e "   ${COLOR_CYAN}Docker & Services${NC}"
+    printf "   1) ${COLOR_GREEN}🟢 Démarrer${NC}         5) ${COLOR_BLUE}📊 Logs Worker${NC}\n"
+    printf "   2) ${COLOR_YELLOW}🔄 Redémarrer tout${NC}   6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\n"
+    printf "   3) ${COLOR_RED}🔴 Arrêter${NC}           7) ${COLOR_BLUE}🔨 Rebuild (no cache)${NC}\n"
+    printf "   4) ${COLOR_CYAN}⚡ Statut${NC}            8) ${COLOR_RED}🧹 Nettoyer Docker${NC}\n"
     printf "   9) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}\n"
     echo ""
-    echo -e "  ${COLOR_CYAN}Développement${NC}"
-    printf "  10) ${COLOR_BLUE}🔍 Lint${NC}           12) ${COLOR_BLUE}🧪 Tests${NC}\n"
-    printf "  11) ${COLOR_BLUE}✨ Format${NC}         13) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
+    echo -e "   ${COLOR_CYAN}Développement${NC}"
+    printf "  10) ${COLOR_BLUE}🔍 Lint${NC}             12) ${COLOR_BLUE}🧪 Tests${NC}\n"
+    printf "  11) ${COLOR_BLUE}✨ Format${NC}           13) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
+    printf "  14) ${COLOR_BLUE}✅ Toutes les vérifications${NC}\n"
     echo ""
     printf "  16) ${COLOR_RED}🚪 Quitter${NC}\n"
     echo ""
@@ -352,7 +382,7 @@ if [ "$#" -gt 0 ]; then
             esac
             ;;
         status) show_status ;;
-        logs) show_logs "$2" ;;
+        logs) show_logs ;;
         rebuild) rebuild_services ;;
         clean-docker) clean_docker ;;
         shell) shell_access ;;
@@ -360,6 +390,7 @@ if [ "$#" -gt 0 ]; then
         format) run_format ;;
         test) run_tests ;;
         typecheck) run_typecheck ;;
+        all-checks) run_all_checks ;;
         menu) # Tombe dans la boucle du menu
             ;;
         *)
@@ -382,7 +413,7 @@ while true; do
         2) restart_all_services ;;
         3) stop_services ;;
         4) show_status ;;
-        5) read -p "Quel service? (worker/docker) [docker]: " log_choice; show_logs ${log_choice:-docker} ;;
+        5) show_logs ;;
         6) shell_access ;;
         7) rebuild_services ;;
         8) clean_docker ;;
@@ -391,6 +422,7 @@ while true; do
         11) run_format ;;
         12) run_tests ;;
         13) run_typecheck ;;
+        14) run_all_checks ;;
         16)
             echo -e "${COLOR_GREEN}Au revoir!${NC}"
             exit 0
@@ -399,5 +431,8 @@ while true; do
             echo -e "${COLOR_RED}Choix invalide. Veuillez réessayer.${NC}"
             ;;
     esac
-    read -p "Appuyez sur Entrée pour retourner au menu..."
+    # Ajoute une pause avant de réafficher le menu pour que l'utilisateur puisse voir la sortie
+    if [[ "1 2 3 4 5 6 7 8 9 10 11 12 13 14" =~ " $choice " ]]; then
+        read -n 1 -s -r -p "Appuyez sur une touche pour continuer..."
+    fi
 done

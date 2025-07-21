@@ -16,7 +16,14 @@ interface StreamMessage {
     | 'error'
     | 'tool.start'
     | 'close'
-    | 'quota_exceeded';
+    | 'quota_exceeded'
+    | 'browser.navigating'
+    | 'browser.page.created'
+    | 'browser.page.loaded'
+    | 'browser.content.extracted'
+    | 'browser.error'
+    | 'browser.closed'
+    | 'displayOutput'; // Add the new displayOutput type
   content?: string;
   toolName?: string;
   params?: Record<string, unknown>;
@@ -26,6 +33,14 @@ interface StreamMessage {
     name?: string;
     args?: Record<string, unknown>;
     content?: string;
+    url?: string;
+    length?: number;
+    message?: string;
+  };
+  // Add payload for displayOutput tool
+  payload?: {
+    type: 'html' | 'markdown' | 'url' | 'text';
+    content: string;
   };
 }
 
@@ -42,6 +57,7 @@ export const useAgentStream = () => {
     setAgentStatus,
     addDebugLog,
     setAgentProgress,
+    setBrowserStatus,
   } = useStore();
 
   const startAgent = useCallback(async () => {
@@ -168,6 +184,35 @@ export const useAgentStream = () => {
             callbacks.onToolCall(data.data.name, data.data.args);
           }
           break;
+        case 'browser.navigating':
+          setBrowserStatus(`Navigating to ${data.data?.url}`);
+          break;
+        case 'browser.page.created':
+          setBrowserStatus('Page created');
+          break;
+        case 'browser.page.loaded':
+          setBrowserStatus(`Page loaded: ${data.data?.url}`);
+          break;
+        case 'browser.content.extracted':
+          setBrowserStatus(`Content extracted: ${data.data?.length} bytes`);
+          break;
+        case 'browser.error':
+          setBrowserStatus(`Error: ${data.data?.message}`);
+          break;
+        case 'browser.closed':
+          setBrowserStatus('Browser closed');
+          break;
+        case 'displayOutput': // Handle the new displayOutput event
+          if (data.payload) {
+            const canvasOutputMessage: NewChatMessage = {
+              type: 'agent_canvas_output',
+              content: data.payload.content,
+              contentType: data.payload.type,
+            };
+            addMessage(canvasOutputMessage);
+            addDebugLog(`[DISPLAY_OUTPUT] Type: ${data.payload.type}, Content length: ${data.payload.content.length}`);
+          }
+          break;
         case 'close':
           callbacks.onClose();
           setAgentProgress(100);
@@ -199,6 +244,7 @@ export const useAgentStream = () => {
     setAgentStatus,
     addDebugLog,
     setAgentProgress,
+    setBrowserStatus,
   ]);
 
   const interruptAgent = useCallback(async () => {

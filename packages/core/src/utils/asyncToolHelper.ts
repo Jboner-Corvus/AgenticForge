@@ -2,7 +2,10 @@ import type { SessionData } from '../types.js';
 
 // src/utils/asyncToolHelper.ts (Corrigé pour SessionData)
 import logger from '../logger.js';
-import { type AsyncTaskJobPayload, jobQueue as taskQueue } from '../queue.js';
+import {
+  type AsyncTaskJobPayload,
+  jobQueue as taskQueue,
+} from '../modules/queue/queue.js';
 import {
   EnqueueTaskError,
   type ErrorDetails,

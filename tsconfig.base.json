@@ -3,8 +3,8 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "composite": true,
-    "types": ["node"]
+    "types": ["node", "vitest/globals"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.test.ts"],
   "exclude": ["node_modules", "dist"]
 }

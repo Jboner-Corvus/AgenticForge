@@ -10,6 +10,7 @@ interface AppState {
   agentStatus: string | null;
   toolStatus: string;
   authToken: null | string;
+  browserStatus: string;
   clearDebugLog: () => void;
   clearMessages: () => void;
   codeExecutionEnabled: boolean;
@@ -23,10 +24,16 @@ interface AppState {
   sessionId: null | string;
   agentProgress: number;
 
+  // Canvas state
+  canvasContent: string;
+  canvasType: 'html' | 'markdown' | 'url' | 'text';
+  isCanvasVisible: boolean;
+
   sessionStatus: 'error' | 'unknown' | 'valid';
   setAgentStatus: (agentStatus: string | null) => void;
   setToolStatus: (toolStatus: string) => void;
   setAuthToken: (authToken: null | string) => void;
+  setBrowserStatus: (status: string) => void;
   setCodeExecutionEnabled: (codeExecutionEnabled: boolean) => void;
   
   setIsProcessing: (isProcessing: boolean) => void;
@@ -40,6 +47,12 @@ interface AppState {
   setTokenStatus: (tokenStatus: boolean) => void;
   setToolCount: (toolCount: number | string) => void;
   setToolCreationEnabled: (toolCreationEnabled: boolean) => void;
+
+  // Canvas setters
+  setCanvasContent: (content: string) => void;
+  setCanvasType: (type: 'html' | 'markdown' | 'url' | 'text') => void;
+  setIsCanvasVisible: (isVisible: boolean) => void;
+
   streamCloseFunc: (() => void) | null;
   tokenStatus: boolean;
   toolCount: number | string;
@@ -53,6 +66,7 @@ export const useStore = create<AppState>((set, get) => ({
   agentStatus: null,
   toolStatus: '',
   authToken: null,
+  browserStatus: 'idle',
   clearDebugLog: () => set({ debugLog: [] }),
   clearMessages: () => set({ messages: [] }),
   codeExecutionEnabled: true,
@@ -81,10 +95,16 @@ export const useStore = create<AppState>((set, get) => ({
   serverHealthy: false,
   sessionId: null,
 
+  // Canvas state initialization
+  canvasContent: '',
+  canvasType: 'text',
+  isCanvasVisible: false,
+
   sessionStatus: 'unknown',
   setAgentStatus: (agentStatus) => set({ agentStatus }),
   setToolStatus: (toolStatus) => set({ toolStatus }),
   setAuthToken: (authToken) => set({ authToken }),
+  setBrowserStatus: (status) => set({ browserStatus: status }),
   setCodeExecutionEnabled: (codeExecutionEnabled) => set({ codeExecutionEnabled }),
   
   setIsProcessing: (isProcessing) => set({ isProcessing }),
@@ -98,9 +118,17 @@ export const useStore = create<AppState>((set, get) => ({
   setToolCount: (toolCount) => set({ toolCount }),
   setAgentProgress: (agentProgress) => set({ agentProgress }),
   setToolCreationEnabled: (toolCreationEnabled) => set({ toolCreationEnabled }),
+
+  // Canvas setters
+  setCanvasContent: (content) => set({ canvasContent: content }),
+  setCanvasType: (type) => set({ canvasType: type }),
+  setIsCanvasVisible: (isVisible: boolean) => set({ isCanvasVisible: isVisible }),
+
   streamCloseFunc: null,
   tokenStatus: false,
   toolCount: 0,
   toolCreationEnabled: true,
   updateSessionStatus: (status) => set({ sessionStatus: status }),
 }));
+
+

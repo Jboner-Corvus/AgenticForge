@@ -37,3 +37,4 @@ worker.pid
 worker.log
 rapport.txt
 rapport-final.txt
+runw.ps1

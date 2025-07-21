@@ -49,3 +49,5 @@ export type ToolList = {
 };
 
 export type DisplayableItem = NewDisplayableItem & { id: string };
+
+export type ChatMessage = DisplayableItem;

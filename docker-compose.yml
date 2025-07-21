@@ -54,7 +54,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 120s
     networks:
       - agentic_network
 
@@ -85,6 +85,12 @@ services:
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://server:3001/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - agentic_network
 
