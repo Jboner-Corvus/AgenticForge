@@ -1,5 +1,5 @@
 console.log('<<<<< LOADING toolLoader.ts >>>>>');
-import * as chokidar from 'chokidar';
+// import * as chokidar from 'chokidar';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 import type { Tool } from '../types.js';
 
 import logger from '../logger.js';
-import { toolRegistry } from '../toolRegistry.js';
+import { toolRegistry } from '../modules/tools/toolRegistry.js';
 import { getErrDetails } from './errorUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -16,7 +16,7 @@ const __dirname = path.dirname(__filename);
 // Cache pour stocker les chemins des fichiers d'outils chargés pour éviter les doublons
 const loadedToolFiles = new Set<string>();
 const fileToToolNameMap = new Map<string, string>();
-let watcher: chokidar.FSWatcher | null = null;
+// let watcher: chokidar.FSWatcher | null = null;
 
 const runningInDist = process.env.NODE_ENV === 'production';
 const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
@@ -25,10 +25,10 @@ const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
 export function _resetTools(): void {
   loadedToolFiles.clear();
   fileToToolNameMap.clear();
-  if (watcher) {
-    watcher.close();
-    watcher = null;
-  }
+  // if (watcher) {
+  //   watcher.close();
+  //   watcher = null;
+  // }
   // Note: Le toolRegistry n'est pas réinitialisé ici car il est un singleton global.
   // Les tests doivent gérer la réinitialisation du toolRegistry si nécessaire.
 }
@@ -40,9 +40,9 @@ export function _resetTools(): void {
 export async function getTools(): Promise<Tool[]> {
   if (loadedToolFiles.size === 0) {
     await _internalLoadTools();
-    if (!watcher) {
-      watchTools();
-    }
+    // if (!watcher) {
+    //   watchTools();
+    // }
   }
   return toolRegistry.getAll();
 }
@@ -52,14 +52,30 @@ export async function getTools(): Promise<Tool[]> {
  * @returns Une promesse qui se résout avec un tableau de tous les outils chargés.
  */
 async function _internalLoadTools(): Promise<void> {
-  logger.info('[_internalLoadTools] Starting to load tools dynamically.');
+  logger.info(`[_internalLoadTools] Starting to load tools dynamically.`);
   const toolsDir = getToolsDir();
-  logger.info(`[_internalLoadTools] Tools directory: ${toolsDir}`);
-  const toolFiles = await findToolFiles(toolsDir, fileExtension);
-  logger.info(`[_internalLoadTools] Found tool files: ${toolFiles.join(', ')}`);
-
-  for (const file of toolFiles) {
-    await loadToolFile(file);
+  console.log(`[toolLoader] Resolved toolsDir: ${toolsDir}`);
+  let toolFiles: string[] = []; // Declare toolFiles here
+  try {
+    toolFiles = await findToolFiles(toolsDir, fileExtension);
+    console.log(`[toolLoader] Found tool files: ${toolFiles.join(', ')}`);
+    logger.info(
+      `[_internalLoadTools] Found tool files: ${toolFiles.join(', ')}`,
+    );
+    for (const file of toolFiles) {
+      logger.info(`[_internalLoadTools] Attempting to load tool file: ${file}`);
+      await loadToolFile(file);
+      logger.info(
+        `[_internalLoadTools] Successfully loaded tool file: ${file}`,
+      );
+    }
+  } catch (error) {
+    logger.error({
+      ...getErrDetails(error),
+      logContext:
+        '[_internalLoadTools] Error during tool file discovery or loading.',
+    });
+    throw error; // Re-throw to ensure the error is propagated
   }
   logger.info(
     `${toolRegistry.getAll().length} tools have been loaded dynamically.`,
@@ -74,15 +90,19 @@ async function findToolFiles(
   extension: string,
 ): Promise<string[]> {
   let files: string[] = [];
+  console.log(`[findToolFiles] Scanning directory: ${dir}`);
   logger.info(`[findToolFiles] Scanning directory: ${dir}`);
   try {
     const entries = await fs.readdir(dir, { withFileTypes: true });
+    console.log(`[findToolFiles] Found ${entries.length} entries in ${dir}`);
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
+      console.log(`[findToolFiles] Processing entry: ${fullPath}`);
       if (entry.isDirectory()) {
         files = files.concat(await findToolFiles(fullPath, extension));
       } else if (entry.isFile() && entry.name.endsWith(extension)) {
         files.push(fullPath);
+        console.log(`[findToolFiles] Added tool file: ${fullPath}`);
       }
     }
   } catch (error) {
@@ -92,12 +112,16 @@ async function findToolFiles(
       directory: dir,
       logContext: "Erreur lors du parcours du répertoire d'outils.",
     });
+    console.error(
+      `[findToolFiles] Error: ${errDetails.message} in directory: ${dir}`,
+    );
     if (!errDetails.message.includes('ENOENT')) {
       throw new Error(
         `Impossible de lire le répertoire des outils '${dir}'. Détails: ${errDetails.message}`,
       );
     }
   }
+  console.log(`[findToolFiles] Returning ${files.length} files from ${dir}`);
   return files;
 }
 
@@ -109,7 +133,7 @@ function getToolsDir(): string {
     process.env.TOOLS_PATH ||
     (runningInDist
       ? path.join(__dirname, 'tools')
-      : path.resolve(__dirname, '..', 'tools'));
+      : path.resolve(__dirname, '..', 'modules', 'tools'));
   console.log('Constructed tools path:', toolsPath);
   return toolsPath;
 }
@@ -119,7 +143,7 @@ async function loadToolFile(file: string): Promise<void> {
     // Invalidate module cache for dynamic loading
     if (process.env.NODE_ENV === 'development') {
       const resolvedPath = path.resolve(file);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       delete (global as any)._moduleCache?.[resolvedPath];
     }
 
@@ -158,49 +182,4 @@ async function loadToolFile(file: string): Promise<void> {
       logContext: `[loadToolFile] Failed to dynamically load tool file.`,
     });
   }
-}
-
-function unloadToolFile(file: string): void {
-  const toolName = fileToToolNameMap.get(file);
-  if (toolName) {
-    toolRegistry.unregister(toolName);
-    fileToToolNameMap.delete(file);
-  }
-  loadedToolFiles.delete(file);
-  logger.info(`Fichier d'outil déchargé (chemin) : ${path.basename(file)}`);
-}
-
-function watchTools(): void {
-  const toolsDir = getToolsDir();
-  logger.info(
-    `Démarrage de l'observateur de fichiers pour les outils dans: ${toolsDir}`,
-  );
-  watcher = chokidar.watch(toolsDir, {
-    ignored: /(^|\/)\..*|\.d\.ts$/,
-    ignoreInitial: true,
-    persistent: true,
-  });
-
-  watcher.on('add', async (filePath) => {
-    logger.info(`Nouveau fichier d'outil détecté: ${filePath}`);
-    await loadToolFile(filePath);
-  });
-
-  watcher.on('change', async (filePath) => {
-    logger.info(`Fichier d'outil modifié détecté: ${filePath}`);
-    unloadToolFile(filePath);
-    await loadToolFile(filePath);
-  });
-
-  watcher.on('unlink', (filePath: string) => {
-    logger.info(`Fichier d'outil supprimé détecté: ${filePath}`);
-    unloadToolFile(filePath);
-  });
-
-  watcher.on('error', (error: unknown) => {
-    logger.error({
-      ...getErrDetails(error),
-      logContext: "Erreur de l'observateur de fichiers d'outils.",
-    });
-  });
 }

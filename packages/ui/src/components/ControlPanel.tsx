@@ -27,6 +27,7 @@ export const ControlPanel = memo(() => {
   const setSessionId = useStore((state) => state.setSessionId);
   const addMessage = useStore((state) => state.addMessage);
 
+  const browserStatus = useStore((state) => state.browserStatus);
   const { toast } = useToast();
 
   const handleClearHistory = useCallback((showMessage: boolean) => {
@@ -77,6 +78,10 @@ export const ControlPanel = memo(() => {
               <Badge variant={serverHealthy ? 'success' : 'destructive'}>
                 {serverHealthy ? fr.online : fr.offline}
               </Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4" />Browser Status</Label>
+              <span className="text-sm text-muted-foreground">{browserStatus}</span>
             </div>
           </div>
         </TabsContent>

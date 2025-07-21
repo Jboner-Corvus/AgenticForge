@@ -22,7 +22,8 @@ interface StreamMessage {
     | 'browser.page.loaded'
     | 'browser.content.extracted'
     | 'browser.error'
-    | 'browser.closed';
+    | 'browser.closed'
+    | 'displayOutput'; // Add the new displayOutput type
   content?: string;
   toolName?: string;
   params?: Record<string, unknown>;
@@ -35,6 +36,11 @@ interface StreamMessage {
     url?: string;
     length?: number;
     message?: string;
+  };
+  // Add payload for displayOutput tool
+  payload?: {
+    type: 'html' | 'markdown' | 'url' | 'text';
+    content: string;
   };
 }
 
@@ -195,6 +201,13 @@ export const useAgentStream = () => {
           break;
         case 'browser.closed':
           setBrowserStatus('Browser closed');
+          break;
+        case 'displayOutput': // Handle the new displayOutput event
+          if (data.payload) {
+            useStore.getState().setCanvasContent(data.payload.content);
+            useStore.getState().setCanvasType(data.payload.type);
+            addDebugLog(`[DISPLAY_OUTPUT] Type: ${data.payload.type}, Content length: ${data.payload.content.length}`);
+          }
           break;
         case 'close':
           callbacks.onClose();

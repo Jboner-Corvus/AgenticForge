@@ -28,7 +28,7 @@ export type Ctx = {
   taskQueue: Queue;
 } & Omit<FastMCPContext<SessionData>, 'reportProgress' | 'streamContent'>;
 
-import type { LLMContent } from './llm-types.js';
+import type { LLMContent } from './modules/llm/llm-types.js';
 
 export interface ILlmProvider {
   getLlmResponse(

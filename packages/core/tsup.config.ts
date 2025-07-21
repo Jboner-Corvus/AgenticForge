@@ -2,12 +2,9 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig({
   clean: true,
-  dts: true,
-  entry: ['src/**/*.ts', '!src/**/*.test.ts', 'src/types.ts'],
+  dts: false,
+  entry: ['src/**/*.ts'],
+  external: ['path', 'playwright', 'playwright-core'],
   format: ['esm'],
   outDir: 'dist',
-  // Utiliser 'copy' pour inclure les fichiers non-ts.
-  // Cela préserve la structure des répertoires.
-  copy: ['src/prompts/**/*', 'src/tools/**/*', 'src/utils/**/*'],
-  external: ['chromium-bidi'],
 });

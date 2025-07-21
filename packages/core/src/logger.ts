@@ -1,6 +1,6 @@
-// FICHIER : src/logger.ts
 import { pino } from 'pino';
 
+// FICHIER : src/logger.ts
 import { config } from './config.js';
 
 const logger = pino({

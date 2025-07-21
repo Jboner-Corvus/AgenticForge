@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AppInitializer } from './components/AppInitializer';
-import { AgentVisualizer } from './components/AgentVisualizer';
+import { AnimatePresence } from 'framer-motion';
+
 import { ControlPanel } from './components/ControlPanel';
 import { Header } from './components/Header';
 import { Skeleton } from './components/ui/skeleton';
@@ -13,10 +14,13 @@ import { useStore } from './lib/store';
 import { Typography } from './components/Typography';
 import { Toaster } from './components/ui/sonner';
 import { ChatMessage } from './types/chat';
+import AgentOutputCanvas from './components/AgentOutputCanvas'; // Import the new component
 
 export default function App() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isControlPanelVisible, setIsControlPanelVisible] = useState(true);
+
+  
 
   const messages = useStore((state) => state.messages);
   const input = useStore((state) => state.messageInputValue);
@@ -24,6 +28,22 @@ export default function App() {
   const isProcessing = useStore((state) => state.isProcessing);
 
   const { startAgent } = useAgentStream();
+
+  const canvasContent = useStore((state) => state.canvasContent);
+  const canvasType = useStore((state) => state.canvasType);
+  const isCanvasVisible = useStore((state) => state.isCanvasVisible);
+  const setIsCanvasVisible = useStore((state) => state.setIsCanvasVisible);
+
+  useEffect(() => {
+    if (canvasContent) {
+      setIsCanvasVisible(true);
+    } else {
+      const timer = setTimeout(() => {
+        setIsCanvasVisible(false);
+      }, 500); // Durée de l'animation de sortie
+      return () => clearTimeout(timer);
+    }
+  }, [canvasContent, setIsCanvasVisible]);
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedMode = localStorage.getItem('darkMode');
@@ -91,6 +111,18 @@ export default function App() {
               <Message key={msg.id} message={msg} />
             ))}
           </div>
+
+          <div className="p-6 border-t border-border flex flex-col gap-4">
+            <h2 className="text-lg font-semibold">Agent Output Canvas</h2>
+            <div className="w-full h-96 border border-border rounded-lg overflow-hidden">
+              <AnimatePresence mode="wait">
+                {isCanvasVisible && (
+                  <AgentOutputCanvas content={canvasContent} type={canvasType} />
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
           <div className="p-6 border-t border-border flex items-center">
             <label htmlFor="chat-input" className="sr-only">Type your message</label>
             <input
@@ -115,7 +147,7 @@ export default function App() {
             </button>
           </div>
         </div>
-        <AgentVisualizer />
+        
       </div>
       <Toaster />
     </div>

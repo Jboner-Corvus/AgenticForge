@@ -24,6 +24,11 @@ interface AppState {
   sessionId: null | string;
   agentProgress: number;
 
+  // Canvas state
+  canvasContent: string;
+  canvasType: 'html' | 'markdown' | 'url' | 'text';
+  isCanvasVisible: boolean;
+
   sessionStatus: 'error' | 'unknown' | 'valid';
   setAgentStatus: (agentStatus: string | null) => void;
   setToolStatus: (toolStatus: string) => void;
@@ -42,6 +47,12 @@ interface AppState {
   setTokenStatus: (tokenStatus: boolean) => void;
   setToolCount: (toolCount: number | string) => void;
   setToolCreationEnabled: (toolCreationEnabled: boolean) => void;
+
+  // Canvas setters
+  setCanvasContent: (content: string) => void;
+  setCanvasType: (type: 'html' | 'markdown' | 'url' | 'text') => void;
+  setIsCanvasVisible: (isVisible: boolean) => void;
+
   streamCloseFunc: (() => void) | null;
   tokenStatus: boolean;
   toolCount: number | string;
@@ -84,6 +95,11 @@ export const useStore = create<AppState>((set, get) => ({
   serverHealthy: false,
   sessionId: null,
 
+  // Canvas state initialization
+  canvasContent: '',
+  canvasType: 'text',
+  isCanvasVisible: false,
+
   sessionStatus: 'unknown',
   setAgentStatus: (agentStatus) => set({ agentStatus }),
   setToolStatus: (toolStatus) => set({ toolStatus }),
@@ -102,9 +118,17 @@ export const useStore = create<AppState>((set, get) => ({
   setToolCount: (toolCount) => set({ toolCount }),
   setAgentProgress: (agentProgress) => set({ agentProgress }),
   setToolCreationEnabled: (toolCreationEnabled) => set({ toolCreationEnabled }),
+
+  // Canvas setters
+  setCanvasContent: (content) => set({ canvasContent: content }),
+  setCanvasType: (type) => set({ canvasType: type }),
+  setIsCanvasVisible: (isVisible: boolean) => set({ isCanvasVisible: isVisible }),
+
   streamCloseFunc: null,
   tokenStatus: false,
   toolCount: 0,
   toolCreationEnabled: true,
   updateSessionStatus: (status) => set({ sessionStatus: status }),
 }));
+
+

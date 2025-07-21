@@ -40,6 +40,7 @@ usage() {
     echo "   format         : Formate le code."
     echo "   test           : Lance les tests."
     echo "   typecheck      : Vérifie les types TypeScript."
+    echo "   all-checks     : Lance toutes les vérifications (TypeCheck, Lint, Test, Format)."
     echo "   menu           : Affiche le menu interactif (défaut)."
     exit 1
 }
@@ -136,13 +137,13 @@ check_redis_availability() {
 load_env_vars() {
     if [ -f .env ]; then
         set -a # Exporte automatiquement les variables
-        source .env
+        . "${SCRIPT_DIR}/.env" # Use . (dot) for POSIX compliance
         set +a # Arrête l'exportation automatique
     else
         echo -e "${COLOR_RED}✗ Le fichier .env est introuvable. Lancement de la création...${NC}"
         check_and_create_env
         set -a
-        source .env
+        . "${SCRIPT_DIR}/.env" # Use . (dot) for POSIX compliance
         set +a
     fi
 }
@@ -150,16 +151,21 @@ load_env_vars() {
 # Arrête proprement le processus worker local.
 stop_worker() {
     echo -e "${COLOR_YELLOW}Arrêt du worker local...${NC}"
+    # Attempt to kill processes by name first for robustness
+    pkill -f "tsx watch src/worker.ts" 2>/dev/null
+    pkill -f "node --loader ts-node/esm src/worker.ts" 2>/dev/null
+    pkill -f "node dist/worker.js" 2>/dev/null
+
     if [ -f "${SCRIPT_DIR}/worker.pid" ]; then
         WORKER_PID=$(cat "${SCRIPT_DIR}/worker.pid")
         if kill $WORKER_PID 2>/dev/null; then
             echo -e "${COLOR_GREEN}✓ Worker (PID ${WORKER_PID}) arrêté.${NC}"
         else
-            echo -e "${COLOR_YELLOW}Impossible d'arrêter le worker (PID ${WORKER_PID}). Il n'était peut-être pas en cours d'exécution.${NC}"
+            echo -e "${COLOR_YELLOW}Impossible d'arrêter le worker (PID ${WORKER_PID}). Il n'était peut-être pas en cours d'exécution ou a déjà été tué.${NC}"
         fi
-        rm "${SCRIPT_DIR}/worker.pid"
+        rm -f "${SCRIPT_DIR}/worker.pid" # Use -f to avoid error if file doesn't exist
     else
-        echo -e "${COLOR_YELLOW}Fichier worker.pid non trouvé. Le worker est déjà arrêté.${NC}"
+        echo -e "${COLOR_YELLOW}Fichier worker.pid non trouvé. Le worker est déjà arrêté ou a été tué par pkill.${NC}"
     fi
 }
 
@@ -243,6 +249,7 @@ restart_all_services() {
 # Redémarre uniquement le worker.
 restart_worker() {
     echo -e "${COLOR_YELLOW}Redémarrage du worker...${NC}"
+    load_env_vars
     stop_worker
     start_worker
 }
@@ -319,6 +326,19 @@ run_typecheck() {
     pnpm --filter=@agenticforge/core exec tsc --noEmit
 }
 
+run_all_checks() {
+    echo -e "${COLOR_YELLOW}Lancement de toutes les vérifications (TypeCheck, Lint, Test, Format)...${NC}"
+    run_typecheck && \
+    run_lint && \
+    run_tests && \
+    run_format
+    if [ $? -eq 0 ]; then
+        echo -e "${COLOR_GREEN}✓ Toutes les vérifications ont réussi.${NC}"
+    else
+        echo -e "${COLOR_RED}✗ Certaines vérifications ont échoué. Veuillez consulter les logs ci-dessus.${NC}"
+    fi
+}
+
 # ==============================================================================
 # UI du Menu
 # ==============================================================================
@@ -340,6 +360,7 @@ show_menu() {
     echo -e "   ${COLOR_CYAN}Développement${NC}"
     printf "  10) ${COLOR_BLUE}🔍 Lint${NC}             12) ${COLOR_BLUE}🧪 Tests${NC}\n"
     printf "  11) ${COLOR_BLUE}✨ Format${NC}           13) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
+    printf "  14) ${COLOR_BLUE}✅ Toutes les vérifications${NC}\n"
     echo ""
     printf "  16) ${COLOR_RED}🚪 Quitter${NC}\n"
     echo ""
@@ -369,6 +390,7 @@ if [ "$#" -gt 0 ]; then
         format) run_format ;;
         test) run_tests ;;
         typecheck) run_typecheck ;;
+        all-checks) run_all_checks ;;
         menu) # Tombe dans la boucle du menu
             ;;
         *)
@@ -400,6 +422,7 @@ while true; do
         11) run_format ;;
         12) run_tests ;;
         13) run_typecheck ;;
+        14) run_all_checks ;;
         16)
             echo -e "${COLOR_GREEN}Au revoir!${NC}"
             exit 0
@@ -409,7 +432,7 @@ while true; do
             ;;
     esac
     # Ajoute une pause avant de réafficher le menu pour que l'utilisateur puisse voir la sortie
-    if [[ "1 2 3 4 5 6 7 8 9 10 11 12 13" =~ " $choice " ]]; then
+    if [[ "1 2 3 4 5 6 7 8 9 10 11 12 13 14" =~ " $choice " ]]; then
         read -n 1 -s -r -p "Appuyez sur une touche pour continuer..."
     fi
 done

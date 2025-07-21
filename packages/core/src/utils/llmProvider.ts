@@ -1,6 +1,6 @@
 import { config } from '../config.js';
-import { LLMContent } from '../llm-types.js';
 import logger from '../logger.js';
+import { LLMContent } from '../modules/llm/llm-types.js';
 
 interface LLMProvider {
   getLlmResponse(
