@@ -65,9 +65,9 @@ services:
     container_name: agentic_forge_web
     ports:
       - "${WEB_PORT:-3002}:3000"
-    # depends_on:
-    #   server:
-    #     condition: service_healthy
+    depends_on:
+      server:
+        condition: service_healthy
     environment:
       - NODE_ENV=production
       - WEB_PORT=3002

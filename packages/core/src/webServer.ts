@@ -37,6 +37,20 @@ export async function startWebServer() {
   app.use(express.static(path.join(__dirname, '..', 'ui', 'dist')));
   app.use(cookieParser());
 
+  // Middleware d'authentification par clé API
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // Exempter la route de health check
+    if (req.path === '/api/health') {
+      return next();
+    }
+
+    const apiKey = req.headers.authorization;
+    if (config.AUTH_API_KEY && apiKey !== `Bearer ${config.AUTH_API_KEY}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    next();
+  });
+
   app.use(
     (
       req: express.Request,

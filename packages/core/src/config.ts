@@ -12,6 +12,7 @@ import { z } from 'zod';
 
 const configSchema = z.object({
   AGENT_MAX_ITERATIONS: z.coerce.number().default(10),
+  AUTH_API_KEY: z.string().optional(),
   CODE_EXECUTION_TIMEOUT_MS: z.coerce.number().default(60000),
   CONTAINER_MEMORY_LIMIT: z.string().default('2g'),
   HISTORY_MAX_LENGTH: z.coerce.number().default(1000),
