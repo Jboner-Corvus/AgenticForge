@@ -4,9 +4,10 @@ import type { Mock } from 'vitest';
 import { Job, Queue } from 'bullmq';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { Message, SessionData } from '@/types.js';
+
 import { config } from '../../config.js';
 import logger from '../../logger.js';
-import { Message, SessionData } from '../../types.js';
 import { redis } from '../redis/redisClient.js';
 import { summarizeTool } from '../tools/definitions/ai/summarize.tool.js';
 import { SessionManager } from './sessionManager.js';

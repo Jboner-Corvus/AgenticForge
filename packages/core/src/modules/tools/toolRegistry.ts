@@ -18,8 +18,9 @@
 
 import { z, ZodTypeAny } from 'zod';
 
+import { Ctx, Tool } from '@/types.js';
+
 import logger from '../../logger.js';
-import { Ctx, Tool } from '../../types.js';
 import { UserError } from '../../utils/errorUtils.js';
 
 class ToolRegistry {
@@ -114,6 +115,7 @@ class ToolRegistry {
       throw new UserError(`Tool with name ${tool.name} already registered.`);
     }
     this.tools.set(tool.name, tool);
+    logger.debug({ parameters: tool.parameters.shape, toolName: tool.name }, `Tool registered: ${tool.name}`);
   }
 
   /**

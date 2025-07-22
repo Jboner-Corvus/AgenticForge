@@ -2,12 +2,14 @@
 FROM node:20-alpine AS builder
 WORKDIR /usr/src/app
 
-# Copy root manifests and install all monorepo dependencies
+# Copy root manifests
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/core/package.json ./packages/core/
+# Copy UI package.json
 COPY packages/ui/package.json ./packages/ui/
+
+# Install UI-specific dependencies
 RUN npm install -g pnpm
-RUN pnpm install --prod=false
+RUN pnpm install --prod=false --filter @agenticforge/ui
 
 # Copy the rest of the UI code
 COPY ./packages/ui ./packages/ui
@@ -17,13 +19,15 @@ RUN pnpm --filter @agenticforge/ui build
 
 # Stage 2: Serve the application with Nginx
 FROM nginx:alpine
-RUN apk add --no-cache curl netcat-openbsd
+# Remove curl and netcat-openbsd if not strictly needed by docker-entrypoint.sh
+# RUN apk add --no-cache curl netcat-openbsd
 COPY --from=builder /usr/src/app/packages/ui/dist /usr/share/nginx/html
 
 # Copy the Nginx configuration
 COPY ./packages/ui/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy the custom entrypoint script and make it executable
+# NOTE: Review the content of docker-entrypoint.sh for security and superfluous logic.
 COPY ./packages/ui/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 

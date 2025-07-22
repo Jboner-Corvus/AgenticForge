@@ -26,8 +26,9 @@ vi.mock('../../../../logger.js', () => ({
 import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
 
+import { Ctx, ILlmProvider, SessionData } from '@/types.js';
+
 import logger from '../../../../logger.js';
-import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
 import { readFileTool } from './readFile.tool.js';
 
 describe('readFileTool', () => {

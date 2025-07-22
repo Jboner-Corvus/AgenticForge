@@ -1,16 +1,14 @@
 # Stage 1: Builder
-FROM mcr.microsoft.com/playwright:v1.53.2-jammy AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /usr/src/app
 
 # Installer pnpm
 RUN npm install -g pnpm
 
-# Copier les fichiers de manifeste et de configuration
+# Copier les fichiers de manifeste et de configuration pour optimiser le cache Docker
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY tsconfig.base.json tsconfig.json ./
-COPY packages/core/src packages/core/src/
-COPY packages/ui/src packages/ui/src/
 COPY packages/core/package.json packages/core/package.json
 COPY packages/ui/package.json packages/ui/package.json
 
@@ -24,22 +22,19 @@ COPY . .
 RUN pnpm build
 
 # Stage 2: Production
-FROM mcr.microsoft.com/playwright:v1.53.2-jammy
+FROM node:20-alpine
 
 WORKDIR /usr/src/app
 
-# Installer pnpm dans l'image finale
-RUN npm install -g pnpm
-
-# Copier les dépendances de production depuis le builder
+# Copier uniquement les dépendances de production et les fichiers nécessaires
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/packages ./packages
+COPY package.json ./
+COPY .env ./
 
-# Copier les fichiers de package.json pour exécuter les commandes
-COPY package.json .
-COPY .env .
+# Supprimer pnpm si non nécessaire à l'exécution
+# RUN npm uninstall -g pnpm # Uncomment if pnpm is not needed at runtime
 
 EXPOSE 8080 3000
 
-# --- COMMANDE CORRIGÉE ---
 CMD [ "node", "packages/core/dist/webServer.js" ]

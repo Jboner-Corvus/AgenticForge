@@ -2,8 +2,9 @@
 import { Job, Queue } from 'bullmq';
 import { describe, expect, it, Mock, vi } from 'vitest';
 
+import { Ctx, SessionData } from '@/types.js';
+
 import logger from '../../../../logger.js';
-import { Ctx, SessionData } from '../../../../types.js';
 import { llmProvider } from '../../../../utils/llmProvider.js';
 import { summarizeTool } from './summarize.tool.js';
 

@@ -24,8 +24,9 @@ vi.mock('../../../../logger.js', () => ({
 import { Queue } from 'bullmq';
 import { chromium } from 'playwright';
 
+import { Ctx, ILlmProvider, SessionData } from '@/types.js';
+
 import logger from '../../../../logger.js';
-import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
 import { browserTool } from './browser.tool.js';
 
 describe('browserTool', () => {

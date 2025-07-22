@@ -32,7 +32,7 @@ usage() {
     echo "   stop           : Arrête tous les services (Docker et worker local)."
     echo "   restart [worker]: Redémarre tous les services ou seulement le worker."
     echo "   status         : Affiche le statut des conteneurs Docker."
-    echo "   logs           : Affiche les 100 dernières lignes des logs du worker."
+    echo "   logs [docker]  : Affiche les 100 dernières lignes des logs du worker ou des conteneurs Docker."
     echo "   rebuild        : Force la reconstruction des images Docker et redémarre."
     echo "   clean-docker   : Nettoie le système Docker (supprime conteneurs, volumes, etc.)."
     echo "   shell          : Ouvre un shell dans le conteneur du serveur."
@@ -119,10 +119,44 @@ check_redis_availability() {
         return 1
     fi
 
-    # Méthode 3: Avertissement et délai si aucun outil n'est disponible
-    echo -e "${COLOR_RED}AVERTISSEMENT: 'redis-cli' et 'nc' ne sont pas installés.${NC}"
+    # Méthode 3: Utiliser un conteneur Docker temporaire pour pinger Redis
+    if command -v docker &> /dev/null; then
+        echo "Info: 'redis-cli' et 'nc' non trouvés. Utilisation d'un conteneur Docker temporaire pour pinger Redis."
+        # Démarrer un conteneur redis-cli temporaire et le faire pinger le Redis principal
+        # Utilise --network host pour que le conteneur puisse accéder à localhost du host
+        # Ou, si Docker Compose est utilisé, il faut s'assurer que le conteneur temporaire est sur le même réseau
+        # Pour l'instant, on suppose que Redis est accessible via le réseau Docker Compose si démarré par docker-compose.
+        # Si Redis est sur localhost du host, --network host est nécessaire.
+        # Pour simplifier, on va pinger le service 'redis' du docker-compose network.
+        # Si le script est exécuté en dehors de docker-compose, cela peut échouer.
+        # Une approche plus robuste serait de pinger 'localhost' si le Redis est local,
+        # ou le nom du service 'redis' si on est dans un contexte docker-compose.
+        # Pour l'instant, on va pinger le service 'redis' du docker-compose network.
+        # Cela suppose que le script est exécuté dans un contexte où le réseau docker-compose est actif.
+
+        # Obtenir le nom du réseau Docker Compose
+        DOCKER_COMPOSE_PROJECT_NAME=$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]*//g')
+        DOCKER_NETWORK_NAME="${DOCKER_COMPOSE_PROJECT_NAME}_default" # Nom par défaut du réseau
+
+        echo -e "${COLOR_YELLOW}Tentative de ping de Redis via un conteneur Docker temporaire sur le réseau ${DOCKER_NETWORK_NAME}...${NC}"
+        for i in {1..30}; do
+            # Exécuter un conteneur temporaire sur le même réseau Docker Compose
+            if docker run --rm --network ${DOCKER_NETWORK_NAME} redis:alpine redis-cli -h redis -p ${REDIS_PORT_STD} ping > /dev/null 2>&1; then
+                echo -e "\n${COLOR_GREEN}✓ Redis est opérationnel via Docker. Ajout d'une pause de 2s...${NC}"
+                sleep 2 # Ajoute une pause de 2 secondes
+                return 0
+            fi
+            printf "."
+            sleep 1
+        done
+        echo -e "\n${COLOR_RED}✗ Timeout: Impossible de pinger Redis via Docker après 30 secondes.${NC}"
+        return 1
+    fi
+
+    # Méthode 4: Avertissement et délai si aucun outil n'est disponible (y compris Docker)
+    echo -e "${COLOR_RED}AVERTISSEMENT: 'redis-cli', 'nc' et 'docker' ne sont pas installés.${NC}"
     echo "Impossible de vérifier automatiquement si Redis est prêt."
-    echo "Suggestion pour Debian/Ubuntu: sudo apt-get update && sudo apt-get install redis-tools"
+    echo "Suggestion pour Debian/Ubuntu: sudo apt-get update && sudo apt-get install redis-tools docker.io"
     echo "Le script va continuer après un délai de sécurité de 15 secondes..."
     sleep 15
     return 0
@@ -151,7 +185,10 @@ load_env_vars() {
 # Arrête proprement le processus worker local.
 stop_worker() {
     echo -e "${COLOR_YELLOW}Arrêt du worker local...${NC}"
-    # Attempt to kill processes by name first for robustness
+    # NOTE: Using pkill for stopping the worker is effective for development,
+    # but for production environments, consider more robust process managers
+    # like PM2, systemd, or Kubernetes, which offer better process lifecycle
+    # management, monitoring, and reliability.
     pkill -f "tsx watch src/worker.ts" 2>/dev/null
     pkill -f "node --loader ts-node/esm src/worker.ts" 2>/dev/null
     pkill -f "node dist/worker.js" 2>/dev/null
@@ -189,8 +226,14 @@ start_worker() {
     echo -e "${COLOR_YELLOW}Démarrage du worker local en arrière-plan...${NC}"
     cd "${SCRIPT_DIR}/packages/core"
     
-    # Exécute le worker avec tsx et enregistre la sortie et le PID.
-    NODE_OPTIONS='--enable-source-maps' pnpm exec tsx watch src/worker.ts > "${SCRIPT_DIR}/worker.log" 2>&1 &
+    # Exécute le worker en fonction de NODE_ENV.
+    if [ "$NODE_ENV" = "production" ]; then
+        echo -e "${COLOR_YELLOW}Démarrage du worker en mode production...${NC}"
+        NODE_OPTIONS='--enable-source-maps' pnpm exec node dist/worker.js > "${SCRIPT_DIR}/worker.log" 2>&1 &
+    else
+        echo -e "${COLOR_YELLOW}Démarrage du worker en mode développement...${NC}"
+        NODE_OPTIONS='--enable-source-maps' pnpm exec tsx watch src/worker.ts > "${SCRIPT_DIR}/worker.log" 2>&1 &
+    fi
     
     local WORKER_PID=$!
     echo $WORKER_PID > "$PID_FILE"
@@ -208,8 +251,13 @@ start_services() {
     # Avertissement sur le réseau Docker existant
     if docker network ls | grep -q "agentic_forge_network"; then
         PROJECT_NAME=$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]*//g')
-        if ! docker network inspect agentic_forge_network | grep -q "\"Name\": \"${PROJECT_NAME}_agentic_network\""; then
-             echo -e "${COLOR_YELLOW}AVERTISSEMENT: Un réseau 'agentic_forge_network' existe mais semble appartenir à un autre projet.${NC}"
+        EXISTING_NETWORK_PROJECT_LABEL=$(docker network inspect agentic_forge_network --format '{{ index .Labels "com.docker.compose.project" }}' 2>/dev/null)
+
+        # If the network exists and either:
+        # 1. It's not managed by docker compose (label is empty)
+        # 2. It's managed by a *different* docker compose project
+        if [[ -z "$EXISTING_NETWORK_PROJECT_LABEL" || "$EXISTING_NETWORK_PROJECT_LABEL" != "$PROJECT_NAME" ]]; then
+             echo -e "${COLOR_YELLOW}AVERTISSEMENT: Un réseau 'agentic_forge_network' existe et semble appartenir à un autre projet ou n'est pas géré par Docker Compose.${NC}"
              echo -e "${COLOR_YELLOW}Cela peut causer des problèmes. Il est fortement recommandé d'exécuter l'option '8) Nettoyer Docker'.${NC}"
         fi
     fi
@@ -261,13 +309,19 @@ show_status() {
 }
 
 # Affiche les 100 dernières lignes des logs du worker.
-show_logs() {
+show_worker_logs() {
     echo -e "${COLOR_CYAN}--- Logs du Worker (100 dernières lignes) ---${NC}"
     if [ -f "${SCRIPT_DIR}/worker.log" ]; then
         tail -100 "${SCRIPT_DIR}/worker.log"
     else
         echo -e "${COLOR_RED}✗ Le fichier worker.log n'existe pas.${NC}"
     fi
+}
+
+# Affiche les 100 dernières lignes des logs des conteneurs Docker.
+show_docker_logs() {
+    echo -e "${COLOR_CYAN}--- Logs des conteneurs Docker (100 dernières lignes) ---${NC}"
+    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" logs --tail=100
 }
 
 # Ouvre un shell dans le conteneur du serveur.
@@ -321,7 +375,7 @@ run_tests() {
 
 run_typecheck() {
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour l'UI...${NC}"
-    pnpm --filter=@agenticforge/ui exec tsc -b
+    pnpm --filter @agenticforge/ui exec tsc --noEmit -p tsconfig.vitest.json
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour le Core...${NC}"
     pnpm --filter=@agenticforge/core exec tsc --noEmit
 }
@@ -342,7 +396,7 @@ run_all_checks() {
 # ==============================================================================
 # UI du Menu
 # ==============================================================================
-show_menu() {
+snow_menu() {
     clear
     echo -e "${COLOR_ORANGE}"
     echo '   ╔══════════════════════════════════╗'
@@ -351,18 +405,27 @@ show_menu() {
     echo -e "${NC}"
     echo -e "──────────────────────────────────────────"
     echo -e "   ${COLOR_CYAN}Docker & Services${NC}"
-    printf "   1) ${COLOR_GREEN}🟢 Démarrer${NC}         5) ${COLOR_BLUE}📊 Logs Worker${NC}\n"
-    printf "   2) ${COLOR_YELLOW}🔄 Redémarrer tout${NC}   6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\n"
-    printf "   3) ${COLOR_RED}🔴 Arrêter${NC}           7) ${COLOR_BLUE}🔨 Rebuild (no cache)${NC}\n"
-    printf "   4) ${COLOR_CYAN}⚡ Statut${NC}            8) ${COLOR_RED}🧹 Nettoyer Docker${NC}\n"
-    printf "   9) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}\n"
+    printf "   1) ${COLOR_GREEN}🟢 Démarrer${NC}         5) ${COLOR_BLUE}📊 Logs Worker${NC}
+"
+    printf "   2) ${COLOR_YELLOW}🔄 Redémarrer tout${NC}   6) ${COLOR_BLUE}🐚 Shell (Container)${NC}
+"
+    printf "   3) ${COLOR_RED}🔴 Arrêter${NC}           7) ${COLOR_BLUE}🔨 Rebuild (no cache)${NC}
+"
+    printf "   4) ${COLOR_CYAN}⚡ Statut${NC}            8) ${COLOR_RED}🧹 Nettoyer Docker${NC}
+"
+    printf "   9) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}  15) ${COLOR_BLUE}🐳 Logs Docker${NC}
+"
     echo ""
     echo -e "   ${COLOR_CYAN}Développement${NC}"
-    printf "  10) ${COLOR_BLUE}🔍 Lint${NC}             12) ${COLOR_BLUE}🧪 Tests${NC}\n"
-    printf "  11) ${COLOR_BLUE}✨ Format${NC}           13) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
-    printf "  14) ${COLOR_BLUE}✅ Toutes les vérifications${NC}\n"
+    printf "  10) ${COLOR_BLUE}🔍 Lint${NC}             12) ${COLOR_BLUE}🧪 Tests${NC}
+"
+    printf "  11) ${COLOR_BLUE}✨ Format${NC}           13) ${COLOR_BLUE}📘 TypeCheck${NC}
+"
+    printf "  14) ${COLOR_BLUE}✅ Toutes les vérifications${NC}
+"
     echo ""
-    printf "  16) ${COLOR_RED}🚪 Quitter${NC}\n"
+    printf "  16) ${COLOR_RED}🚪 Quitter${NC}
+"
     echo ""
 }
 
@@ -382,7 +445,12 @@ if [ "$#" -gt 0 ]; then
             esac
             ;;
         status) show_status ;;
-        logs) show_logs ;;
+        logs)
+            case "$2" in
+                docker) show_docker_logs ;;
+                *) show_worker_logs ;;
+            esac
+            ;;
         rebuild) rebuild_services ;;
         clean-docker) clean_docker ;;
         shell) shell_access ;;
@@ -405,7 +473,7 @@ fi
 
 # Boucle du menu interactif.
 while true; do
-    show_menu
+    snow_menu
     read -p "Votre choix : " choice
 
     case $choice in
@@ -413,11 +481,12 @@ while true; do
         2) restart_all_services ;;
         3) stop_services ;;
         4) show_status ;;
-        5) show_logs ;;
+        5) show_worker_logs ;;
         6) shell_access ;;
         7) rebuild_services ;;
         8) clean_docker ;;
         9) restart_worker ;;
+        15) show_docker_logs ;;
         10) run_lint ;;
         11) run_format ;;
         12) run_tests ;;
@@ -432,7 +501,7 @@ while true; do
             ;;
     esac
     # Ajoute une pause avant de réafficher le menu pour que l'utilisateur puisse voir la sortie
-    if [[ "1 2 3 4 5 6 7 8 9 10 11 12 13 14" =~ " $choice " ]]; then
+    if [[ "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15" =~ " $choice " ]]; then
         read -n 1 -s -r -p "Appuyez sur une touche pour continuer..."
     fi
 done

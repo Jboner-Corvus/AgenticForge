@@ -4,7 +4,7 @@ import { AgentResponseBubble } from './AgentResponseBubble';
 import { ToolMessage } from './ToolMessage';
 import { AgentThoughtBubble } from './AgentThoughtBubble';
 import { ErrorMessage } from './ErrorMessage';
-import { ChatMessage } from '../types/chat';
+import type { ChatMessage } from '../types/chat';
 
 export const Message: React.FC<{ message: ChatMessage }> = ({ message }) => {
   switch (message.type) {

@@ -2,9 +2,10 @@ import { Job, Queue } from 'bullmq';
 import { Logger } from 'pino';
 import { z } from 'zod';
 
+import { Ctx as _Ctx, SessionData, Tool, ToolOutput } from '@/types.js';
+
 import { config } from '../../config.js';
 import logger from '../../logger.js';
-import { Ctx as _Ctx, SessionData, Tool } from '../../types.js';
 import { llmProvider } from '../../utils/llmProvider.js';
 import { LLMContent } from '../llm/llm-types.js';
 import { redis } from '../redis/redisClient.js';
@@ -53,6 +54,7 @@ export class Agent {
   private readonly log: Logger;
   private loopCounter = 0;
   private readonly session: SessionData;
+  private subscriber: any;
   private readonly taskQueue: Queue;
   private readonly tools: Tool<z.AnyZodObject, z.ZodTypeAny>[];
 
@@ -71,150 +73,180 @@ export class Agent {
 
   public async run(): Promise<string> {
     this.log.info('Agent starting...');
-    const { prompt } = this.job.data;
-    this.session.history.push({ content: prompt, role: 'user' });
-
-    try {
-      this.tools.push(...toolRegistry.getAll());
-      this.log.info(
-        { count: this.tools.length },
-        'All tools are available in the registry.',
-      );
-    } catch (error) {
-      this.log.error({ error }, 'Agent run failed during tool loading');
-      return `Error: ${(error as Error).message}`;
-    }
-
     await this.setupInterruptListener();
-
-    let iterations = 0;
-    const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS ?? 10;
-
-    while (iterations < MAX_ITERATIONS) {
-      if (this.interrupted) {
-        this.log.info('Job has been interrupted.');
-        break;
-      }
-      if (await this.job.isFailed()) {
-        this.log.info('Job has failed.');
-        this.interrupted = true;
-        break;
-      }
-
-      iterations++;
-      const iterationLog = this.log.child({ iteration: iterations });
-      iterationLog.info(`Agent iteration starting`);
+    try {
+      const { prompt } = this.job.data;
+      this.session.history.push({ content: prompt, role: 'user' });
 
       try {
-        const orchestratorPrompt = getMasterPrompt(
-          { data: this.session, id: this.session.id },
-          this.tools,
+        this.tools.push(...toolRegistry.getAll());
+        this.log.info(
+          { count: this.tools.length },
+          'All tools are available in the registry.',
         );
-
-        const messagesForLlm: LLMContent[] = this.session.history
-          .map((message): LLMContent | null => {
-            const role = message.role === 'tool' ? 'user' : message.role;
-            if (role === 'user' || role === 'model') {
-              return { parts: [{ text: message.content }], role };
-            }
-            return null;
-          })
-          .filter((m): m is LLMContent => m !== null);
-
-        const llmResponse = await llmProvider.getLlmResponse(
-          messagesForLlm,
-          orchestratorPrompt,
-        );
-        this.log.info({ llmResponse }, 'Raw LLM response');
-
-        if (typeof llmResponse !== 'string') {
-          throw new Error('The `generate` tool did not return a string.');
-        }
-
-        this.session.history.push({ content: llmResponse, role: 'model' });
-
-        const parsedResponse = this.parseLlmResponse(llmResponse, iterationLog);
-        const { answer, canvas, command, thought } = parsedResponse;
-
-        if (thought) {
-          iterationLog.info({ thought }, 'Agent thought');
-          this.publishToChannel({ content: thought, type: 'agent_thought' });
-        }
-        if (canvas) {
-          iterationLog.info({ canvas }, 'Agent canvas output');
-          this.publishToChannel({
-            content: canvas.content,
-            contentType: canvas.contentType,
-            type: 'agent_canvas_output',
-          });
-          if (!command) {
-            return 'Agent displayed content on the canvas.';
-          }
-        }
-
-        if (answer) {
-          iterationLog.info({ answer }, 'Agent final answer');
-          this.publishToChannel({ content: answer, type: 'agent_response' });
-          return answer;
-        }
-
-        if (command) {
-          if (
-            this.lastCommand &&
-            JSON.stringify(this.lastCommand) === JSON.stringify(command)
-          ) {
-            this.loopCounter++;
-          } else {
-            this.loopCounter = 0;
-          }
-          this.lastCommand = command;
-
-          if (this.loopCounter > 3) {
-            this.log.warn('Loop detected. Breaking.');
-            return 'Agent stuck in a loop.';
-          }
-
-          const toolResult = await this.executeTool(command, iterationLog);
-          const resultForHistory = this.summarizeToolResult(toolResult);
-          this.session.history.push({
-            content: `Tool result: ${JSON.stringify(resultForHistory)}`,
-            role: 'tool',
-          });
-        } else if (!thought && !canvas) {
-          this.session.history.push({
-            content:
-              'You must provide a command, a thought, a canvas output, or a final answer.',
-            role: 'user',
-          });
-        }
       } catch (error) {
-        if (error instanceof FinishToolSignal) {
-          this.log.info({ answer: error.message }, 'Agent finished by tool signal.');
-          this.publishToChannel({ content: error.message, type: 'agent_response' });
-          return error.message;
+        this.log.error({ error }, 'Agent run failed during tool loading');
+        return `Error: ${(error as Error).message}`;
+      }
+
+      let iterations = 0;
+      const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS ?? 10;
+
+      while (iterations < MAX_ITERATIONS) {
+        if (this.interrupted) {
+          this.log.info('Job has been interrupted.');
+          break;
+        }
+        if (await this.job.isFailed()) {
+          this.log.info('Job has failed.');
+          this.interrupted = true;
+          break;
         }
 
-        const errorMessage = (error as Error).message;
-        iterationLog.error(
-          { error },
-          `Error in agent iteration: ${errorMessage}`,
-        );
+        iterations++;
+        const iterationLog = this.log.child({ iteration: iterations });
+        iterationLog.info(`Agent iteration starting`);
 
-        if (errorMessage.includes('Failed to parse LLM response')) {
-          this.session.history.push({
-            content: `Your last response was not a valid command. You must choose a tool from the list or provide a final answer. Please try again. Last response: ${this.session.history.at(-1)?.content}`,
-            role: 'user',
-          });
-        } else {
-          this.session.history.push({ content: errorMessage, role: 'tool' });
+        try {
+          const orchestratorPrompt = getMasterPrompt(
+            { data: this.session, id: this.session.id },
+            this.tools,
+          );
+
+          const messagesForLlm: LLMContent[] = this.session.history
+            .map((message): LLMContent | null => {
+              const role = message.role === 'tool' ? 'user' : message.role;
+              if (role === 'user' || role === 'model') {
+                return { parts: [{ text: message.content }], role };
+              }
+              return null;
+            })
+            .filter((m): m is LLMContent => m !== null);
+
+          const llmResponse = await llmProvider.getLlmResponse(
+            messagesForLlm,
+            orchestratorPrompt,
+          );
+          this.log.info({ llmResponse }, 'Raw LLM response');
+
+          if (typeof llmResponse !== 'string') {
+            throw new Error('The `generate` tool did not return a string.');
+          }
+
+          this.session.history.push({ content: llmResponse, role: 'model' });
+
+          const parsedResponse = this.parseLlmResponse(
+            llmResponse,
+            iterationLog,
+          );
+          const { answer, canvas, command, thought } = parsedResponse;
+
+          if (this.interrupted) {
+            this.log.info('Job has been interrupted.');
+            break;
+          }
+
+          if (thought) {
+            iterationLog.info({ thought }, 'Agent thought');
+            this.publishToChannel({ content: thought, type: 'agent_thought' });
+          }
+          if (canvas) {
+            iterationLog.info({ canvas }, 'Agent canvas output');
+            this.publishToChannel({
+              content: canvas.content,
+              contentType: canvas.contentType,
+              type: 'agent_canvas_output',
+            });
+            if (!command) {
+              return 'Agent displayed content on the canvas.';
+            }
+          }
+
+          if (answer) {
+            iterationLog.info({ answer }, 'Agent final answer');
+            this.publishToChannel({ content: answer, type: 'agent_response' });
+            return answer;
+          }
+
+          if (command) {
+            if (
+              this.lastCommand &&
+              JSON.stringify(this.lastCommand) === JSON.stringify(command)
+            ) {
+              this.loopCounter++;
+            } else {
+              this.loopCounter = 0;
+            }
+            this.lastCommand = command;
+
+            if (this.loopCounter > 3) {
+              this.log.warn('Loop detected. Breaking.');
+              // TODO: Consider implementing more advanced loop detection heuristics,
+              // such as detecting repetitive sequences of thoughts or tools, or
+              // limiting the number of consecutive calls to the same tool without
+              // significant state changes.
+              return 'Agent stuck in a loop.';
+            }
+
+            const toolResult = await this.executeTool(command, iterationLog);
+            this.session.history.push({
+              content: `Tool result: ${JSON.stringify(toolResult)}`,
+              role: 'tool',
+            });
+          } else if (!thought && !canvas) {
+            this.session.history.push({
+              content:
+                'You must provide a command, a thought, a canvas output, or a final answer.',
+              role: 'user',
+            });
+          }
+        } catch (error) {
+          if (error instanceof FinishToolSignal) {
+            this.log.info(
+              { answer: error.message },
+              'Agent finished by tool signal.',
+            );
+            this.publishToChannel({
+              content: error.message,
+              type: 'agent_response',
+            });
+            return error.message;
+          }
+
+          const errorMessage = (error as Error).message;
+          iterationLog.error(
+            { error },
+            `Error in agent iteration: ${errorMessage}`,
+          );
+
+          if (errorMessage.includes('Failed to parse LLM response')) {
+            this.session.history.push({
+              content: `Your last response was not a valid command. You must choose a tool from the list or provide a final answer. Please try again. Last response: ${
+                this.session.history.at(-1)?.content
+              }`,
+              role: 'user',
+            });
+          } else {
+            this.session.history.push({ content: errorMessage, role: 'tool' });
+          }
         }
       }
-    }
 
-    if (this.interrupted) {
-      return 'Agent execution interrupted.';
+      if (this.interrupted) {
+        return 'Agent execution interrupted.';
+      }
+      return 'Agent reached maximum iterations without a final answer.';
+    } finally {
+      await this.cleanup();
     }
-    return 'Agent reached maximum iterations without a final answer.';
+  }
+
+  private async cleanup() {
+    if (this.subscriber) {
+      const channel = `job:${this.job.id}:interrupt`;
+      await this.subscriber.unsubscribe(channel);
+      await this.subscriber.quit();
+    }
   }
 
   private async executeTool(command: Command, log: Logger): Promise<unknown> {
@@ -243,6 +275,10 @@ export class Agent {
     return match ? match[1] : text;
   }
 
+  private handleToolOutput(_toolOutput: ToolOutput) {
+    // TODO: Implement logic to handle tool output, e.g., update session history or display to user.
+  }
+
   private parseLlmResponse(llmResponse: string, log: Logger) {
     const jsonText = this.extractJsonFromMarkdown(llmResponse);
     try {
@@ -253,6 +289,8 @@ export class Agent {
         { error, llmResponse: jsonText },
         'Failed to parse LLM response',
       );
+      // TODO: Implement a more sophisticated retry or recovery strategy for malformed LLM responses.
+      // This could involve asking the LLM to re-format its response or using a more tolerant parser.
       throw new Error(`Failed to parse LLM response.`);
     }
   }
@@ -269,36 +307,22 @@ export class Agent {
   }
 
   private async setupInterruptListener() {
-    const subscriber = redis.duplicate();
     const channel = `job:${this.job.id}:interrupt`;
-
-    subscriber.on('message', (messageChannel, message) => {
-      this.log.info(`Received message from ${messageChannel}: ${message}`);
-      if (message === 'interrupt') {
+    this.subscriber = redis.duplicate();
+    this.subscriber.on('message', (messageChannel: string, message: string) => {
+      if (messageChannel === channel) {
+        this.log.warn(`Interrupting job ${this.job.id}: ${message}`);
         this.interrupted = true;
-        subscriber.unsubscribe(channel);
-        subscriber.quit();
       }
     });
-
-    await subscriber.subscribe(channel, (err, count) => {
-      if (err) {
-        this.log.error(err, 'Failed to subscribe to interrupt channel');
-        return;
-      }
-      this.log.info(`Subscribed to ${count} interrupt channels.`);
-    });
+    await this.subscriber.subscribe(channel);
   }
 
   private summarizeToolResult(result: unknown): unknown {
-    if (typeof result === 'string' && result.length > 1000) {
-      return `${result.slice(0, 1000)}... (truncated)`;
-    }
-    if (typeof result === 'object' && result !== null) {
-      const json = JSON.stringify(result);
-      if (json.length > 1000) {
-        return `${json.slice(0, 1000)}... (truncated)`;
-      }
+    if (typeof result === 'string') {
+      return result.substring(0, 200);
+    } else if (typeof result === 'object' && result !== null) {
+      return JSON.stringify(result).substring(0, 200);
     }
     return result;
   }

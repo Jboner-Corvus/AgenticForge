@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../../../types.js';
+import type { Ctx, Tool } from '@/types.js';
 
 // CORRECTION : Le chemin est maintenant résolu en remontant de 5 niveaux depuis __dirname
 // pour atteindre la racine du projet, puis en ajoutant 'workspace'.

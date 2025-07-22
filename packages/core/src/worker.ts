@@ -21,14 +21,16 @@ import { Job, Queue, Worker } from 'bullmq';
 import { Content } from 'fastmcp';
 import { z } from 'zod';
 
+import { Ctx, Message, SessionData, Tool } from '@/types.js';
+
 import { config } from './config.js';
 import logger from './logger.js';
 import { Agent } from './modules/agent/agent.js';
+import shellCommandWorker from './modules/queue/shellCommandWorker.js';
 import { redis } from './modules/redis/redisClient.js';
 import { SessionManager } from './modules/session/sessionManager.js';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.js';
 import { getAllTools } from './modules/tools/definitions/index.js'; // Import getAllTools
-import { Ctx, Message, SessionData, Tool } from './types.js';
 import { AppError, UserError } from './utils/errorUtils.js';
 
 console.log('Imports complete');
@@ -42,6 +44,8 @@ export async function processJob(
   job: Job,
   tools: Tool<z.AnyZodObject, z.ZodTypeAny>[],
 ): Promise<string> {
+  // NOTE: Ensure all potential error messages are logged with enough context
+  // (e.g., job ID, session ID, full error object) for effective debugging in production.
   logger.info(`[processJob] Received job ${job.id}`);
   const { sessionId } = job.data;
   const log = logger.child({ jobId: job.id, sessionId });
@@ -69,7 +73,17 @@ export async function processJob(
     if (error instanceof AppError || error instanceof UserError) {
       eventMessage = error.message;
     } else if (error instanceof Error) {
-      eventMessage = error.message;
+      let rawErrorMessage = error.message;
+      try {
+        const parsedError = JSON.parse(rawErrorMessage);
+        if (parsedError.tool === 'error' && parsedError.parameters && parsedError.parameters.message) {
+          rawErrorMessage = parsedError.parameters.message;
+        }
+      } catch (_parseError) {
+        // Not a JSON error message, proceed with rawErrorMessage
+      }
+
+      eventMessage = rawErrorMessage;
       if (eventMessage.includes('Quota exceeded')) {
         eventType = 'quota_exceeded';
         eventMessage = 'API quota exceeded. Please try again later.';
@@ -125,6 +139,9 @@ export async function startWorker() {
 
   worker.on('completed', (job: Job) => {
     logger.info(`Job ${job.id} completed.`);
+    redis.incr('leaderboard:successfulRuns').catch(error => {
+      logger.error({ error }, 'Failed to increment successfulRuns in Redis');
+    });
   });
 
   worker.on('failed', (job: Job | undefined, err: Error) => {
@@ -133,6 +150,10 @@ export async function startWorker() {
 
   logger.info('Worker started and listening for tasks...');
   console.log('Worker started and listening for tasks...');
+
+  // Start the detached shell command worker
+  shellCommandWorker.run();
+  logger.info('Detached shell command worker started.');
 }
 
 async function summarizeHistory(sessionData: SessionData, log: typeof logger) {
@@ -144,7 +165,11 @@ async function summarizeHistory(sessionData: SessionData, log: typeof logger) {
       .join('\n');
 
     try {
+      // NOTE: summarizeTool.execute might be a blocking LLM call. If summarization
+      // is a long-running process and impacts worker performance, consider offloading
+      // it to a separate, dedicated worker or process, or making it truly asynchronous.
       const summary = await summarizeTool.execute({ text: textToSummarize }, {
+
         log,
         reportProgress: async (progress: {
           current: number;
@@ -176,8 +201,10 @@ async function summarizeHistory(sessionData: SessionData, log: typeof logger) {
   }
 }
 
-startWorker().catch((err) => {
-  console.error('Failed to start worker:', err);
-  logger.error({ err }, 'Failed to start worker');
-  process.exit(1);
-});
+if (process.env.NODE_ENV !== 'test') {
+  startWorker().catch((err) => {
+    console.error('Failed to start worker:', err);
+    logger.error({ err }, 'Failed to start worker');
+    process.exit(1);
+  });
+}

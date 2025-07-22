@@ -2,7 +2,7 @@ console.log('<<<<< STARTING webServer.ts >>>>>');
 console.log('webServer.ts: File executed.');
 import cookieParser from 'cookie-parser';
 console.log('Imported cookieParser');
-import express from 'express';
+import express, { type Application } from 'express';
 console.log('Imported express');
 import fs from 'fs';
 console.log('Imported fs');
@@ -13,25 +13,20 @@ console.log('Imported fileURLToPath');
 import { v4 as uuidv4 } from 'uuid';
 console.log('Imported uuidv4');
 
+import type { Queue } from 'bullmq';
+import type { Redis } from 'ioredis';
+
 import { config } from './config.js';
-console.log('Imported config');
 import logger from './logger.js';
-console.log('Imported logger');
-import { jobQueue } from './modules/queue/queue.js';
-console.log('Imported jobQueue');
-import { redis } from './modules/redis/redisClient.js';
-console.log('Imported redis');
+import { LlmKeyManager } from './modules/llm/LlmKeyManager.js';
 import { AppError, handleError } from './utils/errorUtils.js';
-console.log('Imported AppError and handleError');
 import { getTools } from './utils/toolLoader.js';
-console.log('Imported getTools');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-console.log('Before startWebServer function declaration');
-export async function startWebServer() {
-  console.log('Inside startWebServer function');
+export async function initializeWebServer(redis: Redis, jobQueue: Queue): Promise<Application> {
+  console.log('Inside initializeWebServer function');
   const app = express();
   app.use(express.json());
   app.use(express.static(path.join(__dirname, '..', 'ui', 'dist')));
@@ -77,6 +72,10 @@ export async function startWebServer() {
           maxAge: 7 * 24 * 60 * 60 * 1000,
           sameSite: 'lax',
           secure: process.env.NODE_ENV === 'production',
+        });
+        // Increment sessionsCreated leaderboard stat
+        redis.incr('leaderboard:sessionsCreated').catch(error => {
+          logger.error({ error }, 'Failed to increment sessionsCreated in Redis');
         });
       }
       req.sessionId = sessionId;
@@ -166,7 +165,9 @@ export async function startWebServer() {
           { channel, message },
           'Received message from Redis channel',
         );
-        res.write(`data: ${message}\n\n`);
+        res.write(`data: ${message}
+
+`);
       });
 
       req.on('close', () => {
@@ -179,7 +180,7 @@ export async function startWebServer() {
 
       // Send a heartbeat to keep the connection alive
       const heartbeatInterval = setInterval(() => {
-        res.write(':heartbeat\n\n');
+        res.write('data: heartbeat\n\n');
       }, 15000);
 
       req.on('close', () => {
@@ -219,6 +220,23 @@ export async function startWebServer() {
     });
   });
 
+  app.get('/api/leaderboard-stats', async (req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    try {
+      const sessionsCreated = await redis.get('leaderboard:sessionsCreated') || '0';
+      const tokensSaved = await redis.get('leaderboard:tokensSaved') || '0';
+      const successfulRuns = await redis.get('leaderboard:successfulRuns') || '0';
+
+      res.status(200).json({
+        apiKeysAdded: 0,
+        sessionsCreated: parseInt(sessionsCreated, 10),
+        successfulRuns: parseInt(successfulRuns, 10),
+        tokensSaved: parseInt(tokensSaved, 10),
+      });
+    } catch (error) {
+      _next(error);
+    }
+  });
+
   app.get(
     '/api/memory',
     async (
@@ -228,9 +246,19 @@ export async function startWebServer() {
     ) => {
       try {
         const workspaceDir = path.resolve(process.cwd(), 'workspace');
+        const { limit, offset } = req.query;
+
         const files = await fs.promises.readdir(workspaceDir);
+        
+        let filesToRead = files;
+        if (limit) {
+          const parsedLimit = parseInt(limit as string, 10);
+          const parsedOffset = offset ? parseInt(offset as string, 10) : 0;
+          filesToRead = files.slice(parsedOffset, parsedOffset + parsedLimit);
+        }
+
         const memoryContents = await Promise.all(
-          files.map(async (file) => {
+          filesToRead.map(async (file) => {
             const content = await fs.promises.readFile(
               path.join(workspaceDir, file),
               'utf-8',
@@ -244,6 +272,170 @@ export async function startWebServer() {
       }
     },
   );
+
+  // New API for saving a session
+  app.post('/api/sessions/save', async (req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    try {
+      const { id, messages, name, timestamp } = req.body;
+      if (!id || !name || !messages || !timestamp) {
+        throw new AppError('Missing session data', { statusCode: 400 });
+      }
+      const sessionKey = `session:${id}:data`;
+      await redis.set(sessionKey, JSON.stringify({ id, messages, name, timestamp }));
+      logger.info({ sessionId: id, sessionName: name }, 'Session saved to Redis.');
+      res.status(200).json({ message: 'Session saved successfully.' });
+    } catch (error) {
+      _next(error);
+    }
+  });
+
+  // New API for loading a session
+  app.get('/api/sessions/:id', async (req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    try {
+      const { id } = req.params;
+      const sessionKey = `session:${id}:data`;
+      const sessionData = await redis.get(sessionKey);
+      if (!sessionData) {
+        throw new AppError('Session not found', { statusCode: 404 });
+      }
+      res.status(200).json(JSON.parse(sessionData));
+    } catch (error) {
+      _next(error);
+    }
+  });
+
+  // New API for deleting a session
+  app.delete('/api/sessions/:id', async (req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    try {
+      const { id } = req.params;
+      const sessionKey = `session:${id}:data`;
+      await redis.del(sessionKey);
+      logger.info({ sessionId: id }, 'Session deleted from Redis.');
+      res.status(200).json({ message: 'Session deleted successfully.' });
+    } catch (error) {
+      _next(error);
+    }
+  });
+
+  // New API for renaming a session
+  app.put('/api/sessions/:id/rename', async (req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    try {
+      const { id } = req.params;
+      const { newName } = req.body;
+      if (!newName) {
+        throw new AppError('New name is missing', { statusCode: 400 });
+      }
+      const sessionKey = `session:${id}:data`;
+      const sessionData = await redis.get(sessionKey);
+      if (!sessionData) {
+        throw new AppError('Session not found', { statusCode: 404 });
+      }
+      const parsedSession = JSON.parse(sessionData);
+      parsedSession.name = newName;
+      await redis.set(sessionKey, JSON.stringify(parsedSession));
+      logger.info({ newName, sessionId: id }, 'Session renamed in Redis.');
+      res.status(200).json({ message: 'Session renamed successfully.' });
+    } catch (error) {
+      _next(error);
+    }
+  });
+
+  // New API for adding an LLM API key
+  app.post('/api/llm-api-keys', async (req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    try {
+      const { key, provider } = req.body;
+      if (!provider || !key) {
+        throw new AppError('Missing provider or key', { statusCode: 400 });
+      }
+      await LlmKeyManager.addKey(provider, key);
+      res.status(200).json({ message: 'LLM API key added successfully.' });
+    } catch (error) {
+      _next(error);
+    }
+  });
+
+  // New API for retrieving LLM API keys
+  app.get('/api/llm-api-keys', async (req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    try {
+      const keys = await LlmKeyManager.getKeysForApi();
+      res.status(200).json(keys);
+    } catch (error) {
+      _next(error);
+    }
+  });
+
+  // New API for deleting an LLM API key
+  app.delete('/api/llm-api-keys/:index', async (req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    try {
+      const { index } = req.params;
+      const keyIndex = parseInt(index, 10);
+      if (isNaN(keyIndex)) {
+        throw new AppError('Invalid index', { statusCode: 400 });
+      }
+      await LlmKeyManager.removeKey(keyIndex);
+      res.status(200).json({ message: 'LLM API key removed successfully.' });
+    } catch (error) {
+      _next(error);
+    }
+  });
+
+  // GitHub OAuth initiation
+  app.get('/api/auth/github', (req: express.Request, res: express.Response) => {
+    const githubClientId = config.GITHUB_CLIENT_ID;
+    if (!githubClientId) {
+      return res.status(500).json({ error: 'GitHub Client ID not configured.' });
+    }
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/github/callback`;
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&redirect_uri=${redirectUri}&scope=user:email`;
+    res.redirect(githubAuthUrl);
+  });
+
+  // GitHub OAuth callback
+  app.get('/api/auth/github/callback', async (req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    try {
+      const { code } = req.query;
+      const githubClientId = config.GITHUB_CLIENT_ID;
+      const githubClientSecret = config.GITHUB_CLIENT_SECRET;
+
+      if (!code || !githubClientId || !githubClientSecret) {
+        throw new AppError('Missing code or GitHub credentials', { statusCode: 400 });
+      }
+
+      const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+        body: JSON.stringify({
+          client_id: githubClientId,
+          client_secret: githubClientSecret,
+          code: code,
+        }),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+      });
+
+      const tokenData = await tokenResponse.json();
+
+      if (tokenData.error) {
+        throw new AppError(`GitHub OAuth error: ${tokenData.error_description || tokenData.error}`, { statusCode: 400 });
+      }
+
+      const accessToken = tokenData.access_token;
+
+      // For now, store the access token in Redis associated with the session ID
+      // In a real application, you would typically store this in a database
+      // and associate it with a user account.
+      if (req.sessionId) {
+        await redis.set(`github:accessToken:${req.sessionId}`, accessToken, 'EX', 3600); // Store for 1 hour
+        logger.info({ accessToken: '***REDACTED***', sessionId: req.sessionId }, 'GitHub access token stored in Redis.');
+      }
+
+      // Redirect to frontend, perhaps with a success message or user info
+      res.redirect('/?github_auth_success=true'); // Redirect to your frontend's main page
+    } catch (error) {
+      _next(error);
+    }
+  });
 
   app.post(
     '/api/interrupt/:jobId',
@@ -312,7 +504,7 @@ export async function startWebServer() {
         const message = {
           payload: {
             content,
-            type: 'html',
+            type: 'html', // TODO: Make this dynamic based on file type (e.g., markdown, image, pdf)
           },
           type: 'displayOutput',
         };
@@ -326,20 +518,6 @@ export async function startWebServer() {
 
   app.use(handleError);
 
-  console.log('Before app.listen call');
-  console.log(`Attempting to listen on port: ${config.PORT}`);
-  try {
-    app.listen(config.PORT, () => {
-      console.log(`Server listening on port ${config.PORT}`);
-      logger.info(
-        `Serveur AgenticForge (mode scalable) démarré sur http://localhost:${config.PORT}`,
-      );
-    });
-  } catch (error) {
-    logger.error({ error }, 'Erreur lors du démarrage du serveur Express.');
-    process.exit(1);
-  }
-
   process.on('uncaughtException', (error) => {
     logger.fatal({ error }, 'Unhandled exception caught!');
     process.exit(1);
@@ -349,6 +527,6 @@ export async function startWebServer() {
     logger.fatal({ promise, reason }, 'Unhandled rejection caught!');
     process.exit(1);
   });
-}
 
-startWebServer();
+  return app;
+}

@@ -1,7 +1,9 @@
 // FICHIER : src/server.ts
 import '../../tracing.js'; // Initialize OpenTelemetry
 import logger from '../../logger.js';
-import { startWebServer } from '../../webServer.js';
+import { jobQueue } from '../../modules/queue/queue.js';
+import { redis } from '../../modules/redis/redisClient.js';
+import { initializeWebServer } from '../../webServer.js';
 
 async function startApplication() {
   logger.info("Démarrage de l'application AgenticForge...");
@@ -9,7 +11,7 @@ async function startApplication() {
   try {
     // Démarrer le serveur web
     logger.info('Démarrage du serveur web...');
-    await startWebServer();
+    await initializeWebServer(redis, jobQueue);
     logger.info('Serveur web AgenticForge démarré.');
   } catch (error) {
     logger.error(

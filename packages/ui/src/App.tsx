@@ -1,81 +1,142 @@
 // packages/ui/src/App.tsx
 
-import { useCallback, useEffect, useState } from 'react';
 import { AppInitializer } from './components/AppInitializer';
 import { AnimatePresence } from 'framer-motion';
 
 import { ControlPanel } from './components/ControlPanel';
 import { Header } from './components/Header';
-import { Skeleton } from './components/ui/skeleton';
 import { Message } from './components/Message';
 import { SettingsModal } from './components/SettingsModal';
-import { useAgentStream } from './lib/hooks/useAgentStream';
 import { useStore } from './lib/store';
-import { Typography } from './components/Typography';
 import { Toaster } from './components/ui/sonner';
-import { ChatMessage } from './types/chat';
+import type { ChatMessage } from './types/chat';
 import AgentOutputCanvas from './components/AgentOutputCanvas'; // Import the new component
 
+import { UserInput } from './components/UserInput';
+import React, { useState, useRef, useEffect } from 'react';
+import { generateUUID } from './lib/utils/uuid';
+import { getLeaderboardStats, getLlmApiKeysApi } from './lib/api';
+
 export default function App() {
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [isControlPanelVisible, setIsControlPanelVisible] = useState(true);
-
+  const isCanvasVisible = useStore((state) => state.isCanvasVisible);
+  const isControlPanelVisible = useStore((state) => state.isControlPanelVisible);
+  const setIsControlPanelVisible = useStore((state) => state.setIsControlPanelVisible);
+  const isSettingsModalOpen = useStore((state) => state.isSettingsModalOpen);
+  const setIsSettingsModalOpen = useStore((state) => state.setIsSettingsModalOpen);
+  const isDarkMode = useStore((state) => state.isDarkMode);
+  const toggleDarkMode = useStore((state) => state.toggleDarkMode);
+  const isHighContrastMode = useStore((state) => state.isHighContrastMode);
+  const toggleHighContrastMode = useStore((state) => state.toggleHighContrastMode);
+  const messages = useStore((state) => state.messages as ChatMessage[]);
+  const setActiveSessionId = useStore((state) => state.setActiveSessionId);
+  const setMessages = useStore((state) => state.setMessages);
+  const setSessionId = useStore((state) => state.setSessionId);
+  const setSessions = useStore((state) => state.setSessions);
+  const updateLeaderboardStats = useStore((state) => state.updateLeaderboardStats);
   
-
-  const messages = useStore((state) => state.messages);
-  const input = useStore((state) => state.messageInputValue);
-  const setInput = useStore((state) => state.setMessageInputValue);
-  const isProcessing = useStore((state) => state.isProcessing);
-
-  const { startAgent } = useAgentStream();
+  const addLlmApiKey = useStore((state) => state.addLlmApiKey);
+  const setActiveLlmApiKey = useStore((state) => state.setActiveLlmApiKey);
 
   useEffect(() => {
-    const lastMessage = useStore.getState().messages[useStore.getState().messages.length - 1];
-    if (lastMessage && lastMessage.type === 'agent_canvas_output') {
-      useStore.getState().setCanvasContent(lastMessage.content);
-      useStore.getState().setCanvasType(lastMessage.contentType);
+    // Load sessions from local storage on mount (will be replaced by backend fetch later)
+    const storedSessions = localStorage.getItem('agenticForgeSessions');
+    if (storedSessions) {
+      setSessions(JSON.parse(storedSessions));
+    }
+
+    // Load leaderboard stats from backend
+    const fetchLeaderboard = async () => {
+      try {
+        const stats = await getLeaderboardStats();
+        updateLeaderboardStats(stats);
+      } catch (error) {
+        console.error("Failed to fetch leaderboard stats:", error);
+      }
+    };
+    fetchLeaderboard();
+
+    // Load LLM API keys from backend
+    const fetchLlmApiKeys = async () => {
+      try {
+        const keys = await getLlmApiKeysApi();
+        keys.forEach((llmKey: { provider: string; key: string }) => addLlmApiKey(llmKey.provider, llmKey.key));
+        if (keys.length > 0) {
+          setActiveLlmApiKey(0);
+        }
+      } catch (error) {
+        console.error("Failed to fetch LLM API keys:", error);
+      }
+    };
+    fetchLlmApiKeys();
+
+    // Set active session from local storage or generate a new one
+    let currentSessionId = localStorage.getItem('agenticForgeSessionId');
+    if (!currentSessionId) {
+      currentSessionId = generateUUID();
+      localStorage.setItem('agenticForgeSessionId', currentSessionId);
+    }
+    setSessionId(currentSessionId);
+    setActiveSessionId(currentSessionId);
+
+    // Load messages for the active session
+    const storedMessages = localStorage.getItem(`agenticForgeSession_${currentSessionId}_messages`);
+    if (storedMessages) {
+      setMessages(JSON.parse(storedMessages));
+    }
+
+  }, [setSessions, setActiveSessionId, setMessages, setSessionId, updateLeaderboardStats, addLlmApiKey, setActiveLlmApiKey]);
+
+  useEffect(() => {
+    // Save current session messages to local storage whenever messages change
+    const currentSessionId = useStore.getState().sessionId;
+    if (currentSessionId) {
+      localStorage.setItem(`agenticForgeSession_${currentSessionId}_messages`, JSON.stringify(messages));
     }
   }, [messages]);
 
-  const canvasContent = useStore((state) => state.canvasContent);
-  const canvasType = useStore((state) => state.canvasType);
-  const isCanvasVisible = useStore((state) => state.isCanvasVisible);
-  const setIsCanvasVisible = useStore((state) => state.setIsCanvasVisible);
+  const [controlPanelWidth, setControlPanelWidth] = useState(300); // Initial width for control panel
+  const [canvasWidth, setCanvasWidth] = useState(500); // Initial width for canvas
+  const isResizingControlPanel = useRef(false);
+  const isResizingCanvas = useRef(false);
 
-  useEffect(() => {
-    if (canvasContent) {
-      setIsCanvasVisible(true);
-    } else {
-      const timer = setTimeout(() => {
-        setIsCanvasVisible(false);
-      }, 500); // Durée de l'animation de sortie
-      return () => clearTimeout(timer);
-    }
-  }, [canvasContent, setIsCanvasVisible]);
+  const handleMouseDownControlPanel = (e: React.MouseEvent) => {
+    isResizingControlPanel.current = true;
+    e.preventDefault();
+  };
 
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedMode = localStorage.getItem('darkMode');
-    return savedMode ? JSON.parse(savedMode) : window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
+  const handleMouseDownCanvas = (e: React.MouseEvent) => {
+    isResizingCanvas.current = true;
+    e.preventDefault();
+  };
 
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
-  }, [isDarkMode]);
-
-  const toggleDarkMode = useCallback(() => {
-    setIsDarkMode((prevMode: boolean) => !prevMode);
-  }, []);
-
-  const handleSendMessage = async () => {
-    if (input.trim()) {
-      await startAgent();
+  const handleMouseMove = (e: MouseEvent) => {
+    if (isResizingControlPanel.current) {
+      const newWidth = e.clientX;
+      if (newWidth > 100 && newWidth < window.innerWidth / 2) {
+        setControlPanelWidth(newWidth);
+      }
+    } else if (isResizingCanvas.current) {
+      const newWidth = window.innerWidth - e.clientX;
+      if (newWidth > 100 && newWidth < window.innerWidth / 2) {
+        setCanvasWidth(newWidth);
+      }
     }
   };
+
+  const handleMouseUp = () => {
+    isResizingControlPanel.current = false;
+    isResizingCanvas.current = false;
+  };
+
+  useEffect(() => {
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -86,74 +147,88 @@ export default function App() {
         setIsSettingsModalOpen={setIsSettingsModalOpen}
         isDarkMode={isDarkMode}
         toggleDarkMode={toggleDarkMode}
+        isHighContrastMode={isHighContrastMode}
+        toggleHighContrastMode={toggleHighContrastMode}
       />
-
       <SettingsModal
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
       />
 
       <div className="flex flex-1 overflow-hidden">
-        <div
-          className={`transition-all duration-300 ease-in-out ${
-            isControlPanelVisible ? 'w-1/4' : 'w-0'
-          } overflow-hidden`}
-        >
-          <ControlPanel />
-        </div>
+        {isControlPanelVisible && (
+          <div
+            className="flex-shrink-0 overflow-hidden relative"
+            style={{ width: controlPanelWidth }}
+          >
+            <ControlPanel />
+            <div
+              id="control-panel-divider"
+              role="separator"
+              aria-valuenow={controlPanelWidth}
+              aria-valuemin={100}
+              aria-valuemax={window.innerWidth / 2}
+              aria-controls="control-panel"
+              tabIndex={0}
+              onMouseDown={handleMouseDownControlPanel}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowLeft') {
+                  setControlPanelWidth(Math.max(100, controlPanelWidth - 10));
+                } else if (e.key === 'ArrowRight') {
+                  setControlPanelWidth(Math.min(window.innerWidth / 2, controlPanelWidth + 10));
+                }
+              }}
+              className="absolute top-0 right-0 w-2 h-full cursor-ew-resize bg-border hover:bg-primary transition-colors duration-200"
+            />
+          </div>
+        )}
 
-        <div className="flex-1 flex flex-col">
-  <div className="flex-1 p-6 overflow-y-auto space-y-4">
-    {isProcessing && (
-      <div className="flex items-center space-x-4">
-        <Skeleton className="h-12 w-12 rounded-full" />
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-[250px]" />
-          <Skeleton className="h-4 w-[200px]" />
-        </div>
-      </div>
-    )}
-    {messages.map((msg: ChatMessage) => (
-      <Message key={msg.id} message={msg} />
-    ))}
-  </div>
-
-          <div className="p-6 border-t border-border flex flex-col gap-4">
-            <h2 className="text-lg font-semibold">Agent Output Canvas</h2>
-            <div className="w-full h-96 border border-border rounded-lg overflow-hidden">
-              <AnimatePresence mode="wait">
-                {isCanvasVisible && (
-                  <AgentOutputCanvas content={canvasContent} type={canvasType} />
-                )}
-              </AnimatePresence>
+        {/* Conteneur principal pour la discussion et le canevas */}
+        <main className="flex-1 flex overflow-hidden gap-6 p-6">
+          
+          {/* Section de la discussion (largeur dynamique) */}
+          <div className={`flex flex-col h-full transition-all duration-500 ease-in-out flex-grow`}>
+            <div className="flex-1 p-6 overflow-y-auto space-y-4">
+                {messages.map((msg: ChatMessage) => (
+                  <Message key={msg.id} message={msg} />
+                ))}
+            </div>
+            <div className="p-6 flex items-center">
+                <UserInput />
             </div>
           </div>
 
-          <div className="p-6 border-t border-border flex items-center">
-            <label htmlFor="chat-input" className="sr-only">Type your message</label>
-            <input
-              id="chat-input"
-              name="chat-input"
-              type="text"
-              className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring dark:bg-card"
-              placeholder="Type your message..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleSendMessage();
-                }
-              }}
-            />
-            <button
-              className="ml-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring"
-              onClick={handleSendMessage}
+          {/* Section du Canevas (apparaît et disparaît) */}
+          {isCanvasVisible && (
+            <div
+              className="flex-shrink-0 h-full relative"
+              style={{ width: canvasWidth }}
             >
-              <Typography variant="p" className="font-semibold">Send</Typography>
-            </button>
-          </div>
-        </div>
-        
+              <AnimatePresence>
+                <AgentOutputCanvas />
+              </AnimatePresence>
+              <div
+                id="canvas-divider"
+                role="separator"
+                aria-valuenow={canvasWidth}
+                aria-valuemin={100}
+                aria-valuemax={window.innerWidth / 2}
+                aria-controls="agent-output-canvas"
+                tabIndex={0}
+                onMouseDown={handleMouseDownCanvas}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowLeft') {
+                    setCanvasWidth(Math.min(window.innerWidth / 2, canvasWidth + 10));
+                  } else if (e.key === 'ArrowRight') {
+                    setCanvasWidth(Math.max(100, canvasWidth - 10));
+                  }
+                }}
+                className="absolute top-0 left-0 w-2 h-full cursor-ew-resize bg-border hover:bg-primary transition-colors duration-200"
+              />
+            </div>
+          )}
+
+        </main>
       </div>
       <Toaster />
     </div>

@@ -2,9 +2,10 @@
 import { Queue } from 'bullmq';
 import { describe, expect, it, vi } from 'vitest';
 
+import { Ctx, ILlmProvider, SessionData } from '@/types.js';
+
 import logger from '../../../../logger.js';
 import loggerMock from '../../../../test/mocks/logger.js';
-import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
 import { agentResponseTool } from './agentResponse.tool.js';
 vi.mock('../../../../logger.js', async () => {
   const vitest = await import('vitest');

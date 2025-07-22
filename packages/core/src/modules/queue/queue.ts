@@ -1,8 +1,9 @@
 // FICHIER : src/queue.ts
 import { Queue } from 'bullmq';
 
+import { SessionData } from '@/types.js';
+
 import logger from '../../logger.js';
-import { SessionData } from '../../types.js';
 import { redis } from '../redis/redisClient.js';
 // CORRIGÉ : 'taskQueue' est maintenant exporté
 export interface AsyncTaskJobPayload<TParams> {

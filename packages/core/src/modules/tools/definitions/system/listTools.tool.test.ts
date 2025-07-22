@@ -2,8 +2,9 @@
 import { Queue } from 'bullmq';
 import { describe, expect, it, vi } from 'vitest';
 
+import { Ctx, ILlmProvider, SessionData, Tool } from '@/types.js';
+
 import logger from '../../../../logger.js';
-import { Ctx, ILlmProvider, SessionData, Tool } from '../../../../types.js';
 import { getAllTools } from '../../../tools/definitions/index.js';
 import { listToolsTool } from './listTools.tool.js';
 

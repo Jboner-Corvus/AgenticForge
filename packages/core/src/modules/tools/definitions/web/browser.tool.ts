@@ -1,7 +1,7 @@
 import { chromium, Page } from 'playwright';
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../../../types.js';
+import type { Ctx, Tool } from '@/types.js';
 
 import { redis } from '../../../redis/redisClient.js';
 

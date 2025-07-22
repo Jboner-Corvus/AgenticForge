@@ -2,7 +2,8 @@ import { Job, Queue } from 'bullmq';
 import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { z } from 'zod';
 
-import { Ctx, SessionData } from '../../types.js';
+import { Ctx, SessionData } from '@/types.js';
+
 import { llmProvider } from '../../utils/llmProvider.js';
 import { getTools } from '../../utils/toolLoader.js';
 import { redis } from '../redis/redisClient.js';
@@ -31,8 +32,25 @@ vi.mock('../redis/redisClient.js', () => ({
   redis: {
     duplicate: vi.fn(),
     publish: vi.fn(),
+    subscribe: vi.fn(),
   },
 }));
+
+vi.mock('../redis/redisClient.js', () => {
+  const mockRedisSubscriber = {
+    on: vi.fn(),
+    quit: vi.fn(),
+    subscribe: vi.fn(),
+    unsubscribe: vi.fn(),
+  };
+  return {
+    redis: {
+      duplicate: vi.fn(() => mockRedisSubscriber),
+      publish: vi.fn(),
+      subscribe: vi.fn(),
+    },
+  };
+});
 
 const mockedGetLlmResponse = llmProvider.getLlmResponse as Mock;
 const mockedGetTools = getTools as Mock;

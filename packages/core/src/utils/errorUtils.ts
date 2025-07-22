@@ -40,7 +40,7 @@ export const handleError = (
       : 500;
   res
     .status(statusCode)
-    .json({ message: err.message || 'An unexpected error occurred.' });
+    .json({ error: err.message || 'An unexpected error occurred.' });
 };
 
 export interface ErrorDetails {

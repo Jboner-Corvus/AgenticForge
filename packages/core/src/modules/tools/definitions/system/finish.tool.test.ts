@@ -1,8 +1,9 @@
 import { Job, Queue } from 'bullmq';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
+import { Ctx, ILlmProvider, SessionData } from '@/types.js';
+
 import logger from '../../../../logger.js';
-import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
 import { finishTool, FinishToolSignal } from './finish.tool.js';
 
 describe('finishTool', () => {

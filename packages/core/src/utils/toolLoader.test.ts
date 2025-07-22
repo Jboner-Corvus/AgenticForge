@@ -5,8 +5,9 @@ import path from 'path';
 import { LogFn } from 'pino';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { Ctx as _Ctx, ILlmProvider } from '@/types.js';
+
 import type logger from '../logger.js';
-import type { Ctx as _Ctx, ILlmProvider } from '../types.js';
 
 import { toolRegistry } from '../modules/tools/toolRegistry.js';
 import { _resetTools, getTools } from './toolLoader.js';

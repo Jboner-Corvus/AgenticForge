@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../../../types.js';
+import type { Ctx, Tool } from '@/types.js';
 
 import { config } from '../../../../config.js'; // Import config
 
@@ -43,6 +43,9 @@ export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> =
           erreur: 'File path is outside the allowed workspace directory.',
         };
       }
+
+      // NOTE: Add dedicated unit tests for path validation in readFile.tool.test.ts
+      // to cover edge cases and ensure strict confinement within WORKSPACE_PATH.
 
       try {
         const content = await fs.readFile(resolvedPath, 'utf-8');

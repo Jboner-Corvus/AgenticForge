@@ -4,7 +4,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
-import type { Tool } from '../types.js';
+import type { Tool } from '@/types.js';
 
 import logger from '../logger.js';
 import { toolRegistry } from '../modules/tools/toolRegistry.js';
@@ -115,11 +115,11 @@ async function findToolFiles(
     console.error(
       `[findToolFiles] Error: ${errDetails.message} in directory: ${dir}`,
     );
-    if (!errDetails.message.includes('ENOENT')) {
-      throw new Error(
-        `Impossible de lire le répertoire des outils '${dir}'. Détails: ${errDetails.message}`,
-      );
-    }
+    // Re-throw ENOENT errors as they indicate a missing tools directory,
+    // which should be a fatal error for the application.
+    throw new Error(
+      `Impossible de lire le répertoire des outils '${dir}'. Détails: ${errDetails.message}`,
+    );
   }
   console.log(`[findToolFiles] Returning ${files.length} files from ${dir}`);
   return files;
@@ -127,14 +127,14 @@ async function findToolFiles(
 
 // Fonction pour obtenir dynamiquement le répertoire des outils
 function getToolsDir(): string {
-  console.log('Running in dist:', runningInDist);
-  console.log('__dirname:', __dirname);
+  logger.debug(`[getToolsDir] Running in dist: ${runningInDist}`);
+  logger.debug(`[getToolsDir] __dirname: ${__dirname}`);
   const toolsPath =
     process.env.TOOLS_PATH ||
     (runningInDist
-      ? path.join(__dirname, 'tools')
+      ? path.join(__dirname, '..', 'tools') // Correction: remonter d'un niveau
       : path.resolve(__dirname, '..', 'modules', 'tools'));
-  console.log('Constructed tools path:', toolsPath);
+  logger.debug(`[getToolsDir] Constructed tools path: ${toolsPath}`);
   return toolsPath;
 }
 

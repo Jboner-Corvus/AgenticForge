@@ -7,8 +7,9 @@ vi.mock('../../../../logger.js', () => ({
 
 import { Queue } from 'bullmq';
 
+import { Ctx, ILlmProvider, SessionData } from '@/types.js';
+
 import logger from '../../../../logger.js';
-import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
 import { webSearchTool } from './webSearch.tool.js';
 
 describe('webSearchTool', () => {

@@ -1,8 +1,9 @@
 import { Queue } from 'bullmq';
 
+import { Ctx, ILlmProvider, SessionData } from '@/types.js';
+
 import logger from '../logger.js';
 import { executeShellCommandTool } from '../modules/tools/definitions/code/executeShellCommand.tool.js';
-import { Ctx, ILlmProvider, SessionData } from '../types.js';
 
 // Mock Ctx for qualityGate functions
 const mockCtx: Ctx = {
@@ -48,7 +49,7 @@ export async function runQualityGate(): Promise<QualityResult> {
     outputMessages.push(`
 --- Running: ${name} ---`);
     const result = (await executeShellCommandTool.execute(
-      { command: cmd },
+      { command: cmd, detach: false },
       mockCtx,
     )) as SandboxResult;
     combinedOutput += `

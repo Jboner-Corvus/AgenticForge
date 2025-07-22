@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { Tool } from '../../types.js';
+import type { Tool } from '@/types.js';
 export declare const webSearchParams: z.ZodObject<
   {
     query: z.ZodString;

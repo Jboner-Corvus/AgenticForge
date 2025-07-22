@@ -1,5 +1,6 @@
-import { Settings, PanelLeft, Sun, Moon, Bell, Maximize, Minimize } from 'lucide-react';
+
 import React, { memo, useState, useCallback } from 'react';
+import { useStore } from '../lib/store';
 
 import { fr } from '../constants/fr';
 import { Button } from './ui/button';
@@ -7,12 +8,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 
 import { Logo } from './Logo';
 
+import { Settings, PanelLeft, Sun, Moon, Bell, Maximize, Minimize, LayoutDashboard, Contrast } from 'lucide-react';
 interface HeaderProps {
   setIsControlPanelVisible: (visible: boolean) => void;
   setIsSettingsModalOpen: (open: boolean) => void;
   isControlPanelVisible: boolean;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
+  isHighContrastMode: boolean;
+  toggleHighContrastMode: () => void;
 }
 
 const HeaderComponent: React.FC<HeaderProps> = ({
@@ -21,6 +25,7 @@ const HeaderComponent: React.FC<HeaderProps> = ({
   isControlPanelVisible,
   isDarkMode,
   toggleDarkMode,
+  toggleHighContrastMode,
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
 
@@ -37,7 +42,7 @@ const HeaderComponent: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="flex items-center justify-between p-4 bg-gradient-to-r from-background to-secondary/50 border-b border-border">
+    <header className="sticky top-0 z-50 flex items-center justify-between p-4 bg-gradient-to-r from-background to-secondary/50 border-b border-border shadow-md">
       <div className="flex items-center space-x-4">
         <Button
           aria-label="Toggle Control Panel"
@@ -72,6 +77,23 @@ const HeaderComponent: React.FC<HeaderProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                aria-label="Toggle Canvas"
+                onClick={() => useStore.getState().setIsCanvasVisible(!useStore.getState().isCanvasVisible)}
+                type="button"
+                variant="ghost"
+              >
+                <LayoutDashboard size={20} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Afficher/Masquer le Canevas</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
                 aria-label="Toggle Fullscreen"
                 onClick={handleFullscreenToggle}
                 type="button"
@@ -82,6 +104,23 @@ const HeaderComponent: React.FC<HeaderProps> = ({
             </TooltipTrigger>
             <TooltipContent>
               <p>Toggle Fullscreen</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="Toggle High Contrast Mode"
+                onClick={toggleHighContrastMode}
+                type="button"
+                variant="ghost"
+              >
+                <Contrast size={20} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Toggle High Contrast Mode</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

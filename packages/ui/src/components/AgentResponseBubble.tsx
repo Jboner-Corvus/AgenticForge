@@ -30,7 +30,7 @@ export const AgentResponseBubble: React.FC<AgentResponseBubbleProps> = ({
         <AvatarImage src="/avatars/agent.png" alt="Agent Avatar" />
         <AvatarFallback>AI</AvatarFallback>
       </Avatar>
-      <div className="relative max-w-[70%] p-3 rounded-lg bg-secondary text-secondary-foreground shadow-md group">
+      <div className="relative max-w-[70%] p-3 rounded-2xl bg-secondary text-secondary-foreground shadow-lg group">
         <div className="message-content prose prose-invert">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {content}
@@ -44,6 +44,7 @@ export const AgentResponseBubble: React.FC<AgentResponseBubbleProps> = ({
           size="icon"
           className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={handleCopy}
+          aria-label="Copy agent response to clipboard"
         >
           <Clipboard className="h-4 w-4" />
         </Button>

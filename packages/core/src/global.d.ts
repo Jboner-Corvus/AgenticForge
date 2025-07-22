@@ -1,0 +1,1 @@
+declare const vi: import('vitest').Mocked<any>;

@@ -1,13 +1,14 @@
 import { spawn } from 'child_process';
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../../../types.js';
+import type { Ctx, Tool } from '@/types.js';
 
 import { config } from '../../../../config.js';
 import { redis } from '../../../redis/redisClient.js';
 
 export const executeShellCommandParams = z.object({
   command: z.string().describe('The shell command to execute.'),
+  detach: z.boolean().optional().default(false).describe('If true, the command will be executed in the background and the tool will return immediately.'),
 });
 
 export const executeShellCommandOutput = z.object({
@@ -26,6 +27,32 @@ export const executeShellCommandTool: Tool<
     args: z.infer<typeof executeShellCommandParams>,
     ctx: Ctx,
   ) => {
+    // TODO: Implement robust input validation and sanitization for `args.command`
+    // to prevent shell injection vulnerabilities. This is critical for security.
+    // Consider using a library for command sanitization or strictly whitelisting allowed commands/arguments.
+
+    // TODO: Reinforce path validation to ensure that any file operations implicitly
+    // performed by the shell command remain strictly within `config.WORKSPACE_PATH`.
+    // This might involve chrooting or more advanced sandboxing if possible.
+    if (args.detach) {
+      // NOTE: For detached commands, ensure robust logging and error handling
+      // mechanisms are in place to track their execution and report results
+      // effectively, as the main process will not wait for their completion.
+      // Enqueue the command for background execution
+      const jobId = `shell-command-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      await ctx.taskQueue.add(
+        'async-tasks', // Job name for the worker
+        { command: args.command, jobId: ctx.job!.id, notificationChannel: `job:${ctx.job!.id}:events` },
+        { jobId: jobId, removeOnComplete: true, removeOnFail: true },
+      );
+      ctx.log.info(`Enqueued detached shell command: ${args.command} with job ID: ${jobId}`);
+      return {
+        exitCode: 0,
+        stderr: '',
+        stdout: `Command "${args.command}" enqueued for background execution with job ID: ${jobId}. Results will be streamed to the frontend.`,
+      };
+    }
+
     try {
       return await new Promise((resolve) => {
         ctx.log.info(`Spawning shell command: ${args.command}`);

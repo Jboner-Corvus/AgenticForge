@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../../../types.js';
+import type { Ctx, Tool } from '@/types.js';
 
 const agentResponseParams = z.object({
   response: z.string().describe('The response to send to the user.'),

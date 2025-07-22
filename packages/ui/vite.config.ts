@@ -7,13 +7,9 @@ import { defineConfig } from "vite";
 import tailwindcss from "tailwindcss";
 import autoprefixer from "autoprefixer";
 
-// https://vitejs.dev/config/
-// This configuration is now simplified for a production-only workflow.
-// The development server and proxy settings have been removed to eliminate ambiguity,
-// as Nginx handles all routing in the production Docker environment.
 export default defineConfig({
   build: {
-    minify: true, // Enabled for production
+    minify: true,
     rollupOptions: {
       output: {
         manualChunks: undefined,
@@ -29,6 +25,15 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  // AJOUTEZ CETTE SECTION
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080', // Cible le port public du backend
+        changeOrigin: true,
+      },
     },
   },
 });

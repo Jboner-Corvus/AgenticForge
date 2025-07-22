@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../../../types.js';
+import type { Ctx, Tool } from '@/types.js';
 
 import { config } from '../../../../config.js'; // Import config
 
@@ -34,13 +34,15 @@ export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
   execute: async (args: z.infer<typeof writeFileParams>, ctx: Ctx) => {
     const absolutePath = path.join(config.WORKSPACE_PATH, args.path);
 
-    try {
-      // Assurer que le répertoire existe
-      await fs
-        .mkdir(path.dirname(absolutePath), { recursive: true })
-        .catch(console.error);
+    // Final security check: ensure the resolved path is within the workspace
+    if (!absolutePath.startsWith(config.WORKSPACE_PATH)) {
+      return {
+        erreur: 'File path is outside the allowed workspace directory.',
+      };
+    }
 
-      // Vérifier si le fichier existe et si son contenu est identique
+    try {
+      // Check if the file exists and if its content is identical before writing
       if (
         await fs
           .stat(absolutePath)
@@ -54,6 +56,11 @@ export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
           return { message: message };
         }
       }
+
+      // Ensure the directory exists only if a write is necessary
+      await fs
+        .mkdir(path.dirname(absolutePath), { recursive: true })
+        .catch(console.error);
 
       await fs.writeFile(absolutePath, args.content, 'utf-8');
 

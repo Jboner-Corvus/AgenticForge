@@ -29,7 +29,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    environment:
+    environment: &common_env
       - NODE_ENV=production
       - DOCKER=true
       - HOST=0.0.0.0
@@ -68,25 +68,12 @@ services:
     depends_on:
       server:
         condition: service_healthy
-    environment:
-      - NODE_ENV=production
-      - WEB_PORT=3002
-      - HOST_PORT=${HOST_PORT}
-      - PORT=${PORT:-3001}
-      - LOG_LEVEL=${LOG_LEVEL}
-      - AUTH_TOKEN=${AUTH_TOKEN}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - LLM_API_KEY=${LLM_API_KEY}
-      - LLM_MODEL_NAME=${LLM_MODEL_NAME}
-      - SESSION_PORT=${SESSION_PORT}
-      - HOST_PROJECT_PATH=${HOST_PROJECT_PATH}
-      - TOOLS_PATH=/usr/src/app/packages/core/dist/tools
+    environment: *common_env
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://server:3001/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 10s
       timeout: 5s
       retries: 5

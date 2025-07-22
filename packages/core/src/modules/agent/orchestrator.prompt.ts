@@ -15,13 +15,13 @@ import { fileURLToPath } from 'url';
 import { format } from 'util';
 
 // FICHIER : src/prompts/orchestrator.prompt.ts
-import type { AgentSession, Message, Tool } from '../../types.js';
+import type { AgentSession, Message, Tool } from '@/types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const promptFilePath = path.resolve(__dirname, 'system.prompt.md');
-const PREAMBULE = readFileSync(promptFilePath, 'utf-8');
+const getPreamble = () => readFileSync(promptFilePath, 'utf-8').replace(/`/g, '\`');
 
 const TOOLS_SECTION_HEADER = '## Available Tools:';
 const HISTORY_SECTION_HEADER = '## Conversation History:';
@@ -53,12 +53,21 @@ export const getMasterPrompt = (
   const toolsSection = `${TOOLS_SECTION_HEADER}\n${formattedTools}`;
 
   const formattedHistory = (session.data.history || [])
-    .map((h: Message) => `${h.role.toUpperCase()}:\n${h.content}`)
-    .join('\n\n');
-  const historySection = `${HISTORY_SECTION_HEADER}\n${formattedHistory}`;
+    .map((h: Message) => `${h.role.toUpperCase()}:
+${h.content}`)
+    .join('
 
-  return `${format(
-    PREAMBULE,
-    new Date().toISOString(),
-  )}\n\n${workingContextSection}${toolsSection}\n\n${historySection}\n\nASSISTANT's turn. Your response:`;
+');
+  const historySection = formattedHistory
+    ? `${HISTORY_SECTION_HEADER}
+${formattedHistory}`
+    : '';
+
+  return `${getPreamble()}
+
+${workingContextSection}${toolsSection}
+
+${historySection}
+
+ASSISTANT's turn. Your response:`;
 };

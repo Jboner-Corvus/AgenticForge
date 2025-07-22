@@ -1,8 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { produce } from 'immer';
 import { sendMessage, interrupt } from '../api';
 import { useStore } from '../store';
-import {  NewChatMessage,  AgentToolResult,  ChatMessage,} from '../../types/chat';
+import { type NewChatMessage, type AgentToolResult, type ChatMessage } from '@/types/chat';
 
 // Define the structure of messages coming from the stream
 interface StreamMessage {
@@ -23,9 +23,9 @@ interface StreamMessage {
     | 'browser.content.extracted'
     | 'browser.error'
     | 'browser.closed'
-    | 'agent_canvas_output'; // Corrected event name
+    | 'agent_canvas_output';
   content?: string;
-  contentType?: 'html' | 'markdown' | 'url' | 'text'; // Add contentType for canvas output
+  contentType?: 'html' | 'markdown' | 'url' | 'text';
   toolName?: string;
   params?: Record<string, unknown>;
   result?: Record<string, unknown>;
@@ -41,6 +41,8 @@ interface StreamMessage {
 }
 
 export const useAgentStream = () => {
+  const eventSourceRef = useRef<EventSource | null>(null);
+
   const {
     addMessage,
     authToken,
@@ -49,7 +51,6 @@ export const useAgentStream = () => {
     setIsProcessing,
     setJobId,
     setMessageInputValue,
-    setStreamCloseFunc,
     setAgentStatus,
     addDebugLog,
     setAgentProgress,
@@ -68,70 +69,75 @@ export const useAgentStream = () => {
     const goal = messageInputValue;
     setMessageInputValue('');
 
-    const callbacks = {
-      onClose: () => {
-        setIsProcessing(false);
-        setJobId(null);
-        setStreamCloseFunc(null);
-        setAgentStatus(null);
-      },
-      onError: (error: Error) => {
-        const errorMessage: NewChatMessage = {
-          type: 'error',
-          content: `An error occurred: ${error.message}`,
-        };
-        addMessage(errorMessage);
-        addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] ${error.message}`);
-        setIsProcessing(false);
-      },
-      onMessage: (content: string) => {
-        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Agent response: ${content}`);
-        const agentMessage: NewChatMessage = {
-          type: 'agent_response',
-          content,
-        };
-        addMessage(agentMessage);
-        setAgentProgress(Math.min(99, useStore.getState().agentProgress + 5));
-      },
-      onThought: (thought: string) => {
-        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Agent thought: ${thought}`);
-        const thoughtMessage: NewChatMessage = {
-          type: 'agent_thought',
-          content: thought,
-        };
-        addMessage(thoughtMessage);
-      },
-      onToolCall: (toolName: string, params: Record<string, unknown>) => {
-        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Tool call: ${toolName} with params ${JSON.stringify(params)}`);
-        setAgentStatus(`Executing tool: ${toolName}...`);
-        const toolCallMessage: NewChatMessage = {
-          type: 'tool_call',
-          toolName,
-          params,
-        };
-        addMessage(toolCallMessage);
-      },
-      onToolResult: (toolName: string, result: Record<string, unknown>) => {
-        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Tool result for ${toolName}: ${JSON.stringify(result)}`);
-        setAgentStatus(null);
-        const toolResultMessage: NewChatMessage = {
-          type: 'tool_result',
-          toolName,
-          result,
-        };
-        addMessage(toolResultMessage);
-      },
+    const handleClose = () => {
+      setIsProcessing(false);
+      setJobId(null);
+      eventSourceRef.current?.close(); // Close the EventSource
+      eventSourceRef.current = null;
+      setAgentStatus(null);
+    };
+
+    const handleError = (error: Error) => {
+      const errorMessage: NewChatMessage = {
+        type: 'error',
+        content: `An error occurred: ${error.message}`,
+      };
+      addMessage(errorMessage);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] ${error.message}`);
+      setIsProcessing(false);
+      handleClose(); // Ensure EventSource is closed on error
+    };
+
+    const handleMessage = (content: string) => {
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Agent response: ${content}`);
+      const agentMessage: NewChatMessage = {
+        type: 'agent_response',
+        content,
+      };
+      addMessage(agentMessage);
+      setAgentProgress(Math.min(99, useStore.getState().agentProgress + 5));
+    };
+
+    const handleThought = (thought: string) => {
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Agent thought: ${thought}`);
+      const thoughtMessage: NewChatMessage = {
+        type: 'agent_thought',
+        content: thought,
+      };
+      addMessage(thoughtMessage);
+    };
+
+    const handleToolCall = (toolName: string, params: Record<string, unknown>) => {
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Tool call: ${toolName} with params ${JSON.stringify(params)}`);
+      setAgentStatus(`Executing tool: ${toolName}...`);
+      const toolCallMessage: NewChatMessage = {
+        type: 'tool_call',
+        toolName,
+        params,
+      };
+      addMessage(toolCallMessage);
+    };
+
+    const handleToolResult = (toolName: string, result: Record<string, unknown>) => {
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Tool result for ${toolName}: ${JSON.stringify(result)}`);
+      setAgentStatus(null);
+      const toolResultMessage: NewChatMessage = {
+        type: 'tool_result',
+        toolName,
+        result,
+      };
+      addMessage(toolResultMessage);
     };
 
     const onMessage = (event: MessageEvent) => {
-      const data: StreamMessage = JSON.parse(event.data);
+      const data: StreamMessage = JSON.parse(event.data) as StreamMessage;
 
       switch (data.type) {
         case 'tool_stream':
           if (data.data?.content) {
             useStore.setState(produce((state: { messages: ChatMessage[] }) => {
               const lastMessage = state.messages[state.messages.length - 1];
-              if (lastMessage?.type === 'tool_result' && lastMessage.toolName === 'executeShellCommand') {
+              if (lastMessage?.type === 'tool_result' && (lastMessage as AgentToolResult).toolName === 'executeShellCommand') {
                 const toolResult = lastMessage as AgentToolResult;
                 toolResult.result.output += data.data?.content;
               } else {
@@ -146,22 +152,22 @@ export const useAgentStream = () => {
           }
           break;
         case 'agent_thought':
-          if (data.content) callbacks.onThought(data.content);
+          if (data.content) handleThought(data.content);
           break;
         case 'tool_call':
-          if (data.toolName && data.params) callbacks.onToolCall(data.toolName, data.params);
+          if (data.toolName && data.params) handleToolCall(data.toolName, data.params);
           break;
         case 'tool_result':
           if (data.toolName && data.result && data.toolName !== 'finish') {
-            callbacks.onToolResult(data.toolName, data.result);
+            handleToolResult(data.toolName, data.result);
           }
           break;
         case 'agent_response':
           if (data.content) {
             if (data.content === 'Agent displayed content on the canvas.') {
-              callbacks.onClose();
+              handleClose();
             } else {
-              callbacks.onMessage(data.content);
+              handleMessage(data.content);
             }
           }
           break;
@@ -169,14 +175,14 @@ export const useAgentStream = () => {
           if (data.content) addDebugLog(`[LLM_RAW] ${data.content}`);
           break;
         case 'error':
-          if (data.message) callbacks.onError(new Error(data.message));
+          if (data.message) handleError(new Error(data.message));
           break;
         case 'quota_exceeded':
-            if (data.message) callbacks.onError(new Error(data.message));
+            if (data.message) handleError(new Error(data.message));
             break;
         case 'tool.start':
           if (data.data?.name && data.data?.args) {
-            callbacks.onToolCall(data.data.name, data.data.args);
+            handleToolCall(data.data.name, data.data.args);
           }
           break;
         case 'browser.navigating':
@@ -197,7 +203,7 @@ export const useAgentStream = () => {
         case 'browser.closed':
           setBrowserStatus('Browser closed');
           break;
-        case 'agent_canvas_output': // Handle the new displayOutput event
+        case 'agent_canvas_output':
           if (data.content && data.contentType) {
             const canvasOutputMessage: NewChatMessage = {
               type: 'agent_canvas_output',
@@ -210,7 +216,7 @@ export const useAgentStream = () => {
           break;
         case 'close':
           setTimeout(() => {
-            callbacks.onClose();
+            handleClose();
             setAgentProgress(100);
           }, 500); // Add a small delay to allow UI to update
           break;
@@ -218,16 +224,17 @@ export const useAgentStream = () => {
     };
 
     try {
-      const jobId = await sendMessage(
+      const { jobId, eventSource } = await sendMessage(
         goal,
         authToken,
         sessionId,
         onMessage,
-        (error) => callbacks.onError(error instanceof Error ? error : new Error(String(error))),
+        (error) => handleError(error instanceof Error ? error : new Error(String(error))),
       );
       setJobId(jobId);
+      eventSourceRef.current = eventSource; // Store EventSource instance
     } catch (error) {
-      callbacks.onError(error instanceof Error ? error : new Error(String(error)));
+      handleError(error instanceof Error ? error : new Error(String(error)));
     }
   }, [
     authToken,
@@ -235,7 +242,6 @@ export const useAgentStream = () => {
     addMessage,
     setIsProcessing,
     setJobId,
-    setStreamCloseFunc,
     messageInputValue,
     setMessageInputValue,
     setAgentStatus,
@@ -245,15 +251,15 @@ export const useAgentStream = () => {
   ]);
 
   const interruptAgent = useCallback(async () => {
-    const { streamCloseFunc, jobId, authToken, sessionId } = useStore.getState();
-    if (jobId && streamCloseFunc) {
+    const { jobId, authToken, sessionId } = useStore.getState();
+    if (jobId && eventSourceRef.current) {
       await interrupt(jobId, authToken, sessionId);
-      streamCloseFunc();
-      setIsProcessing(false);
-      setJobId(null);
-      setStreamCloseFunc(null);
+      eventSourceRef.current.close(); // Close EventSource directly
+      eventSourceRef.current = null;
+      useStore.getState().setIsProcessing(false);
+      useStore.getState().setJobId(null);
     }
-  }, [setIsProcessing, setJobId, setStreamCloseFunc]);
+  }, []);
 
   return {
     startAgent,

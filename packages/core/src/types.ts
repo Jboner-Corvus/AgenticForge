@@ -62,6 +62,12 @@ declare module 'express' {
   }
 }
 
+export interface RedisEvent {
+  content?: string;
+  message?: string;
+  type: string;
+}
+
 export interface Tool<
   T extends z.AnyZodObject = z.AnyZodObject,
   U extends ZodTypeAny = ZodTypeAny,
@@ -74,4 +80,10 @@ export interface Tool<
   name: string;
   output?: U;
   parameters: T;
+}
+
+export interface ToolOutput {
+  isError: boolean;
+  output: unknown;
+  toolName: string;
 }

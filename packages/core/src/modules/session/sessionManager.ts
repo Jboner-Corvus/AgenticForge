@@ -1,14 +1,17 @@
 import { Job, Queue } from 'bullmq';
 import { Content } from 'fastmcp';
 
+import { Ctx, Message, SessionData } from '@/types.js';
+
 import { config } from '../../config.js';
 import logger from '../../logger.js';
-import { Ctx, Message, SessionData } from '../../types.js';
 import { llmProvider } from '../../utils/llmProvider.js';
 import { redis } from '../redis/redisClient.js';
 import { summarizeTool } from '../tools/definitions/ai/summarize.tool.js';
 
 const SESSION_EXPIRATION = 7 * 24 * 60 * 60; // 7 days
+
+export type Session = SessionData;
 
 export class SessionManager {
   private static readonly activeSessions = new Map<string, SessionData>();
