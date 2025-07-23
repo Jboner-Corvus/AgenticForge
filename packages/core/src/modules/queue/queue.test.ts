@@ -9,9 +9,13 @@ vi.mock('../redis/redisClient.js', () => ({
     connect: vi.fn(),
     disconnect: vi.fn(),
     duplicate: vi.fn(),
+    getMaxListeners: vi.fn(() => 10),
     on: vi.fn(),
-    options: { keyPrefix: '' }, // Add the missing options.keyPrefix
+    once: vi.fn(),
+    options: { keyPrefix: '' },
     publish: vi.fn(),
+    removeListener: vi.fn(),
+    setMaxListeners: vi.fn(),
   },
 }));
 

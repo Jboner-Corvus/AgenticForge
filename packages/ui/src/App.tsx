@@ -8,13 +8,14 @@ import { Header } from './components/Header';
 import { Message } from './components/Message';
 import { SettingsModal } from './components/SettingsModal';
 import { useStore } from './lib/store';
-import { Toaster } from './components/ui/sonner';
+
 import type { ChatMessage } from './types/chat';
 import AgentOutputCanvas from './components/AgentOutputCanvas'; // Import the new component
 
 import { UserInput } from './components/UserInput';
 import React, { useState, useRef, useEffect } from 'react';
 import { generateUUID } from './lib/utils/uuid';
+import { Toaster } from './components/ui/toaster';
 import { getLeaderboardStats, getLlmApiKeysApi } from './lib/api';
 
 export default function App() {

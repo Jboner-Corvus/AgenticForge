@@ -35,6 +35,11 @@ Z :
 Z:
 worker.pid
 worker.log
+docker.log
 rapport.txt
 rapport-final.txt
 runw.ps1
+remote_exec.bat
+all-checks.md
+docker.log.pid
+opt.md

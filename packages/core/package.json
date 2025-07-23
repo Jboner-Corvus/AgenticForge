@@ -12,7 +12,7 @@
     "start": "node dist/webServer.js",
     "start:dev": "NODE_ENV=development node --loader ts-node/esm src/server.ts",
     "dev": "NODE_ENV=development nodemon --watch src --exec node --loader ts-node/esm src/server.ts",
-    "build": "NODE_OPTIONS=--max-old-space-size=8192 pnpm exec tsup && tsc --emitDeclarationOnly --declaration && cp src/modules/agent/system.prompt.md dist/modules/agent/system.prompt.md",
+    "build": "NODE_OPTIONS=--max-old-space-size=12288 pnpm exec tsup && cp src/modules/agent/system.prompt.md dist/modules/agent/system.prompt.md",
     "clean": "rm -rf dist",
     "start:worker:dev": "NODE_ENV=development node --loader ts-node/esm src/worker.ts",
     "start:worker": "node dist/worker.js",
@@ -66,7 +66,7 @@
     "pino-pretty": "^13.0.0",
     "playwright": "^1.54.1",
     "semantic-release": "^24.2.7",
-    "tailwindcss": "^4.1.11",
+    
     "tsx": "^4.20.3",
     "valibot": "^1.1.0",
     "supertest": "^7.0.0",

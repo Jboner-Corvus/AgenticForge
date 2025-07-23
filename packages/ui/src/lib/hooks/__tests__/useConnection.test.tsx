@@ -1,7 +1,9 @@
 
 /// <reference types="vitest-dom/extend-expect" />
-import type { SSEClientTransportOptions } from "@modelcontextprotocol/sdk/client/sse.js";
+/// <reference types="vitest/globals" />
 import type { ClientRequest } from "@modelcontextprotocol/sdk/types.js";
+import { SSEClientTransport, type SSEClientTransportOptions } from "@modelcontextprotocol/sdk/client/sse.js";
+import { StreamableHTTPClientTransport, type StreamableHTTPClientTransportOptions } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 // Mock fetch
 const mockFetch = vi.fn().mockResolvedValue({
@@ -17,7 +19,7 @@ beforeEach(() => {
 });
 import { act, renderHook } from "@testing-library/react";
 import { z } from "zod";
-import { vi, expect, describe, beforeEach, beforeAll, test } from 'vitest';
+import { vi, expect, describe, beforeEach, beforeAll, test, type Mock } from 'vitest';
 
 import { DEFAULT_INSPECTOR_CONFIG } from "../../constants";
 import { useConnection } from "../useConnection";
@@ -37,44 +39,61 @@ const mockClient = {
 };
 
 // Mock transport instances
-  const mockSSETransport: {
-  options: SSEClientTransportOptions | undefined;
-  start: vi.Mock;
-  url: undefined | URL;
-} = {
-  options: undefined,
-  start: vi.fn(),
-  url: undefined,
-};
+interface MockSSEClientTransport extends InstanceType<typeof SSEClientTransport> {
+  url?: URL;
+  options?: SSEClientTransportOptions;
+}
 
-const mockStreamableHTTPTransport: {
-  options: SSEClientTransportOptions | undefined;
-  start: vi.Mock;
-  url: undefined | URL;
-} = {
-  options: undefined,
-  start: vi.fn(),
-  url: undefined,
-};
+interface MockStreamableHTTPClientTransport extends InstanceType<typeof StreamableHTTPClientTransport> {
+  url?: URL;
+  options?: StreamableHTTPClientTransportOptions;
+}
+
+let mockSSETransportInstance: MockSSEClientTransport;
+let mockStreamableHTTPTransportInstance: MockStreamableHTTPClientTransport;
 
 vi.mock("@modelcontextprotocol/sdk/client/index.js", () => ({
   Client: vi.fn().mockImplementation(() => mockClient),
 }));
 
-vi.mock("@modelcontextprotocol/sdk/client/sse.js", () => ({
-  SSEClientTransport: vi.fn(function(url: string, options: SSEClientTransportOptions) {
-    mockSSETransport.url = new URL(url);
-    mockSSETransport.options = options;
-    return mockSSETransport;
-  }),
-  SseError: vi.fn(),
-}));
+vi.mock("@modelcontextprotocol/sdk/client/sse.js", () => {
+  const actual = vi.importActual<typeof import("@modelcontextprotocol/sdk/client/sse.js")>("@modelcontextprotocol/sdk/client/sse.js");
+  return {
+    ...actual,
+    SSEClientTransport: vi.fn(function(url: string, options: SSEClientTransportOptions) {
+      mockSSETransportInstance = {
+        url: new URL(url),
+        options: options,
+        start: vi.fn(),
+        close: vi.fn(),
+        _reconnectionOptions: undefined,
+        finishAuth: vi.fn(),
+        send: vi.fn(),
+        setProtocolVersion: vi.fn(),
+      } as unknown as InstanceType<typeof SSEClientTransport>;
+      return mockSSETransportInstance;
+    }) as unknown as typeof SSEClientTransport,
+  };
+});
 
 vi.mock("@modelcontextprotocol/sdk/client/streamableHttp.js", () => ({
-  StreamableHTTPClientTransport: vi.fn(function(url: string, options: SSEClientTransportOptions) {
-    mockStreamableHTTPTransport.url = new URL(url);
-    mockStreamableHTTPTransport.options = options;
-    return mockStreamableHTTPTransport;
+  StreamableHTTPClientTransport: vi.fn(function(url: string, options: StreamableHTTPClientTransportOptions) {
+    mockStreamableHTTPTransportInstance = {
+      url: new URL(url),
+      options: options,
+      start: vi.fn(),
+      close: vi.fn(),
+      _url: new URL(url),
+      _reconnectionOptions: undefined,
+      _authThenStart: vi.fn(),
+      _commonHeaders: undefined,
+      _startOrAuthSse: vi.fn(),
+      _getNextReconnectionDelay: vi.fn(),
+      _normalizeHeaders: vi.fn(),
+      _scheduleReconnection: vi.fn(),
+      // Add other missing properties as vi.fn() or undefined if needed
+    } as unknown as InstanceType<typeof StreamableHTTPClientTransport>;
+    return mockStreamableHTTPTransportInstance;
   }),
 }));
 
@@ -226,8 +245,7 @@ describe("useConnection", () => {
         await result.current.connect();
       });
 
-      const call = SSEClientTransport.mock.calls[0][0];
-      expect(call.toString()).toContain(
+            expect(mockSSETransportInstance.url?.toString()).toContain(
         "url=https%3A%2F%2Fexample.com%3A8443%2Fapi",
       );
     });
@@ -245,8 +263,7 @@ describe("useConnection", () => {
         await result.current.connect();
       });
 
-      const call = SSEClientTransport.mock.calls[0][0];
-      expect(call.toString()).toContain(
+            expect(mockSSETransportInstance.url?.toString()).toContain(
         "url=http%3A%2F%2Flocalhost%3A3000%2Fapi",
       );
     });
@@ -264,9 +281,8 @@ describe("useConnection", () => {
         await result.current.connect();
       });
 
-      const call = SSEClientTransport.mock.calls[0][0];
-      expect(call.toString()).toContain("url=https%3A%2F%2Fexample.com%2Fapi");
-      expect(call.toString()).not.toContain("%3A443");
+            expect(mockSSETransportInstance.url?.toString()).toContain("url=https%3A%2F%2Fexample.com%2Fapi");
+      expect(mockSSETransportInstance.url?.toString()).not.toContain("%3A443");
     });
 
     test("preserves port number in streamable-http transport", async () => {
@@ -282,8 +298,8 @@ describe("useConnection", () => {
         await result.current.connect();
       });
 
-      const call = StreamableHTTPClientTransport.mock.calls[0][0];
-      expect(call.toString()).toContain(
+      const call = mockStreamableHTTPTransportInstance.url;
+      expect(call?.toString()).toContain(
         "url=https%3A%2F%2Fexample.com%3A8443%2Fapi",
       );
     });
@@ -293,10 +309,14 @@ describe("useConnection", () => {
     beforeEach(async () => {
       vi.clearAllMocks();
       // Reset the mock transport objects
-      mockSSETransport.url = undefined;
-      mockSSETransport.options = undefined;
-      mockStreamableHTTPTransport.url = undefined;
-      mockStreamableHTTPTransport.options = undefined;
+      if (mockSSETransportInstance) {
+        mockSSETransportInstance.url = undefined;
+        mockSSETransportInstance.options = undefined;
+      }
+      if (mockStreamableHTTPTransportInstance) {
+        mockStreamableHTTPTransportInstance.url = undefined;
+        mockStreamableHTTPTransportInstance.options = undefined;
+      }
     });
 
     test("sends X-MCP-Proxy-Auth header when proxy auth token is configured", async () => {
@@ -318,17 +338,17 @@ describe("useConnection", () => {
       });
 
       // Check that the transport was created with the correct headers
-      expect(mockSSETransport.options).toBeDefined();
-      expect(mockSSETransport.options?.requestInit).toBeDefined();
+      expect(mockSSETransportInstance.options).toBeDefined();
+      expect(mockSSETransportInstance.options?.requestInit).toBeDefined();
 
-      expect(mockSSETransport.options?.requestInit?.headers).toHaveProperty(
+      expect(mockSSETransportInstance.options?.requestInit?.headers).toHaveProperty(
         "X-MCP-Proxy-Auth",
         "Bearer test-proxy-token",
       );
-      expect(mockSSETransport?.options?.eventSourceInit?.fetch).toBeDefined();
+      expect(mockSSETransportInstance?.options?.eventSourceInit?.fetch).toBeDefined();
 
       // Verify the fetch function includes the proxy auth header
-      const mockFetch = mockSSETransport.options?.eventSourceInit?.fetch;
+      const mockFetch = mockSSETransportInstance.options?.eventSourceInit?.fetch;
       const testUrl = "http://test.com";
       await mockFetch?.(testUrl, {
         cache: "no-store",
@@ -343,11 +363,11 @@ describe("useConnection", () => {
 
       expect(global.fetch).toHaveBeenCalledTimes(2);
       expect(
-        ((global.fetch as vi.Mock).mock.calls[0][1] as RequestInit)?.headers,
+        ((global.fetch as Mock).mock.calls[0][1] as RequestInit)?.headers,
       ).toHaveProperty("X-MCP-Proxy-Auth", "Bearer test-proxy-token");
-      expect((global.fetch as vi.Mock).mock.calls[1][0]).toBe(testUrl);
+      expect((global.fetch as Mock).mock.calls[1][0]).toBe(testUrl);
       expect(
-        ((global.fetch as vi.Mock).mock.calls[1][1] as RequestInit)?.headers,
+        ((global.fetch as Mock).mock.calls[1][1] as RequestInit)?.headers,
       ).toHaveProperty("X-MCP-Proxy-Auth", "Bearer test-proxy-token");
     });
 
@@ -367,7 +387,7 @@ describe("useConnection", () => {
       });
 
       // Check that Authorization header is NOT used for proxy auth
-      expect(mockSSETransport.options?.requestInit?.headers).not.toHaveProperty(
+      expect(mockSSETransportInstance.options?.requestInit?.headers).not.toHaveProperty(
         "Authorization",
         "Bearer test-proxy-token",
       );
@@ -393,7 +413,7 @@ describe("useConnection", () => {
       });
 
       // Check that both headers are present and distinct
-      const headers = mockSSETransport.options?.requestInit?.headers;
+      const headers = mockSSETransportInstance.options?.requestInit?.headers;
       expect(headers).toHaveProperty(
         "Authorization",
         "Bearer server-auth-token",
@@ -405,7 +425,7 @@ describe("useConnection", () => {
     });
 
     test("sends X-MCP-Proxy-Auth in health check requests", async () => {
-      const fetchMock = global.fetch as vi.Mock<Parameters<typeof fetch>, ReturnType<typeof fetch>>;
+      const fetchMock = global.fetch as Mock<Parameters<typeof fetch>, ReturnType<typeof fetch>>;
       fetchMock.mockClear();
 
       const propsWithProxyAuth = {
@@ -431,7 +451,7 @@ describe("useConnection", () => {
       );
 
       expect(healthCheckCall).toBeDefined();
-      expect(healthCheckCall![1].headers).toHaveProperty(
+      expect(healthCheckCall![1]?.headers).toHaveProperty(
         "X-MCP-Proxy-Auth",
         "Bearer test-proxy-token",
       );
@@ -459,9 +479,9 @@ describe("useConnection", () => {
       });
 
       // Check that the streamable HTTP transport was created with the correct headers
-      expect(mockStreamableHTTPTransport.options).toBeDefined();
+      expect(mockStreamableHTTPTransportInstance.options).toBeDefined();
       expect(
-        mockStreamableHTTPTransport.options?.requestInit?.headers,
+        mockStreamableHTTPTransportInstance.options?.requestInit?.headers,
       ).toHaveProperty("X-MCP-Proxy-Auth", "Bearer test-proxy-token");
     });
   });

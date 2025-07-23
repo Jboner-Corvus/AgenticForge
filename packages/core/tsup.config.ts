@@ -4,9 +4,12 @@ import { statSync } from 'fs';
 
 export default defineConfig({
   clean: true,
-  dts: true,
-  entry: ['src/**/*.ts', '!src/**/*.test.ts', '!src/**/*.d.ts'],
-  external: ['path', 'playwright', 'playwright-core'],
+  dts: {
+    resolve: true,
+    entry: 'src/index.ts',
+  },
+  entry: ['src/index.ts', 'src/webServer.ts', 'src/worker.ts'],
+  external: ['path', 'playwright', 'playwright-core', '@modelcontextprotocol/inspector'],
   format: ['esm'],
   outDir: 'dist',
   sourcemap: true,

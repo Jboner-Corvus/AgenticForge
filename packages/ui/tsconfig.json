@@ -3,7 +3,7 @@
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable", "WebWorker"],
-    "types": ["vite/client", "vitest"],
+    "types": ["vite/client", "vitest/globals", "vitest"],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",

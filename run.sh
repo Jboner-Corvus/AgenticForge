@@ -185,10 +185,6 @@ load_env_vars() {
 # Arrête proprement le processus worker local.
 stop_worker() {
     echo -e "${COLOR_YELLOW}Arrêt du worker local...${NC}"
-    # NOTE: Using pkill for stopping the worker is effective for development,
-    # but for production environments, consider more robust process managers
-    # like PM2, systemd, or Kubernetes, which offer better process lifecycle
-    # management, monitoring, and reliability.
     pkill -f "tsx watch src/worker.ts" 2>/dev/null
     pkill -f "node --loader ts-node/esm src/worker.ts" 2>/dev/null
     pkill -f "node dist/worker.js" 2>/dev/null
@@ -200,9 +196,25 @@ stop_worker() {
         else
             echo -e "${COLOR_YELLOW}Impossible d'arrêter le worker (PID ${WORKER_PID}). Il n'était peut-être pas en cours d'exécution ou a déjà été tué.${NC}"
         fi
-        rm -f "${SCRIPT_DIR}/worker.pid" # Use -f to avoid error if file doesn't exist
+        rm -f "${SCRIPT_DIR}/worker.pid"
     else
         echo -e "${COLOR_YELLOW}Fichier worker.pid non trouvé. Le worker est déjà arrêté ou a été tué par pkill.${NC}"
+    fi
+}
+
+# Arrête le collecteur de logs Docker.
+stop_docker_log_collector() {
+    echo -e "${COLOR_YELLOW}Arrêt du collecteur de logs Docker...${NC}"
+    if [ -f "${SCRIPT_DIR}/docker-logs.pid" ]; then
+        DOCKER_LOG_PID=$(cat "${SCRIPT_DIR}/docker-logs.pid")
+        if kill $DOCKER_LOG_PID 2>/dev/null; then
+            echo -e "${COLOR_GREEN}✓ Collecteur de logs Docker (PID ${DOCKER_LOG_PID}) arrêté.${NC}"
+        else
+            echo -e "${COLOR_YELLOW}Impossible d'arrêter le collecteur de logs (PID ${DOCKER_LOG_PID}). Il n'était peut-être pas en cours d'exécution.${NC}"
+        fi
+        rm -f "${SCRIPT_DIR}/docker-logs.pid"
+    else
+        echo -e "${COLOR_YELLOW}Fichier docker-logs.pid non trouvé. Le collecteur est probablement déjà arrêté.${NC}"
     fi
 }
 
@@ -213,7 +225,6 @@ start_worker() {
     if [ -f "$PID_FILE" ]; then
         local PID
         PID=$(cat "$PID_FILE")
-        # kill -0 PID vérifie si le processus existe
         if kill -0 "$PID" > /dev/null 2>&1; then
             echo -e "${COLOR_YELLOW}✓ Le worker est déjà en cours d'exécution (PID: ${PID}).${NC}"
             return 0
@@ -226,7 +237,6 @@ start_worker() {
     echo -e "${COLOR_YELLOW}Démarrage du worker local en arrière-plan...${NC}"
     cd "${SCRIPT_DIR}/packages/core"
     
-    # Exécute le worker en fonction de NODE_ENV.
     if [ "$NODE_ENV" = "production" ]; then
         echo -e "${COLOR_YELLOW}Démarrage du worker en mode production...${NC}"
         NODE_OPTIONS='--enable-source-maps' pnpm exec node dist/worker.js > "${SCRIPT_DIR}/worker.log" 2>&1 &
@@ -238,7 +248,30 @@ start_worker() {
     local WORKER_PID=$!
     echo $WORKER_PID > "$PID_FILE"
     echo -e "${COLOR_GREEN}✓ Worker démarré avec le PID ${WORKER_PID}. Logs disponibles dans worker.log.${NC}"
-    cd "${SCRIPT_DIR}" # Revenir au répertoire du script
+    cd "${SCRIPT_DIR}"
+}
+
+# Démarre le collecteur de logs Docker en arrière-plan.
+start_docker_log_collector() {
+    local PID_FILE="${SCRIPT_DIR}/docker-logs.pid"
+
+    if [ -f "$PID_FILE" ]; then
+        local PID
+        PID=$(cat "$PID_FILE")
+        if kill -0 "$PID" > /dev/null 2>&1; then
+            echo -e "${COLOR_YELLOW}✓ Le collecteur de logs Docker est déjà en cours d'exécution (PID: ${PID}).${NC}"
+            return 0
+        else
+            echo -e "${COLOR_RED}✗ Fichier PID trouvé (stale), mais le processus n'existe pas. Nettoyage...${NC}"
+            rm "$PID_FILE"
+        fi
+    fi
+
+    echo -e "${COLOR_YELLOW}Démarrage du collecteur de logs Docker en arrière-plan...${NC}"
+    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" logs --follow > "${SCRIPT_DIR}/docker.log" 2>&1 &
+    local DOCKER_LOG_PID=$!
+    echo $DOCKER_LOG_PID > "$PID_FILE"
+    echo -e "${COLOR_GREEN}✓ Collecteur de logs Docker démarré avec le PID ${DOCKER_LOG_PID}. Logs disponibles dans docker.log.${NC}"
 }
 
 # Démarre tous les services dans le bon ordre.
@@ -247,6 +280,7 @@ start_services() {
     check_and_create_env
     load_env_vars
     stop_worker # S'assurer que l'ancien worker est bien arrêté.
+    stop_docker_log_collector # S'assurer que l'ancien collecteur est bien arrêté.
 
     # Avertissement sur le réseau Docker existant
     if docker network ls | grep -q "agentic_forge_network"; then
@@ -277,6 +311,7 @@ start_services() {
     fi
     
     start_worker
+    start_docker_log_collector
 }
 
 # Arrête tous les services.
@@ -284,12 +319,15 @@ stop_services() {
     echo -e "${COLOR_YELLOW}Arrêt des services Docker...${NC}"
     docker compose -f "${SCRIPT_DIR}/docker-compose.yml" down
     stop_worker
+    stop_docker_log_collector
     echo -e "${COLOR_GREEN}✓ Services arrêtés.${NC}"
 }
 
 # Redémarre tous les services.
 restart_all_services() {
     echo -e "${COLOR_YELLOW}Redémarrage complet de tous les services...${NC}"
+    rm -f "${SCRIPT_DIR}/worker.log"
+    rm -f "${SCRIPT_DIR}/docker.log"
     stop_services
     start_services
 }
@@ -297,6 +335,7 @@ restart_all_services() {
 # Redémarre uniquement le worker.
 restart_worker() {
     echo -e "${COLOR_YELLOW}Redémarrage du worker...${NC}"
+    rm -f "${SCRIPT_DIR}/worker.log"
     load_env_vars
     stop_worker
     start_worker
@@ -321,7 +360,11 @@ show_worker_logs() {
 # Affiche les 100 dernières lignes des logs des conteneurs Docker.
 show_docker_logs() {
     echo -e "${COLOR_CYAN}--- Logs des conteneurs Docker (100 dernières lignes) ---${NC}"
-    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" logs --tail=100
+    if [ -f "${SCRIPT_DIR}/docker.log" ]; then
+        tail -100 "${SCRIPT_DIR}/docker.log"
+    else
+        echo -e "${COLOR_RED}✗ Le fichier docker.log n'existe pas.${NC}"
+    fi
 }
 
 # Ouvre un shell dans le conteneur du serveur.
@@ -333,6 +376,8 @@ shell_access() {
 # Reconstruit les images Docker sans utiliser le cache.
 rebuild_services() {
     echo -e "${COLOR_YELLOW}Arrêt des services pour la reconstruction...${NC}"
+    rm -f "${SCRIPT_DIR}/worker.log"
+    rm -f "${SCRIPT_DIR}/docker.log"
     stop_services
 
     echo -e "${COLOR_YELLOW}Reconstruction forcée des images Docker (sans cache)...${NC}"
@@ -390,8 +435,9 @@ run_all_checks() {
 
     # Ajouter l'en-tête au fichier de sortie
     ALL_CHECKS_OUTPUT+="# TODO List: Résoudre les erreurs de vérification\n\n"
-    ALL_CHECKS_OUTPUT+="Ce document liste les problèmes identifiés par nos vérifications automatisées (TypeCheck, Lint, Test).\n\n"
-    ALL_CHECKS_OUTPUT+="La correction de chaque erreur doit se faire **uniquement en modifiant le code source** ; il est interdit d'exécuter des commandes bash.\n"
+    ALL_CHECKS_OUTPUT+="Ce document liste les problèmes identifiés par nos vérifications (TypeCheck, Lint, Test).\n\n"
+    ALL_CHECKS_OUTPUT+="La correction de chaque erreur doit se faire **uniquement en modifiant le code source** \n\n"
+    ALL_CHECKS_OUTPUT+="Il est interdit d'exécuter des commandes bash..\n" 
     ALL_CHECKS_OUTPUT+="Il est interdit de lancer une vérification.\n\n"
     ALL_CHECKS_OUTPUT+="Une fois la correction effectué, cochez la case \`[x]\`.\n\n"
     ALL_CHECKS_OUTPUT+="---\n\n"
