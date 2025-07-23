@@ -59,7 +59,7 @@ export const executeShellCommandTool: Tool<
 
         const child = spawn(args.command, {
           cwd: config.WORKSPACE_PATH,
-          shell: '/bin/bash',
+          shell: process.platform === 'win32' ? 'cmd.exe' : '/bin/bash',
           stdio: 'pipe',
         });
 

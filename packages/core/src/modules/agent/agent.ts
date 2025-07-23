@@ -6,7 +6,7 @@ import { Ctx as _Ctx, SessionData, Tool, ToolOutput } from '@/types.js';
 
 import { config } from '../../config.js';
 import logger from '../../logger.js';
-import { llmProvider } from '../../utils/llmProvider.js';
+import { getLlmProvider } from '../../utils/llmProvider.js';
 import { LLMContent } from '../llm/llm-types.js';
 import { redis } from '../redis/redisClient.js';
 import { FinishToolSignal } from '../tools/definitions/index.js';
@@ -123,7 +123,7 @@ export class Agent {
             })
             .filter((m): m is LLMContent => m !== null);
 
-          const llmResponse = await llmProvider.getLlmResponse(
+          const llmResponse = await getLlmProvider().getLlmResponse(
             messagesForLlm,
             orchestratorPrompt,
           );
@@ -253,7 +253,7 @@ export class Agent {
     try {
       const result = await toolRegistry.execute(command.name, command.params, {
         job: this.job,
-        llm: llmProvider,
+        llm: getLlmProvider(),
         log,
         session: this.session,
         taskQueue: this.taskQueue,

@@ -5,7 +5,7 @@ import { Ctx, Message, SessionData } from '@/types.js';
 
 import { config } from '../../config.js';
 import logger from '../../logger.js';
-import { llmProvider } from '../../utils/llmProvider.js';
+import { getLlmProvider } from '../../utils/llmProvider.js';
 import { redis } from '../redis/redisClient.js';
 import { summarizeTool } from '../tools/definitions/ai/summarize.tool.js';
 
@@ -64,7 +64,7 @@ export class SessionManager {
   ): Ctx {
     return {
       job,
-      llm: llmProvider,
+      llm: getLlmProvider(),
       log,
       reportProgress: async (progress: {
         current: number;

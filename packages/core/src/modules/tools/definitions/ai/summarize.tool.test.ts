@@ -5,14 +5,17 @@ import { describe, expect, it, Mock, vi } from 'vitest';
 import { Ctx, SessionData } from '@/types.js';
 
 import logger from '../../../../logger.js';
-import { llmProvider } from '../../../../utils/llmProvider.js';
+import { getLlmProvider } from '../../../../utils/llmProvider.js';
 import { summarizeTool } from './summarize.tool.js';
 
-vi.mock('../../../../utils/llmProvider.js', () => ({
-  llmProvider: {
+vi.mock('../../../../utils/llmProvider.js', () => {
+  const mockLlmProvider = {
     getLlmResponse: vi.fn(),
-  },
-}));
+  };
+  return {
+    getLlmProvider: vi.fn(() => mockLlmProvider),
+  };
+});
 
 vi.mock('../../../../logger.js', () => ({
   default: {
@@ -27,7 +30,7 @@ vi.mock('../../../../logger.js', () => ({
 describe('summarizeTool', () => {
   const mockCtx: Ctx = {
     job: { id: 'test-job-id' } as Job,
-    llm: llmProvider,
+    llm: getLlmProvider(),
     log: logger,
     reportProgress: vi.fn(),
     session: {} as SessionData,
@@ -38,14 +41,14 @@ describe('summarizeTool', () => {
   it('should summarize the given text', async () => {
     const textToSummarize = 'This is a long text that needs to be summarized.';
     const expectedSummary = 'This is a summary.';
-    (llmProvider.getLlmResponse as Mock).mockResolvedValue(expectedSummary);
+    (getLlmProvider().getLlmResponse as Mock).mockResolvedValue(expectedSummary);
 
     const result = await summarizeTool.execute(
       { text: textToSummarize },
       mockCtx,
     );
     expect(result).toBe(expectedSummary);
-    expect(llmProvider.getLlmResponse).toHaveBeenCalled();
+    expect(getLlmProvider().getLlmResponse).toHaveBeenCalled();
     expect(mockCtx.log.info).toHaveBeenCalledWith(
       textToSummarize,
       'Summarizing text',
@@ -55,7 +58,7 @@ describe('summarizeTool', () => {
   it('should return an error if LLM response fails', async () => {
     const textToSummarize = 'Another text.';
     const errorMessage = 'LLM failed to summarize.';
-    (llmProvider.getLlmResponse as Mock).mockRejectedValue(
+    (getLlmProvider().getLlmResponse as Mock).mockRejectedValue(
       new Error(errorMessage),
     );
 

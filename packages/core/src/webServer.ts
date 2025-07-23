@@ -1,20 +1,12 @@
-console.log('<<<<< STARTING webServer.ts >>>>>');
-console.log('webServer.ts: File executed.');
-import cookieParser from 'cookie-parser';
-console.log('Imported cookieParser');
-import express, { type Application } from 'express';
-console.log('Imported express');
-import fs from 'fs';
-console.log('Imported fs');
-import path from 'path';
-console.log('Imported path');
-import { fileURLToPath } from 'url';
-console.log('Imported fileURLToPath');
-import { v4 as uuidv4 } from 'uuid';
-console.log('Imported uuidv4');
-
 import type { Queue } from 'bullmq';
 import type { Redis } from 'ioredis';
+
+import cookieParser from 'cookie-parser';
+import express, { type Application } from 'express';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 
 import { config } from './config.js';
 import logger from './logger.js';
@@ -32,26 +24,7 @@ export async function initializeWebServer(redis: Redis, jobQueue: Queue): Promis
   app.use(express.static(path.join(__dirname, '..', 'ui', 'dist')));
   app.use(cookieParser());
 
-  // Middleware d'authentification par clé API
-  app.use(
-    (
-      req: express.Request,
-      res: express.Response,
-      next: express.NextFunction,
-    ) => {
-      // Exempter la route de health check
-      if (req.path === '/api/health') {
-        return next();
-      }
-
-      const apiKey = req.headers.authorization;
-      if (config.AUTH_API_KEY && apiKey !== `Bearer ${config.AUTH_API_KEY}`) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-      next();
-    },
-  );
-
+  // Session management middleware
   app.use(
     (
       req: express.Request,
@@ -80,6 +53,26 @@ export async function initializeWebServer(redis: Redis, jobQueue: Queue): Promis
       }
       req.sessionId = sessionId;
       _next();
+    },
+  );
+
+  // Middleware d'authentification par clé API
+  app.use(
+    (
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction,
+    ) => {
+      // Exempter la route de health check
+      if (req.path === '/api/health') {
+        return next();
+      }
+
+      const apiKey = req.headers.authorization;
+      if (config.AUTH_API_KEY && apiKey !== `Bearer ${config.AUTH_API_KEY}`) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      next();
     },
   );
 
@@ -518,15 +511,17 @@ export async function initializeWebServer(redis: Redis, jobQueue: Queue): Promis
 
   app.use(handleError);
 
-  process.on('uncaughtException', (error) => {
-    logger.fatal({ error }, 'Unhandled exception caught!');
-    process.exit(1);
-  });
+  if (process.env.NODE_ENV !== 'test') {
+    process.on('uncaughtException', (error) => {
+      logger.fatal({ error }, 'Unhandled exception caught!');
+      process.exit(1);
+    });
 
-  process.on('unhandledRejection', (reason, promise) => {
-    logger.fatal({ promise, reason }, 'Unhandled rejection caught!');
-    process.exit(1);
-  });
+    process.on('unhandledRejection', (reason, promise) => {
+      logger.fatal({ promise, reason }, 'Unhandled rejection caught!');
+      process.exit(1);
+    });
+  }
 
   return app;
 }

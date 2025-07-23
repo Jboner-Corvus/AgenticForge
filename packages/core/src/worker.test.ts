@@ -1,11 +1,26 @@
-import type { Bindings } from 'pino';
-
 /// <reference types="vitest/globals" />
 import { Job, Queue } from 'bullmq';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
 import logger from './logger';
 import { Agent } from './modules/agent/agent';
+
+vi.mock('./modules/redis/redisClient', () => {
+  const mockRedisClient = {
+    del: vi.fn(),
+    duplicate: vi.fn(() => ({
+      subscribe: vi.fn(),
+    })),
+    get: vi.fn(),
+    on: vi.fn(),
+    options: { host: 'localhost', port: 6379 },
+    publish: vi.fn(),
+    set: vi.fn(),
+    subscribe: vi.fn(),
+  };
+  return { redis: mockRedisClient };
+});
+
 import { redis } from './modules/redis/redisClient';
 import { SessionManager } from './modules/session/sessionManager';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool';
@@ -17,18 +32,21 @@ vi.mock('./modules/agent/agent');
 vi.mock('./modules/session/sessionManager');
 
 
-vi.mock('./logger', () => ({
-  __esModule: true,
-  default: {
-    child: vi.fn(() => ({
-      debug: vi.fn(),
-      error: vi.fn((_obj: Bindings, _msg: string) => {}), // Explicitly define signature
-      info: vi.fn(),
-    })),
+vi.mock('./logger', () => {
+  const mockChildLogger = {
+    debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
-  },
-}));
+  };
+  return {
+    __esModule: true,
+    default: {
+      child: vi.fn(() => mockChildLogger),
+      error: vi.fn(),
+      info: vi.fn(),
+    },
+  };
+});
 vi.mock('./modules/tools/definitions/ai/summarize.tool', () => ({
   summarizeTool: {
     execute: vi.fn(),
@@ -84,7 +102,7 @@ describe('processJob', () => {
     await expect(processJob(mockJob as Job, mockTools)).rejects.toThrow(AppError);
 
     expect(logger.child).toHaveBeenCalledWith({ jobId: 'testJobId', sessionId: 'testSessionId' });
-    expect(logger.child({}).error).toHaveBeenCalledWith({}, 'Error in agent execution');
+    expect(logger.child({}).error).toHaveBeenCalledWith(expect.any(Object), 'Error in agent execution');
     expect(redis.publish).toHaveBeenCalledWith('job:testJobId:events', JSON.stringify({ message: errorMessage, type: 'error' }) as string);
     expect(redis.publish).toHaveBeenCalledWith('job:testJobId:events', JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string);
   });
@@ -98,7 +116,7 @@ describe('processJob', () => {
     await expect(processJob(mockJob as Job, mockTools)).rejects.toThrow(UserError);
 
     expect(logger.child).toHaveBeenCalledWith({ jobId: 'testJobId', sessionId: 'testSessionId' });
-    expect(logger.child({}).error).toHaveBeenCalledWith({}, 'Error in agent execution');
+    expect(logger.child({}).error).toHaveBeenCalledWith(expect.any(Object), 'Error in agent execution');
     expect(redis.publish).toHaveBeenCalledWith('job:testJobId:events', JSON.stringify({ message: errorMessage, type: 'error' }) as string);
     expect(redis.publish).toHaveBeenCalledWith('job:testJobId:events', JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string);
   });
@@ -112,7 +130,7 @@ describe('processJob', () => {
     await expect(processJob(mockJob as Job, mockTools)).rejects.toThrow(Error);
 
     expect(logger.child).toHaveBeenCalledWith({ jobId: 'testJobId', sessionId: 'testSessionId' });
-    expect(logger.child({}).error).toHaveBeenCalledWith({}, 'Error in agent execution');
+    expect(logger.child({}).error).toHaveBeenCalledWith(expect.any(Object), 'Error in agent execution');
     expect(redis.publish).toHaveBeenCalledWith('job:testJobId:events', JSON.stringify({ message: errorMessage, type: 'error' }) as string);
     expect(redis.publish).toHaveBeenCalledWith('job:testJobId:events', JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string);
   });

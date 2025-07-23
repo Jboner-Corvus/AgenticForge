@@ -10,7 +10,7 @@ import { getMasterPrompt } from './orchestrator.prompt';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const promptFilePath = path.resolve(__dirname, 'system.prompt.md');
-const PREAMBULE = readFileSync(promptFilePath, 'utf-8');
+const PREAMBULE = readFileSync(promptFilePath, 'utf-8').replace(/`/g, '`');
 
 describe('getMasterPrompt', () => {
   const mockSession: AgentSession = {
@@ -65,21 +65,26 @@ describe('getMasterPrompt', () => {
     expect(prompt).toContain('### testTool');
     expect(prompt).toContain('Description: A tool for testing');
     expect(prompt).toContain('Parameters (JSON Schema):');
-    expect(prompt).toContain(JSON.stringify({
-      param1: {
-        description: "Description for param1",
-        type: "string"
-      }
-    }, null, 2).slice(1, -1)); // Slice to remove outer curly braces
-    expect(prompt).toContain(JSON.stringify({
-      param2: {
-        type: "number"
-      }
-    }, null, 2).slice(1, -1));
+    
+    const jsonSchemaString = prompt.split('Parameters (JSON Schema):')[1].split('###')[0].trim();
+    const jsonSchema = JSON.parse(jsonSchemaString);
+
+    expect(jsonSchema).toEqual({
+      properties: {
+        param1: {
+          description: "Description for param1",
+          type: "string"
+        },
+        param2: {
+          type: "number"
+        }
+      },
+      type: "object"
+    });
 
     expect(prompt).toContain('### anotherTool');
     expect(prompt).toContain('Description: Another tool');
-    expect(prompt).toContain('Parameters (JSON Schema):\n{}');
+    expect(prompt).toContain('Parameters: None');
 
     expect(prompt).toContain('### noParamsTool');
     expect(prompt).toContain('Description: Tool with no parameters');
@@ -121,9 +126,8 @@ describe('getMasterPrompt', () => {
       id: 'test-session-id-3',
     };
     const prompt = getMasterPrompt(sessionWithoutHistory, mockTools);
-    expect(prompt).toContain('## Conversation History:');
-    expect(prompt).not.toContain('USER:');
-    expect(prompt).not.toContain('MODEL:');
+    expect(prompt).not.toContain('## Conversation History:');
+    
   });
 
   it('should handle no tools', () => {

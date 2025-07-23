@@ -415,28 +415,29 @@ class OpenAIProvider implements LLMProvider {
   }
 }
 
-let currentLlmProvider: LLMProvider;
+export function getLlmProvider(): LLMProvider {
+  let currentLlmProvider: LLMProvider;
 
-switch (config.LLM_PROVIDER) {
-  case 'gemini':
-    currentLlmProvider = new GeminiProvider();
-    break;
-  case 'huggingface':
-    currentLlmProvider = new HuggingFaceProvider();
-    break;
-  case 'mistral':
-    currentLlmProvider = new MistralProvider();
-    break;
-  case 'openai':
-    currentLlmProvider = new OpenAIProvider();
-    break;
-  default:
-    logger.warn(
-      `Unknown LLM_PROVIDER: ${config.LLM_PROVIDER}. Defaulting to GeminiProvider.`,
-    );
-    currentLlmProvider = new GeminiProvider();
-    break;
+  switch (config.LLM_PROVIDER) {
+    case 'gemini':
+      currentLlmProvider = new GeminiProvider();
+      break;
+    case 'huggingface':
+      currentLlmProvider = new HuggingFaceProvider();
+      break;
+    case 'mistral':
+      currentLlmProvider = new MistralProvider();
+      break;
+    case 'openai':
+      currentLlmProvider = new OpenAIProvider();
+      break;
+    default:
+      logger.warn(
+        `Unknown LLM_PROVIDER: ${config.LLM_PROVIDER}. Defaulting to GeminiProvider.`,
+      );
+      currentLlmProvider = new GeminiProvider();
+      break;
+  }
+  return currentLlmProvider;
 }
-
-export const llmProvider = currentLlmProvider;
 

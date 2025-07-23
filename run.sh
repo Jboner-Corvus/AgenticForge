@@ -381,16 +381,19 @@ run_typecheck() {
 }
 
 run_all_checks() {
-    echo -e "${COLOR_YELLOW}Lancement de toutes les vérifications (TypeCheck, Lint, Test, Format)...${NC}"
-    run_typecheck && \
-    run_lint && \
-    run_tests && \
-    run_format
+    echo -e "${COLOR_YELLOW}Lancement de toutes les vérifications (TypeCheck, Lint, Test, Format)...${NC}" | tee all-checks.md
+    {
+        run_typecheck && \
+        run_lint && \
+        run_tests && \
+        run_format
+    } 2>&1 | tee -a all-checks.md
     if [ $? -eq 0 ]; then
-        echo -e "${COLOR_GREEN}✓ Toutes les vérifications ont réussi.${NC}"
+        echo -e "${COLOR_GREEN}✓ Toutes les vérifications ont réussi.${NC}" | tee -a all-checks.md
     else
-        echo -e "${COLOR_RED}✗ Certaines vérifications ont échoué. Veuillez consulter les logs ci-dessus.${NC}"
+        echo -e "${COLOR_RED}✗ Certaines vérifications ont échoué. Veuillez consulter le fichier all-checks.md pour les détails.${NC}" | tee -a all-checks.md
     fi
+    echo -e "${COLOR_YELLOW}Les résultats des vérifications ont été enregistrés dans all-checks.md.${NC}" | tee -a all-checks.md
 }
 
 # ==============================================================================

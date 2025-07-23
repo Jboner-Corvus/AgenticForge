@@ -23,7 +23,7 @@ vi.mock('./modules/llm/LlmKeyManager.js', () => ({
 
 vi.mock('./modules/queue/queue.js', () => ({
   jobQueue: {
-    add: vi.fn(),
+    add: vi.fn().mockResolvedValue({ id: 'mockJobId' }), // Add default mock for job.id
     getJob: vi.fn(),
   },
 }));
@@ -62,7 +62,7 @@ describe('Leaderboard Statistics Backend', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     mockRedis._resetStore();
-    app = await initializeWebServer(redis, jobQueue);
+    app = await initializeWebServer(mockRedis as any, jobQueue);
   });
 
   it('should return initial leaderboard stats', async () => {
@@ -101,7 +101,7 @@ describe('Leaderboard Statistics Backend', () => {
 
     const agent = request.agent(app);
     // Simulate a request that triggers session creation
-    await agent.get('/api/chat').set('Cookie', 'agenticforge_session_id='); // No session ID cookie
+    await agent.get('/api/chat'); // Simulate a request that triggers session creation
 
     const res = await agent.get('/api/leaderboard-stats');
     expect(res.statusCode).toEqual(200);
@@ -159,7 +159,7 @@ describe('Session Management Backend', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     mockRedis._resetStore();
-    app = await initializeWebServer(redis, jobQueue);
+    app = await initializeWebServer(mockRedis as any, jobQueue);
   });
 
   it('should save a session', async () => {
@@ -249,7 +249,7 @@ describe('LLM API Key Management Backend', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     mockRedis._resetStore();
-    app = await initializeWebServer(redis, jobQueue);
+    app = await initializeWebServer(mockRedis as any, jobQueue);
   });
 
   it('should add an LLM API key', async () => {
@@ -310,7 +310,7 @@ describe('GitHub OAuth Backend', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     mockRedis._resetStore();
-    app = await initializeWebServer(redis, jobQueue);
+    app = await initializeWebServer(mockRedis as any, jobQueue);
   });
 
   it('should redirect to GitHub for OAuth initiation', async () => {

@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 
+import logger from '../logger.js';
+
 export interface AppErrorDetails {
   [key: string]: unknown;
   statusCode?: number;
@@ -29,18 +31,26 @@ export const handleError = (
   res: Response,
   next: NextFunction,
 ) => {
-  // TODO: Implement proper error handling
-  console.error(err);
+  logger.error({ err, method: req.method, url: req.originalUrl }, 'Error caught by error handling middleware');
+
   if (res.headersSent) {
     return next(err);
   }
+
   const statusCode =
     err instanceof AppError && err.details?.statusCode
       ? err.details.statusCode
       : 500;
-  res
-    .status(statusCode)
-    .json({ error: err.message || 'An unexpected error occurred.' });
+
+  const errorResponse: { error: string; stack?: string } = {
+    error: err.message || 'An unexpected error occurred.',
+  };
+
+  if (process.env.NODE_ENV !== 'production') {
+    errorResponse.stack = err.stack;
+  }
+
+  res.status(statusCode).json(errorResponse);
 };
 
 export interface ErrorDetails {

@@ -4,16 +4,16 @@ import { z } from 'zod';
 
 import { Ctx, SessionData } from '@/types.js';
 
-import { llmProvider } from '../../utils/llmProvider.js';
+import { getLlmProvider } from '../../utils/llmProvider.js';
 import { getTools } from '../../utils/toolLoader.js';
 import { redis } from '../redis/redisClient.js';
 import { toolRegistry } from '../tools/toolRegistry.js';
 import { Agent } from './agent.js';
 
 vi.mock('../../utils/llmProvider.js', () => ({
-  llmProvider: {
+  getLlmProvider: vi.fn(() => ({
     getLlmResponse: vi.fn(),
-  },
+  })),
 }));
 
 vi.mock('../tools/toolRegistry.js', () => ({
@@ -52,7 +52,7 @@ vi.mock('../redis/redisClient.js', () => {
   };
 });
 
-const mockedGetLlmResponse = llmProvider.getLlmResponse as Mock;
+const mockedGetLlmResponse = getLlmProvider().getLlmResponse as Mock;
 const mockedGetTools = getTools as Mock;
 const mockedToolRegistryExecute = toolRegistry.execute as Mock;
 const mockedToolRegistryGetAll = toolRegistry.getAll as Mock;

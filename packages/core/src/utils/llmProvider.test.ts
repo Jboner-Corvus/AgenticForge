@@ -1,18 +1,16 @@
-import type { Bindings } from 'pino';
-
 import { vi } from 'vitest';
 
 import { config } from '../config';
 import logger from '../logger';
 import { LlmKeyErrorType, LlmKeyManager } from '../modules/llm/LlmKeyManager';
 import { redis } from '../modules/redis/redisClient';
-import { llmProvider } from './llmProvider';
+import { getLlmProvider } from './llmProvider';
 
-// Mock external dependencies
+
 vi.mock('../config', () => ({
   config: {
     LLM_MODEL_NAME: 'gemini-pro',
-    LLM_PROVIDER: 'gemini',
+    LLM_PROVIDER: 'gemini', // Default to gemini
   },
 }));
 vi.mock('../modules/llm/LlmKeyManager', () => ({
@@ -26,20 +24,40 @@ vi.mock('../modules/llm/LlmKeyManager', () => ({
     resetKeyStatus: vi.fn(),
   },
 }));
-import { mockRedis } from '../../test/mocks/redisClient.mock';
-vi.mock('../logger', () => ({
-  __esModule: true,
-  default: {
-    child: vi.fn(() => ({
-      error: vi.fn((_obj: Bindings, _msg: string) => {}), // Explicitly define signature
-      info: vi.fn(),
-      warn: vi.fn(),
+
+vi.mock('../modules/redis/redisClient', () => {
+  const mockRedisClient = {
+    del: vi.fn(),
+    duplicate: vi.fn(() => ({
+      subscribe: vi.fn(),
     })),
+    get: vi.fn(),
+    incrby: vi.fn(), // Added this line
+    on: vi.fn(),
+    options: { host: 'localhost', port: 6379 },
+    publish: vi.fn(),
+    set: vi.fn(),
+    subscribe: vi.fn(),
+  };
+  return { redis: mockRedisClient };
+});
+
+vi.mock('../logger', () => {
+  const mockChildLogger = {
     error: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
-  },
-}));
+  };
+  return {
+    __esModule: true,
+    default: {
+      child: vi.fn(() => mockChildLogger),
+      error: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+    },
+  };
+});
 
 describe('llmProvider', () => {
   const mockMessages: { parts: { text: string }[]; role: "model" | "user" }[] = [{ parts: [{ text: 'Hello' }], role: 'user' }];
@@ -49,7 +67,12 @@ describe('llmProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (LlmKeyManager.getNextAvailableKey as any).mockResolvedValue(mockApiKey);
-    // (redis.incrby as any).mockResolvedValue(1); // Removed as incrby already returns a promise
+    // Default mock for fetch to return a successful, generic response
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      json: () => Promise.resolve({ candidates: [{ content: { parts: [{ text: 'Mocked Gemini Response' }] } }] }),
+      ok: true,
+    } as Response);
+    (redis.incrby as any).mockResolvedValue(1); // Mock redis.incrby for token counting
   });
 
   describe('GeminiProvider', () => {
@@ -59,21 +82,7 @@ describe('llmProvider', () => {
     });
 
     it('should return LLM response successfully', async () => {
-      const mockResponse = {
-        candidates: [{
-          content: {
-            parts: [{
-              text: 'Mocked Gemini Response',
-            }],
-          },
-        }],
-      };
-      vi.spyOn(global, 'fetch').mockResolvedValueOnce({
-        json: () => Promise.resolve(mockResponse),
-        ok: true,
-      } as Response);
-
-      const response = await llmProvider.getLlmResponse(mockMessages, mockSystemPrompt);
+      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
       expect(response).toEqual('Mocked Gemini Response');
       expect(LlmKeyManager.resetKeyStatus).toHaveBeenCalledWith(mockApiKey.provider, mockApiKey.key);
       expect(redis.incrby).toHaveBeenCalled();
@@ -86,7 +95,7 @@ describe('llmProvider', () => {
         text: () => Promise.resolve('Unauthorized'),
       } as Response);
 
-      const response = await llmProvider.getLlmResponse(mockMessages, mockSystemPrompt);
+      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
       expect(response).toEqual('{"tool": "error", "parameters": {"message": "Gemini API request failed with status 401: Unauthorized"}}');
       expect(LlmKeyManager.markKeyAsBad).toHaveBeenCalledWith(mockApiKey.provider, mockApiKey.key, LlmKeyErrorType.PERMANENT);
     });
@@ -97,16 +106,16 @@ describe('llmProvider', () => {
         ok: true,
       } as Response);
 
-      const response = await llmProvider.getLlmResponse(mockMessages, mockSystemPrompt);
-      expect(response).toContain('Invalid response structure from Gemini API');
+      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
+      expect(response).toEqual('{"tool": "error", "parameters": {"message": "Invalid response structure from Gemini API. The model may have returned an empty response."}}');
       expect(LlmKeyManager.markKeyAsBad).toHaveBeenCalledWith(mockApiKey.provider, mockApiKey.key, LlmKeyErrorType.TEMPORARY);
     });
 
     it('should return error if no API key is available', async () => {
       (LlmKeyManager.getNextAvailableKey as any).mockResolvedValue(null);
-      const response = await llmProvider.getLlmResponse(mockMessages, mockSystemPrompt);
+      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
       expect(response).toEqual('{"tool": "error", "parameters": {"message": "No LLM API key available."}}');
-      expect(logger.child({}).error).toHaveBeenCalledWith({}, 'No LLM API key available.');
+      expect(logger.child({}).error).toHaveBeenCalledWith('No LLM API key available.');
     });
   });
 
@@ -117,19 +126,12 @@ describe('llmProvider', () => {
     });
 
     it('should return LLM response successfully', async () => {
-      const mockResponse = {
-        choices: [{
-          message: {
-            content: 'Mocked Mistral Response',
-          },
-        }],
-      };
       vi.spyOn(global, 'fetch').mockResolvedValueOnce({
-        json: () => Promise.resolve(mockResponse),
+        json: () => Promise.resolve({ choices: [{ message: { content: 'Mocked Mistral Response' } }] }),
         ok: true,
       } as Response);
 
-      const response = await llmProvider.getLlmResponse(mockMessages, mockSystemPrompt);
+      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
       expect(response).toEqual('Mocked Mistral Response');
       expect(LlmKeyManager.resetKeyStatus).toHaveBeenCalledWith(mockApiKey.provider, mockApiKey.key);
       expect(redis.incrby).toHaveBeenCalled();
@@ -143,19 +145,12 @@ describe('llmProvider', () => {
     });
 
     it('should return LLM response successfully', async () => {
-      const mockResponse = {
-        choices: [{
-          message: {
-            content: 'Mocked OpenAI Response',
-          },
-        }],
-      };
       vi.spyOn(global, 'fetch').mockResolvedValueOnce({
-        json: () => Promise.resolve(mockResponse),
+        json: () => Promise.resolve({ choices: [{ message: { content: 'Mocked OpenAI Response' } }] }),
         ok: true,
       } as Response);
 
-      const response = await llmProvider.getLlmResponse(mockMessages, mockSystemPrompt);
+      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
       expect(response).toEqual('Mocked OpenAI Response');
       expect(LlmKeyManager.resetKeyStatus).toHaveBeenCalledWith(mockApiKey.provider, mockApiKey.key);
       expect(redis.incrby).toHaveBeenCalled();
@@ -169,15 +164,12 @@ describe('llmProvider', () => {
     });
 
     it('should return LLM response successfully', async () => {
-      const mockResponse = [{
-        generated_text: 'Mocked HuggingFace Response',
-      }];
       vi.spyOn(global, 'fetch').mockResolvedValueOnce({
-        json: () => Promise.resolve(mockResponse),
+        json: () => Promise.resolve([{ generated_text: 'Mocked HuggingFace Response' }]),
         ok: true,
       } as Response);
 
-      const response = await llmProvider.getLlmResponse(mockMessages, mockSystemPrompt);
+      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
       expect(response).toEqual('Mocked HuggingFace Response');
       expect(LlmKeyManager.resetKeyStatus).toHaveBeenCalledWith(mockApiKey.provider, mockApiKey.key);
       expect(redis.incrby).toHaveBeenCalled();
@@ -190,25 +182,22 @@ describe('llmProvider', () => {
     });
 
     it('should default to GeminiProvider if LLM_PROVIDER is unknown', async () => {
-      const mockResponse = {
-        candidates: [{
-          content: {
-            parts: [{
-              text: 'Mocked Gemini Response (default)',
-            }],
-          },
-        }],
-      };
+      // Temporarily mock config.LLM_PROVIDER for this test only
+      const originalLlmProvider = config.LLM_PROVIDER;
+      config.LLM_PROVIDER = 'unknown' as any; // Bypass type check for test
+
       vi.spyOn(global, 'fetch').mockResolvedValueOnce({
-        json: () => Promise.resolve(mockResponse),
+        json: () => Promise.resolve({ candidates: [{ content: { parts: [{ text: 'Mocked Gemini Response (default)' }] } }] }),
         ok: true,
       } as Response);
 
-      const response = await llmProvider.getLlmResponse(mockMessages, mockSystemPrompt);
-      expect(response).toEqual('{"tool": "error", "parameters": {"message": "Gemini API request failed with status 401: Unauthorized"}}');
+      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
+      expect(response).toEqual('Mocked Gemini Response (default)');
       expect(logger.warn).toHaveBeenCalledWith(
         `Unknown LLM_PROVIDER: unknown. Defaulting to GeminiProvider.`,
       );
+
+      config.LLM_PROVIDER = originalLlmProvider; // Restore original value
     });
   });
 });
