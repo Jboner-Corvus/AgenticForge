@@ -129,6 +129,11 @@ export class Agent {
           );
           this.log.info({ llmResponse }, 'Raw LLM response');
 
+          if (this.interrupted) {
+            this.log.info('Job has been interrupted.');
+            break;
+          }
+
           if (typeof llmResponse !== 'string') {
             this.log.error(
               { llmResponse },
@@ -146,6 +151,10 @@ export class Agent {
           const parsedResponse = this.parseLlmResponse(
             llmResponse,
             iterationLog,
+          );
+          this.log.debug(
+            { parsedResponse },
+            'Parsed LLM response before answer check',
           );
           const { answer, canvas, command, thought } = parsedResponse;
 
@@ -192,6 +201,10 @@ export class Agent {
                 content: finalAnswer,
                 type: 'agent_response',
               });
+              this.session.history.push({
+                content: `Tool result: ${JSON.stringify(finishResult)}`,
+                role: 'tool',
+              });
               return finalAnswer;
             } else {
               // If finish tool doesn't return an object with 'answer', treat it as an error
@@ -224,6 +237,15 @@ export class Agent {
               content: `Tool result: ${JSON.stringify(toolResult)}`,
               role: 'tool',
             });
+            if (
+              typeof toolResult === 'string' &&
+              toolResult.startsWith('Error executing tool')
+            ) {
+              this.session.history.push({
+                content: `The previous tool execution failed with the following error: ${toolResult}. Please try again or choose a different approach.`,
+                role: 'user',
+              });
+            }
           } else if (!thought && !canvas) {
             this.session.history.push({
               content:
@@ -252,16 +274,18 @@ export class Agent {
 
           if (errorMessage.includes('Failed to parse LLM response')) {
             this.session.history.push({
-              content: `Your last response was not a valid command. You must choose a tool from the list or provide a final answer. Please try again. Last response: ${
-                this.session.history.at(-1)?.content
-              }`,
+              content:
+                'Your last response was not a valid command. You must choose a tool from the list or provide a final answer. Please try again.',
               role: 'user',
             });
+            continue;
           } else {
             this.session.history.push({
               content: `Error: ${errorMessage}`,
               role: 'tool',
             });
+            this.interrupted = true;
+            return `Error in agent iteration: ${errorMessage}`;
           }
         }
       }
@@ -275,6 +299,21 @@ export class Agent {
       // If the loop finishes without returning, it means no final answer was provided
       // and it wasn't interrupted, so it reached max iterations.
       return 'Agent reached maximum iterations without a final answer.';
+    } catch (error) {
+      if (error instanceof FinishToolSignal) {
+        this.log.info(
+          { answer: error.message },
+          'Agent finished by tool signal.',
+        );
+        this.publishToChannel({
+          content: error.message,
+          type: 'agent_response',
+        });
+        return error.message;
+      }
+      const errorMessage = (error as Error).message;
+      this.log.error({ error }, `Agent run failed: ${errorMessage}`);
+      return `Agent run failed: ${errorMessage}`;
     } finally {
       await this.cleanup();
     }
@@ -324,7 +363,7 @@ export class Agent {
 
   private extractJsonFromMarkdown(text: string): string {
     const match = text.match(/```(?:json)?\n([\s\S]+?)\n```/);
-    return match ? match[1] : text;
+    return match ? match[1] : text.trim();
   }
 
   private handleToolOutput(_toolOutput: ToolOutput) {
@@ -333,8 +372,10 @@ export class Agent {
 
   private parseLlmResponse(llmResponse: string, log: Logger) {
     const jsonText = this.extractJsonFromMarkdown(llmResponse);
+    log.debug({ jsonText }, 'Attempting to parse LLM response');
     try {
       const parsed = JSON.parse(jsonText);
+      log.debug({ parsed }, 'Successfully parsed LLM response');
       return llmResponseSchema.parse(parsed);
     } catch (error) {
       log.error(

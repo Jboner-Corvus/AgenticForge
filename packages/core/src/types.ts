@@ -70,7 +70,7 @@ export interface RedisEvent {
 
 export interface Tool<
   T extends z.AnyZodObject = z.AnyZodObject,
-  U extends ZodTypeAny = ZodTypeAny,
+  U extends z.ZodTypeAny = ZodTypeAny,
 > {
   description: string;
   execute: (

@@ -390,8 +390,10 @@ run_all_checks() {
 
     # Ajouter l'en-tête au fichier de sortie
     ALL_CHECKS_OUTPUT+="# TODO List: Résoudre les erreurs de vérification\n\n"
-    ALL_CHECKS_OUTPUT+="Ce document liste les problèmes identifiés lors des vérifications automatisées (TypeCheck, Lint, Test, Format).\n"
-    ALL_CHECKS_OUTPUT+="Veuillez résoudre ces éléments un par un, en cochant la case \`[x]\` une fois l'erreur corrigée.\n\n"
+    ALL_CHECKS_OUTPUT+="Ce document liste les problèmes identifiés par nos vérifications automatisées (TypeCheck, Lint, Test).\n\n"
+    ALL_CHECKS_OUTPUT+="La correction de chaque erreur doit se faire **uniquement en modifiant le code source** ; il est interdit d'exécuter des commandes bash.\n"
+    ALL_CHECKS_OUTPUT+="Il est interdit de lancer une vérification.\n\n"
+    ALL_CHECKS_OUTPUT+="Une fois la correction effectué, cochez la case \`[x]\`.\n\n"
     ALL_CHECKS_OUTPUT+="---\n\n"
     ALL_CHECKS_OUTPUT+="## Erreurs à corriger\n"
 

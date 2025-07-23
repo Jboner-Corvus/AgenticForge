@@ -86,14 +86,16 @@ describe('Leaderboard Statistics Backend', () => {
   });
 
   it('should increment sessionsCreated when a new session is created', async () => {
-    let sessionsCreatedCount = 0;
+    const _sessionsCreatedCount = 0;
     vi.mocked(redis.incr).mockImplementation(async (key: RedisKey) => {
-      if (key === 'leaderboard:sessionsCreated') {
-        sessionsCreatedCount++;
-        mockRedis._getStore()[key.toString()] = sessionsCreatedCount.toString();
-        return Promise.resolve(sessionsCreatedCount);
-      }
-      return Promise.resolve(0);
+      const keyString = key.toString();
+      const currentValue = parseInt(
+        mockRedis._getStore()[keyString] || '0',
+        10,
+      );
+      const newValue = currentValue + 1;
+      mockRedis._getStore()[keyString] = String(newValue);
+      return Promise.resolve(newValue);
     });
     vi.mocked(redis.get).mockImplementation(async (key: RedisKey) => {
       return Promise.resolve(mockRedis._getStore()[key.toString()] || null);
@@ -138,7 +140,7 @@ describe('Leaderboard Statistics Backend', () => {
       .post('/api/chat')
       .set('Authorization', 'Bearer test-api-key')
       .send({ prompt: 'hello' });
-    await processJob({} as any, []);
+    await processJob({} as any, [], jobQueue);
 
     const res = await request(app)
       .get('/api/leaderboard-stats')
@@ -175,6 +177,7 @@ describe('Leaderboard Statistics Backend', () => {
     await processJob(
       { data: { sessionId: 'test-session' }, id: 'job1' } as any,
       [],
+      jobQueue,
     );
 
     const res = await request(app)

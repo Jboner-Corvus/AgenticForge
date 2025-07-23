@@ -21,6 +21,7 @@ vi.mock('./modules/redis/redisClient', () => {
   return { redis: mockRedisClient };
 });
 
+import { config } from './config';
 import { redis } from './modules/redis/redisClient';
 import { SessionManager } from './modules/session/sessionManager';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool';
@@ -37,13 +38,14 @@ vi.mock('./logger', () => {
     error: vi.fn(),
     info: vi.fn(),
   };
+  const mockLogger = {
+    child: vi.fn(() => mockChildLogger),
+    error: vi.fn(),
+    info: vi.fn(),
+  };
   return {
     __esModule: true,
-    default: {
-      child: vi.fn(() => mockChildLogger),
-      error: vi.fn(),
-      info: vi.fn(),
-    },
+    default: mockLogger,
   };
 });
 vi.mock('./modules/tools/definitions/ai/summarize.tool', () => ({
@@ -70,6 +72,9 @@ describe('processJob', () => {
     };
     mockJobQueue = new Queue('tasks', { connection: redis });
 
+    // Mock config.HISTORY_MAX_LENGTH for testing purposes
+    config.HISTORY_MAX_LENGTH = 10;
+
     // Reset mocks
     vi.clearAllMocks();
     (SessionManager.getSession as any).mockResolvedValue(mockSessionData);
@@ -84,7 +89,7 @@ describe('processJob', () => {
       content: 'old message',
       role: 'user',
     }); // Ensure history exceeds max length
-    const _result = await processJob(mockJob as Job, mockTools);
+    const _result = await processJob(mockJob as Job, mockTools, mockJobQueue);
 
     expect(SessionManager.getSession).toHaveBeenCalledWith('testSessionId');
     expect(Agent).toHaveBeenCalledWith(
@@ -117,9 +122,7 @@ describe('processJob', () => {
       run: vi.fn().mockRejectedValue(new AppError(errorMessage)),
     }));
 
-    await expect(processJob(mockJob as Job, mockTools)).rejects.toThrow(
-      AppError,
-    );
+    await processJob(mockJob as Job, mockTools, mockJobQueue);
 
     expect(logger.child).toHaveBeenCalledWith({
       jobId: 'testJobId',
@@ -145,9 +148,7 @@ describe('processJob', () => {
       run: vi.fn().mockRejectedValue(new UserError(errorMessage)),
     }));
 
-    await expect(processJob(mockJob as Job, mockTools)).rejects.toThrow(
-      UserError,
-    );
+    await processJob(mockJob as Job, mockTools, mockJobQueue);
 
     expect(logger.child).toHaveBeenCalledWith({
       jobId: 'testJobId',
@@ -173,7 +174,7 @@ describe('processJob', () => {
       run: vi.fn().mockRejectedValue(new Error(errorMessage)),
     }));
 
-    await expect(processJob(mockJob as Job, mockTools)).rejects.toThrow(Error);
+    await processJob(mockJob as Job, mockTools, mockJobQueue);
 
     expect(logger.child).toHaveBeenCalledWith({
       jobId: 'testJobId',
@@ -199,7 +200,7 @@ describe('processJob', () => {
       run: vi.fn().mockRejectedValue(new Error(errorMessage)),
     }));
 
-    await expect(processJob(mockJob as Job, mockTools)).rejects.toThrow(Error);
+    await processJob(mockJob as Job, mockTools, mockJobQueue);
 
     expect(redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
@@ -207,6 +208,10 @@ describe('processJob', () => {
         message: 'API quota exceeded. Please try again later.',
         type: 'quota_exceeded',
       }) as string,
+    );
+    expect(redis.publish).toHaveBeenCalledWith(
+      'job:testJobId:events',
+      JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string,
     );
   });
 
@@ -216,7 +221,7 @@ describe('processJob', () => {
       run: vi.fn().mockRejectedValue(new Error(errorMessage)),
     }));
 
-    await expect(processJob(mockJob as Job, mockTools)).rejects.toThrow(Error);
+    await processJob(mockJob as Job, mockTools, mockJobQueue);
 
     expect(redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
@@ -226,6 +231,10 @@ describe('processJob', () => {
         type: 'error',
       }) as string,
     );
+    expect(redis.publish).toHaveBeenCalledWith(
+      'job:testJobId:events',
+      JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string,
+    );
   });
 
   it('should handle "is not found for API version v1" error specifically', async () => {
@@ -234,7 +243,7 @@ describe('processJob', () => {
       run: vi.fn().mockRejectedValue(new Error(errorMessage)),
     }));
 
-    await expect(processJob(mockJob as Job, mockTools)).rejects.toThrow(Error);
+    await processJob(mockJob as Job, mockTools, mockJobQueue);
 
     expect(redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
@@ -244,23 +253,29 @@ describe('processJob', () => {
         type: 'error',
       }) as string,
     );
+    expect(redis.publish).toHaveBeenCalledWith(
+      'job:testJobId:events',
+      JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string,
+    );
   });
 
   it('should handle unknown errors and publish a generic error event', async () => {
     (Agent as any).mockImplementation(() => ({
-      run: vi.fn().mockRejectedValue('Unknown error type'),
+      run: vi.fn().mockRejectedValue(new Error('Unknown error type')),
     }));
 
-    await expect(processJob(mockJob as Job, mockTools)).rejects.toThrow(
-      'Unknown error type',
-    );
+    await processJob(mockJob as Job, mockTools, mockJobQueue);
 
     expect(redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({
-        message: 'An unknown error occurred during agent execution.',
+        message: 'Unknown error type',
         type: 'error',
       }) as string,
+    );
+    expect(redis.publish).toHaveBeenCalledWith(
+      'job:testJobId:events',
+      JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string,
     );
   });
 
@@ -269,7 +284,7 @@ describe('processJob', () => {
       run: vi.fn().mockResolvedValue('Agent final response'),
     }));
 
-    await processJob(mockJob as Job, mockTools);
+    await processJob(mockJob as Job, mockTools, mockJobQueue);
 
     expect(redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
@@ -282,7 +297,7 @@ describe('processJob', () => {
       content: 'old message',
       role: 'user',
     }); // Exceeds default 10
-    const _result = await processJob(mockJob as Job, mockTools);
+    const _result = await processJob(mockJob as Job, mockTools, mockJobQueue);
     expect(summarizeTool.execute).toHaveBeenCalled();
   });
 
@@ -291,7 +306,7 @@ describe('processJob', () => {
       content: 'old message',
       role: 'user',
     }); // Does not exceed default 10
-    const _result = await processJob(mockJob as Job, mockTools);
+    const _result = await processJob(mockJob as Job, mockTools, mockJobQueue);
     expect(summarizeTool.execute).not.toHaveBeenCalled();
   });
 });

@@ -38,11 +38,12 @@ console.log(
   `[Worker] Redis URL from redisClient: ${redis.options.host}:${redis.options.port}`,
 );
 
-const jobQueue = new Queue('tasks', { connection: redis });
+const _jobQueue = new Queue('tasks', { connection: redis });
 
 export async function processJob(
   job: Job,
   tools: Tool<z.AnyZodObject, z.ZodTypeAny>[],
+  jobQueue: Queue,
 ): Promise<string> {
   // NOTE: Ensure all potential error messages are logged with enough context
   // (e.g., job ID, session ID, full error object) for effective debugging in production.
@@ -59,7 +60,7 @@ export async function processJob(
 
     sessionData.history.push({ content: finalResponse, role: 'model' });
 
-    await summarizeHistory(sessionData, log);
+    await summarizeHistory(sessionData, log, jobQueue);
     await SessionManager.saveSession(sessionData, job, jobQueue);
 
     return finalResponse;
@@ -101,6 +102,7 @@ export async function processJob(
           'The specified LLM model was not found or is not supported. Please check your LLM_MODEL_NAME in .env.';
       }
     } else {
+      eventType = 'generic_error';
       eventMessage = 'An unknown error occurred during agent execution.';
     }
 
@@ -109,7 +111,7 @@ export async function processJob(
       channel,
       JSON.stringify({ message: eventMessage, type: eventType }),
     );
-    throw error;
+    return eventMessage; // Return the error message as a string
   } finally {
     // AJOUT : Toujours envoyer un événement de fermeture à la fin du traitement
     log.info(`Publishing 'close' event to channel ${channel}`);
@@ -133,7 +135,7 @@ export async function startWorker() {
     'tasks',
     async (job) => {
       logger.info(`Processing job ${job.id} of type ${job.name}`);
-      return processJob(job, tools);
+      return processJob(job, tools, _jobQueue);
     },
     {
       concurrency: config.WORKER_CONCURRENCY,
@@ -160,9 +162,14 @@ export async function startWorker() {
   logger.info('Detached shell command worker started.');
 }
 
-async function summarizeHistory(sessionData: SessionData, log: typeof logger) {
+async function summarizeHistory(
+  sessionData: SessionData,
+  log: typeof logger,
+  jobQueue: Queue,
+) {
   if (sessionData.history.length > config.HISTORY_MAX_LENGTH) {
     log.info('History length exceeds max length, summarizing...');
+    console.log('History before summarization:', sessionData.history.length);
     const historyToSummarize = sessionData.history.slice(0, -10);
     const textToSummarize = historyToSummarize
       .map((msg: Message) => `${msg.role}: ${msg.content}`)
