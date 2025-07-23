@@ -68,7 +68,10 @@ describe('executeShellCommandTool', () => {
 
   it('should execute a valid command and return success message', async () => {
     const command = 'echo hello';
-    const result = await executeShellCommandTool.execute({ command, detach: false }, mockCtx);
+    const result = await executeShellCommandTool.execute(
+      { command, detach: false },
+      mockCtx,
+    );
 
     // CORRECTION : Vérifie que le résultat est un objet avec un code de sortie de 0 et la bonne sortie standard.
     expect(result).toEqual(
@@ -85,7 +88,10 @@ describe('executeShellCommandTool', () => {
 
   it('should return an error for a command that exits with a non-zero code', async () => {
     const command = 'node -e "process.exit(1)"';
-    const result = await executeShellCommandTool.execute({ command, detach: false }, mockCtx);
+    const result = await executeShellCommandTool.execute(
+      { command, detach: false },
+      mockCtx,
+    );
 
     // CORRECTION : Vérifie que le résultat est un objet avec un code de sortie non nul.
     // L'outil ne renvoie pas de propriété 'erreur' dans ce cas.

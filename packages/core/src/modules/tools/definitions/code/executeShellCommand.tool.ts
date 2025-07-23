@@ -8,7 +8,13 @@ import { redis } from '../../../redis/redisClient.js';
 
 export const executeShellCommandParams = z.object({
   command: z.string().describe('The shell command to execute.'),
-  detach: z.boolean().optional().default(false).describe('If true, the command will be executed in the background and the tool will return immediately.'),
+  detach: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      'If true, the command will be executed in the background and the tool will return immediately.',
+    ),
 });
 
 export const executeShellCommandOutput = z.object({
@@ -42,10 +48,16 @@ export const executeShellCommandTool: Tool<
       const jobId = `shell-command-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       await ctx.taskQueue.add(
         'async-tasks', // Job name for the worker
-        { command: args.command, jobId: ctx.job!.id, notificationChannel: `job:${ctx.job!.id}:events` },
+        {
+          command: args.command,
+          jobId: ctx.job!.id,
+          notificationChannel: `job:${ctx.job!.id}:events`,
+        },
         { jobId: jobId, removeOnComplete: true, removeOnFail: true },
       );
-      ctx.log.info(`Enqueued detached shell command: ${args.command} with job ID: ${jobId}`);
+      ctx.log.info(
+        `Enqueued detached shell command: ${args.command} with job ID: ${jobId}`,
+      );
       return {
         exitCode: 0,
         stderr: '',

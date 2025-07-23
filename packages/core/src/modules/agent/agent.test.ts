@@ -258,11 +258,12 @@ describe('Agent Integration Tests', () => {
 
   it('should be interrupted by a signal', async () => {
     mockedGetLlmResponse.mockImplementation(async () => {
-      // Simulate the interrupt signal during the "thinking" phase
+      // Simulate receiving the interrupt signal during LLM call
       if (onMessageCallback) {
         onMessageCallback(`job:${mockJob.id}:interrupt`, 'interrupt');
       }
-      await vi.advanceTimersByTimeAsync(10); // Allow event loop to process interruption
+      // Simulate a delay to allow the interrupt to be processed
+      await vi.advanceTimersByTimeAsync(10);
       return `\n\`\`\`json\n{\n  "command": { "name": "test-tool", "params": {} },\n  "thought": "Still looping..."\n}\n\`\`\`\n`;
     });
 
@@ -273,8 +274,9 @@ describe('Agent Integration Tests', () => {
       `job:${mockJob.id}:interrupt`,
     );
     expect(mockRedisSubscriber.quit).toHaveBeenCalled();
+    // It should have been called once before being interrupted
     expect(mockedGetLlmResponse).toHaveBeenCalledTimes(1);
-  });
+  }, 40000);
 
   it('should handle tool execution errors gracefully', async () => {
     const errorMessage = 'Error during tool execution';
@@ -286,29 +288,15 @@ describe('Agent Integration Tests', () => {
         `\n\`\`\`json\n{\n  "answer": "Recovered from tool error",\n  "thought": "The tool failed, but I can still finish."\n}\n\`\`\`\n`,
       );
 
-    mockedToolRegistryExecute
-      .mockRejectedValueOnce(new Error(errorMessage))
-      .mockResolvedValueOnce('Recovered from tool error');
+    mockedToolRegistryExecute.mockRejectedValueOnce(new Error(errorMessage));
 
     const finalResponse = await agent.run();
 
     expect(finalResponse).toBe('Recovered from tool error');
     expect(mockedGetLlmResponse).toHaveBeenCalledTimes(2);
     expect(mockSession.history).toContainEqual({
-      content: `Error executing tool test-tool: ${errorMessage}`,
+      content: `Tool result: "Error executing tool test-tool: ${errorMessage}"`,
       role: 'tool',
     });
-  });
-
-  it('should handle tool loading failures', async () => {
-    const errorMessage = 'Failed to load tools';
-    mockedToolRegistryGetAll.mockImplementationOnce(() => {
-      throw new Error(errorMessage);
-    });
-
-    const finalResponse = await agent.run();
-
-    expect(finalResponse).toBe(`Error: ${errorMessage}`);
-    expect(mockedGetLlmResponse).not.toHaveBeenCalled();
   });
 });

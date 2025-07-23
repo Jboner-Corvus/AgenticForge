@@ -76,7 +76,11 @@ export async function processJob(
       let rawErrorMessage = error.message;
       try {
         const parsedError = JSON.parse(rawErrorMessage);
-        if (parsedError.tool === 'error' && parsedError.parameters && parsedError.parameters.message) {
+        if (
+          parsedError.tool === 'error' &&
+          parsedError.parameters &&
+          parsedError.parameters.message
+        ) {
           rawErrorMessage = parsedError.parameters.message;
         }
       } catch (_parseError) {
@@ -139,7 +143,7 @@ export async function startWorker() {
 
   worker.on('completed', (job: Job) => {
     logger.info(`Job ${job.id} completed.`);
-    redis.incr('leaderboard:successfulRuns').catch(error => {
+    redis.incr('leaderboard:successfulRuns').catch((error) => {
       logger.error({ error }, 'Failed to increment successfulRuns in Redis');
     });
   });
@@ -169,7 +173,6 @@ async function summarizeHistory(sessionData: SessionData, log: typeof logger) {
       // is a long-running process and impacts worker performance, consider offloading
       // it to a separate, dedicated worker or process, or making it truly asynchronous.
       const summary = await summarizeTool.execute({ text: textToSummarize }, {
-
         log,
         reportProgress: async (progress: {
           current: number;

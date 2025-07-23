@@ -31,7 +31,10 @@ export const handleError = (
   res: Response,
   next: NextFunction,
 ) => {
-  logger.error({ err, method: req.method, url: req.originalUrl }, 'Error caught by error handling middleware');
+  logger.error(
+    { err, method: req.method, url: req.originalUrl },
+    'Error caught by error handling middleware',
+  );
 
   if (res.headersSent) {
     return next(err);

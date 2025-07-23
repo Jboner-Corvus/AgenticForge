@@ -37,7 +37,11 @@ export class LlmKeyManager {
 
     // Filter out temporarily and permanently disabled keys and sort by lastUsed (oldest first)
     const availableKeys = keys
-      .filter(key => !key.isPermanentlyDisabled && (!key.isDisabledUntil || key.isDisabledUntil <= now))
+      .filter(
+        (key) =>
+          !key.isPermanentlyDisabled &&
+          (!key.isDisabledUntil || key.isDisabledUntil <= now),
+      )
       .sort((a, b) => (a.lastUsed || 0) - (b.lastUsed || 0));
 
     if (availableKeys.length === 0) {
@@ -50,13 +54,22 @@ export class LlmKeyManager {
     nextKey.lastUsed = now;
     await this.saveKeys(keys); // Save all keys to persist lastUsed update
 
-    logger.debug({ provider: nextKey.provider }, 'Returning next available LLM API key.');
+    logger.debug(
+      { provider: nextKey.provider },
+      'Returning next available LLM API key.',
+    );
     return nextKey;
   }
 
-  public static async markKeyAsBad(provider: string, key: string, errorType: LlmKeyErrorType): Promise<void> {
+  public static async markKeyAsBad(
+    provider: string,
+    key: string,
+    errorType: LlmKeyErrorType,
+  ): Promise<void> {
     const keys = await this.getKeys();
-    const keyIndex = keys.findIndex(k => k.provider === provider && k.key === key);
+    const keyIndex = keys.findIndex(
+      (k) => k.provider === provider && k.key === key,
+    );
 
     if (keyIndex !== -1) {
       const badKey = keys[keyIndex];
@@ -65,17 +78,27 @@ export class LlmKeyManager {
         badKey.isPermanentlyDisabled = true;
         badKey.errorCount = 0; // Reset error count for permanent disable
         badKey.isDisabledUntil = undefined; // Clear temporary disable
-        logger.error({ provider: badKey.provider }, 'LLM API key permanently disabled.');
-      } else { // LlmKeyErrorType.TEMPORARY
+        logger.error(
+          { provider: badKey.provider },
+          'LLM API key permanently disabled.',
+        );
+      } else {
+        // LlmKeyErrorType.TEMPORARY
         badKey.errorCount = (badKey.errorCount || 0) + 1;
         badKey.lastUsed = Date.now(); // Mark as recently used to push it to the end of the queue
 
         if (badKey.errorCount >= MAX_TEMPORARY_ERROR_COUNT) {
           badKey.isDisabledUntil = Date.now() + TEMPORARY_DISABLE_DURATION_MS;
           badKey.errorCount = 0; // Reset error count after temporary disabling
-          logger.warn({ provider: badKey.provider }, `LLM API key temporarily disabled for ${TEMPORARY_DISABLE_DURATION_MS / 1000} seconds due to multiple temporary errors.`);
+          logger.warn(
+            { provider: badKey.provider },
+            `LLM API key temporarily disabled for ${TEMPORARY_DISABLE_DURATION_MS / 1000} seconds due to multiple temporary errors.`,
+          );
         } else {
-          logger.warn({ errorCount: badKey.errorCount, provider: badKey.provider }, 'LLM API key temporary error count incremented.');
+          logger.warn(
+            { errorCount: badKey.errorCount, provider: badKey.provider },
+            'LLM API key temporary error count incremented.',
+          );
         }
       }
       await this.saveKeys(keys);
@@ -92,9 +115,14 @@ export class LlmKeyManager {
     logger.info({ provider: removedKey[0].provider }, 'LLM API key removed.');
   }
 
-  public static async resetKeyStatus(provider: string, key: string): Promise<void> {
+  public static async resetKeyStatus(
+    provider: string,
+    key: string,
+  ): Promise<void> {
     const keys = await this.getKeys();
-    const keyIndex = keys.findIndex(k => k.provider === provider && k.key === key);
+    const keyIndex = keys.findIndex(
+      (k) => k.provider === provider && k.key === key,
+    );
 
     if (keyIndex !== -1) {
       const goodKey = keys[keyIndex];
@@ -108,13 +136,16 @@ export class LlmKeyManager {
 
   private static async getKeys(): Promise<LlmApiKey[]> {
     const keysJson = await redis.lrange(LLM_API_KEYS_REDIS_KEY, 0, -1);
-    return keysJson.map(key => JSON.parse(key));
+    return keysJson.map((key) => JSON.parse(key));
   }
 
   private static async saveKeys(keys: LlmApiKey[]): Promise<void> {
     await redis.del(LLM_API_KEYS_REDIS_KEY);
     if (keys.length > 0) {
-      await redis.rpush(LLM_API_KEYS_REDIS_KEY, ...keys.map(key => JSON.stringify(key)));
+      await redis.rpush(
+        LLM_API_KEYS_REDIS_KEY,
+        ...keys.map((key) => JSON.stringify(key)),
+      );
     }
   }
 }

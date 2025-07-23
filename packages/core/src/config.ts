@@ -17,11 +17,13 @@ const configSchema = z.object({
   CONTAINER_MEMORY_LIMIT: z.string().default('2g'),
   GITHUB_CLIENT_ID: z.string().optional(),
   GITHUB_CLIENT_SECRET: z.string().optional(),
-  
+
   HISTORY_MAX_LENGTH: z.coerce.number().default(1000),
   HOST_PROJECT_PATH: z.string().default('/usr/src/app'),
   LLM_MODEL_NAME: z.string().default('gemini-pro'),
-  LLM_PROVIDER: z.enum(['gemini', 'openai', 'mistral', 'huggingface']).default('gemini'),
+  LLM_PROVIDER: z
+    .enum(['gemini', 'openai', 'mistral', 'huggingface'])
+    .default('gemini'),
   MCP_API_KEY: z.string().optional(),
   MCP_WEBHOOK_URL: z.string().optional(),
   NODE_ENV: z.string().default('development'),

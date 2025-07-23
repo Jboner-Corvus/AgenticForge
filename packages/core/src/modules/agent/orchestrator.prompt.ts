@@ -20,7 +20,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const promptFilePath = path.resolve(__dirname, 'system.prompt.md');
-const getPreamble = () => readFileSync(promptFilePath, 'utf-8').replace(/`/g, '`');
+const getPreamble = () =>
+  readFileSync(promptFilePath, 'utf-8').replace(/`/g, '`');
 
 const TOOLS_SECTION_HEADER = '## Available Tools:';
 const HISTORY_SECTION_HEADER = '## Conversation History:';
@@ -65,7 +66,11 @@ const zodToJsonSchema = (schema: any): any => {
 };
 
 const formatToolForPrompt = (tool: Tool): string => {
-  if (!tool.parameters || !('shape' in tool.parameters) || Object.keys(tool.parameters.shape).length === 0) {
+  if (
+    !tool.parameters ||
+    !('shape' in tool.parameters) ||
+    Object.keys(tool.parameters.shape).length === 0
+  ) {
     return `### ${tool.name}\nDescription: ${tool.description}\nParameters: None\n`;
   }
   const params = JSON.stringify(zodToJsonSchema(tool.parameters), null, 2);
@@ -91,10 +96,11 @@ export const getMasterPrompt = (
   const formattedHistory = (session.data.history || [])
     .map((h: Message) => `${h.role.toUpperCase()}:\n${h.content}`)
     .join('\n\n');
-  const historySection = formattedHistory.length > 0
-    ? `${HISTORY_SECTION_HEADER}
+  const historySection =
+    formattedHistory.length > 0
+      ? `${HISTORY_SECTION_HEADER}
 ${formattedHistory}`
-    : '';
+      : '';
 
   return `${getPreamble()}\n\n${workingContextSection}${toolsSection}\n\n${historySection}\n\nASSISTANT's turn. Your response:`;
 };

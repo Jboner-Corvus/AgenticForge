@@ -52,10 +52,12 @@ vi.mock('../logger.js', () => ({
 const testToolsDir = path.join(__dirname, 'test_tools');
 
 const createToolContent = (name: string, result: string) => `
+  import { z } from 'zod';
   export const ${name} = {
     name: '${name}',
     description: 'A test tool',
-    execute: async (args, context) => '${result}', // Ajout des arguments pour correspondre à l'interface Tool
+    parameters: z.object({}),
+    execute: async (args, context) => '${result}',
   };
 `;
 

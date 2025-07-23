@@ -6,7 +6,6 @@ import { LlmKeyErrorType, LlmKeyManager } from '../modules/llm/LlmKeyManager';
 import { redis } from '../modules/redis/redisClient';
 import { getLlmProvider } from './llmProvider';
 
-
 vi.mock('../config', () => ({
   config: {
     LLM_MODEL_NAME: 'gemini-pro',
@@ -60,7 +59,8 @@ vi.mock('../logger', () => {
 });
 
 describe('llmProvider', () => {
-  const mockMessages: { parts: { text: string }[]; role: "model" | "user" }[] = [{ parts: [{ text: 'Hello' }], role: 'user' }];
+  const mockMessages: { parts: { text: string }[]; role: 'model' | 'user' }[] =
+    [{ parts: [{ text: 'Hello' }], role: 'user' }];
   const mockSystemPrompt = 'You are a helpful assistant.';
   const mockApiKey = { key: 'test_key', provider: 'gemini' };
 
@@ -69,7 +69,12 @@ describe('llmProvider', () => {
     (LlmKeyManager.getNextAvailableKey as any).mockResolvedValue(mockApiKey);
     // Default mock for fetch to return a successful, generic response
     vi.spyOn(global, 'fetch').mockResolvedValue({
-      json: () => Promise.resolve({ candidates: [{ content: { parts: [{ text: 'Mocked Gemini Response' }] } }] }),
+      json: () =>
+        Promise.resolve({
+          candidates: [
+            { content: { parts: [{ text: 'Mocked Gemini Response' }] } },
+          ],
+        }),
       ok: true,
     } as Response);
     (redis.incrby as any).mockResolvedValue(1); // Mock redis.incrby for token counting
@@ -82,9 +87,15 @@ describe('llmProvider', () => {
     });
 
     it('should return LLM response successfully', async () => {
-      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
+      const response = await getLlmProvider().getLlmResponse(
+        mockMessages,
+        mockSystemPrompt,
+      );
       expect(response).toEqual('Mocked Gemini Response');
-      expect(LlmKeyManager.resetKeyStatus).toHaveBeenCalledWith(mockApiKey.provider, mockApiKey.key);
+      expect(LlmKeyManager.resetKeyStatus).toHaveBeenCalledWith(
+        mockApiKey.provider,
+        mockApiKey.key,
+      );
       expect(redis.incrby).toHaveBeenCalled();
     });
 
@@ -95,9 +106,18 @@ describe('llmProvider', () => {
         text: () => Promise.resolve('Unauthorized'),
       } as Response);
 
-      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
-      expect(response).toEqual('{"tool": "error", "parameters": {"message": "Gemini API request failed with status 401: Unauthorized"}}');
-      expect(LlmKeyManager.markKeyAsBad).toHaveBeenCalledWith(mockApiKey.provider, mockApiKey.key, LlmKeyErrorType.PERMANENT);
+      const response = await getLlmProvider().getLlmResponse(
+        mockMessages,
+        mockSystemPrompt,
+      );
+      expect(response).toEqual(
+        '{"tool": "error", "parameters": {"message": "Gemini API request failed with status 401: Unauthorized"}}',
+      );
+      expect(LlmKeyManager.markKeyAsBad).toHaveBeenCalledWith(
+        mockApiKey.provider,
+        mockApiKey.key,
+        LlmKeyErrorType.PERMANENT,
+      );
     });
 
     it('should handle invalid response structure', async () => {
@@ -106,16 +126,32 @@ describe('llmProvider', () => {
         ok: true,
       } as Response);
 
-      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
-      expect(response).toEqual('{"tool": "error", "parameters": {"message": "Invalid response structure from Gemini API. The model may have returned an empty response."}}');
-      expect(LlmKeyManager.markKeyAsBad).toHaveBeenCalledWith(mockApiKey.provider, mockApiKey.key, LlmKeyErrorType.TEMPORARY);
+      const response = await getLlmProvider().getLlmResponse(
+        mockMessages,
+        mockSystemPrompt,
+      );
+      expect(response).toEqual(
+        '{"tool": "error", "parameters": {"message": "Invalid response structure from Gemini API. The model may have returned an empty response."}}',
+      );
+      expect(LlmKeyManager.markKeyAsBad).toHaveBeenCalledWith(
+        mockApiKey.provider,
+        mockApiKey.key,
+        LlmKeyErrorType.TEMPORARY,
+      );
     });
 
     it('should return error if no API key is available', async () => {
       (LlmKeyManager.getNextAvailableKey as any).mockResolvedValue(null);
-      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
-      expect(response).toEqual('{"tool": "error", "parameters": {"message": "No LLM API key available."}}');
-      expect(logger.child({}).error).toHaveBeenCalledWith('No LLM API key available.');
+      const response = await getLlmProvider().getLlmResponse(
+        mockMessages,
+        mockSystemPrompt,
+      );
+      expect(response).toEqual(
+        '{"tool": "error", "parameters": {"message": "No LLM API key available."}}',
+      );
+      expect(logger.child({}).error).toHaveBeenCalledWith(
+        'No LLM API key available.',
+      );
     });
   });
 
@@ -127,13 +163,22 @@ describe('llmProvider', () => {
 
     it('should return LLM response successfully', async () => {
       vi.spyOn(global, 'fetch').mockResolvedValueOnce({
-        json: () => Promise.resolve({ choices: [{ message: { content: 'Mocked Mistral Response' } }] }),
+        json: () =>
+          Promise.resolve({
+            choices: [{ message: { content: 'Mocked Mistral Response' } }],
+          }),
         ok: true,
       } as Response);
 
-      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
+      const response = await getLlmProvider().getLlmResponse(
+        mockMessages,
+        mockSystemPrompt,
+      );
       expect(response).toEqual('Mocked Mistral Response');
-      expect(LlmKeyManager.resetKeyStatus).toHaveBeenCalledWith(mockApiKey.provider, mockApiKey.key);
+      expect(LlmKeyManager.resetKeyStatus).toHaveBeenCalledWith(
+        mockApiKey.provider,
+        mockApiKey.key,
+      );
       expect(redis.incrby).toHaveBeenCalled();
     });
   });
@@ -146,13 +191,22 @@ describe('llmProvider', () => {
 
     it('should return LLM response successfully', async () => {
       vi.spyOn(global, 'fetch').mockResolvedValueOnce({
-        json: () => Promise.resolve({ choices: [{ message: { content: 'Mocked OpenAI Response' } }] }),
+        json: () =>
+          Promise.resolve({
+            choices: [{ message: { content: 'Mocked OpenAI Response' } }],
+          }),
         ok: true,
       } as Response);
 
-      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
+      const response = await getLlmProvider().getLlmResponse(
+        mockMessages,
+        mockSystemPrompt,
+      );
       expect(response).toEqual('Mocked OpenAI Response');
-      expect(LlmKeyManager.resetKeyStatus).toHaveBeenCalledWith(mockApiKey.provider, mockApiKey.key);
+      expect(LlmKeyManager.resetKeyStatus).toHaveBeenCalledWith(
+        mockApiKey.provider,
+        mockApiKey.key,
+      );
       expect(redis.incrby).toHaveBeenCalled();
     });
   });
@@ -165,13 +219,20 @@ describe('llmProvider', () => {
 
     it('should return LLM response successfully', async () => {
       vi.spyOn(global, 'fetch').mockResolvedValueOnce({
-        json: () => Promise.resolve([{ generated_text: 'Mocked HuggingFace Response' }]),
+        json: () =>
+          Promise.resolve([{ generated_text: 'Mocked HuggingFace Response' }]),
         ok: true,
       } as Response);
 
-      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
+      const response = await getLlmProvider().getLlmResponse(
+        mockMessages,
+        mockSystemPrompt,
+      );
       expect(response).toEqual('Mocked HuggingFace Response');
-      expect(LlmKeyManager.resetKeyStatus).toHaveBeenCalledWith(mockApiKey.provider, mockApiKey.key);
+      expect(LlmKeyManager.resetKeyStatus).toHaveBeenCalledWith(
+        mockApiKey.provider,
+        mockApiKey.key,
+      );
       expect(redis.incrby).toHaveBeenCalled();
     });
   });
@@ -187,11 +248,23 @@ describe('llmProvider', () => {
       config.LLM_PROVIDER = 'unknown' as any; // Bypass type check for test
 
       vi.spyOn(global, 'fetch').mockResolvedValueOnce({
-        json: () => Promise.resolve({ candidates: [{ content: { parts: [{ text: 'Mocked Gemini Response (default)' }] } }] }),
+        json: () =>
+          Promise.resolve({
+            candidates: [
+              {
+                content: {
+                  parts: [{ text: 'Mocked Gemini Response (default)' }],
+                },
+              },
+            ],
+          }),
         ok: true,
       } as Response);
 
-      const response = await getLlmProvider().getLlmResponse(mockMessages, mockSystemPrompt);
+      const response = await getLlmProvider().getLlmResponse(
+        mockMessages,
+        mockSystemPrompt,
+      );
       expect(response).toEqual('Mocked Gemini Response (default)');
       expect(logger.warn).toHaveBeenCalledWith(
         `Unknown LLM_PROVIDER: unknown. Defaulting to GeminiProvider.`,

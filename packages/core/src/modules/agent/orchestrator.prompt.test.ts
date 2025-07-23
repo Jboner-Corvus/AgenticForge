@@ -58,28 +58,33 @@ describe('getMasterPrompt', () => {
 
     // Check Working Context
     expect(prompt).toContain('## Working Context:');
-    expect(prompt).toContain(JSON.stringify(mockSession.data.workingContext, null, 2));
+    expect(prompt).toContain(
+      JSON.stringify(mockSession.data.workingContext, null, 2),
+    );
 
     // Check Tools Section
     expect(prompt).toContain('## Available Tools:');
     expect(prompt).toContain('### testTool');
     expect(prompt).toContain('Description: A tool for testing');
     expect(prompt).toContain('Parameters (JSON Schema):');
-    
-    const jsonSchemaString = prompt.split('Parameters (JSON Schema):')[1].split('###')[0].trim();
+
+    const jsonSchemaString = prompt
+      .split('Parameters (JSON Schema):')[1]
+      .split('###')[0]
+      .trim();
     const jsonSchema = JSON.parse(jsonSchemaString);
 
     expect(jsonSchema).toEqual({
       properties: {
         param1: {
-          description: "Description for param1",
-          type: "string"
+          description: 'Description for param1',
+          type: 'string',
         },
         param2: {
-          type: "number"
-        }
+          type: 'number',
+        },
       },
-      type: "object"
+      type: 'object',
     });
 
     expect(prompt).toContain('### anotherTool');
@@ -102,9 +107,7 @@ describe('getMasterPrompt', () => {
   it('should handle empty working context', () => {
     const sessionWithoutContext: AgentSession = {
       data: {
-        history: [
-          { content: 'Hello', role: 'user' },
-        ],
+        history: [{ content: 'Hello', role: 'user' }],
         id: 'test-session-id-2',
         identities: [],
         workingContext: undefined,
@@ -121,13 +124,15 @@ describe('getMasterPrompt', () => {
         history: [],
         id: 'test-session-id-3',
         identities: [],
-        workingContext: { currentFile: 'example.txt', lastAction: 'mock-action' },
+        workingContext: {
+          currentFile: 'example.txt',
+          lastAction: 'mock-action',
+        },
       },
       id: 'test-session-id-3',
     };
     const prompt = getMasterPrompt(sessionWithoutHistory, mockTools);
     expect(prompt).not.toContain('## Conversation History:');
-    
   });
 
   it('should handle no tools', () => {

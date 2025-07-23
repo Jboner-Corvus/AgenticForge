@@ -24,7 +24,10 @@ const shellCommandWorker = new Worker(
         let _stdout = '';
         let _stderr = '';
 
-        const streamToFrontend = (type: 'stderr' | 'stdout', content: string) => {
+        const streamToFrontend = (
+          type: 'stderr' | 'stdout',
+          content: string,
+        ) => {
           const data = { data: { content, type }, type: 'tool_stream' };
           redis.publish(notificationChannel, JSON.stringify(data));
         };
@@ -44,8 +47,14 @@ const shellCommandWorker = new Worker(
         });
 
         child.on('error', (error) => {
-          log.error({ err: error }, `Failed to start detached shell command: ${command}`);
-          streamToFrontend('stderr', `Failed to start command: ${error.message}`);
+          log.error(
+            { err: error },
+            `Failed to start detached shell command: ${command}`,
+          );
+          streamToFrontend(
+            'stderr',
+            `Failed to start command: ${error.message}`,
+          );
           reject(error);
         });
 
@@ -63,21 +72,39 @@ const shellCommandWorker = new Worker(
       });
       log.info(`Detached shell command completed successfully: ${command}`);
     } catch (error: unknown) {
-      log.error({ err: error }, `Error executing detached shell command: ${command}`);
+      log.error(
+        { err: error },
+        `Error executing detached shell command: ${command}`,
+      );
       throw error; // Re-throw to mark job as failed in BullMQ
     }
   },
-  { connection: redis }
+  { connection: redis },
 );
 
 shellCommandWorker.on('completed', (job) => {
   logger.info(`Job ${job.id} completed for command: ${job.data.command}`);
-  redis.publish(job.data.notificationChannel, JSON.stringify({ data: { jobId: job.id, status: 'completed' }, type: 'tool_stream_end' }));
+  redis.publish(
+    job.data.notificationChannel,
+    JSON.stringify({
+      data: { jobId: job.id, status: 'completed' },
+      type: 'tool_stream_end',
+    }),
+  );
 });
 
 shellCommandWorker.on('failed', (job, err) => {
-  logger.error({ err }, `Job ${job?.id} failed for command: ${job?.data.command}`);
-  redis.publish(job?.data.notificationChannel, JSON.stringify({ data: { error: err.message, jobId: job?.id, status: 'failed' }, type: 'tool_stream_end' }));
+  logger.error(
+    { err },
+    `Job ${job?.id} failed for command: ${job?.data.command}`,
+  );
+  redis.publish(
+    job?.data.notificationChannel,
+    JSON.stringify({
+      data: { error: err.message, jobId: job?.id, status: 'failed' },
+      type: 'tool_stream_end',
+    }),
+  );
 });
 
 export default shellCommandWorker;

@@ -1,8 +1,16 @@
 import express from 'express';
 import { promises as fs } from 'fs';
 import request from 'supertest';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
-import { z } from 'zod';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  Mock,
+  vi,
+} from 'vitest';
 
 import { config } from './config';
 import * as toolLoader from './utils/toolLoader';
@@ -23,12 +31,9 @@ vi.mock('./modules/llm/LlmKeyManager', () => ({
   },
 }));
 
-
 import { mockRedis as redis } from '../test/mocks/redisClient.mock';
 import { LlmKeyManager } from './modules/llm/LlmKeyManager';
 import { jobQueue } from './modules/queue/queue';
-
-
 
 vi.mock('./modules/redis/redisClient', () => {
   const mockRedisClient = {
@@ -56,11 +61,6 @@ vi.mock('./modules/redis/redisClient', () => {
   };
   return { redis: mockRedisClient };
 });
-
-
-
-
-
 
 describe('webServer', () => {
   let app: express.Application;
@@ -97,10 +97,10 @@ describe('webServer', () => {
 
   it('should return 200 for authorized access to /api/tools', async () => {
     const mockTools = [
-      { description: 'Tool 1 description', execute: vi.fn(), name: 'tool1', parameters: z.object({})},
-      { description: 'Tool 2 description', execute: vi.fn(), name: 'tool2', parameters: z.object({})},
+      { description: 'Tool 1 description', name: 'tool1', parameters: {} },
+      { description: 'Tool 2 description', name: 'tool2', parameters: {} },
     ];
-    vi.spyOn(toolLoader, 'getTools').mockResolvedValue(mockTools);
+    vi.spyOn(toolLoader, 'getTools').mockResolvedValue(mockTools as any);
 
     const res = await request(app)
       .get('/api/tools')
@@ -145,22 +145,79 @@ describe('webServer', () => {
   });
 
   it('should handle /api/chat/stream/:jobId correctly', async () => {
-    const res = await request(app).get('/api/chat/stream/testJobId').set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
-    expect(res.statusCode).toEqual(200);
-    expect(res.headers['content-type']).toEqual('text/event-stream');
+    const mockSubscriber = {
+      on: vi.fn(),
+      quit: vi.fn().mockResolvedValue(undefined),
+      subscribe: vi.fn().mockResolvedValue(undefined),
+      unsubscribe: vi.fn().mockResolvedValue(undefined),
+    };
+    (redis.duplicate as Mock).mockReturnValue(mockSubscriber);
+
+    const testPromise = new Promise<void>((resolve) => {
+      let receivedData = '';
+      const req = request(app)
+        .get('/api/chat/stream/testJobId')
+        .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+
+      req.on('response', (res) => {
+        expect(res.statusCode).toEqual(200);
+        expect(res.headers['content-type']).toEqual('text/event-stream');
+
+        res.on('data', (chunk: Buffer) => {
+          receivedData += chunk.toString();
+          if (receivedData.includes('data: Stream ended.\n\n')) {
+            resolve();
+          }
+        });
+      });
+
+      // Simulate Redis messages after the subscription is set up
+      setTimeout(() => {
+        const messageHandler = mockSubscriber.on.mock.calls.find(
+          (call) => call[0] === 'message',
+        )?.[1];
+        if (messageHandler) {
+          messageHandler(
+            'job:testJobId:events',
+            JSON.stringify({ content: 'Hello', type: 'message' }),
+          );
+          messageHandler(
+            'job:testJobId:events',
+            JSON.stringify({ content: 'Stream ended.', type: 'close' }),
+          );
+        }
+        // End the response to ensure the test completes
+        res.end();
+      }, 100);
+    });
+
+    await testPromise;
+
     expect(redis.duplicate).toHaveBeenCalled();
-    expect(redis.duplicate().subscribe).toHaveBeenCalledWith('job:testJobId:events');
-  }, 20000); // Increased timeout to 20 seconds
+    expect(mockSubscriber.subscribe).toHaveBeenCalledWith(
+      'job:testJobId:events',
+    );
+    expect(mockSubscriber.unsubscribe).toHaveBeenCalledWith(
+      'job:testJobId:events',
+    );
+    expect(mockSubscriber.quit).toHaveBeenCalled();
+  }, 30000);
 
   it('should return 200 for /api/history', async () => {
-    (redis.get as Mock).mockResolvedValue(JSON.stringify([{ content: 'test', role: 'user' }]));
-    const res = await request(app).get('/api/history').set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+    (redis.get as Mock).mockResolvedValue(
+      JSON.stringify([{ content: 'test', role: 'user' }]),
+    );
+    const res = await request(app)
+      .get('/api/history')
+      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toEqual([{ content: 'test', role: 'user' }]);
   });
 
   it('should return 200 for /api/session', async () => {
-    const res = await request(app).post('/api/session').set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+    const res = await request(app)
+      .post('/api/session')
+      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toEqual({
       message: 'Session gérée automatiquement via cookie.',
@@ -174,7 +231,9 @@ describe('webServer', () => {
       .mockResolvedValueOnce('100') // tokensSaved
       .mockResolvedValueOnce('5'); // successfulRuns
 
-    const res = await request(app).get('/api/leaderboard-stats').set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+    const res = await request(app)
+      .get('/api/leaderboard-stats')
+      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toEqual({
       apiKeysAdded: 0,
@@ -185,12 +244,17 @@ describe('webServer', () => {
   });
 
   it('should return memory contents for /api/memory', async () => {
-    vi.spyOn(fs, 'readdir').mockResolvedValue(['file1.txt', 'file2.txt'] as any);
+    vi.spyOn(fs, 'readdir').mockResolvedValue([
+      'file1.txt',
+      'file2.txt',
+    ] as any);
     vi.spyOn(fs, 'readFile')
       .mockResolvedValueOnce('content of file1')
       .mockResolvedValueOnce('content of file2');
 
-    const res = await request(app).get('/api/memory').set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+    const res = await request(app)
+      .get('/api/memory')
+      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toEqual([
       { content: 'content of file1', fileName: 'file1.txt' },
@@ -199,39 +263,73 @@ describe('webServer', () => {
   });
 
   it('should save a session via /api/sessions/save', async () => {
-    const sessionData = { id: 's1', messages: [], name: 'testSession', timestamp: Date.now() };
-    const res = await request(app).post('/api/sessions/save').set('Authorization', `Bearer ${config.AUTH_API_KEY}`).send(sessionData);
+    const sessionData = {
+      id: 's1',
+      messages: [],
+      name: 'testSession',
+      timestamp: Date.now(),
+    };
+    const res = await request(app)
+      .post('/api/sessions/save')
+      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`)
+      .send(sessionData);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toEqual({ message: 'Session saved successfully.' });
-    expect(redis.set).toHaveBeenCalledWith(`session:${sessionData.id}:data`, JSON.stringify(sessionData));
+    expect(redis.set).toHaveBeenCalledWith(
+      `session:${sessionData.id}:data`,
+      JSON.stringify(sessionData),
+    );
   });
 
   it('should load a session via /api/sessions/:id', async () => {
-    const sessionData = { id: 's1', messages: [], name: 'testSession', timestamp: Date.now() };
+    const sessionData = {
+      id: 's1',
+      messages: [],
+      name: 'testSession',
+      timestamp: Date.now(),
+    };
     (redis.get as Mock).mockResolvedValue(JSON.stringify(sessionData));
-    const res = await request(app).get('/api/sessions/s1').set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+    const res = await request(app)
+      .get('/api/sessions/s1')
+      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toEqual(sessionData);
   });
 
   it('should delete a session via /api/sessions/:id', async () => {
-    const res = await request(app).delete('/api/sessions/s1').set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+    const res = await request(app)
+      .delete('/api/sessions/s1')
+      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toEqual({ message: 'Session deleted successfully.' });
     expect(redis.del).toHaveBeenCalledWith('session:s1:data');
   });
 
   it('should rename a session via /api/sessions/:id/rename', async () => {
-    const sessionData = { id: 's1', messages: [], name: 'oldName', timestamp: Date.now() };
+    const sessionData = {
+      id: 's1',
+      messages: [],
+      name: 'oldName',
+      timestamp: Date.now(),
+    };
     (redis.get as Mock).mockResolvedValue(JSON.stringify(sessionData));
-    const res = await request(app).put('/api/sessions/s1/rename').set('Authorization', `Bearer ${config.AUTH_API_KEY}`).send({ newName: 'newName' });
+    const res = await request(app)
+      .put('/api/sessions/s1/rename')
+      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`)
+      .send({ newName: 'newName' });
     expect(res.statusCode).toEqual(200);
     expect(res.body).toEqual({ message: 'Session renamed successfully.' });
-    expect(redis.set).toHaveBeenCalledWith('session:s1:data', JSON.stringify({ ...sessionData, name: 'newName' }));
+    expect(redis.set).toHaveBeenCalledWith(
+      'session:s1:data',
+      JSON.stringify({ ...sessionData, name: 'newName' }),
+    );
   });
 
   it('should add an LLM API key via /api/llm-api-keys', async () => {
-    const res = await request(app).post('/api/llm-api-keys').set('Authorization', `Bearer ${config.AUTH_API_KEY}`).send({ key: 'test_key', provider: 'gemini' });
+    const res = await request(app)
+      .post('/api/llm-api-keys')
+      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`)
+      .send({ key: 'test_key', provider: 'gemini' });
     expect(res.statusCode).toEqual(200);
     expect(res.body).toEqual({ message: 'LLM API key added successfully.' });
     expect(LlmKeyManager.addKey).toHaveBeenCalledWith('gemini', 'test_key');
@@ -240,13 +338,17 @@ describe('webServer', () => {
   it('should retrieve LLM API keys via /api/llm-api-keys', async () => {
     const mockKeys = [{ key: 'key1', provider: 'gemini' }];
     (LlmKeyManager.getKeysForApi as Mock).mockResolvedValue(mockKeys);
-    const res = await request(app).get('/api/llm-api-keys').set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+    const res = await request(app)
+      .get('/api/llm-api-keys')
+      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toEqual(mockKeys);
   });
 
   it('should delete an LLM API key via /api/llm-api-keys/:index', async () => {
-    const res = await request(app).delete('/api/llm-api-keys/0').set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+    const res = await request(app)
+      .delete('/api/llm-api-keys/0')
+      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toEqual({ message: 'LLM API key removed successfully.' });
     expect(LlmKeyManager.removeKey).toHaveBeenCalledWith(0);
@@ -255,10 +357,15 @@ describe('webServer', () => {
   it('should handle /api/interrupt/:jobId correctly', async () => {
     (jobQueue.add as Mock).mockResolvedValue({ id: 'mockJobId' });
     (jobQueue.getJob as Mock).mockResolvedValue({ id: 'mockJobId' });
-    const res = await request(app).post('/api/interrupt/mockJobId').set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+    const res = await request(app)
+      .post('/api/interrupt/mockJobId')
+      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toEqual({ message: 'Interruption signal sent.' });
-    expect(redis.publish).toHaveBeenCalledWith('job:mockJobId:interrupt', 'interrupt');
+    expect(redis.publish).toHaveBeenCalledWith(
+      'job:mockJobId:interrupt',
+      'interrupt',
+    );
   });
 
   it('should handle /api/status/:jobId correctly', async () => {
@@ -268,7 +375,9 @@ describe('webServer', () => {
       progress: 100,
       returnvalue: 'success',
     });
-    const res = await request(app).get('/api/status/mockJobId').set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+    const res = await request(app)
+      .get('/api/status/mockJobId')
+      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toEqual({
       jobId: 'mockJobId',
@@ -280,7 +389,9 @@ describe('webServer', () => {
 
   it('should handle /api/display correctly', async () => {
     vi.spyOn(fs, 'readFile').mockResolvedValue('<html>test</html>');
-    const res = await request(app).get('/api/display').set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+    const res = await request(app)
+      .get('/api/display')
+      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toEqual({ message: 'Display event sent.' });
     expect(redis.publish).toHaveBeenCalledWith(

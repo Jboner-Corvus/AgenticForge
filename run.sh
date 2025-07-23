@@ -381,19 +381,128 @@ run_typecheck() {
 }
 
 run_all_checks() {
-    echo -e "${COLOR_YELLOW}Lancement de toutes les vérifications (TypeCheck, Lint, Test, Format)...${NC}" | tee all-checks.md
-    {
-        run_typecheck && \
-        run_lint && \
-        run_tests && \
-        run_format
-    } 2>&1 | tee -a all-checks.md
-    if [ $? -eq 0 ]; then
-        echo -e "${COLOR_GREEN}✓ Toutes les vérifications ont réussi.${NC}" | tee -a all-checks.md
-    else
-        echo -e "${COLOR_RED}✗ Certaines vérifications ont échoué. Veuillez consulter le fichier all-checks.md pour les détails.${NC}" | tee -a all-checks.md
+    echo -e "${COLOR_YELLOW}Lancement de toutes les vérifications (TypeCheck, Lint, Test, Format)...${NC}"
+
+    ALL_CHECKS_OUTPUT=""
+    FAILED_CHECKS=()
+    ERROR_COUNT=0
+    local exit_code=0
+
+    # Ajouter l'en-tête au fichier de sortie
+    ALL_CHECKS_OUTPUT+="# TODO List: Résoudre les erreurs de vérification\n\n"
+    ALL_CHECKS_OUTPUT+="Ce document liste les problèmes identifiés lors des vérifications automatisées (TypeCheck, Lint, Test, Format).\n"
+    ALL_CHECKS_OUTPUT+="Veuillez résoudre ces éléments un par un, en cochant la case \`[x]\` une fois l'erreur corrigée.\n\n"
+    ALL_CHECKS_OUTPUT+="---\n\n"
+    ALL_CHECKS_OUTPUT+="## Erreurs à corriger\n"
+
+    # --- TypeCheck (UI & Core) ---
+    echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour l'UI...${NC}"
+    set -o pipefail
+    UI_TYPECHECK_OUTPUT=$(pnpm --filter @agenticforge/ui exec tsc --noEmit -p tsconfig.vitest.json 2>&1 | tee /dev/tty)
+    exit_code=$?
+    set +o pipefail
+    if [ $exit_code -ne 0 ]; then
+        FAILED_CHECKS+=("TypeCheck UI")
+        while read -r line; do
+            if [[ -n "$line" && "$line" == *"error TS"* ]]; then
+                ERROR_COUNT=$((ERROR_COUNT + 1))
+                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **TypeCheck (UI):** \`${line}\`\n"
+            fi
+        done < <(echo "$UI_TYPECHECK_OUTPUT")
     fi
-    echo -e "${COLOR_YELLOW}Les résultats des vérifications ont été enregistrés dans all-checks.md.${NC}" | tee -a all-checks.md
+
+    echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour le Core...${NC}"
+    set -o pipefail
+    CORE_TYPECHECK_OUTPUT=$(pnpm --filter=@agenticforge/core exec tsc --noEmit 2>&1 | tee /dev/tty)
+    exit_code=$?
+    set +o pipefail
+    if [ $exit_code -ne 0 ]; then
+        FAILED_CHECKS+=("TypeCheck Core")
+        while read -r line; do
+            if [[ -n "$line" && "$line" == *"error TS"* ]]; then
+                ERROR_COUNT=$((ERROR_COUNT + 1))
+                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **TypeCheck (Core):** \`${line}\`\n"
+            fi
+        done < <(echo "$CORE_TYPECHECK_OUTPUT")
+    fi
+
+    # --- Lint ---
+    echo -e "${COLOR_YELLOW}Lancement du linter...${NC}"
+    set -o pipefail
+    LINT_OUTPUT=$(pnpm --recursive run lint 2>&1 | tee /dev/tty)
+    exit_code=$?
+    set +o pipefail
+    if [ $exit_code -ne 0 ]; then
+        FAILED_CHECKS+=("Lint")
+        while read -r line; do
+            if [[ -n "$line" && "$line" == *"error"* ]]; then
+                ERROR_COUNT=$((ERROR_COUNT + 1))
+                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Lint:** \`${line}\`\n"
+            fi
+        done < <(echo "$LINT_OUTPUT")
+    fi
+
+    # --- Tests (AVEC CAPTURE DE BLOCS DÉTAILLÉS) ---
+    echo -e "${COLOR_YELLOW}Lancement des tests...${NC}"
+    set -o pipefail
+    TEST_OUTPUT=$(pnpm --filter=@agenticforge/core test 2>&1 | tee /dev/tty)
+    exit_code=$?
+    set +o pipefail
+    if [ $exit_code -ne 0 ]; then
+        FAILED_CHECKS+=("Tests")
+        local capture_mode=0
+        local error_block=""
+
+        while IFS= read -r line; do
+            if [[ "$line" =~ ^[[:space:]]*FAIL || "$line" =~ ^⎯⎯⎯⎯⎯[[:space:]]*Uncaught[[:space:]]Exception ]]; then
+                if [ $capture_mode -eq 1 ] && [ -n "$error_block" ]; then
+                    ERROR_COUNT=$((ERROR_COUNT + 1))
+                    ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Test Failure:**\n\`\`\`text\n${error_block}\n\`\`\`\n"
+                fi
+                capture_mode=1
+                error_block="$line"
+            elif [[ "$line" =~ ^⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\[[0-9]+/[0-9]+\] ]]; then
+                if [ $capture_mode -eq 1 ]; then
+                    ERROR_COUNT=$((ERROR_COUNT + 1))
+                    ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Test Failure:**\n\`\`\`text\n${error_block}\n\`\`\`\n"
+                    capture_mode=0
+                    error_block=""
+                fi
+            elif [ $capture_mode -eq 1 ]; then
+                error_block+="\n$line"
+            fi
+        done < <(echo "$TEST_OUTPUT")
+
+        if [ $capture_mode -eq 1 ] && [ -n "$error_block" ]; then
+            error_block_cleaned=$(echo -e "$error_block" | sed '/^ Test Files /,$d')
+            ERROR_COUNT=$((ERROR_COUNT + 1))
+            ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Test Failure:**\n\`\`\`text\n${error_block_cleaned}\n\`\`\`\n"
+        fi
+    fi
+
+    # --- Format ---
+    echo -e "${COLOR_YELLOW}Formatage du code...${NC}"
+    pnpm --filter=@agenticforge/core format > /dev/null 2>&1
+
+    # --- Génération du rapport final ---
+    if [ ${#FAILED_CHECKS[@]} -eq 0 ]; then
+        SUCCESS_MSG="\n---\n\n✓ Toutes les vérifications ont réussi.\n"
+        ALL_CHECKS_OUTPUT+="$SUCCESS_MSG"
+        echo -e "${COLOR_GREEN}${SUCCESS_MSG}${NC}"
+    else
+        if [ $ERROR_COUNT -eq 0 ]; then
+            ALL_CHECKS_OUTPUT+="\n- [ ] **Erreur Générale:** Une ou plusieurs vérifications ont échoué sans message d'erreur spécifique capturé. Veuillez examiner les logs ci-dessus.\n"
+        fi
+
+        FAIL_MSG="\n---\n\n✗ ${#FAILED_CHECKS[@]} type(s) de vérification ont échoué : ${FAILED_CHECKS[*]}."
+        FAIL_MSG+="\nVeuillez consulter le fichier all-checks.md pour les ${ERROR_COUNT} erreur(s) détaillée(s).\n"
+        ALL_CHECKS_OUTPUT+="$FAIL_MSG"
+        echo -e "${COLOR_RED}${FAIL_MSG}${NC}"
+    fi
+
+    # Enlever les codes de couleur avant d'écrire dans le fichier
+    echo -e "$ALL_CHECKS_OUTPUT" | sed 's/\x1b\[[0-9;]*m//g' > all-checks.md
+    echo -e "${COLOR_YELLOW}Les résultats des vérifications ont été enregistrés dans all-checks.md.${NC}"
 }
 
 # ==============================================================================

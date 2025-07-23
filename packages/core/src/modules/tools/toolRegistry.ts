@@ -103,7 +103,10 @@ class ToolRegistry {
    * @returns Un tableau de tous les outils.
    */
   public getAll(): Tool<z.AnyZodObject, z.ZodTypeAny>[] {
-    return Array.from(this.tools.values());
+    return Array.from(this.tools.values()).map((tool) => ({
+      ...tool,
+      parameters: tool.parameters,
+    }));
   }
 
   /**
@@ -115,7 +118,10 @@ class ToolRegistry {
       throw new UserError(`Tool with name ${tool.name} already registered.`);
     }
     this.tools.set(tool.name, tool);
-    logger.debug({ parameters: tool.parameters.shape, toolName: tool.name }, `Tool registered: ${tool.name}`);
+    logger.debug(
+      { parameters: tool.parameters.shape, toolName: tool.name },
+      `Tool registered: ${tool.name}`,
+    );
   }
 
   /**

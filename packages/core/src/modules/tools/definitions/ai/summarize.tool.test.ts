@@ -41,7 +41,9 @@ describe('summarizeTool', () => {
   it('should summarize the given text', async () => {
     const textToSummarize = 'This is a long text that needs to be summarized.';
     const expectedSummary = 'This is a summary.';
-    (getLlmProvider().getLlmResponse as Mock).mockResolvedValue(expectedSummary);
+    (getLlmProvider().getLlmResponse as Mock).mockResolvedValue(
+      expectedSummary,
+    );
 
     const result = await summarizeTool.execute(
       { text: textToSummarize },

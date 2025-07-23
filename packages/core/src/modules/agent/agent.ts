@@ -130,7 +130,15 @@ export class Agent {
           this.log.info({ llmResponse }, 'Raw LLM response');
 
           if (typeof llmResponse !== 'string') {
-            throw new Error('The `generate` tool did not return a string.');
+            this.log.error(
+              { llmResponse },
+              'The `generate` tool did not return a string.',
+            );
+            this.session.history.push({
+              content: 'The `generate` tool did not return a string.',
+              role: 'tool',
+            });
+            continue;
           }
 
           this.session.history.push({ content: llmResponse, role: 'model' });
@@ -168,7 +176,34 @@ export class Agent {
             return answer;
           }
 
-          if (command) {
+          if (command && command.name === 'finish') {
+            const finishResult = await this.executeTool(command, iterationLog);
+            if (
+              typeof finishResult === 'object' &&
+              finishResult !== null &&
+              'answer' in finishResult
+            ) {
+              const finalAnswer = (finishResult as { answer: string }).answer;
+              iterationLog.info(
+                { finalAnswer },
+                'Agent finished via finish tool',
+              );
+              this.publishToChannel({
+                content: finalAnswer,
+                type: 'agent_response',
+              });
+              return finalAnswer;
+            } else {
+              // If finish tool doesn't return an object with 'answer', treat it as an error
+              const errorMessage = `Finish tool did not return a valid answer object: ${JSON.stringify(finishResult)}`;
+              iterationLog.error(errorMessage);
+              this.session.history.push({
+                content: `Error: ${errorMessage}`,
+                role: 'tool',
+              });
+              return errorMessage;
+            }
+          } else if (command) {
             if (
               this.lastCommand &&
               JSON.stringify(this.lastCommand) === JSON.stringify(command)
@@ -181,10 +216,6 @@ export class Agent {
 
             if (this.loopCounter > 3) {
               this.log.warn('Loop detected. Breaking.');
-              // TODO: Consider implementing more advanced loop detection heuristics,
-              // such as detecting repetitive sequences of thoughts or tools, or
-              // limiting the number of consecutive calls to the same tool without
-              // significant state changes.
               return 'Agent stuck in a loop.';
             }
 
@@ -227,7 +258,10 @@ export class Agent {
               role: 'user',
             });
           } else {
-            this.session.history.push({ content: errorMessage, role: 'tool' });
+            this.session.history.push({
+              content: `Error: ${errorMessage}`,
+              role: 'tool',
+            });
           }
         }
       }
@@ -235,6 +269,11 @@ export class Agent {
       if (this.interrupted) {
         return 'Agent execution interrupted.';
       }
+      if (iterations >= MAX_ITERATIONS) {
+        return 'Agent reached maximum iterations without a final answer.';
+      }
+      // If the loop finishes without returning, it means no final answer was provided
+      // and it wasn't interrupted, so it reached max iterations.
       return 'Agent reached maximum iterations without a final answer.';
     } finally {
       await this.cleanup();
@@ -251,6 +290,10 @@ export class Agent {
 
   private async executeTool(command: Command, log: Logger): Promise<unknown> {
     try {
+      this.publishToChannel({
+        data: { args: command.params, name: command.name },
+        type: 'tool.start',
+      });
       const result = await toolRegistry.execute(command.name, command.params, {
         job: this.job,
         llm: getLlmProvider(),
@@ -258,20 +301,29 @@ export class Agent {
         session: this.session,
         taskQueue: this.taskQueue,
       });
+      this.publishToChannel({
+        result,
+        toolName: command.name,
+        type: 'tool_result',
+      });
       return result;
     } catch (error) {
       if (error instanceof FinishToolSignal) {
         throw error;
       }
+      const errorMessage = (error as Error).message;
       log.error({ error }, `Error executing tool ${command.name}`);
-      throw new Error(
-        `Error executing tool ${command.name}: ${(error as Error).message}`,
-      );
+      this.publishToChannel({
+        result: { error: errorMessage },
+        toolName: command.name,
+        type: 'tool_result',
+      });
+      return `Error executing tool ${command.name}: ${errorMessage}`;
     }
   }
 
   private extractJsonFromMarkdown(text: string): string {
-    const match = text.match(/```(?:json)?\n([\s\S]+)\n```/);
+    const match = text.match(/```(?:json)?\n([\s\S]+?)\n```/);
     return match ? match[1] : text;
   }
 
@@ -289,41 +341,47 @@ export class Agent {
         { error, llmResponse: jsonText },
         'Failed to parse LLM response',
       );
-      // TODO: Implement a more sophisticated retry or recovery strategy for malformed LLM responses.
-      // This could involve asking the LLM to re-format its response or using a more tolerant parser.
-      throw new Error(`Failed to parse LLM response.`);
+      throw new Error(`Failed to parse LLM response: ${jsonText}`);
     }
   }
 
   private publishToChannel(data: ChannelData) {
     const channel = `job:${this.job.id}:events`;
     const message = JSON.stringify(data);
-
-    // Publie le message sur le bon canal Redis pour le streaming SSE
     redis.publish(channel, message);
-
-    // Conserve la mise à jour de la progression si elle est utilisée ailleurs
     this.job.updateProgress(data);
   }
 
   private async setupInterruptListener() {
     const channel = `job:${this.job.id}:interrupt`;
     this.subscriber = redis.duplicate();
-    this.subscriber.on('message', (messageChannel: string, message: string) => {
+
+    const messageHandler = (messageChannel: string, message: string): void => {
       if (messageChannel === channel) {
         this.log.warn(`Interrupting job ${this.job.id}: ${message}`);
         this.interrupted = true;
       }
-    });
-    await this.subscriber.subscribe(channel);
+    };
+
+    this.subscriber.on('message', messageHandler);
+
+    await this.subscriber.subscribe(
+      channel,
+      (err: Error | null, count: number) => {
+        if (err) {
+          this.log.error(err, `Error subscribing to ${channel}`);
+          return;
+        }
+        this.log.info(
+          `Subscribed to ${channel}. Total subscriptions: ${count}`,
+        );
+      },
+    );
   }
 
   private summarizeToolResult(result: unknown): unknown {
-    if (typeof result === 'string') {
-      return result.substring(0, 200);
-    } else if (typeof result === 'object' && result !== null) {
-      return JSON.stringify(result).substring(0, 200);
-    }
-    return result;
+    const resultString =
+      typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+    return resultString.substring(0, 5000);
   }
 }
