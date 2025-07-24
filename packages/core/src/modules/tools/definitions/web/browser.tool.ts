@@ -1,9 +1,10 @@
-import { chromium, Page } from 'playwright';
+import { Page } from 'playwright';
 import { z } from 'zod';
 
 import type { Ctx, Tool } from '@/types.js';
 
 import { redis } from '../../../redis/redisClient.js';
+import { getBrowser } from './browserManager.js';
 
 export const parameters = z.object({
   url: z.string().url().describe('The URL to navigate to.'),
@@ -43,13 +44,10 @@ export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
     ctx.log.info(`Navigating to URL: ${args.url}`);
     await sendEvent(ctx, 'browser.navigating', { url: args.url });
 
-    let browser;
+    let page;
     try {
-      ctx.log.info('Launching browser...');
-      browser = await chromium.launch({});
-      ctx.log.info('Browser launched.');
-
-      const page = await browser.newPage();
+      const browser = await getBrowser();
+      page = await browser.newPage();
       ctx.log.info('New page created.');
       await sendEvent(ctx, 'browser.page.created', {});
 
@@ -82,16 +80,13 @@ export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
       });
       return { erreur: `Error while Browse ${args.url}: ${err.message}` };
     } finally {
-      if (browser) {
+      if (page) {
         try {
-          ctx.log.info('Closing browser...');
-          await browser.close();
-          ctx.log.info('Browser closed.');
+          await page.close();
         } catch (e) {
-          ctx.log.error(e, 'Failed to close browser');
+          ctx.log.error(e, 'Failed to close page');
         }
       }
-      await sendEvent(ctx, 'browser.closed', {});
     }
   },
   name: 'browser',

@@ -1,36 +1,14 @@
-import { Queue } from 'bullmq';
-
-import { Ctx, ILlmProvider, SessionData } from '@/types.js';
-
 import logger from '../logger.js';
-import { executeShellCommandTool } from '../modules/tools/definitions/code/executeShellCommand.tool.js';
-
-// Mock Ctx for qualityGate functions
-const mockCtx: Ctx = {
-  llm: {} as ILlmProvider,
-  log: logger,
-  reportProgress: async () => {},
-  session: {} as SessionData,
-  streamContent: async () => {},
-  taskQueue: {} as Queue,
-};
-
-interface QualityResult {
-  output: string;
-  success: boolean;
-}
-
-interface SandboxResult {
-  exitCode: number;
-  stderr: string;
-  stdout: string;
-}
+import { executeShellCommand, ShellCommandResult } from './shellUtils.js';
 
 /**
  * Exécute une série de vérifications de qualité (types, format, lint) en exécutant des commandes shell.
  * @returns Un objet indiquant si toutes les vérifications ont réussi et la sortie combinée.
  */
-export async function runQualityGate(): Promise<QualityResult> {
+export async function runQualityGate(): Promise<{
+  output: string;
+  success: boolean;
+}> {
   const outputMessages: string[] = [];
 
   logger.info('Running all quality checks...');
@@ -48,10 +26,7 @@ export async function runQualityGate(): Promise<QualityResult> {
   for (const { cmd, name } of commands) {
     outputMessages.push(`
 --- Running: ${name} ---`);
-    const result = (await executeShellCommandTool.execute(
-      { command: cmd, detach: false },
-      mockCtx,
-    )) as SandboxResult;
+    const result: ShellCommandResult = await executeShellCommand(cmd);
     combinedOutput += `
 ${name} STDOUT:
 ${result.stdout || '(empty)'}`;

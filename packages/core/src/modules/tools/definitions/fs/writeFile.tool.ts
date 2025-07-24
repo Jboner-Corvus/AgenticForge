@@ -42,18 +42,21 @@ export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
     }
 
     try {
-      // Check if the file exists and if its content is identical before writing
-      if (
-        await fs
-          .stat(absolutePath)
-          .then(() => true)
-          .catch(() => false)
-      ) {
-        const currentContent = await fs.readFile(absolutePath, 'utf-8');
-        if (currentContent === args.content) {
-          const message = `File ${args.path} already contains the desired content. No changes made.`;
-          ctx.log.info(message);
-          return { message: message };
+      // For very large content, skip the read/compare to avoid memory issues
+      if (args.content.length < 1024 * 1024) {
+        // 1MB threshold
+        if (
+          await fs
+            .stat(absolutePath)
+            .then(() => true)
+            .catch(() => false)
+        ) {
+          const currentContent = await fs.readFile(absolutePath, 'utf-8');
+          if (currentContent === args.content) {
+            const message = `File ${args.path} already contains the desired content. No changes made.`;
+            ctx.log.info(message);
+            return { message: message };
+          }
         }
       }
 

@@ -1,28 +1,36 @@
 /// <reference types="vitest/globals" />
-import { Job, Queue } from 'bullmq';
-import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
-import logger from './logger';
-import { Agent } from './modules/agent/agent';
+import { Redis } from 'ioredis';
 
+// Mock Redis client first to avoid initialization errors
 vi.mock('./modules/redis/redisClient', () => {
-  const mockRedisClient = {
+  const mockRedisClient: Redis = {
     del: vi.fn(),
     duplicate: vi.fn(() => ({
       subscribe: vi.fn(),
-    })),
+    })) as any,
     get: vi.fn(),
+    incr: vi.fn(),
+    lrange: vi.fn().mockResolvedValue([]),
     on: vi.fn(),
     options: { host: 'localhost', port: 6379 },
     publish: vi.fn(),
+    rpush: vi.fn(),
     set: vi.fn(),
     subscribe: vi.fn(),
+  } as any;
+  return {
+    redis: mockRedisClient,
   };
-  return { redis: mockRedisClient };
 });
 
+import { Job, Queue } from 'bullmq';
+import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+
 import { config } from './config';
-import { redis } from './modules/redis/redisClient';
+import logger from './logger';
+import { Agent } from './modules/agent/agent';
+import * as redis from './modules/redis/redisClient';
 import { SessionManager } from './modules/session/sessionManager';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool';
 import { AppError, UserError } from './utils/errorUtils';
@@ -30,7 +38,15 @@ import { processJob } from './worker';
 
 // Mock external dependencies
 vi.mock('./modules/agent/agent');
-vi.mock('./modules/session/sessionManager');
+const mockSessionManagerInstance = {
+  getSession: vi.fn(),
+  saveSession: vi.fn(),
+};
+vi.mock('./modules/session/sessionManager', () => {
+  return {
+    SessionManager: vi.fn(() => mockSessionManagerInstance),
+  };
+});
 
 vi.mock('./logger', () => {
   const mockChildLogger = {
@@ -70,14 +86,14 @@ describe('processJob', () => {
     mockSessionData = {
       history: [],
     };
-    mockJobQueue = new Queue('tasks', { connection: redis });
+    mockJobQueue = new Queue('tasks', { connection: redis.redis.options });
 
     // Mock config.HISTORY_MAX_LENGTH for testing purposes
     config.HISTORY_MAX_LENGTH = 10;
 
     // Reset mocks
     vi.clearAllMocks();
-    (SessionManager.getSession as any).mockResolvedValue(mockSessionData);
+    mockSessionManagerInstance.getSession.mockResolvedValue(mockSessionData);
     (Agent as Mock).mockImplementation(() => ({
       run: vi.fn().mockResolvedValue('Agent final response'),
     }));
@@ -89,9 +105,11 @@ describe('processJob', () => {
       content: 'old message',
       role: 'user',
     }); // Ensure history exceeds max length
-    const _result = await processJob(mockJob as Job, mockTools, mockJobQueue);
+    const _result = await processJob(mockJob as Job, mockTools, mockJobQueue, new SessionManager({} as any));
 
-    expect(SessionManager.getSession).toHaveBeenCalledWith('testSessionId');
+    expect(mockSessionManagerInstance.getSession).toHaveBeenCalledWith(
+      'testSessionId',
+    );
     expect(Agent).toHaveBeenCalledWith(
       mockJob,
       mockSessionData,
@@ -104,12 +122,12 @@ describe('processJob', () => {
       role: 'model',
     });
     expect(summarizeTool.execute).toHaveBeenCalled();
-    expect(SessionManager.saveSession).toHaveBeenCalledWith(
+    expect(mockSessionManagerInstance.saveSession).toHaveBeenCalledWith(
       mockSessionData,
       mockJob,
       mockJobQueue,
     );
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events' as any,
       JSON.stringify({ content: 'Stream ended.', type: 'close' }) as any,
     );
@@ -122,7 +140,12 @@ describe('processJob', () => {
       run: vi.fn().mockRejectedValue(new AppError(errorMessage)),
     }));
 
-    await processJob(mockJob as Job, mockTools, mockJobQueue);
+    await processJob(
+      mockJob as Job,
+      mockTools,
+      mockJobQueue,
+      new SessionManager({} as any),
+    );
 
     expect(logger.child).toHaveBeenCalledWith({
       jobId: 'testJobId',
@@ -132,11 +155,11 @@ describe('processJob', () => {
       expect.any(Object),
       'Error in agent execution',
     );
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({ message: errorMessage, type: 'error' }) as string,
     );
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string,
     );
@@ -148,7 +171,12 @@ describe('processJob', () => {
       run: vi.fn().mockRejectedValue(new UserError(errorMessage)),
     }));
 
-    await processJob(mockJob as Job, mockTools, mockJobQueue);
+    await processJob(
+      mockJob as Job,
+      mockTools,
+      mockJobQueue,
+      new SessionManager({} as any),
+    );
 
     expect(logger.child).toHaveBeenCalledWith({
       jobId: 'testJobId',
@@ -158,11 +186,11 @@ describe('processJob', () => {
       expect.any(Object),
       'Error in agent execution',
     );
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({ message: errorMessage, type: 'error' }) as string,
     );
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string,
     );
@@ -174,7 +202,12 @@ describe('processJob', () => {
       run: vi.fn().mockRejectedValue(new Error(errorMessage)),
     }));
 
-    await processJob(mockJob as Job, mockTools, mockJobQueue);
+    await processJob(
+      mockJob as Job,
+      mockTools,
+      mockJobQueue,
+      new SessionManager({} as any),
+    );
 
     expect(logger.child).toHaveBeenCalledWith({
       jobId: 'testJobId',
@@ -184,11 +217,11 @@ describe('processJob', () => {
       expect.any(Object),
       'Error in agent execution',
     );
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({ message: errorMessage, type: 'error' }) as string,
     );
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string,
     );
@@ -200,16 +233,21 @@ describe('processJob', () => {
       run: vi.fn().mockRejectedValue(new Error(errorMessage)),
     }));
 
-    await processJob(mockJob as Job, mockTools, mockJobQueue);
+    await processJob(
+      mockJob as Job,
+      mockTools,
+      mockJobQueue,
+      new SessionManager({} as any),
+    );
 
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({
         message: 'API quota exceeded. Please try again later.',
         type: 'quota_exceeded',
       }) as string,
     );
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string,
     );
@@ -221,9 +259,14 @@ describe('processJob', () => {
       run: vi.fn().mockRejectedValue(new Error(errorMessage)),
     }));
 
-    await processJob(mockJob as Job, mockTools, mockJobQueue);
+    await processJob(
+      mockJob as Job,
+      mockTools,
+      mockJobQueue,
+      new SessionManager({} as any),
+    );
 
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({
         message:
@@ -231,7 +274,7 @@ describe('processJob', () => {
         type: 'error',
       }) as string,
     );
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string,
     );
@@ -243,9 +286,14 @@ describe('processJob', () => {
       run: vi.fn().mockRejectedValue(new Error(errorMessage)),
     }));
 
-    await processJob(mockJob as Job, mockTools, mockJobQueue);
+    await processJob(
+      mockJob as Job,
+      mockTools,
+      mockJobQueue,
+      new SessionManager({} as any),
+    );
 
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({
         message:
@@ -253,7 +301,7 @@ describe('processJob', () => {
         type: 'error',
       }) as string,
     );
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string,
     );
@@ -264,16 +312,21 @@ describe('processJob', () => {
       run: vi.fn().mockRejectedValue(new Error('Unknown error type')),
     }));
 
-    await processJob(mockJob as Job, mockTools, mockJobQueue);
+    await processJob(
+      mockJob as Job,
+      mockTools,
+      mockJobQueue,
+      new SessionManager({} as any),
+    );
 
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({
         message: 'Unknown error type',
         type: 'error',
       }) as string,
     );
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string,
     );
@@ -284,9 +337,14 @@ describe('processJob', () => {
       run: vi.fn().mockResolvedValue('Agent final response'),
     }));
 
-    await processJob(mockJob as Job, mockTools, mockJobQueue);
+    await processJob(
+      mockJob as Job,
+      mockTools,
+      mockJobQueue,
+      new SessionManager({} as any),
+    );
 
-    expect(redis.publish).toHaveBeenCalledWith(
+    expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',
       JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string,
     );
@@ -297,7 +355,7 @@ describe('processJob', () => {
       content: 'old message',
       role: 'user',
     }); // Exceeds default 10
-    const _result = await processJob(mockJob as Job, mockTools, mockJobQueue);
+    const _result = await processJob(mockJob as Job, mockTools, mockJobQueue, new SessionManager({} as any));
     expect(summarizeTool.execute).toHaveBeenCalled();
   });
 
@@ -306,7 +364,31 @@ describe('processJob', () => {
       content: 'old message',
       role: 'user',
     }); // Does not exceed default 10
-    const _result = await processJob(mockJob as Job, mockTools, mockJobQueue);
+    const _result = await processJob(mockJob as Job, mockTools, mockJobQueue, new SessionManager({} as any));
     expect(summarizeTool.execute).not.toHaveBeenCalled();
+  });
+
+  it('should not call summarizeHistory if history length is exactly max length', async () => {
+    mockSessionData.history = Array(config.HISTORY_MAX_LENGTH).fill({
+      content: 'old message',
+      role: 'user',
+    }); // Exactly max length
+    const _result = await processJob(mockJob as Job, mockTools, mockJobQueue, new SessionManager({} as any));
+    expect(summarizeTool.execute).not.toHaveBeenCalled();
+  });
+
+  it('should always publish a "close" event in the finally block, even on unhandled errors', async () => {
+    const unhandledError = new Error('This is an unhandled error');
+    (Agent as any).mockImplementation(() => ({
+      run: vi.fn().mockRejectedValue(unhandledError),
+    }));
+
+    // We expect the function to throw, so we wrap it in a try/catch
+    await processJob(mockJob as Job, mockTools, mockJobQueue, new SessionManager({} as any)).catch(() => {});
+
+    expect(redis.redis.publish).toHaveBeenCalledWith(
+      'job:testJobId:events',
+      JSON.stringify({ content: 'Stream ended.', type: 'close' }) as string,
+    );
   });
 });

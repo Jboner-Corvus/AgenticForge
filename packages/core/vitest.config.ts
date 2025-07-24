@@ -4,6 +4,7 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, './src'),
       '../webServer.js': path.resolve(__dirname, './src/webServer.ts'),
       '../modules/redis/redisClient.js': path.resolve(__dirname, './src/modules/redis/redisClient.ts'),
       '../modules/llm/LlmKeyManager.js': path.resolve(__dirname, './src/modules/llm/LlmKeyManager.ts'),

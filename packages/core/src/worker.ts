@@ -1,220 +1,190 @@
-console.log('<<<<< STARTING worker.ts >>>>>');
-// ATTENTION : Ce fichier est le point d'entrée du worker de l'agent.
-// Son rôle principal est d'écouter la file d'attente (queue) sur Redis
-// et de traiter les "jobs" (tâches) qui y sont ajoutés.
-//
-// SI LE WORKER NE DÉMARRE PAS OU NE TRAITE PAS DE TÂCHES :
-// 1. VÉRIFIEZ LA CONNEXION À REDIS : Assurez-vous que les variables d'environnement
-//    (REDIS_HOST, REDIS_PORT, etc.) sont correctement configurées et accessibles.
-//    Le client Redis est configuré dans `redisClient.ts`.
-// 2. VÉRIFIEZ LE NOM DE LA QUEUE : Le nom de la queue ('tasks' par défaut) doit
-//    correspondre exactement à celui utilisé par l'application qui ajoute les jobs.
-//
-// Toute modification dans ce fichier peut affecter la capacité du système à
-// traiter des tâches en arrière-plan.
-
-// import dotenv from 'dotenv';
-// dotenv.config();
-console.log('Starting worker...');
-console.log(`[Worker] process.env.DOCKER: ${process.env.DOCKER}`);
 import { Job, Queue, Worker } from 'bullmq';
-import { Content } from 'fastmcp';
-import { z } from 'zod';
+import { spawn } from 'child_process';
+import { Redis } from 'ioredis';
+import { Client as PgClient } from 'pg';
 
-import { Ctx, Message, SessionData, Tool } from '@/types.js';
+import { Tool } from '@/types';
 
-import { config } from './config.js';
-import logger from './logger.js';
-import { Agent } from './modules/agent/agent.js';
-import shellCommandWorker from './modules/queue/shellCommandWorker.js';
-import { redis } from './modules/redis/redisClient.js';
-import { SessionManager } from './modules/session/sessionManager.js';
-import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.js';
-import { getAllTools } from './modules/tools/definitions/index.js'; // Import getAllTools
-import { AppError, UserError } from './utils/errorUtils.js';
+import { config } from './config';
+import logger from './logger';
+import { Agent } from './modules/agent/agent';
+import { redis } from './modules/redis/redisClient';
+import { SessionManager } from './modules/session/sessionManager';
+import { AppError, getErrDetails, UserError } from './utils/errorUtils';
+import { getTools } from './utils/toolLoader';
 
-console.log('Imports complete');
-console.log(
-  `[Worker] Redis URL from redisClient: ${redis.options.host}:${redis.options.port}`,
-);
+// Initialisation du Worker
+export async function initializeWorker(
+  redisConnection: Redis,
+  pgClient: Client,
+) {
+  const tools = await getTools();
+  const jobQueue = new Queue('tasks', { connection: redisConnection });
+  const sessionManager = new SessionManager(pgClient);
 
-const _jobQueue = new Queue('tasks', { connection: redis });
-
-export async function processJob(
-  job: Job,
-  tools: Tool<z.AnyZodObject, z.ZodTypeAny>[],
-  jobQueue: Queue,
-): Promise<string> {
-  // NOTE: Ensure all potential error messages are logged with enough context
-  // (e.g., job ID, session ID, full error object) for effective debugging in production.
-  logger.info(`[processJob] Received job ${job.id}`);
-  const { sessionId } = job.data;
-  const log = logger.child({ jobId: job.id, sessionId });
-
-  const sessionData = await SessionManager.getSession(sessionId);
-  const agent = new Agent(job, sessionData, jobQueue, tools);
-  const channel = `job:${job.id}:events`; // Définir le nom du canal une seule fois
-
-  try {
-    const finalResponse = await agent.run();
-
-    sessionData.history.push({ content: finalResponse, role: 'model' });
-
-    await summarizeHistory(sessionData, log, jobQueue);
-    await SessionManager.saveSession(sessionData, job, jobQueue);
-
-    return finalResponse;
-  } catch (error) {
-    const log = logger.child({ jobId: job.id, sessionId });
-    log.error({ error }, 'Error in agent execution');
-
-    let eventType = 'error';
-    let eventMessage: string;
-
-    if (error instanceof AppError || error instanceof UserError) {
-      eventMessage = error.message;
-    } else if (error instanceof Error) {
-      let rawErrorMessage = error.message;
-      try {
-        const parsedError = JSON.parse(rawErrorMessage);
-        if (
-          parsedError.tool === 'error' &&
-          parsedError.parameters &&
-          parsedError.parameters.message
-        ) {
-          rawErrorMessage = parsedError.parameters.message;
-        }
-      } catch (_parseError) {
-        // Not a JSON error message, proceed with rawErrorMessage
-      }
-
-      eventMessage = rawErrorMessage;
-      if (eventMessage.includes('Quota exceeded')) {
-        eventType = 'quota_exceeded';
-        eventMessage = 'API quota exceeded. Please try again later.';
-      } else if (
-        eventMessage.includes('Gemini API request failed with status 500')
-      ) {
-        eventMessage =
-          'An internal error occurred with the LLM API. Please try again later or check your API key.';
-      } else if (eventMessage.includes('is not found for API version v1')) {
-        eventMessage =
-          'The specified LLM model was not found or is not supported. Please check your LLM_MODEL_NAME in .env.';
-      }
-    } else {
-      eventType = 'generic_error';
-      eventMessage = 'An unknown error occurred during agent execution.';
-    }
-
-    // En cas d'erreur, on peut aussi notifier le front
-    await redis.publish(
-      channel,
-      JSON.stringify({ message: eventMessage, type: eventType }),
-    );
-    return eventMessage; // Return the error message as a string
-  } finally {
-    // AJOUT : Toujours envoyer un événement de fermeture à la fin du traitement
-    log.info(`Publishing 'close' event to channel ${channel}`);
-    await redis.publish(
-      channel,
-      JSON.stringify({ content: 'Stream ended.', type: 'close' }),
-    );
-  }
-}
-
-export async function startWorker() {
-  console.log('startWorker function called');
-  logger.info('Starting worker...');
-  console.log('[worker] Before getAllTools call');
-  const tools = await getAllTools(); // Load all tools
-  console.log('[worker] After getAllTools call');
-  logger.info(`Found ${tools.length} tools.`);
-
-  logger.info('Creating worker...');
   const worker = new Worker(
     'tasks',
     async (job) => {
-      logger.info(`Processing job ${job.id} of type ${job.name}`);
-      return processJob(job, tools, _jobQueue);
+      if (job.name === 'process-message') {
+        return processJob(job, tools, jobQueue, sessionManager);
+      }
+
+      if (job.name === 'execute-shell-command-detached') {
+        const { command, notificationChannel } = job.data;
+        const log = logger.child({
+          jobId: job.id,
+          originalJobId: job.data.jobId,
+        });
+        log.info(`Executing detached shell command: ${command}`);
+
+        return new Promise((resolve, reject) => {
+          const child = spawn(command, {
+            cwd: config.WORKSPACE_PATH,
+            detached: true,
+            shell: process.platform === 'win32' ? 'cmd.exe' : '/bin/bash',
+            stdio: 'pipe',
+          });
+
+          const streamToFrontend = (
+            type: 'stderr' | 'stdout',
+            content: string,
+            toolName: string, // Add toolName parameter
+          ) => {
+            const data = {
+              data: { content, type },
+              toolName,
+              type: 'tool_stream',
+            }; // Include toolName
+            redis.publish(notificationChannel, JSON.stringify(data));
+          };
+
+          child.stdout.on('data', (data: Buffer) => {
+            const chunk = data.toString();
+            log.info(`[stdout] ${chunk}`);
+            streamToFrontend('stdout', chunk, 'executeShellCommand');
+          });
+
+          child.stderr.on('data', (data: Buffer) => {
+            const chunk = data.toString();
+            log.error(`[stderr] ${chunk}`);
+            streamToFrontend('stderr', chunk, 'executeShellCommand');
+          });
+
+          child.on('error', (error) => {
+            log.error(
+              { err: error },
+              `Failed to start detached shell command: ${command}`,
+            );
+            redis.publish(
+              notificationChannel,
+              JSON.stringify({
+                message: `Failed to start command: ${error.message}`,
+                type: 'error',
+              }),
+            );
+            reject(error);
+          });
+
+          child.on('close', (code) => {
+            const finalMessage = `--- DETACHED COMMAND FINISHED ---\nCommand: ${command}\nExit Code: ${code}`;
+            log.info(finalMessage);
+            streamToFrontend(
+              'stdout',
+              `
+${finalMessage}`,
+              'executeShellCommand',
+            );
+            resolve(`Detached command finished with code ${code}`);
+          });
+        });
+      }
     },
     {
       concurrency: config.WORKER_CONCURRENCY,
-      connection: redis,
+      connection: redisConnection,
     },
   );
 
-  worker.on('completed', (job: Job) => {
-    logger.info(`Job ${job.id} completed.`);
-    redis.incr('leaderboard:successfulRuns').catch((error) => {
-      logger.error({ error }, 'Failed to increment successfulRuns in Redis');
-    });
+  worker.on('completed', (job) => {
+    logger.info(`Job ${job.id} terminé avec succès.`);
   });
 
-  worker.on('failed', (job: Job | undefined, err: Error) => {
-    logger.error({ err, jobId: job?.id }, `Job ${job?.id} failed.`);
+  worker.on('failed', (job, err) => {
+    logger.error({ err }, `Le job ${job?.id} a échoué`);
   });
 
-  logger.info('Worker started and listening for tasks...');
-  console.log('Worker started and listening for tasks...');
-
-  // Start the detached shell command worker
-  shellCommandWorker.run();
-  logger.info('Detached shell command worker started.');
+  logger.info('Worker initialisé et prêt à traiter les jobs.');
+  return worker;
 }
 
-async function summarizeHistory(
-  sessionData: SessionData,
-  log: typeof logger,
+// Fonction principale de traitement des tâches
+export async function processJob(
+  job: Job,
+  tools: Tool[],
   jobQueue: Queue,
-) {
-  if (sessionData.history.length > config.HISTORY_MAX_LENGTH) {
-    log.info('History length exceeds max length, summarizing...');
-    console.log('History before summarization:', sessionData.history.length);
-    const historyToSummarize = sessionData.history.slice(0, -10);
-    const textToSummarize = historyToSummarize
-      .map((msg: Message) => `${msg.role}: ${msg.content}`)
-      .join('\n');
+  sessionManager: SessionManager,
+): Promise<string> {
+  const log = logger.child({ jobId: job.id, sessionId: job.data.sessionId });
+  log.info(`Traitement du job ${job.id} avec les données:`, job.data);
 
-    try {
-      // NOTE: summarizeTool.execute might be a blocking LLM call. If summarization
-      // is a long-running process and impacts worker performance, consider offloading
-      // it to a separate, dedicated worker or process, or making it truly asynchronous.
-      const summary = await summarizeTool.execute({ text: textToSummarize }, {
-        log,
-        reportProgress: async (progress: {
-          current: number;
-          total: number;
-          unit?: string;
-        }) => {
-          log.debug(
-            `Summarize progress: ${progress.current}/${progress.total} ${progress.unit || ''}`,
-          );
-        },
-        session: sessionData,
-        streamContent: async (content: Content | Content[]) => {
-          log.debug(`Summarize stream: ${JSON.stringify(content)}`);
-        },
-        taskQueue: jobQueue,
-      } as Ctx);
-      const summarizedMessage: Message = {
-        content: `Summarized conversation: ${summary}`,
-        role: 'model',
-      };
-      sessionData.history = [
-        summarizedMessage,
-        ...sessionData.history.slice(-10),
-      ];
-      log.info('History summarized successfully.');
-    } catch (error) {
-      log.error({ error }, 'Error summarizing history');
+  const channel = `job:${job.id}:events`;
+
+  try {
+    const session = await sessionManager.getSession(job.data.sessionId);
+    const agent = new Agent(job, session, jobQueue, tools);
+    const finalResponse = await agent.run();
+
+    session.history.push({
+      content: finalResponse,
+      id: crypto.randomUUID(),
+      timestamp: Date.now(),
+      type: 'agent_response',
+    });
+
+    await sessionManager.saveSession(session, job, jobQueue);
+    return finalResponse;
+  } catch (error: unknown) {
+    const errDetails = getErrDetails(error);
+    log.error({ err: errDetails }, "Erreur dans l'exécution de l'agent");
+
+    let errorMessage = errDetails.message;
+    let eventType = 'error';
+
+    // Personnalisation des messages d'erreur courants pour l'utilisateur
+    if (error instanceof AppError || error instanceof UserError) {
+      if (errorMessage.includes('Quota exceeded')) {
+        errorMessage = 'Quota API dépassé. Veuillez réessayer plus tard.';
+        eventType = 'quota_exceeded';
+      } else if (
+        errorMessage.includes('Gemini API request failed with status 500')
+      ) {
+        errorMessage =
+          "Une erreur interne est survenue avec l'API du LLM. Veuillez réessayer plus tard ou vérifier votre clé API.";
+      } else if (errorMessage.includes('is not found for API version v1')) {
+        errorMessage =
+          "Le modèle de LLM spécifié n'a pas été trouvé ou n'est pas supporté. Veuillez vérifier votre LLM_MODEL_NAME dans le fichier .env.";
+      }
     }
+
+    redis.publish(
+      channel,
+      JSON.stringify({ message: errorMessage, type: eventType }),
+    );
+    throw error; // Relance l'erreur pour marquer le job comme échoué dans BullMQ
+  } finally {
+    // Publie toujours un événement de fermeture pour notifier le frontend
+    redis.publish(
+      channel,
+      JSON.stringify({ content: 'Stream terminé.', type: 'close' }),
+    );
+    log.info(`Traitement du job ${job.id} terminé`);
   }
 }
 
+// Démarrage direct du worker
 if (process.env.NODE_ENV !== 'test') {
-  startWorker().catch((err) => {
-    console.error('Failed to start worker:', err);
-    logger.error({ err }, 'Failed to start worker');
+  initializeWorker(redis, {} as PgClient).catch((err) => {
+    logger.error({ err }, "Échec de l'initialisation du worker");
     process.exit(1);
   });
 }

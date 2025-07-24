@@ -6,15 +6,30 @@ import {
   LlmKeyManager,
 } from '../modules/llm/LlmKeyManager.js';
 import { redis } from '../modules/redis/redisClient.js';
+import { ILlmProvider } from '../types.js';
+import { LlmError } from './LlmError.js';
 
-interface LLMProvider {
-  getLlmResponse(
-    messages: LLMContent[],
-    systemPrompt?: string,
-  ): Promise<string>;
-}
+class GeminiProvider implements ILlmProvider {
+  public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
+    if (statusCode === 401 || statusCode === 403) {
+      // Unauthorized, Forbidden - likely invalid API key
+      return LlmKeyErrorType.PERMANENT;
+    } else if (statusCode === 429) {
+      // Too Many Requests - rate limit
+      return LlmKeyErrorType.TEMPORARY;
+    } else if (statusCode >= 500) {
+      // Server errors - temporary issues
+      return LlmKeyErrorType.TEMPORARY;
+    } else if (
+      _errorBody.includes('invalid_api_key') ||
+      _errorBody.includes('Incorrect API key')
+    ) {
+      return LlmKeyErrorType.PERMANENT;
+    }
+    // Default to temporary for unknown errors
+    return LlmKeyErrorType.TEMPORARY;
+  }
 
-class GeminiProvider implements LLMProvider {
   public async getLlmResponse(
     messages: LLMContent[],
     systemPrompt?: string,
@@ -25,7 +40,7 @@ class GeminiProvider implements LLMProvider {
     if (!activeKey) {
       const errorMessage = 'No LLM API key available.';
       log.error(errorMessage);
-      return `{"tool": "error", "parameters": {"message": "${errorMessage}"}}`;
+      throw new LlmError(errorMessage);
     }
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${config.LLM_MODEL_NAME}:generateContent?key=${activeKey.key}`;
@@ -62,7 +77,7 @@ class GeminiProvider implements LLMProvider {
           activeKey.key,
           errorType,
         );
-        return `{"tool": "error", "parameters": {"message": "${errorMessage}"}}`;
+        throw new LlmError(errorMessage);
       }
 
       const data = await response.json();
@@ -82,7 +97,9 @@ class GeminiProvider implements LLMProvider {
           activeKey.key,
           errorType,
         );
-        return `{"tool": "error", "parameters": {"message": "Invalid response structure from Gemini API. The model may have returned an empty response."}}`;
+        throw new LlmError(
+          'Invalid response structure from Gemini API. The model may have returned an empty response.',
+        );
       }
 
       // Placeholder for token counting. In a real scenario, you'd parse the API response
@@ -100,16 +117,19 @@ class GeminiProvider implements LLMProvider {
         ) + content.length;
       redis
         .incrby('leaderboard:tokensSaved', estimatedTokens)
-        .catch((error: unknown) => {
-          logger.error({ error }, 'Failed to increment tokensSaved in Redis');
+        .catch((_error: unknown) => {
+          logger.error({ _error }, 'Failed to increment tokensSaved in Redis');
         });
 
       // If successful, reset error count for this key
       await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
 
       return content.trim();
-    } catch (error) {
-      log.error({ error }, 'Failed to get response from LLM');
+    } catch (_error) {
+      if (_error instanceof LlmError) {
+        throw _error;
+      }
+      log.error({ _error }, 'Failed to get response from LLM');
       if (activeKey) {
         // Assume network errors or unhandled exceptions are temporary
         await LlmKeyManager.markKeyAsBad(
@@ -118,11 +138,16 @@ class GeminiProvider implements LLMProvider {
           LlmKeyErrorType.TEMPORARY,
         );
       }
-      return `{"tool": "error", "parameters": {"message": "Failed to communicate with the LLM."}}`;
+      throw new LlmError('Failed to communicate with the LLM.');
     }
   }
+}
 
-  private getErrorType(statusCode: number, errorBody: string): LlmKeyErrorType {
+class HuggingFaceProvider implements ILlmProvider {
+  public getErrorType(
+    statusCode: number,
+    _errorBody: string,
+  ): LlmKeyErrorType {
     if (statusCode === 401 || statusCode === 403) {
       // Unauthorized, Forbidden - likely invalid API key
       return LlmKeyErrorType.PERMANENT;
@@ -133,17 +158,15 @@ class GeminiProvider implements LLMProvider {
       // Server errors - temporary issues
       return LlmKeyErrorType.TEMPORARY;
     } else if (
-      errorBody.includes('API key not valid') ||
-      errorBody.includes('invalid_api_key')
+      _errorBody.includes('invalid_api_key') ||
+      _errorBody.includes('Authorization header is invalid')
     ) {
       return LlmKeyErrorType.PERMANENT;
     }
     // Default to temporary for unknown errors
     return LlmKeyErrorType.TEMPORARY;
   }
-}
 
-class HuggingFaceProvider implements LLMProvider {
   public async getLlmResponse(
     messages: LLMContent[],
     systemPrompt?: string,
@@ -154,9 +177,7 @@ class HuggingFaceProvider implements LLMProvider {
     if (!activeKey) {
       const errorMessage = 'No LLM API key available.';
       log.error(errorMessage);
-      return (
-        '{"tool": "error", "parameters": {"message": "' + errorMessage + '"}}'
-      );
+      throw new LlmError(errorMessage);
     }
 
     const apiUrl = `https://api-inference.huggingface.co/models/${config.LLM_MODEL_NAME}`;
@@ -197,9 +218,7 @@ class HuggingFaceProvider implements LLMProvider {
           activeKey.key,
           errorType,
         );
-        return (
-          '{"tool": "error", "parameters": {"message": "' + errorMessage + '"}}'
-        );
+        throw new LlmError(errorMessage);
       }
 
       const data = await response.json();
@@ -219,7 +238,9 @@ class HuggingFaceProvider implements LLMProvider {
           activeKey.key,
           errorType,
         );
-        return '{"tool": "error", "parameters": {"message": "Invalid response structure from HuggingFace API. The model may have returned an empty response."}}';
+        throw new LlmError(
+          'Invalid response structure from HuggingFace API. The model may have returned an empty response.',
+        );
       }
 
       // Placeholder for token counting
@@ -235,15 +256,18 @@ class HuggingFaceProvider implements LLMProvider {
         ) + content.length;
       redis
         .incrby('leaderboard:tokensSaved', estimatedTokens)
-        .catch((error: unknown) => {
-          logger.error({ error }, 'Failed to increment tokensSaved in Redis');
+        .catch((_error: unknown) => {
+          logger.error({ _error }, 'Failed to increment tokensSaved in Redis');
         });
 
       await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
 
       return content.trim();
-    } catch (error) {
-      log.error({ error }, 'Failed to get response from LLM');
+    } catch (_error) {
+      if (_error instanceof LlmError) {
+        throw _error;
+      }
+      log.error({ _error }, 'Failed to get response from LLM');
       if (activeKey) {
         // Assume network errors or unhandled exceptions are temporary
         await LlmKeyManager.markKeyAsBad(
@@ -252,11 +276,13 @@ class HuggingFaceProvider implements LLMProvider {
           LlmKeyErrorType.TEMPORARY,
         );
       }
-      return '{"tool": "error", "parameters": {"message": "Failed to communicate with the LLM."}}';
+      throw new LlmError('Failed to communicate with the LLM.');
     }
   }
+}
 
-  private getErrorType(statusCode: number, errorBody: string): LlmKeyErrorType {
+class MistralProvider implements ILlmProvider {
+  public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
     if (statusCode === 401 || statusCode === 403) {
       // Unauthorized, Forbidden - likely invalid API key
       return LlmKeyErrorType.PERMANENT;
@@ -266,18 +292,11 @@ class HuggingFaceProvider implements LLMProvider {
     } else if (statusCode >= 500) {
       // Server errors - temporary issues
       return LlmKeyErrorType.TEMPORARY;
-    } else if (
-      errorBody.includes('invalid_api_key') ||
-      errorBody.includes('Authorization header is invalid')
-    ) {
-      return LlmKeyErrorType.PERMANENT;
     }
     // Default to temporary for unknown errors
     return LlmKeyErrorType.TEMPORARY;
   }
-}
 
-class MistralProvider implements LLMProvider {
   public async getLlmResponse(
     messages: LLMContent[],
     systemPrompt?: string,
@@ -288,7 +307,7 @@ class MistralProvider implements LLMProvider {
     if (!activeKey) {
       const errorMessage = 'No LLM API key available.';
       log.error(errorMessage);
-      return `{"tool": "error", "parameters": {"message": "${errorMessage}"}}`;
+      throw new LlmError(errorMessage);
     }
 
     const apiUrl = 'https://api.mistral.ai/v1/chat/completions';
@@ -329,7 +348,7 @@ class MistralProvider implements LLMProvider {
           activeKey.key,
           errorType,
         );
-        return `{"tool": "error", "parameters": {"message": "${errorMessage}"}}`;
+        throw new LlmError(errorMessage);
       }
 
       const data = await response.json();
@@ -349,7 +368,9 @@ class MistralProvider implements LLMProvider {
           activeKey.key,
           errorType,
         );
-        return `{"tool": "error", "parameters": {"message": "Invalid response structure from Mistral API. The model may have returned an empty response."}}`;
+        throw new LlmError(
+          'Invalid response structure from Mistral API. The model may have returned an empty response.',
+        );
       }
 
       // Placeholder for token counting
@@ -365,15 +386,18 @@ class MistralProvider implements LLMProvider {
         ) + content.length;
       redis
         .incrby('leaderboard:tokensSaved', estimatedTokens)
-        .catch((error: unknown) => {
-          logger.error({ error }, 'Failed to increment tokensSaved in Redis');
+        .catch((_error: unknown) => {
+          logger.error({ _error }, 'Failed to increment tokensSaved in Redis');
         });
 
       await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
 
       return content.trim();
-    } catch (error) {
-      log.error({ error }, 'Failed to get response from LLM');
+    } catch (_error) {
+      if (_error instanceof LlmError) {
+        throw _error;
+      }
+      log.error({ _error }, 'Failed to get response from LLM');
       if (activeKey) {
         // Assume network errors or unhandled exceptions are temporary
         await LlmKeyManager.markKeyAsBad(
@@ -382,11 +406,13 @@ class MistralProvider implements LLMProvider {
           LlmKeyErrorType.TEMPORARY,
         );
       }
-      return `{"tool": "error", "parameters": {"message": "Failed to communicate with the LLM."}}`;
+      throw new LlmError('Failed to communicate with the LLM.');
     }
   }
+}
 
-  private getErrorType(statusCode: number, errorBody: string): LlmKeyErrorType {
+class OpenAIProvider implements ILlmProvider {
+  public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
     if (statusCode === 401 || statusCode === 403) {
       // Unauthorized, Forbidden - likely invalid API key
       return LlmKeyErrorType.PERMANENT;
@@ -397,17 +423,15 @@ class MistralProvider implements LLMProvider {
       // Server errors - temporary issues
       return LlmKeyErrorType.TEMPORARY;
     } else if (
-      errorBody.includes('invalid_api_key') ||
-      errorBody.includes('Incorrect API key')
+      _errorBody.includes('invalid_api_key') ||
+      _errorBody.includes('Incorrect API key')
     ) {
       return LlmKeyErrorType.PERMANENT;
     }
     // Default to temporary for unknown errors
     return LlmKeyErrorType.TEMPORARY;
   }
-}
 
-class OpenAIProvider implements LLMProvider {
   public async getLlmResponse(
     messages: LLMContent[],
     systemPrompt?: string,
@@ -418,7 +442,7 @@ class OpenAIProvider implements LLMProvider {
     if (!activeKey) {
       const errorMessage = 'No LLM API key available.';
       log.error(errorMessage);
-      return `{"tool": "error", "parameters": {"message": "${errorMessage}"}}`;
+      throw new LlmError(errorMessage);
     }
 
     const apiUrl = 'https://api.openai.com/v1/chat/completions';
@@ -459,7 +483,7 @@ class OpenAIProvider implements LLMProvider {
           activeKey.key,
           errorType,
         );
-        return `{"tool": "error", "parameters": {"message": "${errorMessage}"}}`;
+        throw new LlmError(errorMessage);
       }
 
       const data = await response.json();
@@ -479,7 +503,9 @@ class OpenAIProvider implements LLMProvider {
           activeKey.key,
           errorType,
         );
-        return `{"tool": "error", "parameters": {"message": "Invalid response structure from OpenAI API. The model may have returned an empty response."}}`;
+        throw new LlmError(
+          'Invalid response structure from OpenAI API. The model may have returned an empty response.',
+        );
       }
 
       // Placeholder for token counting
@@ -495,15 +521,18 @@ class OpenAIProvider implements LLMProvider {
         ) + content.length;
       redis
         .incrby('leaderboard:tokensSaved', estimatedTokens)
-        .catch((error: unknown) => {
-          logger.error({ error }, 'Failed to increment tokensSaved in Redis');
+        .catch((_error: unknown) => {
+          logger.error({ _error }, 'Failed to increment tokensSaved in Redis');
         });
 
       await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
 
       return content.trim();
-    } catch (error) {
-      log.error({ error }, 'Failed to get response from LLM');
+    } catch (_error) {
+      if (_error instanceof LlmError) {
+        throw _error;
+      }
+      log.error({ _error }, 'Failed to get response from LLM');
       if (activeKey) {
         // Assume network errors or unhandled exceptions are temporary
         await LlmKeyManager.markKeyAsBad(
@@ -512,33 +541,13 @@ class OpenAIProvider implements LLMProvider {
           LlmKeyErrorType.TEMPORARY,
         );
       }
-      return `{"tool": "error", "parameters": {"message": "Failed to communicate with the LLM."}}`;
+      throw new LlmError('Failed to communicate with the LLM.');
     }
-  }
-
-  private getErrorType(statusCode: number, errorBody: string): LlmKeyErrorType {
-    if (statusCode === 401 || statusCode === 403) {
-      // Unauthorized, Forbidden - likely invalid API key
-      return LlmKeyErrorType.PERMANENT;
-    } else if (statusCode === 429) {
-      // Too Many Requests - rate limit
-      return LlmKeyErrorType.TEMPORARY;
-    } else if (statusCode >= 500) {
-      // Server errors - temporary issues
-      return LlmKeyErrorType.TEMPORARY;
-    } else if (
-      errorBody.includes('invalid_api_key') ||
-      errorBody.includes('Incorrect API key')
-    ) {
-      return LlmKeyErrorType.PERMANENT;
-    }
-    // Default to temporary for unknown errors
-    return LlmKeyErrorType.TEMPORARY;
   }
 }
 
-export function getLlmProvider(): LLMProvider {
-  let currentLlmProvider: LLMProvider;
+export function getLlmProvider(): ILlmProvider {
+  let currentLlmProvider: ILlmProvider;
 
   switch (config.LLM_PROVIDER) {
     case 'gemini':

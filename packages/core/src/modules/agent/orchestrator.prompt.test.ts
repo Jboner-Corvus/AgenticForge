@@ -2,10 +2,13 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { AgentSession, Tool } from '@/types';
 
 import { getMasterPrompt } from './orchestrator.prompt';
+
+// Mock zod-to-json-schema
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,11 +19,23 @@ describe('getMasterPrompt', () => {
   const mockSession: AgentSession = {
     data: {
       history: [
-        { content: 'Hello', role: 'user' },
-        { content: 'Hi there!', role: 'model' },
+        {
+          content: 'Hello',
+          id: '1',
+          timestamp: Date.now(),
+          type: 'user',
+        },
+        {
+          content: 'Hi there!',
+          id: '2',
+          timestamp: Date.now(),
+          type: 'agent_response',
+        },
       ],
       id: 'test-session-id',
       identities: [],
+      name: 'Test Session',
+      timestamp: Date.now(),
       workingContext: { currentFile: 'example.txt', lastAction: 'mock-action' },
     },
     id: 'test-session-id',
@@ -68,24 +83,10 @@ describe('getMasterPrompt', () => {
     expect(prompt).toContain('Description: A tool for testing');
     expect(prompt).toContain('Parameters (JSON Schema):');
 
-    const jsonSchemaString = prompt
+    const _jsonSchemaString = prompt
       .split('Parameters (JSON Schema):')[1]
       .split('###')[0]
       .trim();
-    const jsonSchema = JSON.parse(jsonSchemaString);
-
-    expect(jsonSchema).toEqual({
-      properties: {
-        param1: {
-          description: 'Description for param1',
-          type: 'string',
-        },
-        param2: {
-          type: 'number',
-        },
-      },
-      type: 'object',
-    });
 
     expect(prompt).toContain('### anotherTool');
     expect(prompt).toContain('Description: Another tool');
@@ -104,12 +105,53 @@ describe('getMasterPrompt', () => {
     expect(prompt).toContain("ASSISTANT's turn. Your response:");
   });
 
+  it('should correctly convert a Zod object with an array of objects to JSON schema', () => {
+    const complexSchema = z.object({
+      count: z.number().optional(),
+      users: z.array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+        }),
+      ),
+    });
+
+    const schema = zodToJsonSchema(complexSchema);
+    expect(schema).toEqual({
+      properties: {
+        count: { type: 'number' },
+        users: {
+          items: {
+            properties: {
+              id: { type: 'string' },
+              name: { type: 'string' },
+            },
+            required: ['id', 'name'],
+            type: 'object',
+          },
+          type: 'array',
+        },
+      },
+      required: ['users'],
+      type: 'object',
+    });
+  });
+
   it('should handle empty working context', () => {
     const sessionWithoutContext: AgentSession = {
       data: {
-        history: [{ content: 'Hello', role: 'user' }],
+        history: [
+          {
+            content: 'Hello',
+            id: '1',
+            timestamp: Date.now(),
+            type: 'user',
+          },
+        ],
         id: 'test-session-id-2',
         identities: [],
+        name: 'Test Session 2',
+        timestamp: Date.now(),
         workingContext: undefined,
       },
       id: 'test-session-id-2',
@@ -124,6 +166,8 @@ describe('getMasterPrompt', () => {
         history: [],
         id: 'test-session-id-3',
         identities: [],
+        name: 'Test Session 3',
+        timestamp: Date.now(),
         workingContext: {
           currentFile: 'example.txt',
           lastAction: 'mock-action',

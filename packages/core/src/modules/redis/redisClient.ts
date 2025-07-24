@@ -16,27 +16,22 @@ import logger from '../../logger.js';
 // Détermine l'hôte Redis en fonction de l'environnement d'exécution.
 // Si le worker est local (pas dans Docker), il doit utiliser 'localhost'.
 // Si le worker est dans Docker, il doit utiliser le nom de service 'redis'.
-const redisHost =
-  process.env.DOCKER === 'true' ? config.REDIS_HOST : 'localhost';
+const redisHost = config.REDIS_HOST;
 const redisUrl = `redis://${redisHost}:${config.REDIS_PORT}`;
 
-logger.info(`[redisClient] Resolved redisHost: ${redisHost}`);
-logger.info(`[redisClient] Connecting to Redis at: ${redisUrl}`);
-
-console.log('[redisClient] Before Redis instantiation');
 // Utiliser l'URL construite pour la connexion
+ 
 export const redis = new Redis(redisUrl, {
   db: config.REDIS_DB,
-  maxRetriesPerRequest: null, // Permet des tentatives de reconnexion infinies
+  maxRetriesPerRequest: null, // Allows infinite reconnection attempts. Consider limiting or implementing a circuit breaker for persistent issues.
   retryStrategy: (times) => {
     const delay = Math.min(times * 50, 2000); // Backoff exponentiel, max 2 secondes
     logger.warn(
-      `[redisClient] Retrying Redis connection (attempt ${times}). Next retry in ${delay}ms.`,
+      `[Redis] Retrying connection to ${redisUrl} (attempt ${times})`,
     );
     return delay;
   },
 });
-console.log('[redisClient] After Redis instantiation');
 
 redis.on('error', (err: Error) => {
   logger.error({ err }, 'Redis Client Error');

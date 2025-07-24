@@ -17,6 +17,8 @@ export const AppInitializer = () => {
   const setSessionId = useStore((state) => state.setSessionId);
   const setTokenStatus = useStore((state) => state.setTokenStatus);
   const fetchAndDisplayToolCount = useStore((state) => state.fetchAndDisplayToolCount);
+  const toggleDarkMode = useStore((state) => state.toggleDarkMode);
+  const toggleHighContrastMode = useStore((state) => state.toggleHighContrastMode);
 
   const initializeSession = useCallback(() => {
     let currentSessionId = localStorage.getItem('agenticForgeSessionId');
@@ -58,12 +60,34 @@ export const AppInitializer = () => {
   }, [addDebugLog, setAuthToken, setTokenStatus, fetchAndDisplayToolCount]);
 
   useEffect(() => {
-    addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${fr.interfaceInitialized}.`);
-    initializeSession();
-    initializeAuthToken();
-    checkServerHealth();
-    addMessage({      type: 'agent_response',      content: fr.agentReady,    });
-  }, [checkServerHealth, initializeAuthToken, initializeSession, addDebugLog, addMessage]);
+    const initialize = async () => {
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${fr.interfaceInitialized}.`);
+      initializeSession();
+      initializeAuthToken();
+      await checkServerHealth();
+      await useStore.getState().initializeSessionAndMessages();
+      addMessage({ type: 'agent_response', content: fr.agentReady });
+
+      // Apply dark mode and high contrast mode based on initial store state
+      const isDarkMode = useStore.getState().isDarkMode;
+      const storedDarkMode = localStorage.getItem('agenticForgeDarkMode');
+      if (storedDarkMode === 'true' && !isDarkMode) {
+        toggleDarkMode();
+      } else if (storedDarkMode === 'false' && isDarkMode) {
+        toggleDarkMode();
+      }
+
+      const isHighContrastMode = useStore.getState().isHighContrastMode;
+      const storedHighContrastMode = localStorage.getItem('agenticForgeHighContrastMode');
+      if (storedHighContrastMode === 'true' && !isHighContrastMode) {
+        toggleHighContrastMode();
+      } else if (storedHighContrastMode === 'false' && isHighContrastMode) {
+        toggleHighContrastMode();
+      }
+    };
+
+    initialize();
+  }, [checkServerHealth, initializeAuthToken, initializeSession, addDebugLog, addMessage, toggleDarkMode, toggleHighContrastMode]);
 
   return null; // This component doesn't render anything visible
 };

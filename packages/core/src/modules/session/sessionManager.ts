@@ -1,5 +1,6 @@
 import { Job, Queue } from 'bullmq';
 import { Content } from 'fastmcp';
+import { Client as PgClient } from 'pg';
 
 import { Ctx, Message, SessionData } from '@/types.js';
 
@@ -9,51 +10,19 @@ import { getLlmProvider } from '../../utils/llmProvider.js';
 import { redis } from '../redis/redisClient.js';
 import { summarizeTool } from '../tools/definitions/ai/summarize.tool.js';
 
-const SESSION_EXPIRATION = 7 * 24 * 60 * 60; // 7 days
-
 export type Session = SessionData;
 
 export class SessionManager {
-  private static readonly activeSessions = new Map<string, SessionData>();
+  private static activeSessions = new Map<string, SessionData>();
+  private pgClient: PgClient;
 
-  public static async getSession(sessionId: string): Promise<SessionData> {
-    if (this.activeSessions.has(sessionId)) {
-      logger.info({ sessionId }, 'Reusing existing session data from memory.');
-      return this.activeSessions.get(sessionId)!;
-    }
-
-    const historyKey = `session:${sessionId}:history`;
-    const storedHistory = await redis.get(historyKey);
-    const initialHistory: Message[] = storedHistory
-      ? JSON.parse(storedHistory)
-      : [];
-
-    const sessionData: SessionData = {
-      history: initialHistory,
-      id: sessionId,
-      identities: [{ id: 'user', type: 'email' }], // Placeholder
-    };
-
-    this.activeSessions.set(sessionId, sessionData);
-    logger.info({ sessionId }, 'Created new session data from Redis.');
-    return sessionData;
+  constructor(pgClient: PgClient) {
+    this.pgClient = pgClient;
+    this.initDb();
   }
 
-  public static async saveSession(
-    session: SessionData,
-    job: Job,
-    taskQueue: Queue,
-  ): Promise<void> {
-    if (session.history.length > config.HISTORY_MAX_LENGTH) {
-      await this.summarizeHistory(session, job, taskQueue);
-    }
-
-    const historyKey = `session:${session.id}:history`;
-    const historyJson = JSON.stringify(session.history);
-
-    await redis.set(historyKey, historyJson, 'EX', SESSION_EXPIRATION);
-    this.activeSessions.set(session.id, session);
-    logger.info({ sessionId: session.id }, 'Session history saved to Redis.');
+  public static clearActiveSessionsForTest(): void {
+    SessionManager.activeSessions.clear();
   }
 
   private static createToolContext(
@@ -62,6 +31,7 @@ export class SessionManager {
     taskQueue: Queue,
     log: typeof logger,
   ): Ctx {
+    // Ensure all fields are relevant and correctly typed.
     return {
       job,
       llm: getLlmProvider(),
@@ -78,8 +48,19 @@ export class SessionManager {
         );
       },
       session,
-      streamContent: async (content: Content | Content[]) => {
+      streamContent: async (
+        content: Content | Content[],
+        toolName?: string,
+      ) => {
         log.debug(`Tool stream: ${JSON.stringify(content)}`);
+        // Publish to Redis channel for SSE
+        const channel = `job:${job.id}:events`;
+        const message = JSON.stringify({
+          content: String(content),
+          toolName: toolName || 'unknown_tool',
+          type: 'tool_stream',
+        });
+        redis.publish(channel, message);
       },
       taskQueue,
     };
@@ -94,10 +75,15 @@ export class SessionManager {
     log.info('History length exceeds max length, summarizing...');
     const historyToSummarize = session.history.slice(
       0,
-      session.history.length - config.HISTORY_MAX_LENGTH,
+      session.history.length - config.HISTORY_MAX_LENGTH, // Logic ensures we summarize older messages, keeping recent ones.
     );
     const textToSummarize = historyToSummarize
-      .map((msg: Message) => `${msg.role}: ${msg.content}`)
+      .map((msg: Message) => {
+        if ('content' in msg) {
+          return `${msg.type}: ${msg.content}`;
+        }
+        return '';
+      })
       .join('\n');
 
     try {
@@ -108,7 +94,9 @@ export class SessionManager {
       );
       const summarizedMessage: Message = {
         content: `Summarized conversation: ${summary}`,
-        role: 'model',
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        type: 'agent_response',
       };
       session.history = [
         summarizedMessage,
@@ -117,6 +105,206 @@ export class SessionManager {
       log.info('History summarized successfully.');
     } catch (error) {
       log.error({ error }, 'Error summarizing history');
+      // Propagate the error to prevent saving a session with a too-long history
+      throw error;
+    }
+  }
+
+  public async deleteSession(sessionId: string): Promise<void> {
+    await this.pgClient.query('DELETE FROM sessions WHERE id = $1', [
+      sessionId,
+    ] as any[]);
+    SessionManager.activeSessions.delete(sessionId);
+    logger.info({ sessionId }, 'Session deleted from PostgreSQL and memory.');
+  }
+
+  public async getAllSessions(): Promise<SessionData[]> {
+    const res = await this.pgClient.query(
+      'SELECT id, name, timestamp, identities FROM sessions ORDER BY timestamp DESC',
+    );
+    return res.rows.map((row) => ({
+      history: [], // History is not loaded in this overview
+      id: row.id,
+      identities: row.identities || [],
+      name: row.name,
+      timestamp: parseInt(row.timestamp, 10),
+    }));
+  }
+
+  public async getSession(sessionId: string): Promise<SessionData> {
+    if (SessionManager.activeSessions.has(sessionId)) {
+      logger.info({ sessionId }, 'Reusing existing session data from memory.');
+      return SessionManager.activeSessions.get(sessionId)!;
+    }
+
+    const res = await this.pgClient.query(
+      'SELECT * FROM sessions WHERE id = $1',
+      [sessionId] as any[],
+    );
+    let initialHistory: Message[] = [];
+    let sessionName = `Session ${new Date().toLocaleString()}`;
+    let sessionTimestamp = Date.now();
+    let identities: any[] = [];
+
+    if (res.rows.length > 0) {
+      const storedSession = res.rows[0];
+      try {
+        if (typeof storedSession.messages === 'string') {
+          initialHistory = JSON.parse(storedSession.messages) as Message[];
+        } else if (Array.isArray(storedSession.messages)) {
+          initialHistory = storedSession.messages;
+        }
+      } catch (error) {
+        logger.error({ error, sessionId }, 'Failed to parse messages from DB');
+        initialHistory = [];
+      }
+      sessionName = storedSession.name;
+      sessionTimestamp = parseInt(storedSession.timestamp, 10);
+      identities = storedSession.identities || [];
+    } else {
+      logger.info(
+        { sessionId },
+        'No session found in PostgreSQL, creating new one.',
+      );
+    }
+
+    const historyToUse =
+      config.HISTORY_LOAD_LENGTH > 0 &&
+      initialHistory.length > config.HISTORY_LOAD_LENGTH
+        ? initialHistory.slice(-config.HISTORY_LOAD_LENGTH)
+        : initialHistory;
+
+    const sessionData: SessionData = {
+      history: historyToUse,
+      id: sessionId,
+      identities: identities,
+      name: sessionName,
+      timestamp: sessionTimestamp,
+    };
+
+    SessionManager.activeSessions.set(sessionId, sessionData);
+    logger.info({ sessionId }, 'Created new session data from PostgreSQL.');
+    return sessionData;
+  }
+
+  public async renameSession(
+    sessionId: string,
+    newName: string,
+  ): Promise<SessionData> {
+    const session = await this.getSession(sessionId);
+    if (!session) {
+      throw new Error(`Session with ID ${sessionId} not found.`);
+    }
+
+    session.name = newName;
+    await this.pgClient.query('UPDATE sessions SET name = $1 WHERE id = $2', [
+      newName,
+      sessionId,
+    ]);
+    SessionManager.activeSessions.set(sessionId, session);
+    logger.info(
+      { newName, sessionId },
+      'Session renamed in PostgreSQL and memory.',
+    );
+    return session;
+  }
+
+  public async saveSession(
+    session: SessionData,
+    job: Job,
+    taskQueue: Queue,
+  ): Promise<void> {
+    try {
+      if (session.history.length > config.HISTORY_MAX_LENGTH) {
+        await SessionManager.summarizeHistory(session, job, taskQueue);
+      }
+
+      await this.pgClient.query(
+        'INSERT INTO sessions (id, name, messages, timestamp) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, messages = EXCLUDED.messages, timestamp = EXCLUDED.timestamp',
+        [
+          session.id,
+          session.name,
+          JSON.stringify(session.history) as any,
+          session.timestamp.toString() as any,
+        ] as (any | string)[],
+      );
+      SessionManager.activeSessions.set(session.id, session);
+      logger.info(
+        { sessionId: session.id },
+        'Session history saved to PostgreSQL.',
+      );
+    } catch (error) {
+      logger.error({ error }, 'Error saving session');
+      // Re-throw the error to be handled by the agent loop
+      throw error;
+    }
+  }
+
+  private async initDb() {
+    await this.pgClient.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id VARCHAR(255) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        messages JSONB NOT NULL,
+        timestamp BIGINT NOT NULL
+      );
+    `);
+    logger.info('PostgreSQL sessions table ensured.');
+  }
+
+  private parseStoredMessage(rawMessage: any): Message {
+    // This logic mirrors the client-side parsing that will be removed
+    // Ensure it correctly maps raw DB message objects to ChatMessage union types
+    const baseProps = {
+      id: rawMessage.id || crypto.randomUUID(),
+      timestamp: rawMessage.timestamp || Date.now(),
+    };
+
+    switch (rawMessage.type) {
+      case 'agent_canvas_output':
+        return {
+          ...baseProps,
+          content: rawMessage.content,
+          contentType: rawMessage.contentType,
+          type: 'agent_canvas_output',
+        };
+      case 'agent_response':
+        return {
+          ...baseProps,
+          content: rawMessage.content,
+          type: 'agent_response',
+        };
+      case 'agent_thought':
+        return {
+          ...baseProps,
+          content: rawMessage.content,
+          type: 'agent_thought',
+        };
+      case 'error':
+        return { ...baseProps, content: rawMessage.content, type: 'error' };
+      case 'tool_call':
+        return {
+          ...baseProps,
+          params: rawMessage.params,
+          toolName: rawMessage.toolName,
+          type: 'tool_call',
+        };
+      case 'tool_result':
+        return {
+          ...baseProps,
+          result: rawMessage.result,
+          toolName: rawMessage.toolName,
+          type: 'tool_result',
+        };
+      case 'user':
+        return { ...baseProps, content: rawMessage.content, type: 'user' };
+      default:
+        // Fallback for unknown types or older messages
+        return {
+          ...baseProps,
+          content: rawMessage.content || '',
+          type: 'agent_response',
+        };
     }
   }
 }

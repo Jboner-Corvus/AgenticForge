@@ -1,8 +1,8 @@
-console.log('<<<<< LOADING toolLoader.ts >>>>>');
-// import * as chokidar from 'chokidar';
+import * as chokidar from 'chokidar';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { z } from 'zod';
 
 import type { Tool } from '@/types.js';
 
@@ -10,13 +10,21 @@ import logger from '../logger.js';
 import { toolRegistry } from '../modules/tools/toolRegistry.js';
 import { getErrDetails } from './errorUtils.js';
 
+// Schéma Zod pour valider la structure d'un outil
+const toolSchema = z.object({
+  description: z.string(),
+  execute: z.unknown(),
+  name: z.string(),
+  parameters: z.unknown(), // We expect a ZodObject, but z.any() is used here to avoid circular dependencies with ZodObject type
+});
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Cache pour stocker les chemins des fichiers d'outils chargés pour éviter les doublons
 const loadedToolFiles = new Set<string>();
 const fileToToolNameMap = new Map<string, string>();
-// let watcher: chokidar.FSWatcher | null = null;
+let watcher: chokidar.FSWatcher | null = null;
 
 const runningInDist = process.env.NODE_ENV === 'production';
 const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
@@ -25,10 +33,10 @@ const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
 export function _resetTools(): void {
   loadedToolFiles.clear();
   fileToToolNameMap.clear();
-  // if (watcher) {
-  //   watcher.close();
-  //   watcher = null;
-  // }
+  if (watcher) {
+    watcher.close();
+    watcher = null;
+  }
   // Note: Le toolRegistry n'est pas réinitialisé ici car il est un singleton global.
   // Les tests doivent gérer la réinitialisation du toolRegistry si nécessaire.
 }
@@ -40,9 +48,9 @@ export function _resetTools(): void {
 export async function getTools(): Promise<Tool[]> {
   if (loadedToolFiles.size === 0) {
     await _internalLoadTools();
-    // if (!watcher) {
-    //   watchTools();
-    // }
+    if (!watcher) {
+      watchTools();
+    }
   }
   return toolRegistry.getAll();
 }
@@ -54,11 +62,11 @@ export async function getTools(): Promise<Tool[]> {
 async function _internalLoadTools(): Promise<void> {
   logger.info(`[_internalLoadTools] Starting to load tools dynamically.`);
   const toolsDir = getToolsDir();
-  console.log(`[toolLoader] Resolved toolsDir: ${toolsDir}`);
+
   let toolFiles: string[] = []; // Declare toolFiles here
   try {
     toolFiles = await findToolFiles(toolsDir, fileExtension);
-    console.log(`[toolLoader] Found tool files: ${toolFiles.join(', ')}`);
+
     logger.info(
       `[_internalLoadTools] Found tool files: ${toolFiles.join(', ')}`,
     );
@@ -90,19 +98,18 @@ async function findToolFiles(
   extension: string,
 ): Promise<string[]> {
   let files: string[] = [];
-  console.log(`[findToolFiles] Scanning directory: ${dir}`);
+
   logger.info(`[findToolFiles] Scanning directory: ${dir}`);
   try {
     const entries = await fs.readdir(dir, { withFileTypes: true });
-    console.log(`[findToolFiles] Found ${entries.length} entries in ${dir}`);
+
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
-      console.log(`[findToolFiles] Processing entry: ${fullPath}`);
+
       if (entry.isDirectory()) {
         files = files.concat(await findToolFiles(fullPath, extension));
       } else if (entry.isFile() && entry.name.endsWith(extension)) {
         files.push(fullPath);
-        console.log(`[findToolFiles] Added tool file: ${fullPath}`);
       }
     }
   } catch (error) {
@@ -112,16 +119,14 @@ async function findToolFiles(
       directory: dir,
       logContext: "Erreur lors du parcours du répertoire d'outils.",
     });
-    console.error(
-      `[findToolFiles] Error: ${errDetails.message} in directory: ${dir}`,
-    );
+
     // Re-throw ENOENT errors as they indicate a missing tools directory,
     // which should be a fatal error for the application.
     throw new Error(
       `Impossible de lire le répertoire des outils '${dir}'. Détails: ${errDetails.message}`,
     );
   }
-  console.log(`[findToolFiles] Returning ${files.length} files from ${dir}`);
+
   return files;
 }
 
@@ -140,13 +145,10 @@ function getToolsDir(): string {
 
 async function loadToolFile(file: string): Promise<void> {
   try {
-    // Invalidate module cache for dynamic loading
-    if (process.env.NODE_ENV === 'development') {
-      const resolvedPath = path.resolve(file);
-
-      delete (global as any)._moduleCache?.[resolvedPath];
-    }
-
+    // NOTE: The cache-busting query parameter is a simple solution for development
+    // to ensure that the latest version of the tool is loaded on each restart.
+    // For production, a more robust strategy like restarting the worker process
+    // would be more reliable.
     const module = await import(`${path.resolve(file)}?update=${Date.now()}`);
     logger.info(
       { file, moduleExports: Object.keys(module) },
@@ -155,23 +157,20 @@ async function loadToolFile(file: string): Promise<void> {
 
     for (const exportName in module) {
       const exportedItem = module[exportName];
-      if (
-        exportedItem &&
-        typeof exportedItem === 'object' &&
-        'name' in exportedItem &&
-        'execute' in exportedItem
-      ) {
+      const parsedTool = toolSchema.safeParse(exportedItem);
+      if (parsedTool.success) {
+        const tool = parsedTool.data;
         logger.info(
           { file, toolName: exportedItem.name },
           `[loadToolFile] Registering tool`,
         );
-        toolRegistry.register(exportedItem as Tool);
+        toolRegistry.register(tool as Tool);
         loadedToolFiles.add(file);
-        fileToToolNameMap.set(file, exportedItem.name);
+        fileToToolNameMap.set(file, tool.name);
       } else {
         logger.warn(
-          { exportName, file },
-          `[loadToolFile] Skipping non-tool export`,
+          { errors: parsedTool.error.issues, exportName, file },
+          `[loadToolFile] Skipping invalid tool export due to schema mismatch.`,
         );
       }
     }
@@ -182,4 +181,51 @@ async function loadToolFile(file: string): Promise<void> {
       logContext: `[loadToolFile] Failed to dynamically load tool file.`,
     });
   }
+}
+
+function watchTools() {
+  const toolsDir = getToolsDir();
+  logger.info(`[watchTools] Watching for tool changes in: ${toolsDir}`);
+
+  watcher = chokidar.watch(
+    `${toolsDir}/**/*.tool.${runningInDist ? 'js' : 'ts'}`,
+    {
+      ignored: /(^|[\/\\])\../, // ignore dotfiles
+      ignoreInitial: true, // Don't trigger add events on startup
+      persistent: true,
+    },
+  );
+
+  watcher.on('add', async (filePath) => {
+    logger.info(`[watchTools] New tool file added: ${filePath}`);
+    await loadToolFile(filePath);
+  });
+
+  watcher.on('change', async (filePath) => {
+    logger.info(`[watchTools] Tool file changed: ${filePath}`);
+    // Invalidate module cache for hot reloading
+    // This is a simplified approach and might not work for all scenarios
+    // For a robust solution, consider a custom module loader or process restart
+    delete require.cache[require.resolve(filePath)];
+    await loadToolFile(filePath);
+  });
+
+  watcher.on('unlink', (filePath) => {
+    logger.info(`[watchTools] Tool file removed: ${filePath}`);
+    const toolName = fileToToolNameMap.get(filePath);
+    if (toolName) {
+      toolRegistry.unregister(toolName);
+      loadedToolFiles.delete(filePath);
+      fileToToolNameMap.delete(filePath);
+      logger.info(`[watchTools] Unregistered tool: ${toolName}`);
+    }
+  });
+
+  watcher.on('error', (error) => {
+    logger.error({ error }, '[watchTools] Watcher error');
+  });
+
+  watcher.on('ready', () => {
+    logger.info('[watchTools] Initial scan complete. Ready for changes.');
+  });
 }

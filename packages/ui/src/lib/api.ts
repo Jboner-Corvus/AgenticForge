@@ -10,9 +10,30 @@ function getAuthHeaders(
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  if (authToken) {
+
+  // Try to get JWT from cookie
+  const name = 'agenticforge_jwt=';
+  const decodedCookie = decodeURIComponent(document.cookie);
+  const ca = decodedCookie.split(';');
+  for(let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) === 0) {
+      const jwtToken = c.substring(name.length, c.length);
+      if (jwtToken) {
+        headers['Authorization'] = 'Bearer ' + jwtToken;
+      }
+      break;
+    }
+  }
+
+  // Fallback to authToken if provided (e.g., for static API key)
+  if (authToken && !headers['Authorization']) {
     headers['Authorization'] = 'Bearer ' + authToken;
   }
+
   if (sessionId) {
     headers['X-Session-ID'] = String(sessionId);
   }
@@ -60,10 +81,7 @@ export async function sendMessage(
 /**
  * Récupère la liste des outils disponibles.
  */
-export interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-}
+import { type ChatMessage as Message } from '../types/chat.d';
 
 export interface SessionData {
   id: string;
@@ -164,6 +182,18 @@ export async function renameSessionApi(id: string, newName: string): Promise<voi
     const errorData = await response.json();
     throw new Error(errorData.message || `Erreur lors du renommage de la session`);
   }
+}
+
+/**
+ * Charge toutes les sessions.
+ */
+export async function loadAllSessionsApi(): Promise<SessionData[]> {
+  const response = await fetch('/api/sessions');
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || `Erreur lors du chargement de toutes les sessions`);
+  }
+  return await response.json();
 }
 
 /**

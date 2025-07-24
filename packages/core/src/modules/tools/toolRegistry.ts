@@ -21,7 +21,7 @@ import { z, ZodTypeAny } from 'zod';
 import { Ctx, Tool } from '@/types.js';
 
 import logger from '../../logger.js';
-import { UserError } from '../../utils/errorUtils.js';
+import { AppError, UserError } from '../../utils/errorUtils.js';
 
 class ToolRegistry {
   private static instance: ToolRegistry;
@@ -68,19 +68,23 @@ class ToolRegistry {
     try {
       parsedParams = tool.parameters.parse(params);
     } catch (error) {
-      let errorMessage = 'Unknown error';
-      if (error instanceof Error) {
-        errorMessage = error.message;
+      let errorMessage = `Invalid tool parameters for tool '${name}': `;
+      if (error instanceof z.ZodError) {
+        errorMessage += JSON.stringify(error.issues);
+      } else if (error instanceof Error) {
+        errorMessage += error.message;
       } else if (
         typeof error === 'object' &&
         error !== null &&
         'message' in error
       ) {
-        errorMessage = String(error.message);
+        errorMessage += String(error.message);
+      } else {
+        errorMessage += String(error);
       }
-      throw new UserError(
-        `Invalid tool parameters for ${name}: ${errorMessage}`,
-      );
+      throw new AppError(errorMessage, {
+        statusCode: 400,
+      });
     }
 
     ctx.log.info(
@@ -102,11 +106,8 @@ class ToolRegistry {
    * Récupère tous les outils enregistrés.
    * @returns Un tableau de tous les outils.
    */
-  public getAll(): Tool<z.AnyZodObject, z.ZodTypeAny>[] {
-    return Array.from(this.tools.values()).map((tool) => ({
-      ...tool,
-      parameters: tool.parameters,
-    }));
+  public getAll(): Tool[] {
+    return Array.from(this.tools.values());
   }
 
   /**

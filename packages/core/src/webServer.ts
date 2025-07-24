@@ -1,31 +1,56 @@
 import type { Queue } from 'bullmq';
 import type { Redis } from 'ioredis';
 
+import chokidar from 'chokidar';
 import cookieParser from 'cookie-parser';
 import express, { type Application } from 'express';
 import fs from 'fs';
+import jwt from 'jsonwebtoken';
 import path from 'path';
+import { Client as PgClient } from 'pg';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 
-import { config } from './config.js';
+import { config, loadConfig } from './config.js';
 import logger from './logger.js';
 import { LlmKeyManager } from './modules/llm/LlmKeyManager.js';
+import { SessionManager } from './modules/session/sessionManager.js';
+import { Message, SessionData } from './types.js';
 import { AppError, handleError } from './utils/errorUtils.js';
 import { getTools } from './utils/toolLoader.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+let configWatcher: import('chokidar').FSWatcher | null = null;
+
 export async function initializeWebServer(
   redis: Redis,
   jobQueue: Queue,
+  pgClient: PgClient,
 ): Promise<Application> {
-  console.log('Inside initializeWebServer function');
   const app = express();
+  const sessionManager = new SessionManager(pgClient);
   app.use(express.json());
   app.use(express.static(path.join(__dirname, '..', 'ui', 'dist')));
   app.use(cookieParser());
+
+  // Middleware to attach sessionManager to req
+  app.use(
+    (
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction,
+    ) => {
+      (req as any).sessionManager = sessionManager;
+      next();
+    },
+  );
+
+  // Start watching config changes
+  if (process.env.NODE_ENV !== 'production') {
+    watchConfig();
+  }
 
   // Session management middleware
   app.use(
@@ -34,12 +59,8 @@ export async function initializeWebServer(
       res: express.Response,
       _next: express.NextFunction,
     ) => {
-      let sessionId = req.cookies.agenticforge_session_id;
-
-      if (!sessionId) {
-        // Try to get session ID from a custom header for non-browser clients (e.g., curl)
-        sessionId = req.headers['x-agenticforge-session-id'] as string;
-      }
+      let sessionId =
+        req.cookies.agenticforge_session_id || req.headers['x-session-id'];
 
       if (!sessionId) {
         sessionId = uuidv4();
@@ -49,14 +70,15 @@ export async function initializeWebServer(
           sameSite: 'lax',
           secure: process.env.NODE_ENV === 'production',
         });
-        // Increment sessionsCreated leaderboard stat
-        redis.incr('leaderboard:sessionsCreated').catch((error) => {
+        // Increment sessionsCreated leaderboard stat for new sessions
+        redis.incr('leaderboard:sessionsCreated').catch((_error) => {
           logger.error(
-            { error },
+            { _error },
             'Failed to increment sessionsCreated in Redis',
           );
         });
       }
+      res.setHeader('X-Session-ID', sessionId); // Always send X-Session-ID header
       req.sessionId = sessionId;
       _next();
     },
@@ -99,8 +121,8 @@ export async function initializeWebServer(
       try {
         const tools = await getTools();
         res.status(200).json(tools);
-      } catch (error) {
-        _next(error);
+      } catch (_error) {
+        _next(_error);
       }
     },
   );
@@ -125,17 +147,18 @@ export async function initializeWebServer(
         // For SSE, we'll add the job and then immediately return a 200 OK
         // The actual streaming will happen on a separate endpoint or via a different mechanism
         // For now, we'll keep the existing job queueing logic.
-        const job = await jobQueue.add('process-message', {
+        const _job = await jobQueue.add('process-message', {
           prompt,
           sessionId: _sessionId,
         });
+        req.job = _job; // Attach job to request
 
         res.status(202).json({
-          jobId: job.id,
+          jobId: _job.id,
           message: 'Requête reçue, traitement en cours.',
         });
-      } catch (error) {
-        _next(error);
+      } catch (_error) {
+        _next(_error);
       }
     },
   );
@@ -167,27 +190,24 @@ export async function initializeWebServer(
           { channel, message },
           'Received message from Redis channel',
         );
-        res.write(`data: ${message}
-
-`);
-      });
-
-      req.on('close', () => {
-        logger.info(
-          `Client disconnected from SSE for job ${jobId}. Unsubscribing.`,
-        );
-        subscriber.unsubscribe(channel);
-        subscriber.quit();
+        res.write('data: ' + message + '\n\n');
       });
 
       // Send a heartbeat to keep the connection alive
       const heartbeatInterval = setInterval(() => {
-        res.write('data: heartbeat\n\n');
+        res.write(`data: heartbeat\n\n`);
       }, 15000);
 
-      req.on('close', () => {
+      const cleanup = () => {
+        logger.info(
+          `Client disconnected from SSE for job ${jobId}. Unsubscribing.`,
+        );
         clearInterval(heartbeatInterval);
-      });
+        subscriber.unsubscribe(channel);
+        subscriber.quit();
+      };
+
+      req.on('close', cleanup);
     },
   );
 
@@ -204,23 +224,35 @@ export async function initializeWebServer(
         const storedHistory = await redis.get(historyKey);
         const history = storedHistory ? JSON.parse(storedHistory) : [];
         res.status(200).json(history);
-      } catch (error) {
-        _next(error);
+      } catch (_error) {
+        _next(_error);
       }
     },
   );
 
-  app.post('/api/session', (req: express.Request, res: express.Response) => {
-    const sessionId = req.sessionId;
-    logger.info(
-      { sessionId },
-      'Session implicitement créée/récupérée via cookie.',
-    );
-    res.status(200).json({
-      message: 'Session gérée automatiquement via cookie.',
-      sessionId,
-    });
-  });
+  app.post(
+    '/api/session',
+    async (req: express.Request, res: express.Response) => {
+      const sessionId = req.sessionId;
+      if (!sessionId) {
+        return res.status(400).json({ error: 'Session ID is missing.' });
+      }
+      try {
+        await req.sessionManager!.getSession(sessionId); // Ensure session exists or is created
+        logger.info(
+          { sessionId },
+          'Session implicitly created/retrieved via cookie/header.',
+        );
+        res.status(200).json({
+          message: 'Session managed automatically via cookie/header.',
+          sessionId,
+        });
+      } catch (error) {
+        logger.error({ error }, 'Error managing session implicitly');
+        res.status(500).json({ error: 'Failed to manage session.' });
+      }
+    },
+  );
 
   app.get(
     '/api/leaderboard-stats',
@@ -242,8 +274,8 @@ export async function initializeWebServer(
           successfulRuns: parseInt(successfulRuns, 10),
           tokensSaved: parseInt(tokensSaved, 10),
         });
-      } catch (error) {
-        _next(error);
+      } catch (_error) {
+        _next(_error);
       }
     },
   );
@@ -262,29 +294,44 @@ export async function initializeWebServer(
         const files = await fs.promises.readdir(workspaceDir);
 
         let filesToRead = files;
-        if (limit) {
-          const parsedLimit = parseInt(limit as string, 10);
+        if (limit || offset) {
+          const parsedLimit = limit ? parseInt(limit as string, 10) : Infinity;
           const parsedOffset = offset ? parseInt(offset as string, 10) : 0;
+
+          if (
+            isNaN(parsedLimit) ||
+            parsedLimit < 0 ||
+            isNaN(parsedOffset) ||
+            parsedOffset < 0
+          ) {
+            throw new AppError('Invalid limit or offset', { statusCode: 400 });
+          }
+
           filesToRead = files.slice(parsedOffset, parsedOffset + parsedLimit);
         }
 
         const memoryContents = await Promise.all(
           filesToRead.map(async (file) => {
-            const content = await fs.promises.readFile(
-              path.join(workspaceDir, file),
-              'utf-8',
-            );
+            const filePath = path.join(workspaceDir, file);
+            const stats = await fs.promises.stat(filePath);
+            if (stats.size > config.MAX_FILE_SIZE_BYTES) {
+              return {
+                content: `File is too large to be displayed (>${config.MAX_FILE_SIZE_BYTES} bytes).`,
+                error: 'File too large',
+                fileName: file,
+              };
+            }
+            const content = await fs.promises.readFile(filePath, 'utf-8');
             return { content, fileName: file };
           }),
         );
         res.status(200).json(memoryContents);
-      } catch (error) {
-        _next(error);
+      } catch (_error) {
+        _next(_error);
       }
     },
   );
 
-  // New API for saving a session
   app.post(
     '/api/sessions/save',
     async (
@@ -297,18 +344,26 @@ export async function initializeWebServer(
         if (!id || !name || !messages || !timestamp) {
           throw new AppError('Missing session data', { statusCode: 400 });
         }
-        const sessionKey = `session:${id}:data`;
-        await redis.set(
-          sessionKey,
-          JSON.stringify({ id, messages, name, timestamp }),
+        // Use the sessionManager instance from req
+        const sessionDataToSave: SessionData = {
+          history: messages as Message[],
+          id,
+          identities: [], // Assuming identities are not sent in this payload, or need to be fetched
+          name,
+          timestamp,
+        };
+        await req.sessionManager!.saveSession(
+          sessionDataToSave,
+          req.job!,
+          jobQueue,
         );
         logger.info(
           { sessionId: id, sessionName: name },
-          'Session saved to Redis.',
+          'Session saved to PostgreSQL.',
         );
         res.status(200).json({ message: 'Session saved successfully.' });
-      } catch (error) {
-        _next(error);
+      } catch (_error) {
+        _next(_error);
       }
     },
   );
@@ -323,14 +378,14 @@ export async function initializeWebServer(
     ) => {
       try {
         const { id } = req.params;
-        const sessionKey = `session:${id}:data`;
-        const sessionData = await redis.get(sessionKey);
+        // Use the sessionManager instance from req
+        const sessionData = await req.sessionManager!.getSession(id);
         if (!sessionData) {
           throw new AppError('Session not found', { statusCode: 404 });
         }
-        res.status(200).json(JSON.parse(sessionData));
-      } catch (error) {
-        _next(error);
+        res.status(200).json(sessionData);
+      } catch (_error) {
+        _next(_error);
       }
     },
   );
@@ -345,12 +400,12 @@ export async function initializeWebServer(
     ) => {
       try {
         const { id } = req.params;
-        const sessionKey = `session:${id}:data`;
-        await redis.del(sessionKey);
-        logger.info({ sessionId: id }, 'Session deleted from Redis.');
+        // Use the sessionManager instance from req
+        await req.sessionManager!.deleteSession(id);
+        logger.info({ sessionId: id }, 'Session deleted from PostgreSQL.');
         res.status(200).json({ message: 'Session deleted successfully.' });
-      } catch (error) {
-        _next(error);
+      } catch (_error) {
+        _next(_error);
       }
     },
   );
@@ -369,18 +424,21 @@ export async function initializeWebServer(
         if (!newName) {
           throw new AppError('New name is missing', { statusCode: 400 });
         }
-        const sessionKey = `session:${id}:data`;
-        const sessionData = await redis.get(sessionKey);
-        if (!sessionData) {
-          throw new AppError('Session not found', { statusCode: 404 });
-        }
-        const parsedSession = JSON.parse(sessionData);
-        parsedSession.name = newName;
-        await redis.set(sessionKey, JSON.stringify(parsedSession));
-        logger.info({ newName, sessionId: id }, 'Session renamed in Redis.');
-        res.status(200).json({ message: 'Session renamed successfully.' });
-      } catch (error) {
-        _next(error);
+        // Use the sessionManager instance from req
+        const updatedSession = await req.sessionManager!.renameSession(
+          id,
+          newName,
+        );
+        logger.info(
+          { newName, sessionId: id },
+          'Session renamed in PostgreSQL.',
+        );
+        res.status(200).json({
+          message: 'Session renamed successfully.',
+          session: updatedSession,
+        });
+      } catch (_error) {
+        _next(_error);
       }
     },
   );
@@ -400,8 +458,8 @@ export async function initializeWebServer(
         }
         await LlmKeyManager.addKey(provider, key);
         res.status(200).json({ message: 'LLM API key added successfully.' });
-      } catch (error) {
-        _next(error);
+      } catch (_error) {
+        _next(_error);
       }
     },
   );
@@ -417,8 +475,8 @@ export async function initializeWebServer(
       try {
         const keys = await LlmKeyManager.getKeysForApi();
         res.status(200).json(keys);
-      } catch (error) {
-        _next(error);
+      } catch (_error) {
+        _next(_error);
       }
     },
   );
@@ -441,6 +499,23 @@ export async function initializeWebServer(
         res.status(200).json({ message: 'LLM API key removed successfully.' });
       } catch (error) {
         _next(error);
+      }
+    },
+  );
+
+  // New API for retrieving all sessions
+  app.get(
+    '/api/sessions',
+    async (
+      req: express.Request,
+      res: express.Response,
+      _next: express.NextFunction,
+    ) => {
+      try {
+        const sessions = await req.sessionManager!.getAllSessions(); // Assuming a new method to get all sessions
+        res.status(200).json(sessions);
+      } catch (_error) {
+        _next(_error);
       }
     },
   );
@@ -496,6 +571,12 @@ export async function initializeWebServer(
         const tokenData = await tokenResponse.json();
 
         if (tokenData.error) {
+          // Log the full error object from GitHub for better debugging, redacting sensitive info
+          const loggedTokenData = { ...tokenData };
+          if (loggedTokenData.access_token) {
+            loggedTokenData.access_token = '***REDACTED***';
+          }
+          logger.error({ tokenData: loggedTokenData }, 'GitHub OAuth Error');
           throw new AppError(
             `GitHub OAuth error: ${tokenData.error_description || tokenData.error}`,
             { statusCode: 400 },
@@ -518,6 +599,25 @@ export async function initializeWebServer(
             { accessToken: '***REDACTED***', sessionId: req.sessionId },
             'GitHub access token stored in Redis.',
           );
+
+          // Generate JWT and send to frontend
+          if (config.JWT_SECRET) {
+            // In a real app, you'd fetch user info from GitHub API using accessToken
+            // For this example, we'll use a dummy userId or derive it from sessionId
+            const userId = req.sessionId; // Placeholder for actual user ID
+            const token = jwt.sign({ userId }, config.JWT_SECRET, {
+              expiresIn: '1h',
+            });
+            res.cookie('agenticforge_jwt', token, {
+              httpOnly: true,
+              maxAge: 3600 * 1000, // 1 hour
+              sameSite: 'lax',
+              secure: process.env.NODE_ENV === 'production',
+            });
+            logger.info({ userId }, 'JWT issued and sent to frontend.');
+          } else {
+            logger.warn('JWT_SECRET is not configured, skipping JWT issuance.');
+          }
         }
 
         // Redirect to frontend, perhaps with a success message or user info
@@ -588,14 +688,37 @@ export async function initializeWebServer(
       _next: express.NextFunction,
     ) => {
       try {
-        const filePath = path.join(__dirname, '..', 'workspace', 'index.html');
+        const { file } = req.query;
+        if (!file || typeof file !== 'string') {
+          throw new AppError('File parameter is missing or invalid.', {
+            statusCode: 400,
+          });
+        }
+
+        const filePath = path.join(__dirname, '..', 'workspace', file);
         const content = await fs.promises.readFile(filePath, 'utf-8');
         const _sessionId = req.sessionId;
         const channel = `job:display:events`;
+
+        const extension = path.extname(file).toLowerCase();
+        let contentType: 'html' | 'image' | 'markdown' | 'pdf' | 'text' =
+          'text';
+        if (extension === '.html') {
+          contentType = 'html';
+        } else if (extension === '.md') {
+          contentType = 'markdown';
+        } else if (
+          ['.gif', '.jpeg', '.jpg', '.png', '.svg'].includes(extension)
+        ) {
+          contentType = 'image';
+        } else if (extension === '.pdf') {
+          contentType = 'pdf';
+        }
+
         const message = {
           payload: {
             content,
-            type: 'html', // TODO: Make this dynamic based on file type (e.g., markdown, image, pdf)
+            type: contentType,
           },
           type: 'displayOutput',
         };
@@ -610,16 +733,39 @@ export async function initializeWebServer(
   app.use(handleError);
 
   if (process.env.NODE_ENV !== 'test') {
-    process.on('uncaughtException', (error) => {
+    process.on('uncaughtException', (error: Error) => {
       logger.fatal({ error }, 'Unhandled exception caught!');
       process.exit(1);
     });
 
-    process.on('unhandledRejection', (reason, promise) => {
-      logger.fatal({ promise, reason }, 'Unhandled rejection caught!');
-      process.exit(1);
-    });
+    process.on(
+      'unhandledRejection',
+      (reason: unknown, promise: Promise<any>) => {
+        logger.fatal({ promise, reason }, 'Unhandled rejection caught!');
+        process.exit(1);
+      },
+    );
   }
 
   return app;
+}
+
+function watchConfig() {
+  const envPath = path.resolve(process.cwd(), '../../.env');
+  logger.info(`[watchConfig] Watching for .env changes in: ${envPath}`);
+
+  configWatcher = chokidar.watch(envPath, {
+    ignoreInitial: true,
+    persistent: true,
+  });
+
+  configWatcher.on('change', async () => {
+    logger.info('[watchConfig] .env file changed, reloading configuration...');
+    loadConfig(); // Reload the configuration
+    logger.info('[watchConfig] Configuration reloaded.');
+  });
+
+  configWatcher.on('error', (error: unknown) => {
+    logger.error({ error: error as Error }, '[watchConfig] Watcher error');
+  });
 }

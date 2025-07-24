@@ -28,7 +28,7 @@ vi.mock('../tools/toolRegistry.js', () => ({
 }));
 
 vi.mock('../../utils/toolLoader.js', () => ({
-  getTools: vi.fn(),
+  getTools: vi.fn() as Mock,
 }));
 
 vi.mock('../redis/redisClient.js', () => ({
@@ -123,6 +123,8 @@ describe('Agent Integration Tests', () => {
       history: [],
       id: 'test-session-1',
       identities: [],
+      name: 'Test Session',
+      timestamp: Date.now(),
     };
 
     mockQueue = {
@@ -327,6 +329,144 @@ describe('Agent Integration Tests', () => {
     expect(mockedGetLlmResponse).toHaveBeenCalledTimes(2);
     expect(mockSession.history).toContainEqual({
       content: `Tool result: "Error executing tool test-tool: ${errorMessage}"`,
+      role: 'tool',
+    });
+  });
+
+  it('should not loop indefinitely on repeated tool errors', async () => {
+    const errorMessage = 'Persistent tool error';
+    mockedGetLlmResponse.mockImplementation(() =>
+      Promise.resolve(
+        `
+{
+  "command": { "name": "test-tool", "params": { "arg": "consistent_arg" } },
+  "thought": "I will try the tool again."
+}
+`,
+      ),
+    );
+    mockedToolRegistryExecute.mockRejectedValue(new Error(errorMessage));
+
+    const finalResponse = await agent.run();
+
+    expect(finalResponse).toBe(
+      'Agent reached maximum iterations without a final answer.',
+    );
+    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(10);
+    expect(mockedToolRegistryExecute).toHaveBeenCalledTimes(10);
+  });
+
+  it('should handle empty string response from LLM', async () => {
+    mockedGetLlmResponse.mockResolvedValue('');
+
+    const finalResponse = await agent.run();
+
+    expect(finalResponse).toBe(
+      'Agent reached maximum iterations without a final answer.',
+    );
+    expect(mockSession.history).toContainEqual({
+      content:
+        'You must provide a command, a thought, a canvas output, or a final answer.',
+      role: 'user',
+    });
+  });
+
+  it('should handle null response from LLM', async () => {
+    mockedGetLlmResponse.mockResolvedValue(null);
+
+    const finalResponse = await agent.run();
+
+    expect(finalResponse).toBe(
+      'Agent reached maximum iterations without a final answer.',
+    );
+    expect(mockSession.history).toContainEqual({
+      content:
+        'Error: The `generate` tool returned an unexpected non-string response.',
+      role: 'tool',
+    });
+  });
+
+  it('should detect a loop and stop execution', async () => {
+    mockedGetLlmResponse.mockImplementation(() =>
+      Promise.resolve(
+        `
+{
+  "command": { "name": "test-tool", "params": { "arg": "loop" } },
+  "thought": "I'm stuck in a loop."
+}
+`,
+      ),
+    );
+    mockedToolRegistryExecute.mockResolvedValue('loop result');
+
+    const finalResponse = await agent.run();
+
+    expect(finalResponse).toBe('Agent stuck in a loop.');
+    // The agent should stop after detecting the loop (3 iterations)
+    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(4);
+    expect(mockedToolRegistryExecute).toHaveBeenCalledTimes(4);
+  });
+
+  it('should add an error message to history if LLM provides no actionable response', async () => {
+    mockedGetLlmResponse.mockResolvedValue('{}'); // Empty JSON object
+
+    const finalResponse = await agent.run();
+
+    expect(finalResponse).toBe(
+      'Agent reached maximum iterations without a final answer.',
+    );
+    expect(mockSession.history).toContainEqual({
+      content:
+        'You must provide a command, a thought, a canvas output, or a final answer.',
+      role: 'user',
+    });
+  });
+
+  it('should handle JSON parsing errors from LLM response', async () => {
+    const invalidJsonResponse = 'This is not a valid JSON';
+    mockedGetLlmResponse.mockResolvedValueOnce(invalidJsonResponse);
+    mockedGetLlmResponse.mockResolvedValueOnce(
+      `
+{
+  "answer": "Recovered from parsing error",
+  "thought": "I will provide a valid JSON now."
+}
+`,
+    );
+
+    const finalResponse = await agent.run();
+
+    expect(finalResponse).toBe('Recovered from parsing error');
+    expect(mockedGetLlmResponse).toHaveBeenCalledTimes(2);
+    expect(mockSession.history).toContainEqual({
+      content:
+        'I was unable to parse your last response. Please ensure your response is a valid JSON object with the expected properties (`thought`, `command`, `canvas`, or `answer`). Check for syntax errors, missing commas, or unclosed brackets.',
+      role: 'user',
+    });
+  });
+
+  it('should handle finish tool not returning an answer', async () => {
+    mockedGetLlmResponse.mockResolvedValueOnce(
+      `
+{
+  "command": { "name": "finish", "params": { "response": "Final answer" } },
+  "thought": "I have finished."
+}
+`,
+    );
+    // Directly mock the finish tool's execute method
+    (mockFinishTool.execute as Mock).mockResolvedValue({
+      not_an_answer: 'something',
+    });
+
+    const finalResponse = await agent.run();
+
+    expect(finalResponse).toBe(
+      'Finish tool did not return a valid answer object: {"not_an_answer":"something"}',
+    );
+    expect(mockSession.history).toContainEqual({
+      content:
+        'Error: Finish tool did not return a valid answer object: {"not_an_answer":"something"}',
       role: 'tool',
     });
   });

@@ -8,12 +8,12 @@ vi.mock('./config.js', () => ({
 }));
 
 // Mock the pino module
-const pinoMock = vi.fn(() => ({
+const pinoMock = vi.fn((options) => ({
   child: vi.fn().mockReturnThis(),
   debug: vi.fn(),
   error: vi.fn(),
   info: vi.fn(),
-  level: 'debug',
+  level: options?.level || 'debug',
   warn: vi.fn(),
 }));
 
@@ -37,12 +37,26 @@ describe('Logger', () => {
 
   it('should instantiate a pino logger with debug level', async () => {
     // Re-import logger.js to ensure it picks up the mock
-    await import('./logger.js');
+    await import('./logger.ts');
     expect(pinoMock).toHaveBeenCalledWith(
       expect.objectContaining({
         level: 'debug',
       }),
     );
+  });
+
+  it('should set the log level based on LOG_LEVEL environment variable', async () => {
+    process.env.LOG_LEVEL = 'warn';
+    vi.doMock('./config.js', () => ({
+      config: {
+        LOG_LEVEL: process.env.LOG_LEVEL,
+        NODE_ENV: 'test',
+      },
+    }));
+    vi.resetModules();
+    const { default: newLogger } = await import('./logger.ts');
+    expect(newLogger.level).toBe('warn');
+    delete process.env.LOG_LEVEL;
   });
 
   it('should configure pino-pretty transport in development environment', async () => {
@@ -53,7 +67,7 @@ describe('Logger', () => {
       },
     }));
     vi.resetModules();
-    await import('./logger.js');
+    await import('./logger.ts');
 
     expect(pinoMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -80,7 +94,7 @@ describe('Logger', () => {
       },
     }));
     vi.resetModules();
-    await import('./logger.js');
+    await import('./logger.ts');
 
     expect(pinoMock).toHaveBeenCalledWith(
       expect.objectContaining({

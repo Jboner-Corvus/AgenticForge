@@ -17,9 +17,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
+    "@types/chokidar": "^2.1.7",
     "@types/event-source-polyfill": "^1.0.5",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.13",
+    "@types/pg": "^8.15.4",
     "esbuild-fix-imports-plugin": "^1.0.21",
     "eslint": "^9.31.0",
     "eslint-config-prettier": "^10.1.5",

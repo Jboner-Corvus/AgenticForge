@@ -105,6 +105,7 @@ describe('UserInput', () => {
       toolCreationEnabled: true,
       updateSessionStatus: vi.fn(),
       startAgent: vi.fn(),
+      initializeSessionAndMessages: vi.fn(),
     };
 
     // @ts-expect-error: Mocking useStore

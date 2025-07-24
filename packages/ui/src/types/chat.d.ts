@@ -1,5 +1,6 @@
 interface BaseMessage {
   id: string;
+  timestamp: number;
 }
 
 export interface UserMessage extends BaseMessage {
@@ -21,7 +22,7 @@ export interface ToolCallMessage extends BaseMessage {
 export interface ToolResultMessage extends BaseMessage {
   type: 'tool_result';
   toolName: string;
-  result: unknown;
+  result: { output: string | Record<string, unknown> };
 }
 
 export interface AgentToolResult extends ToolResultMessage {
@@ -56,4 +57,11 @@ export type ChatMessage =
   | ErrorMessage
   | AgentCanvasOutputMessage;
 
-export type NewChatMessage =  | { type: 'user'; content: string }  | { type: 'agent_response'; content: string }  | { type: 'tool_call'; toolName: string; params: Record<string, unknown> }  | { type: 'tool_result'; toolName: string; result: unknown }  | { type: 'agent_thought'; content: string }  | { type: 'error'; content: string }  | { type: 'agent_canvas_output'; content: string; contentType: 'html' | 'markdown' | 'url' | 'text' };
+export type NewChatMessage =
+  | { type: 'user'; content: string }
+  | { type: 'agent_response'; content: string }
+  | { type: 'tool_call'; toolName: string; params: Record<string, unknown> }
+  | { type: 'tool_result'; toolName: string; result: { output: string | Record<string, unknown> } }
+  | { type: 'agent_thought'; content: string }
+  | { type: 'error'; content: string }
+  | { type: 'agent_canvas_output'; content: string; contentType: 'html' | 'markdown' | 'url' | 'text' };

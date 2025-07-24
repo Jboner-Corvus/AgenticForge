@@ -342,8 +342,72 @@ describe('useAgentStream', () => {
 
     expect(useStore.getState().messages).toContainEqual({
       type: 'tool_result',
-      toolName: 'executeShellCommand',
+      toolName: 'unknown_tool',
       result: { output: 'New output' },
+    });
+  });
+
+  it('should handle tool_stream message and infer toolName from previous tool_call', async () => {
+    const { result } = renderHook(() => useAgentStream());
+    useStore.setState({ messageInputValue: 'test prompt', authToken: 'test_token', sessionId: 'test_session' });
+
+    await act(async () => {
+      await result.current.startAgent();
+    });
+
+    const eventSourceInstance = mockEventSource;
+    const onMessage = eventSourceInstance.onmessage;
+
+    // Simulate a tool_call message with a different toolName
+    act(() => {
+      if (onMessage) {
+        onMessage.call(eventSourceInstance, { data: JSON.stringify({ type: 'tool_call', toolName: 'anotherTool', params: {} }), type: 'message', lastEventId: '', target: null } as MessageEvent);
+      }
+    });
+
+    // Simulate a tool_stream message
+    act(() => {
+      if (onMessage) {
+        onMessage.call(eventSourceInstance, { data: JSON.stringify({ type: 'tool_stream', data: { content: 'Output from another tool' } }), type: 'message', lastEventId: '', target: null } as MessageEvent);
+      }
+    });
+
+    expect(useStore.getState().messages).toContainEqual({
+      type: 'tool_result',
+      toolName: 'anotherTool',
+      result: { output: 'Output from another tool' },
+    });
+  });
+
+  it('should handle tool_stream message and update previous tool_result with non-executeShellCommand toolName', async () => {
+    const { result } = renderHook(() => useAgentStream());
+    useStore.setState({ messageInputValue: 'test prompt', authToken: 'test_token', sessionId: 'test_session' });
+
+    await act(async () => {
+      await result.current.startAgent();
+    });
+
+    const eventSourceInstance = mockEventSource;
+    const onMessage = eventSourceInstance.onmessage;
+
+    // Simulate an initial tool_result message with a non-executeShellCommand toolName
+    act(() => {
+      if (onMessage) {
+        onMessage.call(eventSourceInstance, { data: JSON.stringify({ type: 'tool_result', toolName: 'someOtherTool', result: { output: 'Initial output for other tool' } }), type: 'message', lastEventId: '', target: null } as MessageEvent);
+      }
+    });
+
+    // Simulate a tool_stream message
+    act(() => {
+      if (onMessage) {
+        onMessage.call(eventSourceInstance, { data: JSON.stringify({ type: 'tool_stream', data: { content: ' streamed content' } }), type: 'message', lastEventId: '', target: null } as MessageEvent);
+      }
+    });
+
+    expect(useStore.getState().messages).toContainEqual({
+      type: 'tool_result',
+      toolName: 'someOtherTool',
+      result: { output: 'Initial output for other tool streamed content' },
     });
   });
 });

@@ -1,76 +1,13 @@
 import { create } from 'zustand';
 
-import { getTools, saveSessionApi, loadSessionApi, deleteSessionApi, renameSessionApi, addLlmApiKeyApi, removeLlmApiKeyApi } from './api';
+import { getTools, saveSessionApi, loadSessionApi, deleteSessionApi, renameSessionApi, addLlmApiKeyApi, removeLlmApiKeyApi, getLeaderboardStats, getLlmApiKeysApi, loadAllSessionsApi } from './api';
 import type { SessionData } from './api';
 import { generateUUID } from './utils/uuid';
-import { type ChatMessage as ExternalChatMessage, type NewChatMessage } from '../types/chat';
+import { type ChatMessage as ExternalChatMessage, type NewChatMessage } from '../types/chat.d';
 
 // Re-define local interfaces for messages, compatible with the backend stream
-export interface BaseMessage {
-  id: string;
-  type: string;
-  content?: string;
-}
-
-export interface UserMessage extends BaseMessage {
-  type: 'user';
-  content: string;
-}
-
-export interface AgentResponseMessage extends BaseMessage {
-  type: 'agent_response';
-  content: string;
-}
-
-export interface AgentThoughtMessage extends BaseMessage {
-  type: 'agent_thought';
-  content: string;
-}
-
-export interface ToolCallMessage extends BaseMessage {
-  type: 'tool_call';
-  toolName: string;
-  params: Record<string, unknown>;
-}
-
-export interface ToolResultMessage extends BaseMessage {
-  type: 'tool_result';
-  toolName: string;
-  result: Record<string, unknown>;
-}
-
-export interface ToolStreamMessage extends BaseMessage {
-  type: 'tool_stream';
-  data: { content: string };
-  contentType?: 'html' | 'markdown' | 'url' | 'text'; // Added for compatibility
-}
-
-export interface AgentCanvasOutputMessage extends BaseMessage {
-  type: 'agent_canvas_output';
-  content: string;
-  contentType: 'html' | 'markdown' | 'url' | 'text';
-}
-
-export interface ErrorMessage extends BaseMessage {
-  type: 'error';
-  message: string;
-}
-
-export interface CloseMessage extends BaseMessage {
-  type: 'close';
-}
-
 // Local ChatMessage union type (for internal store use)
-export type StoreChatMessage =
-  | UserMessage
-  | AgentResponseMessage
-  | AgentThoughtMessage
-  | ToolCallMessage
-  | ToolResultMessage
-  | ToolStreamMessage
-  | AgentCanvasOutputMessage
-  | ErrorMessage
-  | CloseMessage;
+export type StoreChatMessage = ExternalChatMessage;
 
 interface Session {
   id: string;
@@ -189,14 +126,17 @@ export interface AppState {
   toolCreationEnabled: boolean;
   updateSessionStatus: (status: 'error' | 'unknown' | 'valid') => void;
   startAgent: () => Promise<void>;
+  initializeSessionAndMessages: () => Promise<void>;
 }
 
 export const useStore = create<AppState>((set, get) => ({
   addDebugLog: (log) => set((state) => ({ debugLog: [...state.debugLog, log] })),
   addMessage: (message) =>
-    set((state) => ({
-      messages: [...state.messages, { ...message, id: generateUUID() } as ExternalChatMessage],
-    })),
+    set((state) => {
+      const baseProps = { id: generateUUID(), timestamp: Date.now() };
+      const newMessage: ExternalChatMessage = { ...baseProps, ...message } as ExternalChatMessage;
+      return { messages: [...state.messages, newMessage] };
+    }),
   agentStatus: null,
   toolStatus: '',
   authToken: null,
@@ -304,6 +244,7 @@ export const useStore = create<AppState>((set, get) => ({
   setIsSettingsModalOpen: (isOpen: boolean) => set({ isSettingsModalOpen: isOpen }),
   toggleDarkMode: () => set((state) => {
     const newDarkMode = !state.isDarkMode;
+    localStorage.setItem('agenticForgeDarkMode', String(newDarkMode));
     if (newDarkMode) {
       document.documentElement.classList.add('dark');
     } else {
@@ -313,6 +254,7 @@ export const useStore = create<AppState>((set, get) => ({
   }),
   toggleHighContrastMode: () => set((state) => {
     const newHighContrastMode = !state.isHighContrastMode;
+    localStorage.setItem('agenticForgeHighContrastMode', String(newHighContrastMode));
     if (newHighContrastMode) {
       document.documentElement.classList.add('high-contrast');
     } else {
@@ -385,7 +327,7 @@ export const useStore = create<AppState>((set, get) => ({
     const sessionDataToSend: SessionData = {
       id: sessionToSave.id,
       name: sessionToSave.name,
-      messages: sessionToSave.messages.map(m => ({ role: m.type === 'user' ? 'user' : 'assistant', content: 'content' in m ? m.content as string : ''})),
+      messages: sessionToSave.messages,
       timestamp: sessionToSave.timestamp,
     };
 
@@ -404,31 +346,7 @@ export const useStore = create<AppState>((set, get) => ({
       localStorage.setItem('agenticForgeSessionId', sessionToLoad.id);
       set({
         sessionId: sessionToLoad.id,
-        messages: sessionToLoad.messages.map(m => {
-          const baseMessage = { id: generateUUID(), content: '' };
-          if (m.role === 'user') {
-            return { ...baseMessage, type: 'user', content: m.content } as ExternalChatMessage;
-          } else if (m.role === 'assistant') {
-            // Attempt to map assistant messages to the correct ChatMessage type
-            const assistantMessage = JSON.parse(m.content);
-            if (assistantMessage.type === 'agent_canvas_output') {
-              return { ...baseMessage, type: 'agent_canvas_output', content: assistantMessage.content, contentType: assistantMessage.contentType } as ExternalChatMessage;
-            } else if (assistantMessage.type === 'tool_call') {
-              return { ...baseMessage, type: 'tool_call', toolName: assistantMessage.toolName, params: assistantMessage.params } as ExternalChatMessage;
-            } else if (assistantMessage.type === 'tool_result') {
-              return { ...baseMessage, type: 'tool_result', toolName: assistantMessage.toolName, result: { output: assistantMessage.result } } as ExternalChatMessage;
-            } else if (assistantMessage.type === 'tool_stream') {
-              return { ...baseMessage, type: 'tool_stream', data: assistantMessage.data, contentType: 'text' } as unknown as ExternalChatMessage;
-            } else if (assistantMessage.type === 'error') {
-              return { ...baseMessage, type: 'error', message: assistantMessage.message } as ExternalChatMessage;
-            } else if (assistantMessage.type === 'agent_response') {
-              return { ...baseMessage, type: 'agent_response', content: assistantMessage.content } as ExternalChatMessage;
-            } else {
-              return { ...baseMessage, type: 'agent_thought', content: assistantMessage.content } as ExternalChatMessage; // Default to agent_thought if content exists
-            }
-          }
-          return { ...baseMessage, type: 'error', message: 'Unknown message type' } as ExternalChatMessage; // Fallback for unknown types
-        }),
+        messages: sessionToLoad.messages,
         activeSessionId: sessionToLoad.id,
       });
     } catch (error) {
@@ -440,11 +358,9 @@ export const useStore = create<AppState>((set, get) => ({
       await deleteSessionApi(id);
       const { sessions, activeSessionId } = get();
       const updatedSessions = sessions.filter(s => s.id !== id);
-      localStorage.setItem('agenticForgeSessions', JSON.stringify(updatedSessions));
       let newActiveSessionId = activeSessionId;
       if (newActiveSessionId === id) {
         newActiveSessionId = updatedSessions.length > 0 ? updatedSessions[0].id : null;
-        localStorage.setItem('agenticForgeSessionId', newActiveSessionId || '');
       }
       set({ sessions: updatedSessions, activeSessionId: newActiveSessionId });
     } catch (error) {
@@ -458,7 +374,6 @@ export const useStore = create<AppState>((set, get) => ({
       const updatedSessions = sessions.map(s =>
         s.id === id ? { ...s, name: newName } : s
       );
-      localStorage.setItem('agenticForgeSessions', JSON.stringify(updatedSessions));
       set({ sessions: updatedSessions });
     } catch (error) {
       console.error("Failed to rename session on backend:", error);
@@ -474,5 +389,64 @@ export const useStore = create<AppState>((set, get) => ({
   startAgent: async () => {
     // Placeholder for startAgent logic
     console.log("startAgent called from store (placeholder)");
+  },
+  initializeSessionAndMessages: async () => {
+    const { setSessions, setActiveSessionId, setMessages, setSessionId, addDebugLog, updateLeaderboardStats, addLlmApiKey, setActiveLlmApiKey } = get();
+
+    // Load leaderboard stats from backend
+    try {
+      const stats = await getLeaderboardStats();
+      updateLeaderboardStats(stats);
+    } catch (error) {
+      console.error("Failed to fetch leaderboard stats:", error);
+    }
+
+    // Load LLM API keys from backend
+    try {
+      const keys = await getLlmApiKeysApi();
+      keys.forEach((llmKey: { provider: string; key: string }) => addLlmApiKey(llmKey.provider, llmKey.key));
+      if (keys.length > 0) {
+        setActiveLlmApiKey(0);
+      }
+    } catch (error) {
+      console.error("Failed to fetch LLM API keys:", error);
+    }
+
+    // Load sessions from backend first
+    try {
+      const backendSessions = await loadAllSessionsApi();
+      if (backendSessions && backendSessions.length > 0) {
+        setSessions(backendSessions);
+        const currentSessionId = localStorage.getItem('agenticForgeSessionId');
+        let activeSession = backendSessions.find((s: SessionData) => s.id === currentSessionId);
+
+        if (!activeSession) {
+          // If the stored session ID doesn't exist in backend sessions, try to find a session with matching messages
+          const storedMessages = localStorage.getItem(`agenticForgeSession_${currentSessionId}_messages`);
+          if (storedMessages) {
+            const parsedStoredMessages = JSON.parse(storedMessages);
+            activeSession = backendSessions.find((s: SessionData) => JSON.stringify(s.messages) === JSON.stringify(parsedStoredMessages));
+          }
+        }
+
+        if (!activeSession) {
+          // If still no active session, default to the most recent session from backend
+          activeSession = backendSessions.sort((a: SessionData, b: SessionData) => b.timestamp - a.timestamp)[0];
+        }
+
+        setSessionId(activeSession.id);
+        setActiveSessionId(activeSession.id);
+        setMessages(activeSession.messages);
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Sessions and messages loaded from backend.`);
+        return;
+      }
+    } catch (error) {
+      console.error("Failed to fetch sessions from backend:", error);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Failed to load sessions from backend. Falling back to localStorage.`);
+    }
+
+    // If no sessions found anywhere, generate a new one (handled by initializeSession in AppInitializer)
+    // The initializeSession in AppInitializer will handle generating a new session ID if none exists.
+    // Messages will be empty for a new session.
   },
 }));

@@ -2,19 +2,20 @@ import { useCallback, useRef } from 'react';
 import { produce } from 'immer';
 import { sendMessage, interrupt } from '../api';
 import { useStore } from '../store';
-import { type NewChatMessage, type AgentToolResult, type ChatMessage } from '@/types/chat';
+import { type NewChatMessage, type AgentToolResult, type ChatMessage, type ToolResultMessage } from '@/types/chat';
 
 // Define the structure of messages coming from the stream
 interface StreamMessage {
+  id?: string; // Add id to StreamMessage
   type:
     | 'tool_stream'
     | 'agent_thought'
     | 'tool_call'
+    | 'tool.start'
     | 'tool_result'
     | 'agent_response'
     | 'raw_llm_response'
     | 'error'
-    | 'tool.start'
     | 'close'
     | 'quota_exceeded'
     | 'browser.navigating'
@@ -23,10 +24,11 @@ interface StreamMessage {
     | 'browser.content.extracted'
     | 'browser.error'
     | 'browser.closed'
-    | 'agent_canvas_output';
+    | 'agent_canvas_output'
+    | 'agent_canvas_close';
   content?: string;
   contentType?: 'html' | 'markdown' | 'url' | 'text';
-  toolName?: string;
+  toolName?: string; // Added toolName here
   params?: Record<string, unknown>;
   result?: Record<string, unknown>;
   message?: string;
@@ -39,6 +41,15 @@ interface StreamMessage {
     message?: string;
   };
 }
+
+const isAgentToolResult = (message: ChatMessage | undefined): message is AgentToolResult => {
+  return (
+    message?.type === 'tool_result' &&
+    typeof (message as AgentToolResult).result === 'object' &&
+    (message as AgentToolResult).result !== null &&
+    'output' in (message as AgentToolResult).result
+  );
+};
 
 export const useAgentStream = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -124,7 +135,7 @@ export const useAgentStream = () => {
       const toolResultMessage: NewChatMessage = {
         type: 'tool_result',
         toolName,
-        result,
+        result: { output: result },
       };
       addMessage(toolResultMessage);
     };
@@ -137,16 +148,32 @@ export const useAgentStream = () => {
           if (data.data?.content) {
             useStore.setState(produce((state: { messages: ChatMessage[] }) => {
               const lastMessage = state.messages[state.messages.length - 1];
-              if (lastMessage?.type === 'tool_result' && (lastMessage as AgentToolResult).toolName === 'executeShellCommand') {
-                const toolResult = lastMessage as AgentToolResult;
-                toolResult.result.output += data.data?.content;
+              const getLastToolName = (messages: ChatMessage[]): string | undefined => {
+                for (let i = messages.length - 1; i >= 0; i--) {
+                  const message = messages[i];
+                  if (message.type === 'tool_call' || message.type === 'tool_result') {
+                    return message.toolName;
+                  }
+                }
+                return undefined;
+              };
+              const inferredToolName = getLastToolName(state.messages);
+
+              // Prioritize toolName from the stream message itself
+              const streamToolName = data.toolName || data.data?.name;
+              const finalToolName = streamToolName || inferredToolName || 'unknown_tool';
+
+              if (isAgentToolResult(lastMessage) && lastMessage.toolName === finalToolName) {
+                lastMessage.result.output += data.data?.content ?? '';
               } else {
-                const newToolResult: NewChatMessage = {
+                const newToolResult: ToolResultMessage = {
+                  id: crypto.randomUUID(),
+                  timestamp: Date.now(),
                   type: 'tool_result',
-                  toolName: 'executeShellCommand',
-                  result: { output: data.data?.content },
+                  toolName: finalToolName,
+                  result: { output: data.data?.content ?? '' },
                 };
-                addMessage(newToolResult);
+                state.messages.push(newToolResult);
               }
             }));
           }
@@ -154,21 +181,28 @@ export const useAgentStream = () => {
         case 'agent_thought':
           if (data.content) handleThought(data.content);
           break;
-        case 'tool_call':
-          if (data.toolName && data.params) handleToolCall(data.toolName, data.params);
+        case 'tool_call': {
+          // This case is now handled by 'tool.start' from the backend
+          // The LLM's tool_call response is just an instruction, not a confirmation of execution start.
           break;
-        case 'tool_result':
+        }
+        case 'tool.start': { // New case for backend's tool.start event
+          const toolName = data.data?.name;
+          const params = data.data?.args;
+          if (toolName && params) {
+            handleToolCall(toolName, params as Record<string, unknown>); // Cast params to correct type
+          }
+          break;
+        }
+        case 'tool_result': {
           if (data.toolName && data.result && data.toolName !== 'finish') {
             handleToolResult(data.toolName, data.result);
           }
           break;
+        }
         case 'agent_response':
           if (data.content) {
-            if (data.content === 'Agent displayed content on the canvas.') {
-              handleClose();
-            } else {
-              handleMessage(data.content);
-            }
+            handleMessage(data.content);
           }
           break;
         case 'raw_llm_response':
@@ -180,11 +214,6 @@ export const useAgentStream = () => {
         case 'quota_exceeded':
             if (data.message) handleError(new Error(data.message));
             break;
-        case 'tool.start':
-          if (data.data?.name && data.data?.args) {
-            handleToolCall(data.data.name, data.data.args);
-          }
-          break;
         case 'browser.navigating':
           setBrowserStatus(`Navigating to ${data.data?.url}`);
           break;
@@ -213,6 +242,9 @@ export const useAgentStream = () => {
             addMessage(canvasOutputMessage);
             addDebugLog(`[DISPLAY_OUTPUT] Type: ${data.contentType}, Content length: ${data.content.length}`);
           }
+          break;
+        case 'agent_canvas_close':
+          handleClose();
           break;
         case 'close':
           setTimeout(() => {

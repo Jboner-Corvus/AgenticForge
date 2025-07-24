@@ -1,9 +1,8 @@
-import { spawn } from 'child_process';
 import { z } from 'zod';
 
 import type { Ctx, Tool } from '@/types.js';
 
-import { config } from '../../../../config.js';
+import { executeShellCommand } from '../../../../utils/shellUtils.js';
 import { redis } from '../../../redis/redisClient.js';
 
 export const executeShellCommandParams = z.object({
@@ -33,21 +32,11 @@ export const executeShellCommandTool: Tool<
     args: z.infer<typeof executeShellCommandParams>,
     ctx: Ctx,
   ) => {
-    // TODO: Implement robust input validation and sanitization for `args.command`
-    // to prevent shell injection vulnerabilities. This is critical for security.
-    // Consider using a library for command sanitization or strictly whitelisting allowed commands/arguments.
-
-    // TODO: Reinforce path validation to ensure that any file operations implicitly
-    // performed by the shell command remain strictly within `config.WORKSPACE_PATH`.
-    // This might involve chrooting or more advanced sandboxing if possible.
     if (args.detach) {
-      // NOTE: For detached commands, ensure robust logging and error handling
-      // mechanisms are in place to track their execution and report results
-      // effectively, as the main process will not wait for their completion.
       // Enqueue the command for background execution
       const jobId = `shell-command-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       await ctx.taskQueue.add(
-        'async-tasks', // Job name for the worker
+        'execute-shell-command-detached', // Job name for the worker
         {
           command: args.command,
           jobId: ctx.job!.id,
@@ -66,65 +55,7 @@ export const executeShellCommandTool: Tool<
     }
 
     try {
-      return await new Promise((resolve) => {
-        ctx.log.info(`Spawning shell command: ${args.command}`);
-
-        const child = spawn(args.command, {
-          cwd: config.WORKSPACE_PATH,
-          shell: process.platform === 'win32' ? 'cmd.exe' : '/bin/bash',
-          stdio: 'pipe',
-        });
-
-        let stdout = '';
-        let stderr = '';
-
-        const streamToFrontend = (
-          type: 'stderr' | 'stdout',
-          content: string,
-        ) => {
-          const channel = `job:${ctx.job!.id}:events`;
-          const data = { data: { content, type }, type: 'tool_stream' };
-          redis.publish(channel, JSON.stringify(data));
-        };
-
-        child.stdout.on('data', (data: Buffer) => {
-          const chunk = data.toString();
-          stdout += chunk;
-          ctx.log.info(`[stdout] ${chunk}`);
-          streamToFrontend('stdout', chunk);
-        });
-
-        child.stderr.on('data', (data: Buffer) => {
-          const chunk = data.toString();
-          stderr += chunk;
-          ctx.log.error(`[stderr] ${chunk}`);
-          streamToFrontend('stderr', chunk);
-        });
-
-        child.on('error', (error) => {
-          ctx.log.error(
-            { err: error },
-            `Failed to start shell command: ${args.command}`,
-          );
-          resolve({
-            exitCode: 1, // Indicate an error exit code
-            stderr: stderr + `Failed to start command: ${error.message}`,
-            stdout: '',
-          });
-        });
-
-        child.on('close', (code) => {
-          const finalMessage = `--- COMMAND FINISHED ---\nExit Code: ${code}`;
-          ctx.log.info(finalMessage);
-          streamToFrontend('stdout', `\n${finalMessage}`);
-
-          resolve({
-            exitCode: code ?? 1, // Use 1 if code is null (e.g., killed by signal)
-            stderr,
-            stdout,
-          });
-        });
-      });
+      return await executeShellCommand(args.command);
     } catch (error: unknown) {
       ctx.log.error({ err: error }, `Error in executeShellCommandTool`);
       return {

@@ -1,79 +1,88 @@
-/// <reference types="vitest/globals" />
-import { Job, Queue } from 'bullmq';
-import { describe, expect, it, Mock, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Ctx, SessionData } from '@/types.js';
+import { Ctx } from '@/types';
 
-import logger from '../../../../logger.js';
 import { getLlmProvider } from '../../../../utils/llmProvider.js';
 import { summarizeTool } from './summarize.tool.js';
 
-vi.mock('../../../../utils/llmProvider.js', () => {
-  const mockLlmProvider = {
+// Mock dependencies
+vi.mock('../../../../utils/llmProvider.js', () => ({
+  getLlmProvider: vi.fn(() => ({
     getLlmResponse: vi.fn(),
-  };
-  return {
-    getLlmProvider: vi.fn(() => mockLlmProvider),
-  };
-});
-
-vi.mock('../../../../logger.js', () => ({
-  default: {
-    child: vi.fn().mockReturnThis(),
-    debug: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-  },
+  })),
 }));
 
+const mockLogger = {
+  child: vi.fn().mockReturnThis(),
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+};
+
+const mockCtx: Ctx = {
+  llm: getLlmProvider(),
+  log: mockLogger as unknown as Ctx['log'],
+  reportProgress: vi.fn(),
+  session: {} as Ctx['session'],
+  streamContent: vi.fn(),
+  taskQueue: {} as Ctx['taskQueue'],
+};
+
 describe('summarizeTool', () => {
-  const mockCtx: Ctx = {
-    job: { id: 'test-job-id' } as Job,
-    llm: getLlmProvider(),
-    log: logger,
-    reportProgress: vi.fn(),
-    session: {} as SessionData,
-    streamContent: vi.fn(),
-    taskQueue: {} as Queue,
-  };
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-  it('should summarize the given text', async () => {
-    const textToSummarize = 'This is a long text that needs to be summarized.';
-    const expectedSummary = 'This is a summary.';
-    (getLlmProvider().getLlmResponse as Mock).mockResolvedValue(
-      expectedSummary,
+  it('should summarize the text successfully', async () => {
+    vi.mocked(getLlmProvider().getLlmResponse).mockResolvedValue(
+      'This is a summary.',
     );
-
     const result = await summarizeTool.execute(
-      { text: textToSummarize },
+      { text: 'Long text to summarize.' },
       mockCtx,
     );
-    expect(result).toBe(expectedSummary);
+    expect(result).toEqual('This is a summary.');
     expect(getLlmProvider().getLlmResponse).toHaveBeenCalled();
-    expect(mockCtx.log.info).toHaveBeenCalledWith(
-      textToSummarize,
-      'Summarizing text',
+  });
+
+  it('should return an error object if summarization fails', async () => {
+    vi.mocked(getLlmProvider().getLlmResponse).mockResolvedValue('');
+    const result = await summarizeTool.execute(
+      { text: 'Long text to summarize.' },
+      mockCtx,
+    );
+    expect(result).toEqual({ erreur: 'No LLM API key available.' });
+  });
+
+  it('should return an error object if textToSummarize is an empty string', async () => {
+    const result = await summarizeTool.execute({ text: '' }, mockCtx);
+    expect(result).toEqual({
+      erreur:
+        'Failed to summarize text: Input text for summarization is empty.',
+    });
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      'Input text for summarization is empty.',
     );
   });
 
-  it('should return an error if LLM response fails', async () => {
-    const textToSummarize = 'Another text.';
-    const errorMessage = 'LLM failed to summarize.';
-    (getLlmProvider().getLlmResponse as Mock).mockRejectedValue(
-      new Error(errorMessage),
+  it('should return an error object if getLlmResponse returns an empty string or null', async () => {
+    vi.mocked(getLlmProvider().getLlmResponse).mockResolvedValue('');
+    let result = await summarizeTool.execute({ text: 'Some text' }, mockCtx);
+    expect(result).toEqual({
+      erreur: 'Failed to summarize text: LLM returned empty response.',
+    });
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      'LLM returned empty response for summarization.',
     );
 
-    const result = await summarizeTool.execute(
-      { text: textToSummarize },
-      mockCtx,
+    vi.mocked(getLlmProvider().getLlmResponse).mockResolvedValue('');
+    result = await summarizeTool.execute({ text: 'Some text' }, mockCtx);
+    expect(result).toEqual({
+      erreur: 'Failed to summarize text: LLM returned empty response.',
+    });
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      'LLM returned empty response for summarization.',
     );
-    expect(result).toHaveProperty('erreur');
-    expect(
-      typeof result === 'object' && result !== null && 'erreur' in result
-        ? result.erreur
-        : result,
-    ).toContain(errorMessage);
-    expect(mockCtx.log.error).toHaveBeenCalled();
   });
 });

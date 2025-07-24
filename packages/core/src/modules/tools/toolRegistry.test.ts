@@ -3,7 +3,8 @@ import type { Mock } from 'vitest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AnyZodObject, z, ZodString } from 'zod';
 
-import { Ctx, Tool } from '@/types.js';
+import { Ctx, Tool } from '@/types';
+import { AppError } from '@/utils/errorUtils';
 
 import { toolRegistry } from './toolRegistry.js';
 
@@ -130,6 +131,18 @@ describe('ToolRegistry', () => {
     // Pass invalid parameters (e.g., missing 'input' which is required by mockToolSchema)
     await expect(
       toolRegistry.execute('mockTool', { wrongParam: 'value' }, mockCtx),
-    ).rejects.toThrow(/Invalid tool parameters/);
+    ).rejects.toThrow('Invalid tool parameters');
+  });
+
+  // Test for unregister method
+  it('should unregister a tool successfully', () => {
+    toolRegistry.register(mockTool);
+    expect(toolRegistry.get('mockTool')).toBeDefined();
+    toolRegistry.unregister('mockTool');
+    expect(toolRegistry.get('mockTool')).toBeUndefined();
+  });
+
+  it('should not throw an error when unregistering a non-existent tool', () => {
+    expect(() => toolRegistry.unregister('nonExistentTool')).not.toThrow();
   });
 });

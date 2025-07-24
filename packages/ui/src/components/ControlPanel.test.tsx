@@ -109,6 +109,7 @@ describe('ControlPanel', () => {
       toolCreationEnabled: true,
       updateSessionStatus: vi.fn(),
       startAgent: vi.fn(),
+      initializeSessionAndMessages: vi.fn(),
     };
 
     (useStore as unknown as Mock).mockImplementation((selector: (state: AppState) => unknown) => selector(mockState));

@@ -2,7 +2,6 @@ import express from 'express';
 import { promises as fs } from 'fs';
 import request from 'supertest';
 import {
-  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -13,75 +12,54 @@ import {
 } from 'vitest';
 
 import { config } from './config';
+
+vi.mock('./config');
+vi.mock('./utils/toolLoader');
+vi.mock('./modules/queue/queue');
+vi.mock('./modules/llm/LlmKeyManager');
+
+vi.mock('path', async () => {
+  const actual = await vi.importActual('path');
+  return {
+    ...actual,
+    resolve: vi.fn((...args) => {
+      if (args[0] === process.cwd() && args[1] === 'workspace') {
+        return '/mock/workspace'; // Mock the workspace path
+      }
+      return (actual as any).resolve(...args);
+    }),
+  };
+});
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { Callback, Redis, RedisKey } from 'ioredis';
+
+import { LlmKeyManager } from './modules/llm/LlmKeyManager';
+import { jobQueue } from './modules/queue/queue';
+import { redis } from './modules/redis/redisClient';
 import * as toolLoader from './utils/toolLoader';
 import { initializeWebServer } from './webServer';
 
-vi.mock('./modules/queue/queue', () => ({
-  jobQueue: {
-    add: vi.fn(),
-    getJob: vi.fn(),
-  },
-}));
 
-vi.mock('./modules/llm/LlmKeyManager', () => ({
-  LlmKeyManager: {
-    addKey: vi.fn(),
-    getKeysForApi: vi.fn(),
-    removeKey: vi.fn(),
-  },
-}));
-
-import { mockRedis as redis } from '../test/mocks/redisClient.mock';
-import { LlmKeyManager } from './modules/llm/LlmKeyManager';
-import { jobQueue } from './modules/queue/queue';
-
-vi.mock('./modules/redis/redisClient', () => {
-  const mockRedisClient = {
-    condition: 'ready',
-    del: vi.fn().mockResolvedValue(1),
-    duplicate: vi.fn(() => ({
-      on: vi.fn(),
-      quit: vi.fn().mockResolvedValue(undefined),
-      subscribe: vi.fn().mockResolvedValue(undefined),
-      unsubscribe: vi.fn().mockResolvedValue(undefined),
-    })),
-    get: vi.fn().mockResolvedValue(null),
-    incr: vi.fn().mockResolvedValue(1),
-    incrby: vi.fn().mockResolvedValue(1),
-    isCluster: false,
-    on: vi.fn(),
-    options: { host: 'localhost', port: 6379 },
-    publish: vi.fn().mockResolvedValue(1),
-    set: vi.fn().mockResolvedValue('OK'),
-    // Added missing properties for Redis type compatibility
-    status: 'ready',
-    stream: {} as any,
-    subscribe: vi.fn().mockResolvedValue(undefined),
-    // Add other properties as needed by the Redis type if more errors appear
-  };
-  return { redis: mockRedisClient };
-});
 
 describe('webServer', () => {
   let app: express.Application;
 
   beforeAll(async () => {
     config.AUTH_API_KEY = 'test-api-key'; // Set a test API key
-    app = await initializeWebServer(redis as any, jobQueue);
+    const mockPgClient = {} as any; // Mock pgClient
+    app = await initializeWebServer(redis as any, jobQueue, mockPgClient);
   });
 
   beforeEach(() => {
     vi.clearAllMocks();
     // Mock console.log to prevent test output pollution
     vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     // Ensure jobQueue.add always returns a mock job for tests
     (jobQueue.add as Mock).mockResolvedValue({ id: 'mockJobId' });
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+  
 
   it('should return 200 for /api/health', async () => {
     const res = await request(app).get('/api/health');
@@ -144,65 +122,59 @@ describe('webServer', () => {
     );
   });
 
-  // TODO: This test is currently commented out as it is causing issues. We will revisit it later.
-  // it('should handle /api/chat/stream/:jobId correctly', async () => {
-  //   const mockSubscriber = {
-  //     on: vi.fn(),
-  //     quit: vi.fn().mockResolvedValue(undefined),
-  //     subscribe: vi.fn().mockResolvedValue(undefined),
-  //     unsubscribe: vi.fn().mockResolvedValue(undefined),
-  //   };
-  //   (redis.duplicate as Mock).mockReturnValue(mockSubscriber);
+  it('should handle /api/chat/stream/:jobId correctly', async () => {
+    const mockSubscriber = {
+      on: vi.fn(),
+      quit: vi.fn().mockResolvedValue(undefined),
+      subscribe: vi.fn().mockResolvedValue(undefined),
+      unsubscribe: vi.fn().mockResolvedValue(undefined),
+    };
+    (redis.duplicate as Mock).mockReturnValue(mockSubscriber);
 
-  //   const req = request(app)
-  //     .get('/api/chat/stream/testJobId')
-  //     .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+    const req = request(app)
+      .get('/api/chat/stream/testJobId')
+      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
 
-  //   await new Promise<void>((resolve, reject) => {
-  //     let receivedData = '';
-  //     req.on('response', (res) => {
-  //       expect(res.status).toBe(200);
-  //       expect(res.headers['content-type']).toContain('text/event-stream');
+    await new Promise<void>((resolve, reject) => {
+      let receivedData = '';
+      req.on('response', (res) => {
+        expect(res.status).toBe(200);
+        expect(res.headers['content-type']).toContain('text/event-stream');
 
-  //       res.on('data', (chunk) => {
-  //         receivedData += chunk.toString();
-  //         if (receivedData.includes('data: {"type":"test"}\n\n')) {
-  //           expect(receivedData).toContain('data: {"type":"test"}\n\n');
-  //           res.destroy(); // Close the connection
-  //           resolve();
-  //         }
-  //       });
+        res.on('data', (chunk: Buffer) => {
+          receivedData += chunk.toString();
+          if (receivedData.includes('data: {"type":"test"}\n\n')) {
+            expect(receivedData).toContain('data: {"type":"test"}\n\n');
+            res.destroy(); // Close the connection
+            resolve();
+          }
+        });
 
-  //       res.on('end', () => {
-  //         if (!receivedData.includes('data: {"type":"test"}\n\n')) {
-  //           reject(new Error('Stream ended without receiving expected data.'));
-  //         }
-  //       });
+        res.on('end', () => {
+          if (!receivedData.includes('data: {"type":"test"}\n\n')) {
+            reject(new Error('Stream ended without receiving expected data.'));
+          }
+        });
 
-  //       res.on('error', (err) => {
-  //         reject(err);
-  //       });
+        res.on('error', (err: Error) => {
+          reject(err);
+        });
+      });
 
-  //       // Simulate a message being published to the Redis channel after the connection is established
-  //       // This needs to happen after the 'response' event listener is set up
-  //       setTimeout(() => {
-  //         mockSubscriber.on.mock.calls[0][1](
-  //           'job:testJobId:events',
-  //           'data: {"type":"test"}\n\n',
-  //         );
-  //       }, 100); // Small delay to ensure listeners are ready
-  //     });
-
-  //     req.end();
-  //   });
-
-  //   expect(mockSubscriber.quit).toHaveBeenCalled(); // Verify quit is called after promise resolves
-
-  //   expect(redis.duplicate).toHaveBeenCalled();
-  //   expect(mockSubscriber.subscribe).toHaveBeenCalledWith(
-  //     'job:testJobId:events',
-  //   );
-  // }, 90000); // Fix: Increased timeout for this test as it can be long-running due to async operations.
+      // Simulate a message being published to the Redis channel after the connection is established
+      // This needs to happen after the 'response' event listener is set up
+      // We need to wait for the subscriber.subscribe to be called in webServer.ts
+      // A small delay or a more robust mock for redis.duplicate might be needed
+      setTimeout(() => {
+        const onMessageCallback = mockSubscriber.on.mock.calls.find(
+          (call) => call[0] === 'message',
+        );
+        if (onMessageCallback) {
+          onMessageCallback[1]('job:testJobId:events', '{"type":"test"}');
+        }
+      }, 100); // Small delay to allow subscriber.on to be called
+    });
+  });
 
   it('should return 200 for /api/history', async () => {
     (redis.get as Mock).mockResolvedValue(
@@ -391,7 +363,7 @@ describe('webServer', () => {
   it('should handle /api/display correctly', async () => {
     vi.spyOn(fs, 'readFile').mockResolvedValue('<html>test</html>');
     const res = await request(app)
-      .get('/api/display')
+      .get('/api/display?file=index.html')
       .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
     expect(res.statusCode).toEqual(200);
     expect(res.body).toEqual({ message: 'Display event sent.' });

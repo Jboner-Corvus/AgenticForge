@@ -1,46 +1,13 @@
-import type { Queue } from 'bullmq'; // Import Queue type
-
-import { promises as fs } from 'fs';
-import path from 'path';
-import { LogFn } from 'pino';
+import * as fs from 'fs';
+import * as path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Ctx as _Ctx, ILlmProvider } from '@/types.js';
+import { _resetTools, getTools } from '@/utils/toolLoader';
 
-import type logger from '../logger.js';
+import { toolRegistry } from '../modules/tools/toolRegistry';
 
-import { toolRegistry } from '../modules/tools/toolRegistry.js';
-import { _resetTools, getTools } from './toolLoader.js';
-
-// Mock pour logger
-const mockLogger: Partial<typeof logger> = {
-  child: vi.fn().mockReturnThis(),
-  debug: vi.fn() as unknown as LogFn,
-  error: vi.fn() as unknown as LogFn,
-  fatal: vi.fn() as unknown as LogFn,
-  info: vi.fn() as unknown as LogFn,
-  silent: vi.fn() as unknown as LogFn,
-  trace: vi.fn() as unknown as LogFn,
-  warn: vi.fn() as unknown as LogFn,
-};
-
-// Mock pour Queue
-const mockQueue: Partial<Queue> = {
-  add: vi.fn(),
-};
-
-// Mock complet et typé pour le contexte Ctx
-const mockCtx: _Ctx = {
-  llm: {} as ILlmProvider,
-  log: mockLogger as typeof logger,
-  reportProgress: vi.fn(),
-  session: undefined,
-  streamContent: vi.fn(),
-  taskQueue: mockQueue as Queue,
-};
-
-// Mock du logger pour éviter les logs de test
-vi.mock('../logger.js', () => ({
+// Mock the logger to prevent console output during tests
+vi.mock('../logger', () => ({
   default: {
     debug: vi.fn(),
     error: vi.fn(),
@@ -49,83 +16,187 @@ vi.mock('../logger.js', () => ({
   },
 }));
 
-const testToolsDir = path.join(__dirname, 'test_tools');
+// Mock fs.promises for file system operations
+vi.mock('fs', () => ({
+  promises: {
+    readdir: vi.fn(),
+    readFile: vi.fn(),
+  },
+}));
 
-const createToolContent = (name: string, result: string) => `
-  import { z } from 'zod';
-  export const ${name} = {
-    name: '${name}',
-    description: 'A test tool',
-    parameters: z.object({}),
-    execute: async (args, context) => '${result}',
+// Mock path.resolve to control resolved paths
+vi.mock('path', async (importOriginal) => {
+  const actual = (await importOriginal()) as typeof path;
+  return {
+    ...actual,
+    resolve: vi.fn((...args) => actual.resolve(...args)),
   };
-`;
+});
 
-describe('Tool Loader', () => {
-  beforeEach(async () => {
-    // Définir le chemin des outils de test
-    process.env.TOOLS_PATH = testToolsDir;
-
-    // Nettoyer avant chaque test
-    await fs.rm(testToolsDir, { force: true, recursive: true });
-    await fs.mkdir(testToolsDir, { recursive: true });
-    // Réinitialiser le registre des outils et le cache du loader
-    toolRegistry.getAll().forEach((tool) => toolRegistry.unregister(tool.name));
+describe('toolLoader', () => {
+  beforeEach(() => {
     _resetTools();
+    vi.clearAllMocks();
+    process.env.NODE_ENV = 'test'; // Reset NODE_ENV for each test
+    delete process.env.TOOLS_PATH; // Clear custom tools path
+
+    // Explicitly reset mock implementations
+    vi.mocked(fs.promises.readdir).mockReset();
+    vi.mocked(fs.promises.readFile).mockReset();
+    toolRegistry.clear(); // Clear the toolRegistry before each test
   });
 
-  afterEach(async () => {
-    await fs.rm(testToolsDir, { force: true, recursive: true });
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
-  it('should load all tools from the specified directory', async () => {
-    const tool1Path = path.join(testToolsDir, 'tool1.tool.ts');
-    await fs.writeFile(tool1Path, createToolContent('tool1', 'result1'));
-
-    const tools = await getTools();
-
-    expect(tools).toHaveLength(1);
-    expect(tools[0].name).toBe('tool1');
-    expect(await tools[0].execute({}, mockCtx)).toBe('result1');
-  });
-
-  // it('should reload a tool when its file changes', async () => {
-  //   const toolPath = path.join(testToolsDir, 'dynamicTool.tool.ts');
-  //   await fs.writeFile(toolPath, createToolContent('dynamicTool', 'initial'));
-
-  //   let tools = await getTools();
-  //   expect(tools).toHaveLength(1);
-  //   expect(await tools[0].execute({}, mockCtx)).toBe('initial');
-
-  //   // Modifier le fichier
-  //   await fs.writeFile(toolPath, createToolContent('dynamicTool', 'updated'));
-
-  //   // Forcer le rechargement en réinitialisant le cache
-  //   _resetTools();
-  //   tools = await getTools(); // Recharger les outils
-  //   expect(tools).toHaveLength(1);
-  //   expect(await tools[0].execute({}, mockCtx)).toBe('updated');
-  // });
-
-  it('should unload a tool when its file is deleted', async () => {
-    const toolPath = path.join(testToolsDir, 'deletableTool.tool.ts');
-    await fs.writeFile(
-      toolPath,
-      createToolContent('deletableTool', 'toDelete'),
+  it('should load tools from default development path', async () => {
+    process.env.NODE_ENV = 'development';
+    vi.mocked(fs.promises.readdir).mockResolvedValueOnce([
+      { isFile: () => true, name: 'testTool.js' },
+    ] as any);
+    vi.mocked(fs.promises.readFile).mockResolvedValueOnce(
+      "export const name = 'testTool'; export const execute = () => {};",
     );
 
+    const tools = await getTools();
+    expect(tools).toHaveLength(1);
+    expect(tools[0].name).toBe('testTool');
+    expect(path.resolve).toHaveBeenCalledWith(
+      expect.any(String),
+      'src',
+      'modules',
+      'tools',
+      'definitions',
+    );
+    _resetTools();
+  });
+
+  it('should load tools from default production path', async () => {
+    process.env.NODE_ENV = 'production';
+    vi.mocked(fs.promises.readdir).mockResolvedValueOnce([
+      { isFile: () => true, name: 'prodTool.js' },
+    ] as any);
+    vi.mocked(fs.promises.readFile).mockResolvedValueOnce(
+      "export const name = 'prodTool'; export const execute = () => {};",
+    );
+
+    const tools = await getTools();
+    expect(tools).toHaveLength(1);
+    expect(tools[0].name).toBe('prodTool');
+    expect(path.resolve).toHaveBeenCalledWith(
+      expect.any(String),
+      'dist',
+      'modules',
+      'tools',
+      'definitions',
+    );
+    _resetTools();
+  });
+
+  it('should load tools from custom TOOLS_PATH', async () => {
+    process.env.TOOLS_PATH = '/custom/tools';
+    vi.mocked(fs.promises.readdir).mockResolvedValueOnce([
+      { isFile: () => true, name: 'customTool.js' },
+    ] as any);
+    vi.mocked(fs.promises.readFile).mockResolvedValueOnce(
+      "export const name = 'customTool'; export const execute = () => {};",
+    );
+
+    const tools = await getTools();
+    expect(tools).toHaveLength(1);
+    expect(tools[0].name).toBe('customTool');
+    expect(path.resolve).toHaveBeenCalledWith('/custom/tools');
+    _resetTools();
+  });
+
+  it('should throw an error if tools directory does not exist', async () => {
+    vi.mocked(fs.promises.readdir).mockRejectedValueOnce(
+      new Error('ENOENT: no such file or directory, scandir /custom/tools'),
+    );
+    process.env.TOOLS_PATH = '/custom/tools'; // Set a custom path to trigger the error
+    await expect(getTools()).rejects.toThrow(
+      'Impossible de lire le répertoire des outils /custom/tools. Détails: ENOENT: no such file or directory, scandir /custom/tools',
+    );
+    _resetTools();
+  });
+
+  it('should handle tool files with errors gracefully', async () => {
+    vi.mocked(fs.promises.readdir).mockResolvedValueOnce([
+      { isFile: () => true, name: 'errorTool.js' },
+    ] as any);
+    vi.mocked(fs.promises.readFile).mockResolvedValueOnce(
+      "export const name = 'errorTool'; export const execute = () => { throw new Error('Tool error'); };",
+    );
+
+    const tools = await getTools();
+    expect(tools).toHaveLength(1);
+    expect(tools[0].name).toBe('errorTool');
+    // Expect the execute function to throw when called
+    expect(() => tools[0].execute({}, {} as any)).toThrow('Tool error');
+    _resetTools();
+  });
+
+  // Test for _resetTools function
+  it('should reset loaded tools', async () => {
+    vi.mocked(fs.promises.readdir).mockResolvedValueOnce([
+      { isFile: () => true, name: 'tool1.js' },
+    ] as any);
+    vi.mocked(fs.promises.readFile).mockResolvedValueOnce(
+      "export const name = 'tool1'; export const execute = () => {};",
+    );
+
+    await getTools(); // Load tools
+
+    _resetTools(); // Reset tools
+
+    vi.mocked(fs.promises.readdir).mockResolvedValueOnce([
+      { isFile: () => true, name: 'tool2.js' },
+    ] as any);
+    vi.mocked(fs.promises.readFile).mockResolvedValueOnce(
+      "export const name = 'tool2'; export const execute = () => {};",
+    );
+
+    const tools = await getTools(); // Load again after reset
+    expect(tools).toHaveLength(1);
+    expect(tools[0].name).toBe('tool2');
+  });
+
+  it('should validate loaded tools against Tool interface', async () => {
+    // Test case for a valid tool
+    vi.mocked(fs.promises.readdir).mockResolvedValueOnce([
+      { isFile: () => true, name: 'validTool.js' },
+    ] as any);
+    vi.mocked(fs.promises.readFile).mockResolvedValueOnce(
+      "export const name = 'validTool'; export const execute = () => {};",
+    );
     let tools = await getTools();
     expect(tools).toHaveLength(1);
-    expect(tools[0].name).toBe('deletableTool');
+    expect(tools[0].name).toBe('validTool');
+    expect(typeof tools[0].execute).toBe('function');
 
-    // Supprimer le fichier
-    await fs.unlink(toolPath);
-
-    // Vider le registre et réinitialiser le loader pour simuler un rechargement complet
-    toolRegistry.getAll().forEach((tool) => toolRegistry.unregister(tool.name));
     _resetTools();
 
-    tools = await getTools(); // Recharger les outils
-    expect(tools).toHaveLength(0);
+    // Test case for an invalid tool (missing execute)
+    vi.mocked(fs.promises.readdir).mockResolvedValueOnce([
+      { isFile: () => true, name: 'invalidTool.js' },
+    ] as any);
+    vi.mocked(fs.promises.readFile).mockResolvedValueOnce(
+      "export const name = 'invalidTool';",
+    );
+    tools = await getTools();
+    expect(tools).toHaveLength(0); // Invalid tool should not be loaded
+
+    _resetTools();
+
+    // Test case for an invalid tool (missing name)
+    vi.mocked(fs.promises.readdir).mockResolvedValueOnce([
+      { isFile: () => true, name: 'invalidTool2.js' },
+    ] as any);
+    vi.mocked(fs.promises.readFile).mockResolvedValueOnce(
+      'export const execute = () => {};',
+    );
+    tools = await getTools();
+    expect(tools).toHaveLength(0); // Invalid tool should not be loaded
   });
 });

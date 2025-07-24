@@ -16,53 +16,98 @@ import { fileURLToPath } from 'url';
 // FICHIER : src/prompts/orchestrator.prompt.ts
 import type { AgentSession, Message, Tool } from '@/types.js';
 
+import { getResponseJsonSchema } from './responseSchema.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const promptFilePath = path.resolve(__dirname, 'system.prompt.md');
-const getPreamble = () =>
-  readFileSync(promptFilePath, 'utf-8').replace(/`/g, '`');
+const PREAMBLE_CONTENT = readFileSync(promptFilePath, 'utf-8').replace(
+  /`/g,
+  '`',
+);
+
+const getPreamble = () => {
+  const schema = JSON.stringify(getResponseJsonSchema(), null, 2);
+  return PREAMBLE_CONTENT.replace('{{RESPONSE_JSON_SCHEMA}}', schema);
+};
 
 const TOOLS_SECTION_HEADER = '## Available Tools:';
 const HISTORY_SECTION_HEADER = '## Conversation History:';
 const WORKING_CONTEXT_HEADER = '## Working Context:';
 
-const zodToJsonSchema = (schema: any): any => {
-  if (!schema || !schema.shape) {
-    return {};
+const zodToJsonSchema = (_schema: any): any => {
+  if (!_schema || !_schema._def || !_schema._def.typeName) {
+    throw new Error(
+      `Invalid Zod schema provided for JSON schema conversion: ${JSON.stringify(_schema)}`,
+    );
   }
 
-  const properties: { [key: string]: any } = {};
-  for (const key in schema.shape) {
-    const field = schema.shape[key];
-    const fieldSchema: { [key: string]: any } = {};
+  const jsonSchema: any = {};
 
-    // Determine type
-    if (field._def.typeName === 'ZodString') {
-      fieldSchema.type = 'string';
-    } else if (field._def.typeName === 'ZodNumber') {
-      fieldSchema.type = 'number';
-    } else if (field._def.typeName === 'ZodBoolean') {
-      fieldSchema.type = 'boolean';
-    } else if (field._def.typeName === 'ZodObject') {
-      // Recursively handle nested objects
-      const nestedSchema = zodToJsonSchema(field);
-      fieldSchema.type = nestedSchema.type;
-      fieldSchema.properties = nestedSchema.properties;
-    }
-
-    // Add description if available
-    if (field.description) {
-      fieldSchema.description = field.description;
-    }
-
-    properties[key] = fieldSchema;
+  // Add description if available
+  if (_schema.description) {
+    jsonSchema.description = _schema.description;
   }
 
-  return {
-    properties,
-    type: 'object',
-  };
+  switch (_schema._def.typeName) {
+    case 'ZodArray':
+      jsonSchema.type = 'array';
+      jsonSchema.items = zodToJsonSchema(_schema._def.type); // _schema._def.type holds the element _schema
+      break;
+    case 'ZodBoolean':
+      jsonSchema.type = 'boolean';
+      break;
+    case 'ZodEnum':
+      jsonSchema.type = 'string'; // Assuming string enums for simplicity
+      jsonSchema.enum = _schema._def.values;
+      break;
+    case 'ZodLiteral': {
+      const literalValue = _schema._def.value;
+      jsonSchema.type = typeof literalValue;
+      jsonSchema.const = literalValue;
+      break;
+    }
+    case 'ZodNullable':
+    case 'ZodOptional':
+      // For optional/nullable types, we unwrap them and process their inner type
+      // The optional/nullable status is handled by the 'required' array in ZodObject
+      return zodToJsonSchema(_schema._def.innerType);
+    case 'ZodNumber':
+      jsonSchema.type = 'number';
+      break;
+    case 'ZodObject': {
+      jsonSchema.type = 'object';
+      jsonSchema.properties = {};
+      const required: string[] = [];
+      for (const key in _schema.shape) {
+        const field = _schema.shape[key];
+        jsonSchema.properties[key] = zodToJsonSchema(field);
+        // Check if the field is required (not optional, not nullable)
+        if (!field.isOptional() && !field.isNullable()) {
+          required.push(key);
+        }
+      }
+      if (required.length > 0) {
+        jsonSchema.required = required;
+      }
+      break;
+    }
+    case 'ZodString':
+      jsonSchema.type = 'string';
+      break;
+    case 'ZodUnion':
+      jsonSchema.anyOf = _schema._def.options.map((option: any) =>
+        zodToJsonSchema(option),
+      );
+      break;
+    default:
+      throw new Error(
+        `Unsupported Zod type for JSON schema conversion: ${_schema._def.typeName}`,
+      );
+  }
+
+  return jsonSchema;
 };
 
 const formatToolForPrompt = (tool: Tool): string => {
@@ -75,6 +120,54 @@ const formatToolForPrompt = (tool: Tool): string => {
   }
   const params = JSON.stringify(zodToJsonSchema(tool.parameters), null, 2);
   return `### ${tool.name}\nDescription: ${tool.description}\nParameters (JSON Schema):\n${params}\n`;
+};
+
+const formatHistoryMessage = (message: Message): string => {
+  let role: string;
+  let content: string;
+
+  switch (message.type) {
+    case 'agent_canvas_output':
+      role = 'ASSISTANT';
+      content = `Canvas Output (${message.contentType}):\n${message.content}`;
+      break;
+    case 'agent_response':
+      role = 'ASSISTANT';
+      content = message.content;
+      break;
+    case 'agent_thought':
+      role = 'ASSISTANT';
+      content = `Thought: ${message.content}`;
+      break;
+    case 'error':
+      role = 'SYSTEM';
+      content = `Error: ${message.content}`;
+      break;
+    case 'tool_call':
+      role = 'ASSISTANT';
+      content = `Tool Call: ${message.toolName}(${JSON.stringify(message.params, null, 2)})`;
+      break;
+    case 'tool_result':
+      role = 'TOOL';
+      content = `Tool Result from ${message.toolName}: ${JSON.stringify(message.result, null, 2)}`;
+      break;
+    case 'user':
+      role = 'USER';
+      content = message.content;
+      break;
+    default:
+      // This ensures we handle all message types, or TypeScript will complain.
+      // @ts-expect-error - This is a guard for unhandled message types
+      throw new Error(`Unknown message type: ${message.type}`);
+  }
+
+  // Truncate long content to avoid excessively long prompts
+  const MAX_CONTENT_LENGTH = 5000;
+  if (content.length > MAX_CONTENT_LENGTH) {
+    content = `${content.substring(0, MAX_CONTENT_LENGTH)}... (truncated)`;
+  }
+
+  return `${role}:\n${content}`;
 };
 
 export const getMasterPrompt = (
@@ -94,12 +187,11 @@ export const getMasterPrompt = (
   const toolsSection = `${TOOLS_SECTION_HEADER}\n${formattedTools}`;
 
   const formattedHistory = (session.data.history || [])
-    .map((h: Message) => `${h.role.toUpperCase()}:\n${h.content}`)
+    .map(formatHistoryMessage)
     .join('\n\n');
   const historySection =
     formattedHistory.length > 0
-      ? `${HISTORY_SECTION_HEADER}
-${formattedHistory}`
+      ? `${HISTORY_SECTION_HEADER}\n${formattedHistory}`
       : '';
 
   return `${getPreamble()}\n\n${workingContextSection}${toolsSection}\n\n${historySection}\n\nASSISTANT's turn. Your response:`;

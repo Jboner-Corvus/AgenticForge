@@ -18,6 +18,11 @@ export const jobQueue = new Queue('tasks', { connection: redis });
 export const deadLetterQueue = new Queue('dead-letters', {
   connection: redis,
 });
+
 jobQueue.on('error', (err: Error) => {
   logger.error({ err }, 'Job queue error');
+});
+
+deadLetterQueue.on('error', (err: Error) => {
+  logger.error({ err }, 'Dead-letter queue error');
 });

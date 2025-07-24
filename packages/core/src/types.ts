@@ -1,9 +1,28 @@
 import type { Context as FastMCPContext } from 'fastmcp';
 
 import { Queue } from 'bullmq';
+import { Job } from 'bullmq';
 import { z, ZodTypeAny } from 'zod';
 
 import logger from './logger.js';
+import { SessionManager } from './modules/session/sessionManager.js';
+
+export interface AgentCanvasOutputMessage {
+  content: string;
+  contentType: 'html' | 'markdown' | 'text' | 'url';
+  id: string;
+  timestamp: number;
+  type: 'agent_canvas_output';
+}
+
+export interface AgentResponseMessage {
+  content: string;
+  id: string;
+  timestamp: number;
+  type: 'agent_response';
+}
+
+import type { LLMContent } from './modules/llm/llm-types.js';
 
 export interface AgentSession {
   data: SessionData;
@@ -24,19 +43,31 @@ export type Ctx = {
   taskQueue: Queue;
 } & Omit<FastMCPContext<SessionData>, 'reportProgress' | 'streamContent'>;
 
-import type { LLMContent } from './modules/llm/llm-types.js';
+export interface ErrorMessage {
+  content: string;
+  id: string;
+  timestamp: number;
+  type: 'error';
+}
 
 export interface ILlmProvider {
+  getErrorType(statusCode: number, errorBody: string): LlmKeyErrorType;
   getLlmResponse(
     messages: LLMContent[],
     systemPrompt?: string,
   ): Promise<string>;
 }
 
-export interface Message {
-  content: string;
-  role: 'model' | 'tool' | 'user';
-}
+import { LlmKeyErrorType } from './modules/llm/LlmKeyManager.js';
+
+export type Message =
+  | AgentCanvasOutputMessage
+  | AgentResponseMessage
+  | ErrorMessage
+  | ThoughtMessage
+  | ToolCallMessage
+  | ToolResultMessage
+  | UserMessage;
 
 export interface MinimalJob {
   data: unknown;
@@ -48,23 +79,58 @@ export interface MinimalJob {
 export interface SessionData {
   [key: string]: unknown;
   history: Message[];
-  id: string;
   identities: Array<{ id: string; type: string }>;
+  metadata?: Record<string, unknown>;
+  name: string;
+  timestamp: number;
   workingContext?: {
     currentFile?: string;
     lastAction?: string;
   };
 }
 
+export interface ThoughtMessage {
+  content: string;
+  id: string;
+  timestamp: number;
+  type: 'agent_thought';
+}
+
+export interface ToolCallMessage {
+  id: string;
+  params: Record<string, unknown>;
+  timestamp: number;
+  toolName: string;
+  type: 'tool_call';
+}
+
+export interface ToolResultMessage {
+  id: string;
+  result: Record<string, unknown>;
+  timestamp: number;
+  toolName: string;
+  type: 'tool_result';
+}
+
+export interface UserMessage {
+  content: string;
+  id: string;
+  timestamp: number;
+  type: 'user';
+}
+
 declare module 'express' {
   interface Request {
+    job?: Job;
     sessionId?: string;
+    sessionManager?: SessionManager;
   }
 }
 
 export interface RedisEvent {
   content?: string;
   message?: string;
+  toolName?: string; // Added toolName for tool_stream events
   type: string;
 }
 
@@ -80,10 +146,4 @@ export interface Tool<
   name: string;
   output?: U;
   parameters: T;
-}
-
-export interface ToolOutput {
-  isError: boolean;
-  output: unknown;
-  toolName: string;
 }
