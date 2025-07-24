@@ -13,617 +13,965 @@ Une fois la correction effectué, cochez la case `[x]`.
 
 ## Erreurs à corriger
 
-1. [ ] **TypeCheck (Core):** `src/index.ts(18,1): error TS2308: Module './modules/llm/LlmKeyManager.js' has already exported a member named 'LlmKeyErrorType'. Consider explicitly re-exporting to resolve the ambiguity.`
+1. [ ] **TypeCheck (Core):** `src/modules/agent/agent.ts(115,35): error TS2322: Type 'unknown' is not assignable to type 'string'.`
 
-2. [ ] **TypeCheck (Core):** `src/modules/agent/agent.ts(108,35): error TS2322: Type 'unknown' is not assignable to type 'string'.`
+2. [ ] **TypeCheck (Core):** `src/modules/session/sessionManager.ts(231,41): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.`
 
-3. [ ] **TypeCheck (Core):** `src/modules/session/sessionManager.ts(231,41): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.`
+3. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(81,17): error TS2554: Expected 3 arguments, but got 2.`
 
-4. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(13,10): error TS2416: Property 'getErrorType' in type 'GeminiProvider' is not assignable to the same property in base type 'ILlmProvider'.`
+4. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(82,5): error TS2322: Type 'MockInstance<[msg: string, ...args: any[]], void>' is not assignable to type 'MockInstance<unknown[], unknown>'.`
 
-5. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(16,7): error TS2820: Type '"PERMANENT"' is not assignable to type 'LlmKeyErrorType'. Did you mean 'LlmKeyErrorType.PERMANENT'?`
+5. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(294,17): error TS2554: Expected 3 arguments, but got 2.`
 
-6. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(19,7): error TS2820: Type '"TEMPORARY"' is not assignable to type 'LlmKeyErrorType'. Did you mean 'LlmKeyErrorType.TEMPORARY'?`
+6. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(295,5): error TS2322: Type 'MockInstance<[msg: string, ...args: any[]], void>' is not assignable to type 'MockInstance<unknown[], unknown>'.`
 
-7. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(22,7): error TS2820: Type '"TEMPORARY"' is not assignable to type 'LlmKeyErrorType'. Did you mean 'LlmKeyErrorType.TEMPORARY'?`
+7. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(479,17): error TS2554: Expected 3 arguments, but got 2.`
 
-8. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(27,7): error TS2820: Type '"PERMANENT"' is not assignable to type 'LlmKeyErrorType'. Did you mean 'LlmKeyErrorType.PERMANENT'?`
+8. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(480,5): error TS2322: Type 'MockInstance<[msg: string, ...args: any[]], void>' is not assignable to type 'MockInstance<unknown[], unknown>'.`
 
-9. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(219,11): error TS2345: Argument of type '"PERMANENT" | "TEMPORARY"' is not assignable to parameter of type 'LlmKeyErrorType'.`
+9. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(597,5): error TS2322: Type 'MockInstance<[msg: string, ...args: any[]], void>' is not assignable to type 'MockInstance<unknown[], unknown>'.`
 
-10. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(239,11): error TS2345: Argument of type '"PERMANENT" | "TEMPORARY"' is not assignable to parameter of type 'LlmKeyErrorType'.`
+10. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(613,17): error TS2554: Expected 3 arguments, but got 2.`
 
-11. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(285,10): error TS2416: Property 'getErrorType' in type 'MistralProvider' is not assignable to the same property in base type 'ILlmProvider'.`
+11. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(647,17): error TS2554: Expected 3 arguments, but got 2.`
 
-12. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(288,7): error TS2820: Type '"PERMANENT"' is not assignable to type 'LlmKeyErrorType'. Did you mean 'LlmKeyErrorType.PERMANENT'?`
+12. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(675,17): error TS2554: Expected 3 arguments, but got 2.`
 
-13. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(291,7): error TS2820: Type '"TEMPORARY"' is not assignable to type 'LlmKeyErrorType'. Did you mean 'LlmKeyErrorType.TEMPORARY'?`
+13. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(711,17): error TS2554: Expected 3 arguments, but got 2.`
 
-14. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(294,7): error TS2820: Type '"TEMPORARY"' is not assignable to type 'LlmKeyErrorType'. Did you mean 'LlmKeyErrorType.TEMPORARY'?`
+14. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(748,17): error TS2554: Expected 3 arguments, but got 2.`
 
-15. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(415,10): error TS2416: Property 'getErrorType' in type 'OpenAIProvider' is not assignable to the same property in base type 'ILlmProvider'.`
+15. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(766,17): error TS2554: Expected 3 arguments, but got 2.`
 
-16. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(418,7): error TS2820: Type '"PERMANENT"' is not assignable to type 'LlmKeyErrorType'. Did you mean 'LlmKeyErrorType.PERMANENT'?`
+16. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(789,5): error TS2322: Type 'MockInstance<[msg: string, ...args: any[]], void>' is not assignable to type 'MockInstance<unknown[], unknown>'.`
 
-17. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(421,7): error TS2820: Type '"TEMPORARY"' is not assignable to type 'LlmKeyErrorType'. Did you mean 'LlmKeyErrorType.TEMPORARY'?`
+17. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(798,18): error TS2554: Expected 3 arguments, but got 2.`
 
-18. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(424,7): error TS2820: Type '"TEMPORARY"' is not assignable to type 'LlmKeyErrorType'. Did you mean 'LlmKeyErrorType.TEMPORARY'?`
+18. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(816,17): error TS2554: Expected 3 arguments, but got 2.`
 
-19. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(429,7): error TS2820: Type '"PERMANENT"' is not assignable to type 'LlmKeyErrorType'. Did you mean 'LlmKeyErrorType.PERMANENT'?`
+19. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(817,5): error TS2322: Type 'MockInstance<[msg: string, ...args: any[]], void>' is not assignable to type 'MockInstance<unknown[], unknown>'.`
 
-20. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(554,7): error TS2322: Type 'GeminiProvider' is not assignable to type 'ILlmProvider'.`
+20. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(847,17): error TS2554: Expected 3 arguments, but got 2.`
 
-21. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(560,7): error TS2322: Type 'MistralProvider' is not assignable to type 'ILlmProvider'.`
+21. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(848,5): error TS2322: Type 'MockInstance<[msg: string, ...args: any[]], void>' is not assignable to type 'MockInstance<unknown[], unknown>'.`
 
-22. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(563,7): error TS2322: Type 'OpenAIProvider' is not assignable to type 'ILlmProvider'.`
+22. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(895,17): error TS2554: Expected 3 arguments, but got 2.`
 
-23. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(569,7): error TS2322: Type 'GeminiProvider' is not assignable to type 'ILlmProvider'.`
+23. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(896,5): error TS2322: Type 'MockInstance<[msg: string, ...args: any[]], void>' is not assignable to type 'MockInstance<unknown[], unknown>'.`
 
-24. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(73,17): error TS2554: Expected 3 arguments, but got 2.`
+24. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(945,17): error TS2554: Expected 3 arguments, but got 2.`
 
-25. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(73,55): error TS2304: Cannot find name 'jobQueue'.`
+25. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(946,5): error TS2322: Type 'MockInstance<[msg: string, ...args: any[]], void>' is not assignable to type 'MockInstance<unknown[], unknown>'.`
 
-26. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(74,25): error TS2304: Cannot find name 'logger'.`
+26. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(993,17): error TS2554: Expected 3 arguments, but got 2.`
 
-27. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(166,37): error TS2304: Cannot find name 'jobQueue'.`
+27. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(1053,17): error TS2554: Expected 3 arguments, but got 2.`
 
-28. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(183,31): error TS2304: Cannot find name 'logger'.`
+28. [ ] **TypeCheck (Core):** `src/worker.ts(19,13): error TS2552: Cannot find name 'Client'. Did you mean 'PgClient'?`
 
-29. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(200,37): error TS2304: Cannot find name 'jobQueue'.`
+29. [ ] **Lint:** `packages/core lint:   4:10  error  'redis' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
 
-30. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(232,7): error TS2304: Cannot find name 'jobQueue'.`
+30. [ ] **Lint:** `packages/core lint:   1:10  error  'afterEach' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
 
-31. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(246,31): error TS2304: Cannot find name 'logger'.`
+31. [ ] **Lint:** `packages/core lint:   6:10  error  'redis' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
 
-32. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(256,7): error TS2304: Cannot find name 'jobQueue'.`
+32. [ ] **Lint:** `packages/core lint:   7:10  error  'AppError' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
 
-33. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(274,17): error TS2554: Expected 3 arguments, but got 2.`
+33. [ ] **Lint:** `packages/core lint:   13:10  error  'LlmKeyManager' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
 
-34. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(274,55): error TS2304: Cannot find name 'jobQueue'.`
+34. [ ] **Lint:** `packages/core lint:   14:10  error  'redis' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars`
 
-35. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(275,25): error TS2304: Cannot find name 'logger'.`
+35. [ ] **Lint:** `packages/core lint:   193:21  error  Unnecessary escape character: \/  no-useless-escape`
 
-36. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(309,31): error TS2304: Cannot find name 'logger'.`
+36. [ ] **Lint:** `packages/core lint:    40:12  error  'job' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars`
 
-37. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(342,31): error TS2304: Cannot find name 'logger'.`
+37. [ ] **Lint:** `packages/core lint:    40:22  error  'tools' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars`
 
-38. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(381,31): error TS2304: Cannot find name 'logger'.`
+38. [ ] **Lint:** `packages/core lint:    40:34  error  'jobQueue' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars`
 
-39. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(425,31): error TS2304: Cannot find name 'logger'.`
+39. [ ] **Lint:** `packages/core lint:    40:49  error  'ctx' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars`
 
-40. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(459,17): error TS2554: Expected 3 arguments, but got 2.`
+40. [ ] **Lint:** `packages/core lint:    53:21  error  'obj' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars`
 
-41. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(459,55): error TS2304: Cannot find name 'jobQueue'.`
+41. [ ] **Lint:** `packages/core lint:    53:34  error  'msg' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars`
 
-42. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(460,25): error TS2304: Cannot find name 'logger'.`
+42. [ ] **Lint:** `packages/core lint:   173:14  error  'job' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars`
 
-43. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(483,31): error TS2304: Cannot find name 'logger'.`
+43. [ ] **Lint:** `packages/core lint:   203:14  error  'job' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars`
 
-44. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(516,31): error TS2304: Cannot find name 'logger'.`
+44. [ ] **Lint:** `packages/core lint:   204:9   error  Unnecessary try/catch wrapper                                                        no-useless-catch`
 
-45. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(556,31): error TS2304: Cannot find name 'logger'.`
+45. [ ] **Lint:** `packages/core lint:   289:7   error  'errorSpy' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
 
-46. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(577,25): error TS2304: Cannot find name 'logger'.`
+46. [ ] **Lint:** `packages/core lint:   474:7   error  'errorSpy' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
 
-47. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(593,17): error TS2554: Expected 3 arguments, but got 2.`
+47. [ ] **Lint:** `packages/core lint:   811:7   error  'errorSpy' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
 
-48. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(593,55): error TS2304: Cannot find name 'jobQueue'.`
+48. [ ] **Lint:** `packages/core lint:   842:7   error  'errorSpy' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
 
-49. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(627,17): error TS2554: Expected 3 arguments, but got 2.`
+49. [ ] **Lint:** `packages/core lint:   890:7   error  'errorSpy' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
 
-50. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(627,55): error TS2304: Cannot find name 'jobQueue'.`
+50. [ ] **Lint:** `packages/core lint:   940:7   error  'errorSpy' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
 
-51. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(655,17): error TS2554: Expected 3 arguments, but got 2.`
+51. [ ] **Lint:** `packages/core lint: ✖ 22 problems (22 errors, 0 warnings)`
 
-52. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(655,55): error TS2304: Cannot find name 'jobQueue'.`
-
-53. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(691,17): error TS2554: Expected 3 arguments, but got 2.`
-
-54. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(691,55): error TS2304: Cannot find name 'jobQueue'.`
-
-55. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(696,31): error TS2304: Cannot find name 'logger'.`
-
-56. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(728,17): error TS2554: Expected 3 arguments, but got 2.`
-
-57. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(728,55): error TS2304: Cannot find name 'jobQueue'.`
-
-58. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(746,17): error TS2554: Expected 3 arguments, but got 2.`
-
-59. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(746,55): error TS2304: Cannot find name 'jobQueue'.`
-
-60. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(751,31): error TS2304: Cannot find name 'logger'.`
-
-61. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(769,25): error TS2304: Cannot find name 'logger'.`
-
-62. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(778,18): error TS2554: Expected 3 arguments, but got 2.`
-
-63. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(778,52): error TS2304: Cannot find name 'jobQueue'.`
-
-64. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(796,17): error TS2554: Expected 3 arguments, but got 2.`
-
-65. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(796,55): error TS2304: Cannot find name 'jobQueue'.`
-
-66. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(797,25): error TS2304: Cannot find name 'logger'.`
-
-67. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(801,15): error TS2304: Cannot find name 'jobQueue'.`
-
-68. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(804,31): error TS2304: Cannot find name 'logger'.`
-
-69. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(827,17): error TS2554: Expected 3 arguments, but got 2.`
-
-70. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(827,55): error TS2304: Cannot find name 'jobQueue'.`
-
-71. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(828,25): error TS2304: Cannot find name 'logger'.`
-
-72. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(832,15): error TS2304: Cannot find name 'jobQueue'.`
-
-73. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(835,31): error TS2304: Cannot find name 'logger'.`
-
-74. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(850,15): error TS2304: Cannot find name 'jobQueue'.`
-
-75. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(853,31): error TS2304: Cannot find name 'logger'.`
-
-76. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(875,17): error TS2554: Expected 3 arguments, but got 2.`
-
-77. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(875,55): error TS2304: Cannot find name 'jobQueue'.`
-
-78. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(876,25): error TS2304: Cannot find name 'logger'.`
-
-79. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(880,15): error TS2304: Cannot find name 'jobQueue'.`
-
-80. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(884,31): error TS2304: Cannot find name 'logger'.`
-
-81. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(903,31): error TS2304: Cannot find name 'logger'.`
-
-82. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(925,17): error TS2554: Expected 3 arguments, but got 2.`
-
-83. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(925,55): error TS2304: Cannot find name 'jobQueue'.`
-
-84. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(926,25): error TS2304: Cannot find name 'logger'.`
-
-85. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(933,31): error TS2304: Cannot find name 'logger'.`
-
-86. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(952,31): error TS2304: Cannot find name 'logger'.`
-
-87. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(973,17): error TS2554: Expected 3 arguments, but got 2.`
-
-88. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(973,55): error TS2304: Cannot find name 'jobQueue'.`
-
-89. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(1033,17): error TS2554: Expected 3 arguments, but got 2.`
-
-90. [ ] **TypeCheck (Core):** `src/webServer.integration.test.ts(1033,55): error TS2304: Cannot find name 'jobQueue'.`
-
-91. [ ] **TypeCheck (Core):** `src/webServer.test.ts(42,9): error TS7022: 'mockRedisClient' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.`
-
-92. [ ] **TypeCheck (Core):** `src/webServer.test.ts(45,22): error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.`
-
-93. [ ] **TypeCheck (Core):** `src/webServer.test.ts(74,17): error TS2554: Expected 3 arguments, but got 2.`
-
-94. [ ] **TypeCheck (Core):** `src/worker.test.ts(108,27): error TS2554: Expected 4 arguments, but got 3.`
-
-95. [ ] **TypeCheck (Core):** `src/worker.test.ts(130,12): error TS2304: Cannot find name 'mockRedis'.`
-
-96. [ ] **TypeCheck (Core):** `src/worker.test.ts(158,12): error TS2304: Cannot find name 'mockRedis'.`
-
-97. [ ] **TypeCheck (Core):** `src/worker.test.ts(162,12): error TS2304: Cannot find name 'mockRedis'.`
-
-98. [ ] **TypeCheck (Core):** `src/worker.test.ts(189,12): error TS2304: Cannot find name 'mockRedis'.`
-
-99. [ ] **TypeCheck (Core):** `src/worker.test.ts(193,12): error TS2304: Cannot find name 'mockRedis'.`
-
-100. [ ] **TypeCheck (Core):** `src/worker.test.ts(220,12): error TS2304: Cannot find name 'mockRedis'.`
-
-101. [ ] **TypeCheck (Core):** `src/worker.test.ts(224,12): error TS2304: Cannot find name 'mockRedis'.`
-
-102. [ ] **TypeCheck (Core):** `src/worker.test.ts(243,12): error TS2304: Cannot find name 'mockRedis'.`
-
-103. [ ] **TypeCheck (Core):** `src/worker.test.ts(250,12): error TS2304: Cannot find name 'mockRedis'.`
-
-104. [ ] **TypeCheck (Core):** `src/worker.test.ts(269,12): error TS2304: Cannot find name 'mockRedis'.`
-
-105. [ ] **TypeCheck (Core):** `src/worker.test.ts(277,12): error TS2304: Cannot find name 'mockRedis'.`
-
-106. [ ] **TypeCheck (Core):** `src/worker.test.ts(296,12): error TS2304: Cannot find name 'mockRedis'.`
-
-107. [ ] **TypeCheck (Core):** `src/worker.test.ts(304,12): error TS2304: Cannot find name 'mockRedis'.`
-
-108. [ ] **TypeCheck (Core):** `src/worker.test.ts(322,12): error TS2304: Cannot find name 'mockRedis'.`
-
-109. [ ] **TypeCheck (Core):** `src/worker.test.ts(329,12): error TS2304: Cannot find name 'mockRedis'.`
-
-110. [ ] **TypeCheck (Core):** `src/worker.test.ts(347,12): error TS2304: Cannot find name 'mockRedis'.`
-
-111. [ ] **TypeCheck (Core):** `src/worker.test.ts(358,27): error TS2554: Expected 4 arguments, but got 3.`
-
-112. [ ] **TypeCheck (Core):** `src/worker.test.ts(367,27): error TS2554: Expected 4 arguments, but got 3.`
-
-113. [ ] **TypeCheck (Core):** `src/worker.test.ts(376,27): error TS2554: Expected 4 arguments, but got 3.`
-
-114. [ ] **TypeCheck (Core):** `src/worker.test.ts(387,11): error TS2554: Expected 4 arguments, but got 3.`
-
-115. [ ] **TypeCheck (Core):** `src/worker.test.ts(389,12): error TS2304: Cannot find name 'mockRedis'.`
-
-116. [ ] **TypeCheck (Core):** `src/worker.ts(19,13): error TS2552: Cannot find name 'Client'. Did you mean 'PgClient'?`
-
-117. [ ] **Lint:** `packages/core lint:   4:10  error  'redis' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
-
-118. [ ] **Lint:** `packages/core lint:   1:10  error  'afterEach' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
-
-119. [ ] **Lint:** `packages/core lint:   6:10  error  'redis' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
-
-120. [ ] **Lint:** `packages/core lint:   7:10  error  'AppError' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
-
-121. [ ] **Lint:** `packages/core lint:   13:10  error  'LlmKeyManager' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
-
-122. [ ] **Lint:** `packages/core lint:   14:10  error  'redis' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars`
-
-123. [ ] **Lint:** `packages/core lint:   193:21  error  Unnecessary escape character: \/  no-useless-escape`
-
-124. [ ] **Lint:** `packages/core lint:    33:28  error  'job' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars`
-
-125. [ ] **Lint:** `packages/core lint:    33:38  error  'tools' is defined but never used. Allowed unused args must match /^_/u              @typescript-eslint/no-unused-vars`
-
-126. [ ] **Lint:** `packages/core lint:    33:50  error  'jobQueue' is defined but never used. Allowed unused args must match /^_/u           @typescript-eslint/no-unused-vars`
-
-127. [ ] **Lint:** `packages/core lint:    33:65  error  'ctx' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars`
-
-128. [ ] **Lint:** `packages/core lint:   157:14  error  'job' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars`
-
-129. [ ] **Lint:** `packages/core lint:   187:14  error  'job' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars`
-
-130. [ ] **Lint:** `packages/core lint:   188:9   error  Unnecessary try/catch wrapper                                                        no-useless-catch`
-
-131. [ ] **Lint:** `packages/core lint:   269:7   error  'errorSpy' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
-
-132. [ ] **Lint:** `packages/core lint:   454:7   error  'errorSpy' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
-
-133. [ ] **Lint:** `packages/core lint:   791:7   error  'errorSpy' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
-
-134. [ ] **Lint:** `packages/core lint:   822:7   error  'errorSpy' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
-
-135. [ ] **Lint:** `packages/core lint:   870:7   error  'errorSpy' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
-
-136. [ ] **Lint:** `packages/core lint:   920:7   error  'errorSpy' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
-
-137. [ ] **Lint:** `packages/core lint: ✖ 20 problems (20 errors, 0 warnings)`
-
-138. [ ] **Test Failure:**
-```text
- FAIL  src/webServer.integration.test.ts > Leaderboard Statistics Backend > should return initial leaderboard stats
-```
-
-139. [ ] **Test Failure:**
-```text
- FAIL  src/webServer.integration.test.ts > Leaderboard Statistics Backend > should increment sessionsCreated when a new session is created
-```
-
-140. [ ] **Test Failure:**
-```text
- FAIL  src/webServer.integration.test.ts > Leaderboard Statistics Backend > should log an error if redis.incr fails for sessionsCreated
-```
-
-141. [ ] **Test Failure:**
-```text
- FAIL  src/webServer.integration.test.ts > Leaderboard Statistics Backend > should increment tokensSaved when an LLM response is generated
-```
-
-142. [ ] **Test Failure:**
+52. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Leaderboard Statistics Backend > should log an error if redis.incrby fails for tokensSaved
+Error: Redis incrby failed
+ ❯ src/webServer.integration.test.ts:197:7
+    195|   it('should log an error if redis.incrby fails for tokensSaved', asyn…
+    196|     vi.spyOn(redis, 'incrby').mockRejectedValue(
+    197|       new Error('Redis incrby failed'),
+       |       ^
+    198|     );
+    199|     const errorSpy = vi.spyOn(logger, 'error');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/89]⎯
+
 ```
 
-143. [ ] **Test Failure:**
-```text
- FAIL  src/webServer.integration.test.ts > Leaderboard Statistics Backend > should increment successfulRuns when a job completes successfully
-```
-
-144. [ ] **Test Failure:**
+53. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Leaderboard Statistics Backend > should log an error if redis.incr fails for successfulRuns
-ReferenceError: jobQueue is not defined
- ❯ src/webServer.integration.test.ts:73:55
-     71|     vi.clearAllMocks();
-     72|     mockRedis._resetStore();
-     73|     app = await initializeWebServer(mockRedis as any, jobQueue);
-       |                                                       ^
-     74|     errorSpy = vi.spyOn(logger, 'error');
-     75|   });
+Error: Redis incr failed
+ ❯ src/webServer.integration.test.ts:265:47
+    263| 
+    264|   it('should log an error if redis.incr fails for successfulRuns', asy…
+    265|     vi.spyOn(redis, 'incr').mockRejectedValue(new Error('Redis incr fa…
+       |                                               ^
+    266|     const errorSpy = vi.spyOn(logger, 'error');
+    267| 
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/89]⎯
 
 ```
 
-145. [ ] **Test Failure:**
+54. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Session Management Backend > should save a session
+AssertionError: expected 500 to deeply equal 200
+
+- Expected
++ Received
+
+- 200
++ 500
+
+ ❯ src/webServer.integration.test.ts:311:28
+    309|       .set('Authorization', 'Bearer test-api-key')
+    310|       .send(sessionData);
+    311|     expect(res.statusCode).toEqual(200);
+       |                            ^
+    312|     expect(res.body.message).toEqual('Session saved successfully.');
+    313|     expect(redis.set).toHaveBeenCalledWith(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/89]⎯
+
 ```
 
-146. [ ] **Test Failure:**
+55. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Session Management Backend > should log an error if redis.set fails for session save
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…}, …(1) ]
+
+Received: 
+
+  1st spy call:
+
+  Array [
+-   ObjectContaining {
+-     "err": Any<Error>,
++   Object {
++     "error": [TypeError: Cannot read properties of undefined (reading 'query')],
+    },
+-   "Error caught by error handling middleware",
++   "Error saving session",
+  ]
+
+  2nd spy call:
+
+  Array [
+-   ObjectContaining {
+-     "err": Any<Error>,
++   Object {
++     "err": Object {
++       "message": "Cannot read properties of undefined (reading 'query')",
++       "name": "TypeError",
++       "stack": "TypeError: Cannot read properties of undefined (reading 'query')
++     at SessionManager.saveSession (/home/demon/agentforge/AgenticForge2/AgenticForge4/packages/core/src/modules/session/sessionManager.ts:222:27)
++     at /home/demon/agentforge/AgenticForge2/AgenticForge4/packages/core/src/webServer.ts:355:35
++     at Layer.handleRequest (/home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:152:17)
++     at next (/home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/route.js:157:13)
++     at Route.dispatch (/home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/route.js:117:3)
++     at handle (/home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/index.js:435:11)
++     at Layer.handleRequest (/home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:152:17)
++     at /home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/index.js:295:15
++     at processParams (/home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/index.js:582:12)
++     at next (/home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/index.js:291:5)",
++     },
++     "method": "POST",
++     "url": "/api/sessions/save",
+    },
+    "Error caught by error handling middleware",
+  ]
+
+
+Number of calls: 2
+
+ ❯ src/webServer.integration.test.ts:336:22
+    334|       .send(sessionData);
+    335| 
+    336|     expect(errorSpy).toHaveBeenCalledWith(
+       |                      ^
+    337|       expect.objectContaining({ err: expect.any(Error) }),
+    338|       'Error caught by error handling middleware',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/89]⎯
+
 ```
 
-147. [ ] **Test Failure:**
+56. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Session Management Backend > should load a session
+AssertionError: expected 500 to deeply equal 200
+
+- Expected
++ Received
+
+- 200
++ 500
+
+ ❯ src/webServer.integration.test.ts:354:28
+    352|       .get(`/api/sessions/${sessionData.id}`)
+    353|       .set('Authorization', 'Bearer test-api-key');
+    354|     expect(res.statusCode).toEqual(200);
+       |                            ^
+    355|     expect(res.body).toEqual(sessionData);
+    356|     expect(redis.get).toHaveBeenCalledWith(`session:${sessionData.id}:…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/89]⎯
+
 ```
 
-148. [ ] **Test Failure:**
+57. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Session Management Backend > should log an error if redis.get fails for session load
+AssertionError: expected 'Cannot read properties of undefined (…' to contain 'Redis get failed'
+
+- Expected
++ Received
+
+- Redis get failed
++ Cannot read properties of undefined (reading 'query')
+
+ ❯ src/webServer.integration.test.ts:369:36
+    367| 
+    368|     expect(res.statusCode).toEqual(500);
+    369|     expect(res.body.error.message).toContain('Redis get failed');
+       |                                    ^
+    370|     expect(errorSpy).toHaveBeenCalledWith(
+    371|       expect.objectContaining({ err: expect.any(Error) }),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/89]⎯
+
 ```
 
-149. [ ] **Test Failure:**
+58. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Session Management Backend > should return 404 if session not found on load
+AssertionError: expected 500 to deeply equal 404
+
+- Expected
++ Received
+
+- 404
++ 500
+
+ ❯ src/webServer.integration.test.ts:382:28
+    380|       .get('/api/sessions/non-existent-id')
+    381|       .set('Authorization', 'Bearer test-api-key');
+    382|     expect(res.statusCode).toEqual(404);
+       |                            ^
+    383|     expect(res.body.error.message).toEqual('Session not found');
+    384|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/89]⎯
+
 ```
 
-150. [ ] **Test Failure:**
+59. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Session Management Backend > should delete a session
+AssertionError: expected 500 to deeply equal 200
+
+- Expected
++ Received
+
+- 200
++ 500
+
+ ❯ src/webServer.integration.test.ts:393:28
+    391|       .delete(`/api/sessions/${sessionId}`)
+    392|       .set('Authorization', 'Bearer test-api-key');
+    393|     expect(res.statusCode).toEqual(200);
+       |                            ^
+    394|     expect(res.body.message).toEqual('Session deleted successfully.');
+    395|     expect(redis.del).toHaveBeenCalledWith(`session:${sessionId}:data`…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/89]⎯
+
 ```
 
-151. [ ] **Test Failure:**
+60. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Session Management Backend > should log an error if redis.del fails for session delete
+AssertionError: expected 'Cannot read properties of undefined (…' to contain 'Redis del failed'
+
+- Expected
++ Received
+
+- Redis del failed
++ Cannot read properties of undefined (reading 'query')
+
+ ❯ src/webServer.integration.test.ts:408:36
+    406| 
+    407|     expect(res.statusCode).toEqual(500);
+    408|     expect(res.body.error.message).toContain('Redis del failed');
+       |                                    ^
+    409|     expect(errorSpy).toHaveBeenCalledWith(
+    410|       expect.objectContaining({ err: expect.any(Error) }),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/89]⎯
+
 ```
 
-152. [ ] **Test Failure:**
+61. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Session Management Backend > should rename a session
+AssertionError: expected 500 to deeply equal 200
+
+- Expected
++ Received
+
+- 200
++ 500
+
+ ❯ src/webServer.integration.test.ts:431:28
+    429|       .set('Authorization', 'Bearer test-api-key')
+    430|       .send({ newName });
+    431|     expect(res.statusCode).toEqual(200);
+       |                            ^
+    432|     expect(res.body.message).toEqual('Session renamed successfully.');
+    433|     expect(redis.set).toHaveBeenCalledWith(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/89]⎯
+
 ```
 
-153. [ ] **Test Failure:**
+62. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Session Management Backend > should log an error if redis.get fails during session rename
+AssertionError: expected 'Cannot read properties of undefined (…' to contain 'Redis get failed during rename'
+
+- Expected
++ Received
+
+- Redis get failed during rename
++ Cannot read properties of undefined (reading 'query')
+
+ ❯ src/webServer.integration.test.ts:453:36
+    451| 
+    452|     expect(res.statusCode).toEqual(500);
+    453|     expect(res.body.error.message).toContain('Redis get failed during …
+       |                                    ^
+    454|     expect(errorSpy).toHaveBeenCalledWith(
+    455|       expect.objectContaining({ err: expect.any(Error) }),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/89]⎯
+
 ```
 
-154. [ ] **Test Failure:**
+63. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Session Management Backend > should return 404 if session not found on rename
-ReferenceError: jobQueue is not defined
- ❯ src/webServer.integration.test.ts:274:55
-    272|     vi.clearAllMocks();
-    273|     mockRedis._resetStore();
-    274|     app = await initializeWebServer(mockRedis as any, jobQueue);
-       |                                                       ^
-    275|     errorSpy = vi.spyOn(logger, 'error');
-    276|   });
+AssertionError: expected 500 to deeply equal 404
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/98]⎯
+- Expected
++ Received
+
+- 404
++ 500
+
+ ❯ src/webServer.integration.test.ts:467:28
+    465|       .set('Authorization', 'Bearer test-api-key')
+    466|       .send({ newName: 'New Name' });
+    467|     expect(res.statusCode).toEqual(404);
+       |                            ^
+    468|     expect(res.body.error.message).toEqual('Session not found');
+    469|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/89]⎯
 
 ```
 
-155. [ ] **Test Failure:**
-```text
- FAIL  src/webServer.integration.test.ts > LLM API Key Management Backend > should add an LLM API key
-```
-
-156. [ ] **Test Failure:**
+64. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > LLM API Key Management Backend > should return 500 if LlmKeyManager.addKey throws an error
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…}, …(1) ]
+
+Received: 
+
+  1st spy call:
+
+  Array [
+-   ObjectContaining {
+-     "_error": Any<Error>,
++   Object {
++     "err": Object {
++       "message": "Failed to add key",
++       "name": "Error",
++       "stack": "Error: Failed to add key
++     at /home/demon/agentforge/AgenticForge2/AgenticForge4/packages/core/src/webServer.integration.test.ts:499:7
++     at file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
++     at file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
++     at runTest (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:781:17)
++     at processTicksAndRejections (node:internal/process/task_queues:105:5)
++     at runSuite (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15)
++     at runSuite (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15)
++     at runFiles (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:958:5)
++     at startTests (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:967:3)
++     at file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/chunks/runtime-runBaseTests.oAvMKtQC.js:116:7",
++     },
++     "method": "POST",
++     "url": "/api/llm-api-keys",
+    },
+-   "Error adding LLM API key",
++   "Error caught by error handling middleware",
+  ]
+
+
+Number of calls: 1
+
+ ❯ src/webServer.integration.test.ts:511:22
+    509|     expect(res.statusCode).toEqual(500);
+    510|     expect(res.body.error.message).toContain('Failed to add key');
+    511|     expect(errorSpy).toHaveBeenCalledWith(
+       |                      ^
+    512|       expect.objectContaining({ _error: expect.any(Error) }),
+    513|       'Error adding LLM API key',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/89]⎯
+
 ```
 
-157. [ ] **Test Failure:**
-```text
- FAIL  src/webServer.integration.test.ts > LLM API Key Management Backend > should retrieve LLM API keys
-```
-
-158. [ ] **Test Failure:**
+65. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > LLM API Key Management Backend > should return 500 if LlmKeyManager.getKeysForApi throws an error
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…}, …(1) ]
+
+Received: 
+
+  1st spy call:
+
+  Array [
+-   ObjectContaining {
+-     "_error": Any<Error>,
++   Object {
++     "err": Object {
++       "message": "Failed to retrieve keys",
++       "name": "Error",
++       "stack": "Error: Failed to retrieve keys
++     at /home/demon/agentforge/AgenticForge2/AgenticForge4/packages/core/src/webServer.integration.test.ts:534:7
++     at file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
++     at file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
++     at runTest (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:781:17)
++     at processTicksAndRejections (node:internal/process/task_queues:105:5)
++     at runSuite (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15)
++     at runSuite (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15)
++     at runFiles (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:958:5)
++     at startTests (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:967:3)
++     at file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/chunks/runtime-runBaseTests.oAvMKtQC.js:116:7",
++     },
++     "method": "GET",
++     "url": "/api/llm-api-keys",
+    },
+-   "Error retrieving LLM API keys",
++   "Error caught by error handling middleware",
+  ]
+
+
+Number of calls: 1
+
+ ❯ src/webServer.integration.test.ts:543:22
+    541|     expect(res.statusCode).toEqual(500);
+    542|     expect(res.body.error.message).toContain('Failed to retrieve keys'…
+    543|     expect(errorSpy).toHaveBeenCalledWith(
+       |                      ^
+    544|       expect.objectContaining({ _error: expect.any(Error) }),
+    545|       'Error retrieving LLM API keys',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/89]⎯
+
 ```
 
-159. [ ] **Test Failure:**
-```text
- FAIL  src/webServer.integration.test.ts > LLM API Key Management Backend > should delete an LLM API key
-```
-
-160. [ ] **Test Failure:**
-```text
- FAIL  src/webServer.integration.test.ts > LLM API Key Management Backend > should return 400 for invalid index on delete
-```
-
-161. [ ] **Test Failure:**
+66. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > LLM API Key Management Backend > should return 500 if LlmKeyManager.removeKey throws an error
-ReferenceError: jobQueue is not defined
- ❯ src/webServer.integration.test.ts:459:55
-    457|     vi.clearAllMocks();
-    458|     mockRedis._resetStore();
-    459|     app = await initializeWebServer(mockRedis as any, jobQueue);
-       |                                                       ^
-    460|     errorSpy = vi.spyOn(logger, 'error');
-    461|   });
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…}, …(1) ]
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/98]⎯
+Received: 
+
+  1st spy call:
+
+  Array [
+-   ObjectContaining {
+-     "_error": Any<Error>,
++   Object {
++     "err": Object {
++       "message": "Key not found",
++       "name": "Error",
++       "stack": "Error: Key not found
++     at /home/demon/agentforge/AgenticForge2/AgenticForge4/packages/core/src/webServer.integration.test.ts:574:7
++     at file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
++     at file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
++     at runTest (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:781:17)
++     at processTicksAndRejections (node:internal/process/task_queues:105:5)
++     at runSuite (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15)
++     at runSuite (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15)
++     at runFiles (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:958:5)
++     at startTests (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:967:3)
++     at file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/chunks/runtime-runBaseTests.oAvMKtQC.js:116:7",
++     },
++     "method": "DELETE",
++     "url": "/api/llm-api-keys/0",
+    },
+-   "Error removing LLM API key",
++   "Error caught by error handling middleware",
+  ]
+
+
+Number of calls: 1
+
+ ❯ src/webServer.integration.test.ts:583:22
+    581|     expect(res.statusCode).toEqual(500);
+    582|     expect(res.body.error.message).toContain('Key not found');
+    583|     expect(errorSpy).toHaveBeenCalledWith(
+       |                      ^
+    584|       expect.objectContaining({ _error: expect.any(Error) }),
+    585|       'Error removing LLM API key',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/89]⎯
 
 ```
 
-162. [ ] **Test Failure:**
+67. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > GitHub OAuth Backend > should redirect to GitHub for OAuth initiation
+AssertionError: expected 500 to deeply equal 302
+
+- Expected
++ Received
+
+- 302
++ 500
+
+ ❯ src/webServer.integration.test.ts:618:28
+    616|   it('should redirect to GitHub for OAuth initiation', async () => {
+    617|     const res = await request(app).get('/api/auth/github');
+    618|     expect(res.statusCode).toEqual(302);
+       |                            ^
+    619|     expect(res.headers.location).toContain(
+    620|       'https://github.com/login/oauth/authorize',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/89]⎯
+
 ```
 
-163. [ ] **Test Failure:**
+68. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > GitHub OAuth Backend > should handle GitHub OAuth callback successfully
+AssertionError: expected 400 to deeply equal 302
+
+- Expected
++ Received
+
+- 302
++ 400
+
+ ❯ src/webServer.integration.test.ts:652:28
+    650|       .get('/api/auth/github/callback?code=test_code')
+    651|       .set('Cookie', 'agenticforge_session_id=test-session-id');
+    652|     expect(res.statusCode).toEqual(302);
+       |                            ^
+    653|     expect(res.headers.location).toEqual('/?github_auth_success=true');
+    654|     expect(redis.set).toHaveBeenCalledWith(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/89]⎯
+
 ```
 
-164. [ ] **Test Failure:**
+69. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > GitHub OAuth Backend > should handle GitHub OAuth callback with error from GitHub
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…}, …(1) ]
+
+Received: 
+
+  1st spy call:
+
+  Array [
+-   ObjectContaining {
+-     "_error": Any<Error>,
++   Object {
++     "err": Object {
++       "details": Object {
++         "statusCode": 400,
++       },
++       "message": "Missing code or GitHub credentials",
++       "name": "AppError",
++       "stack": "AppError: Missing code or GitHub credentials
++     at /home/demon/agentforge/AgenticForge2/AgenticForge4/packages/core/src/webServer.ts:550:17
++     at Layer.handleRequest (/home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:152:17)
++     at next (/home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/route.js:157:13)
++     at Route.dispatch (/home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/route.js:117:3)
++     at handle (/home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/index.js:435:11)
++     at Layer.handleRequest (/home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:152:17)
++     at /home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/index.js:295:15
++     at processParams (/home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/index.js:582:12)
++     at next (/home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/router@2.2.0/node_modules/router/index.js:291:5)
++     at /home/demon/agentforge/AgenticForge2/AgenticForge4/packages/core/src/webServer.ts:99:16",
+      },
+-   "GitHub OAuth callback error",
++     "method": "GET",
++     "url": "/api/auth/github/callback?code=bad_code",
++   },
++   "Error caught by error handling middleware",
+  ]
+
+
+Number of calls: 1
+
+ ❯ src/webServer.integration.test.ts:692:22
+    690|       'Missing code or GitHub credentials',
+    691|     );
+    692|     expect(errorSpy).toHaveBeenCalledWith(
+       |                      ^
+    693|       expect.objectContaining({ _error: expect.any(Error) }),
+    694|       'GitHub OAuth callback error',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/89]⎯
+
 ```
 
-165. [ ] **Test Failure:**
+70. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > GitHub OAuth Backend > should handle network errors during GitHub OAuth callback
+AssertionError: expected 400 to deeply equal 500
+
+- Expected
++ Received
+
+- 500
++ 400
+
+ ❯ src/webServer.integration.test.ts:721:28
+    719|       '/api/auth/github/callback?code=test_code',
+    720|     );
+    721|     expect(res.statusCode).toEqual(500);
+       |                            ^
+    722|     expect(res.body.error.message).toContain('Network request failed');
+    723|     expect(errorSpy).toHaveBeenCalledWith(
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/89]⎯
+
 ```
 
-166. [ ] **Test Failure:**
-```text
- FAIL  src/webServer.integration.test.ts > GitHub OAuth Backend > should handle GitHub OAuth callback with missing code
-```
-
-167. [ ] **Test Failure:**
+71. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > GitHub OAuth Backend > should return 500 if GITHUB_CLIENT_ID is missing for OAuth initiation
+AssertionError: expected undefined to deeply equal 'GitHub Client ID not configured.'
+
+- Expected: 
+"GitHub Client ID not configured."
+
++ Received: 
+undefined
+
+ ❯ src/webServer.integration.test.ts:752:36
+    750|     const res = await request(app).get('/api/auth/github');
+    751|     expect(res.statusCode).toEqual(500);
+    752|     expect(res.body.error.message).toEqual('GitHub Client ID not confi…
+       |                                    ^
+    753|   });
+    754| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/89]⎯
+
 ```
 
-168. [ ] **Test Failure:**
+72. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > GitHub OAuth Backend > should return 400 if GITHUB_CLIENT_SECRET is missing for OAuth callback
-ReferenceError: logger is not defined
- ❯ src/webServer.integration.test.ts:577:25
-    575|     vi.clearAllMocks();
-    576|     mockRedis._resetStore();
-    577|     errorSpy = vi.spyOn(logger, 'error');
-       |                         ^
-    578|     vi.clearAllMocks();
-    579|     mockRedis._resetStore();
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…}, …(1) ]
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/98]⎯
+Received: 
+
+
+
+Number of calls: 0
+
+ ❯ src/webServer.integration.test.ts:776:22
+    774|       'Missing code or GitHub credentials',
+    775|     );
+    776|     expect(errorSpy).toHaveBeenCalledWith(
+       |                      ^
+    777|       expect.objectContaining({ _error: expect.any(Error) }),
+    778|       'GitHub Client Secret not configured.',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/89]⎯
 
 ```
 
-169. [ ] **Test Failure:**
+73. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Server Initialization > should handle initialization errors gracefully
-ReferenceError: logger is not defined
- ❯ src/webServer.integration.test.ts:769:25
-    767|     vi.clearAllMocks();
-    768|     mockRedis._resetStore();
-    769|     errorSpy = vi.spyOn(logger, 'error');
-       |                         ^
-    770|   });
-    771| 
+AssertionError: promise resolved "[Function app]" instead of rejecting
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/98]⎯
+- Expected: 
+[Error: rejected promise]
+
++ Received: 
+[Function app]
+
+ ❯ src/webServer.integration.test.ts:798:68
+    796| 
+    797|     // We expect initializeWebServer to throw, so we wrap it in a try/…
+    798|     await expect(initializeWebServer(redis as any, jobQueue as any)).r…
+       |                                                                    ^
+    799|       'Redis connection failed during initialization',
+    800|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/89]⎯
 
 ```
 
-170. [ ] **Test Failure:**
+74. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Chat API Backend > should return 500 if jobQueue.add fails
-ReferenceError: jobQueue is not defined
- ❯ src/webServer.integration.test.ts:796:55
-    794|     vi.clearAllMocks();
-    795|     mockRedis._resetStore();
-    796|     app = await initializeWebServer(mockRedis as any, jobQueue);
-       |                                                       ^
-    797|     errorSpy = vi.spyOn(logger, 'error');
-    798|   });
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…}, …(1) ]
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/98]⎯
+Received: 
+
+  1st spy call:
+
+  Array [
+-   ObjectContaining {
+-     "_error": Any<Error>,
++   Object {
++     "err": Object {
++       "message": "Failed to add job to queue",
++       "name": "Error",
++       "stack": "Error: Failed to add job to queue
++     at /home/demon/agentforge/AgenticForge2/AgenticForge4/packages/core/src/webServer.integration.test.ts:822:7
++     at file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
++     at file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
++     at runTest (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:781:17)
++     at processTicksAndRejections (node:internal/process/task_queues:105:5)
++     at runSuite (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15)
++     at runSuite (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15)
++     at runFiles (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:958:5)
++     at startTests (file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:967:3)
++     at file:///home/demon/agentforge/AgenticForge2/AgenticForge4/node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/chunks/runtime-runBaseTests.oAvMKtQC.js:116:7",
++     },
++     "method": "POST",
++     "url": "/api/chat",
+    },
+-   "Error adding job to queue",
++   "Error caught by error handling middleware",
+  ]
+
+
+Number of calls: 1
+
+ ❯ src/webServer.integration.test.ts:833:22
+    831|     expect(res.statusCode).toEqual(500);
+    832|     expect(res.body.error.message).toContain('Failed to add job to que…
+    833|     expect(errorSpy).toHaveBeenCalledWith(
+       |                      ^
+    834|       expect.objectContaining({ _error: expect.any(Error) }),
+    835|       'Error adding job to queue',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/89]⎯
 
 ```
 
-171. [ ] **Test Failure:**
+75. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Job Management Backend > should return 500 if jobQueue.getJob fails in /api/interrupt
+AssertionError: expected [] to include 'Failed to get job from queue'
+ ❯ src/webServer.integration.test.ts:862:28
+    860| 
+    861|     expect(res.statusCode).toEqual(500);
+    862|     expect(res.body.error).toContain('Failed to get job from queue');
+       |                            ^
+    863|     expect(errorSpy).toHaveBeenCalledWith(
+    864|       expect.objectContaining({ _error: expect.any(Error) }),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/89]⎯
+
 ```
 
-172. [ ] **Test Failure:**
+76. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Job Management Backend > should return 500 if jobQueue.getJob fails in /api/status
-ReferenceError: jobQueue is not defined
- ❯ src/webServer.integration.test.ts:827:55
-    825|     vi.clearAllMocks();
-    826|     mockRedis._resetStore();
-    827|     app = await initializeWebServer(mockRedis as any, jobQueue);
-       |                                                       ^
-    828|     errorSpy = vi.spyOn(logger, 'error');
-    829|   });
+AssertionError: expected [] to include 'Failed to get job from queue'
+ ❯ src/webServer.integration.test.ts:880:28
+    878| 
+    879|     expect(res.statusCode).toEqual(500);
+    880|     expect(res.body.error).toContain('Failed to get job from queue');
+       |                            ^
+    881|     expect(errorSpy).toHaveBeenCalledWith(
+    882|       expect.objectContaining({ _error: expect.any(Error) }),
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/89]⎯
 
 ```
 
-173. [ ] **Test Failure:**
+77. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Redis Publish Errors > should return 500 if redis.publish fails in /api/interrupt
+AssertionError: expected [] to include 'Redis publish failed'
+ ❯ src/webServer.integration.test.ts:911:28
+    909| 
+    910|     expect(res.statusCode).toEqual(500);
+    911|     expect(res.body.error).toContain('Redis publish failed');
+       |                            ^
+    912|     expect(errorSpy).toHaveBeenCalledWith(
+    913|       expect.objectContaining({ _error: expect.any(Error) }),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/89]⎯
+
 ```
 
-174. [ ] **Test Failure:**
+78. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Redis Publish Errors > should return 500 if redis.publish fails in /api/display
-ReferenceError: jobQueue is not defined
- ❯ src/webServer.integration.test.ts:875:55
-    873|     vi.clearAllMocks();
-    874|     mockRedis._resetStore();
-    875|     app = await initializeWebServer(mockRedis as any, jobQueue);
-       |                                                       ^
-    876|     errorSpy = vi.spyOn(logger, 'error');
-    877|   });
+AssertionError: expected [] to include 'Redis publish failed'
+ ❯ src/webServer.integration.test.ts:930:28
+    928| 
+    929|     expect(res.statusCode).toEqual(500);
+    930|     expect(res.body.error).toContain('Redis publish failed');
+       |                            ^
+    931|     expect(errorSpy).toHaveBeenCalledWith(
+    932|       expect.objectContaining({ _error: expect.any(Error) }),
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/89]⎯
 
 ```
 
-175. [ ] **Test Failure:**
+79. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Memory API Backend > should return 500 if fs.promises.readdir fails
+AssertionError: expected [] to include 'Failed to read directory'
+ ❯ src/webServer.integration.test.ts:960:28
+    958| 
+    959|     expect(res.statusCode).toEqual(500);
+    960|     expect(res.body.error).toContain('Failed to read directory');
+       |                            ^
+    961|     expect(errorSpy).toHaveBeenCalledWith(
+    962|       expect.objectContaining({ _error: expect.any(Error) }),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/89]⎯
+
 ```
 
-176. [ ] **Test Failure:**
+80. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Memory API Backend > should return 500 if fs.promises.readFile fails
-ReferenceError: jobQueue is not defined
- ❯ src/webServer.integration.test.ts:925:55
-    923|     vi.clearAllMocks();
-    924|     mockRedis._resetStore();
-    925|     app = await initializeWebServer(mockRedis as any, jobQueue);
-       |                                                       ^
-    926|     errorSpy = vi.spyOn(logger, 'error');
-    927|   });
+AssertionError: expected [] to include 'Failed to read file'
+ ❯ src/webServer.integration.test.ts:979:28
+    977| 
+    978|     expect(res.statusCode).toEqual(500);
+    979|     expect(res.body.error).toContain('Failed to read file');
+       |                            ^
+    980|     expect(errorSpy).toHaveBeenCalledWith(
+    981|       expect.objectContaining({ _error: expect.any(Error) }),
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/89]⎯
 
 ```
 
-177. [ ] **Test Failure:**
+81. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Error Handling Middleware > should handle AppError and return custom status code and message
+AssertionError: expected 500 to deeply equal 403
+
+- Expected
++ Received
+
+- 403
++ 500
+
+ ❯ src/webServer.integration.test.ts:1005:28
+    1003|       .set('Authorization', 'Bearer test-api-key');
+    1004| 
+    1005|     expect(res.statusCode).toEqual(403);
+       |                            ^
+    1006|     expect(res.body.error).toEqual('Custom App Error');
+    1007|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/89]⎯
+
 ```
 
-178. [ ] **Test Failure:**
+82. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Error Handling Middleware > should handle UserError and return custom status code and message
+AssertionError: expected 500 to deeply equal 400
+
+- Expected
++ Received
+
+- 400
++ 500
+
+ ❯ src/webServer.integration.test.ts:1018:28
+    1016|       .set('Authorization', 'Bearer test-api-key');
+    1017| 
+    1018|     expect(res.statusCode).toEqual(400); // UserError defaults to 400
+       |                            ^
+    1019|     expect(res.body.error).toEqual('Custom User Error');
+    1020|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/89]⎯
+
 ```
 
-179. [ ] **Test Failure:**
+83. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.integration.test.ts > Error Handling Middleware > should handle generic Error and return 500
-ReferenceError: jobQueue is not defined
- ❯ src/webServer.integration.test.ts:973:55
-    971|     vi.clearAllMocks();
-    972|     mockRedis._resetStore();
-    973|     app = await initializeWebServer(mockRedis as any, jobQueue);
-       |                                                       ^
-    974|   });
-    975| 
+AssertionError: expected undefined to deeply equal 'Generic Error Message'
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/98]⎯
+- Expected: 
+"Generic Error Message"
 
-```
++ Received: 
+undefined
 
-180. [ ] **Test Failure:**
-```text
- FAIL  src/webServer.integration.test.ts > Authentication Backend > should not require authentication if AUTH_API_KEY is not set
-ReferenceError: jobQueue is not defined
- ❯ src/webServer.integration.test.ts:1033:55
-    1031|       };
-    1032|     });
-    1033|     app = await initializeWebServer(mockRedis as any, jobQueue);
-       |                                                       ^
-    1034|   });
-    1035| 
+ ❯ src/webServer.integration.test.ts:1032:28
+    1030| 
+    1031|     expect(res.statusCode).toEqual(500);
+    1032|     expect(res.body.error).toEqual('Generic Error Message');
+       |                            ^
+    1033|   });
+    1034| });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/89]⎯
 
 ```
 
-181. [ ] **Test Failure:**
+84. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.test.ts > webServer > should return 400 if prompt is missing in /api/chat
 AssertionError: expected { …(4) } to deeply equal 'Le prompt est manquant.'
@@ -651,28 +999,51 @@ Object {
     at /home/demon/agentforge/AgenticForge2/AgenticForge4/packages/core/src/webServer.ts:106:7",
 }
 
- ❯ src/webServer.test.ts:128:28
-    126|       .send({});
-    127|     expect(res.statusCode).toEqual(400);
-    128|     expect(res.body.error).toEqual('Le prompt est manquant.');
+ ❯ src/webServer.test.ts:103:28
+    101|       .send({});
+    102|     expect(res.statusCode).toEqual(400);
+    103|     expect(res.body.error).toEqual('Le prompt est manquant.');
        |                            ^
-    129|   });
-    130| 
+    104|   });
+    105| 
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/89]⎯
 
 ```
 
-182. [ ] **Test Failure:**
+85. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.test.ts > webServer > should handle /api/chat/stream/:jobId correctly
-Error: Test timed out in 5000ms.
-If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/98]⎯
+TypeError: redis.duplicate.mockReturnValue is not a function
+ ❯ src/webServer.test.ts:132:31
+    130|       unsubscribe: vi.fn().mockResolvedValue(undefined),
+    131|     };
+    132|     (redis.duplicate as Mock).mockReturnValue(mockSubscriber);
+       |                               ^
+    133| 
+    134|     const req = request(app)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/89]⎯
 
 ```
 
-183. [ ] **Test Failure:**
+86. [ ] **Test Failure:**
+```text
+ FAIL  src/webServer.test.ts > webServer > should return 200 for /api/history
+TypeError: redis.get.mockResolvedValue is not a function
+ ❯ src/webServer.test.ts:180:25
+    178| 
+    179|   it('should return 200 for /api/history', async () => {
+    180|     (redis.get as Mock).mockResolvedValue(
+       |                         ^
+    181|       JSON.stringify([{ content: 'test', role: 'user' }]),
+    182|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/89]⎯
+
+```
+
+87. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.test.ts > webServer > should return 200 for /api/session
 AssertionError: expected 500 to deeply equal 200
@@ -683,19 +1054,35 @@ AssertionError: expected 500 to deeply equal 200
 - 200
 + 500
 
- ❯ src/webServer.test.ts:219:28
-    217|       .post('/api/session')
-    218|       .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
-    219|     expect(res.statusCode).toEqual(200);
+ ❯ src/webServer.test.ts:194:28
+    192|       .post('/api/session')
+    193|       .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+    194|     expect(res.statusCode).toEqual(200);
        |                            ^
-    220|     expect(res.body).toEqual({
-    221|       message: 'Session gérée automatiquement via cookie.',
+    195|     expect(res.body).toEqual({
+    196|       message: 'Session gérée automatiquement via cookie.',
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/89]⎯
 
 ```
 
-184. [ ] **Test Failure:**
+88. [ ] **Test Failure:**
+```text
+ FAIL  src/webServer.test.ts > webServer > should return leaderboard stats for /api/leaderboard-stats
+TypeError: redis.get.mockResolvedValueOnce is not a function
+ ❯ src/webServer.test.ts:203:8
+    201|   it('should return leaderboard stats for /api/leaderboard-stats', asy…
+    202|     (redis.get as Mock)
+    203|       .mockResolvedValueOnce('10') // sessionsCreated
+       |        ^
+    204|       .mockResolvedValueOnce('100') // tokensSaved
+    205|       .mockResolvedValueOnce('5'); // successfulRuns
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/89]⎯
+
+```
+
+89. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.test.ts > webServer > should return memory contents for /api/memory
 AssertionError: expected 500 to deeply equal 200
@@ -706,19 +1093,19 @@ AssertionError: expected 500 to deeply equal 200
 - 200
 + 500
 
- ❯ src/webServer.test.ts:256:28
-    254|       .get('/api/memory')
-    255|       .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
-    256|     expect(res.statusCode).toEqual(200);
+ ❯ src/webServer.test.ts:231:28
+    229|       .get('/api/memory')
+    230|       .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+    231|     expect(res.statusCode).toEqual(200);
        |                            ^
-    257|     expect(res.body).toEqual([
-    258|       { content: 'content of file1', fileName: 'file1.txt' },
+    232|     expect(res.body).toEqual([
+    233|       { content: 'content of file1', fileName: 'file1.txt' },
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/89]⎯
 
 ```
 
-185. [ ] **Test Failure:**
+90. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.test.ts > webServer > should save a session via /api/sessions/save
 AssertionError: expected 500 to deeply equal 200
@@ -729,42 +1116,35 @@ AssertionError: expected 500 to deeply equal 200
 - 200
 + 500
 
- ❯ src/webServer.test.ts:274:28
-    272|       .set('Authorization', `Bearer ${config.AUTH_API_KEY}`)
-    273|       .send(sessionData);
-    274|     expect(res.statusCode).toEqual(200);
+ ❯ src/webServer.test.ts:249:28
+    247|       .set('Authorization', `Bearer ${config.AUTH_API_KEY}`)
+    248|       .send(sessionData);
+    249|     expect(res.statusCode).toEqual(200);
        |                            ^
-    275|     expect(res.body).toEqual({ message: 'Session saved successfully.' …
-    276|     expect(redis.set).toHaveBeenCalledWith(
+    250|     expect(res.body).toEqual({ message: 'Session saved successfully.' …
+    251|     expect(redis.set).toHaveBeenCalledWith(
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/89]⎯
 
 ```
 
-186. [ ] **Test Failure:**
+91. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.test.ts > webServer > should load a session via /api/sessions/:id
-AssertionError: expected 500 to deeply equal 200
+TypeError: redis.get.mockResolvedValue is not a function
+ ❯ src/webServer.test.ts:264:25
+    262|       timestamp: Date.now(),
+    263|     };
+    264|     (redis.get as Mock).mockResolvedValue(JSON.stringify(sessionData));
+       |                         ^
+    265|     const res = await request(app)
+    266|       .get('/api/sessions/s1')
 
-- Expected
-+ Received
-
-- 200
-+ 500
-
- ❯ src/webServer.test.ts:293:28
-    291|       .get('/api/sessions/s1')
-    292|       .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
-    293|     expect(res.statusCode).toEqual(200);
-       |                            ^
-    294|     expect(res.body).toEqual(sessionData);
-    295|   });
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/89]⎯
 
 ```
 
-187. [ ] **Test Failure:**
+92. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.test.ts > webServer > should delete a session via /api/sessions/:id
 AssertionError: expected 500 to deeply equal 200
@@ -775,59 +1155,144 @@ AssertionError: expected 500 to deeply equal 200
 - 200
 + 500
 
- ❯ src/webServer.test.ts:301:28
-    299|       .delete('/api/sessions/s1')
-    300|       .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
-    301|     expect(res.statusCode).toEqual(200);
+ ❯ src/webServer.test.ts:276:28
+    274|       .delete('/api/sessions/s1')
+    275|       .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
+    276|     expect(res.statusCode).toEqual(200);
        |                            ^
-    302|     expect(res.body).toEqual({ message: 'Session deleted successfully.…
-    303|     expect(redis.del).toHaveBeenCalledWith('session:s1:data');
+    277|     expect(res.body).toEqual({ message: 'Session deleted successfully.…
+    278|     expect(redis.del).toHaveBeenCalledWith('session:s1:data');
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[41/89]⎯
 
 ```
 
-188. [ ] **Test Failure:**
+93. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.test.ts > webServer > should rename a session via /api/sessions/:id/rename
-AssertionError: expected 500 to deeply equal 200
+TypeError: redis.get.mockResolvedValue is not a function
+ ❯ src/webServer.test.ts:288:25
+    286|       timestamp: Date.now(),
+    287|     };
+    288|     (redis.get as Mock).mockResolvedValue(JSON.stringify(sessionData));
+       |                         ^
+    289|     const res = await request(app)
+    290|       .put('/api/sessions/s1/rename')
 
-- Expected
-+ Received
-
-- 200
-+ 500
-
- ❯ src/webServer.test.ts:318:28
-    316|       .set('Authorization', `Bearer ${config.AUTH_API_KEY}`)
-    317|       .send({ newName: 'newName' });
-    318|     expect(res.statusCode).toEqual(200);
-       |                            ^
-    319|     expect(res.body).toEqual({ message: 'Session renamed successfully.…
-    320|     expect(redis.set).toHaveBeenCalledWith(
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[42/89]⎯
 
 ```
 
-189. [ ] **Test Failure:**
+94. [ ] **Test Failure:**
+```text
+ FAIL  src/webServer.test.ts > webServer > should handle /api/interrupt/:jobId correctly
+TypeError: [Function] is not a spy or a call to a spy!
+ ❯ src/webServer.test.ts:338:27
+    336|     expect(res.statusCode).toEqual(200);
+    337|     expect(res.body).toEqual({ message: 'Interruption signal sent.' });
+    338|     expect(redis.publish).toHaveBeenCalledWith(
+       |                           ^
+    339|       'job:mockJobId:interrupt',
+    340|       'interrupt',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/89]⎯
+
+```
+
+95. [ ] **Test Failure:**
+```text
+ FAIL  src/webServer.test.ts > webServer > should handle /api/display correctly
+TypeError: [Function] is not a spy or a call to a spy!
+ ❯ src/webServer.test.ts:370:27
+    368|     expect(res.statusCode).toEqual(200);
+    369|     expect(res.body).toEqual({ message: 'Display event sent.' });
+    370|     expect(redis.publish).toHaveBeenCalledWith(
+       |                           ^
+    371|       'job:display:events',
+    372|       JSON.stringify({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[44/89]⎯
+
+```
+
+96. [ ] **Test Failure:**
 ```text
  FAIL  src/worker.test.ts > processJob > should process a job successfully and return the final response
-TypeError: Cannot read properties of undefined (reading 'getSession')
- ❯ Module.processJob src/worker.ts:133:42
-    131| 
-    132|   try {
-    133|     const session = await sessionManager.getSession(job.data.sessionId…
-       |                                          ^
-    134|     const agent = new Agent(job, session, jobQueue, tools);
-    135|     const finalResponse = await agent.run();
- ❯ src/worker.test.ts:108:27
+AssertionError: expected [ …(12) ] to deep equally contain { …(2) }
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/98]⎯
+- Expected: 
+Object {
+  "content": "Agent final response",
+  "role": "model",
+}
+
++ Received: 
+Array [
+  Object {
+    "content": "old message",
+    "role": "user",
+  },
+  Object {
+    "content": "old message",
+    "role": "user",
+  },
+  Object {
+    "content": "old message",
+    "role": "user",
+  },
+  Object {
+    "content": "old message",
+    "role": "user",
+  },
+  Object {
+    "content": "old message",
+    "role": "user",
+  },
+  Object {
+    "content": "old message",
+    "role": "user",
+  },
+  Object {
+    "content": "old message",
+    "role": "user",
+  },
+  Object {
+    "content": "old message",
+    "role": "user",
+  },
+  Object {
+    "content": "old message",
+    "role": "user",
+  },
+  Object {
+    "content": "old message",
+    "role": "user",
+  },
+  Object {
+    "content": "old message",
+    "role": "user",
+  },
+  Object {
+    "content": "Agent final response",
+    "id": "682bfa16-a7a0-4f3f-ae86-15c993e2eae8",
+    "timestamp": 1753366009799,
+    "type": "agent_response",
+  },
+]
+
+ ❯ src/worker.test.ts:120:37
+    118|     );
+    119|     expect((Agent as any).mock.results[0].value.run).toHaveBeenCalled(…
+    120|     expect(mockSessionData.history).toContainEqual({
+       |                                     ^
+    121|       content: 'Agent final response',
+    122|       role: 'model',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[45/89]⎯
 
 ```
 
-190. [ ] **Test Failure:**
+97. [ ] **Test Failure:**
 ```text
  FAIL  src/worker.test.ts > processJob > should handle AppError and publish an error event
 AppError: This is an application error
@@ -843,11 +1308,11 @@ AppError: This is an application error
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
 Serialized Error: { details: undefined }
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[46/89]⎯
 
 ```
 
-191. [ ] **Test Failure:**
+98. [ ] **Test Failure:**
 ```text
  FAIL  src/worker.test.ts > processJob > should handle UserError and publish an error event
 UserError: This is a user error
@@ -863,11 +1328,11 @@ UserError: This is a user error
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
 Serialized Error: { extras: undefined }
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[47/89]⎯
 
 ```
 
-192. [ ] **Test Failure:**
+99. [ ] **Test Failure:**
 ```text
  FAIL  src/worker.test.ts > processJob > should handle generic Error and publish an error event
 Error: Something went wrong
@@ -881,11 +1346,11 @@ Error: Something went wrong
  ❯ Module.processJob src/worker.ts:134:19
  ❯ src/worker.test.ts:205:5
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[48/89]⎯
 
 ```
 
-193. [ ] **Test Failure:**
+100. [ ] **Test Failure:**
 ```text
  FAIL  src/worker.test.ts > processJob > should handle "Quota exceeded" error specifically
 Error: Quota exceeded
@@ -899,11 +1364,11 @@ Error: Quota exceeded
  ❯ Module.processJob src/worker.ts:134:19
  ❯ src/worker.test.ts:236:5
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[49/89]⎯
 
 ```
 
-194. [ ] **Test Failure:**
+101. [ ] **Test Failure:**
 ```text
  FAIL  src/worker.test.ts > processJob > should handle "Gemini API request failed with status 500" error specifically
 Error: Gemini API request failed with status 500
@@ -917,11 +1382,11 @@ Error: Gemini API request failed with status 500
  ❯ Module.processJob src/worker.ts:134:19
  ❯ src/worker.test.ts:262:5
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[50/89]⎯
 
 ```
 
-195. [ ] **Test Failure:**
+102. [ ] **Test Failure:**
 ```text
  FAIL  src/worker.test.ts > processJob > should handle "is not found for API version v1" error specifically
 Error: is not found for API version v1
@@ -935,11 +1400,11 @@ Error: is not found for API version v1
  ❯ Module.processJob src/worker.ts:134:19
  ❯ src/worker.test.ts:289:5
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[51/89]⎯
 
 ```
 
-196. [ ] **Test Failure:**
+103. [ ] **Test Failure:**
 ```text
  FAIL  src/worker.test.ts > processJob > should handle unknown errors and publish a generic error event
 Error: Unknown error type
@@ -953,94 +1418,95 @@ Error: Unknown error type
  ❯ Module.processJob src/worker.ts:134:19
  ❯ src/worker.test.ts:315:5
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[52/89]⎯
 
 ```
 
-197. [ ] **Test Failure:**
+104. [ ] **Test Failure:**
 ```text
  FAIL  src/worker.test.ts > processJob > should always publish a "close" event in the finally block
-ReferenceError: mockRedis is not defined
- ❯ src/worker.test.ts:347:12
+AssertionError: expected "spy" to be called with arguments: [ 'job:testJobId:events', …(1) ]
+
+Received: 
+
+  1st spy call:
+
+  Array [
+    "job:testJobId:events",
+-   "{\"content\":\"Stream ended.\",\"type\":\"close\"}",
++   "{\"content\":\"Stream terminé.\",\"type\":\"close\"}",
+  ]
+
+
+Number of calls: 1
+
+ ❯ src/worker.test.ts:347:33
     345|     );
     346| 
-    347|     expect(mockRedis.publish).toHaveBeenCalledWith(
-       |            ^
+    347|     expect(redis.redis.publish).toHaveBeenCalledWith(
+       |                                 ^
     348|       'job:testJobId:events',
     349|       JSON.stringify({ content: 'Stream ended.', type: 'close' }) as s…
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[53/89]⎯
 
 ```
 
-198. [ ] **Test Failure:**
+105. [ ] **Test Failure:**
 ```text
  FAIL  src/worker.test.ts > processJob > should call summarizeHistory if history length exceeds max length
-TypeError: Cannot read properties of undefined (reading 'getSession')
- ❯ Module.processJob src/worker.ts:133:42
-    131| 
-    132|   try {
-    133|     const session = await sessionManager.getSession(job.data.sessionId…
-       |                                          ^
-    134|     const agent = new Agent(job, session, jobQueue, tools);
-    135|     const finalResponse = await agent.run();
- ❯ src/worker.test.ts:358:27
+AssertionError: expected "spy" to be called at least once
+ ❯ src/worker.test.ts:359:35
+    357|     }); // Exceeds default 10
+    358|     const _result = await processJob(mockJob as Job, mockTools, mockJo…
+    359|     expect(summarizeTool.execute).toHaveBeenCalled();
+       |                                   ^
+    360|   });
+    361| 
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/98]⎯
-
-```
-
-199. [ ] **Test Failure:**
-```text
- FAIL  src/worker.test.ts > processJob > should not call summarizeHistory if history length does not exceed max length
-TypeError: Cannot read properties of undefined (reading 'getSession')
- ❯ Module.processJob src/worker.ts:133:42
-    131| 
-    132|   try {
-    133|     const session = await sessionManager.getSession(job.data.sessionId…
-       |                                          ^
-    134|     const agent = new Agent(job, session, jobQueue, tools);
-    135|     const finalResponse = await agent.run();
- ❯ src/worker.test.ts:367:27
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[54/89]⎯
 
 ```
 
-200. [ ] **Test Failure:**
-```text
- FAIL  src/worker.test.ts > processJob > should not call summarizeHistory if history length is exactly max length
-TypeError: Cannot read properties of undefined (reading 'getSession')
- ❯ Module.processJob src/worker.ts:133:42
-    131| 
-    132|   try {
-    133|     const session = await sessionManager.getSession(job.data.sessionId…
-       |                                          ^
-    134|     const agent = new Agent(job, session, jobQueue, tools);
-    135|     const finalResponse = await agent.run();
- ❯ src/worker.test.ts:376:27
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/98]⎯
-
-```
-
-201. [ ] **Test Failure:**
+106. [ ] **Test Failure:**
 ```text
  FAIL  src/worker.test.ts > processJob > should always publish a "close" event in the finally block, even on unhandled errors
-ReferenceError: mockRedis is not defined
- ❯ src/worker.test.ts:389:12
-    387|     await processJob(mockJob as Job, mockTools, mockJobQueue).catch(()…
+AssertionError: expected "spy" to be called with arguments: [ 'job:testJobId:events', …(1) ]
+
+Received: 
+
+  1st spy call:
+
+  Array [
+    "job:testJobId:events",
+-   "{\"content\":\"Stream ended.\",\"type\":\"close\"}",
++   "{\"message\":\"This is an unhandled error\",\"type\":\"error\"}",
+  ]
+
+  2nd spy call:
+
+  Array [
+    "job:testJobId:events",
+-   "{\"content\":\"Stream ended.\",\"type\":\"close\"}",
++   "{\"content\":\"Stream terminé.\",\"type\":\"close\"}",
+  ]
+
+
+Number of calls: 2
+
+ ❯ src/worker.test.ts:389:33
+    387|     await processJob(mockJob as Job, mockTools, mockJobQueue, new Sess…
     388| 
-    389|     expect(mockRedis.publish).toHaveBeenCalledWith(
-       |            ^
+    389|     expect(redis.redis.publish).toHaveBeenCalledWith(
+       |                                 ^
     390|       'job:testJobId:events',
     391|       JSON.stringify({ content: 'Stream ended.', type: 'close' }) as s…
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[55/89]⎯
 
 ```
 
-202. [ ] **Test Failure:**
+107. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/errorUtils.test.ts > errorUtils > handleError > should set status and json for AppError with custom statusCode
 AssertionError: expected "spy" to be called with arguments: [ { …(4) } ]
@@ -1085,11 +1551,11 @@ Number of calls: 1
     113|         details: { statusCode: 404 },
     114|         error: 'Test App Error',
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[56/89]⎯
 
 ```
 
-203. [ ] **Test Failure:**
+108. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/errorUtils.test.ts > errorUtils > handleError > should set default status 500 for non-AppError
 AssertionError: expected "spy" to be called with arguments: [ { error: 'Generic Error', …(2) } ]
@@ -1131,11 +1597,11 @@ Number of calls: 1
     126|         error: 'Generic Error',
     127|         name: 'Error',
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[57/89]⎯
 
 ```
 
-204. [ ] **Test Failure:**
+109. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/errorUtils.test.ts > errorUtils > handleError > should include stack in development and exclude in production
 AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…} ]
@@ -1178,11 +1644,11 @@ Number of calls: 1
     140|         expect.objectContaining({
     141|           error: 'Stack Test',
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[58/89]⎯
 
 ```
 
-205. [ ] **Test Failure:**
+110. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/errorUtils.test.ts > errorUtils > handleError > should call next if headers are already sent
 AssertionError: expected "error" to be called at least once
@@ -1194,11 +1660,11 @@ AssertionError: expected "error" to be called at least once
     174|     });
     175|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[59/89]⎯
 
 ```
 
-206. [ ] **Test Failure:**
+111. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/llmProvider.test.ts > llmProvider > should call redis.incrby with estimated tokens
 LlmError: No LLM API key available.
@@ -1211,11 +1677,11 @@ LlmError: No LLM API key available.
      45| 
  ❯ src/utils/llmProvider.test.ts:86:5
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[60/89]⎯
 
 ```
 
-207. [ ] **Test Failure:**
+112. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/llmProvider.test.ts > llmProvider > should handle empty systemPrompt gracefully
 LlmError: No LLM API key available.
@@ -1228,11 +1694,11 @@ LlmError: No LLM API key available.
      45| 
  ❯ src/utils/llmProvider.test.ts:113:22
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[61/89]⎯
 
 ```
 
-208. [ ] **Test Failure:**
+113. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/llmProvider.test.ts > llmProvider > should handle empty messages array gracefully
 LlmError: No LLM API key available.
@@ -1245,11 +1711,11 @@ LlmError: No LLM API key available.
      45| 
  ❯ src/utils/llmProvider.test.ts:131:22
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[62/89]⎯
 
 ```
 
-209. [ ] **Test Failure:**
+114. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/llmProvider.test.ts > llmProvider > should handle valid LLM API response with empty content
 LlmError: No LLM API key available.
@@ -1262,11 +1728,11 @@ LlmError: No LLM API key available.
      45| 
  ❯ src/utils/llmProvider.test.ts:163:22
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[63/89]⎯
 
 ```
 
-210. [ ] **Test Failure:**
+115. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/llmProvider.test.ts > llmProvider > should log error and not interrupt main flow if redis.incrby fails
 LlmError: No LLM API key available.
@@ -1279,11 +1745,11 @@ LlmError: No LLM API key available.
      45| 
  ❯ src/utils/llmProvider.test.ts:189:22
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[41/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[64/89]⎯
 
 ```
 
-211. [ ] **Test Failure:**
+116. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/toolLoader.test.ts > toolLoader > should load tools from default development path
 AssertionError: expected [ { …(4) }, { …(4) }, { …(4) }, …(9) ] to have a length of 1 but got 12
@@ -1302,11 +1768,11 @@ AssertionError: expected [ { …(4) }, { …(4) }, { …(4) }, …(9) ] to have 
      64|     expect(tools[0].name).toBe('testTool');
      65|     expect(path.resolve).toHaveBeenCalledWith(
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[42/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[65/89]⎯
 
 ```
 
-212. [ ] **Test Failure:**
+117. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/toolLoader.test.ts > toolLoader > should load tools from default production path
 AssertionError: expected [ { …(4) }, { …(4) }, { …(4) }, …(9) ] to have a length of 1 but got 12
@@ -1325,11 +1791,11 @@ AssertionError: expected [ { …(4) }, { …(4) }, { …(4) }, …(9) ] to have 
      86|     expect(tools[0].name).toBe('prodTool');
      87|     expect(path.resolve).toHaveBeenCalledWith(
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[66/89]⎯
 
 ```
 
-213. [ ] **Test Failure:**
+118. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/toolLoader.test.ts > toolLoader > should load tools from custom TOOLS_PATH
 Error: Impossible de lire le répertoire des outils '/custom/tools'. Détails: ENOENT: no such file or directory, scandir '/custom/tools'
@@ -1344,11 +1810,11 @@ Error: Impossible de lire le répertoire des outils '/custom/tools'. Détails: E
  ❯ Module.getTools src/utils/toolLoader.ts:50:5
  ❯ src/utils/toolLoader.test.ts:106:19
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[44/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[67/89]⎯
 
 ```
 
-214. [ ] **Test Failure:**
+119. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/toolLoader.test.ts > toolLoader > should throw an error if tools directory does not exist
 AssertionError: expected [Function] to throw error including 'Impossible de lire le répertoire des …' but got 'Impossible de lire le répertoire des …'
@@ -1367,11 +1833,11 @@ AssertionError: expected [Function] to throw error including 'Impossible de lire
     119|       'Impossible de lire le répertoire des outils /custom/tools. Déta…
     120|     );
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[45/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[68/89]⎯
 
 ```
 
-215. [ ] **Test Failure:**
+120. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/toolLoader.test.ts > toolLoader > should handle tool files with errors gracefully
 AssertionError: expected [ { …(4) }, { …(4) }, { …(4) }, …(9) ] to have a length of 1 but got 12
@@ -1390,11 +1856,11 @@ AssertionError: expected [ { …(4) }, { …(4) }, { …(4) }, …(9) ] to have 
     134|     expect(tools[0].name).toBe('errorTool');
     135|     // Expect the execute function to throw when called
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[46/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[69/89]⎯
 
 ```
 
-216. [ ] **Test Failure:**
+121. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/toolLoader.test.ts > toolLoader > should reset loaded tools
 AssertionError: expected [ { …(4) }, { …(4) }, { …(4) }, …(9) ] to have a length of 1 but got 12
@@ -1413,11 +1879,11 @@ AssertionError: expected [ { …(4) }, { …(4) }, { …(4) }, …(9) ] to have 
     162|     expect(tools[0].name).toBe('tool2');
     163|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[47/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[70/89]⎯
 
 ```
 
-217. [ ] **Test Failure:**
+122. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/toolLoader.test.ts > toolLoader > should validate loaded tools against Tool interface
 AssertionError: expected [ { …(4) }, { …(4) }, { …(4) }, …(9) ] to have a length of 1 but got 12
@@ -1436,11 +1902,11 @@ AssertionError: expected [ { …(4) }, { …(4) }, { …(4) }, …(9) ] to have 
     175|     expect(tools[0].name).toBe('validTool');
     176|     expect(typeof tools[0].execute).toBe('function');
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[48/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[71/89]⎯
 
 ```
 
-218. [ ] **Test Failure:**
+123. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/agent/agent.test.ts > Agent Integration Tests > should follow the thought-command-result loop
 AssertionError: expected [ { …(4) }, { …(4) }, { …(5) }, …(2) ] to deeply equal [ { …(2) }, { …(2) }, { …(2) }, …(2) ]
@@ -1452,8 +1918,8 @@ AssertionError: expected [ { …(4) }, { …(4) }, { …(5) }, …(2) ] to deepl
     Object {
       "content": "Test objective",
 -     "role": "user",
-+     "id": "63600748-7805-4621-88d6-6dcf5abbe570",
-+     "timestamp": 1753364077918,
++     "id": "4ff35cc9-0171-417e-ab28-5a29dc39121b",
++     "timestamp": 1753366009511,
 +     "type": "user",
     },
     Object {
@@ -1465,16 +1931,16 @@ AssertionError: expected [ { …(4) }, { …(4) }, { …(5) }, …(2) ] to deepl
 - ",
 -     "role": "model",
 +     "content": "I should use the test tool.",
-+     "id": "887a427c-e5e4-4182-b6be-73bec7946e3a",
-+     "timestamp": 1753364077918,
++     "id": "4d48ba3e-4ed2-40dc-b602-6a48864a5093",
++     "timestamp": 1753366009511,
 +     "type": "agent_thought",
     },
     Object {
 -     "content": "Tool result: \"tool result\"",
 -     "role": "tool",
-+     "id": "897a15ce-6ce9-4eb8-a5c6-1a429b3eea27",
++     "id": "660b5556-25e1-4eea-90c4-031379fb7774",
 +     "result": "tool result",
-+     "timestamp": 1753364077918,
++     "timestamp": 1753366009511,
 +     "toolName": "test-tool",
 +     "type": "tool_result",
     },
@@ -1487,18 +1953,18 @@ AssertionError: expected [ { …(4) }, { …(4) }, { …(5) }, …(2) ] to deepl
 - ",
 -     "role": "model",
 +     "content": "I have finished.",
-+     "id": "7e589c8f-17a9-43e2-b9b4-5f1ce12546e8",
-+     "timestamp": 1753364077918,
++     "id": "79755297-057a-4f02-98fd-d78191216de0",
++     "timestamp": 1753366009511,
 +     "type": "agent_thought",
     },
     Object {
 -     "content": "Tool result: {\"answer\":\"Final answer\"}",
 -     "role": "tool",
-+     "id": "1b64eb44-1b5b-48bc-a3b5-4e1d2f7d04da",
++     "id": "80eaaaa2-8b03-427e-b608-d42ff7dd63b9",
 +     "result": Object {
 +       "answer": "Final answer",
 +     },
-+     "timestamp": 1753364077918,
++     "timestamp": 1753366009511,
 +     "toolName": "finish",
 +     "type": "tool_result",
     },
@@ -1512,11 +1978,11 @@ AssertionError: expected [ { …(4) }, { …(4) }, { …(5) }, …(2) ] to deepl
     210|       { content: 'Test objective', role: 'user' },
     211|       {
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[49/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[72/89]⎯
 
 ```
 
-219. [ ] **Test Failure:**
+124. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/agent/agent.test.ts > Agent Integration Tests > should handle tool execution errors gracefully
 AssertionError: expected [ { …(4) }, { …(4) }, { …(5) }, …(2) ] to deep equally contain { …(2) }
@@ -1531,33 +1997,33 @@ Object {
 Array [
   Object {
     "content": "Test objective",
-    "id": "815148f4-bea8-4bfe-b1e8-c2ef8369efc7",
-    "timestamp": 1753364078026,
+    "id": "7f2656fd-53f0-4816-b9a8-97da637bdbd6",
+    "timestamp": 1753366009600,
     "type": "user",
   },
   Object {
     "content": "I will try to use the tool, but it might fail.",
-    "id": "b40c24cd-0ea9-4db6-9265-90667db94cc5",
-    "timestamp": 1753364078026,
+    "id": "9df2a877-1425-43ae-97ff-7ef61b2e26f2",
+    "timestamp": 1753366009600,
     "type": "agent_thought",
   },
   Object {
-    "id": "c1b0d0e8-ff9d-457e-825b-9874d4a781c0",
+    "id": "63887600-9fe2-428f-8771-a8bbc918d62c",
     "result": "Error executing tool test-tool: Error during tool execution",
-    "timestamp": 1753364078026,
+    "timestamp": 1753366009600,
     "toolName": "test-tool",
     "type": "tool_result",
   },
   Object {
     "content": "The tool execution failed with the following error: Error executing tool test-tool: Error during tool execution. Please analyze the error and try a different approach. You can use another tool, or try to fix the problem with the previous tool.",
-    "id": "df297b20-d476-402c-8715-8867dfa59b25",
-    "timestamp": 1753364078026,
+    "id": "ea32e11c-fd6d-46e7-80fd-ce6ac84852ef",
+    "timestamp": 1753366009600,
     "type": "error",
   },
   Object {
     "content": "Recovered from tool error",
-    "id": "961a31be-4d40-486d-9b5b-c0fb09ddb059",
-    "timestamp": 1753364078026,
+    "id": "d7ffc026-537f-4091-9a28-48e1b406786d",
+    "timestamp": 1753366009600,
     "type": "agent_response",
   },
 ]
@@ -1570,11 +2036,11 @@ Array [
     331|       content: `Tool result: "Error executing tool test-tool: ${errorM…
     332|       role: 'tool',
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[50/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[73/89]⎯
 
 ```
 
-220. [ ] **Test Failure:**
+125. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/agent/agent.test.ts > Agent Integration Tests > should not loop indefinitely on repeated tool errors
 AssertionError: expected 'Agent stuck in a loop.' to be 'Agent reached maximum iterations with…' // Object.is equality
@@ -1593,11 +2059,11 @@ AssertionError: expected 'Agent stuck in a loop.' to be 'Agent reached maximum i
     353|       'Agent reached maximum iterations without a final answer.',
     354|     );
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[51/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[74/89]⎯
 
 ```
 
-221. [ ] **Test Failure:**
+126. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/agent/agent.test.ts > Agent Integration Tests > should handle empty string response from LLM
 AssertionError: expected 'Agent stopped due to persistent malfo…' to be 'Agent reached maximum iterations with…' // Object.is equality
@@ -1616,11 +2082,11 @@ AssertionError: expected 'Agent stopped due to persistent malfo…' to be 'Agent
     365|       'Agent reached maximum iterations without a final answer.',
     366|     );
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[52/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[75/89]⎯
 
 ```
 
-222. [ ] **Test Failure:**
+127. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/agent/agent.test.ts > Agent Integration Tests > should handle null response from LLM
 AssertionError: expected 'Agent stopped due to persistent malfo…' to be 'Agent reached maximum iterations with…' // Object.is equality
@@ -1639,11 +2105,11 @@ AssertionError: expected 'Agent stopped due to persistent malfo…' to be 'Agent
     380|       'Agent reached maximum iterations without a final answer.',
     381|     );
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[53/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[76/89]⎯
 
 ```
 
-223. [ ] **Test Failure:**
+128. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/agent/agent.test.ts > Agent Integration Tests > should detect a loop and stop execution
 AssertionError: expected "spy" to be called 4 times, but got 3 times
@@ -1655,11 +2121,11 @@ AssertionError: expected "spy" to be called 4 times, but got 3 times
     408|   });
     409| 
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[54/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[77/89]⎯
 
 ```
 
-224. [ ] **Test Failure:**
+129. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/agent/agent.test.ts > Agent Integration Tests > should add an error message to history if LLM provides no actionable response
 AssertionError: expected [ { …(4) }, { …(4) }, { …(4) }, …(8) ] to deep equally contain { …(2) }
@@ -1674,68 +2140,68 @@ Object {
 Array [
   Object {
     "content": "Test objective",
-    "id": "19b7cce6-ceb9-4ca2-a35f-e85b5398a8d3",
-    "timestamp": 1753364078078,
+    "id": "0ef4e187-58ef-4d1a-901d-1e37a8c8e1ef",
+    "timestamp": 1753366009664,
     "type": "user",
   },
   Object {
     "content": "You must provide a command, a thought, a canvas output, or a final answer.",
-    "id": "82eed826-7457-4c01-9a23-81a9d1cdf7d7",
-    "timestamp": 1753364078078,
+    "id": "2c7fd530-b1dd-48e4-a537-844cec9a7f0b",
+    "timestamp": 1753366009664,
     "type": "error",
   },
   Object {
     "content": "You must provide a command, a thought, a canvas output, or a final answer.",
-    "id": "ede4fe8c-8e2a-4679-8d80-5c49196484aa",
-    "timestamp": 1753364078078,
+    "id": "01f0a3c8-5150-478b-86d7-1f825fbb2854",
+    "timestamp": 1753366009664,
     "type": "error",
   },
   Object {
     "content": "You must provide a command, a thought, a canvas output, or a final answer.",
-    "id": "c24917df-cf7b-46ba-9820-cede48b5b972",
-    "timestamp": 1753364078078,
+    "id": "149c9738-e26e-460a-b01d-1fc7d90ebfc5",
+    "timestamp": 1753366009664,
     "type": "error",
   },
   Object {
     "content": "You must provide a command, a thought, a canvas output, or a final answer.",
-    "id": "2cde036b-fc13-4d63-ac7f-366cb494a8f2",
-    "timestamp": 1753364078078,
+    "id": "77465b82-5970-4503-a0ca-7b3e8866adda",
+    "timestamp": 1753366009664,
     "type": "error",
   },
   Object {
     "content": "You must provide a command, a thought, a canvas output, or a final answer.",
-    "id": "204ac6ef-a92c-4b17-84bc-a805d1693838",
-    "timestamp": 1753364078078,
+    "id": "214a02bb-8f74-40c4-94df-5aac5dbd0c7f",
+    "timestamp": 1753366009664,
     "type": "error",
   },
   Object {
     "content": "You must provide a command, a thought, a canvas output, or a final answer.",
-    "id": "ad16abe4-5f7c-4b63-8b25-56eb8b74b0b8",
-    "timestamp": 1753364078078,
+    "id": "46788692-32cb-4f6f-b30c-274754be264c",
+    "timestamp": 1753366009664,
     "type": "error",
   },
   Object {
     "content": "You must provide a command, a thought, a canvas output, or a final answer.",
-    "id": "08a3ffd0-fc64-477a-a4f4-9b9f620f0402",
-    "timestamp": 1753364078078,
+    "id": "516b8b55-1f15-4e9a-ace8-4c683ff04aef",
+    "timestamp": 1753366009664,
     "type": "error",
   },
   Object {
     "content": "You must provide a command, a thought, a canvas output, or a final answer.",
-    "id": "4037c227-b0a2-4a94-a747-f680ee7832be",
-    "timestamp": 1753364078078,
+    "id": "e17a13e3-c36b-4f0e-a8fc-950f54eeeab2",
+    "timestamp": 1753366009664,
     "type": "error",
   },
   Object {
     "content": "You must provide a command, a thought, a canvas output, or a final answer.",
-    "id": "4fb4b7f3-9969-4e32-95b6-793b2b5a8ac8",
-    "timestamp": 1753364078078,
+    "id": "404b4059-2fe5-4eff-b98d-65b9c3429982",
+    "timestamp": 1753366009664,
     "type": "error",
   },
   Object {
     "content": "You must provide a command, a thought, a canvas output, or a final answer.",
-    "id": "e650393f-e44b-45a6-8597-6f9f536d363a",
-    "timestamp": 1753364078078,
+    "id": "30af7f3e-a244-4cd7-98a2-e1429a150118",
+    "timestamp": 1753366009664,
     "type": "error",
   },
 ]
@@ -1748,11 +2214,11 @@ Array [
     419|       content:
     420|         'You must provide a command, a thought, a canvas output, or a …
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[55/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[78/89]⎯
 
 ```
 
-225. [ ] **Test Failure:**
+130. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/agent/agent.test.ts > Agent Integration Tests > should handle JSON parsing errors from LLM response
 AssertionError: expected [ { …(4) }, { …(4) }, { …(4) } ] to deep equally contain { …(2) }
@@ -1767,20 +2233,20 @@ Object {
 Array [
   Object {
     "content": "Test objective",
-    "id": "e2af80d8-5716-4af4-b44c-fa0daebdd5c2",
-    "timestamp": 1753364078103,
+    "id": "08211b96-aafe-4281-8efd-f4b903d4a4b4",
+    "timestamp": 1753366009687,
     "type": "user",
   },
   Object {
     "content": "I was unable to parse your last response. Please ensure your response is a valid JSON object with the expected properties (`thought`, `command`, `canvas`, or `answer`). Check for syntax errors, missing commas, or unclosed brackets.",
-    "id": "02a666e1-3ddb-4350-85f0-9451ba185c58",
-    "timestamp": 1753364078103,
+    "id": "ca2806d8-59ce-437c-875b-54cabb915c24",
+    "timestamp": 1753366009687,
     "type": "error",
   },
   Object {
     "content": "Recovered from parsing error",
-    "id": "a0b09793-dd6f-44bc-83ff-632fca0967e2",
-    "timestamp": 1753364078103,
+    "id": "d6d0b5dc-42e7-4fe5-9f82-760efb049b7d",
+    "timestamp": 1753366009687,
     "type": "agent_response",
   },
 ]
@@ -1788,11 +2254,11 @@ Array [
  ❯ src/modules/agent/agent.test.ts:441:33
 
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[56/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[79/89]⎯
 
 ```
 
-226. [ ] **Test Failure:**
+131. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/agent/agent.test.ts > Agent Integration Tests > should handle finish tool not returning an answer
 AssertionError: expected 'Finish tool did not return a valid an…' to be 'Finish tool did not return a valid an…' // Object.is equality
@@ -1811,11 +2277,11 @@ AssertionError: expected 'Finish tool did not return a valid an…' to be 'Finis
     465|       'Finish tool did not return a valid answer object: {"not_an_answ…
     466|     );
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[57/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[80/89]⎯
 
 ```
 
-227. [ ] **Test Failure:**
+132. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/agent/orchestrator.prompt.test.ts > getMasterPrompt > should correctly format the master prompt with all sections
 AssertionError: expected '# Agent Persona and Core Directive
@@ -2063,11 +2529,11 @@ Hi there!');
     103| 
     104|     // Check Assistant's turn
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[58/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[81/89]⎯
 
 ```
 
-228. [ ] **Test Failure:**
+133. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/agent/orchestrator.prompt.test.ts > getMasterPrompt > should correctly convert a Zod object with an array of objects to JSON schema
 AssertionError: expected { type: 'object', …(4) } to deeply equal { properties: { …(2) }, …(2) }
@@ -2116,11 +2582,11 @@ AssertionError: expected { type: 'object', …(4) } to deeply equal { properties
     121|       properties: {
     122|         count: { type: 'number' },
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[59/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[82/89]⎯
 
 ```
 
-229. [ ] **Test Failure:**
+134. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/session/sessionManager.test.ts > SessionManager > should save a session to the database
 AssertionError: expected "spy" to be called with arguments: [ StringContaining{…}, …(1) ]
@@ -2135,9 +2601,9 @@ Received:
     Array [
       "session-to-save",
       "Session to Save",
-      "[{\"content\":\"Test\",\"id\":\"1\",\"timestamp\":1753364078709,\"type\":\"user\"}]",
--     1753364078709,
-+     "1753364078709",
+      "[{\"content\":\"Test\",\"id\":\"1\",\"timestamp\":1753366010292,\"type\":\"user\"}]",
+-     1753366010292,
++     "1753366010292",
     ],
   ]
 
@@ -2152,11 +2618,11 @@ Number of calls: 1
     106|       expect.stringContaining('INSERT INTO sessions'),
     107|       [
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[60/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[83/89]⎯
 
 ```
 
-230. [ ] **Test Failure:**
+135. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/definitions/ai/summarize.tool.test.ts > summarizeTool > should summarize the text successfully
 AssertionError: expected { Object (erreur) } to deeply equal 'This is a summary.'
@@ -2177,11 +2643,11 @@ Object {
      46|     expect(getLlmProvider().getLlmResponse).toHaveBeenCalled();
      47|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[61/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[84/89]⎯
 
 ```
 
-231. [ ] **Test Failure:**
+136. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/definitions/ai/summarize.tool.test.ts > summarizeTool > should return an error object if summarization fails
 AssertionError: expected { Object (erreur) } to deeply equal { erreur: 'No LLM API key available.' }
@@ -2202,11 +2668,11 @@ AssertionError: expected { Object (erreur) } to deeply equal { erreur: 'No LLM A
      56|   });
      57| 
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[62/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[85/89]⎯
 
 ```
 
-232. [ ] **Test Failure:**
+137. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/definitions/code/executeShellCommand.tool.test.ts > executeShellCommandTool > should enqueue a detached command and return immediately
 AssertionError: expected "spy" to be called with arguments: [ 'async-tasks', …(2) ]
@@ -2227,7 +2693,7 @@ Received:
 -   ObjectContaining {
 -     "jobId": Any<String>,
 +   Object {
-+     "jobId": "shell-command-1753364077659-u8kmis2",
++     "jobId": "shell-command-1753366009328-xzglued",
 +     "removeOnComplete": true,
 +     "removeOnFail": true,
     },
@@ -2244,11 +2710,11 @@ Number of calls: 1
     153|       'async-tasks',
     154|       expect.objectContaining({
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[63/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[86/89]⎯
 
 ```
 
-233. [ ] **Test Failure:**
+138. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/definitions/code/executeShellCommand.tool.test.ts > executeShellCommandTool > should handle child process error event
 AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…}, …(1) ]
@@ -2267,11 +2733,11 @@ Number of calls: 0
     194|       expect.objectContaining({ err: expect.any(Error) }),
     195|       `Failed to start shell command: ${command}`,
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[64/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[87/89]⎯
 
 ```
 
-234. [ ] **Test Failure:**
+139. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/definitions/code/executeShellCommand.tool.test.ts > executeShellCommandTool > should stream stdout and stderr to frontend via redis.publish
 AssertionError: expected "spy" to be called with arguments: [ 'job:test-job:events', …(1) ]
@@ -2290,11 +2756,11 @@ Number of calls: 0
     232|       `job:${mockCtx.job!.id}:events`,
     233|       JSON.stringify({
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[65/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[88/89]⎯
 
 ```
 
-235. [ ] **Test Failure:**
+140. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/definitions/web/browser.tool.test.ts > browserTool > should return an error if navigation fails
 AssertionError: expected { Object (content, url) } to have property "erreur"
@@ -2306,11 +2772,11 @@ AssertionError: expected { Object (content, url) } to have property "erreur"
      68|     expect(
      69|       typeof result === 'object' && result !== null && 'erreur' in res…
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[66/98]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[89/89]⎯
 
 ⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
 
-Vitest caught 1 unhandled error during the test run.
+Vitest caught 49 unhandled errors during the test run.
 This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
 
 ⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
@@ -2324,7 +2790,53 @@ TypeError: Cannot read properties of undefined (reading 'query')
     246|         id VARCHAR(255) PRIMARY KEY,
  ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
  ❯ Module.initializeWebServer src/webServer.ts:33:26
- ❯ src/webServer.test.ts:74:17
+ ❯ src/webServer.integration.test.ts:81:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ runTest ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:774:30
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return initial leaderboard stats". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:81:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should increment sessionsCreated when a new session is created". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: this.pgClient.query is not a function
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.test.ts:51:17
  ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
  ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
  ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
@@ -2334,11 +2846,1075 @@ This error originated in "src/webServer.test.ts" test file. It doesn't mean the 
 The latest test that might've caused the error is "should return 200 for /api/health". It might mean one of the following:
 - The error was thrown, while Vitest was running this test.
 - If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:81:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should log an error if redis.incr fails for sessionsCreated". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:81:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should increment tokensSaved when an LLM response is generated". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:81:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should log an error if redis.incrby fails for tokensSaved". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:81:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should increment successfulRuns when a job completes successfully". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:81:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should save a session". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:294:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should save a session". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:294:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should log an error if redis.set fails for session save". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:294:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should load a session". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:294:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should log an error if redis.get fails for session load". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:294:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 404 if session not found on load". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:294:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should delete a session". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:294:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should log an error if redis.del fails for session delete". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:294:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should rename a session". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:294:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should log an error if redis.get fails during session rename". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:294:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 404 if session not found on rename". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:479:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should add an LLM API key". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:479:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 500 if LlmKeyManager.addKey throws an error". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:479:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should retrieve LLM API keys". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:479:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 500 if LlmKeyManager.getKeysForApi throws an error". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:479:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should delete an LLM API key". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:479:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 400 for invalid index on delete". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:479:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 500 if LlmKeyManager.removeKey throws an error". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:613:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should redirect to GitHub for OAuth initiation". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:613:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should handle GitHub OAuth callback successfully". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:647:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ runTest ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:781:17
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+ ❯ runSuite ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15
+ ❯ runSuite ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should handle GitHub OAuth callback successfully". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:613:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should handle GitHub OAuth callback with error from GitHub". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:675:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ runTest ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:781:17
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+ ❯ runSuite ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15
+ ❯ runSuite ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should handle GitHub OAuth callback with error from GitHub". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:613:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should handle network errors during GitHub OAuth callback". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:711:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ runTest ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:781:17
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+ ❯ runSuite ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15
+ ❯ runSuite ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should handle network errors during GitHub OAuth callback". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:613:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should handle GitHub OAuth callback with missing code". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:613:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 500 if GITHUB_CLIENT_ID is missing for OAuth initiation". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:748:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ runTest ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:781:17
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+ ❯ runSuite ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15
+ ❯ runSuite ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 500 if GITHUB_CLIENT_ID is missing for OAuth initiation". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:613:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 400 if GITHUB_CLIENT_SECRET is missing for OAuth callback". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:766:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ runTest ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:781:17
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+ ❯ runSuite ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15
+ ❯ runSuite ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 400 if GITHUB_CLIENT_SECRET is missing for OAuth callback". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:798:18
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ runTest ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:781:17
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+ ❯ runSuite ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15
+ ❯ runSuite ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 500 if jobQueue.add fails". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:816:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 500 if jobQueue.add fails". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:847:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 500 if jobQueue.getJob fails in /api/interrupt". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:847:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 500 if jobQueue.getJob fails in /api/status". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:895:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 500 if redis.publish fails in /api/interrupt". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:895:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 500 if redis.publish fails in /api/display". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:945:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 500 if fs.promises.readdir fails". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:945:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should return 500 if fs.promises.readFile fails". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:993:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should handle AppError and return custom status code and message". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:993:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should handle UserError and return custom status code and message". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:993:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should handle generic Error and return 500". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'query')
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:244:25
+    242| 
+    243|   private async initDb() {
+    244|     await this.pgClient.query(`
+       |                         ^
+    245|       CREATE TABLE IF NOT EXISTS sessions (
+    246|         id VARCHAR(255) PRIMARY KEY,
+ ❯ new SessionManager src/modules/session/sessionManager.ts:21:10
+ ❯ Module.initializeWebServer src/webServer.ts:33:26
+ ❯ src/webServer.integration.test.ts:1053:17
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:135:14
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:60:26
+ ❯ ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:59
+ ❯ callSuiteHook ../../node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:700:47
+ ❯ processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "src/webServer.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should not require authentication if AUTH_API_KEY is not set". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
 ```
 
 ---
 
 ✗ 3 type(s) de vérification ont échoué : TypeCheck Core Lint Tests.
-Veuillez consulter le fichier all-checks.md pour les 235 erreur(s) détaillée(s).
+Veuillez consulter le fichier all-checks.md pour les 140 erreur(s) détaillée(s).
 

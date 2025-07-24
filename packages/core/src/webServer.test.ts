@@ -1,15 +1,7 @@
 import express from 'express';
 import { promises as fs } from 'fs';
 import request from 'supertest';
-import {
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  Mock,
-  vi,
-} from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
 import { config } from './config';
 
@@ -40,8 +32,6 @@ import { redis } from './modules/redis/redisClient';
 import * as toolLoader from './utils/toolLoader';
 import { initializeWebServer } from './webServer';
 
-
-
 describe('webServer', () => {
   let app: express.Application;
 
@@ -58,8 +48,6 @@ describe('webServer', () => {
     // Ensure jobQueue.add always returns a mock job for tests
     (jobQueue.add as Mock).mockResolvedValue({ id: 'mockJobId' });
   });
-
-  
 
   it('should return 200 for /api/health', async () => {
     const res = await request(app).get('/api/health');

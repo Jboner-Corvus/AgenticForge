@@ -2,7 +2,18 @@ import { Job, Queue } from 'bullmq';
 import { Logger } from 'pino';
 import { z } from 'zod';
 
-import { Ctx as _Ctx, AgentResponseMessage, ErrorMessage, Message, SessionData, ThoughtMessage, Tool, ToolCallMessage, ToolResultMessage, UserMessage } from '@/types.js';
+import {
+  Ctx as _Ctx,
+  AgentResponseMessage,
+  ErrorMessage,
+  Message,
+  SessionData,
+  ThoughtMessage,
+  Tool,
+  ToolCallMessage,
+  ToolResultMessage,
+  UserMessage,
+} from '@/types.js';
 
 import { config } from '../../config.js';
 import logger from '../../logger.js';
@@ -47,13 +58,12 @@ export class Agent {
   private readonly tools: Tool<z.AnyZodObject, z.ZodTypeAny>[];
 
   constructor(
-     
     job: Job<{ prompt: string }>,
-     
+
     session: SessionData,
-     
+
     _taskQueue: Queue,
-     
+
     _tools?: Tool<z.AnyZodObject, z.ZodTypeAny>[],
   ) {
     this.job = job;
@@ -123,7 +133,9 @@ export class Agent {
                   return null;
                 case 'agent_response':
                 case 'agent_thought':
-                  const agentMessage = message as AgentResponseMessage | ThoughtMessage;
+                  const agentMessage = message as
+                    | AgentResponseMessage
+                    | ThoughtMessage;
                   if (typeof agentMessage.content === 'string') {
                     return {
                       parts: [{ text: agentMessage.content }],
@@ -158,7 +170,10 @@ export class Agent {
                     role: 'tool',
                   };
                 case 'user':
-                  if (message.type === 'user' && typeof message.content === 'string') {
+                  if (
+                    message.type === 'user' &&
+                    typeof message.content === 'string'
+                  ) {
                     return {
                       parts: [{ text: message.content }],
                       role: 'user',

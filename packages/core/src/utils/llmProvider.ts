@@ -144,10 +144,7 @@ class GeminiProvider implements ILlmProvider {
 }
 
 class HuggingFaceProvider implements ILlmProvider {
-  public getErrorType(
-    statusCode: number,
-    _errorBody: string,
-  ): LlmKeyErrorType {
+  public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
     if (statusCode === 401 || statusCode === 403) {
       // Unauthorized, Forbidden - likely invalid API key
       return LlmKeyErrorType.PERMANENT;

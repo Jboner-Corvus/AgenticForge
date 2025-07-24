@@ -105,7 +105,12 @@ describe('processJob', () => {
       content: 'old message',
       role: 'user',
     }); // Ensure history exceeds max length
-    const _result = await processJob(mockJob as Job, mockTools, mockJobQueue, new SessionManager({} as any));
+    const _result = await processJob(
+      mockJob as Job,
+      mockTools,
+      mockJobQueue,
+      new SessionManager({} as any),
+    );
 
     expect(mockSessionManagerInstance.getSession).toHaveBeenCalledWith(
       'testSessionId',
@@ -355,7 +360,12 @@ describe('processJob', () => {
       content: 'old message',
       role: 'user',
     }); // Exceeds default 10
-    const _result = await processJob(mockJob as Job, mockTools, mockJobQueue, new SessionManager({} as any));
+    const _result = await processJob(
+      mockJob as Job,
+      mockTools,
+      mockJobQueue,
+      new SessionManager({} as any),
+    );
     expect(summarizeTool.execute).toHaveBeenCalled();
   });
 
@@ -364,7 +374,12 @@ describe('processJob', () => {
       content: 'old message',
       role: 'user',
     }); // Does not exceed default 10
-    const _result = await processJob(mockJob as Job, mockTools, mockJobQueue, new SessionManager({} as any));
+    const _result = await processJob(
+      mockJob as Job,
+      mockTools,
+      mockJobQueue,
+      new SessionManager({} as any),
+    );
     expect(summarizeTool.execute).not.toHaveBeenCalled();
   });
 
@@ -373,7 +388,12 @@ describe('processJob', () => {
       content: 'old message',
       role: 'user',
     }); // Exactly max length
-    const _result = await processJob(mockJob as Job, mockTools, mockJobQueue, new SessionManager({} as any));
+    const _result = await processJob(
+      mockJob as Job,
+      mockTools,
+      mockJobQueue,
+      new SessionManager({} as any),
+    );
     expect(summarizeTool.execute).not.toHaveBeenCalled();
   });
 
@@ -384,7 +404,12 @@ describe('processJob', () => {
     }));
 
     // We expect the function to throw, so we wrap it in a try/catch
-    await processJob(mockJob as Job, mockTools, mockJobQueue, new SessionManager({} as any)).catch(() => {});
+    await processJob(
+      mockJob as Job,
+      mockTools,
+      mockJobQueue,
+      new SessionManager({} as any),
+    ).catch(() => {});
 
     expect(redis.redis.publish).toHaveBeenCalledWith(
       'job:testJobId:events',

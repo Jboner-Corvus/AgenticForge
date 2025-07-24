@@ -25,7 +25,8 @@ vi.mock('./modules/llm/LlmKeyManager.js', () => ({
 }));
 
 vi.mock('./modules/queue/queue.js', async (importOriginal) => {
-  const original = await importOriginal<typeof import('./modules/queue/queue.js')>();
+  const original =
+    await importOriginal<typeof import('./modules/queue/queue.js')>();
   return {
     ...original,
     jobQueue: {
@@ -795,9 +796,9 @@ describe('Server Initialization', () => {
     });
 
     // We expect initializeWebServer to throw, so we wrap it in a try/catch
-    await expect(initializeWebServer(redis as any, jobQueue as any)).rejects.toThrow(
-      'Redis connection failed during initialization',
-    );
+    await expect(
+      initializeWebServer(redis as any, jobQueue as any),
+    ).rejects.toThrow('Redis connection failed during initialization');
 
     expect(errorSpy).toHaveBeenCalledWith(
       expect.objectContaining({ _error: expect.any(Error) }),

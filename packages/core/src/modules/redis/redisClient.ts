@@ -20,7 +20,7 @@ const redisHost = config.REDIS_HOST;
 const redisUrl = `redis://${redisHost}:${config.REDIS_PORT}`;
 
 // Utiliser l'URL construite pour la connexion
- 
+
 export const redis = new Redis(redisUrl, {
   db: config.REDIS_DB,
   maxRetriesPerRequest: null, // Allows infinite reconnection attempts. Consider limiting or implementing a circuit breaker for persistent issues.
