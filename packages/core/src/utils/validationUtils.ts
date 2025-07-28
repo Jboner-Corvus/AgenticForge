@@ -1,6 +1,4 @@
-// src/utils/validationUtils.ts
-
-import logger from '../logger.js'; // Pour la journalisation interne si nécessaire
+import logger from '../logger.js';
 
 /**
  * Valide si une chaîne de caractères est une URL HTTP/HTTPS valide.

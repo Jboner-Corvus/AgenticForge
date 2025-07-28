@@ -1,5 +1,5 @@
 import { Job, Queue, Worker } from 'bullmq';
-import { spawn } from 'child_process';
+import { spawn as _spawn } from 'child_process';
 import { Redis } from 'ioredis';
 import { Client as PgClient } from 'pg';
 
@@ -8,37 +8,45 @@ import { Tool } from '@/types';
 import { config } from './config';
 import logger from './logger';
 import { Agent } from './modules/agent/agent';
-import { redis } from './modules/redis/redisClient';
+import * as redisClient from './modules/redis/redisClient.js';
 import { SessionManager } from './modules/session/sessionManager';
+import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.js';
 import { AppError, getErrDetails, UserError } from './utils/errorUtils';
 import { getTools } from './utils/toolLoader';
 
-// Initialisation du Worker
+// ... rest of the file
+
 export async function initializeWorker(
   redisConnection: Redis,
-  pgClient: Client,
+  pgClient: PgClient,
 ) {
-  const tools = await getTools();
-  const jobQueue = new Queue('tasks', { connection: redisConnection });
+  const _tools = await getTools();
+  const _jobQueue = new Queue('tasks', { connection: redisConnection });
   const sessionManager = new SessionManager(pgClient);
 
   const worker = new Worker(
     'tasks',
-    async (job) => {
-      if (job.name === 'process-message') {
-        return processJob(job, tools, jobQueue, sessionManager);
+    async (_job) => {
+      if (_job.name === 'process-message') {
+        return processJob(
+          _job,
+          _tools,
+          _jobQueue,
+          sessionManager,
+          redisConnection,
+        );
       }
 
-      if (job.name === 'execute-shell-command-detached') {
-        const { command, notificationChannel } = job.data;
+      if (_job.name === 'execute-shell-command-detached') {
+        const { command, notificationChannel } = _job.data;
         const log = logger.child({
-          jobId: job.id,
-          originalJobId: job.data.jobId,
+          jobId: _job.id,
+          originalJobId: _job.data.jobId,
         });
         log.info(`Executing detached shell command: ${command}`);
 
         return new Promise((resolve, reject) => {
-          const child = spawn(command, {
+          const child = _spawn(command, {
             cwd: config.WORKSPACE_PATH,
             detached: true,
             shell: process.platform === 'win32' ? 'cmd.exe' : '/bin/bash',
@@ -55,7 +63,7 @@ export async function initializeWorker(
               toolName,
               type: 'tool_stream',
             }; // Include toolName
-            redis.publish(notificationChannel, JSON.stringify(data));
+            redisConnection.publish(notificationChannel, JSON.stringify(data));
           };
 
           child.stdout.on('data', (data: Buffer) => {
@@ -70,12 +78,12 @@ export async function initializeWorker(
             streamToFrontend('stderr', chunk, 'executeShellCommand');
           });
 
-          child.on('error', (error) => {
+          child.on('error', (error: Error) => {
             log.error(
               { err: error },
               `Failed to start detached shell command: ${command}`,
             );
-            redis.publish(
+            redisConnection.publish(
               notificationChannel,
               JSON.stringify({
                 message: `Failed to start command: ${error.message}`,
@@ -85,7 +93,7 @@ export async function initializeWorker(
             reject(error);
           });
 
-          child.on('close', (code) => {
+          child.on('close', (code: null | number) => {
             const finalMessage = `--- DETACHED COMMAND FINISHED ---\nCommand: ${command}\nExit Code: ${code}`;
             log.info(finalMessage);
             streamToFrontend(
@@ -105,12 +113,12 @@ ${finalMessage}`,
     },
   );
 
-  worker.on('completed', (job) => {
-    logger.info(`Job ${job.id} terminé avec succès.`);
+  worker.on('completed', (_job) => {
+    logger.info(`Job ${_job.id} terminé avec succès.`);
   });
 
-  worker.on('failed', (job, err) => {
-    logger.error({ err }, `Le job ${job?.id} a échoué`);
+  worker.on('failed', (_job, err) => {
+    logger.error({ err }, `Le job ${_job?.id} a échoué`);
   });
 
   logger.info('Worker initialisé et prêt à traiter les jobs.');
@@ -119,19 +127,20 @@ ${finalMessage}`,
 
 // Fonction principale de traitement des tâches
 export async function processJob(
-  job: Job,
-  tools: Tool[],
-  jobQueue: Queue,
-  sessionManager: SessionManager,
+  _job: Job,
+  _tools: Tool[],
+  _jobQueue: Queue,
+  _sessionManager: SessionManager,
+  redisConnection: Redis,
 ): Promise<string> {
-  const log = logger.child({ jobId: job.id, sessionId: job.data.sessionId });
-  log.info(`Traitement du job ${job.id} avec les données:`, job.data);
+  const log = logger.child({ jobId: _job.id, sessionId: _job.data.sessionId });
+  log.info(`Traitement du job ${_job.id} avec les données:`, _job.data);
 
-  const channel = `job:${job.id}:events`;
+  const channel = `job:${_job.id}:events`;
 
   try {
-    const session = await sessionManager.getSession(job.data.sessionId);
-    const agent = new Agent(job, session, jobQueue, tools);
+    const session = await _sessionManager.getSession(_job.data.sessionId);
+    const agent = new Agent(_job, session, _jobQueue, _tools);
     const finalResponse = await agent.run();
 
     session.history.push({
@@ -141,7 +150,34 @@ export async function processJob(
       type: 'agent_response',
     });
 
-    await sessionManager.saveSession(session, job, jobQueue);
+    if (session.history.length > config.HISTORY_MAX_LENGTH) {
+      const summarizedHistory = await summarizeTool.execute(
+        {
+          text: session.history
+            .map((m) => ('content' in m ? m.content : ''))
+            .join('\n'),
+        },
+        {
+          job: _job,
+          llm: null as any,
+          log: log,
+          reportProgress: async () => {},
+          session: session,
+          streamContent: async () => {},
+          taskQueue: _jobQueue,
+        },
+      );
+      session.history = [
+        {
+          content: summarizedHistory as string,
+          id: crypto.randomUUID(),
+          timestamp: Date.now(),
+          type: 'agent_response',
+        },
+      ];
+    }
+
+    await _sessionManager.saveSession(session, _job, _jobQueue);
     return finalResponse;
   } catch (error: unknown) {
     const errDetails = getErrDetails(error);
@@ -166,24 +202,30 @@ export async function processJob(
       }
     }
 
-    redis.publish(
+    redisConnection.publish(
       channel,
       JSON.stringify({ message: errorMessage, type: eventType }),
     );
     throw error; // Relance l'erreur pour marquer le job comme échoué dans BullMQ
   } finally {
     // Publie toujours un événement de fermeture pour notifier le frontend
-    redis.publish(
+    redisConnection.publish(
       channel,
       JSON.stringify({ content: 'Stream terminé.', type: 'close' }),
     );
-    log.info(`Traitement du job ${job.id} terminé`);
+    log.info(`Traitement du job ${_job.id} terminé`);
   }
 }
 
 // Démarrage direct du worker
 if (process.env.NODE_ENV !== 'test') {
-  initializeWorker(redis, {} as PgClient).catch((err) => {
+  const connectionString = `postgresql://${config.POSTGRES_USER}:${config.POSTGRES_PASSWORD}@${config.POSTGRES_HOST}:${config.POSTGRES_PORT}/${config.POSTGRES_DB}`;
+  const pgClient = new PgClient({
+    connectionString: connectionString,
+  });
+  pgClient.connect();
+  const redisConnection = redisClient.redis;
+  initializeWorker(redisConnection, pgClient).catch((err) => {
     logger.error({ err }, "Échec de l'initialisation du worker");
     process.exit(1);
   });

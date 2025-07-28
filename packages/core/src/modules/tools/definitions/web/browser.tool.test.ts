@@ -8,8 +8,8 @@ vi.mock('playwright', async () => {
       launch: vitest.vi.fn().mockResolvedValue({
         close: vitest.vi.fn().mockResolvedValue(undefined),
         newPage: vitest.vi.fn().mockResolvedValue({
-          evaluate: vitest.vi.fn().mockResolvedValue('Mocked page content'),
-          goto: vitest.vi.fn().mockResolvedValue(undefined),
+          evaluate: vitest.vi.fn(),
+          goto: vitest.vi.fn(),
         }),
       }),
     },
@@ -28,6 +28,7 @@ import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 
 import logger from '../../../../logger.js';
 import { browserTool } from './browser.tool.js';
+import { closeBrowser } from './browserManager.js';
 
 describe('browserTool', () => {
   const mockCtx: Ctx = {
@@ -39,12 +40,30 @@ describe('browserTool', () => {
     taskQueue: {} as Queue,
   };
 
-  beforeEach(() => {
+  let mockPage: any; // Declare mockPage here to access it later
+
+  beforeEach(async () => {
+    await closeBrowser();
     vi.clearAllMocks();
+
+    const mockBrowser = {
+      close: vi.fn().mockResolvedValue(undefined),
+      newPage: vi.fn().mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        evaluate: vi.fn(),
+        goto: vi.fn(), // This is the mock we need to control
+      }),
+    };
+
+    vi.mocked(chromium.launch).mockResolvedValue(mockBrowser as any);
+    mockPage = await mockBrowser.newPage();
   });
 
   it('should navigate to a URL and return its content', async () => {
     const url = 'https://example.com';
+    mockPage.evaluate.mockResolvedValue('Mocked page content'); // Set evaluate mock here
+    mockPage.goto.mockResolvedValue(undefined); // Ensure goto resolves for this test
+
     const result = await browserTool.execute({ url }, mockCtx);
 
     expect(chromium.launch).toHaveBeenCalled();
@@ -54,22 +73,21 @@ describe('browserTool', () => {
 
   it('should return an error if navigation fails', async () => {
     const url = 'https://bad-url.com';
+    const errorMessage = 'Navigation failed';
 
-    vi.mocked(chromium.launch).mockResolvedValueOnce({
-      close: vi.fn().mockResolvedValue(undefined),
-      newPage: vi.fn().mockResolvedValue({
-        evaluate: vi.fn(),
-        goto: vi.fn().mockRejectedValue(new Error('Navigation failed')),
-      } as any),
-    } as any);
+    // Now, set the mockRejectedValue on the specific mockPage.goto
+    mockPage.goto.mockRejectedValue(new Error(errorMessage));
 
     const result = await browserTool.execute({ url }, mockCtx);
+
     expect(result).toHaveProperty('erreur');
     expect(
       typeof result === 'object' && result !== null && 'erreur' in result
         ? result.erreur
         : result,
-    ).toContain('Navigation failed');
+    ).toContain(`Error while Browse ${url}: ${errorMessage}`);
     expect(loggerMock.error).toHaveBeenCalled();
+    expect(mockPage.goto).toHaveBeenCalledWith(url, expect.any(Object));
+    expect(mockPage.close).toHaveBeenCalled();
   });
 });

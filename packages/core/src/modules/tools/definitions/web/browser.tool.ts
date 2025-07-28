@@ -67,6 +67,7 @@ export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
         length: content.length,
       });
 
+      await page.close();
       return {
         content: content,
         url: args.url,
@@ -78,15 +79,10 @@ export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
         message: err.message,
         url: args.url,
       });
-      return { erreur: `Error while Browse ${args.url}: ${err.message}` };
-    } finally {
       if (page) {
-        try {
-          await page.close();
-        } catch (e) {
-          ctx.log.error(e, 'Failed to close page');
-        }
+        await page.close();
       }
+      return { erreur: `Error while Browse ${args.url}: ${err.message}` };
     }
   },
   name: 'browser',

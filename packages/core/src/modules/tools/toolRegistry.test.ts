@@ -1,10 +1,7 @@
-import type { Mock } from 'vitest';
-
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { AnyZodObject, z, ZodString } from 'zod';
 
 import { Ctx, Tool } from '@/types';
-import { AppError } from '@/utils/errorUtils';
 
 import { toolRegistry } from './toolRegistry.js';
 

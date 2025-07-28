@@ -1,5 +1,7 @@
+import type { MockInstance } from 'vitest';
+
 import { NextFunction, Request, Response } from 'express';
-import { describe, expect, it, MockInstance, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import logger from '../logger';
 import {
@@ -81,7 +83,6 @@ describe('errorUtils', () => {
   });
 
   describe('handleError', () => {
-    let consoleErrorSpy: MockInstance;
     let errorSpy: MockInstance;
     let mockRequest: Request;
     let mockResponse: Response;
@@ -95,12 +96,10 @@ describe('errorUtils', () => {
         status: vi.fn().mockReturnThis(),
       } as unknown as Response;
       mockNext = vi.fn() as unknown as NextFunction;
-      consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       errorSpy = vi.spyOn(logger, 'error');
     });
 
     afterEach(() => {
-      consoleErrorSpy.mockRestore();
       errorSpy.mockRestore();
       vi.clearAllMocks();
     });
@@ -110,12 +109,14 @@ describe('errorUtils', () => {
       handleError(error, mockRequest, mockResponse, mockNext);
       expect(mockResponse.status).toHaveBeenCalledWith(404);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        details: { statusCode: 404 },
-        error: 'Test App Error',
-        name: 'AppError',
-        stack: expect.any(String),
+        error: {
+          details: { statusCode: 404 },
+          message: 'Test App Error',
+          name: 'AppError',
+          stack: expect.any(String),
+        },
       });
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
     });
 
     it('should set default status 500 for non-AppError', () => {
@@ -123,11 +124,13 @@ describe('errorUtils', () => {
       handleError(error, mockRequest, mockResponse, mockNext);
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        error: 'Generic Error',
-        name: 'Error',
-        stack: expect.any(String),
+        error: {
+          message: 'Generic Error',
+          name: 'Error',
+          stack: expect.any(String),
+        },
       });
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
     });
 
     it('should include stack in development and exclude in production', () => {
@@ -136,22 +139,19 @@ describe('errorUtils', () => {
       // Development environment
       process.env.NODE_ENV = 'development';
       handleError(error, mockRequest, mockResponse, mockNext);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: 'Stack Test',
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        error: expect.objectContaining({
+          message: 'Stack Test',
           stack: expect.any(String),
         }),
-      );
+      });
       vi.clearAllMocks();
 
       // Production environment
       process.env.NODE_ENV = 'production';
       handleError(error, mockRequest, mockResponse, mockNext);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: expect.not.objectContaining({ stack: expect.any(String) }),
-        }),
-      );
+      const response = (mockResponse.json as any).mock.calls[0][0];
+      expect(response.error).not.toHaveProperty('stack');
     });
 
     it('should call logger.error with correct arguments', () => {
@@ -170,7 +170,7 @@ describe('errorUtils', () => {
       expect(mockResponse.status).not.toHaveBeenCalled();
       expect(mockResponse.json).not.toHaveBeenCalled();
       expect(mockNext).toHaveBeenCalledWith(error);
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 

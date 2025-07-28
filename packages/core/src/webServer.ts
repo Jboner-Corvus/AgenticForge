@@ -1,10 +1,10 @@
 import type { Queue } from 'bullmq';
-import type { Redis } from 'ioredis';
+import type { Redis as _Redis } from 'ioredis';
 
 import chokidar from 'chokidar';
 import cookieParser from 'cookie-parser';
 import express, { type Application } from 'express';
-import fs from 'fs';
+import * as fs from 'fs/promises';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import { Client as PgClient } from 'pg';
@@ -13,33 +13,32 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { config, loadConfig } from './config.js';
 import logger from './logger.js';
-import { LlmKeyManager } from './modules/llm/LlmKeyManager.js';
+import { LlmKeyManager as _LlmKeyManager } from './modules/llm/LlmKeyManager';
 import { SessionManager } from './modules/session/sessionManager.js';
 import { Message, SessionData } from './types.js';
 import { AppError, handleError } from './utils/errorUtils.js';
 import { getTools } from './utils/toolLoader.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// ... rest of the file
 
 let configWatcher: import('chokidar').FSWatcher | null = null;
 
 export async function initializeWebServer(
-  redis: Redis,
+  redisClient: _Redis,
   jobQueue: Queue,
   pgClient: PgClient,
 ): Promise<Application> {
   const app = express();
   const sessionManager = new SessionManager(pgClient);
   app.use(express.json());
-  app.use(express.static(path.join(__dirname, '..', 'ui', 'dist')));
+  app.use(express.static(path.join(process.cwd(), 'packages', 'ui', 'dist')));
   app.use(cookieParser());
 
   // Middleware to attach sessionManager to req
   app.use(
     (
       req: express.Request,
-      res: express.Response,
+      _res: express.Response,
       next: express.NextFunction,
     ) => {
       (req as any).sessionManager = sessionManager;
@@ -57,7 +56,7 @@ export async function initializeWebServer(
     (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       let sessionId =
         req.cookies.agenticforge_session_id || req.headers['x-session-id'];
@@ -66,21 +65,24 @@ export async function initializeWebServer(
         sessionId = uuidv4();
         res.cookie('agenticforge_session_id', sessionId, {
           httpOnly: true,
-          maxAge: 7 * 24 * 60 * 60 * 1000,
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
           sameSite: 'lax',
           secure: process.env.NODE_ENV === 'production',
         });
         // Increment sessionsCreated leaderboard stat for new sessions
-        redis.incr('leaderboard:sessionsCreated').catch((_error) => {
-          logger.error(
-            { _error },
-            'Failed to increment sessionsCreated in Redis',
-          );
-        });
+        redisClient
+          .incr('leaderboard:sessionsCreated')
+          .catch((err: unknown) => {
+            logger.error(
+              { err },
+              'Failed to increment sessionsCreated in Redis',
+            );
+          });
       }
+      (req as any).sessionId = sessionId;
+      (req as any).redis = redisClient; // Attach redis to req
       res.setHeader('X-Session-ID', sessionId); // Always send X-Session-ID header
-      req.sessionId = sessionId;
-      _next();
+      next();
     },
   );
 
@@ -179,7 +181,7 @@ export async function initializeWebServer(
         'Content-Type': 'text/event-stream',
       });
 
-      const subscriber = redis.duplicate();
+      const subscriber = redisClient.duplicate();
       const channel = `job:${jobId}:events`;
 
       await subscriber.subscribe(channel);
@@ -198,16 +200,14 @@ export async function initializeWebServer(
         res.write(`data: heartbeat\n\n`);
       }, 15000);
 
-      const cleanup = () => {
+      req.on('close', () => {
         logger.info(
           `Client disconnected from SSE for job ${jobId}. Unsubscribing.`,
         );
         clearInterval(heartbeatInterval);
         subscriber.unsubscribe(channel);
         subscriber.quit();
-      };
-
-      req.on('close', cleanup);
+      });
     },
   );
 
@@ -221,7 +221,7 @@ export async function initializeWebServer(
       try {
         const sessionId = req.sessionId;
         const historyKey = `session:${sessionId}:history`;
-        const storedHistory = await redis.get(historyKey);
+        const storedHistory = await redisClient.get(historyKey);
         const history = storedHistory ? JSON.parse(storedHistory) : [];
         res.status(200).json(history);
       } catch (_error) {
@@ -263,10 +263,11 @@ export async function initializeWebServer(
     ) => {
       try {
         const sessionsCreated =
-          (await redis.get('leaderboard:sessionsCreated')) || '0';
-        const tokensSaved = (await redis.get('leaderboard:tokensSaved')) || '0';
+          (await redisClient.get('leaderboard:sessionsCreated')) || '0';
+        const tokensSaved =
+          (await redisClient.get('leaderboard:tokensSaved')) || '0';
         const successfulRuns =
-          (await redis.get('leaderboard:successfulRuns')) || '0';
+          (await redisClient.get('leaderboard:successfulRuns')) || '0';
 
         res.status(200).json({
           apiKeysAdded: 0,
@@ -291,7 +292,7 @@ export async function initializeWebServer(
         const workspaceDir = path.resolve(process.cwd(), 'workspace');
         const { limit, offset } = req.query;
 
-        const files = await fs.promises.readdir(workspaceDir);
+        const files = await fs.readdir(workspaceDir);
 
         let filesToRead = files;
         if (limit || offset) {
@@ -313,7 +314,7 @@ export async function initializeWebServer(
         const memoryContents = await Promise.all(
           filesToRead.map(async (file) => {
             const filePath = path.join(workspaceDir, file);
-            const stats = await fs.promises.stat(filePath);
+            const stats = await fs.stat(filePath);
             if (stats.size > config.MAX_FILE_SIZE_BYTES) {
               return {
                 content: `File is too large to be displayed (>${config.MAX_FILE_SIZE_BYTES} bytes).`,
@@ -321,13 +322,14 @@ export async function initializeWebServer(
                 fileName: file,
               };
             }
-            const content = await fs.promises.readFile(filePath, 'utf-8');
+            const content = await fs.readFile(filePath, 'utf-8');
             return { content, fileName: file };
           }),
         );
         res.status(200).json(memoryContents);
       } catch (_error) {
-        _next(_error);
+        logger.error(_error, 'Failed to retrieve memory contents.');
+        res.status(200).json([]);
       }
     },
   );
@@ -354,7 +356,7 @@ export async function initializeWebServer(
         };
         await req.sessionManager!.saveSession(
           sessionDataToSave,
-          req.job!,
+          req.job,
           jobQueue,
         );
         logger.info(
@@ -456,7 +458,7 @@ export async function initializeWebServer(
         if (!provider || !key) {
           throw new AppError('Missing provider or key', { statusCode: 400 });
         }
-        await LlmKeyManager.addKey(provider, key);
+        await _LlmKeyManager.addKey(provider, key);
         res.status(200).json({ message: 'LLM API key added successfully.' });
       } catch (_error) {
         _next(_error);
@@ -473,7 +475,7 @@ export async function initializeWebServer(
       _next: express.NextFunction,
     ) => {
       try {
-        const keys = await LlmKeyManager.getKeysForApi();
+        const keys = await _LlmKeyManager.getKeysForApi();
         res.status(200).json(keys);
       } catch (_error) {
         _next(_error);
@@ -495,7 +497,7 @@ export async function initializeWebServer(
         if (isNaN(keyIndex)) {
           throw new AppError('Invalid index', { statusCode: 400 });
         }
-        await LlmKeyManager.removeKey(keyIndex);
+        await _LlmKeyManager.removeKey(keyIndex);
         res.status(200).json({ message: 'LLM API key removed successfully.' });
       } catch (error) {
         _next(error);
@@ -589,7 +591,7 @@ export async function initializeWebServer(
         // In a real application, you would typically store this in a database
         // and associate it with a user account.
         if (req.sessionId) {
-          await redis.set(
+          await redisClient.set(
             `github:accessToken:${req.sessionId}`,
             accessToken,
             'EX',
@@ -645,7 +647,7 @@ export async function initializeWebServer(
 
         // A simple way to interrupt is to publish a message on a specific channel
         // that the worker is listening to. The worker can then gracefully stop.
-        await redis.publish(`job:${jobId}:interrupt`, 'interrupt');
+        await redisClient.publish(`job:${jobId}:interrupt`, 'interrupt');
 
         res.status(200).json({ message: 'Interruption signal sent.' });
       } catch (error) {
@@ -695,8 +697,8 @@ export async function initializeWebServer(
           });
         }
 
-        const filePath = path.join(__dirname, '..', 'workspace', file);
-        const content = await fs.promises.readFile(filePath, 'utf-8');
+        const filePath = path.join(process.cwd(), 'workspace', file);
+        const content = await fs.readFile(filePath, 'utf-8');
         const _sessionId = req.sessionId;
         const channel = `job:display:events`;
 
@@ -722,7 +724,7 @@ export async function initializeWebServer(
           },
           type: 'displayOutput',
         };
-        await redis.publish(channel, JSON.stringify(message));
+        await req.redis!.publish(channel, JSON.stringify(message));
         res.status(200).json({ message: 'Display event sent.' });
       } catch (error) {
         _next(error);
@@ -751,7 +753,10 @@ export async function initializeWebServer(
 }
 
 function watchConfig() {
-  const envPath = path.resolve(process.cwd(), '../../.env');
+  const envPath = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '../../.env',
+  );
   logger.info(`[watchConfig] Watching for .env changes in: ${envPath}`);
 
   configWatcher = chokidar.watch(envPath, {

@@ -1,24 +1,22 @@
-// packages/core/src/utils/shellUtils.ts
 import { spawn } from 'child_process';
 
-import { config } from '../config.js';
-import logger from '../logger.js';
+import { Ctx } from '@/types';
+
+import { config } from '../config';
 
 export interface ShellCommandResult {
-  exitCode: number;
+  exitCode: null | number;
   stderr: string;
   stdout: string;
 }
 
-export function executeShellCommand(
+export async function executeShellCommand(
   command: string,
+  ctx: Ctx,
 ): Promise<ShellCommandResult> {
-  const log = logger.child({ module: 'shellUtils' });
-  return new Promise((resolve) => {
-    log.info(`Executing shell command: ${command}`);
-
+  return new Promise((resolve, reject) => {
     const child = spawn(command, {
-      cwd: config.WORKSPACE_PATH,
+      cwd: config.HOST_PROJECT_PATH,
       shell: process.platform === 'win32' ? 'cmd.exe' : '/bin/bash',
       stdio: 'pipe',
     });
@@ -26,30 +24,32 @@ export function executeShellCommand(
     let stdout = '';
     let stderr = '';
 
-    child.stdout.on('data', (data: Buffer) => {
-      stdout += data.toString();
+    child.stdout?.on('data', (data: Buffer) => {
+      const chunk = data.toString();
+      stdout += chunk;
+      if (ctx.streamContent) {
+        ctx.streamContent([
+          { content: chunk, toolName: 'executeShellCommand', type: 'stdout' },
+        ]);
+      }
     });
 
-    child.stderr.on('data', (data: Buffer) => {
-      stderr += data.toString();
+    child.stderr?.on('data', (data: Buffer) => {
+      const chunk = data.toString();
+      stderr += chunk;
+      if (ctx.streamContent) {
+        ctx.streamContent([
+          { content: chunk, toolName: 'executeShellCommand', type: 'stderr' },
+        ]);
+      }
     });
 
-    child.on('error', (error) => {
-      log.error({ err: error }, `Failed to start shell command: ${command}`);
-      resolve({
-        exitCode: 1,
-        stderr: `Failed to start command: ${error.message}`,
-        stdout: '',
-      });
+    child.on('close', (code: null | number) => {
+      resolve({ exitCode: code, stderr, stdout });
     });
 
-    child.on('close', (code) => {
-      log.info(`Command finished with exit code: ${code}`);
-      resolve({
-        exitCode: code ?? 1,
-        stderr,
-        stdout,
-      });
+    child.on('error', (err: Error) => {
+      reject(err);
     });
   });
 }

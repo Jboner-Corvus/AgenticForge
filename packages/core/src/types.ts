@@ -1,4 +1,5 @@
 import type { Context as FastMCPContext } from 'fastmcp';
+import type { Redis as _Redis } from 'ioredis';
 
 import { Queue } from 'bullmq';
 import { Job } from 'bullmq';
@@ -122,6 +123,7 @@ export interface UserMessage {
 declare module 'express' {
   interface Request {
     job?: Job;
+    redis?: _Redis; // Add this line
     sessionId?: string;
     sessionManager?: SessionManager;
   }

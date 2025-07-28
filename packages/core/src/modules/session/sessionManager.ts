@@ -7,7 +7,7 @@ import { Ctx, Message, SessionData } from '@/types.js';
 import { config } from '../../config.js';
 import logger from '../../logger.js';
 import { getLlmProvider } from '../../utils/llmProvider.js';
-import { redis } from '../redis/redisClient.js';
+import { redis } from '../redis/redisClient.ts';
 import { summarizeTool } from '../tools/definitions/ai/summarize.tool.js';
 
 export type Session = SessionData;
@@ -26,14 +26,13 @@ export class SessionManager {
   }
 
   private static createToolContext(
-    job: Job,
+    _job: Job,
     session: SessionData,
-    taskQueue: Queue,
+    _taskQueue: Queue,
     log: typeof logger,
   ): Ctx {
-    // Ensure all fields are relevant and correctly typed.
     return {
-      job,
+      job: _job,
       llm: getLlmProvider(),
       log,
       reportProgress: async (progress: {
@@ -53,33 +52,38 @@ export class SessionManager {
         toolName?: string,
       ) => {
         log.debug(`Tool stream: ${JSON.stringify(content)}`);
-        // Publish to Redis channel for SSE
-        const channel = `job:${job.id}:events`;
+        const channel = `job:${_job.id}:events`;
+        let contentString: string;
+        if (Array.isArray(content)) {
+          contentString = content.map((c) => c.toString()).join('');
+        } else {
+          contentString = String(content);
+        }
         const message = JSON.stringify({
-          content: String(content),
+          content: contentString,
           toolName: toolName || 'unknown_tool',
           type: 'tool_stream',
         });
         redis.publish(channel, message);
       },
-      taskQueue,
+      taskQueue: _taskQueue,
     };
   }
 
   private static async summarizeHistory(
     session: SessionData,
-    job: Job,
+    _job: Job,
     taskQueue: Queue,
   ) {
     const log = logger.child({ module: 'Summarizer', sessionId: session.id });
     log.info('History length exceeds max length, summarizing...');
     const historyToSummarize = session.history.slice(
       0,
-      session.history.length - config.HISTORY_MAX_LENGTH, // Logic ensures we summarize older messages, keeping recent ones.
+      session.history.length - config.HISTORY_MAX_LENGTH,
     );
     const textToSummarize = historyToSummarize
       .map((msg: Message) => {
-        if ('content' in msg) {
+        if ('content' in msg && typeof msg.content === 'string') {
           return `${msg.type}: ${msg.content}`;
         }
         return '';
@@ -87,13 +91,13 @@ export class SessionManager {
       .join('\n');
 
     try {
-      const context = this.createToolContext(job, session, taskQueue, log);
+      const context = this.createToolContext(_job, session, taskQueue, log);
       const summary = await summarizeTool.execute(
         { text: textToSummarize },
         context,
       );
       const summarizedMessage: Message = {
-        content: `Summarized conversation: ${summary}`,
+        content: `Summarized conversation: ${String(summary)}`,
         id: crypto.randomUUID(),
         timestamp: Date.now(),
         type: 'agent_response',
@@ -105,7 +109,6 @@ export class SessionManager {
       log.info('History summarized successfully.');
     } catch (error) {
       log.error({ error }, 'Error summarizing history');
-      // Propagate the error to prevent saving a session with a too-long history
       throw error;
     }
   }
@@ -113,7 +116,7 @@ export class SessionManager {
   public async deleteSession(sessionId: string): Promise<void> {
     await this.pgClient.query('DELETE FROM sessions WHERE id = $1', [
       sessionId,
-    ] as any[]);
+    ]);
     SessionManager.activeSessions.delete(sessionId);
     logger.info({ sessionId }, 'Session deleted from PostgreSQL and memory.');
   }
@@ -123,7 +126,7 @@ export class SessionManager {
       'SELECT id, name, timestamp, identities FROM sessions ORDER BY timestamp DESC',
     );
     return res.rows.map((row) => ({
-      history: [], // History is not loaded in this overview
+      history: [],
       id: row.id,
       identities: row.identities || [],
       name: row.name,
@@ -139,7 +142,7 @@ export class SessionManager {
 
     const res = await this.pgClient.query(
       'SELECT * FROM sessions WHERE id = $1',
-      [sessionId] as any[],
+      [sessionId],
     );
     let initialHistory: Message[] = [];
     let sessionName = `Session ${new Date().toLocaleString()}`;
@@ -152,7 +155,7 @@ export class SessionManager {
         if (typeof storedSession.messages === 'string') {
           initialHistory = JSON.parse(storedSession.messages) as Message[];
         } else if (Array.isArray(storedSession.messages)) {
-          initialHistory = storedSession.messages;
+          initialHistory = storedSession.messages as Message[];
         }
       } catch (error) {
         logger.error({ error, sessionId }, 'Failed to parse messages from DB');
@@ -211,31 +214,31 @@ export class SessionManager {
 
   public async saveSession(
     session: SessionData,
-    job: Job,
+    job: Job | undefined,
     taskQueue: Queue,
   ): Promise<void> {
     try {
-      if (session.history.length > config.HISTORY_MAX_LENGTH) {
+      if (session.history.length > config.HISTORY_MAX_LENGTH && job) {
         await SessionManager.summarizeHistory(session, job, taskQueue);
       }
 
       await this.pgClient.query(
-        'INSERT INTO sessions (id, name, messages, timestamp) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, messages = EXCLUDED.messages, timestamp = EXCLUDED.timestamp',
+        'INSERT INTO sessions (id, name, messages, timestamp, identities) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, messages = EXCLUDED.messages, timestamp = EXCLUDED.timestamp, identities = EXCLUDED.identities',
         [
           session.id,
           session.name,
-          JSON.stringify(session.history) as any,
-          session.timestamp.toString() as any,
-        ] as (any | string)[],
+          JSON.stringify(session.history),
+          session.timestamp as any,
+          JSON.stringify(session.identities),
+        ],
       );
-      SessionManager.activeSessions.set(session.id, session);
+      SessionManager.activeSessions.set(session.id as string, session);
       logger.info(
         { sessionId: session.id },
         'Session history saved to PostgreSQL.',
       );
     } catch (error) {
       logger.error({ error }, 'Error saving session');
-      // Re-throw the error to be handled by the agent loop
       throw error;
     }
   }
@@ -246,65 +249,10 @@ export class SessionManager {
         id VARCHAR(255) PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         messages JSONB NOT NULL,
-        timestamp BIGINT NOT NULL
+        timestamp BIGINT NOT NULL,
+        identities JSONB
       );
     `);
     logger.info('PostgreSQL sessions table ensured.');
-  }
-
-  private parseStoredMessage(rawMessage: any): Message {
-    // This logic mirrors the client-side parsing that will be removed
-    // Ensure it correctly maps raw DB message objects to ChatMessage union types
-    const baseProps = {
-      id: rawMessage.id || crypto.randomUUID(),
-      timestamp: rawMessage.timestamp || Date.now(),
-    };
-
-    switch (rawMessage.type) {
-      case 'agent_canvas_output':
-        return {
-          ...baseProps,
-          content: rawMessage.content,
-          contentType: rawMessage.contentType,
-          type: 'agent_canvas_output',
-        };
-      case 'agent_response':
-        return {
-          ...baseProps,
-          content: rawMessage.content,
-          type: 'agent_response',
-        };
-      case 'agent_thought':
-        return {
-          ...baseProps,
-          content: rawMessage.content,
-          type: 'agent_thought',
-        };
-      case 'error':
-        return { ...baseProps, content: rawMessage.content, type: 'error' };
-      case 'tool_call':
-        return {
-          ...baseProps,
-          params: rawMessage.params,
-          toolName: rawMessage.toolName,
-          type: 'tool_call',
-        };
-      case 'tool_result':
-        return {
-          ...baseProps,
-          result: rawMessage.result,
-          toolName: rawMessage.toolName,
-          type: 'tool_result',
-        };
-      case 'user':
-        return { ...baseProps, content: rawMessage.content, type: 'user' };
-      default:
-        // Fallback for unknown types or older messages
-        return {
-          ...baseProps,
-          content: rawMessage.content || '',
-          type: 'agent_response',
-        };
-    }
   }
 }

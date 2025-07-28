@@ -1,10 +1,11 @@
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
 // FICHIER : packages/core/src/config.ts
 import { z } from 'zod';
 
-// Résout correctement le chemin vers le fichier .env à la racine du projet.
-const envPath = path.resolve(process.cwd(), '../../.env');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const configSchema = z.object({
   AGENT_MAX_ITERATIONS: z.coerce.number().default(10),
@@ -30,7 +31,7 @@ const configSchema = z.object({
   PORT: z.coerce.number().default(3001),
 
   POSTGRES_DB: z.string().default('agenticforge'),
-  POSTGRES_HOST: z.string().default('localhost'),
+  POSTGRES_HOST: z.string().default('postgres'),
   POSTGRES_PASSWORD: z.string().optional(),
   POSTGRES_PORT: z.coerce.number().default(5432),
   POSTGRES_USER: z.string().default('user'),
@@ -47,10 +48,8 @@ const configSchema = z.object({
   TAVILY_API_KEY: z.string().optional(),
   WEBHOOK_SECRET: z.string().optional(),
   WORKER_CONCURRENCY: z.coerce.number().default(5),
-  // Utilise __dirname pour garantir que le chemin est relatif à l'emplacement du fichier
-  WORKSPACE_PATH: z
-    .string()
-    .default(path.resolve(__dirname, '../../../../workspace')),
+  // Utilise process.cwd() pour garantir que le chemin est absolu et fiable
+  WORKSPACE_PATH: z.string().default(path.resolve(process.cwd(), 'workspace')),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -58,10 +57,16 @@ export type Config = z.infer<typeof configSchema>;
 export let config: Config;
 
 export function loadConfig() {
-  const result = dotenv.config({ path: envPath });
+  if (process.env.NODE_ENV !== 'test') {
+    const result = dotenv.config({
+      path: path.resolve(process.cwd(), '.env'),
+    });
 
-  if (result.error) {
-    console.warn('Could not find .env file, using environment variables only.');
+    if (result.error) {
+      console.warn(
+        'Could not find .env file, using environment variables only.',
+      );
+    }
   }
 
   config = configSchema.parse(process.env);

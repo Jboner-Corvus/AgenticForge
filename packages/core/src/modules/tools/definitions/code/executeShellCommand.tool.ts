@@ -2,8 +2,7 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '@/types.js';
 
-import { executeShellCommand } from '../../../../utils/shellUtils.js';
-import { redis } from '../../../redis/redisClient.js';
+import { executeShellCommand } from '@/utils/shellUtils.js';
 
 export const executeShellCommandParams = z.object({
   command: z.string().describe('The shell command to execute.'),
@@ -17,7 +16,7 @@ export const executeShellCommandParams = z.object({
 });
 
 export const executeShellCommandOutput = z.object({
-  exitCode: z.number(),
+  exitCode: z.number().nullable(),
   stderr: z.string(),
   stdout: z.string(),
 });
@@ -55,12 +54,18 @@ export const executeShellCommandTool: Tool<
     }
 
     try {
-      return await executeShellCommand(args.command);
+      const result = await executeShellCommand(args.command, ctx);
+      return result;
     } catch (error: unknown) {
-      ctx.log.error({ err: error }, `Error in executeShellCommandTool`);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      ctx.log.error(
+        { err: error },
+        `Error executing shell command: ${errorMessage}`,
+      );
       return {
         exitCode: 1,
-        stderr: `An unexpected error occurred: ${error instanceof Error ? error.message : String(error)}`,
+        stderr: `An unexpected error occurred: ${errorMessage}`,
         stdout: '',
       };
     }

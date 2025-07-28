@@ -8,10 +8,10 @@
 // La configuration est entièrement gérée par les variables d'environnement
 // chargées dans l'objet `config`. Ne mettez jamais de valeurs en dur ici.
 // Pour modifier la connexion, ajustez les variables d'environnement correspondantes.
-import { Redis } from 'ioredis';
+
+import Redis from 'ioredis';
 
 import { config } from '../../config.js';
-import logger from '../../logger.js';
 
 // Détermine l'hôte Redis en fonction de l'environnement d'exécution.
 // Si le worker est local (pas dans Docker), il doit utiliser 'localhost'.
@@ -26,13 +26,10 @@ export const redis = new Redis(redisUrl, {
   maxRetriesPerRequest: null, // Allows infinite reconnection attempts. Consider limiting or implementing a circuit breaker for persistent issues.
   retryStrategy: (times) => {
     const delay = Math.min(times * 50, 2000); // Backoff exponentiel, max 2 secondes
-    logger.warn(
-      `[Redis] Retrying connection to ${redisUrl} (attempt ${times})`,
-    );
     return delay;
   },
 });
 
 redis.on('error', (err: Error) => {
-  logger.error({ err }, 'Redis Client Error');
+  console.error('Redis Client Error', err);
 });

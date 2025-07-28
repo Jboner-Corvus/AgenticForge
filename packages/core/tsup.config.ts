@@ -8,7 +8,7 @@ export default defineConfig({
     resolve: true,
     entry: 'src/index.ts',
   },
-  entry: ['src/index.ts', 'src/webServer.ts', 'src/worker.ts'],
+  entry: ['src/index.ts', 'src/webServer.ts', 'src/worker.ts', 'src/server-start.ts'],
   external: ['path', 'playwright', 'playwright-core', '@modelcontextprotocol/inspector'],
   format: ['esm'],
   outDir: 'dist',
@@ -24,6 +24,7 @@ export default defineConfig({
         return !src.endsWith('.ts');
       },
     });
+    await fs.copy('src/modules/agent/system.prompt.md', 'dist/modules/agent/system.prompt.md');
     console.log('Additional files copied.');
   },
 });

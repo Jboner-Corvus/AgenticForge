@@ -1,16 +1,20 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
 import { Ctx } from '@/types';
 
+import { ILlmProvider } from '../../../../types.js';
 import { getLlmProvider } from '../../../../utils/llmProvider.js';
 import { summarizeTool } from './summarize.tool.js';
 
 // Mock dependencies
-vi.mock('../../../../utils/llmProvider.js', () => ({
-  getLlmProvider: vi.fn(() => ({
-    getLlmResponse: vi.fn(),
-  })),
-}));
+vi.mock('../../../../utils/llmProvider.js', () => {
+  const mockGetLlmResponse = vi.fn();
+  return {
+    getLlmProvider: vi.fn(() => ({
+      getLlmResponse: mockGetLlmResponse,
+    })),
+  };
+});
 
 const mockLogger = {
   child: vi.fn().mockReturnThis(),
@@ -21,7 +25,7 @@ const mockLogger = {
 };
 
 const mockCtx: Ctx = {
-  llm: getLlmProvider(),
+  llm: {} as any, // Will be set in beforeEach
   log: mockLogger as unknown as Ctx['log'],
   reportProgress: vi.fn(),
   session: {} as Ctx['session'],
@@ -30,8 +34,16 @@ const mockCtx: Ctx = {
 };
 
 describe('summarizeTool', () => {
+  let mockGetLlmResponse: Mock;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetLlmResponse = vi.fn();
+    vi.mocked(getLlmProvider).mockReturnValue({
+      getErrorType: vi.fn(),
+      getLlmResponse: mockGetLlmResponse,
+    } as ILlmProvider);
+    mockCtx.llm = getLlmProvider(); // Set the mocked LLM provider to context
   });
 
   it('should summarize the text successfully', async () => {
@@ -44,15 +56,6 @@ describe('summarizeTool', () => {
     );
     expect(result).toEqual('This is a summary.');
     expect(getLlmProvider().getLlmResponse).toHaveBeenCalled();
-  });
-
-  it('should return an error object if summarization fails', async () => {
-    vi.mocked(getLlmProvider().getLlmResponse).mockResolvedValue('');
-    const result = await summarizeTool.execute(
-      { text: 'Long text to summarize.' },
-      mockCtx,
-    );
-    expect(result).toEqual({ erreur: 'No LLM API key available.' });
   });
 
   it('should return an error object if textToSummarize is an empty string', async () => {

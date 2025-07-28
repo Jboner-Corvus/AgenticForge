@@ -8,8 +8,6 @@ import { AgentSession, Tool } from '@/types';
 
 import { getMasterPrompt } from './orchestrator.prompt';
 
-// Mock zod-to-json-schema
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const promptFilePath = path.resolve(__dirname, 'system.prompt.md');
@@ -69,7 +67,7 @@ describe('getMasterPrompt', () => {
     const prompt = getMasterPrompt(mockSession, mockTools);
 
     // Check Preamble
-    expect(prompt).toContain(PREAMBULE.split('\n')[0]); // Check first line of preamble
+    expect(prompt).toContain(PREAMBULE.split('\n')[0]);
 
     // Check Working Context
     expect(prompt).toContain('## Working Context:');
@@ -83,10 +81,16 @@ describe('getMasterPrompt', () => {
     expect(prompt).toContain('Description: A tool for testing');
     expect(prompt).toContain('Parameters (JSON Schema):');
 
-    const _jsonSchemaString = prompt
+    const jsonSchemaString = prompt
       .split('Parameters (JSON Schema):')[1]
       .split('###')[0]
       .trim();
+    const expectedSchema = zodToJsonSchema(mockTools[0].parameters);
+    expect(JSON.parse(jsonSchemaString)).toEqual({
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      additionalProperties: false,
+      ...expectedSchema,
+    });
 
     expect(prompt).toContain('### anotherTool');
     expect(prompt).toContain('Description: Another tool');
@@ -99,7 +103,7 @@ describe('getMasterPrompt', () => {
     // Check History Section
     expect(prompt).toContain('## Conversation History:');
     expect(prompt).toContain('USER:\nHello');
-    expect(prompt).toContain('MODEL:\nHi there!');
+    expect(prompt).toContain('ASSISTANT:\nHi there!');
 
     // Check Assistant's turn
     expect(prompt).toContain("ASSISTANT's turn. Your response:");
@@ -118,10 +122,13 @@ describe('getMasterPrompt', () => {
 
     const schema = zodToJsonSchema(complexSchema);
     expect(schema).toEqual({
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      additionalProperties: false,
       properties: {
         count: { type: 'number' },
         users: {
           items: {
+            additionalProperties: false,
             properties: {
               id: { type: 'string' },
               name: { type: 'string' },

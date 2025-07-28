@@ -1,7 +1,7 @@
 import { Client as PgClient } from 'pg';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { redis } from '@/modules/redis/redisClient';
+import { redis as _redis } from '@/modules/redis/redisClient';
 import { SessionManager } from '@/modules/session/sessionManager';
 
 import { config } from '../../config';
@@ -78,7 +78,7 @@ describe('SessionManager', () => {
         { content: 'Hello', id: '1', timestamp: Date.now(), type: 'user' },
       ]),
       name: 'Existing Session',
-      timestamp: Date.now().toString(),
+      timestamp: Date.now(),
     };
     mockPgClient.query.mockResolvedValue({ rows: [mockSessionData] });
 
@@ -103,12 +103,13 @@ describe('SessionManager', () => {
     mockPgClient.query.mockResolvedValue({ rows: [] });
     await sessionManager.saveSession(session, mockJob, mockTaskQueue);
     expect(mockPgClient.query).toHaveBeenCalledWith(
-      expect.stringContaining('INSERT INTO sessions'),
+      'INSERT INTO sessions (id, name, messages, timestamp, identities) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, messages = EXCLUDED.messages, timestamp = EXCLUDED.timestamp, identities = EXCLUDED.identities',
       [
         'session-to-save',
         'Session to Save',
         JSON.stringify(session.history),
         session.timestamp,
+        JSON.stringify(session.identities),
       ],
     );
   });
@@ -157,13 +158,13 @@ describe('SessionManager', () => {
         id: 's1',
         identities: [],
         name: 'Session 1',
-        timestamp: Date.now().toString(),
+        timestamp: Date.now(),
       },
       {
         id: 's2',
         identities: [],
         name: 'Session 2',
-        timestamp: (Date.now() - 1000).toString(),
+        timestamp: Date.now() - 1000,
       },
     ];
     mockPgClient.query.mockResolvedValue({ rows: mockSessions });

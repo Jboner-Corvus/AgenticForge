@@ -9,7 +9,7 @@
 // Cette structure est validée par `llmResponseSchema` dans `packages/core/src/agent.ts`.
 // Assurez-vous que les deux fichiers restent synchronisés.
 
-import { readFileSync } from 'fs';
+import { accessSync, constants, existsSync, readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -21,7 +21,28 @@ import { getResponseJsonSchema } from './responseSchema.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const promptFilePath = path.resolve(__dirname, 'system.prompt.md');
+// Corrige le chemin pour pointer vers le fichier source, que le code soit exécuté depuis /src ou /dist
+const promptFilePath = path.resolve(
+  __dirname,
+  'system.prompt.md',
+);
+
+// --- START DEBUG LOGS ---
+console.log('DEBUG: __dirname:', __dirname);
+console.log('DEBUG: promptFilePath:', promptFilePath);
+console.log('DEBUG: File exists:', existsSync(promptFilePath));
+try {
+  accessSync(promptFilePath, constants.R_OK);
+  console.log('DEBUG: File is readable.');
+} catch (e: unknown) {
+  if (e instanceof Error) {
+    console.log('DEBUG: File is NOT readable. Error:', e.message);
+  } else {
+    console.log('DEBUG: File is NOT readable. Unknown error:', e);
+  }
+}
+// --- END DEBUG LOGS ---
+
 const PREAMBLE_CONTENT = readFileSync(promptFilePath, 'utf-8').replace(
   /`/g,
   '`',
@@ -79,6 +100,8 @@ const zodToJsonSchema = (_schema: any): any => {
     case 'ZodObject': {
       jsonSchema.type = 'object';
       jsonSchema.properties = {};
+      jsonSchema.$schema = 'http://json-schema.org/draft-07/schema#';
+      jsonSchema.additionalProperties = false;
       const required: string[] = [];
       for (const key in _schema.shape) {
         const field = _schema.shape[key];
@@ -129,7 +152,8 @@ const formatHistoryMessage = (message: Message): string => {
   switch (message.type) {
     case 'agent_canvas_output':
       role = 'ASSISTANT';
-      content = `Canvas Output (${message.contentType}):\n${message.content}`;
+      content = `Canvas Output (${message.contentType}):
+${message.content}`;
       break;
     case 'agent_response':
       role = 'ASSISTANT';
@@ -148,7 +172,7 @@ const formatHistoryMessage = (message: Message): string => {
       content = `Tool Call: ${message.toolName}(${JSON.stringify(message.params, null, 2)})`;
       break;
     case 'tool_result':
-      role = 'TOOL';
+      role = 'OBSERVATION';
       content = `Tool Result from ${message.toolName}: ${JSON.stringify(message.result, null, 2)}`;
       break;
     case 'user':

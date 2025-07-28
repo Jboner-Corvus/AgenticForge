@@ -18,15 +18,18 @@ export async function runQualityGate(): Promise<{
   let combinedOutput = '';
 
   const commands = [
+    { cmd: 'pnpm exec tsc --noEmit', name: 'Type Check' },
     { cmd: 'pnpm run lint:fix', name: 'Lint (Fix)' },
     { cmd: 'pnpm run format', name: 'Format' },
-    { cmd: 'pnpm exec tsc --noEmit', name: 'Type Check' },
   ];
 
   for (const { cmd, name } of commands) {
     outputMessages.push(`
 --- Running: ${name} ---`);
-    const result: ShellCommandResult = await executeShellCommand(cmd);
+    const result: ShellCommandResult = await executeShellCommand(
+      cmd,
+      {} as any,
+    );
     combinedOutput += `
 ${name} STDOUT:
 ${result.stdout || '(empty)'}`;

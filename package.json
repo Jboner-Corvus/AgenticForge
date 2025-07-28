@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "AgenticForge Monorepo",
   "private": true,
+  "type": "module",
   "workspaces": [
     "packages/core"
   ],
@@ -32,5 +33,9 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.36.0",
     "vitest": "^1.6.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "jsonwebtoken": "^9.0.2"
   }
 }

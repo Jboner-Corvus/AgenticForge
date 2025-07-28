@@ -4,10 +4,9 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
 
-import type { Tool } from '@/types.js';
-
 import logger from '../logger.js';
 import { toolRegistry } from '../modules/tools/toolRegistry.js';
+import { Tool } from '../types.js';
 import { getErrDetails } from './errorUtils.js';
 
 // Schéma Zod pour valider la structure d'un outil
@@ -27,39 +26,13 @@ const fileToToolNameMap = new Map<string, string>();
 let watcher: chokidar.FSWatcher | null = null;
 
 const runningInDist = process.env.NODE_ENV === 'production';
-const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
-
-// Fonction de réinitialisation pour les tests
-export function _resetTools(): void {
-  loadedToolFiles.clear();
-  fileToToolNameMap.clear();
-  if (watcher) {
-    watcher.close();
-    watcher = null;
-  }
-  // Note: Le toolRegistry n'est pas réinitialisé ici car il est un singleton global.
-  // Les tests doivent gérer la réinitialisation du toolRegistry si nécessaire.
-}
-
-/**
- * Récupère la liste de tous les outils, en les chargeant s'ils ne le sont pas déjà.
- * C'est la fonction à utiliser dans toute l'application pour garantir une seule source de vérité.
- */
-export async function getTools(): Promise<Tool[]> {
-  if (loadedToolFiles.size === 0) {
-    await _internalLoadTools();
-    if (!watcher) {
-      watchTools();
-    }
-  }
-  return toolRegistry.getAll();
-}
+export const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
 
 /**
  * Charge dynamiquement tous les outils disponibles. (Fonction interne)
  * @returns Une promesse qui se résout avec un tableau de tous les outils chargés.
  */
-async function _internalLoadTools(): Promise<void> {
+export async function _internalLoadTools(): Promise<void> {
   logger.info(`[_internalLoadTools] Starting to load tools dynamically.`);
   const toolsDir = getToolsDir();
 
@@ -88,6 +61,45 @@ async function _internalLoadTools(): Promise<void> {
   logger.info(
     `${toolRegistry.getAll().length} tools have been loaded dynamically.`,
   );
+}
+
+// Fonction de réinitialisation pour les tests
+export function _resetTools(): void {
+  loadedToolFiles.clear();
+  fileToToolNameMap.clear();
+  if (watcher) {
+    watcher.close();
+    watcher = null;
+  }
+  // Note: Le toolRegistry n'est pas réinitialisé ici car il est un singleton global.
+  // Les tests doivent gérer la réinitialisation du toolRegistry si nécessaire.
+}
+
+/**
+ * Récupère la liste de tous les outils, en les chargeant s'ils ne le sont pas déjà.
+ * C'est la fonction à utiliser dans toute l'application pour garantir une seule source de vérité.
+ */
+export async function getTools(): Promise<Tool[]> {
+  if (loadedToolFiles.size === 0) {
+    await _internalLoadTools();
+    if (!watcher) {
+      watchTools();
+    }
+  }
+  return toolRegistry.getAll();
+}
+
+// Fonction pour obtenir dynamiquement le répertoire des outils
+export function getToolsDir(): string {
+  logger.debug(`[getToolsDir] Running in dist: ${runningInDist}`);
+  logger.debug(`[getToolsDir] __dirname: ${__dirname}`);
+  const toolsPath =
+    process.env.TOOLS_PATH ||
+    (runningInDist
+      ? path.join(__dirname, '..', 'modules', 'tools', 'definitions')
+      : path.resolve(__dirname, '..', 'modules', 'tools'));
+  logger.debug(`[getToolsDir] Constructed tools path: ${toolsPath}`);
+  return toolsPath;
 }
 
 /**
@@ -128,19 +140,6 @@ async function findToolFiles(
   }
 
   return files;
-}
-
-// Fonction pour obtenir dynamiquement le répertoire des outils
-function getToolsDir(): string {
-  logger.debug(`[getToolsDir] Running in dist: ${runningInDist}`);
-  logger.debug(`[getToolsDir] __dirname: ${__dirname}`);
-  const toolsPath =
-    process.env.TOOLS_PATH ||
-    (runningInDist
-      ? path.join(__dirname, '..', 'tools') // Correction: remonter d'un niveau
-      : path.resolve(__dirname, '..', 'modules', 'tools'));
-  logger.debug(`[getToolsDir] Constructed tools path: ${toolsPath}`);
-  return toolsPath;
 }
 
 async function loadToolFile(file: string): Promise<void> {
@@ -190,7 +189,7 @@ function watchTools() {
   watcher = chokidar.watch(
     `${toolsDir}/**/*.tool.${runningInDist ? 'js' : 'ts'}`,
     {
-      ignored: /(^|[\/\\])\../, // ignore dotfiles
+      ignored: /(^|[/\\])\../, // ignore dotfiles
       ignoreInitial: true, // Don't trigger add events on startup
       persistent: true,
     },

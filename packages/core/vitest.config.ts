@@ -11,13 +11,17 @@ export default defineConfig({
       '../modules/queue/queue.js': path.resolve(__dirname, './src/modules/queue/queue.ts'),
       '../worker.js': path.resolve(__dirname, './src/worker.ts'),
       '../../utils/constants.js': path.resolve(__dirname, './src/utils/constants.ts'),
+      '../test/mocks/redisClient.mock.js': path.resolve(__dirname, './test/mocks/redisClient.mock.ts'),
     },
   },
   test: {
+    deps: {
+      external: ['jsonwebtoken'],
+    },
     globals: true,
     environment: 'node',
     include: ['src/**/*.test.ts', 'src/**/__tests__/**/*.ts'],
     exclude: ['node_modules', 'dist'],
-    setupFiles: [],
+    setupFiles: ['src/test/setup.ts'],
     },
 });

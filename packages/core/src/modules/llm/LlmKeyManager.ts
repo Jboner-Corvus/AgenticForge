@@ -1,17 +1,17 @@
 import logger from '../../logger.js';
-import { redis } from '../../modules/redis/redisClient.js';
+import { redis as _redis } from '../../modules/redis/redisClient.js';
 
 export enum LlmKeyErrorType {
   PERMANENT = 'permanent',
   TEMPORARY = 'temporary',
 }
 
-interface LlmApiKey {
-  errorCount?: number; // Number of consecutive errors for temporary errors
-  isDisabledUntil?: number; // Timestamp until which key is disabled (for temporary errors)
-  isPermanentlyDisabled?: boolean; // Flag for permanently disabled keys
-  key: string;
-  lastUsed?: number; // Timestamp of last use
+export interface LlmApiKey {
+  apiKey: string;
+  errorCount: number;
+  isDisabledUntil?: number;
+  isPermanentlyDisabled?: boolean;
+  lastUsed?: number;
   provider: string;
 }
 
@@ -22,7 +22,7 @@ const TEMPORARY_DISABLE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 export class LlmKeyManager {
   public static async addKey(provider: string, key: string): Promise<void> {
     const keys = await this.getKeys();
-    keys.push({ errorCount: 0, key, provider });
+    keys.push({ apiKey: key, errorCount: 0, provider });
     await this.saveKeys(keys);
     logger.info({ provider }, 'LLM API key added.');
   }
@@ -68,7 +68,7 @@ export class LlmKeyManager {
   ): Promise<void> {
     const keys = await this.getKeys();
     const keyIndex = keys.findIndex(
-      (k) => k.provider === provider && k.key === key,
+      (k) => k.provider === provider && k.apiKey === key,
     );
 
     if (keyIndex !== -1) {
@@ -121,7 +121,7 @@ export class LlmKeyManager {
   ): Promise<void> {
     const keys = await this.getKeys();
     const keyIndex = keys.findIndex(
-      (k) => k.provider === provider && k.key === key,
+      (k) => k.provider === provider && k.apiKey === key,
     );
 
     if (keyIndex !== -1) {
@@ -135,14 +135,14 @@ export class LlmKeyManager {
   }
 
   private static async getKeys(): Promise<LlmApiKey[]> {
-    const keysJson = await redis.lrange(LLM_API_KEYS_REDIS_KEY, 0, -1);
+    const keysJson = await _redis.lrange(LLM_API_KEYS_REDIS_KEY, 0, -1);
     return keysJson.map((key) => JSON.parse(key));
   }
 
   private static async saveKeys(keys: LlmApiKey[]): Promise<void> {
-    await redis.del(LLM_API_KEYS_REDIS_KEY);
+    await _redis.del(LLM_API_KEYS_REDIS_KEY);
     if (keys.length > 0) {
-      await redis.rpush(
+      await _redis.rpush(
         LLM_API_KEYS_REDIS_KEY,
         ...keys.map((key) => JSON.stringify(key)),
       );

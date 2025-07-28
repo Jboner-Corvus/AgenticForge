@@ -95,11 +95,19 @@ export class Agent {
           'All tools are available in the registry.',
         );
       } catch (_error) {
+        let errorMessage: string;
+        if (_error instanceof Error) {
+          errorMessage = _error.message;
+        } else {
+          errorMessage = String(_error);
+        }
         this.log.error(
-          { error: _error },
-          'Agent run failed during tool loading',
+          {
+            error: _error instanceof Error ? _error : new Error(String(_error)),
+          },
+          `Agent run failed during tool loading: ${errorMessage}`,
         );
-        return `Error: ${(_error as Error).message}`;
+        return `Error: ${errorMessage}`;
       }
 
       let iterations = 0;
@@ -122,7 +130,7 @@ export class Agent {
 
         try {
           const orchestratorPrompt = getMasterPrompt(
-            { data: this.session, id: this.session.id },
+            { data: this.session, id: String(this.session.id) },
             this.tools,
           );
 

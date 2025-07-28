@@ -43,7 +43,7 @@ class GeminiProvider implements ILlmProvider {
       throw new LlmError(errorMessage);
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${config.LLM_MODEL_NAME}:generateContent?key=${activeKey.key}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${config.LLM_MODEL_NAME}:generateContent?key=${activeKey.apiKey}`;
 
     if (systemPrompt) {
       messages.unshift({
@@ -74,7 +74,7 @@ class GeminiProvider implements ILlmProvider {
         const errorType = this.getErrorType(response.status, errorBody);
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.key,
+          activeKey.apiKey,
           errorType,
         );
         throw new LlmError(errorMessage);
@@ -83,7 +83,7 @@ class GeminiProvider implements ILlmProvider {
       const data = await response.json();
 
       const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!content) {
+      if (content === undefined || content === null) {
         log.error(
           { response: data },
           'Invalid response structure from Gemini API',
@@ -94,7 +94,7 @@ class GeminiProvider implements ILlmProvider {
         );
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.key,
+          activeKey.apiKey,
           errorType,
         );
         throw new LlmError(
@@ -122,7 +122,7 @@ class GeminiProvider implements ILlmProvider {
         });
 
       // If successful, reset error count for this key
-      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
+      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
 
       return content.trim();
     } catch (_error) {
@@ -134,7 +134,7 @@ class GeminiProvider implements ILlmProvider {
         // Assume network errors or unhandled exceptions are temporary
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.key,
+          activeKey.apiKey,
           LlmKeyErrorType.TEMPORARY,
         );
       }
@@ -199,7 +199,7 @@ class HuggingFaceProvider implements ILlmProvider {
       const response = await fetch(apiUrl, {
         body,
         headers: {
-          Authorization: `Bearer ${activeKey.key}`,
+          Authorization: `Bearer ${activeKey.apiKey}`,
           'Content-Type': 'application/json',
         },
         method: 'POST',
@@ -212,7 +212,7 @@ class HuggingFaceProvider implements ILlmProvider {
         const errorType = this.getErrorType(response.status, errorBody);
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.key,
+          activeKey.apiKey,
           errorType,
         );
         throw new LlmError(errorMessage);
@@ -221,7 +221,7 @@ class HuggingFaceProvider implements ILlmProvider {
       const data = await response.json();
 
       const content = data?.[0]?.generated_text; // Adjust based on actual HF API response structure
-      if (!content) {
+      if (content === undefined || content === null) {
         log.error(
           { response: data },
           'Invalid response structure from HuggingFace API',
@@ -232,7 +232,7 @@ class HuggingFaceProvider implements ILlmProvider {
         );
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.key,
+          activeKey.apiKey,
           errorType,
         );
         throw new LlmError(
@@ -257,7 +257,7 @@ class HuggingFaceProvider implements ILlmProvider {
           logger.error({ _error }, 'Failed to increment tokensSaved in Redis');
         });
 
-      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
+      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
 
       return content.trim();
     } catch (_error) {
@@ -269,7 +269,7 @@ class HuggingFaceProvider implements ILlmProvider {
         // Assume network errors or unhandled exceptions are temporary
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.key,
+          activeKey.apiKey,
           LlmKeyErrorType.TEMPORARY,
         );
       }
@@ -329,7 +329,7 @@ class MistralProvider implements ILlmProvider {
       const response = await fetch(apiUrl, {
         body,
         headers: {
-          Authorization: `Bearer ${activeKey.key}`,
+          Authorization: `Bearer ${activeKey.apiKey}`,
           'Content-Type': 'application/json',
         },
         method: 'POST',
@@ -342,7 +342,7 @@ class MistralProvider implements ILlmProvider {
         const errorType = this.getErrorType(response.status, errorBody);
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.key,
+          activeKey.apiKey,
           errorType,
         );
         throw new LlmError(errorMessage);
@@ -351,7 +351,7 @@ class MistralProvider implements ILlmProvider {
       const data = await response.json();
 
       const content = data.choices?.[0]?.message?.content;
-      if (!content) {
+      if (content === undefined || content === null) {
         log.error(
           { response: data },
           'Invalid response structure from Mistral API',
@@ -362,7 +362,7 @@ class MistralProvider implements ILlmProvider {
         );
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.key,
+          activeKey.apiKey,
           errorType,
         );
         throw new LlmError(
@@ -387,7 +387,7 @@ class MistralProvider implements ILlmProvider {
           logger.error({ _error }, 'Failed to increment tokensSaved in Redis');
         });
 
-      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
+      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
 
       return content.trim();
     } catch (_error) {
@@ -399,7 +399,7 @@ class MistralProvider implements ILlmProvider {
         // Assume network errors or unhandled exceptions are temporary
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.key,
+          activeKey.apiKey,
           LlmKeyErrorType.TEMPORARY,
         );
       }
@@ -464,7 +464,7 @@ class OpenAIProvider implements ILlmProvider {
       const response = await fetch(apiUrl, {
         body,
         headers: {
-          Authorization: `Bearer ${activeKey.key}`,
+          Authorization: `Bearer ${activeKey.apiKey}`,
           'Content-Type': 'application/json',
         },
         method: 'POST',
@@ -477,7 +477,7 @@ class OpenAIProvider implements ILlmProvider {
         const errorType = this.getErrorType(response.status, errorBody);
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.key,
+          activeKey.apiKey,
           errorType,
         );
         throw new LlmError(errorMessage);
@@ -486,7 +486,7 @@ class OpenAIProvider implements ILlmProvider {
       const data = await response.json();
 
       const content = data.choices?.[0]?.message?.content;
-      if (!content) {
+      if (content === undefined || content === null) {
         log.error(
           { response: data },
           'Invalid response structure from OpenAI API',
@@ -497,7 +497,7 @@ class OpenAIProvider implements ILlmProvider {
         );
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.key,
+          activeKey.apiKey,
           errorType,
         );
         throw new LlmError(
@@ -522,7 +522,7 @@ class OpenAIProvider implements ILlmProvider {
           logger.error({ _error }, 'Failed to increment tokensSaved in Redis');
         });
 
-      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
+      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
 
       return content.trim();
     } catch (_error) {
@@ -534,7 +534,7 @@ class OpenAIProvider implements ILlmProvider {
         // Assume network errors or unhandled exceptions are temporary
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.key,
+          activeKey.apiKey,
           LlmKeyErrorType.TEMPORARY,
         );
       }

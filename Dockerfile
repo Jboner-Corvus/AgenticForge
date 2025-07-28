@@ -18,8 +18,8 @@ RUN pnpm install --prod=false
 # Copier le reste du code
 COPY . .
 
-# Construire le projet
-RUN pnpm build
+# Nettoyer et construire le projet
+RUN rm -rf packages/core/dist && pnpm build
 
 # Stage 2: Production
 FROM node:20-alpine
@@ -28,13 +28,18 @@ WORKDIR /usr/src/app
 
 # Copier uniquement les dépendances de production et les fichiers nécessaires
 COPY --from=builder /usr/src/app/node_modules ./node_modules
-COPY --from=builder /usr/src/app/packages ./packages
+COPY --from=builder /usr/src/app/packages/core/dist ./packages/core/dist
+COPY --from=builder /usr/src/app/packages/ui/dist ./packages/ui/dist
+COPY --from=builder /usr/src/app/packages/core/node_modules ./packages/core/node_modules
 COPY package.json ./
 COPY .env ./
+
+# Install curl for healthcheck
+RUN apk add --no-cache curl
 
 # Supprimer pnpm si non nécessaire à l'exécution
 # RUN npm uninstall -g pnpm # Uncomment if pnpm is not needed at runtime
 
 EXPOSE 8080 3000
 
-CMD [ "node", "packages/core/dist/webServer.js" ]
+CMD [ "node", "packages/core/dist/server-start.js" ]

@@ -1,75 +1,31 @@
 import { Queue } from 'bullmq';
-import { spawn } from 'child_process';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Ctx } from '@/types';
+import * as shellUtils from '@/utils/shellUtils.js';
 
-import { config } from '../../../../config';
-import { redis } from '../../../redis/redisClient';
-import { executeShellCommandTool } from './executeShellCommand.tool';
+import { redis as _redis } from '../../../redis/redisClient';
+import { executeShellCommandTool } from './executeShellCommand.tool'; // Temp fix
 
-// Mock child_process.spawn
-vi.mock('child_process', () => ({
-  spawn: vi.fn(() => {
-    const mockChildProcess = {
-      kill: vi.fn(),
-      on: vi.fn(),
-      stderr: { on: vi.fn() },
-      stdout: { on: vi.fn() },
-    };
-    // Simulate immediate close for non-detached commands
-    mockChildProcess.on.mockImplementation(
-      (event: string, callback: (...args: any[]) => void) => {
-        if (event === 'close') {
-          setTimeout(() => callback(0), 10);
-        }
-      },
-    );
-    return mockChildProcess;
-  }),
-}));
-
-// Mock redis.publish
 vi.mock('../../../redis/redisClient', () => ({
   redis: {
     publish: vi.fn(),
   },
 }));
 
-// Mock config
-vi.mock('../../../../config', () => ({
-  config: {
-    WORKSPACE_PATH: '/tmp/workspace',
-  },
-}));
-
 describe('executeShellCommandTool', () => {
   let mockCtx: Ctx;
-  let mockChildProcess: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockChildProcess = {
-      kill: vi.fn(),
-      on: vi.fn(),
-      stderr: { on: vi.fn() },
-      // Re-mock child process for each test
-      stdout: { on: vi.fn() },
-    };
-    // Default mock for spawn to simulate successful command execution
-    vi.mocked(spawn).mockImplementation((__cmd, __args, __options) => {
-      mockChildProcess.on.mockImplementation(
-        (event: string, callback: (...args: any[]) => void) => {
-          if (event === 'close') {
-            setTimeout(() => callback(0), 10);
-          }
-        },
-      );
-      return mockChildProcess as any;
-    });
 
     mockCtx = {
-      job: { id: 'test-job' } as Ctx['job'],
+      job: {
+        data: {} as unknown,
+        id: 'test-job',
+        isFailed: vi.fn(),
+        name: 'test-job-name',
+      } as Ctx['job'],
       llm: {} as Ctx['llm'],
       log: {
         child: vi.fn().mockReturnThis(),
@@ -101,29 +57,10 @@ describe('executeShellCommandTool', () => {
     const expectedStdout = 'hello\n';
     const expectedStderr = 'error\n';
 
-    vi.mocked(spawn).mockImplementation((__cmd, __args, __options) => {
-      mockChildProcess.stdout.on.mockImplementation(
-        (event: string, callback: (chunk: Buffer) => void) => {
-          if (event === 'data') {
-            callback(Buffer.from(expectedStdout));
-          }
-        },
-      );
-      mockChildProcess.stderr.on.mockImplementation(
-        (event: string, callback: (chunk: Buffer) => void) => {
-          if (event === 'data') {
-            callback(Buffer.from(expectedStderr));
-          }
-        },
-      );
-      mockChildProcess.on.mockImplementation(
-        (event: string, callback: (code: number) => void) => {
-          if (event === 'close') {
-            callback(0);
-          }
-        },
-      );
-      return mockChildProcess as any;
+    vi.spyOn(shellUtils, 'executeShellCommand').mockResolvedValue({
+      exitCode: 0,
+      stderr: expectedStderr,
+      stdout: expectedStdout,
     });
 
     const result = await executeShellCommandTool.execute(
@@ -131,11 +68,10 @@ describe('executeShellCommandTool', () => {
       mockCtx,
     );
 
-    expect(spawn).toHaveBeenCalledWith(command, {
-      cwd: config.WORKSPACE_PATH,
-      shell: process.platform === 'win32' ? 'cmd.exe' : '/bin/bash',
-      stdio: 'pipe',
-    });
+    expect(shellUtils.executeShellCommand).toHaveBeenCalledWith(
+      command,
+      mockCtx,
+    );
     expect(result).toEqual({
       exitCode: 0,
       stderr: expectedStderr,
@@ -150,13 +86,17 @@ describe('executeShellCommandTool', () => {
     const result = await executeShellCommandTool.execute(args, mockCtx);
 
     expect(mockCtx.taskQueue.add).toHaveBeenCalledWith(
-      'async-tasks',
+      'execute-shell-command-detached',
       expect.objectContaining({
         command,
         jobId: mockCtx.job!.id,
         notificationChannel: `job:${mockCtx.job!.id}:events`,
       }),
-      expect.objectContaining({ jobId: expect.any(String) }),
+      expect.objectContaining({
+        jobId: expect.any(String),
+        removeOnComplete: true,
+        removeOnFail: true,
+      }),
     );
     expect((result as { exitCode: number }).exitCode).toBe(0);
     expect((result as { stdout: string }).stdout).toContain(
@@ -169,16 +109,9 @@ describe('executeShellCommandTool', () => {
     const command = 'nonexistent-command';
     const errorMessage = 'spawn nonexistent-command ENOENT';
 
-    vi.mocked(spawn).mockImplementation((__cmd, __args, __options) => {
-      mockChildProcess.on.mockImplementation(
-        (event: string, callback: (err: Error) => void) => {
-          if (event === 'error') {
-            callback(new Error(errorMessage));
-          }
-        },
-      );
-      return mockChildProcess as any;
-    });
+    vi.spyOn(shellUtils, 'executeShellCommand').mockRejectedValue(
+      new Error(errorMessage),
+    );
 
     const result = await executeShellCommandTool.execute(
       { command, detach: false },
@@ -187,76 +120,59 @@ describe('executeShellCommandTool', () => {
 
     expect((result as { exitCode: number }).exitCode).toBe(1);
     expect((result as { stderr: string }).stderr).toBe(
-      `Failed to start command: ${errorMessage}`,
+      `An unexpected error occurred: ${errorMessage}`,
     );
     expect((result as { stdout: string }).stdout).toBe('');
     expect(mockCtx.log.error).toHaveBeenCalledWith(
-      expect.objectContaining({ err: expect.any(Error) }),
-      `Failed to start shell command: ${command}`,
+      { err: expect.any(Error) },
+      `Error executing shell command: ${errorMessage}`,
     );
   });
 
-  it('should stream stdout and stderr to frontend via redis.publish', async () => {
+  it('should stream stdout and stderr via streamContent', async () => {
     const command = 'echo test && echo error >&2';
     const stdoutChunk1 = 'test\n';
     const stderrChunk1 = 'error\n';
 
-    vi.mocked(spawn).mockImplementation((__cmd, __args, __options) => {
-      mockChildProcess.stdout.on.mockImplementation(
-        (event: string, callback: (chunk: Buffer) => void) => {
-          if (event === 'data') {
-            callback(Buffer.from(stdoutChunk1));
-          }
-        },
-      );
-      mockChildProcess.stderr.on.mockImplementation(
-        (event: string, callback: (chunk: Buffer) => void) => {
-          if (event === 'data') {
-            callback(Buffer.from(stderrChunk1));
-          }
-        },
-      );
-      mockChildProcess.on.mockImplementation(
-        (event: string, callback: (code: number) => void) => {
-          if (event === 'close') {
-            callback(0);
-          }
-        },
-      );
-      return mockChildProcess as any;
-    });
+    vi.spyOn(shellUtils, 'executeShellCommand').mockImplementation(
+      async (cmd, ctx) => {
+        if (ctx.streamContent) {
+          await ctx.streamContent([
+            {
+              content: stdoutChunk1,
+              toolName: 'executeShellCommand',
+              type: 'stdout',
+            },
+          ]);
+        }
+        if (ctx.streamContent) {
+          await ctx.streamContent([
+            {
+              content: stderrChunk1,
+              toolName: 'executeShellCommand',
+              type: 'stderr',
+            },
+          ]);
+        }
+        return { exitCode: 0, stderr: stderrChunk1, stdout: stdoutChunk1 };
+      },
+    );
 
     await executeShellCommandTool.execute({ command, detach: false }, mockCtx);
 
-    expect(redis.publish).toHaveBeenCalledWith(
-      `job:${mockCtx.job!.id}:events`,
-      JSON.stringify({
-        data: {
-          content: stdoutChunk1,
-          type: 'stdout',
-        },
-        type: 'tool_stream',
-      }),
-    );
-    expect(redis.publish).toHaveBeenCalledWith(
-      `job:${mockCtx.job!.id}:events`,
-      JSON.stringify({
-        data: {
-          content: stderrChunk1,
-          type: 'stderr',
-        },
-        type: 'tool_stream',
-      }),
-    );
-    expect(redis.publish).toHaveBeenCalledWith(
-      `job:${mockCtx.job!.id}:events`,
-      JSON.stringify({
-        data: {
-          content: '\n--- COMMAND FINISHED ---\nExit Code: 0',
-          type: 'stdout',
-        },
-        type: 'tool_stream',
-      }),
-    );
+    expect(mockCtx.streamContent).toHaveBeenCalledWith([
+      {
+        content: stdoutChunk1,
+        toolName: 'executeShellCommand',
+        type: 'stdout',
+      },
+    ]);
+    expect(mockCtx.streamContent).toHaveBeenCalledWith([
+      {
+        content: stderrChunk1,
+        toolName: 'executeShellCommand',
+        type: 'stderr',
+      },
+    ]);
   });
 });

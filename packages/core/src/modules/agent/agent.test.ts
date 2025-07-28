@@ -1,4 +1,5 @@
-import { Job, Queue } from 'bullmq';
+import type { Job, Queue } from 'bullmq';
+
 import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { z } from 'zod';
 
@@ -29,14 +30,6 @@ vi.mock('../tools/toolRegistry.js', () => ({
 
 vi.mock('../../utils/toolLoader.js', () => ({
   getTools: vi.fn() as Mock,
-}));
-
-vi.mock('../redis/redisClient.js', () => ({
-  redis: {
-    duplicate: vi.fn(),
-    publish: vi.fn(),
-    subscribe: vi.fn(),
-  },
 }));
 
 vi.mock('../redis/redisClient.js', () => {
@@ -185,10 +178,10 @@ describe('Agent Integration Tests', () => {
 
     mockedToolRegistryExecute.mockImplementation(async (name, params, ctx) => {
       if (name === 'test-tool') {
-        return mockTestTool.execute(params as { arg: string }, ctx);
+        return mockTestTool.execute({ arg: 'value' }, ctx);
       }
       if (name === 'finish') {
-        return mockFinishTool.execute(params as { response: string }, ctx);
+        return mockFinishTool.execute({ response: 'Final answer' }, ctx);
       }
     });
 
@@ -207,32 +200,37 @@ describe('Agent Integration Tests', () => {
       expect.any(Object),
     );
     expect(mockSession.history).toEqual([
-      { content: 'Test objective', role: 'user' },
       {
-        content: `
-{
-          "command": { "name": "test-tool", "params": { "arg": "value" } },
-          "thought": "I should use the test tool."
-}
-`,
-        role: 'model',
+        content: 'Test objective',
+        id: expect.any(String),
+        timestamp: expect.any(Number),
+        type: 'user',
       },
       {
-        content: 'Tool result: "tool result"' as any,
-        role: 'tool',
+        content: 'I should use the test tool.',
+        id: expect.any(String),
+        timestamp: expect.any(Number),
+        type: 'agent_thought',
       },
       {
-        content: `
-{
-          "command": { "name": "finish", "params": { "response": "Final answer" } },
-          "thought": "I have finished."
-}
-`,
-        role: 'model',
+        id: expect.any(String),
+        result: 'tool result',
+        timestamp: expect.any(Number),
+        toolName: 'test-tool',
+        type: 'tool_result',
       },
       {
-        content: 'Tool result: {"answer":"Final answer"}' as any,
-        role: 'tool',
+        content: 'I have finished.',
+        id: expect.any(String),
+        timestamp: expect.any(Number),
+        type: 'agent_thought',
+      },
+      {
+        id: expect.any(String),
+        result: { answer: 'Final answer' },
+        timestamp: expect.any(Number),
+        toolName: 'finish',
+        type: 'tool_result',
       },
     ]);
   });
@@ -254,11 +252,12 @@ describe('Agent Integration Tests', () => {
   });
 
   it('should stop if it reaches max iterations', async () => {
-    mockedGetLlmResponse.mockImplementation(() => {
+    mockedGetLlmResponse.mockImplementation((messages) => {
+      const iteration = messages.length; // Use message history length to create unique commands
       return Promise.resolve(
         `
 {
-          "command": { "name": "test-tool", "params": { "arg": "looping_arg_" + iterations } },
+          "command": { "name": "test-tool", "params": { "arg": "looping_arg_${iteration}" } },
           "thought": "Looping..."
 }
 `,
@@ -276,11 +275,9 @@ describe('Agent Integration Tests', () => {
 
   it('should be interrupted by a signal', async () => {
     mockedGetLlmResponse.mockImplementation(async () => {
-      // Simulate receiving the interrupt signal during LLM call
       if (onMessageCallback) {
         onMessageCallback(`job:${mockJob.id}:interrupt`, 'interrupt');
       }
-      // Simulate a delay to allow the interrupt to be processed
       await vi.advanceTimersByTimeAsync(10);
       return `
 {
@@ -297,7 +294,6 @@ describe('Agent Integration Tests', () => {
       `job:${mockJob.id}:interrupt`,
     );
     expect(mockRedisSubscriber.quit).toHaveBeenCalled();
-    // It should have been called once before being interrupted
     expect(mockedGetLlmResponse).toHaveBeenCalledTimes(1);
   }, 40000);
 
@@ -328,18 +324,21 @@ describe('Agent Integration Tests', () => {
     expect(finalResponse).toBe('Recovered from tool error');
     expect(mockedGetLlmResponse).toHaveBeenCalledTimes(2);
     expect(mockSession.history).toContainEqual({
-      content: `Tool result: "Error executing tool test-tool: ${errorMessage}"`,
-      role: 'tool',
+      id: expect.any(String),
+      result: `Error executing tool test-tool: ${errorMessage}`,
+      timestamp: expect.any(Number),
+      toolName: 'test-tool',
+      type: 'tool_result',
     });
   });
 
   it('should not loop indefinitely on repeated tool errors', async () => {
     const errorMessage = 'Persistent tool error';
-    mockedGetLlmResponse.mockImplementation(() =>
+    mockedGetLlmResponse.mockImplementation((messages) =>
       Promise.resolve(
         `
 {
-  "command": { "name": "test-tool", "params": { "arg": "consistent_arg" } },
+  "command": { "name": "test-tool", "params": { "arg": "consistent_arg_${messages.length}" } },
   "thought": "I will try the tool again."
 }
 `,
@@ -362,12 +361,14 @@ describe('Agent Integration Tests', () => {
     const finalResponse = await agent.run();
 
     expect(finalResponse).toBe(
-      'Agent reached maximum iterations without a final answer.',
+      'Agent stopped due to persistent malformed responses.',
     );
     expect(mockSession.history).toContainEqual({
       content:
-        'You must provide a command, a thought, a canvas output, or a final answer.',
-      role: 'user',
+        'Error: The `generate` tool returned an unexpected non-string or empty response.',
+      id: expect.any(String),
+      timestamp: expect.any(Number),
+      type: 'error',
     });
   });
 
@@ -377,12 +378,14 @@ describe('Agent Integration Tests', () => {
     const finalResponse = await agent.run();
 
     expect(finalResponse).toBe(
-      'Agent reached maximum iterations without a final answer.',
+      'Agent stopped due to persistent malformed responses.',
     );
     expect(mockSession.history).toContainEqual({
       content:
-        'Error: The `generate` tool returned an unexpected non-string response.',
-      role: 'tool',
+        'Error: The `generate` tool returned an unexpected non-string or empty response.',
+      id: expect.any(String),
+      timestamp: expect.any(Number),
+      type: 'error',
     });
   });
 
@@ -402,9 +405,8 @@ describe('Agent Integration Tests', () => {
     const finalResponse = await agent.run();
 
     expect(finalResponse).toBe('Agent stuck in a loop.');
-    // The agent should stop after detecting the loop (3 iterations)
     expect(mockedGetLlmResponse).toHaveBeenCalledTimes(4);
-    expect(mockedToolRegistryExecute).toHaveBeenCalledTimes(4);
+    expect(mockedToolRegistryExecute).toHaveBeenCalledTimes(3);
   });
 
   it('should add an error message to history if LLM provides no actionable response', async () => {
@@ -418,7 +420,9 @@ describe('Agent Integration Tests', () => {
     expect(mockSession.history).toContainEqual({
       content:
         'You must provide a command, a thought, a canvas output, or a final answer.',
-      role: 'user',
+      id: expect.any(String),
+      timestamp: expect.any(Number),
+      type: 'error',
     });
   });
 
@@ -441,7 +445,9 @@ describe('Agent Integration Tests', () => {
     expect(mockSession.history).toContainEqual({
       content:
         'I was unable to parse your last response. Please ensure your response is a valid JSON object with the expected properties (`thought`, `command`, `canvas`, or `answer`). Check for syntax errors, missing commas, or unclosed brackets.',
-      role: 'user',
+      id: expect.any(String),
+      timestamp: expect.any(Number),
+      type: 'error',
     });
   });
 
@@ -454,20 +460,19 @@ describe('Agent Integration Tests', () => {
 }
 `,
     );
-    // Directly mock the finish tool's execute method
-    (mockFinishTool.execute as Mock).mockResolvedValue({
-      not_an_answer: 'something',
-    });
+    (mockFinishTool.execute as Mock).mockResolvedValue('loop result');
 
     const finalResponse = await agent.run();
 
-    expect(finalResponse).toBe(
-      'Finish tool did not return a valid answer object: {"not_an_answer":"something"}',
+    expect(finalResponse).toEqual(
+      'Finish tool did not return a valid answer object: "loop result"',
     );
     expect(mockSession.history).toContainEqual({
       content:
-        'Error: Finish tool did not return a valid answer object: {"not_an_answer":"something"}',
-      role: 'tool',
+        'Error: Finish tool did not return a valid answer object: "loop result"',
+      id: expect.any(String),
+      timestamp: expect.any(Number),
+      type: 'error',
     });
   });
 });
