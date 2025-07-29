@@ -141,6 +141,7 @@ export async function processJob(
   try {
     const session = await _sessionManager.getSession(_job.data.sessionId);
     const activeLlmProvider = session.activeLlmProvider || config.LLM_PROVIDER; // Use session's provider or default
+    const { apiKey } = _job.data;
     const agent = new Agent(
       _job,
       session,
@@ -148,6 +149,7 @@ export async function processJob(
       _tools,
       activeLlmProvider,
       _sessionManager, // Pass sessionManager
+      apiKey,
     );
     const finalResponse = await agent.run();
 

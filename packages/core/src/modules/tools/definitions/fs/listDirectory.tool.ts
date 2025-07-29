@@ -11,10 +11,9 @@ const WORKSPACE_DIR = config.WORKSPACE_PATH;
 export const listFilesParams = z.object({
   path: z
     .string()
-    .default('.')
     .describe(
       'The subdirectory to list within the workspace. Defaults to the root.',
-    ),
+    ).optional(),
 });
 
 export const listFilesOutput = z.union([
@@ -31,7 +30,7 @@ export const listFilesTool: Tool<
   description:
     'Lists files and directories within a specified path in the workspace.',
   execute: async (args: z.infer<typeof listFilesParams>, ctx: Ctx) => {
-    const { path: listPath } = args;
+    const listPath = args.path || '.';
     const targetDir = path.resolve(WORKSPACE_DIR, listPath);
 
     if (!targetDir.startsWith(WORKSPACE_DIR)) {

@@ -3,7 +3,6 @@ import { GoogleLogo, GithubLogo, DiscordLogo, TelegramLogo, OpenAILogo, GrokLogo
 import { Input } from './ui/input';
 import { Modal } from './ui/modal';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Label } from './ui/label';
@@ -137,16 +136,9 @@ export const ControlPanel = memo(() => {
         style={{ width }}
       >
         <div className="absolute top-0 right-0 w-2 h-full cursor-col-resize" onMouseDown={handleDragStart} />
-        <Tabs defaultValue="status" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="status" className="flex items-center"><ListChecks className="mr-2 h-4 w-4" />Status</TabsTrigger>
-            <TabsTrigger value="capabilities" className="flex items-center"><Cog className="mr-2 h-4 w-4" />Capabilities</TabsTrigger>
-            <TabsTrigger value="actions" className="flex items-center"><Play className="mr-2 h-4 w-4" />Actions</TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center"><History className="mr-2 h-4 w-4" />History</TabsTrigger>
-            <TabsTrigger value="leaderboard" className="flex items-center"><BarChart className="mr-2 h-4 w-4" />Leaderboard</TabsTrigger>
-            <TabsTrigger value="login" className="flex items-center"><Chrome className="mr-2 h-4 w-4" />Login</TabsTrigger>
-          </TabsList>
-          <TabsContent value="status" className="mt-4">
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-4 flex items-center"><ListChecks className="mr-2 h-4 w-4" />Status</h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <Label className="text-sm flex items-center"><Key className="mr-2 h-4 w-4" />{fr.sessionId}</Label>
@@ -167,8 +159,9 @@ export const ControlPanel = memo(() => {
                 <span className="text-sm text-muted-foreground">{browserStatus}</span>
               </div>
             </div>
-          </TabsContent>
-          <TabsContent value="capabilities" className="mt-4">
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-4 flex items-center"><Cog className="mr-2 h-4 w-4" />Capabilities</h3>
             <div className="space-y-4">
               <TooltipProvider>
                 <Tooltip>
@@ -197,8 +190,9 @@ export const ControlPanel = memo(() => {
                 </Tooltip>
               </TooltipProvider>
             </div>
-          </TabsContent>
-          <TabsContent value="actions" className="mt-4">
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-4 flex items-center"><Play className="mr-2 h-4 w-4" />Actions</h3>
             <div className="space-y-2">
               <Button className="w-full flex items-center justify-center" onClick={handleNewSession} variant="secondary">
                 <Settings className="mr-2 h-4 w-4" />
@@ -213,8 +207,9 @@ export const ControlPanel = memo(() => {
                 Save Current Session
               </Button>
             </div>
-          </TabsContent>
-          <TabsContent value="history" className="mt-4">
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-4 flex items-center"><History className="mr-2 h-4 w-4" />History</h3>
             <div className="space-y-2">
               {sessions.length === 0 ? (
                 <p className="text-muted-foreground">No sessions saved yet.</p>
@@ -240,8 +235,9 @@ export const ControlPanel = memo(() => {
                 ))
               )}
             </div>
-          </TabsContent>
-          <TabsContent value="leaderboard" className="mt-4">
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-4 flex items-center"><BarChart className="mr-2 h-4 w-4" />Leaderboard</h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <Label className="text-sm">Tokens Saved:</Label>
@@ -260,8 +256,9 @@ export const ControlPanel = memo(() => {
                 <span className="text-sm text-muted-foreground">{leaderboardStats.apiKeysAdded}</span>
               </div>
             </div>
-          </TabsContent>
-          <TabsContent value="login" className="mt-4">
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-4 flex items-center"><Chrome className="mr-2 h-4 w-4" />Login</h3>
             <div className="space-y-4">
               <h4 className="text-md font-semibold">Email/Password Login</h4>
               <Input placeholder="Email" type="email" aria-label="Email" />
@@ -442,8 +439,8 @@ export const ControlPanel = memo(() => {
               </div>
               
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </aside>
 
       <Modal isOpen={isRenameModalOpen} onClose={() => setIsRenameModalOpen(false)} title="Rename Session">

@@ -166,7 +166,49 @@ def run_command(command_number):
             print(f"▶️  Exécution de la commande #{command_number}...")
             print(f" commande : {commands[index]}")
             # Exécute la commande dans le shell
-            subprocess.run(commands[index], shell=True, check=True)
+            process = subprocess.Popen(commands[index], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            stdout, stderr = process.communicate()
+            print(stdout)
+            print(stderr)
+            if process.returncode != 0:
+                raise subprocess.CalledProcessError(process.returncode, commands[index], output=stdout, stderr=stderr)
+            
+            try:
+                job_info = json.loads(stdout.split('\n')[0])
+                job_id = job_info.get('jobId')
+                print(f"Job ID: {job_id}")
+            except json.JSONDecodeError:
+                print("Could not decode JSON from curl output.")
+                job_id = None
+
+            if job_id:
+                # Poll for job status
+                status_url = f"http://192.168.2.56:8080/api/status/{job_id}"
+                print(f"Polling job status at {status_url}")
+                while True:
+                    status_process = subprocess.run(['curl', '-s', status_url], capture_output=True, text=True, check=True)
+                    status_output = json.loads(status_process.stdout)
+                    job_state = status_output.get('state')
+                    return_value = status_output.get('returnvalue')
+                    
+                    print(f"Job State: {job_state}, Return Value: {return_value}")
+
+                    if job_state == 'completed':
+                        print(f"Job {job_id} completed.")
+                        # Add verification logic here based on the test number
+                        if command_number == '1':
+                            if "Directory listing for 'workspace/" in return_value:
+                                print("✅ Test 1 (List files and folders) passed.")
+                            else:
+                                print("❌ Test 1 (List files and folders) failed: Unexpected output.")
+                        break
+                    elif job_state == 'failed':
+                        print(f"❌ Job {job_id} failed.")
+                        break
+                    import time
+                    time.sleep(2)
+            else:
+                print("❌ Could not retrieve job ID.")
             print(f"✅ Commande #{command_number} exécutée avec succès.")
         else:
             print(f"❌ Erreur : Le numéro de commande '{command_number}' est invalide. "

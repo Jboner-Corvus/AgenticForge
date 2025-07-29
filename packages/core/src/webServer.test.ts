@@ -90,7 +90,6 @@ describe('webServer', () => {
     const res = await request(app)
       .post('/api/session')
       .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
-      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
     expect(res.statusCode).toEqual(200);
     expect(res.body.message).toEqual(
       'Session managed automatically via cookie/header.',
@@ -111,7 +110,6 @@ describe('webServer', () => {
 
     const res = await request(app)
       .get('/api/sessions/s1')
-      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
       .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
 
     expect(res.statusCode).toEqual(200);

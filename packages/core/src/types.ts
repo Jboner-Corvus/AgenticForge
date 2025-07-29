@@ -56,6 +56,7 @@ export interface ILlmProvider {
   getLlmResponse(
     messages: LLMContent[],
     systemPrompt?: string,
+    apiKey?: string,
   ): Promise<string>;
 }
 

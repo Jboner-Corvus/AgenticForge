@@ -2,6 +2,7 @@ import { config } from '../config.js';
 import logger from '../logger.js';
 import { LLMContent } from '../modules/llm/llm-types.js';
 import {
+  LlmApiKey,
   LlmKeyErrorType,
   LlmKeyManager,
 } from '../modules/llm/LlmKeyManager.js';
@@ -33,10 +34,22 @@ class GeminiProvider implements ILlmProvider {
   public async getLlmResponse(
     messages: LLMContent[],
     systemPrompt?: string,
+    apiKey?: string,
   ): Promise<string> {
     const log = logger.child({ module: 'GeminiProvider' });
 
-    const activeKey = await LlmKeyManager.getNextAvailableKey();
+    let activeKey: LlmApiKey | null;
+    if (apiKey) {
+      activeKey = {
+        apiKey,
+        errorCount: 0,
+        isPermanentlyDisabled: false,
+        provider: 'gemini', // Assuming provider based on the class
+      };
+    } else {
+      activeKey = await LlmKeyManager.getNextAvailableKey('gemini');
+    }
+
     if (!activeKey) {
       const errorMessage = 'No LLM API key available.';
       log.error(errorMessage);
@@ -167,10 +180,22 @@ class HuggingFaceProvider implements ILlmProvider {
   public async getLlmResponse(
     messages: LLMContent[],
     systemPrompt?: string,
+    apiKey?: string,
   ): Promise<string> {
     const log = logger.child({ module: 'HuggingFaceProvider' });
 
-    const activeKey = await LlmKeyManager.getNextAvailableKey();
+    let activeKey: LlmApiKey | null;
+    if (apiKey) {
+      activeKey = {
+        apiKey,
+        errorCount: 0,
+        isPermanentlyDisabled: false,
+        provider: 'huggingface', // Assuming provider based on the class
+      };
+    } else {
+      activeKey = await LlmKeyManager.getNextAvailableKey('huggingface');
+    }
+
     if (!activeKey) {
       const errorMessage = 'No LLM API key available.';
       log.error(errorMessage);
@@ -297,10 +322,22 @@ class MistralProvider implements ILlmProvider {
   public async getLlmResponse(
     messages: LLMContent[],
     systemPrompt?: string,
+    apiKey?: string,
   ): Promise<string> {
     const log = logger.child({ module: 'MistralProvider' });
 
-    const activeKey = await LlmKeyManager.getNextAvailableKey();
+    let activeKey: LlmApiKey | null;
+    if (apiKey) {
+      activeKey = {
+        apiKey,
+        errorCount: 0,
+        isPermanentlyDisabled: false,
+        provider: 'mistral', // Assuming provider based on the class
+      };
+    } else {
+      activeKey = await LlmKeyManager.getNextAvailableKey('mistral');
+    }
+
     if (!activeKey) {
       const errorMessage = 'No LLM API key available.';
       log.error(errorMessage);
@@ -432,10 +469,22 @@ class OpenAIProvider implements ILlmProvider {
   public async getLlmResponse(
     messages: LLMContent[],
     systemPrompt?: string,
+    apiKey?: string,
   ): Promise<string> {
     const log = logger.child({ module: 'OpenAIProvider' });
 
-    const activeKey = await LlmKeyManager.getNextAvailableKey();
+    let activeKey: LlmApiKey | null;
+    if (apiKey) {
+      activeKey = {
+        apiKey,
+        errorCount: 0,
+        isPermanentlyDisabled: false,
+        provider: 'openai', // Assuming provider based on the class
+      };
+    } else {
+      activeKey = await LlmKeyManager.getNextAvailableKey('openai');
+    }
+
     if (!activeKey) {
       const errorMessage = 'No LLM API key available.';
       log.error(errorMessage);

@@ -6,23 +6,24 @@
 
 ### Instructions pour l'Agent :
 
-Vous devez parcourir la liste des tests ci-dessous. Pour chaque test, suivez la procédure suivante :
+Vous devez parcourir la liste des tests ci-dessous. Pour chaque test, suivez les 6 procédure suivante obligatoirement  :
 
-1.  **Exécuter le Test** : Lancez le test correspondant en utilisant le script `AgenticForge4/exec_Test.py` avec le numéro de commande approprié.
-    * **Exemple** : `python AgenticForge4/exec_Test.py <numéro_du_test>`
+1.  **Exécuter le Test** : Lancez le test correspondant en utilisant le script `AgenticForge/exec_Test.py` avec le numéro de commande approprié.
+    * **Exemple** : `python AgenticForge/exec_Test.py <numéro_du_test>`
 
-2.  **Surveiller l'Exécution** : Consultez les logs du worker (`AgenticForge4/worker.log`) pour suivre l'exécution de la tâche.
+2.  **Surveiller l'Exécution** : Consultez la fin des logs du worker (`AgenticForge/worker.log`) pour suivre l'exécution de la tâche.
 
 3.  **Valider le Résultat** :
     * Confirmez que la tâche associée au test a été reçue et s'est terminée avec succès.
-    * Vérifiez que l'action attendue par le test a bien été effectuée (par exemple, un fichier créé, une donnée lue, une commande exécutée, etc.).
+4.  * Vérifiez que l'action attendue par le test a bien été effectuée
+    (par exemple, un fichier créé, une donnée lue, une commande exécutée, etc.).
 
-4.  **Gérer les Échecs** :
+5.  **Gérer les Échecs** :
     * Si un test échoue ou ne produit pas le résultat attendu, analysez les logs et le code pour identifier la cause du problème.
     * Corrigez le code ou la configuration nécessaire pour que le test puisse réussir.
     * Ré-exécutez le test après la correction jusqu'à ce qu'il réussisse.
 
-5.  **Marquer le Test comme Terminé** : Une fois qu'un test a été exécuté avec succès et validé, marquez-le comme terminé.
+6.  **Marquer le Test comme Terminé** : Une fois qu'un test a été exécuté avec succès et validé, marquez-le comme terminé.
 
 ---
 

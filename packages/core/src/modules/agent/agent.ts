@@ -49,6 +49,7 @@ interface Command {
 
 export class Agent {
   private activeLlmProvider: string; // New property
+  private apiKey?: string; // New property
   private commandHistory: Command[] = [];
   private interrupted = false;
   private readonly job: Job<{ prompt: string }>;
@@ -60,15 +61,17 @@ export class Agent {
   private readonly sessionManager: SessionManager; // New property
   private subscriber: any;
   private readonly taskQueue: Queue;
+
   private readonly tools: Tool<z.AnyZodObject, z.ZodTypeAny>[];
 
   constructor(
-    job: Job<{ prompt: string }>,
+    job: Job<{ apiKey?: string; prompt: string; }>,
     session: SessionData,
     taskQueue: Queue,
     tools: Tool<z.AnyZodObject, z.ZodTypeAny>[],
     activeLlmProvider: string,
-    sessionManager: SessionManager, // New parameter
+    sessionManager: SessionManager,
+    apiKey?: string,
   ) {
     this.job = job;
     this.session = session;
@@ -76,7 +79,9 @@ export class Agent {
     this.taskQueue = taskQueue;
     this.tools = tools ?? [];
     this.activeLlmProvider = activeLlmProvider;
-    this.sessionManager = sessionManager; // Assign new parameter
+    this.session.activeLlmProvider = activeLlmProvider; // Ensure session also has the active provider
+    this.sessionManager = sessionManager;
+    this.apiKey = apiKey;
   }
 
   public async run(): Promise<string> {
@@ -227,6 +232,7 @@ export class Agent {
               llmResponse = await getLlmProvider(providerToTry).getLlmResponse(
                 messagesForLlm,
                 orchestratorPrompt,
+                this.apiKey,
               );
               this.activeLlmProvider = providerToTry; // Update active provider on success
               this.session.activeLlmProvider = providerToTry; // Update session data

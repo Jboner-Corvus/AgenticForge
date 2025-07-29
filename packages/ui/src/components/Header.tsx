@@ -9,6 +9,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 import { Logo } from './Logo';
 
 import { Settings, PanelLeft, Sun, Moon, Bell, Maximize, Minimize, LayoutDashboard, Contrast } from 'lucide-react';
+import { UserMenu } from './UserMenu';
+
 interface HeaderProps {
   setIsControlPanelVisible: (visible: boolean) => void;
   setIsSettingsModalOpen: (open: boolean) => void;
@@ -17,7 +19,10 @@ interface HeaderProps {
   toggleDarkMode: () => void;
   isHighContrastMode: boolean;
   toggleHighContrastMode: () => void;
+  isAuthenticated: boolean;
 }
+
+import { LoginModal } from './LoginModal';
 
 const HeaderComponent: React.FC<HeaderProps> = ({
   setIsControlPanelVisible,
@@ -26,8 +31,10 @@ const HeaderComponent: React.FC<HeaderProps> = ({
   isDarkMode,
   toggleDarkMode,
   toggleHighContrastMode,
+  isAuthenticated,
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const handleFullscreenToggle = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -158,6 +165,19 @@ const HeaderComponent: React.FC<HeaderProps> = ({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
+        {isAuthenticated ? (
+          <UserMenu />
+        ) : (
+          <Button
+            aria-label="Login"
+            onClick={() => setIsLoginModalOpen(true)}
+            type="button"
+            variant="ghost"
+          >
+            Login
+          </Button>
+        )}
+        <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
       </div>
     </header>
   );

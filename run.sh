@@ -290,7 +290,7 @@ start_services() {
         # If the network exists and either:
         # 1. It's not managed by docker compose (label is empty)
         # 2. It's managed by a *different* docker compose project
-        if [[ -z "$EXISTING_NETWORK_PROJECT_LABEL" || "$EXISTING_NETWORK_PROJECT_LABEL" != "$PROJECT_NAME" ]]; then
+        if [ -z "$EXISTING_NETWORK_PROJECT_LABEL" ] || [ "$EXISTING_NETWORK_PROJECT_LABEL" != "$PROJECT_NAME" ]; then
              echo -e "${COLOR_YELLOW}AVERTISSEMENT: Un réseau 'agentic_forge_network' existe et semble appartenir à un autre projet ou n'est pas géré par Docker Compose.${NC}"
              echo -e "${COLOR_YELLOW}Cela peut causer des problèmes. Il est fortement recommandé d'exécuter l'option '8) Nettoyer Docker'.${NC}"
         fi
@@ -460,12 +460,12 @@ run_all_checks() {
     set +o pipefail
     if [ $exit_code -ne 0 ]; then
         FAILED_CHECKS+=("TypeCheck UI")
-        while read -r line; do
+        echo "$UI_TYPECHECK_OUTPUT" | while read -r line; do
             if [[ -n "$line" && "$line" == *"error TS"* ]]; then
                 ERROR_COUNT=$((ERROR_COUNT + 1))
                 ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **TypeCheck (UI):** \`${line}\`\n"
             fi
-        echo "$UI_TYPECHECK_OUTPUT" | while read -r line; do
+        done
     fi
 
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour le Core...${NC}"
@@ -475,12 +475,12 @@ run_all_checks() {
     set +o pipefail
     if [ $exit_code -ne 0 ]; then
         FAILED_CHECKS+=("TypeCheck Core")
-        while read -r line; do
+        echo "$CORE_TYPECHECK_OUTPUT" | while read -r line; do
             if [[ -n "$line" && "$line" == *"error TS"* ]]; then
                 ERROR_COUNT=$((ERROR_COUNT + 1))
                 ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **TypeCheck (Core):** \`${line}\`\n"
             fi
-        done < <(echo "$CORE_TYPECHECK_OUTPUT")
+        done
     fi
 
     # --- Lint ---
@@ -491,12 +491,12 @@ run_all_checks() {
     set +o pipefail
     if [ $exit_code -ne 0 ]; then
         FAILED_CHECKS+=("Lint")
-        while read -r line; do
+        echo "$LINT_OUTPUT" | while read -r line; do
             if [[ -n "$line" && "$line" == *"error"* ]]; then
                 ERROR_COUNT=$((ERROR_COUNT + 1))
                 ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Lint:** \`${line}\`\n"
             fi
-        done < <(echo "$LINT_OUTPUT")
+        done
     fi
 
     # --- Tests (AVEC CAPTURE DE BLOCS DÉTAILLÉS) ---
@@ -510,7 +510,7 @@ run_all_checks() {
         local capture_mode=0
         local error_block=""
 
-        while IFS= read -r line; do
+        echo "$TEST_OUTPUT" | while IFS= read -r line; do
             if [[ "$line" =~ ^[[:space:]]*FAIL || "$line" =~ ^⎯⎯⎯⎯⎯[[:space:]]*Uncaught[[:space:]]Exception ]]; then
                 if [ $capture_mode -eq 1 ] && [ -n "$error_block" ]; then
                     ERROR_COUNT=$((ERROR_COUNT + 1))
@@ -528,7 +528,7 @@ run_all_checks() {
             elif [ $capture_mode -eq 1 ]; then
                 error_block+="\n$line"
             fi
-        done < <(echo "$TEST_OUTPUT")
+        done
 
         if [ $capture_mode -eq 1 ] && [ -n "$error_block" ]; then
             error_block_cleaned=$(echo -e "$error_block" | sed '/^ Test Files /,$d')

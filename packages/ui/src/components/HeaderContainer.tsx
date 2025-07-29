@@ -20,6 +20,7 @@ export function HeaderContainer() {
       toggleDarkMode={toggleDarkMode}
       isHighContrastMode={isHighContrastMode}
       toggleHighContrastMode={toggleHighContrastMode}
+      isAuthenticated={false}
     />
   );
 }

@@ -131,7 +131,7 @@ export async function initializeWebServer(
       _next: express.NextFunction,
     ) => {
       try {
-        const { prompt } = req.body;
+        const { apiKey, prompt } = req.body;
         const _sessionId = req.sessionId;
 
         if (!prompt) {
@@ -141,6 +141,7 @@ export async function initializeWebServer(
         logger.info({ prompt, sessionId: _sessionId }, 'Nouveau message reçu');
 
         const _job = await jobQueue.add('process-message', {
+          apiKey,
           prompt,
           sessionId: _sessionId,
         });
