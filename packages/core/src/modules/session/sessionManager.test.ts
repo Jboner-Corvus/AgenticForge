@@ -103,13 +103,14 @@ describe('SessionManager', () => {
     mockPgClient.query.mockResolvedValue({ rows: [] });
     await sessionManager.saveSession(session, mockJob, mockTaskQueue);
     expect(mockPgClient.query).toHaveBeenCalledWith(
-      'INSERT INTO sessions (id, name, messages, timestamp, identities) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, messages = EXCLUDED.messages, timestamp = EXCLUDED.timestamp, identities = EXCLUDED.identities',
+      'INSERT INTO sessions (id, name, messages, timestamp, identities, active_llm_provider) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, messages = EXCLUDED.messages, timestamp = EXCLUDED.timestamp, identities = EXCLUDED.identities, active_llm_provider = EXCLUDED.active_llm_provider',
       [
         'session-to-save',
         'Session to Save',
         JSON.stringify(session.history),
         session.timestamp,
         JSON.stringify(session.identities),
+        null,
       ],
     );
   });

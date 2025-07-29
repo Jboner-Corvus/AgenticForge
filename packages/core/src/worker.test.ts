@@ -47,12 +47,12 @@ import { processJob } from './worker';
 
 // Mock external dependencies
 vi.mock('./modules/agent/agent');
-const mockSessionManagerInstance = {
+const _mockSessionManagerInstance = {
   getSession: vi.fn(),
   saveSession: vi.fn(),
 };
 vi.mock('./modules/session/sessionManager', () => ({
-  SessionManager: vi.fn(() => mockSessionManagerInstance),
+  SessionManager: vi.fn(() => _mockSessionManagerInstance),
 }));
 
 vi.mock('./logger', () => {
@@ -104,7 +104,7 @@ describe('processJob', () => {
 
     // Reset mocks
     vi.clearAllMocks();
-    mockSessionManagerInstance.getSession.mockResolvedValue(mockSessionData);
+    _mockSessionManagerInstance.getSession.mockResolvedValue(mockSessionData);
     (Agent as Mock).mockImplementation(() => ({
       run: vi.fn().mockResolvedValue('Agent final response'),
     }));
@@ -120,18 +120,20 @@ describe('processJob', () => {
       mockJob as Job,
       mockTools,
       mockJobQueue,
-      mockSessionManagerInstance as any,
+      _mockSessionManagerInstance as any,
       mockRedisConnection,
     );
 
-    expect(mockSessionManagerInstance.getSession).toHaveBeenCalledWith(
+    expect(_mockSessionManagerInstance.getSession).toHaveBeenCalledWith(
       'testSessionId',
     );
     expect(Agent).toHaveBeenCalledWith(
       mockJob,
       mockSessionData,
-      expect.any(Object),
+      mockJobQueue,
       mockTools,
+      'gemini',
+      _mockSessionManagerInstance,
     );
     expect((Agent as any).mock.results[0].value.run).toHaveBeenCalled();
     expect(mockSessionData.history).toContainEqual({
@@ -141,7 +143,7 @@ describe('processJob', () => {
       type: 'agent_response',
     });
     expect(summarizeTool.execute).toHaveBeenCalled();
-    expect(mockSessionManagerInstance.saveSession).toHaveBeenCalledWith(
+    expect(_mockSessionManagerInstance.saveSession).toHaveBeenCalledWith(
       mockSessionData,
       mockJob,
       mockJobQueue,
@@ -164,7 +166,7 @@ describe('processJob', () => {
         mockJob as Job,
         mockTools,
         mockJobQueue,
-        mockSessionManagerInstance as any,
+        _mockSessionManagerInstance as any,
         mockRedisConnection,
       ),
     ).rejects.toThrow(_AppError);

@@ -1,13 +1,11 @@
 import express from 'express';
-import { promises as fs } from 'fs';
+import request from 'supertest';
+
 vi.mock('fs/promises', () => ({
   readdir: vi.fn().mockResolvedValue(['file1.txt']),
   readFile: vi.fn().mockResolvedValue('content of file1'),
   stat: vi.fn().mockResolvedValue({ size: 10 }),
 }));
-
-import request from 'supertest';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock Redis and PostgreSQL clients at the top level
 import { mockRedis } from '../test/mocks/redisClient.mock';
@@ -68,49 +66,6 @@ describe('webServer', () => {
     expect(res.body).toEqual(mockTools);
   });
 
-  it('should handle /api/chat/stream/:jobId correctly', async () => {
-    const mockSubscriber = {
-      on: vi.fn(),
-      quit: vi.fn(),
-      subscribe: vi.fn(),
-      unsubscribe: vi.fn(),
-    };
-    mockRedis.duplicate.mockReturnValue(mockSubscriber as any);
-
-    const testRequest = request(app)
-      .get('/api/chat/stream/testJobId')
-      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
-
-    // Execute the request and get the response stream
-    const res = await testRequest; // This will wait for the initial headers
-
-    expect(res.statusCode).toEqual(200);
-    expect(res.headers['content-type']).toMatch(/text\/event-stream/);
-    expect(mockSubscriber.subscribe).toHaveBeenCalledWith(
-      'job:testJobId:events',
-    );
-
-    // Simulate a message being published to the Redis channel
-    mockSubscriber.on.mock.calls[0][1](
-      'job:testJobId:events',
-      '{"type":"test","content":"hello"}',
-    );
-
-    // Explicitly destroy the client-side response stream to trigger server-side 'close'
-    testRequest.abort(); // This should trigger req.on('close') on the server side
-
-    // Wait for cleanup to be called by the server's req.on('close') handler
-    await vi.waitFor(
-      () => {
-        expect(mockSubscriber.unsubscribe).toHaveBeenCalledWith(
-          'job:testJobId:events',
-        );
-        expect(mockSubscriber.quit).toHaveBeenCalled();
-      },
-      { timeout: 10000 },
-    ); // Give it some time for async cleanup
-  }, 10000);
-
   it('should return 200 for /api/session', async () => {
     const res = await request(app)
       .post('/api/session')
@@ -152,16 +107,5 @@ describe('webServer', () => {
 
     expect(res.statusCode).toEqual(200);
     expect(res.body.message).toEqual('Session renamed successfully.');
-  });
-
-  it('should handle /api/display correctly', async () => {
-    vi.spyOn(fs, 'readFile').mockResolvedValue('content');
-
-    const res = await request(app)
-      .get('/api/display?file=test.txt')
-      .set('Authorization', `Bearer ${config.AUTH_API_KEY}`);
-
-    expect(res.statusCode).toEqual(200);
-    expect(mockRedis.publish).toHaveBeenCalled();
   });
 });

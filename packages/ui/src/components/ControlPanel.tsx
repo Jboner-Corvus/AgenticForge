@@ -430,7 +430,7 @@ export const ControlPanel = memo(() => {
                       </span>
                       <div className="flex space-x-1">
                         <Button size="icon" variant="ghost" onClick={() => setActiveLlmApiKey(index)} aria-label="Set as active">
-                          <Play className="h-4 w-4" />
+                          <LlmLogo provider={llmKey.provider} className="h-4 w-4" />
                         </Button>
                         <Button size="icon" variant="ghost" onClick={() => removeLlmApiKey(index)} aria-label="Remove API Key">
                           <X className="h-4 w-4" />

@@ -37,7 +37,7 @@ export const summarizeTool: Tool<
         };
       }
 
-      const result = await getLlmProvider().getLlmResponse([
+      const result = await getLlmProvider('gemini').getLlmResponse([
         { parts: [{ text: getSummarizerPrompt(params.text) }], role: 'user' },
       ]);
 

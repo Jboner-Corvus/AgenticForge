@@ -88,6 +88,7 @@ export interface SessionData {
   name: string;
   messages: Message[];
   timestamp: number;
+  activeLlmProvider?: string;
 }
 
 export const getTools = async (authToken: string, sessionId: string) => {
@@ -254,5 +255,20 @@ export async function removeLlmApiKeyApi(index: number): Promise<void> {
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || `Erreur lors de la suppression de la clé API LLM`);
+  }
+}
+
+/**
+ * Définit le fournisseur LLM actif pour la session.
+ */
+export async function setActiveLlmProviderApi(providerName: string, authToken: null | string, sessionId: null | string): Promise<void> {
+  const response = await fetch('/api/session/llm-provider', {
+    method: 'POST',
+    headers: getAuthHeaders(authToken, sessionId),
+    body: JSON.stringify({ providerName }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || `Erreur lors de la définition du fournisseur LLM actif`);
   }
 }

@@ -543,10 +543,10 @@ class OpenAIProvider implements ILlmProvider {
   }
 }
 
-export function getLlmProvider(): ILlmProvider {
+export function getLlmProvider(providerName: string): ILlmProvider {
   let currentLlmProvider: ILlmProvider;
 
-  switch (config.LLM_PROVIDER) {
+  switch (providerName) {
     case 'gemini':
       currentLlmProvider = new GeminiProvider();
       break;
@@ -561,7 +561,7 @@ export function getLlmProvider(): ILlmProvider {
       break;
     default:
       logger.warn(
-        `Unknown LLM_PROVIDER: ${config.LLM_PROVIDER}. Defaulting to GeminiProvider.`,
+        `Unknown LLM provider requested: ${providerName}. Defaulting to GeminiProvider.`,
       );
       currentLlmProvider = new GeminiProvider();
       break;

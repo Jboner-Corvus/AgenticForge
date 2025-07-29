@@ -33,7 +33,7 @@ export class SessionManager {
   ): Ctx {
     return {
       job: _job,
-      llm: getLlmProvider(),
+      llm: getLlmProvider(session.activeLlmProvider || 'gemini'), // Default to 'gemini' if not set
       log,
       reportProgress: async (progress: {
         current: number;
@@ -148,6 +148,7 @@ export class SessionManager {
     let sessionName = `Session ${new Date().toLocaleString()}`;
     let sessionTimestamp = Date.now();
     let identities: any[] = [];
+    let activeLlmProvider: string | undefined = undefined; // Initialize new field
 
     if (res.rows.length > 0) {
       const storedSession = res.rows[0];
@@ -164,6 +165,7 @@ export class SessionManager {
       sessionName = storedSession.name;
       sessionTimestamp = parseInt(storedSession.timestamp, 10);
       identities = storedSession.identities || [];
+      activeLlmProvider = storedSession.active_llm_provider || undefined; // Retrieve new field
     } else {
       logger.info(
         { sessionId },
@@ -178,6 +180,7 @@ export class SessionManager {
         : initialHistory;
 
     const sessionData: SessionData = {
+      activeLlmProvider: activeLlmProvider, // Add to sessionData
       history: historyToUse,
       id: sessionId,
       identities: identities,
@@ -223,13 +226,14 @@ export class SessionManager {
       }
 
       await this.pgClient.query(
-        'INSERT INTO sessions (id, name, messages, timestamp, identities) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, messages = EXCLUDED.messages, timestamp = EXCLUDED.timestamp, identities = EXCLUDED.identities',
+        'INSERT INTO sessions (id, name, messages, timestamp, identities, active_llm_provider) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, messages = EXCLUDED.messages, timestamp = EXCLUDED.timestamp, identities = EXCLUDED.identities, active_llm_provider = EXCLUDED.active_llm_provider',
         [
           session.id,
           session.name,
           JSON.stringify(session.history),
           session.timestamp as any,
           JSON.stringify(session.identities),
+          session.activeLlmProvider || null, // Save the new field
         ],
       );
       SessionManager.activeSessions.set(session.id as string, session);
@@ -250,7 +254,8 @@ export class SessionManager {
         name VARCHAR(255) NOT NULL,
         messages JSONB NOT NULL,
         timestamp BIGINT NOT NULL,
-        identities JSONB
+        identities JSONB,
+        active_llm_provider VARCHAR(255) -- New column
       );
     `);
     logger.info('PostgreSQL sessions table ensured.');

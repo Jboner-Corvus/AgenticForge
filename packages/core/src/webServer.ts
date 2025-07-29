@@ -4,7 +4,6 @@ import type { Redis as _Redis } from 'ioredis';
 import chokidar from 'chokidar';
 import cookieParser from 'cookie-parser';
 import express, { type Application } from 'express';
-import * as fs from 'fs/promises';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import { Client as PgClient } from 'pg';
@@ -204,29 +203,12 @@ export async function initializeWebServer(
         logger.info(
           `Client disconnected from SSE for job ${jobId}. Unsubscribing.`,
         );
+        logger.debug(`Attempting to unsubscribe from channel: ${channel}`);
         clearInterval(heartbeatInterval);
         subscriber.unsubscribe(channel);
         subscriber.quit();
+        logger.debug(`Unsubscribed and quit for channel: ${channel}`);
       });
-    },
-  );
-
-  app.get(
-    '/api/history',
-    async (
-      req: express.Request,
-      res: express.Response,
-      _next: express.NextFunction,
-    ) => {
-      try {
-        const sessionId = req.sessionId;
-        const historyKey = `session:${sessionId}:history`;
-        const storedHistory = await redisClient.get(historyKey);
-        const history = storedHistory ? JSON.parse(storedHistory) : [];
-        res.status(200).json(history);
-      } catch (_error) {
-        _next(_error);
-      }
     },
   );
 
@@ -254,6 +236,41 @@ export async function initializeWebServer(
     },
   );
 
+  // New API for setting the active LLM provider for a session
+  app.post(
+    '/api/session/llm-provider',
+    async (
+      req: express.Request,
+      res: express.Response,
+      _next: express.NextFunction,
+    ) => {
+      try {
+        const { providerName } = req.body;
+        const sessionId = req.sessionId;
+
+        if (!sessionId || !providerName) {
+          throw new AppError('Missing session ID or provider name', {
+            statusCode: 400,
+          });
+        }
+
+        const session = await req.sessionManager!.getSession(sessionId);
+        session.activeLlmProvider = providerName;
+        await req.sessionManager!.saveSession(session, req.job, jobQueue);
+
+        logger.info(
+          { providerName, sessionId },
+          'Active LLM provider updated for session.',
+        );
+        res
+          .status(200)
+          .json({ message: 'Active LLM provider updated successfully.' });
+      } catch (_error) {
+        _next(_error);
+      }
+    },
+  );
+
   app.get(
     '/api/leaderboard-stats',
     async (
@@ -277,59 +294,6 @@ export async function initializeWebServer(
         });
       } catch (_error) {
         _next(_error);
-      }
-    },
-  );
-
-  app.get(
-    '/api/memory',
-    async (
-      req: express.Request,
-      res: express.Response,
-      _next: express.NextFunction,
-    ) => {
-      try {
-        const workspaceDir = path.resolve(process.cwd(), 'workspace');
-        const { limit, offset } = req.query;
-
-        const files = await fs.readdir(workspaceDir);
-
-        let filesToRead = files;
-        if (limit || offset) {
-          const parsedLimit = limit ? parseInt(limit as string, 10) : Infinity;
-          const parsedOffset = offset ? parseInt(offset as string, 10) : 0;
-
-          if (
-            isNaN(parsedLimit) ||
-            parsedLimit < 0 ||
-            isNaN(parsedOffset) ||
-            parsedOffset < 0
-          ) {
-            throw new AppError('Invalid limit or offset', { statusCode: 400 });
-          }
-
-          filesToRead = files.slice(parsedOffset, parsedOffset + parsedLimit);
-        }
-
-        const memoryContents = await Promise.all(
-          filesToRead.map(async (file) => {
-            const filePath = path.join(workspaceDir, file);
-            const stats = await fs.stat(filePath);
-            if (stats.size > config.MAX_FILE_SIZE_BYTES) {
-              return {
-                content: `File is too large to be displayed (>${config.MAX_FILE_SIZE_BYTES} bytes).`,
-                error: 'File too large',
-                fileName: file,
-              };
-            }
-            const content = await fs.readFile(filePath, 'utf-8');
-            return { content, fileName: file };
-          }),
-        );
-        res.status(200).json(memoryContents);
-      } catch (_error) {
-        logger.error(_error, 'Failed to retrieve memory contents.');
-        res.status(200).json([]);
       }
     },
   );
@@ -676,56 +640,6 @@ export async function initializeWebServer(
         const returnvalue = job.returnvalue;
 
         res.status(200).json({ jobId, progress, returnvalue, state });
-      } catch (error) {
-        _next(error);
-      }
-    },
-  );
-
-  app.get(
-    '/api/display',
-    async (
-      req: express.Request,
-      res: express.Response,
-      _next: express.NextFunction,
-    ) => {
-      try {
-        const { file } = req.query;
-        if (!file || typeof file !== 'string') {
-          throw new AppError('File parameter is missing or invalid.', {
-            statusCode: 400,
-          });
-        }
-
-        const filePath = path.join(process.cwd(), 'workspace', file);
-        const content = await fs.readFile(filePath, 'utf-8');
-        const _sessionId = req.sessionId;
-        const channel = `job:display:events`;
-
-        const extension = path.extname(file).toLowerCase();
-        let contentType: 'html' | 'image' | 'markdown' | 'pdf' | 'text' =
-          'text';
-        if (extension === '.html') {
-          contentType = 'html';
-        } else if (extension === '.md') {
-          contentType = 'markdown';
-        } else if (
-          ['.gif', '.jpeg', '.jpg', '.png', '.svg'].includes(extension)
-        ) {
-          contentType = 'image';
-        } else if (extension === '.pdf') {
-          contentType = 'pdf';
-        }
-
-        const message = {
-          payload: {
-            content,
-            type: contentType,
-          },
-          type: 'displayOutput',
-        };
-        await req.redis!.publish(channel, JSON.stringify(message));
-        res.status(200).json({ message: 'Display event sent.' });
       } catch (error) {
         _next(error);
       }

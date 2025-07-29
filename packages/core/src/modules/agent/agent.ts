@@ -17,9 +17,12 @@ import {
 
 import { config } from '../../config.js';
 import logger from '../../logger.js';
+import { LlmError } from '../../utils/LlmError.js';
 import { getLlmProvider } from '../../utils/llmProvider.js';
 import { LLMContent } from '../llm/llm-types.js';
+import { LlmKeyManager } from '../llm/LlmKeyManager.js';
 import { redis } from '../redis/redisClient.js';
+import { SessionManager } from '../session/sessionManager.js';
 import { FinishToolSignal } from '../tools/definitions/index.js';
 import { toolRegistry } from '../tools/toolRegistry.js';
 import { getMasterPrompt } from './orchestrator.prompt.js';
@@ -45,6 +48,7 @@ interface Command {
 }
 
 export class Agent {
+  private activeLlmProvider: string; // New property
   private commandHistory: Command[] = [];
   private interrupted = false;
   private readonly job: Job<{ prompt: string }>;
@@ -53,24 +57,26 @@ export class Agent {
   private loopCounter = 0;
   private malformedResponseCounter = 0;
   private readonly session: SessionData;
+  private readonly sessionManager: SessionManager; // New property
   private subscriber: any;
   private readonly taskQueue: Queue;
   private readonly tools: Tool<z.AnyZodObject, z.ZodTypeAny>[];
 
   constructor(
     job: Job<{ prompt: string }>,
-
     session: SessionData,
-
-    _taskQueue: Queue,
-
-    _tools?: Tool<z.AnyZodObject, z.ZodTypeAny>[],
+    taskQueue: Queue,
+    tools: Tool<z.AnyZodObject, z.ZodTypeAny>[],
+    activeLlmProvider: string,
+    sessionManager: SessionManager, // New parameter
   ) {
     this.job = job;
     this.session = session;
     this.log = logger.child({ jobId: job.id, sessionId: session.id });
-    this.taskQueue = _taskQueue;
-    this.tools = _tools ?? [];
+    this.taskQueue = taskQueue;
+    this.tools = tools ?? [];
+    this.activeLlmProvider = activeLlmProvider;
+    this.sessionManager = sessionManager; // Assign new parameter
   }
 
   public async run(): Promise<string> {
@@ -194,11 +200,67 @@ export class Agent {
             })
             .filter((m): m is LLMContent => m !== null);
 
-          const llmResponse = await getLlmProvider().getLlmResponse(
-            messagesForLlm,
-            orchestratorPrompt,
+          let llmResponse: string | undefined;
+          let currentProviderIndex = config.LLM_PROVIDER_HIERARCHY.indexOf(
+            this.activeLlmProvider,
           );
-          this.log.info({ llmResponse }, 'Raw LLM response');
+          if (currentProviderIndex === -1) {
+            currentProviderIndex = 0; // Default to first in hierarchy if current is not found
+          }
+
+          for (let i = 0; i < config.LLM_PROVIDER_HIERARCHY.length; i++) {
+            const providerToTry =
+              config.LLM_PROVIDER_HIERARCHY[
+                (currentProviderIndex + i) %
+                  config.LLM_PROVIDER_HIERARCHY.length
+              ];
+            this.log.info(
+              `Attempting LLM call with provider: ${providerToTry}`,
+            );
+            try {
+              if (!(await LlmKeyManager.hasAvailableKeys(providerToTry))) {
+                this.log.warn(
+                  `No available keys for provider ${providerToTry}. Skipping.`,
+                );
+                continue;
+              }
+              llmResponse = await getLlmProvider(providerToTry).getLlmResponse(
+                messagesForLlm,
+                orchestratorPrompt,
+              );
+              this.activeLlmProvider = providerToTry; // Update active provider on success
+              this.session.activeLlmProvider = providerToTry; // Update session data
+              await this.sessionManager.saveSession(
+                this.session,
+                this.job,
+                this.taskQueue,
+              ); // Persist session change
+              this.log.info(
+                { llmResponse, provider: providerToTry },
+                'Raw LLM response',
+              );
+              break; // Success, break out of provider loop
+            } catch (llmError) {
+              if (
+                llmError instanceof LlmError &&
+                llmError.message.includes('No LLM API key available')
+              ) {
+                this.log.warn(
+                  `No LLM API key available for ${providerToTry}. Trying next provider in hierarchy.`,
+                );
+                // Continue to next provider in hierarchy
+              } else {
+                // Re-throw other types of LLM errors immediately
+                throw llmError;
+              }
+            }
+          }
+
+          if (llmResponse === undefined) {
+            throw new LlmError(
+              'No LLM provider in the hierarchy could provide a response.',
+            );
+          }
 
           if (this.interrupted) {
             this.log.info('Job has been interrupted.');
@@ -474,7 +536,7 @@ export class Agent {
       });
       const result = await toolRegistry.execute(command.name, command.params, {
         job: this.job,
-        llm: getLlmProvider(),
+        llm: getLlmProvider(this.activeLlmProvider),
         log,
         session: this.session,
         taskQueue: this.taskQueue,

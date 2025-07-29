@@ -43,11 +43,11 @@ describe('summarizeTool', () => {
       getErrorType: vi.fn(),
       getLlmResponse: mockGetLlmResponse,
     } as ILlmProvider);
-    mockCtx.llm = getLlmProvider(); // Set the mocked LLM provider to context
+    mockCtx.llm = getLlmProvider('gemini'); // Set the mocked LLM provider to context
   });
 
   it('should summarize the text successfully', async () => {
-    vi.mocked(getLlmProvider().getLlmResponse).mockResolvedValue(
+    vi.mocked(getLlmProvider('gemini').getLlmResponse).mockResolvedValue(
       'This is a summary.',
     );
     const result = await summarizeTool.execute(
@@ -55,7 +55,7 @@ describe('summarizeTool', () => {
       mockCtx,
     );
     expect(result).toEqual('This is a summary.');
-    expect(getLlmProvider().getLlmResponse).toHaveBeenCalled();
+    expect(getLlmProvider('gemini').getLlmResponse).toHaveBeenCalled();
   });
 
   it('should return an error object if textToSummarize is an empty string', async () => {
@@ -70,7 +70,7 @@ describe('summarizeTool', () => {
   });
 
   it('should return an error object if getLlmResponse returns an empty string or null', async () => {
-    vi.mocked(getLlmProvider().getLlmResponse).mockResolvedValue('');
+    vi.mocked(getLlmProvider('gemini').getLlmResponse).mockResolvedValue('');
     let result = await summarizeTool.execute({ text: 'Some text' }, mockCtx);
     expect(result).toEqual({
       erreur: 'Failed to summarize text: LLM returned empty response.',
@@ -79,7 +79,7 @@ describe('summarizeTool', () => {
       'LLM returned empty response for summarization.',
     );
 
-    vi.mocked(getLlmProvider().getLlmResponse).mockResolvedValue('');
+    vi.mocked(getLlmProvider('gemini').getLlmResponse).mockResolvedValue('');
     result = await summarizeTool.execute({ text: 'Some text' }, mockCtx);
     expect(result).toEqual({
       erreur: 'Failed to summarize text: LLM returned empty response.',

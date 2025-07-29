@@ -63,6 +63,15 @@ export const AppInitializer = () => {
     const initialize = async () => {
       addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${fr.interfaceInitialized}.`);
       initializeSession();
+      // Check for GitHub OAuth success redirect
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('github_auth_success') === 'true') {
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] GitHub OAuth success detected. Re-initializing auth token.`);
+        initializeAuthToken(); // Re-run to pick up new JWT from cookie
+        urlParams.delete('github_auth_success');
+        window.history.replaceState({}, document.title, `${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`);
+      }
+
       initializeAuthToken();
       await checkServerHealth();
       await useStore.getState().initializeSessionAndMessages();

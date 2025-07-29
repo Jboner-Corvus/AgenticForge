@@ -65,25 +65,25 @@ describe('llmProvider', () => {
 
   it('should return the correct LLM provider based on config', () => {
     config.LLM_PROVIDER = 'openai';
-    let provider = getLlmProvider();
+    let provider = getLlmProvider(config.LLM_PROVIDER);
     expect(provider.constructor.name).toBe('OpenAIProvider');
 
     config.LLM_PROVIDER = 'mistral';
-    provider = getLlmProvider();
+    provider = getLlmProvider(config.LLM_PROVIDER);
     expect(provider.constructor.name).toBe('MistralProvider');
 
     config.LLM_PROVIDER = 'huggingface';
-    provider = getLlmProvider();
+    provider = getLlmProvider(config.LLM_PROVIDER);
     expect(provider.constructor.name).toBe('HuggingFaceProvider');
 
     config.LLM_PROVIDER = 'gemini';
-    provider = getLlmProvider();
+    provider = getLlmProvider(config.LLM_PROVIDER);
     expect(provider.constructor.name).toBe('GeminiProvider');
   });
 
   it('should throw LlmError if fetch fails', async () => {
     mockFetch.mockRejectedValue(new Error('Network error'));
-    const provider = getLlmProvider();
+    const provider = getLlmProvider(config.LLM_PROVIDER);
     await expect(
       provider.getLlmResponse([
         {

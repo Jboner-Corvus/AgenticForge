@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { getTools, saveSessionApi, loadSessionApi, deleteSessionApi, renameSessionApi, addLlmApiKeyApi, removeLlmApiKeyApi, getLeaderboardStats, getLlmApiKeysApi, loadAllSessionsApi } from './api';
+import { getTools, saveSessionApi, loadSessionApi, deleteSessionApi, renameSessionApi, addLlmApiKeyApi, removeLlmApiKeyApi, getLeaderboardStats, getLlmApiKeysApi, loadAllSessionsApi, setActiveLlmProviderApi } from './api';
 import type { SessionData } from './api';
 import { generateUUID } from './utils/uuid';
 import { type ChatMessage as ExternalChatMessage, type NewChatMessage } from '../types/chat.d';
@@ -19,6 +19,12 @@ interface Session {
 interface LlmApiKey {
   provider: string;
   key: string;
+}
+
+interface ToastOptions {
+  title?: string;
+  description?: string;
+  variant?: "default" | "destructive";
 }
 
 export interface AppState {
@@ -103,6 +109,7 @@ export interface AppState {
   setSessions: (sessions: Session[]) => void;
   setMessages: (messages: ExternalChatMessage[]) => void;
   setActiveSessionId: (id: string | null) => void;
+  toast: (options: ToastOptions) => void;
 
   // Canvas setters
   setCanvasContent: (content: string) => void;
@@ -282,9 +289,24 @@ export const useStore = create<AppState>((set, get) => ({
       console.error("Failed to remove LLM API key from backend:", error);
     }
   },
-  setActiveLlmApiKey: (index: number) => set(() => {
-    return { activeLlmApiKeyIndex: index };
-  }),
+  setActiveLlmApiKey: (index: number) => async () => {
+    const { llmApiKeys, authToken, sessionId, addDebugLog, toast } = get();
+    if (index < 0 || index >= llmApiKeys.length) {
+      console.error("Invalid LLM API key index.");
+      return;
+    }
+    const selectedProvider = llmApiKeys[index].provider;
+    try {
+      await setActiveLlmProviderApi(selectedProvider, authToken, sessionId);
+      set({ activeLlmApiKeyIndex: index });
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Active LLM provider set to: ${selectedProvider}`);
+      toast({ title: "LLM Provider Changed", description: `Active LLM provider set to ${selectedProvider}.` });
+    } catch (error) {
+      console.error("Failed to set active LLM provider:", error);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Failed to set active LLM provider: ${error instanceof Error ? error.message : String(error)}`);
+      toast({ title: "Error", description: "Failed to set active LLM provider.", variant: "destructive" });
+    }
+  },
 
   clearCanvas: () => set({ canvasContent: '', isCanvasVisible: false }),
 
@@ -390,6 +412,7 @@ export const useStore = create<AppState>((set, get) => ({
     // Placeholder for startAgent logic
     console.log("startAgent called from store (placeholder)");
   },
+  toast: () => {},
   initializeSessionAndMessages: async () => {
     const { setSessions, setActiveSessionId, setMessages, setSessionId, addDebugLog, updateLeaderboardStats, addLlmApiKey, setActiveLlmApiKey } = get();
 
@@ -437,6 +460,17 @@ export const useStore = create<AppState>((set, get) => ({
         setSessionId(activeSession.id);
         setActiveSessionId(activeSession.id);
         setMessages(activeSession.messages);
+        // Set active LLM API key based on loaded session's activeLlmProvider
+        if (activeSession.activeLlmProvider) {
+          const llmApiKeys = get().llmApiKeys;
+          const providerIndex = llmApiKeys.findIndex(key => key.provider === activeSession.activeLlmProvider);
+          if (providerIndex !== -1) {
+            set({ activeLlmApiKeyIndex: providerIndex });
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Active LLM provider synchronized from session: ${activeSession.activeLlmProvider}`);
+          } else {
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [WARN] Session's active LLM provider '${activeSession.activeLlmProvider}' not found in available keys.`);
+          }
+        }
         addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Sessions and messages loaded from backend.`);
         return;
       }

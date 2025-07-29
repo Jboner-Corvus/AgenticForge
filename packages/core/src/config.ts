@@ -23,6 +23,10 @@ const configSchema = z.object({
   LLM_PROVIDER: z
     .enum(['gemini', 'openai', 'mistral', 'huggingface'])
     .default('gemini'),
+  LLM_PROVIDER_HIERARCHY: z
+    .string()
+    .default('gemini,openai,mistral,huggingface')
+    .transform((str) => str.split(',').map((s) => s.trim())),
   LOG_LEVEL: z.string().default('debug'),
   MAX_FILE_SIZE_BYTES: z.coerce.number().default(10 * 1024 * 1024), // 10 MB
   MCP_API_KEY: z.string().optional(),

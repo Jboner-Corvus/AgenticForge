@@ -31,7 +31,9 @@ export class LlmKeyManager {
     return await this.getKeys();
   }
 
-  public static async getNextAvailableKey(): Promise<LlmApiKey | null> {
+  public static async getNextAvailableKey(
+    providerName?: string,
+  ): Promise<LlmApiKey | null> {
     const keys = await this.getKeys();
     const now = Date.now();
 
@@ -39,6 +41,7 @@ export class LlmKeyManager {
     const availableKeys = keys
       .filter(
         (key) =>
+          (!providerName || key.provider === providerName) && // Filter by providerName
           !key.isPermanentlyDisabled &&
           (!key.isDisabledUntil || key.isDisabledUntil <= now),
       )
@@ -59,6 +62,19 @@ export class LlmKeyManager {
       'Returning next available LLM API key.',
     );
     return nextKey;
+  }
+
+  public static async hasAvailableKeys(providerName: string): Promise<boolean> {
+    const keys = await this.getKeys();
+    const now = Date.now();
+
+    const availableKeysForProvider = keys.filter(
+      (key) =>
+        key.provider === providerName &&
+        !key.isPermanentlyDisabled &&
+        (!key.isDisabledUntil || key.isDisabledUntil <= now),
+    );
+    return availableKeysForProvider.length > 0;
   }
 
   public static async markKeyAsBad(

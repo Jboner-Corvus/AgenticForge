@@ -110,6 +110,7 @@ describe('ControlPanel', () => {
       updateSessionStatus: vi.fn(),
       startAgent: vi.fn(),
       initializeSessionAndMessages: vi.fn(),
+      toast: vi.fn(),
     };
 
     (useStore as unknown as Mock).mockImplementation((selector: (state: AppState) => unknown) => selector(mockState));

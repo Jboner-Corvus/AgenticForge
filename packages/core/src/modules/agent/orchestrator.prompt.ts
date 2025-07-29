@@ -22,10 +22,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Corrige le chemin pour pointer vers le fichier source, que le code soit exécuté depuis /src ou /dist
-const promptFilePath = path.resolve(
-  __dirname,
-  'system.prompt.md',
-);
+const promptFilePath = path.resolve(__dirname, 'system.prompt.md');
 
 // --- START DEBUG LOGS ---
 console.log('DEBUG: __dirname:', __dirname);

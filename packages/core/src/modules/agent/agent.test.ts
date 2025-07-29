@@ -13,12 +13,24 @@ import { Agent } from './agent.js';
 
 vi.mock('../../utils/llmProvider.js', () => {
   const mockLlmProvider = {
-    getLlmResponse: vi.fn(),
+    getLlmResponse: vi.fn((_messages: any, _systemPrompt?: string) => {}),
   };
   return {
-    getLlmProvider: vi.fn(() => mockLlmProvider),
+    getLlmProvider: vi.fn((_providerName: string) => mockLlmProvider),
   };
 });
+
+vi.mock('../llm/LlmKeyManager.js', () => ({
+  LlmKeyManager: {
+    addKey: vi.fn(),
+    getKeysForApi: vi.fn(),
+    getNextAvailableKey: vi.fn(),
+    hasAvailableKeys: vi.fn(),
+    markKeyAsBad: vi.fn(),
+    removeKey: vi.fn(),
+    resetKeyStatus: vi.fn(),
+  },
+}));
 
 vi.mock('../tools/toolRegistry.js', () => ({
   toolRegistry: {
@@ -33,25 +45,40 @@ vi.mock('../../utils/toolLoader.js', () => ({
 }));
 
 vi.mock('../redis/redisClient.js', () => {
-  const mockRedisSubscriber = {
-    on: vi.fn(),
-    quit: vi.fn(),
-    subscribe: vi.fn(),
-    unsubscribe: vi.fn(),
+  const mockRedisClient = {
+    duplicate: vi.fn(),
+    lrange: vi.fn().mockResolvedValue([]),
+    publish: vi.fn(),
   };
   return {
-    redis: {
-      duplicate: vi.fn(() => mockRedisSubscriber),
-      publish: vi.fn(),
-      subscribe: vi.fn(),
-    },
+    redis: mockRedisClient,
   };
 });
 
-const mockedGetLlmResponse = getLlmProvider().getLlmResponse as Mock;
+import { SessionManager as _SessionManager } from '../session/sessionManager';
+
+const _mockSessionManagerInstance = {
+  getSession: vi.fn(),
+  saveSession: vi.fn(),
+};
+
+vi.mock('../session/sessionManager', () => ({
+  SessionManager: vi.fn(() => ({
+    getSession: vi.fn(),
+    saveSession: vi.fn(),
+  })),
+}));
+
+import { LlmKeyManager } from '../llm/LlmKeyManager.js';
+
+const mockedGetLlmResponse = getLlmProvider('gemini').getLlmResponse as Mock;
 const mockedGetTools = getTools as Mock;
 const mockedToolRegistryExecute = toolRegistry.execute as Mock;
 const mockedToolRegistryGetAll = toolRegistry.getAll as Mock;
+const mockedLlmKeyManagerGetNextAvailableKey =
+  LlmKeyManager.getNextAvailableKey as Mock;
+const mockedLlmKeyManagerHasAvailableKeys =
+  LlmKeyManager.hasAvailableKeys as Mock;
 
 const mockFinishToolParams = z.object({
   response: z.string().describe('The final, complete answer to the user.'),
@@ -113,6 +140,7 @@ describe('Agent Integration Tests', () => {
     } as unknown as Job;
 
     mockSession = {
+      activeLlmProvider: 'gemini', // Default active provider for tests
       history: [],
       id: 'test-session-1',
       identities: [],
@@ -143,10 +171,39 @@ describe('Agent Integration Tests', () => {
     (redis.duplicate as Mock).mockReturnValue(mockRedisSubscriber);
     (redis.publish as Mock).mockResolvedValue(1);
 
-    agent = new Agent(mockJob, mockSession, mockQueue, [
-      mockTestTool,
-      mockFinishTool,
-    ]);
+    // Default mocks for LLM Key Manager
+    mockedLlmKeyManagerHasAvailableKeys.mockResolvedValue(true);
+    mockedLlmKeyManagerGetNextAvailableKey.mockResolvedValue({
+      apiKey: 'mock-api-key',
+      errorCount: 0,
+      provider: 'gemini',
+    });
+
+    // Mock config.LLM_PROVIDER_HIERARCHY
+    vi.mock('../../config.js', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('../../config.js')>();
+      return {
+        ...actual,
+        config: {
+          ...actual.config,
+          LLM_PROVIDER_HIERARCHY: [
+            'gemini',
+            'openai',
+            'mistral',
+            'huggingface',
+          ],
+        },
+      };
+    });
+
+    agent = new Agent(
+      mockJob,
+      mockSession,
+      mockQueue,
+      [mockTestTool, mockFinishTool],
+      mockSession.activeLlmProvider!,
+      new _SessionManager(null as any),
+    );
 
     mockedGetTools.mockResolvedValue([mockTestTool, mockFinishTool]);
     mockedToolRegistryGetAll.mockReturnValue([mockTestTool, mockFinishTool]);
@@ -155,6 +212,9 @@ describe('Agent Integration Tests', () => {
   afterEach(() => {
     vi.clearAllMocks();
     vi.useRealTimers();
+    if (mockRedisSubscriber) {
+      mockRedisSubscriber.quit();
+    }
   });
 
   it('should follow the thought-command-result loop', async () => {

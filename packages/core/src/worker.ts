@@ -140,7 +140,15 @@ export async function processJob(
 
   try {
     const session = await _sessionManager.getSession(_job.data.sessionId);
-    const agent = new Agent(_job, session, _jobQueue, _tools);
+    const activeLlmProvider = session.activeLlmProvider || config.LLM_PROVIDER; // Use session's provider or default
+    const agent = new Agent(
+      _job,
+      session,
+      _jobQueue,
+      _tools,
+      activeLlmProvider,
+      _sessionManager, // Pass sessionManager
+    );
     const finalResponse = await agent.run();
 
     session.history.push({

@@ -79,6 +79,7 @@ export interface MinimalJob {
 
 export interface SessionData {
   [key: string]: unknown;
+  activeLlmProvider?: string; // New field to store the active LLM provider
   history: Message[];
   identities: Array<{ id: string; type: string }>;
   metadata?: Record<string, unknown>;
