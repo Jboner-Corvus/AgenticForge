@@ -10,13 +10,13 @@
   "type": "module",
   "scripts": {
     "start": "node dist/webServer.js",
-    "start:dev": "NODE_ENV=development node --loader ts-node/esm src/server.ts",
-    "dev": "NODE_ENV=development nodemon --watch src --exec node --loader ts-node/esm src/server.ts",
+    "start:dev": "NODE_ENV=development tsx src/server-start.ts",
+    "dev": "NODE_ENV=development nodemon --watch src --exec tsx src/server-start.ts",
     "build": "NODE_OPTIONS=--max-old-space-size=12288 pnpm exec tsup",
     "clean": "rm -rf dist",
     "start:worker:dev": "NODE_ENV=development node --loader ts-node/esm src/worker.ts",
     "start:worker": "node dist/worker.js",
-    "test": "NODE_OPTIONS=--max-old-space-size=8192 vitest run",
+    "test": "NODE_OPTIONS=--max-old-space-size=16384 vitest run",
     "lint": "eslint --fix \"src/**/*.ts\"",
     "format": "prettier --write src/ && eslint --fix src/"
   },

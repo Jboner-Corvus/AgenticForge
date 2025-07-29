@@ -5,14 +5,14 @@ import { Client as PgClient } from 'pg';
 
 import { Tool } from '@/types';
 
-import { config } from './config';
-import logger from './logger';
-import { Agent } from './modules/agent/agent';
+import { config } from './config.js';
+import logger from './logger.js';
+import { Agent } from './modules/agent/agent.js';
 import * as redisClient from './modules/redis/redisClient.js';
-import { SessionManager } from './modules/session/sessionManager';
+import { SessionManager } from './modules/session/sessionManager.js';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.js';
-import { AppError, getErrDetails, UserError } from './utils/errorUtils';
-import { getTools } from './utils/toolLoader';
+import { AppError, getErrDetails, UserError } from './utils/errorUtils.js';
+import { getTools } from './utils/toolLoader.js';
 
 // ... rest of the file
 

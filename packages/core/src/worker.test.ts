@@ -26,7 +26,7 @@ vi.mock('./modules/redis/redisClient', async (importOriginal) => {
   };
 });
 
-import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
 vi.mock('pg', () => ({
   Client: vi.fn(() => ({
@@ -109,6 +109,10 @@ describe('processJob', () => {
       run: vi.fn().mockResolvedValue('Agent final response'),
     }));
     (summarizeTool.execute as any).mockResolvedValue('Summarized conversation');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should process a job successfully and return the final response', async () => {

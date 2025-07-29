@@ -1,3 +1,0 @@
-{
-  "prompt": "Je veux que tu exécutes les tâches suivantes dans l'ordre : 1. Crée un fichier nommé 'index.html' avec le contenu '<h1>Bonjour le monde !</h1>'. 2. Démarre un serveur web simple sur le port 8000 en arrière-plan pour servir les fichiers du répertoire de travail."
-}

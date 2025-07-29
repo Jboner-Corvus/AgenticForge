@@ -5,7 +5,7 @@ import { redis as _redis } from '@/modules/redis/redisClient';
 import { SessionManager } from '@/modules/session/sessionManager';
 
 import { config } from '../../config';
-import { summarizeTool } from '../../modules/tools/definitions/ai/summarize.tool';
+import { summarizeTool } from '../tools/definitions/ai/summarize.tool';
 
 // Mock dependencies
 vi.mock('pg', () => {

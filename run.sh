@@ -417,7 +417,14 @@ run_format() {
 
 run_tests() {
     echo -e "${COLOR_YELLOW}Lancement des tests...${NC}"
+    echo -e "${COLOR_YELLOW}Démarrage des services Docker pour l'environnement de test...${NC}"
+    start_services
+    echo -e "${COLOR_GREEN}Services Docker démarrés. Lancement des tests...${NC}"
     pnpm --filter=@agenticforge/core test
+    local test_exit_code=$?
+    echo -e "${COLOR_YELLOW}Tests terminés. Arrêt des services Docker...${NC}"
+    stop_services
+    return $test_exit_code
 }
 
 run_typecheck() {

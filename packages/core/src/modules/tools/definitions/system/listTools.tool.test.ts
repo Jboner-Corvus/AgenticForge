@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Ctx, ILlmProvider, SessionData, Tool } from '@/types.js';
 
 import logger from '../../../../logger.js';
-import { getAllTools } from '../../../tools/definitions/index.js';
+import { getAllTools } from '../index.js';
 import { listToolsTool } from './listTools.tool.js';
 
 vi.mock('../../../tools/definitions/index.js', () => ({

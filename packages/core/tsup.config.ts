@@ -24,7 +24,7 @@ export default defineConfig({
         return !src.endsWith('.ts');
       },
     });
-    await fs.copy('src/modules/agent/system.prompt.md', 'dist/modules/agent/system.prompt.md');
+    await fs.copy('src/modules/agent/system.prompt.md', 'dist/system.prompt.md');
     console.log('Additional files copied.');
   },
 });

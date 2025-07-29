@@ -1,5 +1,5 @@
 import logger from '../../logger.js';
-import { redis as _redis } from '../../modules/redis/redisClient.js';
+import { redis as _redis } from '../redis/redisClient.js';
 
 export enum LlmKeyErrorType {
   PERMANENT = 'permanent',

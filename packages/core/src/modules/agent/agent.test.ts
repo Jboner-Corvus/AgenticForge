@@ -55,7 +55,7 @@ vi.mock('../redis/redisClient.js', () => {
   };
 });
 
-import { SessionManager as _SessionManager } from '../session/sessionManager';
+import { SessionManager as _SessionManager } from '../session/sessionManager.js';
 
 const _mockSessionManagerInstance = {
   getSession: vi.fn(),

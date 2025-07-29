@@ -60,10 +60,14 @@ export type Config = z.infer<typeof configSchema>;
 
 export let config: Config;
 
+export function getConfig(): Config {
+  return config;
+}
+
 export function loadConfig() {
   if (process.env.NODE_ENV !== 'test') {
     const result = dotenv.config({
-      path: path.resolve(process.cwd(), '.env'),
+      path: '/home/demon/agentforge/AgenticForge2/AgenticForge4/.env',
     });
 
     if (result.error) {

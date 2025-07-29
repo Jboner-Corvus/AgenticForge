@@ -24,6 +24,6 @@ export * from './utils/errorUtils.js';
 export * from './utils/qualityGate.js';
 export * from './utils/toolLoader.js';
 export * from './utils/validationUtils.js';
-export * from './utils/webhookUtils.js';
+// export * from './utils/webhookUtils';
 export * from './webServer.js';
 export * from './worker.js';

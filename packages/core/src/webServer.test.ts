@@ -33,17 +33,37 @@ vi.mock('./modules/llm/LlmKeyManager');
 vi.mock('jsonwebtoken');
 vi.mock('fs/promises');
 
+import { Server } from 'http';
+
 describe('webServer', () => {
   let app: express.Application;
+  let server: Server;
 
   beforeAll(async () => {
     config.AUTH_API_KEY = 'test-api-key';
     config.MAX_FILE_SIZE_BYTES = 1024 * 1024; // 1 MB
-    app = await initializeWebServer(
+    const webServer = await initializeWebServer(
       mockRedis as any,
       jobQueue,
       mockPgClient as any,
     );
+    app = webServer.app;
+    server = webServer.server;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) => {
+      server.close(err => {
+        if (err) {
+          return reject(err);
+        }
+        resolve();
+      });
+    });
+    if ((mockRedis as any).quit) {
+      await (mockRedis as any).quit();
+    }
+    await mockPgClient.end();
   });
 
   beforeEach(() => {

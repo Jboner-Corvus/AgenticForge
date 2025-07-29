@@ -35,6 +35,7 @@ export const mockRedis = {
     host: 'mock_host',
     port: 1234,
   },
+  quit: vi.fn(),
   _getStore: () => store,
   _resetStore: () => {
     for (const key in store) {

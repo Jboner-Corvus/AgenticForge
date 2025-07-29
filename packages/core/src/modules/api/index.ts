@@ -3,9 +3,9 @@ import '../../tracing.js'; // Initialize OpenTelemetry
 import { Client as PgClient } from 'pg';
 
 import logger from '../../logger.js';
-import { jobQueue } from '../../modules/queue/queue.js';
-import { redis } from '../../modules/redis/redisClient.js';
 import { initializeWebServer } from '../../webServer.js';
+import { jobQueue } from '../queue/queue.js';
+import { redis } from '../redis/redisClient.js';
 
 async function startApplication() {
   logger.info("Démarrage de l'application AgenticForge...");
