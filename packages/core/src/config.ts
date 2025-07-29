@@ -65,9 +65,12 @@ export function getConfig(): Config {
 }
 
 export function loadConfig() {
-  if (process.env.NODE_ENV !== 'test') {
+  // Always load .env file to ensure consistent configuration across environments
+  // The NODE_ENV check was removed to allow .env variables to be used in tests.
+  // If specific test configurations are needed, they should be managed via test-specific .env files or direct environment variable setting in test scripts.
+  {
     const result = dotenv.config({
-      path: '/home/demon/agentforge/AgenticForge2/AgenticForge4/.env',
+      path: path.resolve(__dirname, '../../../../.env'),
     });
 
     if (result.error) {

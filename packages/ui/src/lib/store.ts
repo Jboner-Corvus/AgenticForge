@@ -459,7 +459,7 @@ export const useStore = create<AppState>((set, get) => ({
 
         setSessionId(activeSession.id);
         setActiveSessionId(activeSession.id);
-        setMessages(activeSession.messages);
+        setMessages(activeSession.messages || []);
         // Set active LLM API key based on loaded session's activeLlmProvider
         if (activeSession.activeLlmProvider) {
           const llmApiKeys = get().llmApiKeys;
