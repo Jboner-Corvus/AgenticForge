@@ -14,7 +14,6 @@ export const editFileParams = z.object({
   is_regex: z
     .boolean()
     .optional()
-    .default(false)
     .describe('Set to true if content_to_replace is a regex.'),
   new_content: z
     .string()
@@ -58,10 +57,12 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
 
       try {
         const originalContent = await fs.readFile(absolutePath, 'utf-8');
-        let modifiedContent: string;
+      let modifiedContent: string;
 
-        if (args.is_regex) {
-          const regex = new RegExp(args.content_to_replace, 'g');
+      const useRegex = args.is_regex ?? false; // Handle default here
+
+      if (useRegex) {
+        const regex = new RegExp(args.content_to_replace, 'g');
           modifiedContent = originalContent.replace(regex, args.new_content);
         } else {
           modifiedContent = originalContent

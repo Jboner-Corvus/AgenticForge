@@ -58,20 +58,43 @@ class GeminiProvider implements ILlmProvider {
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${config.LLM_MODEL_NAME}:generateContent?key=${activeKey.apiKey}`;
 
+    const geminiMessages = messages.map((msg) => {
+      let role = msg.role;
+      let parts = msg.parts;
+
+      if (role === 'tool') {
+        // Gemini API does not directly support 'tool' role in 'contents'.
+        // Convert tool outputs to user messages.
+        role = 'user';
+        parts = [{ text: `Tool output: ${parts.map(p => p.text).join('')}` }];
+      }
+
+      return { role, parts };
+    });
+
     if (systemPrompt) {
-      messages.unshift({
-        parts: [{ text: systemPrompt }],
-        role: 'user',
-      });
+      // Prepend system prompt to the first user message, as Gemini API does not have a dedicated system role.
+      const firstUserMessage = geminiMessages.find(msg => msg.role === 'user');
+      if (firstUserMessage) {
+        firstUserMessage.parts.unshift({ text: systemPrompt + '\n' });
+      } else {
+        // If there are no user messages, create one with the system prompt
+        geminiMessages.unshift({
+          parts: [{ text: systemPrompt }],
+          role: 'user',
+        });
+      }
     }
 
     const requestBody = {
-      contents: messages,
+      contents: geminiMessages,
     };
 
     const body = JSON.stringify(requestBody);
 
     try {
+      // Log 2: Avant chaque appel LLM
+      log.info(`[LLM CALL] Envoi de la requête au modèle : ${config.LLM_MODEL_NAME} via ${activeKey.provider}`);
       const response = await fetch(apiUrl, {
         body,
         headers: {
@@ -221,6 +244,8 @@ class HuggingFaceProvider implements ILlmProvider {
     const body = JSON.stringify(requestBody);
 
     try {
+      // Log 2: Avant chaque appel LLM
+      log.info(`[LLM CALL] Envoi de la requête au modèle : ${config.LLM_MODEL_NAME} via ${activeKey.provider}`);
       const response = await fetch(apiUrl, {
         body,
         headers: {
@@ -363,6 +388,8 @@ class MistralProvider implements ILlmProvider {
     const body = JSON.stringify(requestBody);
 
     try {
+      // Log 2: Avant chaque appel LLM
+      log.info(`[LLM CALL] Envoi de la requête au modèle : ${config.LLM_MODEL_NAME} via ${activeKey.provider}`);
       const response = await fetch(apiUrl, {
         body,
         headers: {
@@ -510,6 +537,8 @@ class OpenAIProvider implements ILlmProvider {
     const body = JSON.stringify(requestBody);
 
     try {
+      // Log 2: Avant chaque appel LLM
+      log.info(`[LLM CALL] Envoi de la requête au modèle : ${config.LLM_MODEL_NAME} via ${activeKey.provider}`);
       const response = await fetch(apiUrl, {
         body,
         headers: {

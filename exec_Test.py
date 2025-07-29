@@ -197,7 +197,7 @@ def run_command(command_number):
                         print(f"Job {job_id} completed.")
                         # Add verification logic here based on the test number
                         if command_number == '1':
-                            if "Directory listing for 'workspace/" in return_value:
+                            if "Here are the files and folders in the current working directory:" in return_value:
                                 print("✅ Test 1 (List files and folders) passed.")
                             else:
                                 print("❌ Test 1 (List files and folders) failed: Unexpected output.")

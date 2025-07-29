@@ -19,6 +19,7 @@ const configSchema = z.object({
   HISTORY_MAX_LENGTH: z.coerce.number().default(1000),
   HOST_PROJECT_PATH: z.string().default('/usr/src/app'),
   JWT_SECRET: z.string().optional(),
+  LLM_API_KEY: z.string().optional(), // Added LLM_API_KEY
   LLM_MODEL_NAME: z.string().default('gemini-pro'),
   LLM_PROVIDER: z
     .enum(['gemini', 'openai', 'mistral', 'huggingface'])

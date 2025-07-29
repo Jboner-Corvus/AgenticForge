@@ -13,6 +13,7 @@ import { SessionManager } from './modules/session/sessionManager.js';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.js';
 import { AppError, getErrDetails, UserError } from './utils/errorUtils.js';
 import { getTools } from './utils/toolLoader.js';
+import { LlmKeyManager } from './modules/llm/LlmKeyManager.js'; // Import LlmKeyManager
 
 // ... rest of the file
 
@@ -23,6 +24,12 @@ export async function initializeWorker(
   const _tools = await getTools();
   const _jobQueue = new Queue('tasks', { connection: redisConnection });
   const sessionManager = new SessionManager(pgClient);
+
+  // Add LLM API key to LlmKeyManager at startup
+  if (config.LLM_API_KEY && config.LLM_PROVIDER) {
+    await LlmKeyManager.addKey(config.LLM_PROVIDER, config.LLM_API_KEY);
+    logger.info(`[INIT LLM] Added LLM API key for provider: ${config.LLM_PROVIDER}`);
+  }
 
   const worker = new Worker(
     'tasks',
@@ -229,6 +236,11 @@ export async function processJob(
 
 // Démarrage direct du worker
 if (process.env.NODE_ENV !== 'test') {
+  // Log 1: Vérification des Variables d'Environnement (Backend)
+  logger.info(`[INIT LLM] LLM_PROVIDER détecté : ${process.env.LLM_PROVIDER}`);
+  logger.info(`[INIT LLM] LLM_API_KEY (partiel) détecté : ${process.env.LLM_API_KEY ? process.env.LLM_API_KEY.substring(0, 5) + '...' : 'NON DÉTECTÉ'}`);
+  logger.info(`[INIT LLM] LLM_MODEL_NAME détecté : ${process.env.LLM_MODEL_NAME}`);
+
   const connectionString = `postgresql://${config.POSTGRES_USER}:${config.POSTGRES_PASSWORD}@${config.POSTGRES_HOST}:${config.POSTGRES_PORT}/${config.POSTGRES_DB}`;
   const pgClient = new PgClient({
     connectionString: connectionString,

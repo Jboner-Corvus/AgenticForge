@@ -310,9 +310,7 @@ start_services() {
         return 1
     fi
     
-    if [ "$DOCKER" != "true" ]; then
-        start_worker
-    fi
+    start_worker
     start_docker_log_collector
 }
 

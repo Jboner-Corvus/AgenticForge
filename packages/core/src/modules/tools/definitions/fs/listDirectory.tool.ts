@@ -11,9 +11,10 @@ const WORKSPACE_DIR = config.WORKSPACE_PATH;
 export const listFilesParams = z.object({
   path: z
     .string()
+    .optional()
     .describe(
       'The subdirectory to list within the workspace. Defaults to the root.',
-    ).optional(),
+    ),
 });
 
 export const listFilesOutput = z.union([

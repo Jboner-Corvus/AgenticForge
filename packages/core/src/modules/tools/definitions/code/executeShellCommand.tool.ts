@@ -9,7 +9,6 @@ export const executeShellCommandParams = z.object({
   detach: z
     .boolean()
     .optional()
-    .default(false)
     .describe(
       'If true, the command will be executed in the background and the tool will return immediately.',
     ),
@@ -31,7 +30,9 @@ export const executeShellCommandTool: Tool<
     args: z.infer<typeof executeShellCommandParams>,
     ctx: Ctx,
   ) => {
-    if (args.detach) {
+    const detachCommand = args.detach ?? false; // Handle default here
+
+    if (detachCommand) {
       // Enqueue the command for background execution
       const jobId = `shell-command-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       await ctx.taskQueue.add(
