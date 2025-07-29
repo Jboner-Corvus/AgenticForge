@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "src",
+    "composite": true,
+    "target": "es2022",
+    "module": "nodenext",
+    "lib": ["es2022", "dom"],
+    "moduleResolution": "node",
+    "types": ["node", "jest"],
+    "declaration": true,
+    "declarationMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "inlineSources": true,
+    "moduleDetection": "force",
+    "skipLibCheck": true,
+    "strict": true,
+    "sourceMap": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.test.ts"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,41 @@
+{
+  "name": "agentic-forge-monorepo",
+  "version": "1.0.0",
+  "description": "AgenticForge Monorepo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/core"
+  ],
+  "scripts": {
+    "build": "pnpm --recursive run build",
+    "dev": "pnpm --filter=./packages/core dev",
+    "start": "pnpm --filter=./packages/core start",
+    "start:worker": "pnpm --filter=./packages/core start:worker",
+    "test": "pnpm --filter=./packages/core test",
+    "lint": "pnpm --recursive run lint",
+    "format": "pnpm --filter=./packages/core format"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.31.0",
+    "@types/chokidar": "^2.1.7",
+    "@types/event-source-polyfill": "^1.0.5",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.13",
+    "@types/pg": "^8.15.4",
+    "esbuild-fix-imports-plugin": "^1.0.21",
+    "eslint": "^9.31.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-perfectionist": "^4.15.0",
+    "globals": "^15.8.0",
+    "prettier": "^3.6.2",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.36.0",
+    "vitest": "^1.6.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

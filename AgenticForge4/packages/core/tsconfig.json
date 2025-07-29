@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": ".",
+    "target": "es2022",
+    "module": "esnext",
+    "lib": ["es2022", "dom"],
+    "moduleResolution": "node",
+    "declaration": true,
+    "declarationMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "inlineSources": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "allowJs": true,
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "allowImportingTsExtensions": true,
+    "types": ["vitest/globals", "vitest", "express", "ioredis"],
+  },
+  "include": ["src", "src/**/*.test.ts", "vitest.config.ts", "test/mocks"],
+  "exclude": ["node_modules", "dist"]
+}
