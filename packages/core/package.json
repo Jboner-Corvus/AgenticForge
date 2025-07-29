@@ -16,7 +16,7 @@
     "clean": "rm -rf dist",
     "start:worker:dev": "NODE_ENV=development node --loader ts-node/esm src/worker.ts",
     "start:worker": "node dist/worker.js",
-    "test": "NODE_OPTIONS=--max-old-space-size=16384 vitest run",
+    "test": "NODE_OPTIONS=--max-old-space-size=32768 vitest run",
     "lint": "eslint --fix \"src/**/*.ts\"",
     "format": "prettier --write src/ && eslint --fix src/"
   },

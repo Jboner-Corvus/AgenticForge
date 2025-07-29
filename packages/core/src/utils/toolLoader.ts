@@ -156,20 +156,34 @@ async function loadToolFile(file: string): Promise<void> {
 
     for (const exportName in module) {
       const exportedItem = module[exportName];
-      const parsedTool = toolSchema.safeParse(exportedItem);
-      if (parsedTool.success) {
-        const tool = parsedTool.data;
-        logger.info(
-          { file, toolName: exportedItem.name },
-          `[loadToolFile] Registering tool`,
-        );
-        toolRegistry.register(tool as Tool);
-        loadedToolFiles.add(file);
-        fileToToolNameMap.set(file, tool.name);
+
+      // Only attempt to parse if it looks like a tool (has name and description properties)
+      if (
+        typeof exportedItem === 'object' &&
+        exportedItem !== null &&
+        'name' in exportedItem &&
+        'description' in exportedItem
+      ) {
+        const parsedTool = toolSchema.safeParse(exportedItem);
+        if (parsedTool.success) {
+          const tool = parsedTool.data;
+          logger.info(
+            { file, toolName: exportedItem.name },
+            `[loadToolFile] Registering tool`,
+          );
+          toolRegistry.register(tool as Tool);
+          loadedToolFiles.add(file);
+          fileToToolNameMap.set(file, tool.name);
+        } else {
+          logger.warn(
+            { errors: parsedTool.error.issues, exportName, file },
+            `[loadToolFile] Skipping invalid tool export due to schema mismatch.`
+          );
+        }
       } else {
-        logger.warn(
-          { errors: parsedTool.error.issues, exportName, file },
-          `[loadToolFile] Skipping invalid tool export due to schema mismatch.`,
+        logger.debug(
+          { exportName, file },
+          `[loadToolFile] Skipping non-tool export.`
         );
       }
     }
