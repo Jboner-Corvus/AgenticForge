@@ -465,7 +465,7 @@ run_all_checks() {
                 ERROR_COUNT=$((ERROR_COUNT + 1))
                 ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **TypeCheck (UI):** \`${line}\`\n"
             fi
-        done < <(echo "$UI_TYPECHECK_OUTPUT")
+        echo "$UI_TYPECHECK_OUTPUT" | while read -r line; do
     fi
 
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour le Core...${NC}"
@@ -661,7 +661,11 @@ while true; do
             ;;
     esac
     # Ajoute une pause avant de réafficher le menu pour que l'utilisateur puisse voir la sortie
-    if [[ "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15" =~ " $choice " ]]; then
-        read -n 1 -s -r -p "Appuyez sur une touche pour continuer..."
-    fi
+    case $choice in
+        1|2|3|4|5|6|7|8|9|10|11|12|13|14|15)
+            read -n 1 -s -r -p "Appuyez sur une touche pour continuer..."
+            ;;
+        *)
+            ;;
+    esac
 done
