@@ -59,10 +59,7 @@ const AgentOutputCanvas: React.FC = () => {
         <div className="w-full h-full bg-white dark:bg-black rounded-md shadow-inner">
          {renderContent()}
         </div>
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center text-white text-lg font-semibold rounded-md">
-          Overlay Content Here
-        </div>
+        
       </div>
     </motion.div>
   );

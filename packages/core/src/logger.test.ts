@@ -54,8 +54,8 @@ describe('Logger', () => {
       },
     }));
     vi.resetModules();
-    const { default: newLogger } = await import('./logger.ts');
-    expect(newLogger.level).toBe('warn');
+    const { getLogger: newGetLogger } = await import('./logger.ts');
+    expect(newGetLogger().level).toBe('warn');
     delete process.env.LOG_LEVEL;
   });
 

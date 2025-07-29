@@ -13,7 +13,7 @@ import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getConfig, loadConfig } from './config.js';
-import logger from './logger.js';
+import { getLogger } from './logger.js';
 const config = getConfig();
 import { LlmKeyManager as _LlmKeyManager } from './modules/llm/LlmKeyManager.js';
 import { SessionManager } from './modules/session/sessionManager.js';
@@ -69,7 +69,7 @@ export async function initializeWebServer(
         redisClient
           .incr('leaderboard:sessionsCreated')
           .catch((err: unknown) => {
-            logger.error(
+            getLogger().error(
               { err },
               'Failed to increment sessionsCreated in Redis',
             );
@@ -131,17 +131,20 @@ export async function initializeWebServer(
       _next: express.NextFunction,
     ) => {
       try {
-        const { apiKey, prompt } = req.body;
+        const { apiKey, llmApiKey, llmModelName, llmProvider, prompt } = req.body;
         const _sessionId = req.sessionId;
 
         if (!prompt) {
           throw new AppError('Le prompt est manquant.', { statusCode: 400 });
         }
 
-        logger.info({ prompt, sessionId: _sessionId }, 'Nouveau message reçu');
+        getLogger().info({ prompt, sessionId: _sessionId }, 'Nouveau message reçu');
 
         const _job = await jobQueue.add('process-message', {
           apiKey,
+          llmApiKey,
+          llmModelName,
+          llmProvider,
           prompt,
           sessionId: _sessionId,
         });
@@ -177,10 +180,10 @@ export async function initializeWebServer(
       const channel = `job:${jobId}:events`;
 
       await subscriber.subscribe(channel);
-      logger.info(`Subscribed to ${channel} for SSE.`);
+      getLogger().info(`Subscribed to ${channel} for SSE.`);
 
       subscriber.on('message', (channel: string, message: string) => {
-        logger.info(
+        getLogger().info(
           { channel, message },
           'Received message from Redis channel',
         );
@@ -192,14 +195,14 @@ export async function initializeWebServer(
       }, 15000);
 
       req.on('close', () => {
-        logger.info(
+        getLogger().info(
           `Client disconnected from SSE for job ${jobId}. Unsubscribing.`,
         );
-        logger.debug(`Attempting to unsubscribe from channel: ${channel}`);
+        getLogger().debug(`Attempting to unsubscribe from channel: ${channel}`);
         clearInterval(heartbeatInterval);
         subscriber.unsubscribe(channel);
         subscriber.quit();
-        logger.debug(`Unsubscribed and quit for channel: ${channel}`);
+        getLogger().debug(`Unsubscribed and quit for channel: ${channel}`);
       });
     },
   );
@@ -213,7 +216,7 @@ export async function initializeWebServer(
       }
       try {
         await req.sessionManager!.getSession(sessionId);
-        logger.info(
+        getLogger().info(
           { sessionId },
           'Session implicitly created/retrieved via cookie/header.',
         );
@@ -222,7 +225,7 @@ export async function initializeWebServer(
           sessionId,
         });
       } catch (error) {
-        logger.error({ error }, 'Error managing session implicitly');
+        getLogger().error({ error }, 'Error managing session implicitly');
         res.status(500).json({ error: 'Failed to manage session.' });
       }
     },
@@ -249,7 +252,7 @@ export async function initializeWebServer(
         session.activeLlmProvider = providerName;
         await req.sessionManager!.saveSession(session, req.job, jobQueue);
 
-        logger.info(
+        getLogger().info(
           { providerName, sessionId },
           'Active LLM provider updated for session.',
         );
@@ -313,7 +316,7 @@ export async function initializeWebServer(
           req.job,
           jobQueue,
         );
-        logger.info(
+        getLogger().info(
           { sessionId: id, sessionName: name },
           'Session saved to PostgreSQL.',
         );
@@ -354,7 +357,7 @@ export async function initializeWebServer(
       try {
         const { id } = req.params;
         await req.sessionManager!.deleteSession(id);
-        logger.info({ sessionId: id }, 'Session deleted from PostgreSQL.');
+        getLogger().info({ sessionId: id }, 'Session deleted from PostgreSQL.');
         res.status(200).json({ message: 'Session deleted successfully.' });
       } catch (_error) {
         _next(_error);
@@ -379,7 +382,7 @@ export async function initializeWebServer(
           id,
           newName,
         );
-        logger.info(
+        getLogger().info(
           { newName, sessionId: id },
           'Session renamed in PostgreSQL.',
         );
@@ -519,7 +522,7 @@ export async function initializeWebServer(
           if (loggedTokenData.access_token) {
             loggedTokenData.access_token = '***REDACTED***';
           }
-          logger.error({ tokenData: loggedTokenData }, 'GitHub OAuth Error');
+          getLogger().error({ tokenData: loggedTokenData }, 'GitHub OAuth Error');
           throw new AppError(
             `GitHub OAuth error: ${tokenData.error_description || tokenData.error}`,
             { statusCode: 400 },
@@ -535,7 +538,7 @@ export async function initializeWebServer(
             'EX',
             3600,
           );
-          logger.info(
+          getLogger().info(
             { accessToken: '***REDACTED***', sessionId: req.sessionId },
             'GitHub access token stored in Redis.',
           );
@@ -551,9 +554,9 @@ export async function initializeWebServer(
               sameSite: 'lax',
               secure: process.env.NODE_ENV === 'production',
             });
-            logger.info({ userId }, 'JWT issued and sent to frontend.');
+            getLogger().info({ userId }, 'JWT issued and sent to frontend.');
           } else {
-            logger.warn('JWT_SECRET is not configured, skipping JWT issuance.');
+            getLogger().warn('JWT_SECRET is not configured, skipping JWT issuance.');
           }
         }
 
@@ -616,7 +619,7 @@ export async function initializeWebServer(
 
         exec(command, (error, stdout, stderr) => {
           if (error) {
-            logger.error(
+            getLogger().error(
               { error, stderr, stdout },
               `Error executing ${action}`,
             );
@@ -627,7 +630,7 @@ export async function initializeWebServer(
               stdout,
             });
           }
-          logger.info({ stderr, stdout }, `${action} executed successfully`);
+          getLogger().info({ stderr, stdout }, `${action} executed successfully`);
           res.status(200).json({
             message: `${action} completed successfully.`,
             output: stdout,
@@ -671,14 +674,14 @@ export async function initializeWebServer(
 
   if (process.env.NODE_ENV !== 'test') {
     process.on('uncaughtException', (error: Error) => {
-      logger.fatal({ error }, 'Unhandled exception caught!');
+      getLogger().fatal({ error }, 'Unhandled exception caught!');
       process.exit(1);
     });
 
     process.on(
       'unhandledRejection',
       (reason: unknown, promise: Promise<any>) => {
-        logger.fatal({ promise, reason }, 'Unhandled rejection caught!');
+        getLogger().fatal({ promise, reason }, 'Unhandled rejection caught!');
         process.exit(1);
       },
     );
@@ -692,7 +695,7 @@ function watchConfig() {
     path.dirname(fileURLToPath(import.meta.url)),
     '../../.env',
   );
-  logger.info(`[watchConfig] Watching for .env changes in: ${envPath}`);
+  getLogger().info(`[watchConfig] Watching for .env changes in: ${envPath}`);
 
   configWatcher = chokidar.watch(envPath, {
     ignoreInitial: true,
@@ -700,12 +703,12 @@ function watchConfig() {
   });
 
   configWatcher.on('change', async () => {
-    logger.info('[watchConfig] .env file changed, reloading configuration...');
-    loadConfig();
-    logger.info('[watchConfig] Configuration reloaded.');
+    getLogger().info('[watchConfig] .env file changed, reloading configuration...');
+    await loadConfig();
+    getLogger().info('[watchConfig] Configuration reloaded.');
   });
 
   configWatcher.on('error', (error: unknown) => {
-    logger.error({ error: error as Error }, '[watchConfig] Watcher error');
+    getLogger().error({ error: error as Error }, '[watchConfig] Watcher error');
   });
 }

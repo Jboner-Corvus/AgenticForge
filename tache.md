@@ -23,7 +23,7 @@ Vous devez parcourir la liste des tests ci-dessous. Pour chaque test, suivez les
     * Corrigez le code ou la configuration nécessaire pour que le test puisse réussir.
     * Ré-exécutez le test après la correction jusqu'à ce qu'il réussisse.
 
-6.  **Marquer le Test comme Terminé** : Une fois qu'un test a été exécuté avec succès et validé, marquez-le comme terminé.
+6.  **Marquer le Test comme Terminé** : Une fois qu'un test a été exécuté avec succès et validé, marquez-le comme terminé. en editant ce fichier , tu peu rajouter tes probleme rencontré 
 
 ---
 

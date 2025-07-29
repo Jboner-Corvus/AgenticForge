@@ -37,7 +37,7 @@ vi.mock('pg', () => ({
 }));
 
 import { config } from './config';
-import logger from './logger';
+import { getLogger } from './logger';
 import { Agent } from './modules/agent/agent';
 import * as _redis from './modules/redis/redisClient';
 import { SessionManager as _SessionManager } from './modules/session/sessionManager';
@@ -68,7 +68,7 @@ vi.mock('./logger', () => {
   };
   return {
     __esModule: true,
-    default: mockLogger,
+    getLogger: vi.fn(() => mockLogger),
   };
 });
 vi.mock('./modules/tools/definitions/ai/summarize.tool', () => ({
@@ -175,11 +175,11 @@ describe('processJob', () => {
       ),
     ).rejects.toThrow(_AppError);
 
-    expect(logger.child).toHaveBeenCalledWith({
+    expect(getLogger().child).toHaveBeenCalledWith({
       jobId: 'testJobId',
       sessionId: 'testSessionId',
     });
-    expect(logger.child({}).error).toHaveBeenCalledWith(
+    expect(getLogger().child({}).error).toHaveBeenCalledWith(
       expect.any(Object),
       `Erreur dans l'exécution de l'agent`,
     );

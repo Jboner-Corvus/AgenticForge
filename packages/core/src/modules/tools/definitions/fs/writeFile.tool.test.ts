@@ -25,7 +25,7 @@ vi.mock('fs', async () => {
 // Import logger mock separately and mock the logger module
 import loggerMock from '../../../../test/mocks/logger.js';
 vi.mock('../../../../logger.js', () => ({
-  default: loggerMock,
+  getLogger: loggerMock,
 }));
 
 // Then import other dependencies
@@ -36,13 +36,13 @@ import path from 'path';
 import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 
 import { config } from '../../../../config.js';
-import logger from '../../../../logger.js';
+import { getLogger } from '../../../../logger.js';
 import { writeFile as writeFileTool } from './writeFile.tool.js';
 
 describe('writeFileTool', () => {
   const mockCtx: Ctx = {
     llm: {} as ILlmProvider,
-    log: logger,
+    log: getLogger(),
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),

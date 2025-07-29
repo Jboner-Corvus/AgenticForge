@@ -1,14 +1,14 @@
 import { Client as PgClient } from 'pg';
 
 import { config, loadConfig } from './config.js';
-import logger from './logger.js';
+import { getLogger } from './logger.js';
 import { jobQueue } from './modules/queue/queue.js';
 import { redis } from './modules/redis/redisClient.js';
 import { initializeWebServer } from './webServer.js';
 
 async function startServer() {
-  loadConfig(); // Load configuration
-  
+  await loadConfig(); // Load configuration
+  const logger = getLogger();
   await new Promise(res => setTimeout(res, 15000));
 
   let pgClient: null | PgClient = null;
@@ -38,7 +38,7 @@ async function startServer() {
   }
 
   pgClient.on('error', (err) => {
-    logger.error({ err }, 'PostgreSQL client error');
+    getLogger().error({ err }, 'PostgreSQL client error');
   });
 
   const { server } = await initializeWebServer(redis, jobQueue, pgClient);
@@ -50,11 +50,11 @@ async function startServer() {
 
   process.on('exit', () => {
     pgClient?.end();
-    logger.info('PostgreSQL client disconnected.');
+    getLogger().info('PostgreSQL client disconnected.');
   });
 }
 
 startServer().catch((err) => {
-  logger.fatal({ err }, 'Failed to start web server');
+  getLogger().fatal({ err }, 'Failed to start web server');
   process.exit(1);
 });

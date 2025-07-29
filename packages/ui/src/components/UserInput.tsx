@@ -6,15 +6,13 @@ import { useStore } from '../lib/store';
 
 export const UserInput = () => {
   const [inputValue, setInputValue] = useState('');
-  const addMessage = useStore((state) => state.addMessage);
+  const startAgent = useStore((state) => state.startAgent);
+  const setMessageInputValue = useStore((state) => state.setMessageInputValue);
 
   const handleSendMessage = () => {
     if (inputValue.trim()) {
-      addMessage({
-        type: 'user',
-        content: inputValue,
-      });
-      // Logic to send the message to the backend would go here
+      setMessageInputValue(inputValue);
+      startAgent();
       setInputValue('');
     }
   };

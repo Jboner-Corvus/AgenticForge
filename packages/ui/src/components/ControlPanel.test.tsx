@@ -111,6 +111,16 @@ describe('ControlPanel', () => {
       startAgent: vi.fn(),
       initializeSessionAndMessages: vi.fn(),
       toast: vi.fn(),
+      // Add missing loading states
+      setIsLoadingSessions: vi.fn(),
+      setIsLoadingTools: vi.fn(),
+      isSavingSession: vi.fn(),
+      isDeletingSession: vi.fn(),
+      isRenamingSession: vi.fn(),
+      isAddingLlmApiKey: vi.fn(),
+      isRemovingLlmApiKey: vi.fn(),
+      isSettingActiveLlmApiKey: vi.fn(),
+      isLoadingLeaderboardStats: vi.fn(),
     };
 
     (useStore as unknown as Mock).mockImplementation((selector: (state: AppState) => unknown) => selector(mockState));

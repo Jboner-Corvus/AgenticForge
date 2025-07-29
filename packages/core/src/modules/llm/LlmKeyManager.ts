@@ -1,4 +1,4 @@
-import logger from '../../logger.js';
+import { getLogger } from '../../logger.js';
 import { redis as _redis } from '../redis/redisClient.js';
 
 export enum LlmKeyErrorType {
@@ -24,7 +24,7 @@ export class LlmKeyManager {
     const keys = await this.getKeys();
     keys.push({ apiKey: key, errorCount: 0, provider });
     await this.saveKeys(keys);
-    logger.info({ provider }, 'LLM API key added.');
+    getLogger().info({ provider }, 'LLM API key added.');
   }
 
   public static async getKeysForApi(): Promise<LlmApiKey[]> {
@@ -48,7 +48,7 @@ export class LlmKeyManager {
       .sort((a, b) => (a.lastUsed || 0) - (b.lastUsed || 0));
 
     if (availableKeys.length === 0) {
-      logger.warn('No available LLM API keys.');
+      getLogger().warn('No available LLM API keys.');
       return null;
     }
 
@@ -57,7 +57,7 @@ export class LlmKeyManager {
     nextKey.lastUsed = now;
     await this.saveKeys(keys); // Save all keys to persist lastUsed update
 
-    logger.debug(
+    getLogger().debug(
       { provider: nextKey.provider },
       'Returning next available LLM API key.',
     );
@@ -94,7 +94,7 @@ export class LlmKeyManager {
         badKey.isPermanentlyDisabled = true;
         badKey.errorCount = 0; // Reset error count for permanent disable
         badKey.isDisabledUntil = undefined; // Clear temporary disable
-        logger.error(
+        getLogger().error(
           { provider: badKey.provider },
           'LLM API key permanently disabled.',
         );
@@ -106,12 +106,12 @@ export class LlmKeyManager {
         if (badKey.errorCount >= MAX_TEMPORARY_ERROR_COUNT) {
           badKey.isDisabledUntil = Date.now() + TEMPORARY_DISABLE_DURATION_MS;
           badKey.errorCount = 0; // Reset error count after temporary disabling
-          logger.warn(
+          getLogger().warn(
             { provider: badKey.provider },
             `LLM API key temporarily disabled for ${TEMPORARY_DISABLE_DURATION_MS / 1000} seconds due to multiple temporary errors.`,
           );
         } else {
-          logger.warn(
+          getLogger().warn(
             { errorCount: badKey.errorCount, provider: badKey.provider },
             'LLM API key temporary error count incremented.',
           );
@@ -128,7 +128,7 @@ export class LlmKeyManager {
     }
     const removedKey = keys.splice(index, 1);
     await this.saveKeys(keys);
-    logger.info({ provider: removedKey[0].provider }, 'LLM API key removed.');
+    getLogger().info({ provider: removedKey[0].provider }, 'LLM API key removed.');
   }
 
   public static async resetKeyStatus(
@@ -145,7 +145,7 @@ export class LlmKeyManager {
       goodKey.errorCount = 0;
       goodKey.isDisabledUntil = undefined;
       goodKey.isPermanentlyDisabled = false; // Clear permanent disable flag
-      logger.info({ provider: goodKey.provider }, 'LLM API key status reset.');
+      getLogger().info({ provider: goodKey.provider }, 'LLM API key status reset.');
       await this.saveKeys(keys);
     }
   }

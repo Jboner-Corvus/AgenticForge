@@ -1,4 +1,4 @@
-import logger from '../logger.js';
+import { getLogger } from '../logger.js';
 
 /**
  * Valide si une chaîne de caractères est une URL HTTP/HTTPS valide.
@@ -17,7 +17,7 @@ export function isValidHttpUrl(
     const url = new URL(urlString);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') {
       if (context) {
-        logger.warn(
+        getLogger().warn(
           { context, reason: 'Protocole non supporté', url: urlString },
           "Tentative d'utilisation d'une URL avec un protocole non HTTP/HTTPS.",
         );
@@ -27,7 +27,7 @@ export function isValidHttpUrl(
     return true;
   } catch (e) {
     if (context) {
-      logger.warn(
+      getLogger().warn(
         { context, error: (e as Error).message, url: urlString },
         "Format d'URL invalide détecté.",
       );

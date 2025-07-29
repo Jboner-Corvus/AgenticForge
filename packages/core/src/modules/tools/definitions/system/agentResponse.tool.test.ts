@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 
-import logger from '../../../../logger.js';
+import { getLogger } from '../../../../logger.js';
 import loggerMock from '../../../../test/mocks/logger.js';
 import { agentResponseTool } from './agentResponse.tool.js';
 vi.mock('../../../../logger.js', async () => {
@@ -13,14 +13,14 @@ vi.mock('../../../../logger.js', async () => {
     '../../../../test/mocks/logger.js',
   );
   return {
-    default: loggerMock.default,
+    getLogger: loggerMock.getLogger,
   };
 });
 
 describe('agentResponseTool', () => {
   const mockCtx: Ctx = {
     llm: {} as ILlmProvider,
-    log: logger,
+    log: getLogger(),
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),

@@ -6,14 +6,14 @@ import { Client as PgClient } from 'pg';
 import { Tool } from '@/types';
 
 import { config } from './config.js';
-import logger from './logger.js';
+import { getLogger } from './logger.js';
 import { Agent } from './modules/agent/agent.js';
+import { LlmKeyManager } from './modules/llm/LlmKeyManager.js'; // Import LlmKeyManager
 import * as redisClient from './modules/redis/redisClient.js';
 import { SessionManager } from './modules/session/sessionManager.js';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.js';
 import { AppError, getErrDetails, UserError } from './utils/errorUtils.js';
 import { getTools } from './utils/toolLoader.js';
-import { LlmKeyManager } from './modules/llm/LlmKeyManager.js'; // Import LlmKeyManager
 
 // ... rest of the file
 
@@ -21,6 +21,7 @@ export async function initializeWorker(
   redisConnection: Redis,
   pgClient: PgClient,
 ) {
+  const logger = getLogger();
   const _tools = await getTools();
   const _jobQueue = new Queue('tasks', { connection: redisConnection });
   const sessionManager = new SessionManager(pgClient);
@@ -28,7 +29,7 @@ export async function initializeWorker(
   // Add LLM API key to LlmKeyManager at startup
   if (config.LLM_API_KEY && config.LLM_PROVIDER) {
     await LlmKeyManager.addKey(config.LLM_PROVIDER, config.LLM_API_KEY);
-    logger.info(`[INIT LLM] Added LLM API key for provider: ${config.LLM_PROVIDER}`);
+    getLogger().info(`[INIT LLM] Added LLM API key for provider: ${config.LLM_PROVIDER}`);
   }
 
   const worker = new Worker(
@@ -121,14 +122,14 @@ ${finalMessage}`,
   );
 
   worker.on('completed', (_job) => {
-    logger.info(`Job ${_job.id} terminé avec succès.`);
+    getLogger().info(`Job ${_job.id} terminé avec succès.`);
   });
 
   worker.on('failed', (_job, err) => {
-    logger.error({ err }, `Le job ${_job?.id} a échoué`);
+    getLogger().error({ err }, `Le job ${_job?.id} a échoué`);
   });
 
-  logger.info('Worker initialisé et prêt à traiter les jobs.');
+  getLogger().info('Worker initialisé et prêt à traiter les jobs.');
   return worker;
 }
 
@@ -140,7 +141,7 @@ export async function processJob(
   _sessionManager: SessionManager,
   redisConnection: Redis,
 ): Promise<string> {
-  const log = logger.child({ jobId: _job.id, sessionId: _job.data.sessionId });
+  const log = getLogger().child({ jobId: _job.id, sessionId: _job.data.sessionId });
   log.info(`Traitement du job ${_job.id} avec les données:`, _job.data);
 
   const channel = `job:${_job.id}:events`;
@@ -148,15 +149,17 @@ export async function processJob(
   try {
     const session = await _sessionManager.getSession(_job.data.sessionId);
     const activeLlmProvider = session.activeLlmProvider || config.LLM_PROVIDER; // Use session's provider or default
-    const { apiKey } = _job.data;
+    const { apiKey, llmApiKey, llmModelName, llmProvider } = _job.data;
     const agent = new Agent(
       _job,
       session,
       _jobQueue,
       _tools,
-      activeLlmProvider,
-      _sessionManager, // Pass sessionManager
-      apiKey,
+      llmProvider || activeLlmProvider,
+      _sessionManager,
+      llmApiKey || apiKey,
+      llmModelName,
+      llmApiKey,
     );
     const finalResponse = await agent.run();
 
@@ -198,7 +201,7 @@ export async function processJob(
     return finalResponse;
   } catch (error: unknown) {
     const errDetails = getErrDetails(error);
-    log.error({ err: errDetails }, "Erreur dans l'exécution de l'agent");
+    getLogger().error({ err: errDetails }, "Erreur dans l'exécution de l'agent");
 
     let errorMessage = errDetails.message;
     let eventType = 'error';
@@ -237,9 +240,9 @@ export async function processJob(
 // Démarrage direct du worker
 if (process.env.NODE_ENV !== 'test') {
   // Log 1: Vérification des Variables d'Environnement (Backend)
-  logger.info(`[INIT LLM] LLM_PROVIDER détecté : ${process.env.LLM_PROVIDER}`);
-  logger.info(`[INIT LLM] LLM_API_KEY (partiel) détecté : ${process.env.LLM_API_KEY ? process.env.LLM_API_KEY.substring(0, 5) + '...' : 'NON DÉTECTÉ'}`);
-  logger.info(`[INIT LLM] LLM_MODEL_NAME détecté : ${process.env.LLM_MODEL_NAME}`);
+  getLogger().info(`[INIT LLM] LLM_PROVIDER détecté : ${process.env.LLM_PROVIDER}`);
+  getLogger().info(`[INIT LLM] LLM_API_KEY (partiel) détecté : ${process.env.LLM_API_KEY ? process.env.LLM_API_KEY.substring(0, 5) + '...' : 'NON DÉTECTÉ'}`);
+  getLogger().info(`[INIT LLM] LLM_MODEL_NAME détecté : ${process.env.LLM_MODEL_NAME}`);
 
   const connectionString = `postgresql://${config.POSTGRES_USER}:${config.POSTGRES_PASSWORD}@${config.POSTGRES_HOST}:${config.POSTGRES_PORT}/${config.POSTGRES_DB}`;
   const pgClient = new PgClient({
@@ -248,7 +251,7 @@ if (process.env.NODE_ENV !== 'test') {
   pgClient.connect();
   const redisConnection = redisClient.redis;
   initializeWorker(redisConnection, pgClient).catch((err) => {
-    logger.error({ err }, "Échec de l'initialisation du worker");
+    getLogger().error({ err }, "Échec de l'initialisation du worker");
     process.exit(1);
   });
 }

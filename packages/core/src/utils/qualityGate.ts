@@ -1,4 +1,4 @@
-import logger from '../logger.js';
+import { getLogger } from '../logger.js';
 import { executeShellCommand, ShellCommandResult } from './shellUtils.js';
 
 /**
@@ -9,9 +9,10 @@ export async function runQualityGate(): Promise<{
   output: string;
   success: boolean;
 }> {
+  const logger = getLogger();
   const outputMessages: string[] = [];
 
-  logger.info('Running all quality checks...');
+  getLogger().info('Running all quality checks...');
   outputMessages.push(`--- Running Quality Gate ---`);
 
   let success = true;
@@ -40,7 +41,7 @@ ${result.stderr || '(empty)'}`;
     if (result.exitCode !== 0) {
       success = false;
       outputMessages.push(`${name} FAILED with exit code ${result.exitCode}.`);
-      logger.error(`${name} FAILED`, {
+      getLogger().error(`${name} FAILED`, {
         stderr: result.stderr,
         stdout: result.stdout,
       });
@@ -62,7 +63,7 @@ ${combinedOutput}`);
   } else {
     const failureMessage = `Quality Gate FAILED.`;
     outputMessages.push(failureMessage);
-    logger.error(failureMessage, {
+    getLogger().error(failureMessage, {
       output: combinedOutput,
     });
   }

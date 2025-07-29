@@ -2,12 +2,13 @@
 import '../../tracing.js'; // Initialize OpenTelemetry
 import { Client as PgClient } from 'pg';
 
-import logger from '../../logger.js';
+import { getLogger } from '../../logger.js';
 import { initializeWebServer } from '../../webServer.js';
 import { jobQueue } from '../queue/queue.js';
 import { redis } from '../redis/redisClient.js';
 
 async function startApplication() {
+  const logger = getLogger();
   logger.info("Démarrage de l'application AgenticForge...");
 
   const pgClient = new PgClient({
@@ -31,6 +32,6 @@ async function startApplication() {
 }
 
 startApplication().catch((error) => {
-  logger.error(error, "Erreur critique lors du démarrage de l'application.");
+  getLogger().error(error, "Erreur critique lors du démarrage de l'application.");
   process.exit(1);
 });

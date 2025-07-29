@@ -16,7 +16,7 @@ import {
 } from '@/types.js';
 
 import { config } from '../../config.js';
-import logger from '../../logger.js';
+import { getLogger } from '../../logger.js';
 import { LlmError } from '../../utils/LlmError.js';
 import { getLlmProvider } from '../../utils/llmProvider.js';
 import { LLMContent } from '../llm/llm-types.js';
@@ -65,17 +65,19 @@ export class Agent {
   private readonly tools: Tool<z.AnyZodObject, z.ZodTypeAny>[];
 
   constructor(
-    job: Job<{ apiKey?: string; prompt: string; }>,
+    job: Job<{ apiKey?: string; llmApiKey?: string; llmModelName?: string; llmProvider?: string; prompt: string; }>,
     session: SessionData,
     taskQueue: Queue,
     tools: Tool<z.AnyZodObject, z.ZodTypeAny>[],
     activeLlmProvider: string,
     sessionManager: SessionManager,
     apiKey?: string,
+    private readonly llmModelName?: string, // New property
+    private readonly llmApiKey?: string, // New property
   ) {
     this.job = job;
     this.session = session;
-    this.log = logger.child({ jobId: job.id, sessionId: session.id });
+    this.log = getLogger().child({ jobId: job.id, sessionId: session.id });
     this.taskQueue = taskQueue;
     this.tools = tools ?? [];
     this.activeLlmProvider = activeLlmProvider;
@@ -229,10 +231,13 @@ export class Agent {
                 );
                 continue;
               }
-              llmResponse = await getLlmProvider(providerToTry).getLlmResponse(
+              llmResponse = await getLlmProvider(
+                providerToTry,
+              ).getLlmResponse(
                 messagesForLlm,
                 orchestratorPrompt,
-                this.apiKey,
+                this.llmApiKey || this.apiKey, // Prioritize llmApiKey from constructor, then general apiKey
+                this.llmModelName, // Pass modelName to getLlmResponse
               );
               this.activeLlmProvider = providerToTry; // Update active provider on success
               this.session.activeLlmProvider = providerToTry; // Update session data

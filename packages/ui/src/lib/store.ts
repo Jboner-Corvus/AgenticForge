@@ -47,6 +47,17 @@ export interface AppState {
   sessionId: null | string;
   agentProgress: number;
 
+  // Loading states
+  isLoadingSessions: boolean;
+  isLoadingTools: boolean;
+  isSavingSession: boolean;
+  isDeletingSession: boolean;
+  isRenamingSession: boolean;
+  isAddingLlmApiKey: boolean;
+  isRemovingLlmApiKey: boolean;
+  isSettingActiveLlmApiKey: boolean;
+  isLoadingLeaderboardStats: boolean;
+
   // Canvas state
   canvasContent: string;
   canvasType: 'html' | 'markdown' | 'url' | 'text';
@@ -102,6 +113,17 @@ export interface AppState {
   setSessionId: (sessionId: null | string) => void;
   setSessionStatus: (sessionStatus: 'error' | 'unknown' | 'valid') => void;
   streamCloseFunc: (() => void) | null;
+
+  // Loading state setters
+  setIsLoadingSessions: (isLoading: boolean) => void;
+  setIsLoadingTools: (isLoading: boolean) => void;
+  setIsSavingSession: (isSaving: boolean) => void;
+  setIsDeletingSession: (isDeleting: boolean) => void;
+  setIsRenamingSession: (isRenaming: boolean) => void;
+  setIsAddingLlmApiKey: (isAdding: boolean) => void;
+  setIsRemovingLlmApiKey: (isRemoving: boolean) => void;
+  setIsSettingActiveLlmApiKey: (isSetting: boolean) => void;
+  setIsLoadingLeaderboardStats: (isLoading: boolean) => void;
   
   setTokenStatus: (tokenStatus: boolean) => void;
   setToolCount: (toolCount: number | string) => void;
@@ -154,7 +176,7 @@ export const useStore = create<AppState>((set, get) => ({
   debugLog: [],
   messages: [],
   fetchAndDisplayToolCount: async () => {
-    const { addDebugLog, authToken, sessionId, setToolCount, updateSessionStatus, cache, setCache } = get();
+    const { addDebugLog, authToken, sessionId, setToolCount, updateSessionStatus, cache, setCache, setIsLoadingTools } = get();
     if (!authToken || !sessionId) return;
 
     const cacheKey = `tools_${sessionId}`;
@@ -168,6 +190,7 @@ export const useStore = create<AppState>((set, get) => ({
       return;
     }
 
+    setIsLoadingTools(true);
     addDebugLog(`[${new Date().toLocaleTimeString()}] [REQUEST] Récupération de la liste des outils...`);
     try {
       const tools = (await getTools(authToken, sessionId)) as { name: string }[];
@@ -180,6 +203,8 @@ export const useStore = create<AppState>((set, get) => ({
       addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Erreur getTools: ${message}`);
       setToolCount('Erreur');
       updateSessionStatus('error');
+    } finally {
+      setIsLoadingTools(false);
     }
   },
   agentProgress: 0,
@@ -212,6 +237,17 @@ export const useStore = create<AppState>((set, get) => ({
     apiKeysAdded: 0,
   },
 
+  // Loading states initialization
+  isLoadingSessions: false,
+  isLoadingTools: false,
+  isSavingSession: false,
+  isDeletingSession: false,
+  isRenamingSession: false,
+  isAddingLlmApiKey: false,
+  isRemovingLlmApiKey: false,
+  isSettingActiveLlmApiKey: false,
+  isLoadingLeaderboardStats: false,
+
   // LLM API Key Management initialization
   llmApiKeys: [],
   activeLlmApiKeyIndex: -1, // -1 indicates no key is active
@@ -235,6 +271,17 @@ export const useStore = create<AppState>((set, get) => ({
   setSessionId: (sessionId) => set({ sessionId }),
   setSessionStatus: (sessionStatus) => set({ sessionStatus }),
   setStreamCloseFunc: (func: (() => void) | null) => set({ streamCloseFunc: func }),
+
+  // Loading state setters
+  setIsLoadingSessions: (isLoadingSessions) => set({ isLoadingSessions }),
+  setIsLoadingTools: (isLoadingTools) => set({ isLoadingTools }),
+  setIsSavingSession: (isSavingSession) => set({ isSavingSession }),
+  setIsDeletingSession: (isDeletingSession) => set({ isDeletingSession }),
+  setIsRenamingSession: (isRenamingSession) => set({ isRenamingSession }),
+  setIsAddingLlmApiKey: (isAddingLlmApiKey) => set({ isAddingLlmApiKey }),
+  setIsRemovingLlmApiKey: (isRemovingLlmApiKey) => set({ isRemovingLlmApiKey }),
+  setIsSettingActiveLlmApiKey: (isSettingActiveLlmApiKey) => set({ isSettingActiveLlmApiKey }),
+  setIsLoadingLeaderboardStats: (isLoadingLeaderboardStats) => set({ isLoadingLeaderboardStats }),
   setTokenStatus: (tokenStatus) => set({ tokenStatus }),
   setToolCount: (toolCount) => set({ toolCount }),
   setAgentProgress: (agentProgress) => set({ agentProgress }),
@@ -272,30 +319,39 @@ export const useStore = create<AppState>((set, get) => ({
 
   // LLM API Key Management actions
   addLlmApiKey: (provider: string, key: string) => async () => {
+    const { setIsAddingLlmApiKey } = get();
+    setIsAddingLlmApiKey(true);
     try {
       await addLlmApiKeyApi(provider, key);
       const llmApiKeys = get().llmApiKeys; // Get current keys
       set({ llmApiKeys: [...llmApiKeys, { provider, key }] });
     } catch (error) {
       console.error("Failed to add LLM API key to backend:", error);
+    } finally {
+      setIsAddingLlmApiKey(false);
     }
   },
   removeLlmApiKey: (index: number) => async () => {
+    const { setIsRemovingLlmApiKey } = get();
+    setIsRemovingLlmApiKey(true);
     try {
       await removeLlmApiKeyApi(index);
       const newKeys = get().llmApiKeys.filter((_, i) => i !== index);
       set({ llmApiKeys: newKeys, activeLlmApiKeyIndex: -1 });
     } catch (error) {
       console.error("Failed to remove LLM API key from backend:", error);
+    } finally {
+      setIsRemovingLlmApiKey(false);
     }
   },
   setActiveLlmApiKey: (index: number) => async () => {
-    const { llmApiKeys, authToken, sessionId, addDebugLog, toast } = get();
+    const { llmApiKeys, authToken, sessionId, addDebugLog, toast, setIsSettingActiveLlmApiKey } = get();
     if (index < 0 || index >= llmApiKeys.length) {
       console.error("Invalid LLM API key index.");
       return;
     }
     const selectedProvider = llmApiKeys[index].provider;
+    setIsSettingActiveLlmApiKey(true);
     try {
       await setActiveLlmProviderApi(selectedProvider, authToken, sessionId);
       set({ activeLlmApiKeyIndex: index });
@@ -305,6 +361,8 @@ export const useStore = create<AppState>((set, get) => ({
       console.error("Failed to set active LLM provider:", error);
       addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Failed to set active LLM provider: ${error instanceof Error ? error.message : String(error)}`);
       toast({ title: "Error", description: "Failed to set active LLM provider.", variant: "destructive" });
+    } finally {
+      setIsSettingActiveLlmApiKey(false);
     }
   },
 
@@ -336,7 +394,7 @@ export const useStore = create<AppState>((set, get) => ({
   // Session history actions
   // Session history actions
   saveSession: (name: string) => async () => {
-    const { sessionId, messages, sessions } = get();
+    const { sessionId, messages, sessions, setIsSavingSession } = get();
     if (!sessionId) return;
 
     const sessionToSave: Session = {
@@ -353,6 +411,7 @@ export const useStore = create<AppState>((set, get) => ({
       timestamp: sessionToSave.timestamp,
     };
 
+    setIsSavingSession(true);
     try {
       await saveSessionApi(sessionDataToSend);
       const updatedSessions = [...sessions.filter(s => s.id !== sessionId), sessionToSave];
@@ -360,9 +419,13 @@ export const useStore = create<AppState>((set, get) => ({
       set({ sessions: updatedSessions });
     } catch (error) {
       console.error("Failed to save session to backend:", error);
+    } finally {
+      setIsSavingSession(false);
     }
   },
   loadSession: (id: string) => async () => {
+    const { setIsLoadingSessions } = get();
+    setIsLoadingSessions(true);
     try {
       const sessionToLoad = await loadSessionApi(id);
       localStorage.setItem('agenticForgeSessionId', sessionToLoad.id);
@@ -373,9 +436,13 @@ export const useStore = create<AppState>((set, get) => ({
       });
     } catch (error) {
       console.error("Failed to load session from backend:", error);
+    } finally {
+      setIsLoadingSessions(false);
     }
   },
   deleteSession: (id: string) => async () => {
+    const { setIsDeletingSession } = get();
+    setIsDeletingSession(true);
     try {
       await deleteSessionApi(id);
       const { sessions, activeSessionId } = get();
@@ -387,9 +454,13 @@ export const useStore = create<AppState>((set, get) => ({
       set({ sessions: updatedSessions, activeSessionId: newActiveSessionId });
     } catch (error) {
       console.error("Failed to delete session from backend:", error);
+    } finally {
+      setIsDeletingSession(false);
     }
   },
   renameSession: (id: string, newName: string) => async () => {
+    const { setIsRenamingSession } = get();
+    setIsRenamingSession(true);
     try {
       await renameSessionApi(id, newName);
       const { sessions } = get();
@@ -399,6 +470,8 @@ export const useStore = create<AppState>((set, get) => ({
       set({ sessions: updatedSessions });
     } catch (error) {
       console.error("Failed to rename session on backend:", error);
+    } finally {
+      setIsRenamingSession(false);
     }
   },
 
@@ -409,22 +482,91 @@ export const useStore = create<AppState>((set, get) => ({
   updateSessionStatus: (status) => set({ sessionStatus: status }),
   toggleIsCanvasVisible: () => set((state) => ({ isCanvasVisible: !state.isCanvasVisible })),
   startAgent: async () => {
-    // Placeholder for startAgent logic
-    console.log("startAgent called from store (placeholder)");
+    const { messageInputValue, authToken, sessionId, addDebugLog, setIsProcessing, setJobId, addMessage } = get();
+
+    if (!messageInputValue.trim()) {
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [WARN] Message input is empty.`);
+      return;
+    }
+
+    if (!authToken || !sessionId) {
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Missing authentication token or session ID.`);
+      return;
+    }
+
+    setIsProcessing(true);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Sending message to agent...`);
+
+    // Add user message to history immediately
+    addMessage({
+      type: 'user',
+      content: messageInputValue,
+    });
+
+    const storedLlmConfig = localStorage.getItem('llmConfig');
+    let llmProvider: string | undefined;
+    let llmModelName: string | undefined;
+    let llmApiKey: string | undefined;
+
+    if (storedLlmConfig) {
+      const parsedConfig = JSON.parse(storedLlmConfig);
+      llmProvider = parsedConfig.provider;
+      llmModelName = parsedConfig.model;
+      llmApiKey = parsedConfig.apiKey;
+    }
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+          'X-Session-ID': sessionId,
+        },
+        body: JSON.stringify({
+          prompt: messageInputValue,
+          apiKey: authToken, // This is the general auth token, not LLM specific
+          llmProvider,
+          llmModelName,
+          llmApiKey,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send message to agent');
+      }
+
+      const data = await response.json();
+      setJobId(data.jobId);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [SUCCESS] Message sent. Job ID: ${data.jobId}`);
+
+      // Clear input after sending
+      set({ messageInputValue: '' });
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Error sending message: ${errorMessage}`);
+      setIsProcessing(false);
+    }
   },
   toast: () => {},
   initializeSessionAndMessages: async () => {
-    const { setSessions, setActiveSessionId, setMessages, setSessionId, addDebugLog, updateLeaderboardStats, addLlmApiKey, setActiveLlmApiKey } = get();
+    const { setSessions, setActiveSessionId, setMessages, setSessionId, addDebugLog, updateLeaderboardStats, addLlmApiKey, setActiveLlmApiKey, setIsLoadingLeaderboardStats, setIsLoadingSessions } = get();
 
     // Load leaderboard stats from backend
+    setIsLoadingLeaderboardStats(true);
     try {
       const stats = await getLeaderboardStats();
       updateLeaderboardStats(stats);
     } catch (error) {
       console.error("Failed to fetch leaderboard stats:", error);
+    } finally {
+      setIsLoadingLeaderboardStats(false);
     }
 
     // Load LLM API keys from backend
+    // No explicit loading state for this as it's usually quick and part of init
     try {
       const keys = await getLlmApiKeysApi();
       keys.forEach((llmKey: { provider: string; key: string }) => addLlmApiKey(llmKey.provider, llmKey.key));
@@ -436,6 +578,7 @@ export const useStore = create<AppState>((set, get) => ({
     }
 
     // Load sessions from backend first
+    setIsLoadingSessions(true);
     try {
       const backendSessions = await loadAllSessionsApi();
       if (backendSessions && backendSessions.length > 0) {
@@ -477,6 +620,8 @@ export const useStore = create<AppState>((set, get) => ({
     } catch (error) {
       console.error("Failed to fetch sessions from backend:", error);
       addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Failed to load sessions from backend. Falling back to localStorage.`);
+    } finally {
+      setIsLoadingSessions(false);
     }
 
     // If no sessions found anywhere, generate a new one (handled by initializeSession in AppInitializer)

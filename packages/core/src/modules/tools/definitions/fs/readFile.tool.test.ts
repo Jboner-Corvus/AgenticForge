@@ -20,7 +20,7 @@ vi.mock('fs', async () => {
 
 import loggerMock from '../../../../test/mocks/logger.js';
 vi.mock('../../../../logger.js', () => ({
-  default: loggerMock,
+  getLogger: loggerMock,
 }));
 
 import { Queue } from 'bullmq';
@@ -28,13 +28,13 @@ import { promises as fs } from 'fs';
 
 import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 
-import logger from '../../../../logger.js';
+import { getLogger } from '../../../../logger.js';
 import { readFileTool } from './readFile.tool.js';
 
 describe('readFileTool', () => {
   const mockCtx: Ctx = {
     llm: {} as ILlmProvider,
-    log: logger,
+    log: getLogger(),
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),

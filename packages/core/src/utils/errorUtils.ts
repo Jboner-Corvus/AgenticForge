@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 
-import logger from '../logger.js';
+import { getLogger } from '../logger.js';
 
 export interface AppErrorDetails {
   [key: string]: unknown;
@@ -33,7 +33,7 @@ export const handleError = (
   res: Response,
   next: NextFunction,
 ) => {
-  logger.error(
+  getLogger().error(
     { err: getErrDetails(err), method: req.method, url: req.originalUrl },
     'Error caught by error handling middleware',
   );

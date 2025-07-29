@@ -5,7 +5,6 @@ import { Queue } from 'bullmq';
 import { Job } from 'bullmq';
 import { z, ZodTypeAny } from 'zod';
 
-import logger from './logger.js';
 import { SessionManager } from './modules/session/sessionManager.js';
 
 export interface AgentCanvasOutputMessage {
@@ -30,10 +29,12 @@ export interface AgentSession {
   id: string;
 }
 
+import { pino } from 'pino';
+
 export type Ctx = {
   job?: MinimalJob;
   llm: ILlmProvider; // <-- AJOUTEZ OU MODIFIEZ CETTE LIGNE
-  log: typeof logger;
+  log: pino.Logger;
   reportProgress?: (progress: {
     current: number;
     total: number;
@@ -57,6 +58,7 @@ export interface ILlmProvider {
     messages: LLMContent[],
     systemPrompt?: string,
     apiKey?: string,
+    modelName?: string,
   ): Promise<string>;
 }
 
@@ -72,7 +74,13 @@ export type Message =
   | UserMessage;
 
 export interface MinimalJob {
-  data: unknown;
+  data: {
+    apiKey?: string;
+    llmApiKey?: string;
+    llmModelName?: string;
+    llmProvider?: string;
+    prompt: string;
+  };
   id?: string;
   isFailed(): Promise<boolean>;
   name: string;

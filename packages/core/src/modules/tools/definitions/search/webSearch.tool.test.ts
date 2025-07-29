@@ -2,14 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import loggerMock from '../../../../test/mocks/logger.js';
 vi.mock('../../../../logger.js', () => ({
-  default: loggerMock,
+  getLogger: loggerMock,
 }));
 
 import { Queue } from 'bullmq';
 
 import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 
-import logger from '../../../../logger.js';
+import { getLogger } from '../../../../logger.js';
 import { webSearchTool } from './webSearch.tool.js';
 
 describe('webSearchTool', () => {
@@ -20,9 +20,9 @@ describe('webSearchTool', () => {
     vi.spyOn(global, 'fetch').mockRestore(); // Restore fetch mock
 
     mockCtx = {
-      job: { data: {}, id: 'test-job-id', isFailed: vi.fn(), name: 'test-job' },
+      job: { data: { prompt: 'test prompt' }, id: 'test-job-id', isFailed: vi.fn(), name: 'test-job' },
       llm: {} as ILlmProvider,
-      log: logger,
+      log: getLogger(),
       reportProgress: vi.fn(),
       session: {} as SessionData,
       streamContent: vi.fn(),

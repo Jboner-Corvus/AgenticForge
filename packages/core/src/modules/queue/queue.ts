@@ -3,7 +3,7 @@ import { Queue } from 'bullmq';
 
 import { SessionData } from '@/types.js';
 
-import logger from '../../logger.js';
+import { getLogger } from '../../logger.js';
 import { redis } from '../redis/redisClient.js';
 // CORRIGÉ : 'taskQueue' est maintenant exporté
 export interface AsyncTaskJobPayload<TParams> {
@@ -20,9 +20,9 @@ export const deadLetterQueue = new Queue('dead-letters', {
 });
 
 jobQueue.on('error', (err: Error) => {
-  logger.error({ err }, 'Job queue error');
+  getLogger().error({ err }, 'Job queue error');
 });
 
 deadLetterQueue.on('error', (err: Error) => {
-  logger.error({ err }, 'Dead-letter queue error');
+  getLogger().error({ err }, 'Dead-letter queue error');
 });

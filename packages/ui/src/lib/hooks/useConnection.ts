@@ -252,7 +252,7 @@ export function useConnection({
     try {
       const proxyHealthUrl = new URL(`${getMCPProxyAddress(config)}/health`);
       const { header: proxyAuthTokenHeader, token: proxyAuthToken } =
-        getMCPProxyAuthToken(config);
+        getMCPProxyAuthToken();
       const headers: HeadersInit = {};
       if (proxyAuthToken) {
         headers[proxyAuthTokenHeader] = `Bearer ${proxyAuthToken}`;
@@ -342,7 +342,7 @@ export function useConnection({
 
       // Add proxy authentication
       const { header: proxyAuthTokenHeader, token: proxyAuthToken } =
-        getMCPProxyAuthToken(config);
+        getMCPProxyAuthToken();
       const proxyHeaders: HeadersInit = {};
       if (proxyAuthToken) {
         proxyHeaders[proxyAuthTokenHeader] = `Bearer ${proxyAuthToken}`;

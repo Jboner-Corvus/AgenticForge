@@ -57,4 +57,13 @@ export const fr = {
   show: "Afficher",
   toolUsed: "🛠️ Outil utilisé:",
   toolExecutedSuccessfully: "Tool executed successfully.",
+  llmConfiguration: "Configuration LLM",
+  llmProvider: "Fournisseur LLM:",
+  selectLlmProvider: "Sélectionner un fournisseur LLM",
+  llmModel: "Modèle LLM:",
+  selectLlmModel: "Sélectionner un modèle LLM",
+  llmApiKey: "Clé API LLM:",
+  llmApiKeyPlaceholder: "Collez votre clé API LLM ici (optionnel)",
+  saveLlmSettings: "Sauvegarder les paramètres LLM",
+  llmSettingsSaved: "Paramètres LLM sauvegardés.",
 };

@@ -4,6 +4,9 @@ import { fileURLToPath } from 'url';
 // FICHIER : packages/core/src/config.ts
 import { z } from 'zod';
 
+import { getLogger } from './logger.js';
+import { LlmKeyManager } from './modules/llm/LlmKeyManager.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -14,19 +17,21 @@ const configSchema = z.object({
   CONTAINER_MEMORY_LIMIT: z.string().default('2g'),
   GITHUB_CLIENT_ID: z.string().optional(),
   GITHUB_CLIENT_SECRET: z.string().optional(),
-  HISTORY_LOAD_LENGTH: z.coerce.number().default(50), // New config for loading only N recent messages
+  GROK_API_KEY: z.string().optional(),
 
+  HISTORY_LOAD_LENGTH: z.coerce.number().default(50), // New config for loading only N recent messages
   HISTORY_MAX_LENGTH: z.coerce.number().default(1000),
   HOST_PROJECT_PATH: z.string().default('/usr/src/app'),
+  HUGGINGFACE_API_KEY: z.string().optional(),
   JWT_SECRET: z.string().optional(),
   LLM_API_KEY: z.string().optional(), // Added LLM_API_KEY
   LLM_MODEL_NAME: z.string().default('gemini-pro'),
   LLM_PROVIDER: z
-    .enum(['gemini', 'openai', 'mistral', 'huggingface'])
+    .enum(['gemini', 'openai', 'mistral', 'huggingface', 'grok'])
     .default('gemini'),
   LLM_PROVIDER_HIERARCHY: z
     .string()
-    .default('gemini,openai,mistral,huggingface')
+    .default('huggingface,grok,gemini,openai,mistral')
     .transform((str) => str.split(',').map((s) => s.trim())),
   LOG_LEVEL: z.string().default('debug'),
   MAX_FILE_SIZE_BYTES: z.coerce.number().default(10 * 1024 * 1024), // 10 MB
@@ -65,13 +70,13 @@ export function getConfig(): Config {
   return config;
 }
 
-export function loadConfig() {
+export async function loadConfig() {
   // Always load .env file to ensure consistent configuration across environments
   // The NODE_ENV check was removed to allow .env variables to be used in tests.
   // If specific test configurations are needed, they should be managed via test-specific .env files or direct environment variable setting in test scripts.
   {
     const result = dotenv.config({
-      path: path.resolve(__dirname, '../../../../.env'),
+      path: path.resolve(process.cwd(), '.env'),
     });
 
     if (result.error) {
@@ -83,6 +88,18 @@ export function loadConfig() {
 
   config = configSchema.parse(process.env);
   console.log('Resolved WORKSPACE_PATH:', config.WORKSPACE_PATH);
+
+  // Add HuggingFace API key if available and not already added
+  if (process.env.HUGGINGFACE_API_KEY && !(await LlmKeyManager.hasAvailableKeys('huggingface'))) {
+    await LlmKeyManager.addKey('huggingface', process.env.HUGGINGFACE_API_KEY);
+    getLogger().info('HuggingFace API key loaded from .env');
+  }
+
+  // Add Grok API key if available and not already added
+  if (process.env.GROK_API_KEY && !(await LlmKeyManager.hasAvailableKeys('grok'))) {
+    await LlmKeyManager.addKey('grok', process.env.GROK_API_KEY);
+    getLogger().info('Grok API key loaded from .env');
+  }
 }
 
 // Initial load

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
 import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 
-import logger from '../../../../logger.js';
+import { getLogger } from '../../../../logger.js';
 import { finishTool, FinishToolSignal } from './finish.tool.js';
 
 describe('finishTool', () => {
@@ -14,14 +14,14 @@ describe('finishTool', () => {
     mockCtx = {
       job: { id: 'test-job-id' } as Job,
       llm: {} as ILlmProvider,
-      log: logger,
+      log: getLogger(),
       reportProgress: vi.fn(),
       session: {} as SessionData,
       streamContent: vi.fn(),
       taskQueue: {} as Queue,
     };
-    vi.spyOn(logger, 'info');
-    vi.spyOn(logger, 'error');
+    vi.spyOn(getLogger(), 'info');
+    vi.spyOn(getLogger(), 'error');
   });
 
   it('should throw a FinishToolSignal with the final response when called with an object', async () => {

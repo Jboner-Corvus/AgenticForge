@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 
-import logger from '../../../../logger.js';
+import { getLogger } from '../../../../logger.js';
 import { runQualityGate } from '../../../../utils/qualityGate.js';
 import { createToolTool } from './createTool.tool.js';
 
@@ -23,13 +23,13 @@ vi.mock('../../../../utils/qualityGate.js', () => ({
 }));
 
 vi.mock('../../../../logger.js', () => ({
-  default: {
+  getLogger: vi.fn(() => ({
     child: vi.fn().mockReturnThis(),
     debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
-  },
+  })),
 }));
 
 describe('createToolTool', () => {
@@ -39,7 +39,7 @@ describe('createToolTool', () => {
     vi.clearAllMocks();
     mockCtx = {
       llm: {} as ILlmProvider,
-      log: logger,
+      log: getLogger(),
       reportProgress: vi.fn(),
       session: {} as SessionData,
       streamContent: vi.fn(),

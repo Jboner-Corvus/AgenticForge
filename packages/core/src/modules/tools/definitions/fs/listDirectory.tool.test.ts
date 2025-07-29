@@ -5,7 +5,7 @@ import { describe, expect, it, Mock, vi } from 'vitest';
 
 import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 
-import logger from '../../../../logger.js';
+import { getLogger } from '../../../../logger.js';
 import { listFilesTool } from './listDirectory.tool.js';
 
 vi.mock('fs', () => ({
@@ -15,19 +15,19 @@ vi.mock('fs', () => ({
 }));
 
 vi.mock('../../../../logger.js', () => ({
-  default: {
+  getLogger: vi.fn(() => ({
     child: vi.fn().mockReturnThis(),
     debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
-  },
+  })),
 }));
 
 describe('listFilesTool', () => {
   const mockCtx: Ctx = {
     llm: {} as ILlmProvider,
-    log: logger,
+    log: getLogger(),
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),

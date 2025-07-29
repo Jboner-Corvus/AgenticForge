@@ -5,7 +5,7 @@ import { Client as PgClient } from 'pg';
 import { Ctx, Message, SessionData } from '@/types.js';
 
 import { config } from '../../config.js';
-import logger from '../../logger.js';
+import { getLogger } from '../../logger.js';
 import { getLlmProvider } from '../../utils/llmProvider.js';
 import { redis } from '../redis/redisClient.ts';
 import { summarizeTool } from '../tools/definitions/ai/summarize.tool.js';
@@ -75,7 +75,7 @@ export class SessionManager {
     _job: Job,
     taskQueue: Queue,
   ) {
-    const log = logger.child({ module: 'Summarizer', sessionId: session.id });
+    const log = getLogger().child({ module: 'Summarizer', sessionId: session.id });
     log.info('History length exceeds max length, summarizing...');
     const historyToSummarize = session.history.slice(
       0,
@@ -118,7 +118,7 @@ export class SessionManager {
       sessionId,
     ]);
     SessionManager.activeSessions.delete(sessionId);
-    logger.info({ sessionId }, 'Session deleted from PostgreSQL and memory.');
+    getLogger().info({ sessionId }, 'Session deleted from PostgreSQL and memory.');
   }
 
   public async getAllSessions(): Promise<SessionData[]> {
@@ -136,7 +136,7 @@ export class SessionManager {
 
   public async getSession(sessionId: string): Promise<SessionData> {
     if (SessionManager.activeSessions.has(sessionId)) {
-      logger.info({ sessionId }, 'Reusing existing session data from memory.');
+      getLogger().info({ sessionId }, 'Reusing existing session data from memory.');
       return SessionManager.activeSessions.get(sessionId)!;
     }
 
@@ -159,7 +159,7 @@ export class SessionManager {
           initialHistory = storedSession.messages as Message[];
         }
       } catch (error) {
-        logger.error({ error, sessionId }, 'Failed to parse messages from DB');
+        getLogger().error({ error, sessionId }, 'Failed to parse messages from DB');
         initialHistory = [];
       }
       sessionName = storedSession.name;
@@ -167,7 +167,7 @@ export class SessionManager {
       identities = storedSession.identities || [];
       activeLlmProvider = storedSession.active_llm_provider || undefined; // Retrieve new field
     } else {
-      logger.info(
+      getLogger().info(
         { sessionId },
         'No session found in PostgreSQL, creating new one.',
       );
@@ -189,7 +189,7 @@ export class SessionManager {
     };
 
     SessionManager.activeSessions.set(sessionId, sessionData);
-    logger.info({ sessionId }, 'Created new session data from PostgreSQL.');
+    getLogger().info({ sessionId }, 'Created new session data from PostgreSQL.');
     return sessionData;
   }
 
@@ -208,7 +208,7 @@ export class SessionManager {
       sessionId,
     ]);
     SessionManager.activeSessions.set(sessionId, session);
-    logger.info(
+    getLogger().info(
       { newName, sessionId },
       'Session renamed in PostgreSQL and memory.',
     );
@@ -237,12 +237,12 @@ export class SessionManager {
         ],
       );
       SessionManager.activeSessions.set(session.id as string, session);
-      logger.info(
+      getLogger().info(
         { sessionId: session.id },
         'Session history saved to PostgreSQL.',
       );
     } catch (error) {
-      logger.error({ error }, 'Error saving session');
+      getLogger().error({ error }, 'Error saving session');
       throw error;
     }
   }
@@ -258,6 +258,6 @@ export class SessionManager {
         active_llm_provider VARCHAR(255) -- New column
       );
     `);
-    logger.info('PostgreSQL sessions table ensured.');
+    getLogger().info('PostgreSQL sessions table ensured.');
   }
 }

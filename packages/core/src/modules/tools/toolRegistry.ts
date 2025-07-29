@@ -20,7 +20,7 @@ import { z, ZodTypeAny } from 'zod';
 
 import { Ctx, Tool } from '@/types.js';
 
-import logger from '../../logger.js';
+import { getLogger } from '../../logger.js';
 import { AppError, UserError } from '../../utils/errorUtils.js';
 
 class ToolRegistry {
@@ -119,7 +119,7 @@ class ToolRegistry {
       throw new UserError(`Tool with name ${tool.name} already registered.`);
     }
     this.tools.set(tool.name, tool);
-    logger.debug(
+    getLogger().debug(
       { parameters: tool.parameters.shape, toolName: tool.name },
       `Tool registered: ${tool.name}`,
     );
@@ -131,9 +131,9 @@ class ToolRegistry {
    */
   public unregister(name: string): void {
     if (this.tools.delete(name)) {
-      logger.info(`Outil désenregistré : "${name}"`);
+      getLogger().info(`Outil désenregistré : "${name}"`);
     } else {
-      logger.warn(`Tentative de désenregistrer un outil inconnu : "${name}"`);
+      getLogger().warn(`Tentative de désenregistrer un outil inconnu : "${name}"`);
     }
   }
 }

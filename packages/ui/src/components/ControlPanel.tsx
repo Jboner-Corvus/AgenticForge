@@ -13,6 +13,7 @@ import { useToast } from '../lib/hooks/useToast';
 import { useDraggableSidebar } from '../lib/hooks/useDraggablePane';
 import { memo, useCallback, useState } from 'react';
 import { useStore } from '../lib/store';
+import { LoadingSpinner } from './LoadingSpinner';
 
 export const ControlPanel = memo(() => {
   const codeExecutionEnabled = useStore((state) => state.codeExecutionEnabled);
@@ -39,6 +40,17 @@ export const ControlPanel = memo(() => {
   const removeLlmApiKey = useStore((state) => state.removeLlmApiKey);
   const setActiveLlmApiKey = useStore((state) => state.setActiveLlmApiKey);
   const leaderboardStats = useStore((state) => state.leaderboardStats);
+
+  // Loading states
+  const isLoadingSessions = useStore((state) => state.isLoadingSessions);
+  const isLoadingTools = useStore((state) => state.isLoadingTools);
+  const isSavingSession = useStore((state) => state.isSavingSession);
+  const isDeletingSession = useStore((state) => state.isDeletingSession);
+  const isRenamingSession = useStore((state) => state.isRenamingSession);
+  const isAddingLlmApiKey = useStore((state) => state.isAddingLlmApiKey);
+  const isRemovingLlmApiKey = useStore((state) => state.isRemovingLlmApiKey);
+  const isSettingActiveLlmApiKey = useStore((state) => state.isSettingActiveLlmApiKey);
+  const isLoadingLeaderboardStats = useStore((state) => state.isLoadingLeaderboardStats);
 
   const browserStatus = useStore((state) => state.browserStatus);
   const { toast } = useToast();
@@ -146,7 +158,9 @@ export const ControlPanel = memo(() => {
               </div>
               <div className="flex justify-between items-center">
                 <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4" />{fr.toolsDetected}</Label>
-                <span className="text-sm text-muted-foreground">{toolCount}</span>
+                <span className="text-sm text-muted-foreground">
+                  {isLoadingTools ? <LoadingSpinner className="ml-2" /> : toolCount}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <Label className="text-sm flex items-center"><Server className="mr-2 h-4 w-4" />{fr.connectionStatus}</Label>
@@ -194,16 +208,16 @@ export const ControlPanel = memo(() => {
           <div>
             <h3 className="text-lg font-semibold mb-4 flex items-center"><Play className="mr-2 h-4 w-4" />Actions</h3>
             <div className="space-y-2">
-              <Button className="w-full flex items-center justify-center" onClick={handleNewSession} variant="secondary">
-                <Settings className="mr-2 h-4 w-4" />
+              <Button className="w-full flex items-center justify-center" onClick={handleNewSession} variant="secondary" disabled={isLoadingTools || isSavingSession || isLoadingSessions}>
+                {isLoadingTools ? <LoadingSpinner className="mr-2" /> : <Settings className="mr-2 h-4 w-4" />}
                 {fr.newSession}
               </Button>
               <Button className="w-full flex items-center justify-center" onClick={() => handleClearHistory(true)} variant="destructive">
                 <Trash2 className="mr-2 h-4 w-4" />
                 {fr.clearHistory}
               </Button>
-              <Button className="w-full flex items-center justify-center" onClick={handleSaveCurrentSession} variant="secondary">
-                <Save className="mr-2 h-4 w-4" />
+              <Button className="w-full flex items-center justify-center" onClick={handleSaveCurrentSession} variant="secondary" disabled={isSavingSession}>
+                {isSavingSession ? <LoadingSpinner className="mr-2" /> : <Save className="mr-2 h-4 w-4" />}
                 Save Current Session
               </Button>
             </div>
@@ -211,7 +225,11 @@ export const ControlPanel = memo(() => {
           <div>
             <h3 className="text-lg font-semibold mb-4 flex items-center"><History className="mr-2 h-4 w-4" />History</h3>
             <div className="space-y-2">
-              {sessions.length === 0 ? (
+              {isLoadingSessions ? (
+                <div className="flex justify-center items-center h-20">
+                  <LoadingSpinner />
+                </div>
+              ) : sessions.length === 0 ? (
                 <p className="text-muted-foreground">No sessions saved yet.</p>
               ) : (
                 sessions.map((session) => (
@@ -221,13 +239,13 @@ export const ControlPanel = memo(() => {
                       {session.id === activeSessionId && <Badge variant="secondary" className="ml-2">Active</Badge>}
                     </span>
                     <div className="flex space-x-1">
-                      <Button size="icon" variant="ghost" onClick={() => handleLoadSession(session.id)} aria-label="Load session">
+                      <Button size="icon" variant="ghost" onClick={() => handleLoadSession(session.id)} aria-label="Load session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
                         <Play className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleOpenRenameModal(session)} aria-label="Rename session">
+                      <Button size="icon" variant="ghost" onClick={() => handleOpenRenameModal(session)} aria-label="Rename session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleDeleteSession(session.id)} aria-label="Delete session">
+                      <Button size="icon" variant="ghost" onClick={() => handleDeleteSession(session.id)} aria-label="Delete session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
                         <XCircle className="h-4 w-4" />
                       </Button>
                     </div>
@@ -239,22 +257,30 @@ export const ControlPanel = memo(() => {
           <div>
             <h3 className="text-lg font-semibold mb-4 flex items-center"><BarChart className="mr-2 h-4 w-4" />Leaderboard</h3>
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <Label className="text-sm">Tokens Saved:</Label>
-                <span className="text-sm text-muted-foreground">{leaderboardStats.tokensSaved}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <Label className="text-sm">Successful Runs:</Label>
-                <span className="text-sm text-muted-foreground">{leaderboardStats.successfulRuns}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <Label className="text-sm">Sessions Created:</Label>
-                <span className="text-sm text-muted-foreground">{leaderboardStats.sessionsCreated}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <Label className="text-sm">API Keys Added:</Label>
-                <span className="text-sm text-muted-foreground">{leaderboardStats.apiKeysAdded}</span>
-              </div>
+              {isLoadingLeaderboardStats ? (
+                <div className="flex justify-center items-center h-20">
+                  <LoadingSpinner />
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm">Tokens Saved:</Label>
+                    <span className="text-sm text-muted-foreground">{leaderboardStats.tokensSaved}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm">Successful Runs:</Label>
+                    <span className="text-sm text-muted-foreground">{leaderboardStats.successfulRuns}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm">Sessions Created:</Label>
+                    <span className="text-sm text-muted-foreground">{leaderboardStats.sessionsCreated}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm">API Keys Added:</Label>
+                    <span className="text-sm text-muted-foreground">{leaderboardStats.apiKeysAdded}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
           <div>
@@ -303,8 +329,8 @@ export const ControlPanel = memo(() => {
                     onChange={(e) => setOpenAiApiKey(e.target.value)}
                     aria-label="OpenAI API Key Input"
                   />
-                  <Button onClick={() => { addLlmApiKey('openai', openAiApiKey); setOpenAiApiKey(''); }} aria-label="Add OpenAI API Key">
-                    <Check className="h-4 w-4" />
+                  <Button onClick={() => { addLlmApiKey('openai', openAiApiKey); setOpenAiApiKey(''); }} aria-label="Add OpenAI API Key" disabled={isAddingLlmApiKey}>
+                    {isAddingLlmApiKey ? <LoadingSpinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                   </Button>
                 </div>
 
@@ -318,8 +344,8 @@ export const ControlPanel = memo(() => {
                     onChange={(e) => setGrokApiKey(e.target.value)}
                     aria-label="Grok API Key Input"
                   />
-                  <Button onClick={() => { addLlmApiKey('grok', grokApiKey); setGrokApiKey(''); }} aria-label="Add Grok API Key">
-                    <Check className="h-4 w-4" />
+                  <Button onClick={() => { addLlmApiKey('grok', grokApiKey); setGrokApiKey(''); }} aria-label="Add Grok API Key" disabled={isAddingLlmApiKey}>
+                    {isAddingLlmApiKey ? <LoadingSpinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                   </Button>
                 </div>
 
@@ -333,8 +359,8 @@ export const ControlPanel = memo(() => {
                     onChange={(e) => setKimika2ApiKey(e.target.value)}
                     aria-label="Kimika2 API Key Input"
                   />
-                  <Button onClick={() => { addLlmApiKey('kimika2', kimika2ApiKey); setKimika2ApiKey(''); }} aria-label="Add Kimika2 API Key">
-                    <Check className="h-4 w-4" />
+                  <Button onClick={() => { addLlmApiKey('kimika2', kimika2ApiKey); setKimika2ApiKey(''); }} aria-label="Add Kimika2 API Key" disabled={isAddingLlmApiKey}>
+                    {isAddingLlmApiKey ? <LoadingSpinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                   </Button>
                 </div>
 
@@ -348,8 +374,8 @@ export const ControlPanel = memo(() => {
                     onChange={(e) => setDeepseekApiKey(e.target.value)}
                     aria-label="Deepseek API Key Input"
                   />
-                  <Button onClick={() => { addLlmApiKey('deepseek', deepseekApiKey); setDeepseekApiKey(''); }} aria-label="Add Deepseek API Key">
-                    <Check className="h-4 w-4" />
+                  <Button onClick={() => { addLlmApiKey('deepseek', deepseekApiKey); setDeepseekApiKey(''); }} aria-label="Add Deepseek API Key" disabled={isAddingLlmApiKey}>
+                    {isAddingLlmApiKey ? <LoadingSpinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                   </Button>
                 </div>
 
@@ -363,8 +389,8 @@ export const ControlPanel = memo(() => {
                     onChange={(e) => setHuggingFaceApiKey(e.target.value)}
                     aria-label="HuggingFace API Key Input"
                   />
-                  <Button onClick={() => { addLlmApiKey('huggingface', huggingFaceApiKey); setHuggingFaceApiKey(''); }} aria-label="Add HuggingFace API Key">
-                    <Check className="h-4 w-4" />
+                  <Button onClick={() => { addLlmApiKey('huggingface', huggingFaceApiKey); setHuggingFaceApiKey(''); }} aria-label="Add HuggingFace API Key" disabled={isAddingLlmApiKey}>
+                    {isAddingLlmApiKey ? <LoadingSpinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                   </Button>
                 </div>
 
@@ -378,8 +404,8 @@ export const ControlPanel = memo(() => {
                     onChange={(e) => setMixtralApiKey(e.target.value)}
                     aria-label="Mixtral API Key Input"
                   />
-                  <Button onClick={() => { addLlmApiKey('mixtral', mixtralApiKey); setMixtralApiKey(''); }} aria-label="Add Mixtral API Key">
-                    <Check className="h-4 w-4" />
+                  <Button onClick={() => { addLlmApiKey('mixtral', mixtralApiKey); setMixtralApiKey(''); }} aria-label="Add Mixtral API Key" disabled={isAddingLlmApiKey}>
+                    {isAddingLlmApiKey ? <LoadingSpinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                   </Button>
                 </div>
 
@@ -393,8 +419,8 @@ export const ControlPanel = memo(() => {
                     onChange={(e) => setOllamaApiKey(e.target.value)}
                     aria-label="Ollama API Key Input"
                   />
-                  <Button onClick={() => { addLlmApiKey('ollama', ollamaApiKey); setOllamaApiKey(''); }} aria-label="Add Ollama API Key">
-                    <Check className="h-4 w-4" />
+                  <Button onClick={() => { addLlmApiKey('ollama', ollamaApiKey); setOllamaApiKey(''); }} aria-label="Add Ollama API Key" disabled={isAddingLlmApiKey}>
+                    {isAddingLlmApiKey ? <LoadingSpinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                   </Button>
                 </div>
 
@@ -408,8 +434,8 @@ export const ControlPanel = memo(() => {
                     onChange={(e) => setLmStudioApiKey(e.target.value)}
                     aria-label="LM Studio API Key Input"
                   />
-                  <Button onClick={() => { addLlmApiKey('lmstudio', lmStudioApiKey); setLmStudioApiKey(''); }} aria-label="Add LM Studio API Key">
-                    <Check className="h-4 w-4" />
+                  <Button onClick={() => { addLlmApiKey('lmstudio', lmStudioApiKey); setLmStudioApiKey(''); }} aria-label="Add LM Studio API Key" disabled={isAddingLlmApiKey}>
+                    {isAddingLlmApiKey ? <LoadingSpinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                   </Button>
                 </div>
 
@@ -426,11 +452,11 @@ export const ControlPanel = memo(() => {
                         {activeLlmApiKeyIndex === index && <Badge variant="secondary" className="ml-2">Active</Badge>}
                       </span>
                       <div className="flex space-x-1">
-                        <Button size="icon" variant="ghost" onClick={() => setActiveLlmApiKey(index)} aria-label="Set as active">
-                          <LlmLogo provider={llmKey.provider} className="h-4 w-4" />
+                        <Button size="icon" variant="ghost" onClick={() => setActiveLlmApiKey(index)} aria-label="Set as active" disabled={isSettingActiveLlmApiKey || isRemovingLlmApiKey}>
+                          {isSettingActiveLlmApiKey ? <LoadingSpinner className="h-4 w-4" /> : <LlmLogo provider={llmKey.provider} className="h-4 w-4" />}
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => removeLlmApiKey(index)} aria-label="Remove API Key">
-                          <X className="h-4 w-4" />
+                        <Button size="icon" variant="ghost" onClick={() => removeLlmApiKey(index)} aria-label="Remove API Key" disabled={isSettingActiveLlmApiKey || isRemovingLlmApiKey}>
+                          {isRemovingLlmApiKey ? <LoadingSpinner className="h-4 w-4" /> : <X className="h-4 w-4" />}
                         </Button>
                       </div>
                     </div>

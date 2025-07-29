@@ -308,6 +308,7 @@ describe("useConnection", () => {
   describe("Proxy Authentication Headers", () => {
     beforeEach(async () => {
       vi.clearAllMocks();
+      vi.stubEnv('VITE_MCP_PROXY_AUTH_TOKEN', 'test-proxy-token');
       // Reset the mock transport objects
       if (mockSSETransportInstance) {
         mockSSETransportInstance.url = undefined;
@@ -319,6 +320,10 @@ describe("useConnection", () => {
       }
     });
 
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
     test("sends X-MCP-Proxy-Auth header when proxy auth token is configured", async () => {
       const propsWithProxyAuth = {
         ...defaultProps,
@@ -326,7 +331,6 @@ describe("useConnection", () => {
           ...DEFAULT_INSPECTOR_CONFIG,
           MCP_PROXY_AUTH_TOKEN: {
             ...DEFAULT_INSPECTOR_CONFIG.MCP_PROXY_AUTH_TOKEN,
-            value: "test-proxy-token",
           },
         },
       };
@@ -401,7 +405,6 @@ describe("useConnection", () => {
           ...DEFAULT_INSPECTOR_CONFIG,
           MCP_PROXY_AUTH_TOKEN: {
             ...DEFAULT_INSPECTOR_CONFIG.MCP_PROXY_AUTH_TOKEN,
-            value: "test-proxy-token",
           },
         },
       };
@@ -434,7 +437,6 @@ describe("useConnection", () => {
           ...DEFAULT_INSPECTOR_CONFIG,
           MCP_PROXY_AUTH_TOKEN: {
             ...DEFAULT_INSPECTOR_CONFIG.MCP_PROXY_AUTH_TOKEN,
-            value: "test-proxy-token",
           },
         },
       };
@@ -464,7 +466,6 @@ describe("useConnection", () => {
           ...DEFAULT_INSPECTOR_CONFIG,
           MCP_PROXY_AUTH_TOKEN: {
             ...DEFAULT_INSPECTOR_CONFIG.MCP_PROXY_AUTH_TOKEN,
-            value: "test-proxy-token",
           },
         },
         transportType: "streamable-http" as const,

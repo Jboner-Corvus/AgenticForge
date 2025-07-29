@@ -1,7 +1,7 @@
 import type { SessionData } from '@/types.js';
 
 // src/utils/asyncToolHelper.ts (Corrigé pour SessionData)
-import logger from '../logger.js';
+import { getLogger } from '../logger.js';
 import {
   type AsyncTaskJobPayload,
   jobQueue as taskQueue,
@@ -35,7 +35,7 @@ export async function enqueueTask<TParams extends Record<string, unknown>>(
   args: EnqueueParams<TParams>,
 ): Promise<string | undefined> {
   const { auth, cbUrl, params, taskId, toolName } = args;
-  const log = logger.child({
+  const log = getLogger().child({
     cbUrl: !!cbUrl,
     clientIp: auth?.clientIp,
     proc: 'task-producer',

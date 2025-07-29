@@ -17,7 +17,7 @@ export const Message: React.FC<{ message: ChatMessage }> = ({ message }) => {
     case 'tool_result':
       return <ToolMessage message={message} />;
     case 'agent_thought':
-      return <AgentThoughtBubble content={message.content} />;
+      return <AgentThoughtBubble content={message.content} timestamp={new Date(message.timestamp).toLocaleTimeString()} />;
     case 'error':
       return <ErrorMessage content={message.content} />;
     case 'agent_canvas_output':
