@@ -45,7 +45,7 @@ vi.mock('../../redis/redisClient.js', () => ({
   },
 }));
 
-import { Ctx, ILlmProvider, SessionData } from '@/types';
+
 
 // Define the mock for getLoggerInstance outside vi.mock to ensure consistency
 const mockLoggerInstance = {

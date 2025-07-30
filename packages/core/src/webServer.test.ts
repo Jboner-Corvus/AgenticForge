@@ -1,6 +1,6 @@
 import { Job } from 'bullmq';
 import express from 'express';
-import { Client, QueryResult } from 'pg';
+import { Client } from 'pg';
 import request from 'supertest';
 import { Mock, vi } from 'vitest';
 
@@ -10,7 +10,7 @@ vi.mock('fs/promises', () => ({
   stat: vi.fn().mockResolvedValue({ size: 10 }),
 }));
 
-import { SessionData } from '@/types';
+import type { SessionData } from '@/types';
 
 import { mockRedis } from '../test/mocks/redisClient.mock';
 

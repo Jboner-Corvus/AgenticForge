@@ -2,7 +2,7 @@
 import { afterAll, describe, expect, it, vi } from 'vitest';
 
 import { browserTool } from './browser.tool.js';
-import { closeBrowser, getBrowser } from './browserManager.js';
+import { closeBrowser } from './browserManager.js';
 
 // Mock browserManager to prevent actual browser launches and closures
 vi.mock('./browserManager.js', () => ({

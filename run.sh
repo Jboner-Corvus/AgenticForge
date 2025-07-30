@@ -493,20 +493,44 @@ run_all_checks() {
     fi
 
     # --- Lint ---
-    echo -e "${COLOR_YELLOW}Lancement du linter...${NC}"
+    # Lancement du linter (vérification des erreurs) pour chaque package
+    echo -e "${COLOR_YELLOW}Lancement du linter (vérification des erreurs)...${NC}"
+
+    # Linting pour le package 'core'
+    echo -e "${COLOR_CYAN}Lancement du linter pour @agenticforge/core...${NC}"
     set -o pipefail
-    LINT_OUTPUT=$(pnpm --recursive run lint 2>&1)
-    exit_code=$?
+    CORE_LINT_OUTPUT=$(pnpm --filter=@agenticforge/core lint 2>&1 | tee /dev/tty)
+    CORE_LINT_EXIT_CODE=$?
     set +o pipefail
-    if [ $exit_code -ne 0 ]; then
-        FAILED_CHECKS+=("Lint")
+    if [ $CORE_LINT_EXIT_CODE -ne 0 ]; then
+        FAILED_CHECKS+=("Lint (Core)")
         while read -r line; do
-            if [[ -n "$line" && "$line" == *"error"* ]]; then
+            if [[ -n "$line" && ("$line" == *"error"* || "$line" == *"warning"*) && ! "$line" =~ ^packages/.*/lint: && ! "$line" =~ ^[0-9]+:[0-9]+ && ! "$line" =~ ^✖ ]]; then
                 ERROR_COUNT=$((ERROR_COUNT + 1))
-                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Lint:** \`${line}\`\n"
+                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Lint (Core):** `${line}`\n"
             fi
-        done < <(echo "$LINT_OUTPUT")
+        done < <(echo "$CORE_LINT_OUTPUT")
     fi
+
+    # Linting pour le package 'ui'
+    echo -e "${COLOR_CYAN}Lancement du linter pour @agenticforge/ui...${NC}"
+    set -o pipefail
+    UI_LINT_OUTPUT=$(pnpm --filter=@agenticforge/ui lint 2>&1 | tee /dev/tty)
+    UI_LINT_EXIT_CODE=$?
+    set +o pipefail
+    if [ $UI_LINT_EXIT_CODE -ne 0 ]; then
+        FAILED_CHECKS+=("Lint (UI)")
+        while read -r line; do
+            if [[ -n "$line" && ("$line" == *"error"* || "$line" == *"warning"*) && ! "$line" =~ ^packages/.*/lint: && ! "$line" =~ ^[0-9]+:[0-9]+ && ! "$line" =~ ^✖ ]]; then
+                ERROR_COUNT=$((ERROR_COUNT + 1))
+                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Lint (UI):** `${line}`\n"
+            fi
+        done < <(echo "$UI_LINT_OUTPUT")
+    fi
+
+    echo -e "${COLOR_YELLOW}Lancement du linter (correction automatique)...${NC}"
+    pnpm --filter=@agenticforge/core lint --fix > /dev/null 2>&1
+    pnpm --filter=@agenticforge/ui lint --fix > /dev/null 2>&1
 
     # --- Tests Unitaires (AVEC CAPTURE DE BLOCS DÉTAILLÉS) ---
     echo -e "${COLOR_YELLOW}Lancement des tests unitaires...${NC}"
