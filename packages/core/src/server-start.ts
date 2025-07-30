@@ -7,6 +7,8 @@ import { initializeWebServer } from './webServer.js';
 
 async function startServer() {
   await loadConfig(); // Load configuration
+  // Initialize logger after config is loaded
+  const logger = getLoggerInstance();
   await new Promise((res) => setTimeout(res, 15000));
 
   let pgClient: null | PgClient = null;
@@ -21,11 +23,11 @@ async function startServer() {
         user: config.POSTGRES_USER,
       });
       await pgClient.connect();
-      getLoggerInstance().info('Connected to PostgreSQL.');
+      logger.info('Connected to PostgreSQL.');
       connected = true;
       break;
     } catch (err) {
-      getLoggerInstance().warn(
+      logger.warn(
         { err },
         `Failed to connect to PostgreSQL, retrying... (${i + 1}/5)`,
       );
@@ -34,26 +36,26 @@ async function startServer() {
   }
 
   if (!connected || !pgClient) {
-    getLoggerInstance().error(
+    logger.error(
       'Could not connect to PostgreSQL after 5 attempts, exiting.',
     );
     process.exit(1);
   }
 
   pgClient.on('error', (err) => {
-    getLoggerInstance().error({ err }, 'PostgreSQL client error');
+    logger.error({ err }, 'PostgreSQL client error');
   });
 
   const { server } = await initializeWebServer(jobQueue, pgClient);
 
   const port = config.PORT || 3001;
   server.listen(port, () => {
-    getLoggerInstance().info(`Server listening on port ${port}`);
+    logger.info(`Server listening on port ${port}`);
   });
 
   process.on('exit', () => {
     pgClient?.end();
-    getLoggerInstance().info('PostgreSQL client disconnected.');
+    logger.info('PostgreSQL client disconnected.');
   });
 }
 

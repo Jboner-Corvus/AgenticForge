@@ -1,5 +1,5 @@
 /// <reference types="vitest/globals" />
-import { Queue } from 'bullmq';
+ 
 import { describe, vi } from 'vitest';
 
 vi.mock('../../../../config.js', async () => {

@@ -1,12 +1,13 @@
 import { Logger, pino } from 'pino';
 export type { Logger };
 
-import { config } from './config.js';
+import { getConfig } from './config.js';
 
 let loggerInstance: Logger;
 
 export function getLogger(): Logger {
   if (!loggerInstance) {
+    const config = getConfig();
     loggerInstance = pino({
       level: config.LOG_LEVEL || 'debug',
       ...(config.NODE_ENV === 'development' && {
