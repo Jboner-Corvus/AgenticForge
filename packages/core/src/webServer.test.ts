@@ -1,7 +1,8 @@
 import { Job } from 'bullmq';
 import express from 'express';
-import { Client } from 'pg';
+import { Client, QueryResult } from 'pg';
 import request from 'supertest';
+import { Mock, vi } from 'vitest';
 
 vi.mock('fs/promises', () => ({
   readdir: vi.fn().mockResolvedValue(['file1.txt']),
@@ -9,7 +10,8 @@ vi.mock('fs/promises', () => ({
   stat: vi.fn().mockResolvedValue({ size: 10 }),
 }));
 
-import { mockLogger } from '../test/mocks/logger';
+import { SessionData } from '@/types';
+
 import { mockRedis } from '../test/mocks/redisClient.mock';
 
 vi.mock('./modules/redis/redisClient.js', () => ({
@@ -29,9 +31,17 @@ const mockPgClient = {
   connect: vi.fn().mockResolvedValue(undefined),
   end: vi.fn().mockResolvedValue(undefined),
   query: vi.fn(),
-};
+} as unknown as Client;
+
 vi.mock('pg', () => ({
   Client: vi.fn(() => mockPgClient),
+  QueryResult: vi.fn(() => ({
+    command: '',
+    fields: [],
+    oid: 0,
+    rowCount: 0,
+    rows: [],
+  })),
 }));
 
 import { jobQueue } from './modules/queue/queue';
@@ -41,16 +51,20 @@ import * as toolLoader from './utils/toolLoader';
 vi.mock('./modules/session/sessionManager');
 
 vi.mock('./utils/toolLoader');
-vi.mock('./modules/queue/queue', async () => {
-  const actual = await vi.importActual('./modules/queue/queue');
+
+vi.mock('bullmq', async () => {
+  const actual = await vi.importActual<typeof import('bullmq')>('bullmq');
   return {
     ...actual,
-    jobQueue: {
-      ...actual.jobQueue,
+    Queue: vi.fn(() => ({
       add: vi.fn((name: string, data: any, opts?: any) => {
         return Promise.resolve({ data, id: 'mockJobId', name, opts } as Job);
       }),
-    },
+      emit: vi.fn(),
+      libName: 'mock-bullmq',
+      off: vi.fn(),
+      on: vi.fn(),
+    })),
   };
 });
 vi.mock('./modules/llm/LlmKeyManager');
@@ -94,11 +108,11 @@ const mockConfigWatcher = {
 };
 
 vi.mock('./webServer', async () => {
-  const actual = await vi.importActual('./webServer');
+  const actual = await vi.importActual<typeof import('./webServer')>('./webServer');
   return {
     ...actual,
     configWatcher: mockConfigWatcher,
-    initializeWebServer: vi.fn(actual.initializeWebServer),
+    initializeWebServer: vi.fn(actual.initializeWebServer) as typeof actual.initializeWebServer,
   };
 });
 
@@ -109,10 +123,7 @@ describe('webServer', () => {
   beforeAll(async () => {
     const { initializeWebServer } = await import('./webServer');
 
-    const webServer = await initializeWebServer(
-      jobQueue,
-      mockPgClient as unknown as Client,
-    );
+    const webServer = await initializeWebServer(jobQueue as any, mockPgClient as any);
     app = webServer.app;
     server = webServer.server;
   });
@@ -141,9 +152,9 @@ describe('webServer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRedis._resetStore();
-    mockPgClient.query.mockResolvedValue({ rows: [] });
+
+    (mockPgClient.query as Mock).mockResolvedValue({ rows: [] });
     vi.spyOn(console, 'log').mockImplementation(() => {});
-    
   });
 
   it('should return 200 for authorized access to /api/tools', async () => {
@@ -169,15 +180,15 @@ describe('webServer', () => {
   });
 
   it('should load a session via /api/sessions/:id', async () => {
-    const sessionData = {
+    const sessionData: SessionData = {
       history: [],
       id: 's1',
       identities: [],
       name: 'test',
       timestamp: Date.now(),
     };
-    vi.mocked(SessionManager.prototype.getSession).mockResolvedValue(
-      sessionData,
+    vi.spyOn(SessionManager.prototype, 'getSession').mockResolvedValue(
+      sessionData as any,
     );
 
     const res = await request(app)
@@ -189,8 +200,20 @@ describe('webServer', () => {
   });
 
   it('should rename a session via /api/sessions/:id/rename', async () => {
-    mockPgClient.query.mockResolvedValueOnce({ rows: [{ id: 's1' }] }); // for getSession
-    mockPgClient.query.mockResolvedValueOnce({ rows: [] }); // for renameSession
+    (mockPgClient.query as Mock).mockResolvedValueOnce({
+      command: 'SELECT',
+      fields: [],
+      oid: 0,
+      rowCount: 1,
+      rows: [{ id: 's1' }],
+    }); // for getSession
+    (mockPgClient.query as Mock).mockResolvedValueOnce({
+      command: 'UPDATE',
+      fields: [],
+      oid: 0,
+      rowCount: 0,
+      rows: [],
+    }); // for renameSession
 
     const res = await request(app)
       .put('/api/sessions/s1/rename')
