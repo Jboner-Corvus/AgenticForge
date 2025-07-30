@@ -6,7 +6,7 @@ import {
   LlmKeyErrorType,
   LlmKeyManager,
 } from '../modules/llm/LlmKeyManager.js';
-import { redisClient } from '../modules/redis/redisClient.js';
+import { getRedisClientInstance } from '../modules/redis/redisClient.js';
 import { ILlmProvider } from '../types.js';
 import { LlmError } from './LlmError.js';
 

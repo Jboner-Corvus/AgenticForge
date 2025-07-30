@@ -9,7 +9,7 @@ import { config } from './config.js';
 import { getLoggerInstance } from './logger.js';
 import { Agent } from './modules/agent/agent.js';
 import { LlmKeyManager } from './modules/llm/LlmKeyManager.js';
-import { redisClient } from './modules/redis/redisClient.js';
+import { getRedisClientInstance } from './modules/redis/redisClient.js';
 import { SessionManager } from './modules/session/sessionManager.js';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.js';
 import { AppError, getErrDetails, UserError } from './utils/errorUtils.js';
@@ -254,7 +254,7 @@ if (process.env.NODE_ENV !== 'test') {
     connectionString: connectionString,
   });
   pgClient.connect();
-  initializeWorker(redisClient, pgClient).catch((err) => {
+  initializeWorker(getRedisClientInstance(), pgClient).catch((err) => {
     getLoggerInstance().error({ err }, "Échec de l'initialisation du worker");
     process.exit(1);
   });

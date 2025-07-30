@@ -2,17 +2,15 @@
 FROM node:20-alpine AS builder
 WORKDIR /usr/src/app
 
-# Copy root manifests
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-# Copy UI package.json
-COPY packages/ui/package.json ./packages/ui/
+# Copy the entire project directory
+COPY . .
 
-# Install UI-specific dependencies
+# Install pnpm globally
 RUN npm install -g pnpm
-RUN pnpm install --prod=false --filter @agenticforge/ui
 
-# Copy the rest of the UI code
-COPY ./packages/ui ./packages/ui
+# Install all dependencies for the monorepo, including devDependencies
+# This will ensure all packages, including tailwindcss, are correctly linked
+RUN pnpm install --prod=false
 
 # Build the UI
 RUN pnpm --filter @agenticforge/ui build

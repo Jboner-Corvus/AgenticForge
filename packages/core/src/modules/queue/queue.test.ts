@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock redis
 vi.mock('../redis/redisClient.js', () => ({
-  redisClient: {
+  getRedisClientInstance: vi.fn(() => ({
     connect: vi.fn(),
     disconnect: vi.fn(),
     duplicate: vi.fn(),
@@ -14,7 +14,7 @@ vi.mock('../redis/redisClient.js', () => ({
     publish: vi.fn(),
     removeListener: vi.fn(),
     setMaxListeners: vi.fn(),
-  },
+  })),
 }));
 
 // Define the mock for getLoggerInstance before importing queue.js
@@ -31,13 +31,12 @@ vi.doMock('../../logger.js', () => ({
 }));
 
 // Now import the module under test
-import { deadLetterQueue, jobQueue } from './queue.js';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { getDeadLetterQueue, getJobQueue } from './queue.js';
 
 describe('Queue Initialization and Error Handling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Spy on the specific mock instance returned by getLoggerInstance
-    vi.spyOn(mockLoggerInstance, 'error');
   });
 
   it('should instantiate jobQueue correctly', () => {

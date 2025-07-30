@@ -4,7 +4,7 @@ import type { SessionData } from '@/types.js';
 import { getLogger } from '../logger.js';
 import {
   type AsyncTaskJobPayload,
-  jobQueue as taskQueue,
+  getJobQueue,
 } from '../modules/queue/queue.js';
 import {
   EnqueueTaskError,
@@ -50,7 +50,7 @@ export async function enqueueTask<TParams extends Record<string, unknown>>(
     toolName,
   };
   try {
-    const job = await taskQueue.add(toolName, jobData, { jobId: taskId });
+    const job = await getJobQueue().add(toolName, jobData, { jobId: taskId });
     log.info({ jobId: job.id }, "Tâche ajoutée à la file d'attente.");
     return job.id;
   } catch (error: unknown) {

@@ -44,7 +44,7 @@ vi.mock('pg', () => ({
   })),
 }));
 
-import { jobQueue } from './modules/queue/queue';
+import { getJobQueue } from './modules/queue/queue';
 import { SessionManager } from './modules/session/sessionManager';
 import * as toolLoader from './utils/toolLoader';
 
@@ -123,7 +123,7 @@ describe('webServer', () => {
   beforeAll(async () => {
     const { initializeWebServer } = await import('./webServer');
 
-    const webServer = await initializeWebServer(jobQueue as any, mockPgClient as any);
+    const webServer = await initializeWebServer(getJobQueue() as any, mockPgClient as any);
     app = webServer.app;
     server = webServer.server;
   });

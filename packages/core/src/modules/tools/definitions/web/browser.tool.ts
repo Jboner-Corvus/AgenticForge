@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '@/types.js';
 
-import { redisClient } from '../../../redis/redisClient.js';
+import { getRedisClientInstance } from '../../../redis/redisClient.js';
 import { getBrowser } from './browserManager.js';
 
 export const parameters = z.object({
@@ -32,7 +32,7 @@ const sendEvent = async (ctx: Ctx, type: string, data: unknown) => {
   if (ctx.job?.id) {
     const channel = `job:${ctx.job.id}:events`;
     const event = JSON.stringify({ data, type });
-    await redisClient.publish(channel, event);
+    await getRedisClientInstance().publish(channel, event);
     ctx.log.info({ channel, event }, 'Published event to Redis');
   }
 };

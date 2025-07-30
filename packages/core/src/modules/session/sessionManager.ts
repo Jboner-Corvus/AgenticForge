@@ -7,7 +7,7 @@ import { Ctx, Message, SessionData } from '@/types.js';
 import { config } from '../../config.js';
 import { getLogger, Logger } from '../../logger.js';
 import { getLlmProvider } from '../../utils/llmProvider.js';
-import { redisClient } from '../redis/redisClient.js';
+import { getRedisClientInstance } from '../redis/redisClient.js';
 import { summarizeTool } from '../tools/definitions/ai/summarize.tool.js';
 
 export type Session = SessionData;
@@ -64,7 +64,7 @@ export class SessionManager {
           toolName: toolName || 'unknown_tool',
           type: 'tool_stream',
         });
-        redisClient.publish(channel, message);
+        getRedisClientInstance().publish(channel, message);
       },
       taskQueue: _taskQueue,
     };
@@ -170,7 +170,7 @@ export class SessionManager {
       } catch (error) {
         getLogger().error(
           { error, sessionId },
-          'Failed to parse messages from DB',
+          'Failed to parse messages from DB, initializing with empty history.',
         );
         initialHistory = [];
       }

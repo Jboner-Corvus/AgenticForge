@@ -6,7 +6,6 @@ vi.mock('./modules/redis/redisClient', async (importOriginal) => {
   const actual =
     await importOriginal<typeof import('./modules/redis/redisClient')>();
   const mockRedisClient = {
-    ...actual.redisClient,
     del: vi.fn(),
     duplicate: vi.fn(() => mockRedisClient),
     get: vi.fn(),
@@ -22,7 +21,7 @@ vi.mock('./modules/redis/redisClient', async (importOriginal) => {
     unsubscribe: vi.fn(),
   } as any;
   return {
-    redisClient: mockRedisClient,
+    getRedisClientInstance: vi.fn(() => mockRedisClient),
   };
 });
 
@@ -55,7 +54,7 @@ import { getConfig as _getConfig, config } from './config';
 import { getLogger } from './logger';
 import { Agent } from './modules/agent/agent';
 import * as _redis from './modules/redis/redisClient';
-import { redisClient } from './modules/redis/redisClient';
+import { getRedisClientInstance } from './modules/redis/redisClient';
 import { SessionManager as _SessionManager } from './modules/session/sessionManager';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool';
 import { AppError as _AppError } from './utils/errorUtils';

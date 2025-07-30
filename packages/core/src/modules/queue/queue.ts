@@ -3,7 +3,7 @@ import { Queue } from 'bullmq';
 import { SessionData } from '@/types.js';
 
 import { getLoggerInstance } from '../../logger.js';
-import { redisClient } from '../redis/redisClient.js';
+import { getRedisClientInstance } from '../redis/redisClient.js';
 
 export interface AsyncTaskJobPayload<TParams> {
   auth: SessionData | undefined;
@@ -13,16 +13,29 @@ export interface AsyncTaskJobPayload<TParams> {
   toolName: string;
 }
 
-export const jobQueue = new Queue('tasks', { connection: redisClient });
+let jobQueueInstance: null | Queue = null;
+let deadLetterQueueInstance: null | Queue = null;
 
-export const deadLetterQueue = new Queue('dead-letters', {
-  connection: redisClient,
-});
+export function getDeadLetterQueue(): Queue {
+  if (!deadLetterQueueInstance) {
+    const redisClient = getRedisClientInstance();
+    deadLetterQueueInstance = new Queue('dead-letters', {
+      connection: redisClient,
+    });
+    deadLetterQueueInstance.on('error', (err: Error) => {
+      getLoggerInstance().error({ err }, 'Dead-letter queue error');
+    });
+  }
+  return deadLetterQueueInstance;
+}
 
-jobQueue.on('error', (err: Error) => {
-  getLoggerInstance().error({ err }, 'Job queue error');
-});
-
-deadLetterQueue.on('error', (err: Error) => {
-  getLoggerInstance().error({ err }, 'Dead-letter queue error');
-});
+export function getJobQueue(): Queue {
+  if (!jobQueueInstance) {
+    const redisClient = getRedisClientInstance();
+    jobQueueInstance = new Queue('tasks', { connection: redisClient });
+    jobQueueInstance.on('error', (err: Error) => {
+      getLoggerInstance().error({ err }, 'Job queue error');
+    });
+  }
+  return jobQueueInstance;
+}

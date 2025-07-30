@@ -4,6 +4,10 @@ import { getConfig } from '../../config.js';
 
 let redisInstance: null | Redis = null;
 
+export function getRedisClientInstance(): Redis {
+  return getRedisClient();
+}
+
 function getRedisClient(): Redis {
   if (!redisInstance) {
     const config = getConfig();
@@ -25,5 +29,3 @@ function getRedisClient(): Redis {
   }
   return redisInstance;
 }
-
-export const redisClient = getRedisClient();

@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { getConfig, loadConfig } from './config.js';
 import { getLoggerInstance } from './logger.js';
-import { redisClient } from './modules/redis/redisClient.js';
+import { getRedisClientInstance } from './modules/redis/redisClient.js';
 const config = getConfig();
 import { LlmKeyManager as _LlmKeyManager } from './modules/llm/LlmKeyManager.js';
 import { SessionManager } from './modules/session/sessionManager.js';
@@ -65,7 +65,7 @@ export async function initializeWebServer(
           sameSite: 'lax',
           secure: process.env.NODE_ENV === 'production',
         });
-        redisClient
+        getRedisClientInstance()
           .incr('leaderboard:sessionsCreated')
           .catch((err: unknown) => {
             getLoggerInstance().error(

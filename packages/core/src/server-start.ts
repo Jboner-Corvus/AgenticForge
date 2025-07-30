@@ -2,7 +2,7 @@ import { Client as PgClient } from 'pg';
 
 import { config, loadConfig } from './config.js';
 import { getLoggerInstance } from './logger.js';
-import { jobQueue } from './modules/queue/queue.js';
+import { getDeadLetterQueue, getJobQueue } from './modules/queue/queue.js';
 import { initializeWebServer } from './webServer.js';
 
 async function startServer() {
@@ -46,6 +46,8 @@ async function startServer() {
     logger.error({ err }, 'PostgreSQL client error');
   });
 
+  const jobQueue = getJobQueue();
+  const deadLetterQueue = getDeadLetterQueue();
   const { server } = await initializeWebServer(jobQueue, pgClient);
 
   const port = config.PORT || 3001;

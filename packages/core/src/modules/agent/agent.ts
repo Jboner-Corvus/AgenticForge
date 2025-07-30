@@ -21,7 +21,7 @@ import { LlmError } from '../../utils/LlmError.js';
 import { getLlmProvider } from '../../utils/llmProvider.js';
 import { LLMContent } from '../llm/llm-types.js';
 import { LlmKeyManager } from '../llm/LlmKeyManager.js';
-import { redisClient } from '../redis/redisClient.js';
+import { getRedisClientInstance } from '../redis/redisClient.js';
 import { SessionManager } from '../session/sessionManager.js';
 import { FinishToolSignal } from '../tools/definitions/index.js';
 import { toolRegistry } from '../tools/toolRegistry.js';
@@ -616,7 +616,7 @@ export class Agent {
   private publishToChannel(data: ChannelData) {
     const channel = `job:${this.job.id}:events`;
     const message = JSON.stringify(data);
-    redisClient.publish(channel, message);
+    getRedisClientInstance().publish(channel, message);
     // Only send serializable and relevant data to updateProgress
     const progressData = { ...data };
     if (progressData.type === 'tool.start') {
@@ -628,7 +628,7 @@ export class Agent {
 
   private async setupInterruptListener() {
     const channel = `job:${this.job.id}:interrupt`;
-    this.subscriber = redisClient.duplicate();
+    this.subscriber = getRedisClientInstance().duplicate();
 
     const messageHandler = (messageChannel: string, message: string): void => {
       if (messageChannel === channel) {

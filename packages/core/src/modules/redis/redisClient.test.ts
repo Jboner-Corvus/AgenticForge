@@ -11,7 +11,7 @@ vi.mock('ioredis', () => {
   };
 });
 
-import { redisClient } from './redisClient.js';
+import { getRedisClientInstance } from './redisClient.js';
 
 // Mock the logger to prevent console output during tests
 vi.mock('../../logger', () => ({
