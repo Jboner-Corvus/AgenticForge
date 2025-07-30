@@ -240,10 +240,10 @@ start_worker() {
     
     if [ "$NODE_ENV" = "production" ]; then
         echo -e "${COLOR_YELLOW}Démarrage du worker en mode production...${NC}"
-        NODE_OPTIONS='--enable-source-maps' pnpm exec node dist/worker.js > "${SCRIPT_DIR}/worker.log" 2>&1 &
+        POSTGRES_HOST=localhost NODE_OPTIONS='--enable-source-maps' pnpm exec node dist/worker.js > "${SCRIPT_DIR}/worker.log" 2>&1 &
     else
         echo -e "${COLOR_YELLOW}Démarrage du worker en mode développement...${NC}"
-        NODE_OPTIONS='--enable-source-maps' pnpm exec tsx watch src/worker.ts > "${SCRIPT_DIR}/worker.log" 2>&1 &
+        POSTGRES_HOST=localhost NODE_OPTIONS='--enable-source-maps' pnpm exec tsx watch src/worker.ts > "${SCRIPT_DIR}/worker.log" 2>&1 &
     fi
     
     local WORKER_PID=$!

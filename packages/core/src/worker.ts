@@ -201,7 +201,7 @@ export async function processJob(
     return finalResponse;
   } catch (error: unknown) {
     const errDetails = getErrDetails(error);
-    getLoggerInstance().error(
+    log.error(
       { err: errDetails },
       "Erreur dans l'exécution de l'agent",
     );
