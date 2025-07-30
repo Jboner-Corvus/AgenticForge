@@ -92,7 +92,7 @@ class AnthropicProvider implements ILlmProvider {
         headers: {
           'anthropic-version': '2023-06-01', // Required Anthropic API version
           'Content-Type': 'application/json',
-          'x-api-key': activeKey.apiKey,
+          'x-api-key': activeKey.key,
         },
         method: 'POST',
       });
@@ -104,7 +104,7 @@ class AnthropicProvider implements ILlmProvider {
         const errorType = this.getErrorType(response.status, errorBody);
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           errorType,
         );
         throw new LlmError(errorMessage);
@@ -124,7 +124,7 @@ class AnthropicProvider implements ILlmProvider {
         );
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           errorType,
         );
         throw new LlmError(
@@ -151,7 +151,7 @@ class AnthropicProvider implements ILlmProvider {
           );
         });
 
-      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
+      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
 
       return content.trim();
     } catch (_error) {
@@ -162,7 +162,7 @@ class AnthropicProvider implements ILlmProvider {
       if (activeKey) {
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           LlmKeyErrorType.TEMPORARY,
         );
       }
@@ -218,7 +218,7 @@ class GeminiProvider implements ILlmProvider {
       throw new LlmError(errorMessage);
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${modelName || config.LLM_MODEL_NAME}:generateContent?key=${activeKey.apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${modelName || config.LLM_MODEL_NAME}:generateContent?key=${activeKey.key}`;
 
     const geminiMessages = messages.map((msg) => {
       let role = msg.role;
@@ -276,7 +276,7 @@ class GeminiProvider implements ILlmProvider {
         const errorType = this.getErrorType(response.status, errorBody);
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           errorType,
         );
         throw new LlmError(errorMessage);
@@ -296,7 +296,7 @@ class GeminiProvider implements ILlmProvider {
         );
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           errorType,
         );
         throw new LlmError(
@@ -327,7 +327,7 @@ class GeminiProvider implements ILlmProvider {
         });
 
       // If successful, reset error count for this key
-      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
+      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
 
       return content.trim();
     } catch (_error) {
@@ -339,7 +339,7 @@ class GeminiProvider implements ILlmProvider {
         // Assume network errors or unhandled exceptions are temporary
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           LlmKeyErrorType.TEMPORARY,
         );
       }
@@ -418,7 +418,7 @@ class GrokProvider implements ILlmProvider {
       const response = await fetch(apiUrl, {
         body,
         headers: {
-          Authorization: `Bearer ${activeKey.apiKey}`,
+          Authorization: `Bearer ${activeKey.key}`,
           'Content-Type': 'application/json',
         },
         method: 'POST',
@@ -431,7 +431,7 @@ class GrokProvider implements ILlmProvider {
         const errorType = this.getErrorType(response.status, errorBody);
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           errorType,
         );
         throw new LlmError(errorMessage);
@@ -451,7 +451,7 @@ class GrokProvider implements ILlmProvider {
         );
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           errorType,
         );
         throw new LlmError(
@@ -478,7 +478,7 @@ class GrokProvider implements ILlmProvider {
           );
         });
 
-      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
+      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
 
       return content.trim();
     } catch (_error) {
@@ -489,7 +489,7 @@ class GrokProvider implements ILlmProvider {
       if (activeKey) {
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           LlmKeyErrorType.TEMPORARY,
         );
       }
@@ -571,7 +571,7 @@ class HuggingFaceProvider implements ILlmProvider {
       const response = await fetch(apiUrl, {
         body,
         headers: {
-          Authorization: `Bearer ${activeKey.apiKey}`,
+          Authorization: `Bearer ${activeKey.key}`,
           'Content-Type': 'application/json',
         },
         method: 'POST',
@@ -584,7 +584,7 @@ class HuggingFaceProvider implements ILlmProvider {
         const errorType = this.getErrorType(response.status, errorBody);
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           errorType,
         );
         throw new LlmError(errorMessage);
@@ -604,7 +604,7 @@ class HuggingFaceProvider implements ILlmProvider {
         );
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           errorType,
         );
         throw new LlmError(
@@ -632,7 +632,7 @@ class HuggingFaceProvider implements ILlmProvider {
           );
         });
 
-      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
+      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
 
       return content.trim();
     } catch (_error) {
@@ -644,7 +644,7 @@ class HuggingFaceProvider implements ILlmProvider {
         // Assume network errors or unhandled exceptions are temporary
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           LlmKeyErrorType.TEMPORARY,
         );
       }
@@ -721,7 +721,7 @@ class MistralProvider implements ILlmProvider {
       const response = await fetch(apiUrl, {
         body,
         headers: {
-          Authorization: `Bearer ${activeKey.apiKey}`,
+          Authorization: `Bearer ${activeKey.key}`,
           'Content-Type': 'application/json',
         },
         method: 'POST',
@@ -734,7 +734,7 @@ class MistralProvider implements ILlmProvider {
         const errorType = this.getErrorType(response.status, errorBody);
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           errorType,
         );
         throw new LlmError(errorMessage);
@@ -754,7 +754,7 @@ class MistralProvider implements ILlmProvider {
         );
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           errorType,
         );
         throw new LlmError(
@@ -782,7 +782,7 @@ class MistralProvider implements ILlmProvider {
           );
         });
 
-      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
+      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
 
       return content.trim();
     } catch (_error) {
@@ -794,7 +794,7 @@ class MistralProvider implements ILlmProvider {
         // Assume network errors or unhandled exceptions are temporary
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           LlmKeyErrorType.TEMPORARY,
         );
       }
@@ -876,7 +876,7 @@ class OpenAIProvider implements ILlmProvider {
       const response = await fetch(apiUrl, {
         body,
         headers: {
-          Authorization: `Bearer ${activeKey.apiKey}`,
+          Authorization: `Bearer ${activeKey.key}`,
           'Content-Type': 'application/json',
         },
         method: 'POST',
@@ -889,7 +889,7 @@ class OpenAIProvider implements ILlmProvider {
         const errorType = this.getErrorType(response.status, errorBody);
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           errorType,
         );
         throw new LlmError(errorMessage);
@@ -909,7 +909,7 @@ class OpenAIProvider implements ILlmProvider {
         );
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           errorType,
         );
         throw new LlmError(
@@ -937,7 +937,7 @@ class OpenAIProvider implements ILlmProvider {
           );
         });
 
-      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
+      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
 
       return content.trim();
     } catch (_error) {
@@ -949,7 +949,7 @@ class OpenAIProvider implements ILlmProvider {
         // Assume network errors or unhandled exceptions are temporary
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           LlmKeyErrorType.TEMPORARY,
         );
       }

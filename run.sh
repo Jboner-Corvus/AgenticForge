@@ -463,7 +463,7 @@ run_all_checks() {
         while read -r line; do
             if [[ -n "$line" && "$line" == *"error TS"* ]]; then
                 ERROR_COUNT=$((ERROR_COUNT + 1))
-                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **TypeCheck (UI):** \`${line}\`\n"
+                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **TypeCheck (UI):** `${line}`\n"
             fi
         done < <(echo "$UI_TYPECHECK_OUTPUT")
     fi
@@ -486,7 +486,7 @@ run_all_checks() {
     # --- Lint ---
     echo -e "${COLOR_YELLOW}Lancement du linter...${NC}"
     set -o pipefail
-    LINT_OUTPUT=$(pnpm --recursive run lint 2>&1 | tee /dev/tty)
+    LINT_OUTPUT=$(pnpm --recursive run lint 2>&1)
     exit_code=$?
     set +o pipefail
     if [ $exit_code -ne 0 ]; then
@@ -511,7 +511,7 @@ run_all_checks() {
         local error_block=""
 
         while IFS= read -r line; do
-            if [[ "$line" =~ ^[[:space:]]*FAIL || "$line" =~ ^⎯⎯⎯⎯⎯[[:space:]]*Uncaught[[:space:]]Exception ]]; then
+            if [[ "$line" =~ ^[[:space:]]*FAIL || "$line" =~ ^⎯⎯⎯⎯⎯[[:space:]]*Uncaught[[:space:]]Exception || "$line" =~ ^⎯⎯⎯⎯[[:space:]]*Unhandled[[:space:]]Rejection || "$line" =~ ^⎯⎯⎯⎯⎯⎯[[:space:]]*Unhandled[[:space:]]Errors ]]; then
                 if [ $capture_mode -eq 1 ] && [ -n "$error_block" ]; then
                     ERROR_COUNT=$((ERROR_COUNT + 1))
                     ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Test Failure:**\n\`\`\`text\n${error_block}\n\`\`\`\n"

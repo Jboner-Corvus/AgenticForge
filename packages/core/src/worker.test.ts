@@ -36,6 +36,14 @@ vi.mock('pg', () => ({
   })),
 }));
 
+vi.mock('./config', () => ({
+  config: {
+    HISTORY_MAX_LENGTH: 10,
+    REDIS_HOST: 'localhost',
+    REDIS_PORT: 6379,
+  },
+}));
+
 import { config } from './config';
 import { getLogger } from './logger';
 import { Agent } from './modules/agent/agent';

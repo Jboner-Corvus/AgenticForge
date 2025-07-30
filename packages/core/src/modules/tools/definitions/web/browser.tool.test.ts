@@ -16,9 +16,20 @@ vi.mock('playwright', async () => {
   };
 });
 
-import loggerMock from '../../../../test/mocks/logger.js';
+const loggerMock = {
+  child: vi.fn(() => ({
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  })),
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+};
+
+import { getLogger as mockGetLogger } from '../../../../test/mocks/logger.js';
 vi.mock('../../../../logger.js', () => ({
-  getLogger: loggerMock,
+  getLogger: mockGetLogger,
 }));
 
 import { Queue } from 'bullmq';

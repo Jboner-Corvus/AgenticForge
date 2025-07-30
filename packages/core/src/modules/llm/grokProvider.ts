@@ -34,9 +34,9 @@ export class GrokProvider implements ILlmProvider {
     let activeKey: LlmApiKey | null;
     if (apiKey) {
       activeKey = {
-        apiKey,
         errorCount: 0,
         isPermanentlyDisabled: false,
+        key: apiKey,
         provider: 'grok',
       };
     } else {
@@ -76,7 +76,7 @@ export class GrokProvider implements ILlmProvider {
       const response = await fetch(apiUrl, {
         body,
         headers: {
-          Authorization: `Bearer ${activeKey.apiKey}`,
+          Authorization: `Bearer ${activeKey.key}`,
           'Content-Type': 'application/json',
         },
         method: 'POST',
@@ -89,7 +89,7 @@ export class GrokProvider implements ILlmProvider {
         const errorType = this.getErrorType(response.status, errorBody);
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           errorType,
         );
         throw new LlmError(errorMessage);
@@ -109,7 +109,7 @@ export class GrokProvider implements ILlmProvider {
         );
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           errorType,
         );
         throw new LlmError(
@@ -136,7 +136,7 @@ export class GrokProvider implements ILlmProvider {
           );
         });
 
-      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
+      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
 
       return content.trim();
     } catch (_error) {
@@ -147,7 +147,7 @@ export class GrokProvider implements ILlmProvider {
       if (activeKey) {
         await LlmKeyManager.markKeyAsBad(
           activeKey.provider,
-          activeKey.apiKey,
+          activeKey.key,
           LlmKeyErrorType.TEMPORARY,
         );
       }

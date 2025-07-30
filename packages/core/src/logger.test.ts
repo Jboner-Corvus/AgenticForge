@@ -1,10 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the config module to control NODE_ENV
+import { getLogger as mockGetLogger } from './test/mocks/logger.js';
+vi.mock('./logger.js', () => ({
+  getLogger: mockGetLogger,
+}));
+
 vi.mock('./config.js', () => ({
   config: {
     NODE_ENV: 'test', // Default to 'test' environment
   },
+  getConfig: vi.fn(() => ({
+    LOG_LEVEL: 'debug',
+    NODE_ENV: 'test',
+  })),
 }));
 
 // Mock the pino module
@@ -52,6 +61,10 @@ describe('Logger', () => {
         LOG_LEVEL: process.env.LOG_LEVEL,
         NODE_ENV: 'test',
       },
+      getConfig: vi.fn(() => ({
+        LOG_LEVEL: process.env.LOG_LEVEL,
+        NODE_ENV: 'test',
+      })),
     }));
     vi.resetModules();
     const { getLogger: newGetLogger } = await import('./logger.ts');
@@ -65,6 +78,10 @@ describe('Logger', () => {
       config: {
         NODE_ENV: 'development',
       },
+      getConfig: vi.fn(() => ({
+        LOG_LEVEL: 'debug',
+        NODE_ENV: 'development',
+      })),
     }));
     vi.resetModules();
     await import('./logger.ts');
@@ -92,6 +109,10 @@ describe('Logger', () => {
       config: {
         NODE_ENV: 'production',
       },
+      getConfig: vi.fn(() => ({
+        LOG_LEVEL: 'debug',
+        NODE_ENV: 'production',
+      })),
     }));
     vi.resetModules();
     await import('./logger.ts');

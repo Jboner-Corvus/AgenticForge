@@ -13,174 +13,103 @@ Une fois la correction effectué, cochez la case `[x]`.
 
 ## Erreurs à corriger
 
-1. [ ] **TypeCheck (Core):** `src/modules/llm/LlmKeyManager.ts(143,43): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
+1. [ ] **TypeCheck (Core):** `src/modules/tools/definitions/system/agentResponse.tool.test.ts(17,10): error TS2304: Cannot find name 'getLogger'.`
 
-2. [ ] **TypeCheck (Core):** `src/modules/llm/grokProvider.ts(37,9): error TS2353: Object literal may only specify known properties, and 'apiKey' does not exist in type 'LlmApiKey'.`
+2. [ ] **TypeCheck (Core):** `src/modules/tools/definitions/system/agentResponse.tool.test.ts(28,12): error TS2304: Cannot find name 'loggerMock'.`
 
-3. [ ] **TypeCheck (Core):** `src/modules/llm/grokProvider.ts(79,46): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
+3. [ ] **TypeCheck (Core):** `src/modules/tools/definitions/system/listTools.tool.test.ts(37,10): error TS2304: Cannot find name 'getLogger'.`
 
-4. [ ] **TypeCheck (Core):** `src/modules/llm/grokProvider.ts(92,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
+4. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(533,9): error TS2353: Object literal may only specify known properties, and 'apiKey' does not exist in type 'LlmApiKey'.`
 
-5. [ ] **TypeCheck (Core):** `src/modules/llm/grokProvider.ts(112,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
+5. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(838,9): error TS2353: Object literal may only specify known properties, and 'apiKey' does not exist in type 'LlmApiKey'.`
 
-6. [ ] **TypeCheck (Core):** `src/modules/llm/grokProvider.ts(139,72): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
+6. [ ] **TypeCheck (Core):** `src/webServer.test.ts(105,39): error TS2304: Cannot find name 'config'.`
 
-7. [ ] **TypeCheck (Core):** `src/modules/llm/grokProvider.ts(150,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
+7. [ ] **TypeCheck (Core):** `src/webServer.test.ts(114,39): error TS2304: Cannot find name 'config'.`
 
-8. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(95,34): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
+8. [ ] **TypeCheck (Core):** `src/webServer.test.ts(135,39): error TS2304: Cannot find name 'config'.`
 
-9. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(107,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
+9. [ ] **TypeCheck (Core):** `src/webServer.test.ts(147,39): error TS2304: Cannot find name 'config'.`
 
-10. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(127,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
+10. [ ] **Lint:** `packages/core lint:   24:10  error  'initializeWebServer' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars`
 
-11. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(154,72): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
+11. [ ] **Lint:** `packages/core lint:   65:13  error  'config' is assigned a value but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars`
 
-12. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(165,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
+12. [ ] **Lint:** `packages/core lint: ✖ 2 problems (2 errors, 0 warnings)`
 
-13. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(221,143): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-14. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(279,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-15. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(299,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-16. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(330,72): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-17. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(342,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-18. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(421,46): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-19. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(434,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-20. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(454,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-21. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(481,72): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-22. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(492,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-23. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(533,9): error TS2353: Object literal may only specify known properties, and 'apiKey' does not exist in type 'LlmApiKey'.`
-
-24. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(574,46): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-25. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(587,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-26. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(607,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-27. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(635,72): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-28. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(647,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-29. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(724,46): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-30. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(737,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-31. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(757,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-32. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(785,72): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-33. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(797,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-34. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(838,9): error TS2353: Object literal may only specify known properties, and 'apiKey' does not exist in type 'LlmApiKey'.`
-
-35. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(879,46): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-36. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(892,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-37. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(912,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-38. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(940,72): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-39. [ ] **TypeCheck (Core):** `src/utils/llmProvider.ts(952,21): error TS2339: Property 'apiKey' does not exist on type 'LlmApiKey'.`
-
-40. [ ] **Test Failure:**
+13. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.test.ts > webServer
-TypeError: Cannot read properties of undefined (reading 'LOG_LEVEL')
- ❯ Module.getLogger src/logger.ts:12:21
-     10|     const config = getConfig();
-     11|     loggerInstance = pino({
-     12|       level: config.LOG_LEVEL || 'debug',
-       |                     ^
-     13|       ...(config.NODE_ENV === 'development' && {
-     14|         transport: {
- ❯ watchConfig src/webServer.ts:710:3
- ❯ Module.initializeWebServer src/webServer.ts:49:5
- ❯ src/webServer.test.ts:45:29
+Error: [vitest] No "default" export is defined on the "chokidar" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/32]⎯
+vi.mock("chokidar", async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    // your mocked methods
+  }
+})
+
+ ❯ watchConfig src/webServer.ts:712:19
+    710|   getLogger().info(`[watchConfig] Watching for .env changes in: ${envP…
+    711| 
+    712|   configWatcher = chokidar.watch(envPath, {
+       |                   ^
+    713|     ignoreInitial: true,
+    714|     persistent: true,
+ ❯ initializeWebServer src/webServer.ts:49:5
+ ❯ src/webServer.test.ts:67:29
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/33]⎯
 
 ```
 
-41. [ ] **Test Failure:**
+14. [ ] **Test Failure:**
 ```text
  FAIL  src/webServer.test.ts > webServer
 TypeError: Cannot read properties of undefined (reading 'close')
- ❯ src/webServer.test.ts:56:14
-     54|   afterAll(async () => {
-     55|     await new Promise<void>((resolve, reject) => {
-     56|       server.close((err) => {
+ ❯ src/webServer.test.ts:78:14
+     76|   afterAll(async () => {
+     77|     await new Promise<void>((resolve, reject) => {
+     78|       server.close((err) => {
        |              ^
-     57|         if (err) {
-     58|           return reject(err);
- ❯ src/webServer.test.ts:55:11
+     79|         if (err) {
+     80|           return reject(err);
+ ❯ src/webServer.test.ts:77:11
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/32]⎯
-
-```
-
-42. [ ] **Test Failure:**
-```text
- FAIL  src/worker.test.ts [ src/worker.test.ts ]
-Error: [vitest] There was an error when mocking a module. If you are using "vi.mock" factory, make sure there are no top level variables inside, since this call is hoisted to top of the file. Read more: https://vitest.dev/api/vi.html#vi-mock
- ❯ src/modules/llm/LlmKeyManager.ts:2:31
-      1| import { getLogger } from '../../logger.js';
-      2| import { redis as _redis } from '../redis/redisClient.js';
-       |                               ^
-      3| 
-      4| export enum LlmKeyErrorType {
- ❯ src/config.ts:6:31
-
-Caused by: TypeError: Cannot read properties of undefined (reading 'REDIS_HOST')
- ❯ src/modules/redis/redisClient.ts:19:26
- ❯ src/worker.test.ts:3:18
- ❯ src/modules/llm/LlmKeyManager.ts:2:31
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/33]⎯
 
 ```
 
-43. [ ] **Test Failure:**
+15. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/errorUtils.test.ts [ src/utils/errorUtils.test.ts ]
 ```
 
-44. [ ] **Test Failure:**
+16. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/validationUtils.test.ts [ src/utils/validationUtils.test.ts ]
 ```
 
-45. [ ] **Test Failure:**
+17. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/toolRegistry.test.ts [ src/modules/tools/toolRegistry.test.ts ]
 ```
 
-46. [ ] **Test Failure:**
+18. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/definitions/fs/editFile.tool.test.ts [ src/modules/tools/definitions/fs/editFile.tool.test.ts ]
 ```
 
-47. [ ] **Test Failure:**
+19. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/definitions/fs/listDirectory.tool.test.ts [ src/modules/tools/definitions/fs/listDirectory.tool.test.ts ]
 ```
 
-48. [ ] **Test Failure:**
+20. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/definitions/fs/readFile.tool.test.ts [ src/modules/tools/definitions/fs/readFile.tool.test.ts ]
-```
-
-49. [ ] **Test Failure:**
-```text
- FAIL  src/modules/tools/definitions/system/finish.tool.test.ts [ src/modules/tools/definitions/system/finish.tool.test.ts ]
 TypeError: Cannot read properties of undefined (reading 'REDIS_HOST')
  ❯ src/modules/redis/redisClient.ts:19:26
      17| // Si le worker est local (pas dans Docker), il doit utiliser 'localho…
@@ -191,81 +120,45 @@ TypeError: Cannot read properties of undefined (reading 'REDIS_HOST')
      21| 
  ❯ src/modules/llm/LlmKeyManager.ts:2:31
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/33]⎯
 
 ```
 
-50. [ ] **Test Failure:**
-```text
- FAIL  src/modules/tools/definitions/fs/writeFile.tool.test.ts [ src/modules/tools/definitions/fs/writeFile.tool.test.ts ]
-TypeError: getLogger is not a function
- ❯ src/modules/tools/definitions/fs/writeFile.tool.test.ts:45:10
-     43|   const mockCtx: Ctx = {
-     44|     llm: {} as ILlmProvider,
-     45|     log: getLogger(),
-       |          ^
-     46|     reportProgress: vi.fn(),
-     47|     session: {} as SessionData,
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/32]⎯
-
-```
-
-51. [ ] **Test Failure:**
+21. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/definitions/system/agentResponse.tool.test.ts [ src/modules/tools/definitions/system/agentResponse.tool.test.ts ]
-TypeError: getLogger is not a function
- ❯ src/modules/tools/definitions/system/agentResponse.tool.test.ts:23:10
-     21|   const mockCtx: Ctx = {
-     22|     llm: {} as ILlmProvider,
-     23|     log: getLogger(),
+ReferenceError: getLogger is not defined
+ ❯ src/modules/tools/definitions/system/agentResponse.tool.test.ts:17:10
+     15|   const mockCtx: Ctx = {
+     16|     llm: {} as ILlmProvider,
+     17|     log: getLogger(),
        |          ^
-     24|     reportProgress: vi.fn(),
-     25|     session: {} as SessionData,
+     18|     reportProgress: vi.fn(),
+     19|     session: {} as SessionData,
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/33]⎯
 
 ```
 
-52. [ ] **Test Failure:**
+22. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/definitions/system/listTools.tool.test.ts [ src/modules/tools/definitions/system/listTools.tool.test.ts ]
-Error: [vitest] There was an error when mocking a module. If you are using "vi.mock" factory, make sure there are no top level variables inside, since this call is hoisted to top of the file. Read more: https://vitest.dev/api/vi.html#vi-mock
- ❯ src/modules/tools/definitions/system/listTools.tool.test.ts:16:25
-     14| 
-     15| vi.mock('../../../../logger.js', async () => {
-     16|   const actual = await vi.importActual<typeof import('../../../../logg…
-       |                         ^
-     17|     '../../../../logger.js',
-     18|   );
-
-Caused by: TypeError: Cannot read properties of undefined (reading 'REDIS_HOST')
- ❯ src/modules/redis/redisClient.ts:19:26
- ❯ src/modules/llm/LlmKeyManager.ts:2:31
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/32]⎯
-
-```
-
-53. [ ] **Test Failure:**
-```text
- FAIL  src/modules/tools/definitions/web/browser.tool.test.ts [ src/modules/tools/definitions/web/browser.tool.test.ts ]
-TypeError: getLogger is not a function
- ❯ src/modules/tools/definitions/web/browser.tool.test.ts:36:10
-     34|   const mockCtx: Ctx = {
-     35|     llm: {} as ILlmProvider,
-     36|     log: getLogger(),
+ReferenceError: getLogger is not defined
+ ❯ src/modules/tools/definitions/system/listTools.tool.test.ts:37:10
+     35|   const mockCtx: Ctx = {
+     36|     llm: {} as ILlmProvider,
+     37|     log: getLogger(),
        |          ^
-     37|     reportProgress: vi.fn(),
-     38|     session: {} as SessionData,
+     38|     reportProgress: vi.fn(),
+     39|     session: {} as SessionData,
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/33]⎯
 
-⎯⎯⎯⎯⎯⎯ Failed Tests 18 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯ Failed Tests 23 ⎯⎯⎯⎯⎯⎯⎯
 
 ```
 
-54. [ ] **Test Failure:**
+23. [ ] **Test Failure:**
 ```text
  FAIL  src/logger.test.ts > Logger > should instantiate a pino logger with debug level
 AssertionError: expected "spy" to be called with arguments: [ ObjectContaining {"level": "debug"} ]
@@ -276,46 +169,42 @@ Received:
 
 Number of calls: 0
 
- ❯ src/logger.test.ts:41:22
-     39|     // Re-import logger.js to ensure it picks up the mock
-     40|     await import('./logger.ts');
-     41|     expect(pinoMock).toHaveBeenCalledWith(
+ ❯ src/logger.test.ts:50:22
+     48|     // Re-import logger.js to ensure it picks up the mock
+     49|     await import('./logger.ts');
+     50|     expect(pinoMock).toHaveBeenCalledWith(
        |                      ^
-     42|       expect.objectContaining({
-     43|         level: 'debug',
+     51|       expect.objectContaining({
+     52|         level: 'debug',
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/33]⎯
 
 ```
 
-55. [ ] **Test Failure:**
+24. [ ] **Test Failure:**
 ```text
  FAIL  src/logger.test.ts > Logger > should set the log level based on LOG_LEVEL environment variable
-Error: [vitest] No "getConfig" export is defined on the "./config.js" mock. Did you forget to return it from "vi.mock"?
-If you need to partially mock a module, you can use "importOriginal" helper inside:
+AssertionError: expected undefined to be 'warn' // Object.is equality
 
-vi.mock("./config.js", async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    // your mocked methods
-  }
-})
+- Expected: 
+"warn"
 
- ❯ getLogger src/logger.ts:10:20
-      8| export function getLogger(): Logger {
-      9|   if (!loggerInstance) {
-     10|     const config = getConfig();
-       |                    ^
-     11|     loggerInstance = pino({
-     12|       level: config.LOG_LEVEL || 'debug',
- ❯ src/logger.test.ts:58:12
++ Received: 
+undefined
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/32]⎯
+ ❯ src/logger.test.ts:71:34
+     69|     vi.resetModules();
+     70|     const { getLogger: newGetLogger } = await import('./logger.ts');
+     71|     expect(newGetLogger().level).toBe('warn');
+       |                                  ^
+     72|     delete process.env.LOG_LEVEL;
+     73|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/33]⎯
 
 ```
 
-56. [ ] **Test Failure:**
+25. [ ] **Test Failure:**
 ```text
  FAIL  src/logger.test.ts > Logger > should configure pino-pretty transport in development environment
 AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…} ]
@@ -326,19 +215,19 @@ Received:
 
 Number of calls: 0
 
- ❯ src/logger.test.ts:72:22
-     70|     await import('./logger.ts');
-     71| 
-     72|     expect(pinoMock).toHaveBeenCalledWith(
+ ❯ src/logger.test.ts:89:22
+     87|     await import('./logger.ts');
+     88| 
+     89|     expect(pinoMock).toHaveBeenCalledWith(
        |                      ^
-     73|       expect.objectContaining({
-     74|         level: 'debug',
+     90|       expect.objectContaining({
+     91|         level: 'debug',
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/33]⎯
 
 ```
 
-57. [ ] **Test Failure:**
+26. [ ] **Test Failure:**
 ```text
  FAIL  src/logger.test.ts > Logger > should not configure pino-pretty transport in non-development environment
 AssertionError: expected "spy" to be called with arguments: [ ObjectContaining {"level": "debug"} ]
@@ -349,19 +238,99 @@ Received:
 
 Number of calls: 0
 
- ❯ src/logger.test.ts:99:22
-     97|     await import('./logger.ts');
-     98| 
-     99|     expect(pinoMock).toHaveBeenCalledWith(
+ ❯ src/logger.test.ts:120:22
+    118|     await import('./logger.ts');
+    119| 
+    120|     expect(pinoMock).toHaveBeenCalledWith(
        |                      ^
-    100|       expect.objectContaining({
-    101|         level: 'debug',
+    121|       expect.objectContaining({
+    122|         level: 'debug',
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/33]⎯
 
 ```
 
-58. [ ] **Test Failure:**
+27. [ ] **Test Failure:**
+```text
+ FAIL  src/worker.test.ts > processJob > should process a job successfully and return the final response
+AssertionError: expected "Agent" to be called with arguments: [ { …(3) }, …(5) ]
+
+Received: 
+
+  1st Agent call:
+
+  Array [
+    Object {
+      "data": Object {
+        "sessionId": "testSessionId",
+      },
+      "id": "testJobId",
+      "name": "testJob",
+    },
+    Object {
+      "history": Array [
+        Object {
+          "content": "Summarized conversation",
+          "id": "72388a21-7c54-4150-88a9-94fab47ebc1c",
+          "timestamp": 1753846241322,
+          "type": "agent_response",
+        },
+      ],
+    },
+    Object {
+      "add": [Function spy],
+    },
+    Array [],
+-   "gemini",
++   undefined,
+    Object {
+      "getSession": [Function spy],
+      "saveSession": [Function spy],
+    },
++   undefined,
++   undefined,
++   undefined,
+  ]
+
+
+Number of calls: 1
+
+ ❯ src/worker.test.ts:142:19
+    140|       'testSessionId',
+    141|     );
+    142|     expect(Agent).toHaveBeenCalledWith(
+       |                   ^
+    143|       mockJob,
+    144|       mockSessionData,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/33]⎯
+
+```
+
+28. [ ] **Test Failure:**
+```text
+ FAIL  src/worker.test.ts > processJob > should handle AppError and publish an error event
+AssertionError: expected "spy" to be called with arguments: [ Any<Object>, …(1) ]
+
+Received: 
+
+
+
+Number of calls: 0
+
+ ❯ src/worker.test.ts:190:41
+    188|       sessionId: 'testSessionId',
+    189|     });
+    190|     expect(getLogger().child({}).error).toHaveBeenCalledWith(
+       |                                         ^
+    191|       expect.any(Object),
+    192|       `Erreur dans l'exécution de l'agent`,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/33]⎯
+
+```
+
+29. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/toolLoader.test.ts > toolLoader > should discover and load tool files correctly
 Error: [vitest] No "getLogger" export is defined on the "../logger" mock. Did you forget to return it from "vi.mock"?
@@ -384,11 +353,11 @@ vi.mock("../logger", async (importOriginal) => {
      98|   const toolsPath =
  ❯ src/utils/toolLoader.test.ts:87:25
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/33]⎯
 
 ```
 
-59. [ ] **Test Failure:**
+30. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/toolLoader.test.ts > toolLoader > should handle errors during file loading gracefully
 Error: [vitest] No "getLogger" export is defined on the "../logger" mock. Did you forget to return it from "vi.mock"?
@@ -411,11 +380,11 @@ vi.mock("../logger", async (importOriginal) => {
      98|   const toolsPath =
  ❯ src/utils/toolLoader.test.ts:139:25
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/33]⎯
 
 ```
 
-60. [ ] **Test Failure:**
+31. [ ] **Test Failure:**
 ```text
  FAIL  src/utils/toolLoader.test.ts > toolLoader > should not register invalid tools
 Error: [vitest] No "getLogger" export is defined on the "../logger" mock. Did you forget to return it from "vi.mock"?
@@ -438,11 +407,11 @@ vi.mock("../logger", async (importOriginal) => {
      98|   const toolsPath =
  ❯ src/utils/toolLoader.test.ts:161:25
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/33]⎯
 
 ```
 
-61. [ ] **Test Failure:**
+32. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/queue/queue.test.ts > Queue Initialization and Error Handling > should log an error when jobQueue emits an error
 AssertionError: expected "spy" to be called with arguments: [ { …(1) }, 'Job queue error' ]
@@ -461,11 +430,11 @@ Number of calls: 0
      53|       { err: testError },
      54|       'Job queue error',
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/33]⎯
 
 ```
 
-62. [ ] **Test Failure:**
+33. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/queue/queue.test.ts > Queue Initialization and Error Handling > should log an error when deadLetterQueue emits an error
 AssertionError: expected "spy" to be called with arguments: [ { …(1) }, 'Dead-letter queue error' ]
@@ -484,11 +453,11 @@ Number of calls: 0
      62|       { err: testError },
      63|       'Dead-letter queue error',
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/33]⎯
 
 ```
 
-63. [ ] **Test Failure:**
+34. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/session/sessionManager.test.ts > SessionManager > should create a new session if one does not exist in the database
 Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
@@ -510,13 +479,13 @@ vi.mock("../../config", async (importOriginal) => {
      11|     loggerInstance = pino({
      12|       level: config.LOG_LEVEL || 'debug',
  ❯ SessionManager.getSession src/modules/session/sessionManager.ts:182:7
- ❯ src/modules/session/sessionManager.test.ts:66:21
+ ❯ src/modules/session/sessionManager.test.ts:68:21
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/33]⎯
 
 ```
 
-64. [ ] **Test Failure:**
+35. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/session/sessionManager.test.ts > SessionManager > should load an existing session from the database
 Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
@@ -538,13 +507,13 @@ vi.mock("../../config", async (importOriginal) => {
      11|     loggerInstance = pino({
      12|       level: config.LOG_LEVEL || 'debug',
  ❯ SessionManager.getSession src/modules/session/sessionManager.ts:204:5
- ❯ src/modules/session/sessionManager.test.ts:85:21
+ ❯ src/modules/session/sessionManager.test.ts:87:21
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/33]⎯
 
 ```
 
-65. [ ] **Test Failure:**
+36. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/session/sessionManager.test.ts > SessionManager > should save a session to the database
 Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
@@ -566,13 +535,13 @@ vi.mock("../../config", async (importOriginal) => {
      11|     loggerInstance = pino({
      12|       level: config.LOG_LEVEL || 'debug',
  ❯ SessionManager.saveSession src/modules/session/sessionManager.ts:260:7
- ❯ src/modules/session/sessionManager.test.ts:104:5
+ ❯ src/modules/session/sessionManager.test.ts:106:5
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/33]⎯
 
 ```
 
-66. [ ] **Test Failure:**
+37. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/session/sessionManager.test.ts > SessionManager > should summarize history if it exceeds HISTORY_MAX_LENGTH
 Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
@@ -594,13 +563,13 @@ vi.mock("../../config", async (importOriginal) => {
      11|     loggerInstance = pino({
      12|       level: config.LOG_LEVEL || 'debug',
  ❯ SessionManager.saveSession src/modules/session/sessionManager.ts:260:7
- ❯ src/modules/session/sessionManager.test.ts:137:5
+ ❯ src/modules/session/sessionManager.test.ts:139:5
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/33]⎯
 
 ```
 
-67. [ ] **Test Failure:**
+38. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/session/sessionManager.test.ts > SessionManager > should delete a session from the database
 Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
@@ -622,28 +591,28 @@ vi.mock("../../config", async (importOriginal) => {
      11|     loggerInstance = pino({
      12|       level: config.LOG_LEVEL || 'debug',
  ❯ SessionManager.deleteSession src/modules/session/sessionManager.ts:124:5
- ❯ src/modules/session/sessionManager.test.ts:149:5
+ ❯ src/modules/session/sessionManager.test.ts:151:5
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/33]⎯
 
 ```
 
-68. [ ] **Test Failure:**
+39. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/definitions/search/webSearch.tool.test.ts > webSearchTool > should perform a web search and return a summary
 ```
 
-69. [ ] **Test Failure:**
+40. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/definitions/search/webSearch.tool.test.ts > webSearchTool > should return a message if no direct answer is found
 ```
 
-70. [ ] **Test Failure:**
+41. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/definitions/search/webSearch.tool.test.ts > webSearchTool > should return an error message if fetch request fails
 ```
 
-71. [ ] **Test Failure:**
+42. [ ] **Test Failure:**
 ```text
  FAIL  src/modules/tools/definitions/search/webSearch.tool.test.ts > webSearchTool > should return an error message if the fetch call throws an exception
 TypeError: getLogger is not a function
@@ -655,147 +624,76 @@ TypeError: getLogger is not a function
      31|       reportProgress: vi.fn(),
      32|       session: {} as SessionData,
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/32]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/33]⎯
 
-## Erreurs non gérées (Unhandled Errors)
-
-1. [ ] **Unhandled Rejection:**
-```text
-Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
-If you need to partially mock a module, you can use "importOriginal" helper inside:
-
-vi.mock("../../config", async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    // your mocked methods
-  }
-})
-
- ❯ VitestMocker.createError ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:79:19
- ❯ Object.get ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:153:22
- ❯ Module.getLogger src/logger.ts:10:20
-      8| export function getLogger(): Logger {
-      9|   if (!loggerInstance) {
-     10|     const config = getConfig();
-       |                    ^
-     11|     loggerInstance = pino({
-     12|       level: config.LOG_LEVEL || 'debug',
- ❯ SessionManager.initDb src/modules/session/sessionManager.ts:276:5
-
-This error originated in "src/modules/session/sessionManager.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
 ```
 
-2. [ ] **Unhandled Rejection:**
+43. [ ] **Test Failure:**
 ```text
-Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
-If you need to partially mock a module, you can use "importOriginal" helper inside:
+ FAIL  src/modules/tools/definitions/system/finish.tool.test.ts > finishTool > should return an error message if args are invalid
+AssertionError: expected [Function] to throw error including 'An unexpected error occurred in finis…' but got 'Invalid arguments provided to finishT…'
 
-vi.mock("../../config", async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    // your mocked methods
-  }
-})
+- Expected
++ Received
 
- ❯ VitestMocker.createError ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:79:19
- ❯ Object.get ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:153:22
- ❯ Module.getLogger src/logger.ts:10:20
-      8| export function getLogger(): Logger {
-      9|   if (!loggerInstance) {
-     10|     const config = getConfig();
-       |                    ^
-     11|     loggerInstance = pino({
-     12|       level: config.LOG_LEVEL || 'debug',
- ❯ SessionManager.initDb src/modules/session/sessionManager.ts:276:5
+- An unexpected error occurred in finishTool: Invalid arguments provided to finishTool. A final answer is required.
++ Invalid arguments provided to finishTool. A final answer is required.
 
-This error originated in "src/modules/session/sessionManager.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/33]⎯
+
 ```
 
-3. [ ] **Unhandled Rejection:**
+44. [ ] **Test Failure:**
 ```text
-Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
-If you need to partially mock a module, you can use "importOriginal" helper inside:
+ FAIL  src/modules/tools/definitions/web/browser.tool.test.ts > browserTool > should navigate to a URL and return its content
+AssertionError: expected "spy" to be called with arguments: [ Array(1) ]
 
-vi.mock("../../config", async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    // your mocked methods
-  }
-})
+Received: 
 
- ❯ VitestMocker.createError ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:79:19
- ❯ Object.get ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:153:22
- ❯ Module.getLogger src/logger.ts:10:20
-      8| export function getLogger(): Logger {
-      9|   if (!loggerInstance) {
-     10|     const config = getConfig();
-       |                    ^
-     11|     loggerInstance = pino({
-     12|       level: config.LOG_LEVEL || 'debug',
- ❯ SessionManager.initDb src/modules/session/sessionManager.ts:276:5
 
-This error originated in "src/modules/session/sessionManager.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+Number of calls: 0
+
+ ❯ src/modules/tools/definitions/web/browser.tool.test.ts:82:29
+     80|     expect(chromium.launch).toHaveBeenCalled();
+     81|     expect(result).toEqual({ content: 'Mocked page content', url });
+     82|     expect(loggerMock.info).toHaveBeenCalledWith(`Navigating to URL: $…
+       |                             ^
+     83|   });
+     84| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/33]⎯
+
 ```
 
-4. [ ] **Unhandled Rejection:**
+45. [ ] **Test Failure:**
 ```text
-Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
-If you need to partially mock a module, you can use "importOriginal" helper inside:
+ FAIL  src/modules/tools/definitions/web/browser.tool.test.ts > browserTool > should return an error if navigation fails
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/tools/definitions/web/browser.tool.test.ts:100:30
+     98|         : result,
+     99|     ).toContain(`Error while Browse ${url}: ${errorMessage}`);
+    100|     expect(loggerMock.error).toHaveBeenCalled();
+       |                              ^
+    101|     expect(mockPage.goto).toHaveBeenCalledWith(url, expect.any(Object)…
+    102|     expect(mockPage.close).toHaveBeenCalled();
 
-vi.mock("../../config", async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    // your mocked methods
-  }
-})
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/33]⎯
 
- ❯ VitestMocker.createError ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:79:19
- ❯ Object.get ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:153:22
- ❯ Module.getLogger src/logger.ts:10:20
-      8| export function getLogger(): Logger {
-      9|   if (!loggerInstance) {
-     10|     const config = getConfig();
-       |                    ^
-     11|     loggerInstance = pino({
-     12|       level: config.LOG_LEVEL || 'debug',
- ❯ SessionManager.initDb src/modules/session/sessionManager.ts:276:5
-
-This error originated in "src/modules/session/sessionManager.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
 ```
 
-5. [ ] **Unhandled Rejection:**
+46. [ ] **Test Failure:**
 ```text
-Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
-If you need to partially mock a module, you can use "importOriginal" helper inside:
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
 
-vi.mock("../../config", async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    // your mocked methods
-  }
-})
+Vitest caught 6 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
 
- ❯ VitestMocker.createError ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:79:19
- ❯ Object.get ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:153:22
- ❯ Module.getLogger src/logger.ts:10:20
-      8| export function getLogger(): Logger {
-      9|   if (!loggerInstance) {
-     10|     const config = getConfig();
-       |                    ^
-     11|     loggerInstance = pino({
-     12|       level: config.LOG_LEVEL || 'debug',
- ❯ SessionManager.initDb src/modules/session/sessionManager.ts:276:5
-
-This error originated in "src/modules/session/sessionManager.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
 ```
 
-6. [ ] **Unhandled Rejection:**
+47. [ ] **Test Failure:**
 ```text
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
 Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
 If you need to partially mock a module, you can use "importOriginal" helper inside:
 
@@ -819,10 +717,156 @@ vi.mock("../../config", async (importOriginal) => {
  ❯ SessionManager.initDb src/modules/session/sessionManager.ts:276:5
 
 This error originated in "src/modules/session/sessionManager.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+```
+
+48. [ ] **Test Failure:**
+```text
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+vi.mock("../../config", async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    // your mocked methods
+  }
+})
+
+ ❯ VitestMocker.createError ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:79:19
+ ❯ Object.get ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:153:22
+ ❯ Module.getLogger src/logger.ts:10:20
+      8| export function getLogger(): Logger {
+      9|   if (!loggerInstance) {
+     10|     const config = getConfig();
+       |                    ^
+     11|     loggerInstance = pino({
+     12|       level: config.LOG_LEVEL || 'debug',
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:276:5
+
+This error originated in "src/modules/session/sessionManager.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+```
+
+49. [ ] **Test Failure:**
+```text
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+vi.mock("../../config", async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    // your mocked methods
+  }
+})
+
+ ❯ VitestMocker.createError ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:79:19
+ ❯ Object.get ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:153:22
+ ❯ Module.getLogger src/logger.ts:10:20
+      8| export function getLogger(): Logger {
+      9|   if (!loggerInstance) {
+     10|     const config = getConfig();
+       |                    ^
+     11|     loggerInstance = pino({
+     12|       level: config.LOG_LEVEL || 'debug',
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:276:5
+
+This error originated in "src/modules/session/sessionManager.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+```
+
+50. [ ] **Test Failure:**
+```text
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+vi.mock("../../config", async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    // your mocked methods
+  }
+})
+
+ ❯ VitestMocker.createError ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:79:19
+ ❯ Object.get ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:153:22
+ ❯ Module.getLogger src/logger.ts:10:20
+      8| export function getLogger(): Logger {
+      9|   if (!loggerInstance) {
+     10|     const config = getConfig();
+       |                    ^
+     11|     loggerInstance = pino({
+     12|       level: config.LOG_LEVEL || 'debug',
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:276:5
+
+This error originated in "src/modules/session/sessionManager.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+```
+
+51. [ ] **Test Failure:**
+```text
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+vi.mock("../../config", async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    // your mocked methods
+  }
+})
+
+ ❯ VitestMocker.createError ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:79:19
+ ❯ Object.get ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:153:22
+ ❯ Module.getLogger src/logger.ts:10:20
+      8| export function getLogger(): Logger {
+      9|   if (!loggerInstance) {
+     10|     const config = getConfig();
+       |                    ^
+     11|     loggerInstance = pino({
+     12|       level: config.LOG_LEVEL || 'debug',
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:276:5
+
+This error originated in "src/modules/session/sessionManager.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+```
+
+52. [ ] **Test Failure:**
+```text
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: [vitest] No "getConfig" export is defined on the "../../config" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+vi.mock("../../config", async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    // your mocked methods
+  }
+})
+
+ ❯ VitestMocker.createError ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:79:19
+ ❯ Object.get ../../node_modules/.pnpm/vitest@1.6.1_@types+node@24.1.0_@vitest+ui@1.6.1_jsdom@24.1.3/node_modules/vitest/dist/vendor/execute.fL3szUAI.js:153:22
+ ❯ Module.getLogger src/logger.ts:10:20
+      8| export function getLogger(): Logger {
+      9|   if (!loggerInstance) {
+     10|     const config = getConfig();
+       |                    ^
+     11|     loggerInstance = pino({
+     12|       level: config.LOG_LEVEL || 'debug',
+ ❯ SessionManager.initDb src/modules/session/sessionManager.ts:276:5
+
+This error originated in "src/modules/session/sessionManager.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
 ```
 
 ---
 
-✗ 2 type(s) de vérification ont échoué : TypeCheck Core Tests.
-Veuillez consulter le fichier all-checks.md pour les 71 erreur(s) détaillée(s).
+✗ 4 type(s) de vérification ont échoué : TypeCheck UI TypeCheck Core Lint Tests.
+Veuillez consulter le fichier all-checks.md pour les 52 erreur(s) détaillée(s).
 

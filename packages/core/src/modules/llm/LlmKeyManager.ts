@@ -140,7 +140,7 @@ export class LlmKeyManager {
   ): Promise<void> {
     const keys = await this.getKeys();
     const keyIndex = keys.findIndex(
-      (k) => k.provider === provider && k.apiKey === key,
+      (k) => k.provider === provider && k.key === key,
     );
 
     if (keyIndex !== -1) {

@@ -18,7 +18,6 @@ const mockPgClient = {
 };
 vi.mock('pg', () => ({ Client: () => mockPgClient }));
 
-import { config } from './config';
 import { jobQueue } from './modules/queue/queue';
 import { SessionManager } from './modules/session/sessionManager';
 import * as toolLoader from './utils/toolLoader';
@@ -26,12 +25,34 @@ import { initializeWebServer } from './webServer';
 
 vi.mock('./modules/session/sessionManager');
 
-vi.mock('./config');
 vi.mock('./utils/toolLoader');
 vi.mock('./modules/queue/queue');
 vi.mock('./modules/llm/LlmKeyManager');
 vi.mock('jsonwebtoken');
 vi.mock('fs/promises');
+vi.mock('chokidar', () => ({
+  watch: vi.fn(() => ({
+    close: vi.fn(),
+    on: vi.fn(),
+  })),
+}));
+
+vi.mock('./config', async () => {
+  return {
+    config: {
+      AUTH_API_KEY: 'test-api-key',
+      LOG_LEVEL: 'debug',
+      MAX_FILE_SIZE_BYTES: 1024 * 1024,
+      NODE_ENV: 'test',
+    },
+    getConfig: vi.fn(() => ({
+      AUTH_API_KEY: 'test-api-key',
+      LOG_LEVEL: 'debug',
+      MAX_FILE_SIZE_BYTES: 1024 * 1024,
+      NODE_ENV: 'test',
+    })),
+  };
+});
 
 import { Server } from 'http';
 
@@ -40,8 +61,8 @@ describe('webServer', () => {
   let server: Server;
 
   beforeAll(async () => {
-    config.AUTH_API_KEY = 'test-api-key';
-    config.MAX_FILE_SIZE_BYTES = 1024 * 1024; // 1 MB
+    const { initializeWebServer } = await import('./webServer');
+
     const webServer = await initializeWebServer(
       mockRedis as any,
       jobQueue,

@@ -22,10 +22,9 @@ vi.mock('fs', async () => {
   };
 });
 
-// Import logger mock separately and mock the logger module
-import loggerMock from '../../../../test/mocks/logger.js';
+import { getLogger as mockGetLogger } from '../../../../test/mocks/logger.js';
 vi.mock('../../../../logger.js', () => ({
-  getLogger: loggerMock,
+  getLogger: mockGetLogger,
 }));
 
 // Then import other dependencies
@@ -123,6 +122,6 @@ describe('writeFileTool', () => {
     } else {
       throw new Error('Expected an object with an erreur property.');
     }
-    expect(loggerMock.error).toHaveBeenCalled();
+    expect(mockGetLogger().error).toHaveBeenCalled();
   });
 });

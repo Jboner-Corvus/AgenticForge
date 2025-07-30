@@ -4,23 +4,27 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 
-import { getLogger } from '../../../../logger.js';
-import loggerMock from '../../../../test/mocks/logger.js';
-import { agentResponseTool } from './agentResponse.tool.js';
-vi.mock('../../../../logger.js', async () => {
-  const vitest = await import('vitest');
-  const loggerMock = await vitest.vi.importActual(
-    '../../../../test/mocks/logger.js',
-  );
-  return {
-    getLogger: loggerMock.getLogger,
-  };
-});
+const loggerMock = {
+  child: vi.fn(() => ({
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  })),
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+};
+
+vi.mock('../../../../logger.js', () => ({
+  getLogger: vi.fn(() => loggerMock),
+}));
+
+import { agentResponse as agentResponseTool } from './agentResponse.tool.js';
 
 describe('agentResponseTool', () => {
   const mockCtx: Ctx = {
     llm: {} as ILlmProvider,
-    log: getLogger(),
+    log: mockGetLogger(),
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),
@@ -31,7 +35,7 @@ describe('agentResponseTool', () => {
     const response = 'Hello, user!';
     const result = await agentResponseTool.execute({ response }, mockCtx);
     expect(result).toBe(response);
-    expect(loggerMock.info).toHaveBeenCalledWith('Responding to user', {
+    expect(mockGetLogger().info).toHaveBeenCalledWith('Responding to user', {
       args: { response },
     });
   });

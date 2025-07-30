@@ -4,7 +4,21 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { Ctx, ILlmProvider, SessionData, Tool } from '@/types.js';
 
-import { getLogger } from '../../../../logger.js';
+const loggerMock = {
+  child: vi.fn(() => ({
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  })),
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+};
+
+vi.mock('../../../../logger.js', () => ({
+  getLogger: vi.fn(() => loggerMock),
+}));
+
 import { getAllTools } from '../index.js';
 import { listToolsTool } from './listTools.tool.js';
 
@@ -12,22 +26,10 @@ vi.mock('../../../tools/definitions/index.js', () => ({
   getAllTools: vi.fn(),
 }));
 
-vi.mock('../../../../logger.js', async () => {
-  const actual = await vi.importActual<typeof import('../../../../logger.js')>(
-    '../../../../logger.js',
-  );
-  return {
-    getLogger: {
-      ...actual.getLogger,
-      error: vi.fn(),
-    },
-  };
-});
-
 describe('listToolsTool', () => {
   const mockCtx: Ctx = {
     llm: {} as ILlmProvider,
-    log: getLogger(),
+    log: loggerMock,
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),

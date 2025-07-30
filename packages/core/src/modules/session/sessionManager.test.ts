@@ -34,6 +34,8 @@ vi.mock('../../modules/redis/redisClient', () => ({
 vi.mock('../../config', () => ({
   config: {
     HISTORY_MAX_LENGTH: 10,
+    LOG_LEVEL: 'debug',
+    NODE_ENV: 'test',
   },
 }));
 

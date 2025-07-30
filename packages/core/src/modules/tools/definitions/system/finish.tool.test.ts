@@ -3,6 +3,21 @@ import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
 import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 
+vi.mock('../../../../config', () => ({
+  config: {
+    LOG_LEVEL: 'debug',
+    NODE_ENV: 'test',
+    REDIS_HOST: 'localhost',
+    REDIS_PORT: 6379,
+  },
+  getConfig: vi.fn(() => ({
+    LOG_LEVEL: 'debug',
+    NODE_ENV: 'test',
+    REDIS_HOST: 'localhost',
+    REDIS_PORT: 6379,
+  })),
+}));
+
 import { getLogger } from '../../../../logger.js';
 import { finishTool, FinishToolSignal } from './finish.tool.js';
 
