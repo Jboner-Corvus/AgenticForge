@@ -16,7 +16,7 @@ vi.mock('fs', () => ({
 }));
 
 vi.mock('../../../../utils/qualityGate', () => ({
-  runQualityGate: vi.fn(() => Promise.resolve({ success: true, output: '' })),
+  runQualityGate: vi.fn(() => Promise.resolve({ output: '', success: true })),
 }));
 
 // Define the mock for getLoggerInstance outside vi.mock to ensure consistency

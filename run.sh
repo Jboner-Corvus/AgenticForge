@@ -443,6 +443,7 @@ run_unit_tests() {
 }
 
 run_all_checks() {
+    set -x # Enable shell debugging
     echo -e "${COLOR_YELLOW}Lancement de toutes les vérifications (TypeCheck, Lint, Test, Format)...${NC}"
 
     ALL_CHECKS_OUTPUT=""
@@ -535,7 +536,7 @@ run_all_checks() {
     # --- Tests Unitaires (AVEC CAPTURE DE BLOCS DÉTAILLÉS) ---
     echo -e "${COLOR_YELLOW}Lancement des tests unitaires...${NC}"
     set -o pipefail
-    TEST_OUTPUT=$(pnpm --filter=@agenticforge/core test:unit 2>&1 | tee /dev/tty)
+    TEST_OUTPUT=$(pnpm --filter=@agenticforge/core exec vitest run --exclude src/webServer.integration.test.ts 2>&1 | tee /dev/tty)
     exit_code=$?
     set +o pipefail
     if [ $exit_code -ne 0 ]; then

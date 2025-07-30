@@ -2,7 +2,6 @@ import { Client as PgClient } from 'pg';
 
 import { config, loadConfig } from './config.js';
 import { getLoggerInstance } from './logger.js';
-
 import { getRedisClientInstance } from './modules/redis/redisClient.js';
 import { initializeWebServer } from './webServer.js';
 

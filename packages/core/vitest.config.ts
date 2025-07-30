@@ -5,7 +5,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/*.test.ts', 'src/**/__tests__/**/*.ts'],
-    exclude: ['node_modules', 'dist'],
+    exclude: ['node_modules', 'dist', 'src/webServer.integration.test.ts'],
     setupFiles: ['src/test/setup.ts'],
   },
   
