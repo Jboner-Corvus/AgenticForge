@@ -1,4 +1,5 @@
-import { pino, Logger } from 'pino';
+import { Logger, pino } from 'pino';
+export type { Logger };
 
 import { getConfig } from './config.js';
 

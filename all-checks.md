@@ -17,6 +17,6 @@ Une fois la correction effectué, cochez la case `[x]`.
 
 ---
 
-✗ 1 type(s) de vérification ont échoué : Tests.
+✗ 2 type(s) de vérification ont échoué : TypeCheck Core Tests.
 Veuillez consulter le fichier all-checks.md pour les 0 erreur(s) détaillée(s).
 

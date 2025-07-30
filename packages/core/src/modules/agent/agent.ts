@@ -65,7 +65,13 @@ export class Agent {
   private readonly tools: Tool<z.AnyZodObject, z.ZodTypeAny>[];
 
   constructor(
-    job: Job<{ apiKey?: string; llmApiKey?: string; llmModelName?: string; llmProvider?: string; prompt: string; }>,
+    job: Job<{
+      apiKey?: string;
+      llmApiKey?: string;
+      llmModelName?: string;
+      llmProvider?: string;
+      prompt: string;
+    }>,
     session: SessionData,
     taskQueue: Queue,
     tools: Tool<z.AnyZodObject, z.ZodTypeAny>[],
@@ -231,9 +237,7 @@ export class Agent {
                 );
                 continue;
               }
-              llmResponse = await getLlmProvider(
-                providerToTry,
-              ).getLlmResponse(
+              llmResponse = await getLlmProvider(providerToTry).getLlmResponse(
                 messagesForLlm,
                 orchestratorPrompt,
                 this.llmApiKey || this.apiKey, // Prioritize llmApiKey from constructor, then general apiKey

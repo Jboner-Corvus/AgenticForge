@@ -133,7 +133,9 @@ class ToolRegistry {
     if (this.tools.delete(name)) {
       getLogger().info(`Outil désenregistré : "${name}"`);
     } else {
-      getLogger().warn(`Tentative de désenregistrer un outil inconnu : "${name}"`);
+      getLogger().warn(
+        `Tentative de désenregistrer un outil inconnu : "${name}"`,
+      );
     }
   }
 }

@@ -5,7 +5,7 @@ import { Client as PgClient } from 'pg';
 import { Ctx, Message, SessionData } from '@/types.js';
 
 import { config } from '../../config.js';
-import { getLogger } from '../../logger.js';
+import { getLogger, Logger } from '../../logger.js';
 import { getLlmProvider } from '../../utils/llmProvider.js';
 import { redis } from '../redis/redisClient.ts';
 import { summarizeTool } from '../tools/definitions/ai/summarize.tool.js';
@@ -29,7 +29,7 @@ export class SessionManager {
     _job: Job,
     session: SessionData,
     _taskQueue: Queue,
-    log: typeof logger,
+    log: Logger,
   ): Ctx {
     return {
       job: _job,
@@ -75,7 +75,10 @@ export class SessionManager {
     _job: Job,
     taskQueue: Queue,
   ) {
-    const log = getLogger().child({ module: 'Summarizer', sessionId: session.id });
+    const log = getLogger().child({
+      module: 'Summarizer',
+      sessionId: session.id,
+    });
     log.info('History length exceeds max length, summarizing...');
     const historyToSummarize = session.history.slice(
       0,
@@ -118,7 +121,10 @@ export class SessionManager {
       sessionId,
     ]);
     SessionManager.activeSessions.delete(sessionId);
-    getLogger().info({ sessionId }, 'Session deleted from PostgreSQL and memory.');
+    getLogger().info(
+      { sessionId },
+      'Session deleted from PostgreSQL and memory.',
+    );
   }
 
   public async getAllSessions(): Promise<SessionData[]> {
@@ -136,7 +142,10 @@ export class SessionManager {
 
   public async getSession(sessionId: string): Promise<SessionData> {
     if (SessionManager.activeSessions.has(sessionId)) {
-      getLogger().info({ sessionId }, 'Reusing existing session data from memory.');
+      getLogger().info(
+        { sessionId },
+        'Reusing existing session data from memory.',
+      );
       return SessionManager.activeSessions.get(sessionId)!;
     }
 
@@ -159,7 +168,10 @@ export class SessionManager {
           initialHistory = storedSession.messages as Message[];
         }
       } catch (error) {
-        getLogger().error({ error, sessionId }, 'Failed to parse messages from DB');
+        getLogger().error(
+          { error, sessionId },
+          'Failed to parse messages from DB',
+        );
         initialHistory = [];
       }
       sessionName = storedSession.name;
@@ -189,7 +201,10 @@ export class SessionManager {
     };
 
     SessionManager.activeSessions.set(sessionId, sessionData);
-    getLogger().info({ sessionId }, 'Created new session data from PostgreSQL.');
+    getLogger().info(
+      { sessionId },
+      'Created new session data from PostgreSQL.',
+    );
     return sessionData;
   }
 

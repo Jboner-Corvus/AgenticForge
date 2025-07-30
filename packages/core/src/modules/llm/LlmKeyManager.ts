@@ -7,10 +7,10 @@ export enum LlmKeyErrorType {
 }
 
 export interface LlmApiKey {
-  apiKey: string;
   errorCount: number;
   isDisabledUntil?: number;
   isPermanentlyDisabled?: boolean;
+  key: string;
   lastUsed?: number;
   provider: string;
 }
@@ -22,7 +22,7 @@ const TEMPORARY_DISABLE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 export class LlmKeyManager {
   public static async addKey(provider: string, key: string): Promise<void> {
     const keys = await this.getKeys();
-    keys.push({ apiKey: key, errorCount: 0, provider });
+    keys.push({ errorCount: 0, key, provider });
     await this.saveKeys(keys);
     getLogger().info({ provider }, 'LLM API key added.');
   }
@@ -84,7 +84,7 @@ export class LlmKeyManager {
   ): Promise<void> {
     const keys = await this.getKeys();
     const keyIndex = keys.findIndex(
-      (k) => k.provider === provider && k.apiKey === key,
+      (k) => k.provider === provider && k.key === key,
     );
 
     if (keyIndex !== -1) {
@@ -128,7 +128,10 @@ export class LlmKeyManager {
     }
     const removedKey = keys.splice(index, 1);
     await this.saveKeys(keys);
-    getLogger().info({ provider: removedKey[0].provider }, 'LLM API key removed.');
+    getLogger().info(
+      { provider: removedKey[0].provider },
+      'LLM API key removed.',
+    );
   }
 
   public static async resetKeyStatus(
@@ -145,7 +148,10 @@ export class LlmKeyManager {
       goodKey.errorCount = 0;
       goodKey.isDisabledUntil = undefined;
       goodKey.isPermanentlyDisabled = false; // Clear permanent disable flag
-      getLogger().info({ provider: goodKey.provider }, 'LLM API key status reset.');
+      getLogger().info(
+        { provider: goodKey.provider },
+        'LLM API key status reset.',
+      );
       await this.saveKeys(keys);
     }
   }

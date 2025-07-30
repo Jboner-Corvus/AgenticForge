@@ -57,12 +57,12 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
 
       try {
         const originalContent = await fs.readFile(absolutePath, 'utf-8');
-      let modifiedContent: string;
+        let modifiedContent: string;
 
-      const useRegex = args.is_regex ?? false; // Handle default here
+        const useRegex = args.is_regex ?? false; // Handle default here
 
-      if (useRegex) {
-        const regex = new RegExp(args.content_to_replace, 'g');
+        if (useRegex) {
+          const regex = new RegExp(args.content_to_replace, 'g');
           modifiedContent = originalContent.replace(regex, args.new_content);
         } else {
           modifiedContent = originalContent

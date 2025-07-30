@@ -29,7 +29,9 @@ export async function initializeWorker(
   // Add LLM API key to LlmKeyManager at startup
   if (config.LLM_API_KEY && config.LLM_PROVIDER) {
     await LlmKeyManager.addKey(config.LLM_PROVIDER, config.LLM_API_KEY);
-    getLogger().info(`[INIT LLM] Added LLM API key for provider: ${config.LLM_PROVIDER}`);
+    getLogger().info(
+      `[INIT LLM] Added LLM API key for provider: ${config.LLM_PROVIDER}`,
+    );
   }
 
   const worker = new Worker(
@@ -141,7 +143,10 @@ export async function processJob(
   _sessionManager: SessionManager,
   redisConnection: Redis,
 ): Promise<string> {
-  const log = getLogger().child({ jobId: _job.id, sessionId: _job.data.sessionId });
+  const log = getLogger().child({
+    jobId: _job.id,
+    sessionId: _job.data.sessionId,
+  });
   log.info(`Traitement du job ${_job.id} avec les données:`, _job.data);
 
   const channel = `job:${_job.id}:events`;
@@ -201,7 +206,10 @@ export async function processJob(
     return finalResponse;
   } catch (error: unknown) {
     const errDetails = getErrDetails(error);
-    getLogger().error({ err: errDetails }, "Erreur dans l'exécution de l'agent");
+    getLogger().error(
+      { err: errDetails },
+      "Erreur dans l'exécution de l'agent",
+    );
 
     let errorMessage = errDetails.message;
     let eventType = 'error';
@@ -240,9 +248,15 @@ export async function processJob(
 // Démarrage direct du worker
 if (process.env.NODE_ENV !== 'test') {
   // Log 1: Vérification des Variables d'Environnement (Backend)
-  getLogger().info(`[INIT LLM] LLM_PROVIDER détecté : ${process.env.LLM_PROVIDER}`);
-  getLogger().info(`[INIT LLM] LLM_API_KEY (partiel) détecté : ${process.env.LLM_API_KEY ? process.env.LLM_API_KEY.substring(0, 5) + '...' : 'NON DÉTECTÉ'}`);
-  getLogger().info(`[INIT LLM] LLM_MODEL_NAME détecté : ${process.env.LLM_MODEL_NAME}`);
+  getLogger().info(
+    `[INIT LLM] LLM_PROVIDER détecté : ${process.env.LLM_PROVIDER}`,
+  );
+  getLogger().info(
+    `[INIT LLM] LLM_API_KEY (partiel) détecté : ${process.env.LLM_API_KEY ? process.env.LLM_API_KEY.substring(0, 5) + '...' : 'NON DÉTECTÉ'}`,
+  );
+  getLogger().info(
+    `[INIT LLM] LLM_MODEL_NAME détecté : ${process.env.LLM_MODEL_NAME}`,
+  );
 
   const connectionString = `postgresql://${config.POSTGRES_USER}:${config.POSTGRES_PASSWORD}@${config.POSTGRES_HOST}:${config.POSTGRES_PORT}/${config.POSTGRES_DB}`;
   const pgClient = new PgClient({

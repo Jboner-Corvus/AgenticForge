@@ -10,6 +10,167 @@ import { redis } from '../modules/redis/redisClient.js';
 import { ILlmProvider } from '../types.js';
 import { LlmError } from './LlmError.js';
 
+class AnthropicProvider implements ILlmProvider {
+  public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
+    if (statusCode === 401 || statusCode === 403) {
+      return LlmKeyErrorType.PERMANENT;
+    } else if (statusCode === 429) {
+      return LlmKeyErrorType.TEMPORARY;
+    } else if (statusCode >= 500) {
+      return LlmKeyErrorType.TEMPORARY;
+    } else if (
+      _errorBody.includes('invalid_api_key') ||
+      _errorBody.includes('authentication_error')
+    ) {
+      return LlmKeyErrorType.PERMANENT;
+    }
+    return LlmKeyErrorType.TEMPORARY;
+  }
+
+  public async getLlmResponse(
+    messages: LLMContent[],
+    systemPrompt?: string,
+    apiKey?: string,
+    modelName?: string,
+  ): Promise<string> {
+    const log = getLogger().child({ module: 'AnthropicProvider' });
+
+    let activeKey: LlmApiKey | null;
+    if (apiKey) {
+      activeKey = {
+        errorCount: 0,
+        isPermanentlyDisabled: false,
+        key: apiKey,
+        provider: 'anthropic',
+      };
+    } else {
+      activeKey = await LlmKeyManager.getNextAvailableKey('anthropic');
+    }
+
+    if (!activeKey) {
+      const errorMessage = 'No Anthropic API key available.';
+      log.error(errorMessage);
+      throw new LlmError(errorMessage);
+    }
+
+    const apiUrl = 'https://api.anthropic.com/v1/messages';
+
+    const anthropicMessages = messages.map((msg) => {
+      let role: 'assistant' | 'user' = 'user';
+      if (msg.role === 'model') {
+        role = 'assistant';
+      } else if (msg.role === 'tool') {
+        // Anthropic does not have a direct 'tool' role in messages API.
+        // We'll convert tool outputs to user messages for now.
+        // A more sophisticated approach might involve tool use in Anthropic's API.
+        return {
+          content: `Tool output: ${msg.parts.map((p) => p.text).join('')}`,
+          role: 'user',
+        };
+      }
+      return { content: msg.parts.map((p) => p.text).join(''), role };
+    });
+
+    const requestBody: any = {
+      max_tokens: 4096, // A reasonable default for Anthropic models
+      messages: anthropicMessages,
+      model: modelName || config.LLM_MODEL_NAME,
+    };
+
+    if (systemPrompt) {
+      requestBody.system = systemPrompt;
+    }
+
+    const body = JSON.stringify(requestBody);
+
+    try {
+      log.info(
+        `[LLM CALL] Sending request to model: ${modelName || config.LLM_MODEL_NAME} via ${activeKey.provider}`,
+      );
+      const response = await fetch(apiUrl, {
+        body,
+        headers: {
+          'anthropic-version': '2023-06-01', // Required Anthropic API version
+          'Content-Type': 'application/json',
+          'x-api-key': activeKey.apiKey,
+        },
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        const errorMessage = `Anthropic API request failed with status ${response.status}: ${errorBody}`;
+        log.error({ errorBody, status: response.status }, errorMessage);
+        const errorType = this.getErrorType(response.status, errorBody);
+        await LlmKeyManager.markKeyAsBad(
+          activeKey.provider,
+          activeKey.apiKey,
+          errorType,
+        );
+        throw new LlmError(errorMessage);
+      }
+
+      const data = await response.json();
+
+      const content = data.content?.[0]?.text;
+      if (content === undefined || content === null) {
+        log.error(
+          { response: data },
+          'Invalid response structure from Anthropic API',
+        );
+        const errorType = this.getErrorType(
+          response.status,
+          JSON.stringify(data),
+        );
+        await LlmKeyManager.markKeyAsBad(
+          activeKey.provider,
+          activeKey.apiKey,
+          errorType,
+        );
+        throw new LlmError(
+          'Invalid response structure from Anthropic API. The model may have returned an empty response.',
+        );
+      }
+
+      const estimatedTokens =
+        messages.reduce(
+          (sum, msg) =>
+            sum +
+            msg.parts.reduce(
+              (partSum, part) => partSum + (part.text?.length || 0),
+              0,
+            ),
+          0,
+        ) + content.length;
+      redis
+        .incrby('leaderboard:tokensSaved', estimatedTokens)
+        .catch((_error: unknown) => {
+          getLogger().error(
+            { _error },
+            'Failed to increment tokensSaved in Redis',
+          );
+        });
+
+      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
+
+      return content.trim();
+    } catch (_error) {
+      if (_error instanceof LlmError) {
+        throw _error;
+      }
+      log.error({ _error }, 'Failed to get response from LLM');
+      if (activeKey) {
+        await LlmKeyManager.markKeyAsBad(
+          activeKey.provider,
+          activeKey.apiKey,
+          LlmKeyErrorType.TEMPORARY,
+        );
+      }
+      throw new LlmError('Failed to communicate with the LLM.');
+    }
+  }
+}
+
 class GeminiProvider implements ILlmProvider {
   public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
     if (statusCode === 401 || statusCode === 403) {
@@ -42,9 +203,9 @@ class GeminiProvider implements ILlmProvider {
     let activeKey: LlmApiKey | null;
     if (apiKey) {
       activeKey = {
-        apiKey,
         errorCount: 0,
         isPermanentlyDisabled: false,
+        key: apiKey,
         provider: 'gemini', // Assuming provider based on the class
       };
     } else {
@@ -67,7 +228,7 @@ class GeminiProvider implements ILlmProvider {
         // Gemini API does not directly support 'tool' role in 'contents'.
         // Convert tool outputs to user messages.
         role = 'user';
-        parts = [{ text: `Tool output: ${parts.map(p => p.text).join('')}` }];
+        parts = [{ text: `Tool output: ${parts.map((p) => p.text).join('')}` }];
       }
 
       return { parts, role };
@@ -75,7 +236,9 @@ class GeminiProvider implements ILlmProvider {
 
     if (systemPrompt) {
       // Prepend system prompt to the first user message, as Gemini API does not have a dedicated system role.
-      const firstUserMessage = geminiMessages.find(msg => msg.role === 'user');
+      const firstUserMessage = geminiMessages.find(
+        (msg) => msg.role === 'user',
+      );
       if (firstUserMessage) {
         firstUserMessage.parts.unshift({ text: systemPrompt + '\n' });
       } else {
@@ -95,7 +258,9 @@ class GeminiProvider implements ILlmProvider {
 
     try {
       // Log 2: Avant chaque appel LLM
-      log.info(`[LLM CALL] Envoi de la requête au modèle : ${config.LLM_MODEL_NAME} via ${activeKey.provider}`);
+      log.info(
+        `[LLM CALL] Envoi de la requête au modèle : ${config.LLM_MODEL_NAME} via ${activeKey.provider}`,
+      );
       const response = await fetch(apiUrl, {
         body,
         headers: {
@@ -155,7 +320,10 @@ class GeminiProvider implements ILlmProvider {
       redis
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
-          getLogger().error({ _error }, 'Failed to increment tokensSaved in Redis');
+          getLogger().error(
+            { _error },
+            'Failed to increment tokensSaved in Redis',
+          );
         });
 
       // If successful, reset error count for this key
@@ -208,9 +376,9 @@ class GrokProvider implements ILlmProvider {
     let activeKey: LlmApiKey | null;
     if (apiKey) {
       activeKey = {
-        apiKey,
         errorCount: 0,
         isPermanentlyDisabled: false,
+        key: apiKey,
         provider: 'grok',
       };
     } else {
@@ -304,7 +472,10 @@ class GrokProvider implements ILlmProvider {
       redis
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
-          getLogger().error({ _error }, 'Failed to increment tokensSaved in Redis');
+          getLogger().error(
+            { _error },
+            'Failed to increment tokensSaved in Redis',
+          );
         });
 
       await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
@@ -394,7 +565,9 @@ class HuggingFaceProvider implements ILlmProvider {
 
     try {
       // Log 2: Avant chaque appel LLM
-      log.info(`[LLM CALL] Envoi de la requête au modèle : ${modelName || config.LLM_MODEL_NAME} via ${activeKey.provider}`);
+      log.info(
+        `[LLM CALL] Envoi de la requête au modèle : ${modelName || config.LLM_MODEL_NAME} via ${activeKey.provider}`,
+      );
       const response = await fetch(apiUrl, {
         body,
         headers: {
@@ -453,7 +626,10 @@ class HuggingFaceProvider implements ILlmProvider {
       redis
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
-          getLogger().error({ _error }, 'Failed to increment tokensSaved in Redis');
+          getLogger().error(
+            { _error },
+            'Failed to increment tokensSaved in Redis',
+          );
         });
 
       await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
@@ -504,9 +680,9 @@ class MistralProvider implements ILlmProvider {
     let activeKey: LlmApiKey | null;
     if (apiKey) {
       activeKey = {
-        apiKey,
         errorCount: 0,
         isPermanentlyDisabled: false,
+        key: apiKey,
         provider: 'mistral', // Assuming provider based on the class
       };
     } else {
@@ -539,7 +715,9 @@ class MistralProvider implements ILlmProvider {
 
     try {
       // Log 2: Avant chaque appel LLM
-      log.info(`[LLM CALL] Envoi de la requête au modèle : ${config.LLM_MODEL_NAME} via ${activeKey.provider}`);
+      log.info(
+        `[LLM CALL] Envoi de la requête au modèle : ${config.LLM_MODEL_NAME} via ${activeKey.provider}`,
+      );
       const response = await fetch(apiUrl, {
         body,
         headers: {
@@ -598,7 +776,10 @@ class MistralProvider implements ILlmProvider {
       redis
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
-          getLogger().error({ _error }, 'Failed to increment tokensSaved in Redis');
+          getLogger().error(
+            { _error },
+            'Failed to increment tokensSaved in Redis',
+          );
         });
 
       await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
@@ -621,7 +802,6 @@ class MistralProvider implements ILlmProvider {
     }
   }
 }
-
 
 class OpenAIProvider implements ILlmProvider {
   public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
@@ -690,7 +870,9 @@ class OpenAIProvider implements ILlmProvider {
 
     try {
       // Log 2: Avant chaque appel LLM
-      log.info(`[LLM CALL] Envoi de la requête au modèle : ${config.LLM_MODEL_NAME} via ${activeKey.provider}`);
+      log.info(
+        `[LLM CALL] Envoi de la requête au modèle : ${config.LLM_MODEL_NAME} via ${activeKey.provider}`,
+      );
       const response = await fetch(apiUrl, {
         body,
         headers: {
@@ -749,7 +931,10 @@ class OpenAIProvider implements ILlmProvider {
       redis
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
-          getLogger().error({ _error }, 'Failed to increment tokensSaved in Redis');
+          getLogger().error(
+            { _error },
+            'Failed to increment tokensSaved in Redis',
+          );
         });
 
       await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);
@@ -773,12 +958,13 @@ class OpenAIProvider implements ILlmProvider {
   }
 }
 
-export function getLlmProvider(
-  providerName: string,
-): ILlmProvider {
+export function getLlmProvider(providerName: string): ILlmProvider {
   let currentLlmProvider: ILlmProvider;
 
   switch (providerName) {
+    case 'anthropic':
+      currentLlmProvider = new AnthropicProvider();
+      break;
     case 'gemini':
       currentLlmProvider = new GeminiProvider();
       break;
@@ -803,5 +989,3 @@ export function getLlmProvider(
   }
   return currentLlmProvider;
 }
-
-

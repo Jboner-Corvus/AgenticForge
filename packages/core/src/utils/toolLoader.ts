@@ -44,7 +44,9 @@ export async function _internalLoadTools(): Promise<void> {
       `[_internalLoadTools] Found tool files: ${toolFiles.join(', ')}`,
     );
     for (const file of toolFiles) {
-      getLogger().info(`[_internalLoadTools] Attempting to load tool file: ${file}`);
+      getLogger().info(
+        `[_internalLoadTools] Attempting to load tool file: ${file}`,
+      );
       await loadToolFile(file);
       getLogger().info(
         `[_internalLoadTools] Successfully loaded tool file: ${file}`,
@@ -177,13 +179,13 @@ async function loadToolFile(file: string): Promise<void> {
         } else {
           getLogger().warn(
             { errors: parsedTool.error.issues, exportName, file },
-            `[loadToolFile] Skipping invalid tool export due to schema mismatch.`
+            `[loadToolFile] Skipping invalid tool export due to schema mismatch.`,
           );
         }
       } else {
         getLogger().debug(
           { exportName, file },
-          `[loadToolFile] Skipping non-tool export.`
+          `[loadToolFile] Skipping non-tool export.`,
         );
       }
     }

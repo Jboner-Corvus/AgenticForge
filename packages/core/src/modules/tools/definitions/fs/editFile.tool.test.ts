@@ -19,7 +19,9 @@ vi.mock('fs', () => ({
 }));
 
 vi.mock('../../../../logger.js', async () => {
-  const actual = await vi.importActual<typeof import('../../../../logger.js')>('../../../../logger.js');
+  const actual = await vi.importActual<typeof import('../../../../logger.js')>(
+    '../../../../logger.js',
+  );
   return {
     ...actual,
     getLogger: vi.fn(() => ({

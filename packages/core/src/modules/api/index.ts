@@ -32,6 +32,9 @@ async function startApplication() {
 }
 
 startApplication().catch((error) => {
-  getLogger().error(error, "Erreur critique lors du démarrage de l'application.");
+  getLogger().error(
+    error,
+    "Erreur critique lors du démarrage de l'application.",
+  );
   process.exit(1);
 });

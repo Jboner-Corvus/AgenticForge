@@ -90,13 +90,19 @@ export async function loadConfig() {
   console.log('Resolved WORKSPACE_PATH:', config.WORKSPACE_PATH);
 
   // Add HuggingFace API key if available and not already added
-  if (process.env.HUGGINGFACE_API_KEY && !(await LlmKeyManager.hasAvailableKeys('huggingface'))) {
+  if (
+    process.env.HUGGINGFACE_API_KEY &&
+    !(await LlmKeyManager.hasAvailableKeys('huggingface'))
+  ) {
     await LlmKeyManager.addKey('huggingface', process.env.HUGGINGFACE_API_KEY);
     getLogger().info('HuggingFace API key loaded from .env');
   }
 
   // Add Grok API key if available and not already added
-  if (process.env.GROK_API_KEY && !(await LlmKeyManager.hasAvailableKeys('grok'))) {
+  if (
+    process.env.GROK_API_KEY &&
+    !(await LlmKeyManager.hasAvailableKeys('grok'))
+  ) {
     await LlmKeyManager.addKey('grok', process.env.GROK_API_KEY);
     getLogger().info('Grok API key loaded from .env');
   }

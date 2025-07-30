@@ -20,7 +20,12 @@ describe('webSearchTool', () => {
     vi.spyOn(global, 'fetch').mockRestore(); // Restore fetch mock
 
     mockCtx = {
-      job: { data: { prompt: 'test prompt' }, id: 'test-job-id', isFailed: vi.fn(), name: 'test-job' },
+      job: {
+        data: { prompt: 'test prompt' },
+        id: 'test-job-id',
+        isFailed: vi.fn(),
+        name: 'test-job',
+      },
       llm: {} as ILlmProvider,
       log: getLogger(),
       reportProgress: vi.fn(),

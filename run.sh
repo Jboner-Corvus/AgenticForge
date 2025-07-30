@@ -453,48 +453,51 @@ run_all_checks() {
     # --- TypeCheck (UI & Core) ---
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour l'UI...${NC}"
     set -o pipefail
-    UI_TYPECHECK_OUTPUT=$(pnpm --filter @agenticforge/ui exec tsc --noEmit -p tsconfig.vitest.json 2>&1 | tee /dev/tty)
+    UI_TYPECHECK_OUTPUT=$(pnpm --filter @agenticforge/ui exec tsc --noEmit -p tsconfig.vitest.json 2>&1)
     exit_code=$?
     set +o pipefail
     if [ $exit_code -ne 0 ]; then
         FAILED_CHECKS+=("TypeCheck UI")
-        echo "$UI_TYPECHECK_OUTPUT" | while read -r line; do
-            if [[ -n "$line" && "$line" == *"error TS"* ]]; then
-                ERROR_COUNT=$((ERROR_COUNT + 1))
-                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **TypeCheck (UI):** \`${line}\`\n"
-            fi
-        done
+        ERROR_COUNT=$((ERROR_COUNT + 1))
+        ALL_CHECKS_OUTPUT+="
+${ERROR_COUNT}. [ ] **TypeCheck (UI) Failed:**
+```text
+${UI_TYPECHECK_OUTPUT}
+```
+"
     fi
 
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour le Core...${NC}"
     set -o pipefail
-    CORE_TYPECHECK_OUTPUT=$(pnpm --filter=@agenticforge/core exec tsc --noEmit 2>&1 | tee /dev/tty)
+    CORE_TYPECHECK_OUTPUT=$(pnpm --filter=@agenticforge/core exec tsc --noEmit 2>&1)
     exit_code=$?
     set +o pipefail
     if [ $exit_code -ne 0 ]; then
         FAILED_CHECKS+=("TypeCheck Core")
-        echo "$CORE_TYPECHECK_OUTPUT" | while read -r line; do
-            if [[ -n "$line" && "$line" == *"error TS"* ]]; then
-                ERROR_COUNT=$((ERROR_COUNT + 1))
-                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **TypeCheck (Core):** \`${line}\`\n"
-            fi
-        done
+        ERROR_COUNT=$((ERROR_COUNT + 1))
+        ALL_CHECKS_OUTPUT+="
+${ERROR_COUNT}. [ ] **TypeCheck (Core) Failed:**
+```text
+${CORE_TYPECHECK_OUTPUT}
+```
+"
     fi
 
     # --- Lint ---
     echo -e "${COLOR_YELLOW}Lancement du linter...${NC}"
     set -o pipefail
-    LINT_OUTPUT=$(pnpm --recursive run lint 2>&1 | tee /dev/tty)
+    LINT_OUTPUT=$(pnpm --recursive run lint 2>&1)
     exit_code=$?
     set +o pipefail
     if [ $exit_code -ne 0 ]; then
         FAILED_CHECKS+=("Lint")
-        echo "$LINT_OUTPUT" | while read -r line; do
-            if [[ -n "$line" && "$line" == *"error"* ]]; then
-                ERROR_COUNT=$((ERROR_COUNT + 1))
-                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Lint:** \`${line}\`\n"
-            fi
-        done
+        ERROR_COUNT=$((ERROR_COUNT + 1))
+        ALL_CHECKS_OUTPUT+="
+${ERROR_COUNT}. [ ] **Lint Failed:**
+```text
+${LINT_OUTPUT}
+```
+"
     fi
 
     # --- Tests (AVEC CAPTURE DE BLOCS DÉTAILLÉS) ---
@@ -505,33 +508,142 @@ run_all_checks() {
     set +o pipefail
     if [ $exit_code -ne 0 ]; then
         FAILED_CHECKS+=("Tests")
-        local capture_mode=0
-        local error_block=""
+        local current_file=""
+        local current_suite=""
+        local current_test=""
+        local capturing_error=0
+        local error_details=""
 
         echo "$TEST_OUTPUT" | while IFS= read -r line; do
-            if [[ "$line" =~ ^[[:space:]]*FAIL || "$line" =~ ^⎯⎯⎯⎯⎯[[:space:]]*Uncaught[[:space:]]Exception ]]; then
-                if [ $capture_mode -eq 1 ] && [ -n "$error_block" ]; then
+            # Detect test file
+            if [[ "$line" =~ ^[[:space:]]*packages/core/(.*\.test\.ts)[[:space:]]*$ ]]; then
+                # If we were capturing an error for a previous test, print it now
+                if [ $capturing_error -eq 1 ] && [ -n "$error_details" ]; then
                     ERROR_COUNT=$((ERROR_COUNT + 1))
-                    ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Test Failure:**\n\`\`\`text\n${error_block}\n\`\`\`\n"
+                    ALL_CHECKS_OUTPUT+="
+${ERROR_COUNT}. [ ] **Test Failed:**
+"
+                    ALL_CHECKS_OUTPUT+="    - **Fichier:** `${current_file}`
+"
+                    ALL_CHECKS_OUTPUT+="    - **Suite:** `${current_suite}`
+"
+                    ALL_CHECKS_OUTPUT+="    - **Cas:** `${current_test}`
+"
+                    ALL_CHECKS_OUTPUT+="```text
+${error_details}
+```
+"
                 fi
-                capture_mode=1
-                error_block="$line"
-            elif [[ "$line" =~ ^⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\[[0-9]+/[0-9]+\] ]]; then
-                if [ $capture_mode -eq 1 ]; then
+                current_file="${BASH_REMATCH[1]}"
+                current_suite=""
+                current_test=""
+                capturing_error=0
+                error_details=""
+            # Detect describe block
+            elif [[ "$line" =~ ^[[:space:]]*describe[[:space:]]*"(.*)" ]]; then
+                # If we were capturing an error for a previous test, print it now
+                if [ $capturing_error -eq 1 ] && [ -n "$error_details" ]; then
                     ERROR_COUNT=$((ERROR_COUNT + 1))
-                    ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Test Failure:**\n\`\`\`text\n${error_block}\n\`\`\`\n"
-                    capture_mode=0
-                    error_block=""
+                    ALL_CHECKS_OUTPUT+="
+${ERROR_COUNT}. [ ] **Test Failed:**
+"
+                    ALL_CHECKS_OUTPUT+="    - **Fichier:** `${current_file}`
+"
+                    ALL_CHECKS_OUTPUT+="    - **Suite:** `${current_suite}`
+"
+                    ALL_CHECKS_OUTPUT+="    - **Cas:** `${current_test}`
+"
+                    ALL_CHECKS_OUTPUT+="```text
+${error_details}
+```
+"
                 fi
-            elif [ $capture_mode -eq 1 ]; then
-                error_block+="\n$line"
+                current_suite="${BASH_REMATCH[1]}"
+                current_test=""
+                capturing_error=0
+                error_details=""
+            # Detect failed test case
+            elif [[ "$line" =~ ^[[:space:]]*test[[:space:]]*"(.*)"[[:space:]]*FAIL ]]; then
+                # If we were capturing an error for a previous test, print it now
+                if [ $capturing_error -eq 1 ] && [ -n "$error_details" ]; then
+                    ERROR_COUNT=$((ERROR_COUNT + 1))
+                    ALL_CHECKS_OUTPUT+="
+${ERROR_COUNT}. [ ] **Test Failed:**
+"
+                    ALL_CHECKS_OUTPUT+="    - **Fichier:** `${current_file}`
+"
+                    ALL_CHECKS_OUTPUT+="    - **Suite:** `${current_suite}`
+"
+                    ALL_CHECKS_OUTPUT+="    - **Cas:** `${current_test}`
+"
+                    ALL_CHECKS_OUTPUT+="```text
+${error_details}
+```
+"
+                fi
+                current_test="${BASH_REMATCH[1]}"
+                capturing_error=1
+                error_details=""
+            # Capture error details until the next test, suite, or summary
+            elif [ $capturing_error -eq 1 ]; then
+                # Stop capturing if we hit a summary line or another test/suite declaration
+                if [[ "$line" =~ ^[[:space:]]*(Test[[:space:]]Files|Tests:)[[:space:]]* ]] || 
+                   [[ "$line" =~ ^[[:space:]]*packages/core/.*\.test\.ts[[:space:]]*$ ]] || 
+                   [[ "$line" =~ ^[[:space:]]*describe[[:space:]]*".*" ]] || 
+                   [[ "$line" =~ ^[[:space:]]*test[[:space:]]*".*"[[:space:]]*FAIL ]]; then
+                    # Process the captured error details
+                    if [ -n "$error_details" ]; then
+                        ERROR_COUNT=$((ERROR_COUNT + 1))
+                        ALL_CHECKS_OUTPUT+="
+${ERROR_COUNT}. [ ] **Test Failed:**
+"
+                        ALL_CHECKS_OUTPUT+="    - **Fichier:** `${current_file}`
+"
+                        ALL_CHECKS_OUTPUT+="    - **Suite:** `${current_suite}`
+"
+                        ALL_CHECKS_OUTPUT+="    - **Cas:** `${current_test}`
+"
+                        ALL_CHECKS_OUTPUT+="```text
+${error_details}
+```
+"
+                    fi
+                    capturing_error=0
+                    error_details=""
+                    # Re-process the current line if it's a new test/suite/file declaration
+                    if [[ "$line" =~ ^[[:space:]]*packages/core/(.*\.test\.ts)[[:space:]]*$ ]]; then
+                        current_file="${BASH_REMATCH[1]}"
+                        current_suite=""
+                        current_test=""
+                    elif [[ "$line" =~ ^[[:space:]]*describe[[:space:]]*"(.*)" ]]; then
+                        current_suite="${BASH_REMATCH[1]}"
+                        current_test=""
+                    elif [[ "$line" =~ ^[[:space:]]*test[[:space:]]*"(.*)"[[:space:]]*FAIL ]]; then
+                        current_test="${BASH_REMATCH[1]}"
+                        capturing_error=1
+                    fi
+                else
+                    error_details+="
+$line"
+                fi
             fi
         done
-
-        if [ $capture_mode -eq 1 ] && [ -n "$error_block" ]; then
-            error_block_cleaned=$(echo -e "$error_block" | sed '/^ Test Files /,$d')
+        # Handle any remaining error details after the loop
+        if [ $capturing_error -eq 1 ] && [ -n "$error_details" ]; then
             ERROR_COUNT=$((ERROR_COUNT + 1))
-            ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Test Failure:**\n\`\`\`text\n${error_block_cleaned}\n\`\`\`\n"
+            ALL_CHECKS_OUTPUT+="
+${ERROR_COUNT}. [ ] **Test Failed:**
+"
+            ALL_CHECKS_OUTPUT+="    - **Fichier:** `${current_file}`
+"
+            ALL_CHECKS_OUTPUT+="    - **Suite:** `${current_suite}`
+"
+            ALL_CHECKS_OUTPUT+="    - **Cas:** `${current_test}`
+"
+            ALL_CHECKS_OUTPUT+="```text
+${error_details}
+```
+"
         fi
     fi
 

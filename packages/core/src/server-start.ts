@@ -9,7 +9,7 @@ import { initializeWebServer } from './webServer.js';
 async function startServer() {
   await loadConfig(); // Load configuration
   const logger = getLogger();
-  await new Promise(res => setTimeout(res, 15000));
+  await new Promise((res) => setTimeout(res, 15000));
 
   let pgClient: null | PgClient = null;
   let connected = false;
@@ -27,8 +27,11 @@ async function startServer() {
       connected = true;
       break;
     } catch (err) {
-      logger.warn({ err }, `Failed to connect to PostgreSQL, retrying... (${i + 1}/5)`);
-      await new Promise(res => setTimeout(res, 10000));
+      logger.warn(
+        { err },
+        `Failed to connect to PostgreSQL, retrying... (${i + 1}/5)`,
+      );
+      await new Promise((res) => setTimeout(res, 10000));
     }
   }
 

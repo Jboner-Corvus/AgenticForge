@@ -130,7 +130,10 @@ export class GrokProvider implements ILlmProvider {
       redis
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
-          getLogger().error({ _error }, 'Failed to increment tokensSaved in Redis');
+          getLogger().error(
+            { _error },
+            'Failed to increment tokensSaved in Redis',
+          );
         });
 
       await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.apiKey);

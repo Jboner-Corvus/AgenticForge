@@ -131,14 +131,18 @@ export async function initializeWebServer(
       _next: express.NextFunction,
     ) => {
       try {
-        const { apiKey, llmApiKey, llmModelName, llmProvider, prompt } = req.body;
+        const { apiKey, llmApiKey, llmModelName, llmProvider, prompt } =
+          req.body;
         const _sessionId = req.sessionId;
 
         if (!prompt) {
           throw new AppError('Le prompt est manquant.', { statusCode: 400 });
         }
 
-        getLogger().info({ prompt, sessionId: _sessionId }, 'Nouveau message reçu');
+        getLogger().info(
+          { prompt, sessionId: _sessionId },
+          'Nouveau message reçu',
+        );
 
         const _job = await jobQueue.add('process-message', {
           apiKey,
@@ -522,7 +526,10 @@ export async function initializeWebServer(
           if (loggedTokenData.access_token) {
             loggedTokenData.access_token = '***REDACTED***';
           }
-          getLogger().error({ tokenData: loggedTokenData }, 'GitHub OAuth Error');
+          getLogger().error(
+            { tokenData: loggedTokenData },
+            'GitHub OAuth Error',
+          );
           throw new AppError(
             `GitHub OAuth error: ${tokenData.error_description || tokenData.error}`,
             { statusCode: 400 },
@@ -556,7 +563,9 @@ export async function initializeWebServer(
             });
             getLogger().info({ userId }, 'JWT issued and sent to frontend.');
           } else {
-            getLogger().warn('JWT_SECRET is not configured, skipping JWT issuance.');
+            getLogger().warn(
+              'JWT_SECRET is not configured, skipping JWT issuance.',
+            );
           }
         }
 
@@ -630,7 +639,10 @@ export async function initializeWebServer(
               stdout,
             });
           }
-          getLogger().info({ stderr, stdout }, `${action} executed successfully`);
+          getLogger().info(
+            { stderr, stdout },
+            `${action} executed successfully`,
+          );
           res.status(200).json({
             message: `${action} completed successfully.`,
             output: stdout,
@@ -703,7 +715,9 @@ function watchConfig() {
   });
 
   configWatcher.on('change', async () => {
-    getLogger().info('[watchConfig] .env file changed, reloading configuration...');
+    getLogger().info(
+      '[watchConfig] .env file changed, reloading configuration...',
+    );
     await loadConfig();
     getLogger().info('[watchConfig] Configuration reloaded.');
   });

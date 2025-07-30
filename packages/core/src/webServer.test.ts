@@ -53,7 +53,7 @@ describe('webServer', () => {
 
   afterAll(async () => {
     await new Promise<void>((resolve, reject) => {
-      server.close(err => {
+      server.close((err) => {
         if (err) {
           return reject(err);
         }
