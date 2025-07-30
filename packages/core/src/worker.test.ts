@@ -52,7 +52,7 @@ vi.mock('./config', async (importOriginal) => {
 });
 
 import { getConfig as _getConfig, config } from './config';
-import { getLogger } from './logger';
+import { getLogger, _mockChildLogger } from './logger';
 import { Agent } from './modules/agent/agent';
 import * as _redis from './modules/redis/redisClient';
 import { getRedisClientInstance } from './modules/redis/redisClient';
@@ -86,6 +86,8 @@ vi.mock('./logger', async (importOriginal) => {
   return {
     ...actual,
     getLogger: vi.fn(() => mockLogger),
+    _mockLogger: mockLogger, // Export the mockLogger
+    _mockChildLogger: mockChildLogger, // Export the mockChildLogger
   };
 });
 vi.mock('./modules/tools/definitions/ai/summarize.tool', () => ({
