@@ -7,7 +7,6 @@ import { Ctx, SessionData, Tool } from '@/types.js';
 
 import { getLlmProvider } from '../../utils/llmProvider.js';
 import { getTools } from '../../utils/toolLoader.js';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getRedisClientInstance } from '../redis/redisClient.js';
 import { toolRegistry } from '../tools/toolRegistry.js';
 import { Agent } from './agent.js';

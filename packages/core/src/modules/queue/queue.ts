@@ -5,6 +5,9 @@ import { SessionData } from '@/types.js';
 import { getLoggerInstance } from '../../logger.js';
 import { getRedisClientInstance } from '../redis/redisClient.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const redisClient = getRedisClientInstance();
+
 export interface AsyncTaskJobPayload<TParams> {
   auth: SessionData | undefined;
   cbUrl?: string;

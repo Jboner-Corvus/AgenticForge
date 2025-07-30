@@ -3,6 +3,7 @@
 import type { Job, Queue } from 'bullmq';
 
 vi.mock('./modules/redis/redisClient', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const actual =
     await importOriginal<typeof import('./modules/redis/redisClient')>();
   const mockRedisClient = {
@@ -113,7 +114,7 @@ describe('processJob', () => {
     mockJobQueue = {
       add: vi.fn(),
     } as any;
-    mockRedisConnection = redisClient;
+    mockRedisConnection = getRedisClientInstance();
 
     // Mock config.HISTORY_MAX_LENGTH for testing purposes
     config.HISTORY_MAX_LENGTH = 10;

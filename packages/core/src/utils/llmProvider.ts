@@ -142,7 +142,7 @@ class AnthropicProvider implements ILlmProvider {
             ),
           0,
         ) + content.length;
-      redisClient
+      getRedisClientInstance()
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
           getLogger().error(
@@ -317,7 +317,7 @@ class GeminiProvider implements ILlmProvider {
             ),
           0,
         ) + content.length;
-      redisClient
+      getRedisClientInstance()
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
           getLogger().error(
@@ -469,7 +469,7 @@ class GrokProvider implements ILlmProvider {
             ),
           0,
         ) + content.length;
-      redisClient
+      getRedisClientInstance()
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
           getLogger().error(
@@ -623,7 +623,7 @@ class HuggingFaceProvider implements ILlmProvider {
             ),
           0,
         ) + content.length;
-      redisClient
+      getRedisClientInstance()
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
           getLogger().error(
@@ -773,7 +773,7 @@ class MistralProvider implements ILlmProvider {
             ),
           0,
         ) + content.length;
-      redisClient
+      getRedisClientInstance()
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
           getLogger().error(
@@ -928,7 +928,7 @@ class OpenAIProvider implements ILlmProvider {
             ),
           0,
         ) + content.length;
-      redisClient
+      getRedisClientInstance()
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
           getLogger().error(

@@ -31,7 +31,7 @@ vi.doMock('../../logger.js', () => ({
 }));
 
 // Now import the module under test
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 import { getDeadLetterQueue, getJobQueue } from './queue.js';
 
 describe('Queue Initialization and Error Handling', () => {
@@ -40,16 +40,16 @@ describe('Queue Initialization and Error Handling', () => {
   });
 
   it('should instantiate jobQueue correctly', () => {
-    expect(jobQueue).toBeInstanceOf(Queue);
+    expect(getJobQueue()).toBeInstanceOf(Queue);
   });
 
   it('should instantiate deadLetterQueue correctly', () => {
-    expect(deadLetterQueue).toBeInstanceOf(Queue);
+    expect(getDeadLetterQueue()).toBeInstanceOf(Queue);
   });
 
   it('should log an error when jobQueue emits an error', () => {
     const testError = new Error('Job queue test error');
-    jobQueue.emit('error', testError);
+    getJobQueue().emit('error', testError);
     expect(mockLoggerInstance.error).toHaveBeenCalledWith(
       { err: testError },
       'Job queue error',
@@ -58,7 +58,7 @@ describe('Queue Initialization and Error Handling', () => {
 
   it('should log an error when deadLetterQueue emits an error', () => {
     const testError = new Error('Dead-letter queue test error');
-    deadLetterQueue.emit('error', testError);
+    getDeadLetterQueue().emit('error', testError);
     expect(mockLoggerInstance.error).toHaveBeenCalledWith(
       { err: testError },
       'Dead-letter queue error',

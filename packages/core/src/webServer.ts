@@ -1,4 +1,4 @@
-import type { Queue } from 'bullmq';
+
 
 import { exec } from 'child_process';
 import chokidar from 'chokidar';
@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { getConfig, loadConfig } from './config.js';
 import { getLoggerInstance } from './logger.js';
+import { getJobQueue } from './modules/queue/queue.js';
 import { getRedisClientInstance } from './modules/redis/redisClient.js';
 const config = getConfig();
 import { LlmKeyManager as _LlmKeyManager } from './modules/llm/LlmKeyManager.js';
@@ -24,9 +25,10 @@ import { getTools } from './utils/toolLoader.js';
 export let configWatcher: import('chokidar').FSWatcher | null = null;
 
 export async function initializeWebServer(
-  jobQueue: Queue,
   pgClient: PgClient,
 ): Promise<{ app: Application; server: Server }> {
+  const jobQueue = getJobQueue();
+  
   const app = express();
   const sessionManager = new SessionManager(pgClient);
   app.use(express.json());
@@ -75,7 +77,7 @@ export async function initializeWebServer(
           });
       }
       (req as any).sessionId = sessionId;
-      (req as any).redis = redisClient;
+      (req as any).redis = getRedisClientInstance();
       res.setHeader('X-Session-ID', sessionId);
       next();
     },
@@ -179,7 +181,7 @@ export async function initializeWebServer(
         'Content-Type': 'text/event-stream',
       });
 
-      const subscriber = redisClient.duplicate();
+      const subscriber = getRedisClientInstance().duplicate();
       const channel = `job:${jobId}:events`;
 
       await subscriber.subscribe(channel);
@@ -284,11 +286,11 @@ export async function initializeWebServer(
     ) => {
       try {
         const sessionsCreated =
-          (await redisClient.get('leaderboard:sessionsCreated')) || '0';
+          (await getRedisClientInstance().get('leaderboard:sessionsCreated')) || '0';
         const tokensSaved =
-          (await redisClient.get('leaderboard:tokensSaved')) || '0';
+          (await getRedisClientInstance().get('leaderboard:tokensSaved')) || '0';
         const successfulRuns =
-          (await redisClient.get('leaderboard:successfulRuns')) || '0';
+          (await getRedisClientInstance().get('leaderboard:successfulRuns')) || '0';
 
         res.status(200).json({
           apiKeysAdded: 0,
@@ -324,7 +326,7 @@ export async function initializeWebServer(
         await req.sessionManager!.saveSession(
           sessionDataToSave,
           req.job,
-          jobQueue,
+          getJobQueue(),
         );
         getLoggerInstance().info(
           { sessionId: id, sessionName: name },
@@ -548,7 +550,7 @@ export async function initializeWebServer(
         const accessToken = tokenData.access_token;
 
         if (req.sessionId) {
-          await redisClient.set(
+          await getRedisClientInstance().set(
             `github:accessToken:${req.sessionId}`,
             accessToken,
             'EX',
@@ -597,13 +599,13 @@ export async function initializeWebServer(
     ) => {
       try {
         const { jobId } = req.params;
-        const job = await jobQueue.getJob(jobId);
+        const job = await getJobQueue().getJob(jobId);
 
         if (!job) {
           throw new AppError('Job non trouvé.', { statusCode: 404 });
         }
 
-        await redisClient.publish(`job:${jobId}:interrupt`, 'interrupt');
+        await getRedisClientInstance().publish(`job:${jobId}:interrupt`, 'interrupt');
 
         res.status(200).json({ message: 'Interruption signal sent.' });
       } catch (error) {
@@ -675,7 +677,7 @@ export async function initializeWebServer(
     ) => {
       try {
         const { jobId } = req.params;
-        const job = await jobQueue.getJob(jobId);
+        const job = await getJobQueue().getJob(jobId);
 
         if (!job) {
           throw new AppError('Job non trouvé.', { statusCode: 404 });
