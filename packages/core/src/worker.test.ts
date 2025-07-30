@@ -38,17 +38,20 @@ vi.mock('pg', () => ({
 
 vi.mock('./config', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./config')>();
+  const mockedConfig = {
+    HISTORY_MAX_LENGTH: 10,
+    LLM_PROVIDER: 'gemini', // Added missing config property
+    REDIS_HOST: 'localhost',
+    REDIS_PORT: 6379,
+  };
   return {
     ...actual,
-    config: {
-      HISTORY_MAX_LENGTH: 10,
-      REDIS_HOST: 'localhost',
-      REDIS_PORT: 6379,
-    },
+    config: mockedConfig,
+    getConfig: vi.fn(() => mockedConfig),
   };
 });
 
-import { config } from './config';
+import { config, getConfig } from './config';
 import { getLogger } from './logger';
 import { Agent } from './modules/agent/agent';
 import * as _redis from './modules/redis/redisClient';

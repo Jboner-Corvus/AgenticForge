@@ -8,9 +8,5 @@ export default defineConfig({
     exclude: ['node_modules', 'dist'],
     setupFiles: ['src/test/setup.ts'],
   },
-  server: {
-    deps: {
-      external: ['jsonwebtoken'],
-    },
-  },
+  
 });

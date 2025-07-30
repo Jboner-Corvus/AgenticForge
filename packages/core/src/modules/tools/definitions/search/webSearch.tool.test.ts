@@ -5,15 +5,19 @@ import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 
 import { getLoggerInstance } from '../../../../logger';
 
+// Define the mock for getLoggerInstance outside vi.mock to ensure consistency
+const mockLoggerInstance = {
+  child: vi.fn().mockReturnThis(),
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+};
+
 vi.mock('../../../../logger', () => ({
-  getLoggerInstance: vi.fn(() => ({
-    child: vi.fn().mockReturnThis(),
-    debug: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-  })),
+  getLoggerInstance: vi.fn(() => mockLoggerInstance),
 }));
+
 import { webSearchTool } from './webSearch.tool.js';
 
 describe('webSearchTool', () => {
@@ -64,7 +68,7 @@ describe('webSearchTool', () => {
     const query = 'test search';
     const result = await webSearchTool.execute({ query }, mockCtx);
 
-    expect(getLoggerInstance().info).toHaveBeenCalledWith(
+    expect(mockLoggerInstance.info).toHaveBeenCalledWith(
       `Performing web search for: "${query}"`,
     );
     expect(result).toContain('Test answer');
@@ -107,7 +111,7 @@ describe('webSearchTool', () => {
     expect(result).toEqual({
       erreur: 'DuckDuckGo API request failed: API error',
     });
-    expect(getLoggerInstance().error).toHaveBeenCalled();
+    expect(mockLoggerInstance.error).toHaveBeenCalled();
   });
 
   it('should return an error message if the fetch call throws an exception', async () => {
@@ -120,6 +124,6 @@ describe('webSearchTool', () => {
     expect(result).toEqual({
       erreur: `An unexpected error occurred: ${errorMessage}`,
     });
-    expect(getLoggerInstance().error).toHaveBeenCalled();
+    expect(mockLoggerInstance.error).toHaveBeenCalled();
   });
 });

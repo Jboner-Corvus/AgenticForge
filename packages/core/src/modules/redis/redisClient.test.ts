@@ -1,5 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 
+// Mock the ioredis module to prevent actual Redis connections
+vi.mock('ioredis', () => {
+  class MockRedis {
+    on = vi.fn();
+    // Add other methods that might be called on the Redis instance if needed
+  }
+  return {
+    default: MockRedis,
+  };
+});
+
 import { redisClient } from './redisClient.js';
 
 // Mock the logger to prevent console output during tests
@@ -12,15 +23,7 @@ vi.mock('../../logger', () => ({
   },
 }));
 
-// Mock the config to control REDIS_HOST and REDIS_PORT
-vi.mock('../../config', () => ({
-  config: {
-    REDIS_DB: 0,
-    REDIS_HOST: 'mock-redis-host',
-    REDIS_PORT: 6379,
-    REDIS_URL: undefined, // Ensure REDIS_URL is undefined for these tests
-  },
-}));
+// No need to mock config for REDIS_HOST/PORT anymore as ioredis is mocked
 
 describe('redisClient', () => {
   it('should be defined', () => {

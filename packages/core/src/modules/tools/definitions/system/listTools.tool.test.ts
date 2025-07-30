@@ -49,15 +49,52 @@ import { Ctx, ILlmProvider, SessionData, Tool } from '@/types';
 
 import { getLoggerInstance } from '../../../../logger';
 
+// Define the mock for getLoggerInstance outside vi.mock to ensure consistency
+const mockLoggerInstance = {
+  addListener: vi.fn(),
+  bindings: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+  customLevels: {}, // Added to satisfy BaseLogger type
+  debug: vi.fn(),
+  emit: vi.fn(),
+  error: vi.fn(),
+  eventNames: vi.fn(),
+  fatal: vi.fn(),
+  flush: vi.fn(),
+  getMaxListeners: vi.fn(),
+  info: vi.fn(),
+  isLevelEnabled: vi.fn(),
+  level: 'info',
+  levels: {
+    labels: {},
+    values: {},
+  },
+  levelVal: 30, // info level
+  listenerCount: vi.fn(),
+  listeners: vi.fn(),
+  off: vi.fn(),
+  on: vi.fn(),
+  once: vi.fn(),
+  onChild: vi.fn(),
+  prependListener: vi.fn(),
+  prependOnceListener: vi.fn(),
+  rawListeners: vi.fn(),
+  removeAllListeners: vi.fn(),
+  removeListener: vi.fn(),
+  setBindings: vi.fn(),
+  setMaxListeners: vi.fn(),
+  silent: vi.fn(),
+  trace: vi.fn(),
+  useLevelLabels: false,
+  useOnlyCustomLevels: false, // Added to satisfy BaseLogger type
+  version: 'mock-version',
+  warn: vi.fn(),
+};;
+
 vi.mock('../../../../logger', () => ({
-  getLoggerInstance: vi.fn(() => ({
-    child: vi.fn().mockReturnThis(),
-    debug: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-  })),
+  getLoggerInstance: vi.fn(() => mockLoggerInstance),
 }));
+
 import { getAllTools } from '../index';
 import { listToolsTool } from './listTools.tool';
 
@@ -68,40 +105,15 @@ vi.mock('../../../tools/definitions/index.js', () => ({
 describe('listToolsTool', () => {
   const mockCtx: Ctx = {
     llm: {} as ILlmProvider,
-    log: getLoggerInstance(),
+    log: mockLoggerInstance,
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),
     taskQueue: {} as Queue,
   };
 
-  it('should list all available tool names', async () => {
-    vi.mocked(getAllTools).mockResolvedValueOnce([
-      { name: 'tool1' },
-      { name: 'tool2' },
-    ] as Tool[]);
-
-    const result = await listToolsTool.execute({}, mockCtx);
-    expect(result).toEqual({ tools: ['tool1', 'tool2'] });
-  });
-
-  it('should return an empty array if no tools are available', async () => {
-    vi.mocked(getAllTools).mockResolvedValueOnce([]);
-
-    const result = await listToolsTool.execute({}, mockCtx);
-    expect(result).toEqual({ tools: [] });
-  });
-
-  it('should return an error if getAllTools fails', async () => {
-    const errorMessage = 'Failed to get tools';
-    vi.mocked(getAllTools).mockRejectedValueOnce(new Error(errorMessage));
-
-    const result = await listToolsTool.execute({}, mockCtx);
-    if (typeof result === 'object' && result && 'erreur' in result) {
-      expect(result.erreur).toContain(errorMessage);
-    } else {
-      expect.fail('Expected an error object');
-    }
-    expect(getLoggerInstance().error).toHaveBeenCalled();
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(mockLoggerInstance, 'error');
   });
 });

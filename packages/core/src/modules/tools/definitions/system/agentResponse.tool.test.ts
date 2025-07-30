@@ -6,15 +6,19 @@ import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 
 import { getLoggerInstance } from '../../../../logger.js';
 
+// Define the mock for getLoggerInstance outside vi.mock to ensure consistency
+const mockLoggerInstance = {
+  child: vi.fn().mockReturnThis(),
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+};
+
 vi.mock('../../../../logger.js', () => ({
-  getLoggerInstance: vi.fn(() => ({
-    child: vi.fn().mockReturnThis(),
-    debug: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-  })),
+  getLoggerInstance: vi.fn(() => mockLoggerInstance),
 }));
+
 import { agentResponseTool } from './agentResponse.tool.js';
 
 describe('agentResponseTool', () => {
@@ -31,12 +35,9 @@ describe('agentResponseTool', () => {
     const response = 'Hello, user!';
     const result = await agentResponseTool.execute({ response }, mockCtx);
     expect(result).toBe(response);
-    expect(getLoggerInstance().info).toHaveBeenCalledWith(
-      'Responding to user',
-      {
-        args: { response },
-      },
-    );
+    expect(mockLoggerInstance.info).toHaveBeenCalledWith('Responding to user', {
+      args: { response },
+    });
   });
 
   it('should handle empty response string', async () => {

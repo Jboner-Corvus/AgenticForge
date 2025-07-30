@@ -1,4 +1,6 @@
+import { Job } from 'bullmq';
 import express from 'express';
+import { Client } from 'pg';
 import request from 'supertest';
 
 vi.mock('fs/promises', () => ({
@@ -14,7 +16,13 @@ vi.mock('./modules/redis/redisClient.js', () => ({
   redisClient: mockRedis,
 }));
 vi.mock('./logger.js', () => ({
-  logger: mockLogger,
+  getLoggerInstance: vi.fn(() => ({
+    child: vi.fn().mockReturnThis(),
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+  })),
 }));
 
 const mockPgClient = {
@@ -22,7 +30,9 @@ const mockPgClient = {
   end: vi.fn().mockResolvedValue(undefined),
   query: vi.fn(),
 };
-vi.mock('pg', () => ({ Client: () => mockPgClient }));
+vi.mock('pg', () => ({
+  Client: vi.fn(() => mockPgClient),
+}));
 
 import { jobQueue } from './modules/queue/queue';
 import { SessionManager } from './modules/session/sessionManager';
@@ -31,7 +41,18 @@ import * as toolLoader from './utils/toolLoader';
 vi.mock('./modules/session/sessionManager');
 
 vi.mock('./utils/toolLoader');
-vi.mock('./modules/queue/queue');
+vi.mock('./modules/queue/queue', async () => {
+  const actual = await vi.importActual('./modules/queue/queue');
+  return {
+    ...actual,
+    jobQueue: {
+      ...actual.jobQueue,
+      add: vi.fn((name: string, data: any, opts?: any) => {
+        return Promise.resolve({ data, id: 'mockJobId', name, opts } as Job);
+      }),
+    },
+  };
+});
 vi.mock('./modules/llm/LlmKeyManager');
 vi.mock('jsonwebtoken');
 vi.mock('fs/promises');
@@ -88,7 +109,10 @@ describe('webServer', () => {
   beforeAll(async () => {
     const { initializeWebServer } = await import('./webServer');
 
-    const webServer = await initializeWebServer(jobQueue, mockPgClient as any);
+    const webServer = await initializeWebServer(
+      jobQueue,
+      mockPgClient as unknown as Client,
+    );
     app = webServer.app;
     server = webServer.server;
   });
@@ -119,7 +143,7 @@ describe('webServer', () => {
     mockRedis._resetStore();
     mockPgClient.query.mockResolvedValue({ rows: [] });
     vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.mocked(jobQueue.add).mockResolvedValue({ id: 'mockJobId' } as any);
+    
   });
 
   it('should return 200 for authorized access to /api/tools', async () => {

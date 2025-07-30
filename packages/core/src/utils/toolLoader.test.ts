@@ -21,8 +21,9 @@ vi.mock('../modules/tools/toolRegistry', () => ({
 }));
 
 // Mock the logger
-vi.mock('../logger', () => ({
-  logger: {
+vi.mock('../logger', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../logger')>();
+  const mockLoggerInstance = {
     child: vi.fn(() => ({
       debug: vi.fn(),
       error: vi.fn(),
@@ -33,8 +34,13 @@ vi.mock('../logger', () => ({
     error: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
-  },
-}));
+  };
+  return {
+    ...actual,
+    getLogger: vi.fn(() => mockLoggerInstance),
+    getLoggerInstance: vi.fn(() => mockLoggerInstance),
+  };
+});
 
 // Mock fs/promises
 vi.mock('fs/promises', async () => {

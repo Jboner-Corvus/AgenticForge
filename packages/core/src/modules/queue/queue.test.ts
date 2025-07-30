@@ -1,10 +1,7 @@
 import { Queue } from 'bullmq';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getLoggerInstance } from '../../logger.js';
-import { deadLetterQueue, jobQueue } from './queue.js';
-
-// Mock redis and logger
+// Mock redis
 vi.mock('../redis/redisClient.js', () => ({
   redisClient: {
     connect: vi.fn(),
@@ -20,20 +17,27 @@ vi.mock('../redis/redisClient.js', () => ({
   },
 }));
 
-vi.mock('../../logger.js', () => ({
-  getLoggerInstance: vi.fn(() => ({
-    child: vi.fn().mockReturnThis(),
-    debug: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-  })),
+// Define the mock for getLoggerInstance before importing queue.js
+const mockLoggerInstance = {
+  child: vi.fn().mockReturnThis(),
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+};
+
+vi.doMock('../../logger.js', () => ({
+  getLoggerInstance: vi.fn(() => mockLoggerInstance),
 }));
+
+// Now import the module under test
+import { deadLetterQueue, jobQueue } from './queue.js';
 
 describe('Queue Initialization and Error Handling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(getLoggerInstance(), 'error');
+    // Spy on the specific mock instance returned by getLoggerInstance
+    vi.spyOn(mockLoggerInstance, 'error');
   });
 
   it('should instantiate jobQueue correctly', () => {
@@ -47,7 +51,7 @@ describe('Queue Initialization and Error Handling', () => {
   it('should log an error when jobQueue emits an error', () => {
     const testError = new Error('Job queue test error');
     jobQueue.emit('error', testError);
-    expect(getLoggerInstance().error).toHaveBeenCalledWith(
+    expect(mockLoggerInstance.error).toHaveBeenCalledWith(
       { err: testError },
       'Job queue error',
     );
@@ -56,7 +60,7 @@ describe('Queue Initialization and Error Handling', () => {
   it('should log an error when deadLetterQueue emits an error', () => {
     const testError = new Error('Dead-letter queue test error');
     deadLetterQueue.emit('error', testError);
-    expect(getLoggerInstance().error).toHaveBeenCalledWith(
+    expect(mockLoggerInstance.error).toHaveBeenCalledWith(
       { err: testError },
       'Dead-letter queue error',
     );

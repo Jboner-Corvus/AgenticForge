@@ -2,9 +2,17 @@ import { Queue } from 'bullmq';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Ctx } from '@/types';
-import * as shellUtils from '@/utils/shellUtils.js';
+import * as shellUtils from '@/utils/shellUtils';
 
 import { executeShellCommandTool } from './executeShellCommand.tool'; // Temp fix
+
+vi.mock('@/utils/shellUtils', async () => {
+  const actual = await vi.importActual('@/utils/shellUtils');
+  return {
+    ...actual,
+    executeShellCommand: vi.fn(),
+  };
+});
 
 vi.mock('../../../redis/redisClient', () => ({
   redisClient: {
@@ -134,7 +142,7 @@ describe('executeShellCommandTool', () => {
     const stderrChunk1 = 'error\n';
 
     vi.spyOn(shellUtils, 'executeShellCommand').mockImplementation(
-      async (cmd, ctx) => {
+      async (cmd: string, ctx: Ctx) => {
         if (ctx.streamContent) {
           await ctx.streamContent([
             {

@@ -30,13 +30,23 @@ import path from 'path';
 import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 
 import { config } from '../../../../config.js';
-import { getLogger } from '../../../../logger.js';
+import { getLoggerInstance } from '../../../../logger.js';
+
+vi.mock('../../../../logger.js', () => ({
+  getLoggerInstance: vi.fn(() => ({
+    child: vi.fn().mockReturnThis(),
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+  })),
+}));
 import { writeFile as writeFileTool } from './writeFile.tool.js';
 
 describe('writeFileTool', () => {
   const mockCtx: Ctx = {
     llm: {} as ILlmProvider,
-    log: getLogger(),
+    log: getLoggerInstance(),
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),
@@ -117,6 +127,6 @@ describe('writeFileTool', () => {
     } else {
       throw new Error('Expected an object with an erreur property.');
     }
-    expect(getLogger().error).toHaveBeenCalled();
+    expect(getLoggerInstance().error).toHaveBeenCalled();
   });
 });

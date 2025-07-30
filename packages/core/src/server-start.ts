@@ -34,19 +34,21 @@ async function startServer() {
   }
 
   if (!connected || !pgClient) {
-    logger.error('Could not connect to PostgreSQL after 5 attempts, exiting.');
+    getLoggerInstance().error(
+      'Could not connect to PostgreSQL after 5 attempts, exiting.',
+    );
     process.exit(1);
   }
 
   pgClient.on('error', (err) => {
-    logger.error({ err }, 'PostgreSQL client error');
+    getLoggerInstance().error({ err }, 'PostgreSQL client error');
   });
 
   const { server } = await initializeWebServer(jobQueue, pgClient);
 
   const port = config.PORT || 3001;
   server.listen(port, () => {
-    logger.info(`Server listening on port ${port}`);
+    getLoggerInstance().info(`Server listening on port ${port}`);
   });
 
   process.on('exit', () => {

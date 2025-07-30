@@ -40,17 +40,21 @@ vi.mock('../../../../config', async () => {
   };
 });
 
+import { getLoggerInstance } from '../../../../logger.js';
+
+// Define the mock for getLoggerInstance outside vi.mock to ensure consistency
+const mockLoggerInstance = {
+  child: vi.fn().mockReturnThis(),
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+};
+
 vi.mock('../../../../logger.js', () => ({
-  getLoggerInstance: vi.fn(() => ({
-    child: vi.fn().mockReturnThis(),
-    debug: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-  })),
+  getLoggerInstance: vi.fn(() => mockLoggerInstance),
 }));
 
-import { getLoggerInstance } from '../../../../logger.js';
 import { finishTool, FinishToolSignal } from './finish.tool.js';
 
 describe('finishTool', () => {
@@ -67,8 +71,8 @@ describe('finishTool', () => {
       streamContent: vi.fn(),
       taskQueue: {} as Queue,
     };
-    vi.spyOn(getLoggerInstance(), 'info');
-    vi.spyOn(getLoggerInstance(), 'error');
+    vi.spyOn(mockLoggerInstance, 'info');
+    vi.spyOn(mockLoggerInstance, 'error');
   });
 
   it('should throw a FinishToolSignal with the final response when called with an object', async () => {
@@ -76,7 +80,7 @@ describe('finishTool', () => {
     await expect(finishTool.execute({ response }, mockCtx)).rejects.toThrow(
       new FinishToolSignal(response),
     );
-    expect(getLoggerInstance().info as Mock).toHaveBeenCalledWith(
+    expect(mockLoggerInstance.info as Mock).toHaveBeenCalledWith(
       `Goal accomplished: ${response}`,
     );
   });
@@ -86,7 +90,7 @@ describe('finishTool', () => {
     await expect(finishTool.execute(response, mockCtx)).rejects.toThrow(
       new FinishToolSignal(response),
     );
-    expect(getLoggerInstance().info as Mock).toHaveBeenCalledWith(
+    expect(mockLoggerInstance.info as Mock).toHaveBeenCalledWith(
       `Goal accomplished: ${response}`,
     );
   });
