@@ -155,6 +155,9 @@ describe('processJob', () => {
       mockTools,
       'gemini',
       _mockSessionManagerInstance,
+      undefined, // apiKey
+      undefined, // llmModelName
+      undefined, // llmApiKey
     );
     expect((Agent as any).mock.results[0].value.run).toHaveBeenCalled();
     expect(mockSessionData.history).toContainEqual({

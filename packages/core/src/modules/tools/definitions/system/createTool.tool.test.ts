@@ -8,6 +8,17 @@ import { getLoggerInstance } from '../../../../logger.js';
 import { runQualityGate } from '../../../../utils/qualityGate';
 import { createToolTool } from './createTool.tool';
 
+vi.mock('fs', () => ({
+  promises: {
+    mkdir: vi.fn(() => Promise.resolve()),
+    writeFile: vi.fn(() => Promise.resolve()),
+  },
+}));
+
+vi.mock('../../../../utils/qualityGate', () => ({
+  runQualityGate: vi.fn(() => Promise.resolve()),
+}));
+
 // Define the mock for getLoggerInstance outside vi.mock to ensure consistency
 const mockLoggerInstance = {
   child: vi.fn().mockReturnThis(),

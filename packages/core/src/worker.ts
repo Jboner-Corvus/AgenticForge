@@ -5,7 +5,7 @@ import { Client as PgClient } from 'pg';
 
 import { Tool } from '@/types';
 
-import { config } from './config.js';
+import { config, loadConfig } from './config.js';
 import { getLoggerInstance } from './logger.js';
 import { Agent } from './modules/agent/agent.js';
 import { LlmKeyManager } from './modules/llm/LlmKeyManager.js';
@@ -239,6 +239,9 @@ export async function processJob(
 }
 
 if (process.env.NODE_ENV !== 'test') {
+  // Load configuration for the worker process
+  await loadConfig();
+
   getLoggerInstance().info(
     `[INIT LLM] LLM_PROVIDER détecté : ${process.env.LLM_PROVIDER}`,
   );
@@ -249,12 +252,14 @@ if (process.env.NODE_ENV !== 'test') {
     `[INIT LLM] LLM_MODEL_NAME détecté : ${process.env.LLM_MODEL_NAME}`,
   );
 
+  getLoggerInstance().info(`PostgreSQL Host for Worker: ${config.POSTGRES_HOST}`);
   const connectionString = `postgresql://${config.POSTGRES_USER}:${config.POSTGRES_PASSWORD}@${config.POSTGRES_HOST}:${config.POSTGRES_PORT}/${config.POSTGRES_DB}`;
+  const redisConnection = getRedisClientInstance();
   const pgClient = new PgClient({
     connectionString: connectionString,
   });
   pgClient.connect();
-  initializeWorker(getRedisClientInstance(), pgClient).catch((err) => {
+  initializeWorker(redisConnection, pgClient).catch((err) => {
     getLoggerInstance().error({ err }, "Échec de l'initialisation du worker");
     process.exit(1);
   });

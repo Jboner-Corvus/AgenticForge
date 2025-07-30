@@ -1,22 +1,6 @@
 import { Queue } from 'bullmq';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock redis
-vi.mock('../redis/redisClient.js', () => ({
-  getRedisClientInstance: vi.fn(() => ({
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-    duplicate: vi.fn(),
-    getMaxListeners: vi.fn(() => 10),
-    on: vi.fn(),
-    once: vi.fn(),
-    options: { keyPrefix: '' },
-    publish: vi.fn(),
-    removeListener: vi.fn(),
-    setMaxListeners: vi.fn(),
-  })),
-}));
-
 // Define the mock for getLoggerInstance before importing queue.js
 const mockLoggerInstance = {
   child: vi.fn().mockReturnThis(),
@@ -26,30 +10,59 @@ const mockLoggerInstance = {
   warn: vi.fn(),
 };
 
-vi.doMock('../../logger.js', () => ({
-  getLoggerInstance: vi.fn(() => mockLoggerInstance),
-}));
-
-// Now import the module under test
- 
-import { getDeadLetterQueue, getJobQueue } from './queue.js';
+let getDeadLetterQueue: typeof import('./queue.js').getDeadLetterQueue;
+let getJobQueue: typeof import('./queue.js').getJobQueue;
 
 describe('Queue Initialization and Error Handling', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  let jobQueue: Queue;
+  let deadLetterQueue: Queue;
+
+  beforeEach(async () => {
+    vi.resetModules(); // Reset module cache
+
+    // Re-mock redis client
+    vi.mock('../redis/redisClient.js', () => ({
+      getRedisClientInstance: vi.fn(() => ({
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        duplicate: vi.fn(),
+        getMaxListeners: vi.fn(() => 10),
+        on: vi.fn(),
+        once: vi.fn(),
+        options: { keyPrefix: '' },
+        publish: vi.fn(),
+        removeListener: vi.fn(),
+        setMaxListeners: vi.fn(),
+      })),
+    }));
+
+    // Re-mock logger
+    vi.mock('../../logger.js', () => ({
+      getLoggerInstance: vi.fn(() => mockLoggerInstance),
+    }));
+
+    // Now import the module under test after resetting modules and re-mocking
+    const queueModule = await import('./queue.js');
+    getJobQueue = queueModule.getJobQueue;
+    getDeadLetterQueue = queueModule.getDeadLetterQueue;
+
+    vi.clearAllMocks(); // Clear mocks on the mockLoggerInstance
+
+    jobQueue = getJobQueue();
+    deadLetterQueue = getDeadLetterQueue();
   });
 
   it('should instantiate jobQueue correctly', () => {
-    expect(getJobQueue()).toBeInstanceOf(Queue);
+    expect(jobQueue).toBeInstanceOf(Queue);
   });
 
   it('should instantiate deadLetterQueue correctly', () => {
-    expect(getDeadLetterQueue()).toBeInstanceOf(Queue);
+    expect(deadLetterQueue).toBeInstanceOf(Queue);
   });
 
   it('should log an error when jobQueue emits an error', () => {
     const testError = new Error('Job queue test error');
-    getJobQueue().emit('error', testError);
+    jobQueue.emit('error', testError);
     expect(mockLoggerInstance.error).toHaveBeenCalledWith(
       { err: testError },
       'Job queue error',
@@ -58,7 +71,7 @@ describe('Queue Initialization and Error Handling', () => {
 
   it('should log an error when deadLetterQueue emits an error', () => {
     const testError = new Error('Dead-letter queue test error');
-    getDeadLetterQueue().emit('error', testError);
+    deadLetterQueue.emit('error', testError);
     expect(mockLoggerInstance.error).toHaveBeenCalledWith(
       { err: testError },
       'Dead-letter queue error',

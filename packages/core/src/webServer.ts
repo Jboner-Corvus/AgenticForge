@@ -5,6 +5,7 @@ import chokidar from 'chokidar';
 import cookieParser from 'cookie-parser';
 import express, { type Application } from 'express';
 import { Server } from 'http';
+import { Redis } from 'ioredis';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import { Client as PgClient } from 'pg';
@@ -14,7 +15,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { getConfig, loadConfig } from './config.js';
 import { getLoggerInstance } from './logger.js';
 import { getJobQueue } from './modules/queue/queue.js';
-import { getRedisClientInstance } from './modules/redis/redisClient.js';
 const config = getConfig();
 import { LlmKeyManager as _LlmKeyManager } from './modules/llm/LlmKeyManager.js';
 import { SessionManager } from './modules/session/sessionManager.js';
@@ -26,6 +26,7 @@ export let configWatcher: import('chokidar').FSWatcher | null = null;
 
 export async function initializeWebServer(
   pgClient: PgClient,
+  redisClient: Redis,
 ): Promise<{ app: Application; server: Server }> {
   const jobQueue = getJobQueue();
   
@@ -67,7 +68,7 @@ export async function initializeWebServer(
           sameSite: 'lax',
           secure: process.env.NODE_ENV === 'production',
         });
-        getRedisClientInstance()
+        redisClient
           .incr('leaderboard:sessionsCreated')
           .catch((err: unknown) => {
             getLoggerInstance().error(
@@ -77,7 +78,7 @@ export async function initializeWebServer(
           });
       }
       (req as any).sessionId = sessionId;
-      (req as any).redis = getRedisClientInstance();
+      (req as any).redis = redisClient;
       res.setHeader('X-Session-ID', sessionId);
       next();
     },
@@ -181,7 +182,7 @@ export async function initializeWebServer(
         'Content-Type': 'text/event-stream',
       });
 
-      const subscriber = getRedisClientInstance().duplicate();
+      const subscriber = redisClient.duplicate();
       const channel = `job:${jobId}:events`;
 
       await subscriber.subscribe(channel);
@@ -286,11 +287,11 @@ export async function initializeWebServer(
     ) => {
       try {
         const sessionsCreated =
-          (await getRedisClientInstance().get('leaderboard:sessionsCreated')) || '0';
+          (await redisClient.get('leaderboard:sessionsCreated')) || '0';
         const tokensSaved =
-          (await getRedisClientInstance().get('leaderboard:tokensSaved')) || '0';
+          (await redisClient.get('leaderboard:tokensSaved')) || '0';
         const successfulRuns =
-          (await getRedisClientInstance().get('leaderboard:successfulRuns')) || '0';
+          (await redisClient.get('leaderboard:successfulRuns')) || '0';
 
         res.status(200).json({
           apiKeysAdded: 0,
@@ -550,7 +551,7 @@ export async function initializeWebServer(
         const accessToken = tokenData.access_token;
 
         if (req.sessionId) {
-          await getRedisClientInstance().set(
+          await redisClient.set(
             `github:accessToken:${req.sessionId}`,
             accessToken,
             'EX',
@@ -605,7 +606,7 @@ export async function initializeWebServer(
           throw new AppError('Job non trouvé.', { statusCode: 404 });
         }
 
-        await getRedisClientInstance().publish(`job:${jobId}:interrupt`, 'interrupt');
+        await redisClient.publish(`job:${jobId}:interrupt`, 'interrupt');
 
         res.status(200).json({ message: 'Interruption signal sent.' });
       } catch (error) {

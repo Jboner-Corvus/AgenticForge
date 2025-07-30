@@ -122,8 +122,9 @@ describe('webServer', () => {
 
   beforeAll(async () => {
     const { initializeWebServer } = await import('./webServer');
+    const { getRedisClientInstance } = await import('./modules/redis/redisClient');
 
-    const webServer = await initializeWebServer(mockPgClient as any);
+    const webServer = await initializeWebServer(mockPgClient as any, getRedisClientInstance());
     app = webServer.app;
     server = webServer.server;
   });

@@ -32,29 +32,32 @@ import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 import { config } from '../../../../config.js';
 import { getLoggerInstance } from '../../../../logger.js';
 
+const mockLogger = {
+  child: vi.fn().mockReturnThis(),
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+};
+
 vi.mock('../../../../logger.js', () => ({
-  getLoggerInstance: vi.fn(() => ({
-    child: vi.fn().mockReturnThis(),
-    debug: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-  })),
+  getLoggerInstance: vi.fn(() => mockLogger),
 }));
 import { writeFile as writeFileTool } from './writeFile.tool.js';
 
 describe('writeFileTool', () => {
-  const mockCtx: Ctx = {
-    llm: {} as ILlmProvider,
-    log: getLoggerInstance(),
-    reportProgress: vi.fn(),
-    session: {} as SessionData,
-    streamContent: vi.fn(),
-    taskQueue: {} as Queue,
-  };
+  let mockCtx: Ctx;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCtx = {
+      llm: {} as ILlmProvider,
+      log: getLoggerInstance(),
+      reportProgress: vi.fn(),
+      session: {} as SessionData,
+      streamContent: vi.fn(),
+      taskQueue: {} as Queue,
+    };
   });
 
   it('should write content to a new file', async () => {

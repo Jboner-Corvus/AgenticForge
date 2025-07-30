@@ -2,7 +2,8 @@ import { Client as PgClient } from 'pg';
 
 import { config, loadConfig } from './config.js';
 import { getLoggerInstance } from './logger.js';
-import { getDeadLetterQueue } from './modules/queue/queue.js';
+
+import { getRedisClientInstance } from './modules/redis/redisClient.js';
 import { initializeWebServer } from './webServer.js';
 
 async function startServer() {
@@ -15,6 +16,12 @@ async function startServer() {
   let connected = false;
   for (let i = 0; i < 5; i++) {
     try {
+      logger.info('PostgreSQL Connection Parameters:');
+      logger.info(`  Database: ${config.POSTGRES_DB}`);
+      logger.info(`  Host: ${config.POSTGRES_HOST}`);
+      logger.info(`  Port: ${config.POSTGRES_PORT}`);
+      logger.info(`  User: ${config.POSTGRES_USER}`);
+      logger.info(`  Password: ${config.POSTGRES_PASSWORD ? '********' : 'undefined'}`);
       pgClient = new PgClient({
         database: config.POSTGRES_DB,
         host: config.POSTGRES_HOST,
@@ -47,9 +54,9 @@ async function startServer() {
   });
 
   
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const deadLetterQueue = getDeadLetterQueue();
-  const { server } = await initializeWebServer(pgClient);
+  
+  const redisClient = getRedisClientInstance();
+  const { server } = await initializeWebServer(pgClient, redisClient);
 
   const port = config.PORT || 3001;
   server.listen(port, () => {

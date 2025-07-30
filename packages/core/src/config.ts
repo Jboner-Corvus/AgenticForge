@@ -74,20 +74,20 @@ export async function loadConfig() {
   // Always load .env file to ensure consistent configuration across environments
   // The NODE_ENV check was removed to allow .env variables to be used in tests.
   // If specific test configurations are needed, they should be managed via test-specific .env files or direct environment variable setting in test scripts.
-  {
-    const result = dotenv.config({
-      path: path.resolve(process.cwd(), '.env'),
-    });
+  const result = dotenv.config({
+    path: path.resolve(process.cwd(), '.env'),
+  });
 
-    if (result.error) {
-      console.warn(
-        'Could not find .env file, using environment variables only.',
-      );
-    }
+  if (result.error) {
+    console.warn(
+      'Could not find .env file, using environment variables only.',
+    );
   }
 
   config = configSchema.parse(process.env);
   console.log('Resolved WORKSPACE_PATH:', config.WORKSPACE_PATH);
+  console.log('process.env.REDIS_HOST:', process.env.REDIS_HOST);
+  console.log('config.REDIS_HOST:', config.REDIS_HOST);
 
   // Add HuggingFace API key if available and not already added
   if (
