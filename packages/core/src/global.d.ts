@@ -1,5 +1,3 @@
-declare const vi: import('vitest').Mocked<any>;
-
 declare namespace Express {
   interface Request {
     sessionId?: string;

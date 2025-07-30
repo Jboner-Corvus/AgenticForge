@@ -1,5 +1,5 @@
 import { getLogger } from '../../logger.js';
-import { redis as _redis } from '../redis/redisClient.js';
+import { redisClient } from '../redis/redisClient.js';
 
 export enum LlmKeyErrorType {
   PERMANENT = 'permanent',
@@ -157,14 +157,14 @@ export class LlmKeyManager {
   }
 
   private static async getKeys(): Promise<LlmApiKey[]> {
-    const keysJson = await _redis.lrange(LLM_API_KEYS_REDIS_KEY, 0, -1);
-    return keysJson.map((key) => JSON.parse(key));
+    const keysJson = await redisClient.lrange(LLM_API_KEYS_REDIS_KEY, 0, -1);
+    return keysJson.map((key: string) => JSON.parse(key));
   }
 
   private static async saveKeys(keys: LlmApiKey[]): Promise<void> {
-    await _redis.del(LLM_API_KEYS_REDIS_KEY);
+    await redisClient.del(LLM_API_KEYS_REDIS_KEY);
     if (keys.length > 0) {
-      await _redis.rpush(
+      await redisClient.rpush(
         LLM_API_KEYS_REDIS_KEY,
         ...keys.map((key) => JSON.stringify(key)),
       );

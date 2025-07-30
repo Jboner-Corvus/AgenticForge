@@ -3,7 +3,7 @@ import type { MockInstance } from 'vitest';
 import { NextFunction, Request, Response } from 'express';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getLogger } from '../logger';
+import { getLoggerInstance } from '../logger';
 import {
   AppError,
   EnqueueTaskError,
@@ -96,7 +96,7 @@ describe('errorUtils', () => {
         status: vi.fn().mockReturnThis(),
       } as unknown as Response;
       mockNext = vi.fn() as unknown as NextFunction;
-      errorSpy = vi.spyOn(getLogger(), 'error');
+      errorSpy = vi.spyOn(getLoggerInstance(), 'error');
     });
 
     afterEach(() => {

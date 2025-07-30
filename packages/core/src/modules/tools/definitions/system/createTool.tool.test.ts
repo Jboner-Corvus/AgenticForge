@@ -4,26 +4,26 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 
-import { getLogger } from '../../../../logger.js';
+import { getLoggerInstance } from '../../../../logger.js';
 import { runQualityGate } from '../../../../utils/qualityGate.js';
 import { createToolTool } from './createTool.tool.js';
 
 // Mock dependencies
-vi.mock('fs', () => ({
+/* vi.mock('fs', () => ({
   promises: {
     mkdir: vi.fn(() => Promise.resolve()),
     writeFile: vi.fn(() => Promise.resolve()),
   },
-}));
+})); */
 
-vi.mock('../../../../utils/qualityGate.js', () => ({
+/* vi.mock('../../../../utils/qualityGate.js', () => ({
   runQualityGate: vi.fn(() =>
     Promise.resolve({ output: 'Quality Gate Passed', success: true }),
   ),
-}));
+})); */
 
 vi.mock('../../../../logger.js', () => ({
-  getLogger: vi.fn(() => ({
+  getLoggerInstance: vi.fn(() => ({
     child: vi.fn().mockReturnThis(),
     debug: vi.fn(),
     error: vi.fn(),
@@ -39,7 +39,7 @@ describe('createToolTool', () => {
     vi.clearAllMocks();
     mockCtx = {
       llm: {} as ILlmProvider,
-      log: getLogger(),
+      log: getLoggerInstance(),
       reportProgress: vi.fn(),
       session: {} as SessionData,
       streamContent: vi.fn(),
@@ -55,7 +55,7 @@ describe('createToolTool', () => {
       tool_name: 'test-tool',
     };
 
-    const warnSpy = vi.spyOn(mockCtx.log, 'warn');
+    const warnSpy = vi.spyOn(getLoggerInstance(), 'warn');
 
     const result = await createToolTool.execute(args, mockCtx);
 

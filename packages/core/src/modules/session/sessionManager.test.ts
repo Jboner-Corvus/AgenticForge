@@ -1,8 +1,25 @@
 import { Client as PgClient } from 'pg';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { redis as _redis } from '@/modules/redis/redisClient';
-import { SessionManager } from '@/modules/session/sessionManager';
+// Mock logger first to prevent it from calling getConfig during module load
+vi.mock('../../logger.js', () => ({
+  getLogger: vi.fn(() => ({
+    child: vi.fn(() => ({
+      debug: vi.fn(),
+      error: vi.fn(),
+      fatal: vi.fn(),
+      info: vi.fn(),
+      trace: vi.fn(),
+      warn: vi.fn(),
+    })),
+    debug: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn(),
+    info: vi.fn(),
+    trace: vi.fn(),
+    warn: vi.fn(),
+  })),
+}));
 
 import { config } from '../../config';
 import { summarizeTool } from '../tools/definitions/ai/summarize.tool';
@@ -23,25 +40,34 @@ vi.mock('../../modules/tools/definitions/ai/summarize.tool', () => ({
   },
 }));
 
-vi.mock('../../modules/redis/redisClient', () => ({
-  redis: {
+vi.mock('../../modules/redis/redisClient.js', () => ({
+  getRedisClient: vi.fn(() => ({
     del: vi.fn(),
     get: vi.fn(),
     set: vi.fn(),
-  },
+  })),
 }));
 
-vi.mock('../../config', () => ({
-  config: {
+vi.mock('../../config', async () => {
+  const actual = await vi.importActual('../../config');
+  const mockConfig = {
+    ...(actual as any).config,
     HISTORY_MAX_LENGTH: 10,
     LOG_LEVEL: 'debug',
     NODE_ENV: 'test',
-  },
-}));
+  };
+  return {
+    ...actual,
+    config: mockConfig,
+    getConfig: vi.fn(() => mockConfig),
+  };
+});
 
 import { Job, Queue } from 'bullmq';
 
 import { SessionData, Message as TestMessage } from '@/types';
+
+import { SessionManager } from './sessionManager';
 
 describe('SessionManager', () => {
   let sessionManager: SessionManager;

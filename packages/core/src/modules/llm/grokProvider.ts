@@ -2,7 +2,7 @@ import { config } from '../../config.js';
 import { getLogger } from '../../logger.js';
 import { ILlmProvider } from '../../types.js';
 import { LlmError } from '../../utils/LlmError.js';
-import { redis } from '../redis/redisClient.js';
+import { redisClient } from '../redis/redisClient.js';
 import { LLMContent } from './llm-types.js';
 import { LlmApiKey, LlmKeyErrorType, LlmKeyManager } from './LlmKeyManager.js';
 
@@ -127,7 +127,7 @@ export class GrokProvider implements ILlmProvider {
             ),
           0,
         ) + content.length;
-      redis
+      redisClient
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
           getLogger().error(

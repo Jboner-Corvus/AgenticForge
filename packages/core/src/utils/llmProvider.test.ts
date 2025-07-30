@@ -1,11 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { config } from '@/config';
-import { LlmKeyManager } from '@/modules/llm/LlmKeyManager';
-
+import { config } from '../config';
+import { LlmKeyManager } from '../modules/llm/LlmKeyManager';
 import { getLlmProvider } from './llmProvider';
 
-vi.mock('@/config', async (importOriginal) => {
+vi.mock('../config', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/config')>();
   return {
     ...original,
@@ -18,7 +17,7 @@ vi.mock('@/config', async (importOriginal) => {
   };
 });
 
-vi.mock('@/modules/llm/LlmKeyManager', async (importOriginal) => {
+vi.mock('../modules/llm/LlmKeyManager', async (importOriginal) => {
   const actual =
     await importOriginal<typeof import('@/modules/llm/LlmKeyManager')>();
   return {
@@ -33,7 +32,7 @@ vi.mock('@/modules/llm/LlmKeyManager', async (importOriginal) => {
 });
 
 vi.mock('../modules/redis/redisClient.js', () => ({
-  redis: {
+  redisClient: {
     incrby: vi.fn().mockResolvedValue(undefined),
   },
 }));

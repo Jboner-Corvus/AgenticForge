@@ -30,7 +30,7 @@ export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> =
     description:
       'Reads the content of a file from the workspace. Use this to "open", "view", or "check" a file.',
     execute: async (args: z.infer<typeof readFileParams>, ctx: Ctx) => {
-      let resolvedPath = path.resolve(process.cwd(), args.path);
+      let resolvedPath = path.join(config.WORKSPACE_PATH, args.path);
 
       // If the resolved path is not within the WORKSPACE_PATH, try resolving relative to WORKSPACE_PATH
       if (!resolvedPath.startsWith(config.WORKSPACE_PATH)) {

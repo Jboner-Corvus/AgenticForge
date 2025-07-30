@@ -4,11 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Ctx } from '@/types';
 import * as shellUtils from '@/utils/shellUtils.js';
 
-import { redis as _redis } from '../../../redis/redisClient';
 import { executeShellCommandTool } from './executeShellCommand.tool'; // Temp fix
 
 vi.mock('../../../redis/redisClient', () => ({
-  redis: {
+  redisClient: {
     publish: vi.fn(),
   },
 }));

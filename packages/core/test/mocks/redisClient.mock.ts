@@ -45,5 +45,5 @@ export const mockRedis = {
 };
 
 vi.mock('../../src/modules/redis/redisClient.js', () => ({
-  redis: mockRedis,
+  redisClient: mockRedis,
 }));

@@ -1,5 +1,4 @@
 import type { Queue } from 'bullmq';
-import type { Redis as _Redis } from 'ioredis';
 
 import { exec } from 'child_process';
 import chokidar from 'chokidar';
@@ -13,7 +12,8 @@ import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getConfig, loadConfig } from './config.js';
-import { getLogger } from './logger.js';
+import { getLoggerInstance } from './logger.js';
+import { redisClient } from './modules/redis/redisClient.js';
 const config = getConfig();
 import { LlmKeyManager as _LlmKeyManager } from './modules/llm/LlmKeyManager.js';
 import { SessionManager } from './modules/session/sessionManager.js';
@@ -21,10 +21,9 @@ import { Message, SessionData } from './types.js';
 import { AppError, handleError } from './utils/errorUtils.js';
 import { getTools } from './utils/toolLoader.js';
 
-let configWatcher: import('chokidar').FSWatcher | null = null;
+export let configWatcher: import('chokidar').FSWatcher | null = null;
 
 export async function initializeWebServer(
-  redisClient: _Redis,
   jobQueue: Queue,
   pgClient: PgClient,
 ): Promise<{ app: Application; server: Server }> {
@@ -69,7 +68,7 @@ export async function initializeWebServer(
         redisClient
           .incr('leaderboard:sessionsCreated')
           .catch((err: unknown) => {
-            getLogger().error(
+            getLoggerInstance().error(
               { err },
               'Failed to increment sessionsCreated in Redis',
             );
@@ -139,7 +138,7 @@ export async function initializeWebServer(
           throw new AppError('Le prompt est manquant.', { statusCode: 400 });
         }
 
-        getLogger().info(
+        getLoggerInstance().info(
           { prompt, sessionId: _sessionId },
           'Nouveau message reçu',
         );
@@ -184,10 +183,10 @@ export async function initializeWebServer(
       const channel = `job:${jobId}:events`;
 
       await subscriber.subscribe(channel);
-      getLogger().info(`Subscribed to ${channel} for SSE.`);
+      getLoggerInstance().info(`Subscribed to ${channel} for SSE.`);
 
       subscriber.on('message', (channel: string, message: string) => {
-        getLogger().info(
+        getLoggerInstance().info(
           { channel, message },
           'Received message from Redis channel',
         );
@@ -199,14 +198,18 @@ export async function initializeWebServer(
       }, 15000);
 
       req.on('close', () => {
-        getLogger().info(
+        getLoggerInstance().info(
           `Client disconnected from SSE for job ${jobId}. Unsubscribing.`,
         );
-        getLogger().debug(`Attempting to unsubscribe from channel: ${channel}`);
+        getLoggerInstance().debug(
+          `Attempting to unsubscribe from channel: ${channel}`,
+        );
         clearInterval(heartbeatInterval);
         subscriber.unsubscribe(channel);
         subscriber.quit();
-        getLogger().debug(`Unsubscribed and quit for channel: ${channel}`);
+        getLoggerInstance().debug(
+          `Unsubscribed and quit for channel: ${channel}`,
+        );
       });
     },
   );
@@ -220,7 +223,7 @@ export async function initializeWebServer(
       }
       try {
         await req.sessionManager!.getSession(sessionId);
-        getLogger().info(
+        getLoggerInstance().info(
           { sessionId },
           'Session implicitly created/retrieved via cookie/header.',
         );
@@ -229,7 +232,10 @@ export async function initializeWebServer(
           sessionId,
         });
       } catch (error) {
-        getLogger().error({ error }, 'Error managing session implicitly');
+        getLoggerInstance().error(
+          { error },
+          'Error managing session implicitly',
+        );
         res.status(500).json({ error: 'Failed to manage session.' });
       }
     },
@@ -256,7 +262,7 @@ export async function initializeWebServer(
         session.activeLlmProvider = providerName;
         await req.sessionManager!.saveSession(session, req.job, jobQueue);
 
-        getLogger().info(
+        getLoggerInstance().info(
           { providerName, sessionId },
           'Active LLM provider updated for session.',
         );
@@ -320,7 +326,7 @@ export async function initializeWebServer(
           req.job,
           jobQueue,
         );
-        getLogger().info(
+        getLoggerInstance().info(
           { sessionId: id, sessionName: name },
           'Session saved to PostgreSQL.',
         );
@@ -361,7 +367,10 @@ export async function initializeWebServer(
       try {
         const { id } = req.params;
         await req.sessionManager!.deleteSession(id);
-        getLogger().info({ sessionId: id }, 'Session deleted from PostgreSQL.');
+        getLoggerInstance().info(
+          { sessionId: id },
+          'Session deleted from PostgreSQL.',
+        );
         res.status(200).json({ message: 'Session deleted successfully.' });
       } catch (_error) {
         _next(_error);
@@ -386,7 +395,7 @@ export async function initializeWebServer(
           id,
           newName,
         );
-        getLogger().info(
+        getLoggerInstance().info(
           { newName, sessionId: id },
           'Session renamed in PostgreSQL.',
         );
@@ -526,7 +535,7 @@ export async function initializeWebServer(
           if (loggedTokenData.access_token) {
             loggedTokenData.access_token = '***REDACTED***';
           }
-          getLogger().error(
+          getLoggerInstance().error(
             { tokenData: loggedTokenData },
             'GitHub OAuth Error',
           );
@@ -545,7 +554,7 @@ export async function initializeWebServer(
             'EX',
             3600,
           );
-          getLogger().info(
+          getLoggerInstance().info(
             { accessToken: '***REDACTED***', sessionId: req.sessionId },
             'GitHub access token stored in Redis.',
           );
@@ -561,9 +570,12 @@ export async function initializeWebServer(
               sameSite: 'lax',
               secure: process.env.NODE_ENV === 'production',
             });
-            getLogger().info({ userId }, 'JWT issued and sent to frontend.');
+            getLoggerInstance().info(
+              { userId },
+              'JWT issued and sent to frontend.',
+            );
           } else {
-            getLogger().warn(
+            getLoggerInstance().warn(
               'JWT_SECRET is not configured, skipping JWT issuance.',
             );
           }
@@ -628,7 +640,7 @@ export async function initializeWebServer(
 
         exec(command, (error, stdout, stderr) => {
           if (error) {
-            getLogger().error(
+            getLoggerInstance().error(
               { error, stderr, stdout },
               `Error executing ${action}`,
             );
@@ -639,7 +651,7 @@ export async function initializeWebServer(
               stdout,
             });
           }
-          getLogger().info(
+          getLoggerInstance().info(
             { stderr, stdout },
             `${action} executed successfully`,
           );
@@ -686,14 +698,17 @@ export async function initializeWebServer(
 
   if (process.env.NODE_ENV !== 'test') {
     process.on('uncaughtException', (error: Error) => {
-      getLogger().fatal({ error }, 'Unhandled exception caught!');
+      getLoggerInstance().fatal({ error }, 'Unhandled exception caught!');
       process.exit(1);
     });
 
     process.on(
       'unhandledRejection',
       (reason: unknown, promise: Promise<any>) => {
-        getLogger().fatal({ promise, reason }, 'Unhandled rejection caught!');
+        getLoggerInstance().fatal(
+          { promise, reason },
+          'Unhandled rejection caught!',
+        );
         process.exit(1);
       },
     );
@@ -707,7 +722,9 @@ function watchConfig() {
     path.dirname(fileURLToPath(import.meta.url)),
     '../../.env',
   );
-  getLogger().info(`[watchConfig] Watching for .env changes in: ${envPath}`);
+  getLoggerInstance().info(
+    `[watchConfig] Watching for .env changes in: ${envPath}`,
+  );
 
   configWatcher = chokidar.watch(envPath, {
     ignoreInitial: true,
@@ -715,14 +732,17 @@ function watchConfig() {
   });
 
   configWatcher.on('change', async () => {
-    getLogger().info(
+    getLoggerInstance().info(
       '[watchConfig] .env file changed, reloading configuration...',
     );
     await loadConfig();
-    getLogger().info('[watchConfig] Configuration reloaded.');
+    getLoggerInstance().info('[watchConfig] Configuration reloaded.');
   });
 
   configWatcher.on('error', (error: unknown) => {
-    getLogger().error({ error: error as Error }, '[watchConfig] Watcher error');
+    getLoggerInstance().error(
+      { error: error as Error },
+      '[watchConfig] Watcher error',
+    );
   });
 }

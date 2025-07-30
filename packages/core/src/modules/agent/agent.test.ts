@@ -7,7 +7,7 @@ import { Ctx, SessionData, Tool } from '@/types.js';
 
 import { getLlmProvider } from '../../utils/llmProvider.js';
 import { getTools } from '../../utils/toolLoader.js';
-import { redis } from '../redis/redisClient.js';
+import { redisClient } from '../redis/redisClient.js';
 import { toolRegistry } from '../tools/toolRegistry.js';
 import { Agent } from './agent.js';
 
@@ -51,7 +51,7 @@ vi.mock('../redis/redisClient.js', () => {
     publish: vi.fn(),
   };
   return {
-    redis: mockRedisClient,
+    redisClient: mockRedisClient,
   };
 });
 
@@ -168,8 +168,8 @@ describe('Agent Integration Tests', () => {
       }),
       unsubscribe: vi.fn(),
     };
-    (redis.duplicate as Mock).mockReturnValue(mockRedisSubscriber);
-    (redis.publish as Mock).mockResolvedValue(1);
+    (redisClient.duplicate as Mock).mockReturnValue(mockRedisSubscriber);
+    (redisClient.publish as Mock).mockResolvedValue(1);
 
     // Default mocks for LLM Key Manager
     mockedLlmKeyManagerHasAvailableKeys.mockResolvedValue(true);

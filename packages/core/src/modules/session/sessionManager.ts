@@ -7,7 +7,7 @@ import { Ctx, Message, SessionData } from '@/types.js';
 import { config } from '../../config.js';
 import { getLogger, Logger } from '../../logger.js';
 import { getLlmProvider } from '../../utils/llmProvider.js';
-import { redis } from '../redis/redisClient.ts';
+import { redisClient } from '../redis/redisClient.js';
 import { summarizeTool } from '../tools/definitions/ai/summarize.tool.js';
 
 export type Session = SessionData;
@@ -64,7 +64,7 @@ export class SessionManager {
           toolName: toolName || 'unknown_tool',
           type: 'tool_stream',
         });
-        redis.publish(channel, message);
+        redisClient.publish(channel, message);
       },
       taskQueue: _taskQueue,
     };

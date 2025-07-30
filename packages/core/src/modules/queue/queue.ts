@@ -1,11 +1,10 @@
-// FICHIER : src/queue.ts
 import { Queue } from 'bullmq';
 
 import { SessionData } from '@/types.js';
 
-import { getLogger } from '../../logger.js';
-import { redis } from '../redis/redisClient.js';
-// CORRIGÉ : 'taskQueue' est maintenant exporté
+import { getLoggerInstance } from '../../logger.js';
+import { redisClient } from '../redis/redisClient.js';
+
 export interface AsyncTaskJobPayload<TParams> {
   auth: SessionData | undefined;
   cbUrl?: string;
@@ -13,16 +12,17 @@ export interface AsyncTaskJobPayload<TParams> {
   taskId: string;
   toolName: string;
 }
-export const jobQueue = new Queue('tasks', { connection: redis });
-// CORRIGÉ : 'deadLetterQueue' est maintenant exporté
+
+export const jobQueue = new Queue('tasks', { connection: redisClient });
+
 export const deadLetterQueue = new Queue('dead-letters', {
-  connection: redis,
+  connection: redisClient,
 });
 
 jobQueue.on('error', (err: Error) => {
-  getLogger().error({ err }, 'Job queue error');
+  getLoggerInstance().error({ err }, 'Job queue error');
 });
 
 deadLetterQueue.on('error', (err: Error) => {
-  getLogger().error({ err }, 'Dead-letter queue error');
+  getLoggerInstance().error({ err }, 'Dead-letter queue error');
 });

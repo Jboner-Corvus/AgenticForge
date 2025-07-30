@@ -7,9 +7,15 @@ vi.mock('fs/promises', () => ({
   stat: vi.fn().mockResolvedValue({ size: 10 }),
 }));
 
-// Mock Redis and PostgreSQL clients at the top level
+import { mockLogger } from '../test/mocks/logger';
 import { mockRedis } from '../test/mocks/redisClient.mock';
-vi.mock('./modules/redis/redisClient.js', () => ({ redis: mockRedis }));
+
+vi.mock('./modules/redis/redisClient.js', () => ({
+  redisClient: mockRedis,
+}));
+vi.mock('./logger.js', () => ({
+  logger: mockLogger,
+}));
 
 const mockPgClient = {
   connect: vi.fn().mockResolvedValue(undefined),
@@ -21,7 +27,6 @@ vi.mock('pg', () => ({ Client: () => mockPgClient }));
 import { jobQueue } from './modules/queue/queue';
 import { SessionManager } from './modules/session/sessionManager';
 import * as toolLoader from './utils/toolLoader';
-import { initializeWebServer } from './webServer';
 
 vi.mock('./modules/session/sessionManager');
 
@@ -30,12 +35,16 @@ vi.mock('./modules/queue/queue');
 vi.mock('./modules/llm/LlmKeyManager');
 vi.mock('jsonwebtoken');
 vi.mock('fs/promises');
-vi.mock('chokidar', () => ({
-  watch: vi.fn(() => ({
-    close: vi.fn(),
-    on: vi.fn(),
-  })),
-}));
+vi.mock('chokidar', async () => {
+  const actual = await vi.importActual('chokidar');
+  return {
+    ...actual,
+    watch: vi.fn(() => ({
+      close: vi.fn(),
+      on: vi.fn(),
+    })),
+  };
+});
 
 vi.mock('./config', async () => {
   return {
@@ -56,6 +65,22 @@ vi.mock('./config', async () => {
 
 import { Server } from 'http';
 
+import { config } from './config';
+
+const mockConfigWatcher = {
+  close: vi.fn(),
+  on: vi.fn(),
+};
+
+vi.mock('./webServer', async () => {
+  const actual = await vi.importActual('./webServer');
+  return {
+    ...actual,
+    configWatcher: mockConfigWatcher,
+    initializeWebServer: vi.fn(actual.initializeWebServer),
+  };
+});
+
 describe('webServer', () => {
   let app: express.Application;
   let server: Server;
@@ -63,24 +88,26 @@ describe('webServer', () => {
   beforeAll(async () => {
     const { initializeWebServer } = await import('./webServer');
 
-    const webServer = await initializeWebServer(
-      mockRedis as any,
-      jobQueue,
-      mockPgClient as any,
-    );
+    const webServer = await initializeWebServer(jobQueue, mockPgClient as any);
     app = webServer.app;
     server = webServer.server;
   });
 
   afterAll(async () => {
-    await new Promise<void>((resolve, reject) => {
-      server.close((err) => {
-        if (err) {
-          return reject(err);
-        }
-        resolve();
+    if (server) {
+      await new Promise<void>((resolve, reject) => {
+        server.close((err) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve();
+        });
       });
-    });
+    }
+    // Ensure the config watcher is closed after all tests
+    if (mockConfigWatcher) {
+      mockConfigWatcher.close();
+    }
     if ((mockRedis as any).quit) {
       await (mockRedis as any).quit();
     }
@@ -138,7 +165,7 @@ describe('webServer', () => {
   });
 
   it('should rename a session via /api/sessions/:id/rename', async () => {
-    mockPgClient.query.mockResolvedValue({ rows: [{ id: 's1' }] }); // for getSession
+    mockPgClient.query.mockResolvedValueOnce({ rows: [{ id: 's1' }] }); // for getSession
     mockPgClient.query.mockResolvedValueOnce({ rows: [] }); // for renameSession
 
     const res = await request(app)

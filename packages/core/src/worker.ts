@@ -6,30 +6,26 @@ import { Client as PgClient } from 'pg';
 import { Tool } from '@/types';
 
 import { config } from './config.js';
-import { getLogger } from './logger.js';
+import { getLoggerInstance } from './logger.js';
 import { Agent } from './modules/agent/agent.js';
-import { LlmKeyManager } from './modules/llm/LlmKeyManager.js'; // Import LlmKeyManager
-import * as redisClient from './modules/redis/redisClient.js';
+import { LlmKeyManager } from './modules/llm/LlmKeyManager.js';
+import { redisClient } from './modules/redis/redisClient.js';
 import { SessionManager } from './modules/session/sessionManager.js';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.js';
 import { AppError, getErrDetails, UserError } from './utils/errorUtils.js';
 import { getTools } from './utils/toolLoader.js';
 
-// ... rest of the file
-
 export async function initializeWorker(
   redisConnection: Redis,
   pgClient: PgClient,
 ) {
-  const logger = getLogger();
   const _tools = await getTools();
   const _jobQueue = new Queue('tasks', { connection: redisConnection });
   const sessionManager = new SessionManager(pgClient);
 
-  // Add LLM API key to LlmKeyManager at startup
   if (config.LLM_API_KEY && config.LLM_PROVIDER) {
     await LlmKeyManager.addKey(config.LLM_PROVIDER, config.LLM_API_KEY);
-    getLogger().info(
+    getLoggerInstance().info(
       `[INIT LLM] Added LLM API key for provider: ${config.LLM_PROVIDER}`,
     );
   }
@@ -49,7 +45,7 @@ export async function initializeWorker(
 
       if (_job.name === 'execute-shell-command-detached') {
         const { command, notificationChannel } = _job.data;
-        const log = logger.child({
+        const log = getLoggerInstance().child({
           jobId: _job.id,
           originalJobId: _job.data.jobId,
         });
@@ -66,13 +62,13 @@ export async function initializeWorker(
           const streamToFrontend = (
             type: 'stderr' | 'stdout',
             content: string,
-            toolName: string, // Add toolName parameter
+            toolName: string,
           ) => {
             const data = {
               data: { content, type },
               toolName,
               type: 'tool_stream',
-            }; // Include toolName
+            };
             redisConnection.publish(notificationChannel, JSON.stringify(data));
           };
 
@@ -124,18 +120,17 @@ ${finalMessage}`,
   );
 
   worker.on('completed', (_job) => {
-    getLogger().info(`Job ${_job.id} terminé avec succès.`);
+    getLoggerInstance().info(`Job ${_job.id} terminé avec succès.`);
   });
 
   worker.on('failed', (_job, err) => {
-    getLogger().error({ err }, `Le job ${_job?.id} a échoué`);
+    getLoggerInstance().error({ err }, `Le job ${_job?.id} a échoué`);
   });
 
-  getLogger().info('Worker initialisé et prêt à traiter les jobs.');
+  getLoggerInstance().info('Worker initialisé et prêt à traiter les jobs.');
   return worker;
 }
 
-// Fonction principale de traitement des tâches
 export async function processJob(
   _job: Job,
   _tools: Tool[],
@@ -143,7 +138,7 @@ export async function processJob(
   _sessionManager: SessionManager,
   redisConnection: Redis,
 ): Promise<string> {
-  const log = getLogger().child({
+  const log = getLoggerInstance().child({
     jobId: _job.id,
     sessionId: _job.data.sessionId,
   });
@@ -153,7 +148,7 @@ export async function processJob(
 
   try {
     const session = await _sessionManager.getSession(_job.data.sessionId);
-    const activeLlmProvider = session.activeLlmProvider || config.LLM_PROVIDER; // Use session's provider or default
+    const activeLlmProvider = session.activeLlmProvider || config.LLM_PROVIDER;
     const { apiKey, llmApiKey, llmModelName, llmProvider } = _job.data;
     const agent = new Agent(
       _job,
@@ -206,7 +201,7 @@ export async function processJob(
     return finalResponse;
   } catch (error: unknown) {
     const errDetails = getErrDetails(error);
-    getLogger().error(
+    getLoggerInstance().error(
       { err: errDetails },
       "Erreur dans l'exécution de l'agent",
     );
@@ -214,7 +209,6 @@ export async function processJob(
     let errorMessage = errDetails.message;
     let eventType = 'error';
 
-    // Personnalisation des messages d'erreur courants pour l'utilisateur
     if (error instanceof AppError || error instanceof UserError) {
       if (errorMessage.includes('Quota exceeded')) {
         errorMessage = 'Quota API dépassé. Veuillez réessayer plus tard.';
@@ -234,9 +228,8 @@ export async function processJob(
       channel,
       JSON.stringify({ message: errorMessage, type: eventType }),
     );
-    throw error; // Relance l'erreur pour marquer le job comme échoué dans BullMQ
+    throw error;
   } finally {
-    // Publie toujours un événement de fermeture pour notifier le frontend
     redisConnection.publish(
       channel,
       JSON.stringify({ content: 'Stream terminé.', type: 'close' }),
@@ -245,16 +238,14 @@ export async function processJob(
   }
 }
 
-// Démarrage direct du worker
 if (process.env.NODE_ENV !== 'test') {
-  // Log 1: Vérification des Variables d'Environnement (Backend)
-  getLogger().info(
+  getLoggerInstance().info(
     `[INIT LLM] LLM_PROVIDER détecté : ${process.env.LLM_PROVIDER}`,
   );
-  getLogger().info(
+  getLoggerInstance().info(
     `[INIT LLM] LLM_API_KEY (partiel) détecté : ${process.env.LLM_API_KEY ? process.env.LLM_API_KEY.substring(0, 5) + '...' : 'NON DÉTECTÉ'}`,
   );
-  getLogger().info(
+  getLoggerInstance().info(
     `[INIT LLM] LLM_MODEL_NAME détecté : ${process.env.LLM_MODEL_NAME}`,
   );
 
@@ -263,9 +254,8 @@ if (process.env.NODE_ENV !== 'test') {
     connectionString: connectionString,
   });
   pgClient.connect();
-  const redisConnection = redisClient.redis;
-  initializeWorker(redisConnection, pgClient).catch((err) => {
-    getLogger().error({ err }, "Échec de l'initialisation du worker");
+  initializeWorker(redisClient, pgClient).catch((err) => {
+    getLoggerInstance().error({ err }, "Échec de l'initialisation du worker");
     process.exit(1);
   });
 }

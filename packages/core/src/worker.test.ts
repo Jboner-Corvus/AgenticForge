@@ -6,7 +6,7 @@ vi.mock('./modules/redis/redisClient', async (importOriginal) => {
   const actual =
     await importOriginal<typeof import('./modules/redis/redisClient')>();
   const mockRedisClient = {
-    ...actual.redis,
+    ...actual.redisClient,
     del: vi.fn(),
     duplicate: vi.fn(() => mockRedisClient),
     get: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock('./modules/redis/redisClient', async (importOriginal) => {
     unsubscribe: vi.fn(),
   } as any;
   return {
-    redis: mockRedisClient,
+    redisClient: mockRedisClient,
   };
 });
 
@@ -36,18 +36,23 @@ vi.mock('pg', () => ({
   })),
 }));
 
-vi.mock('./config', () => ({
-  config: {
-    HISTORY_MAX_LENGTH: 10,
-    REDIS_HOST: 'localhost',
-    REDIS_PORT: 6379,
-  },
-}));
+vi.mock('./config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./config')>();
+  return {
+    ...actual,
+    config: {
+      HISTORY_MAX_LENGTH: 10,
+      REDIS_HOST: 'localhost',
+      REDIS_PORT: 6379,
+    },
+  };
+});
 
 import { config } from './config';
 import { getLogger } from './logger';
 import { Agent } from './modules/agent/agent';
 import * as _redis from './modules/redis/redisClient';
+import { redisClient } from './modules/redis/redisClient';
 import { SessionManager as _SessionManager } from './modules/session/sessionManager';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool';
 import { AppError as _AppError } from './utils/errorUtils';
@@ -63,7 +68,8 @@ vi.mock('./modules/session/sessionManager', () => ({
   SessionManager: vi.fn(() => _mockSessionManagerInstance),
 }));
 
-vi.mock('./logger', () => {
+vi.mock('./logger', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./logger')>();
   const mockChildLogger = {
     debug: vi.fn(),
     error: vi.fn(),
@@ -75,7 +81,7 @@ vi.mock('./logger', () => {
     info: vi.fn(),
   };
   return {
-    __esModule: true,
+    ...actual,
     getLogger: vi.fn(() => mockLogger),
   };
 });
@@ -105,7 +111,7 @@ describe('processJob', () => {
     mockJobQueue = {
       add: vi.fn(),
     } as any;
-    mockRedisConnection = _redis.redis;
+    mockRedisConnection = redisClient;
 
     // Mock config.HISTORY_MAX_LENGTH for testing purposes
     config.HISTORY_MAX_LENGTH = 10;

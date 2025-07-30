@@ -2,10 +2,10 @@
 import '../../tracing.js'; // Initialize OpenTelemetry
 import { Client as PgClient } from 'pg';
 
+import { config } from '../../config.js';
 import { getLogger } from '../../logger.js';
 import { initializeWebServer } from '../../webServer.js';
 import { jobQueue } from '../queue/queue.js';
-import { redis } from '../redis/redisClient.js';
 
 async function startApplication() {
   const logger = getLogger();
@@ -20,7 +20,11 @@ async function startApplication() {
   try {
     // Démarrer le serveur web
     logger.info('Démarrage du serveur web...');
-    await initializeWebServer(redis, jobQueue, pgClient);
+    const { server } = await initializeWebServer(jobQueue, pgClient);
+    const port = config.PORT || 3001;
+    server.listen(port, () => {
+      logger.info(`Server listening on port ${port}`);
+    });
     logger.info('Serveur web AgenticForge démarré.');
   } catch (error) {
     logger.error(

@@ -6,7 +6,7 @@ import {
   LlmKeyErrorType,
   LlmKeyManager,
 } from '../modules/llm/LlmKeyManager.js';
-import { redis } from '../modules/redis/redisClient.js';
+import { redisClient } from '../modules/redis/redisClient.js';
 import { ILlmProvider } from '../types.js';
 import { LlmError } from './LlmError.js';
 
@@ -142,7 +142,7 @@ class AnthropicProvider implements ILlmProvider {
             ),
           0,
         ) + content.length;
-      redis
+      redisClient
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
           getLogger().error(
@@ -317,7 +317,7 @@ class GeminiProvider implements ILlmProvider {
             ),
           0,
         ) + content.length;
-      redis
+      redisClient
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
           getLogger().error(
@@ -469,7 +469,7 @@ class GrokProvider implements ILlmProvider {
             ),
           0,
         ) + content.length;
-      redis
+      redisClient
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
           getLogger().error(
@@ -530,9 +530,9 @@ class HuggingFaceProvider implements ILlmProvider {
     let activeKey: LlmApiKey | null;
     if (apiKey) {
       activeKey = {
-        apiKey,
         errorCount: 0,
         isPermanentlyDisabled: false,
+        key: apiKey,
         provider: 'huggingface', // Assuming provider based on the class
       };
     } else {
@@ -623,7 +623,7 @@ class HuggingFaceProvider implements ILlmProvider {
             ),
           0,
         ) + content.length;
-      redis
+      redisClient
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
           getLogger().error(
@@ -773,7 +773,7 @@ class MistralProvider implements ILlmProvider {
             ),
           0,
         ) + content.length;
-      redis
+      redisClient
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
           getLogger().error(
@@ -835,9 +835,9 @@ class OpenAIProvider implements ILlmProvider {
     let activeKey: LlmApiKey | null;
     if (apiKey) {
       activeKey = {
-        apiKey,
         errorCount: 0,
         isPermanentlyDisabled: false,
+        key: apiKey,
         provider: 'openai', // Assuming provider based on the class
       };
     } else {
@@ -928,7 +928,7 @@ class OpenAIProvider implements ILlmProvider {
             ),
           0,
         ) + content.length;
-      redis
+      redisClient
         .incrby('leaderboard:tokensSaved', estimatedTokens)
         .catch((_error: unknown) => {
           getLogger().error(

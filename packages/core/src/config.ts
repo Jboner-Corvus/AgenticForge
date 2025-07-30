@@ -64,7 +64,7 @@ const configSchema = z.object({
 
 export type Config = z.infer<typeof configSchema>;
 
-export let config: Config;
+export let config: Config = {} as Config;
 
 export function getConfig(): Config {
   return config;
@@ -108,5 +108,5 @@ export async function loadConfig() {
   }
 }
 
-// Initial load
-loadConfig();
+// Initial load is now handled by the application's entry point (e.g., server-start.ts)
+// This prevents asynchronous operations from blocking module loading during tests.

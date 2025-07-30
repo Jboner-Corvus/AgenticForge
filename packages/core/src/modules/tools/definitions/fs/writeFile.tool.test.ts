@@ -22,11 +22,6 @@ vi.mock('fs', async () => {
   };
 });
 
-import { getLogger as mockGetLogger } from '../../../../test/mocks/logger.js';
-vi.mock('../../../../logger.js', () => ({
-  getLogger: mockGetLogger,
-}));
-
 // Then import other dependencies
 import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
@@ -122,6 +117,6 @@ describe('writeFileTool', () => {
     } else {
       throw new Error('Expected an object with an erreur property.');
     }
-    expect(mockGetLogger().error).toHaveBeenCalled();
+    expect(getLogger().error).toHaveBeenCalled();
   });
 });

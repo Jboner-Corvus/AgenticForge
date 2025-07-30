@@ -1,15 +1,19 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-import loggerMock from '../../../../test/mocks/logger.js';
-vi.mock('../../../../logger.js', () => ({
-  getLogger: loggerMock,
-}));
-
 import { Queue } from 'bullmq';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Ctx, ILlmProvider, SessionData } from '@/types.js';
 
-import { getLogger } from '../../../../logger.js';
+import { getLoggerInstance } from '../../../../logger';
+
+vi.mock('../../../../logger', () => ({
+  getLoggerInstance: vi.fn(() => ({
+    child: vi.fn().mockReturnThis(),
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+  })),
+}));
 import { webSearchTool } from './webSearch.tool.js';
 
 describe('webSearchTool', () => {
@@ -27,7 +31,7 @@ describe('webSearchTool', () => {
         name: 'test-job',
       },
       llm: {} as ILlmProvider,
-      log: getLogger(),
+      log: getLoggerInstance(),
       reportProgress: vi.fn(),
       session: {} as SessionData,
       streamContent: vi.fn(),
@@ -60,7 +64,7 @@ describe('webSearchTool', () => {
     const query = 'test search';
     const result = await webSearchTool.execute({ query }, mockCtx);
 
-    expect(loggerMock.info).toHaveBeenCalledWith(
+    expect(getLoggerInstance().info).toHaveBeenCalledWith(
       `Performing web search for: "${query}"`,
     );
     expect(result).toContain('Test answer');
@@ -103,7 +107,7 @@ describe('webSearchTool', () => {
     expect(result).toEqual({
       erreur: 'DuckDuckGo API request failed: API error',
     });
-    expect(loggerMock.error).toHaveBeenCalled();
+    expect(getLoggerInstance().error).toHaveBeenCalled();
   });
 
   it('should return an error message if the fetch call throws an exception', async () => {
@@ -116,6 +120,6 @@ describe('webSearchTool', () => {
     expect(result).toEqual({
       erreur: `An unexpected error occurred: ${errorMessage}`,
     });
-    expect(loggerMock.error).toHaveBeenCalled();
+    expect(getLoggerInstance().error).toHaveBeenCalled();
   });
 });

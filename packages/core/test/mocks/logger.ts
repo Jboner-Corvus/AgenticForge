@@ -1,16 +1,14 @@
-import { Logger } from 'pino';
 import { vi } from 'vitest';
+import { Logger } from 'pino';
 
 export const mockLogger: Logger = {
   child: vi.fn(() => mockLogger), // child returns the same mock logger
-  customLevels: {},
   debug: vi.fn(),
   error: vi.fn(),
   fatal: vi.fn(),
   info: vi.fn(),
   trace: vi.fn(),
-  useOnlyCustomLevels: false,
   warn: vi.fn(),
+  customLevels: {},
+  useOnlyCustomLevels: false,
 } as any;
-
-export const getLoggerInstance = vi.fn((): Logger => mockLogger);

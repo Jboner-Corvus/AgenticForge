@@ -38,9 +38,10 @@ usage() {
     echo "   shell          : Ouvre un shell dans le conteneur du serveur."
     echo "   lint           : Lance le linter sur le code."
     echo "   format         : Formate le code."
-    echo "   test           : Lance les tests."
+    echo "   test-integration: Lance les tests d'intégration (nécessite Docker)."
+    echo "   unit-tests     : Lance les tests unitaires (ne nécessite pas Docker)."
     echo "   typecheck      : Vérifie les types TypeScript."
-    echo "   all-checks     : Lance toutes les vérifications (TypeCheck, Lint, Test, Format)."
+    echo "   all-checks     : Lance toutes les vérifications (TypeCheck, Lint, Unit Tests, Format)."
     echo "   menu           : Affiche le menu interactif (défaut)."
     exit 1
 }
@@ -415,14 +416,14 @@ run_format() {
     pnpm --filter=@agenticforge/core format
 }
 
-run_tests() {
-    echo -e "${COLOR_YELLOW}Lancement des tests...${NC}"
+run_integration_tests() {
+    echo -e "${COLOR_YELLOW}Lancement des tests d'intégration...${NC}"
     echo -e "${COLOR_YELLOW}Démarrage des services Docker pour l'environnement de test...${NC}"
     start_services
-    echo -e "${COLOR_GREEN}Services Docker démarrés. Lancement des tests...${NC}"
+    echo -e "${COLOR_GREEN}Services Docker démarrés. Lancement des tests d'intégration...${NC}"
     pnpm --filter=@agenticforge/core test
     local test_exit_code=$?
-    echo -e "${COLOR_YELLOW}Tests terminés. Arrêt des services Docker...${NC}"
+    echo -e "${COLOR_YELLOW}Tests d'intégration terminés. Arrêt des services Docker...${NC}"
     stop_services
     return $test_exit_code
 }
@@ -432,6 +433,13 @@ run_typecheck() {
     pnpm --filter @agenticforge/ui exec tsc --noEmit -p tsconfig.vitest.json
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour le Core...${NC}"
     pnpm --filter=@agenticforge/core exec tsc --noEmit
+}
+
+run_unit_tests() {
+    echo -e "${COLOR_YELLOW}Lancement des tests unitaires...${NC}"
+    pnpm --filter=@agenticforge/core test:unit
+    local test_exit_code=$?
+    return $test_exit_code
 }
 
 run_all_checks() {
@@ -446,7 +454,8 @@ run_all_checks() {
     ALL_CHECKS_OUTPUT+="# TODO List: Résoudre les erreurs de vérification\n\n"
     ALL_CHECKS_OUTPUT+="Ce document liste les problèmes identifiés par nos vérifications (TypeCheck, Lint, Test).\n\n"
     ALL_CHECKS_OUTPUT+="La correction de chaque erreur doit se faire **uniquement en modifiant le code source** \n\n"
-    ALL_CHECKS_OUTPUT+="Il est interdit d'exécuter des commandes bash..\n" 
+    ALL_CHECKS_OUTPUT+="Les tests doivent etre unitaires.\n\n"
+    ALL_CHECKS_OUTPUT+="Il est interdit d'exécuter des commandes bash..\n\n" 
     ALL_CHECKS_OUTPUT+="Il est interdit de lancer une vérification.\n\n"
     ALL_CHECKS_OUTPUT+="Une fois la correction effectué, cochez la case \`[x]\`.\n\n"
     ALL_CHECKS_OUTPUT+="---\n\n"
@@ -499,10 +508,10 @@ run_all_checks() {
         done < <(echo "$LINT_OUTPUT")
     fi
 
-    # --- Tests (AVEC CAPTURE DE BLOCS DÉTAILLÉS) ---
-    echo -e "${COLOR_YELLOW}Lancement des tests...${NC}"
+    # --- Tests Unitaires (AVEC CAPTURE DE BLOCS DÉTAILLÉS) ---
+    echo -e "${COLOR_YELLOW}Lancement des tests unitaires...${NC}"
     set -o pipefail
-    TEST_OUTPUT=$(pnpm --filter=@agenticforge/core test 2>&1 | tee /dev/tty)
+    TEST_OUTPUT=$(pnpm --filter=@agenticforge/core test:unit 2>&1 | tee /dev/tty)
     exit_code=$?
     set +o pipefail
     if [ $exit_code -ne 0 ]; then
@@ -581,9 +590,14 @@ snow_menu() {
     printf "   9) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}  15) ${COLOR_BLUE}🐳 Logs Docker${NC}\n"
     echo ""
     echo -e "   ${COLOR_CYAN}Développement${NC}"
-    printf "  10) ${COLOR_BLUE}🔍 Lint${NC}             12) ${COLOR_BLUE}🧪 Tests${NC}\n"
-    printf "  11) ${COLOR_BLUE}✨ Format${NC}           13) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
-    printf "  14) ${COLOR_BLUE}✅ Toutes les vérifications${NC}\n"
+    printf "  10) ${COLOR_BLUE}🔍 Lint${NC}             12) ${COLOR_BLUE}🧪 Tests (Intégration)${NC}
+"
+    printf "  11) ${COLOR_BLUE}✨ Format${NC}           13) ${COLOR_BLUE}📘 TypeCheck${NC}
+"
+    printf "  17) ${COLOR_BLUE}🚀 Tests (Unitaires)${NC}
+"
+    printf "  14) ${COLOR_BLUE}✅ Toutes les vérifications (Unitaires inclus)${NC}
+"
     echo ""
     printf "  16) ${COLOR_RED}🚪 Quitter${NC}\n"
     echo ""
@@ -616,7 +630,8 @@ if [ "$#" -gt 0 ]; then
         shell) shell_access ;;
         lint) run_lint ;;
         format) run_format ;;
-        test) run_tests ;;
+        test-integration) run_integration_tests ;;
+        unit-tests) run_unit_tests ;;
         typecheck) run_typecheck ;;
         all-checks) run_all_checks ;;
         menu) # Tombe dans la boucle du menu
@@ -649,9 +664,10 @@ while true; do
         15) show_docker_logs ;;
         10) run_lint ;;
         11) run_format ;;
-        12) run_tests ;;
+        12) run_integration_tests ;;
         13) run_typecheck ;;
         14) run_all_checks ;;
+        17) run_unit_tests ;;
         16)
             echo -e "${COLOR_GREEN}Au revoir!${NC}"
             exit 0
@@ -661,7 +677,7 @@ while true; do
             ;;
     esac
     # Ajoute une pause avant de réafficher le menu pour que l'utilisateur puisse voir la sortie
-    if [[ "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15" =~ " $choice " ]]; then
+    if [[ "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 17" =~ " $choice " ]]; then
         read -n 1 -s -r -p "Appuyez sur une touche pour continuer..."
     fi
 done

@@ -42,7 +42,7 @@ describe('summarizeTool', () => {
     vi.mocked(getLlmProvider).mockReturnValue({
       getErrorType: vi.fn(),
       getLlmResponse: mockGetLlmResponse,
-    } as ILlmProvider);
+    } as unknown as ILlmProvider);
     mockCtx.llm = getLlmProvider('gemini'); // Set the mocked LLM provider to context
   });
 

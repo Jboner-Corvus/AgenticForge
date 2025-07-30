@@ -16,12 +16,12 @@ import {
 } from '@/types.js';
 
 import { config } from '../../config.js';
-import { getLogger } from '../../logger.js';
+import { getLoggerInstance } from '../../logger.js';
 import { LlmError } from '../../utils/LlmError.js';
 import { getLlmProvider } from '../../utils/llmProvider.js';
 import { LLMContent } from '../llm/llm-types.js';
 import { LlmKeyManager } from '../llm/LlmKeyManager.js';
-import { redis } from '../redis/redisClient.js';
+import { redisClient } from '../redis/redisClient.js';
 import { SessionManager } from '../session/sessionManager.js';
 import { FinishToolSignal } from '../tools/definitions/index.js';
 import { toolRegistry } from '../tools/toolRegistry.js';
@@ -83,7 +83,10 @@ export class Agent {
   ) {
     this.job = job;
     this.session = session;
-    this.log = getLogger().child({ jobId: job.id, sessionId: session.id });
+    this.log = getLoggerInstance().child({
+      jobId: job.id,
+      sessionId: session.id,
+    });
     this.taskQueue = taskQueue;
     this.tools = tools ?? [];
     this.activeLlmProvider = activeLlmProvider;
@@ -109,7 +112,7 @@ export class Agent {
 
       try {
         this.tools.push(...toolRegistry.getAll());
-        this.log.info(
+        getLoggerInstance().info(
           { count: this.tools.length },
           'All tools are available in the registry.',
         );
@@ -613,7 +616,7 @@ export class Agent {
   private publishToChannel(data: ChannelData) {
     const channel = `job:${this.job.id}:events`;
     const message = JSON.stringify(data);
-    redis.publish(channel, message);
+    redisClient.publish(channel, message);
     // Only send serializable and relevant data to updateProgress
     const progressData = { ...data };
     if (progressData.type === 'tool.start') {
@@ -625,7 +628,7 @@ export class Agent {
 
   private async setupInterruptListener() {
     const channel = `job:${this.job.id}:interrupt`;
-    this.subscriber = redis.duplicate();
+    this.subscriber = redisClient.duplicate();
 
     const messageHandler = (messageChannel: string, message: string): void => {
       if (messageChannel === channel) {

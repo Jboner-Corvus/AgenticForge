@@ -103,6 +103,5 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
       }
     },
     name: 'editFile',
-    output: editFileOutput,
     parameters: editFileParams,
   };
