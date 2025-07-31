@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Modal } from './ui/modal';
+import { useLanguage } from '../lib/hooks/useLanguageHook';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -10,24 +11,25 @@ interface LoginModalProps {
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
+  const { translations } = useLanguage();
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Login">
+    <Modal isOpen={isOpen} onClose={onClose} title={translations.login}>
       <div className="grid gap-4 py-4">
         <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="email" className="text-right">
-            Email
+            {translations.email}
           </Label>
           <Input id="email" type="email" className="col-span-3" />
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="password" className="text-right">
-            Password
+            {translations.password}
           </Label>
           <Input id="password" type="password" className="col-span-3" />
         </div>
       </div>
       <div className="flex justify-end">
-        <Button type="submit">Login</Button>
+        <Button type="submit">{translations.login}</Button>
       </div>
     </Modal>
   );

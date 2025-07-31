@@ -178,7 +178,7 @@ ${message.content}`;
       break;
     default:
       // This ensures we handle all message types, or TypeScript will complain.
-      // @ts-ignore - This is a guard for unhandled message types
+      // @ts-expect-error - This is a guard for unhandled message types
       throw new Error(`Unknown message type: ${message.type}`);
   }
 

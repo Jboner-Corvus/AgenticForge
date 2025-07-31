@@ -3,7 +3,6 @@ import { Logger } from 'pino';
 import { z } from 'zod';
 
 import type {
-  Ctx,
   AgentResponseMessage,
   ErrorMessage,
   Message,

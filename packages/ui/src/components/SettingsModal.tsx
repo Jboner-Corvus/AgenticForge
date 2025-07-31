@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect } from 'react';
 
-import { fr } from '../constants/fr';
+import { useLanguage } from '../lib/hooks/useLanguageHook';
 import { useStore } from '../lib/store';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -16,6 +16,7 @@ interface SettingsModalProps {
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+  const { translations } = useLanguage();
   const setAuthToken = useStore((state) => state.setAuthToken);
   const fetchAndDisplayToolCount = useStore((state) => state.fetchAndDisplayToolCount);
   const addDebugLog = useStore((state) => state.addDebugLog);
@@ -78,46 +79,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     const tokenValue = tokenInputValue.trim();
     setAuthToken(tokenValue);
     if (tokenValue) {
-      toast({ description: fr.tokenSaved, title: fr.tokenSaved });
-      addDebugLog(`[${new Date().toLocaleTimeString()}] ${fr.newTokenSaved}.`);
+      toast({ description: translations.tokenSaved, title: translations.tokenSaved });
+      addDebugLog(`[${new Date().toLocaleTimeString()}] ${translations.newTokenSaved}.`);
       fetchAndDisplayToolCount();
     } else {
-      toast({ description: fr.tokenRemoved, title: fr.tokenRemoved });
-      addDebugLog(`[${new Date().toLocaleTimeString()}] ${fr.tokenDeleted}.`);
+      toast({ description: translations.tokenRemoved, title: translations.tokenRemoved });
+      addDebugLog(`[${new Date().toLocaleTimeString()}] ${translations.tokenDeleted}.`);
       setToolCount(0);
     }
     setTokenStatus(!!tokenValue);
     onClose();
-  }, [fetchAndDisplayToolCount, tokenInputValue, addDebugLog, setAuthToken, setToolCount, setTokenStatus, toast, onClose]);
+  }, [fetchAndDisplayToolCount, tokenInputValue, addDebugLog, setAuthToken, setToolCount, setTokenStatus, toast, onClose, translations]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={fr.settings}>
+    <Modal isOpen={isOpen} onClose={onClose} title={translations.settings}>
       <div className="flex flex-col space-y-4">
         <div className="flex items-center space-x-2">
-          <Label className="text-sm" htmlFor="authToken">{fr.authToken}</Label>
+          <Label className="text-sm" htmlFor="authToken">{translations.authToken}</Label>
           <Input
             aria-label="Authentication Token Input"
             className="w-full bg-input border-border text-foreground placeholder-muted-foreground"
             id="authToken"
             onChange={(e) => setTokenInputValue(e.target.value)}
-            placeholder={fr.authTokenPlaceholder}
+            placeholder={translations.authTokenPlaceholder}
             type="password"
             value={tokenInputValue}
           />
         </div>
         <Button aria-label="Save Token" className="bg-primary hover:bg-accent text-primary-foreground" onClick={handleSaveToken} type="button" disabled={isLoadingTools}>
           {isLoadingTools ? <LoadingSpinner className="mr-2" /> : null}
-          {fr.saveToken}
+          {translations.saveToken}
         </Button>
       </div>
 
       <div className="flex flex-col space-y-4 mt-6">
-        <h3 className="text-lg font-semibold">{fr.llmConfiguration}</h3>
+        <h3 className="text-lg font-semibold">{translations.llmConfiguration}</h3>
         <div className="flex items-center space-x-2">
-          <Label className="text-sm" htmlFor="llmProvider">{fr.llmProvider}</Label>
+          <Label className="text-sm" htmlFor="llmProvider">{translations.llmProvider}</Label>
           <Select onValueChange={setLlmProvider} value={llmProvider}>
             <SelectTrigger className="w-full bg-input border-border text-foreground">
-              <SelectValue placeholder={fr.selectLlmProvider} />
+              <SelectValue placeholder={translations.selectLlmProvider} />
             </SelectTrigger>
             <SelectContent>
               {LLM_PROVIDERS.map((provider) => (
@@ -131,30 +132,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
         {llmProvider && LLM_MODELS[llmProvider] && (
           <div className="flex items-center space-x-2">
-            <Label className="text-sm" htmlFor="llmModelName">{fr.llmModel}</Label>
+            <Label className="text-sm" htmlFor="llmModelName">{translations.llmModel}</Label>
             <Select onValueChange={setLlmModelName} value={llmModelName}>
               <SelectTrigger className="w-full bg-input border-border text-foreground">
-                <SelectValue placeholder={fr.selectLlmModel} />
+                <SelectValue placeholder={translations.selectLlmModel} />
               </SelectTrigger>
               <SelectContent>
                 {LLM_MODELS[llmProvider].map((model) => (
                   <SelectItem key={model.value} value={model.value}>
                     {model.label}
                   </SelectItem>
-                ))}
-              </SelectContent>
+                ))
+              }</SelectContent>
             </Select>
           </div>
         )}
 
         <div className="flex items-center space-x-2">
-          <Label className="text-sm" htmlFor="llmApiKey">{fr.llmApiKey}</Label>
+          <Label className="text-sm" htmlFor="llmApiKey">{translations.llmApiKey}</Label>
           <Input
             aria-label="LLM API Key Input"
             className="w-full bg-input border-border text-foreground placeholder-muted-foreground"
             id="llmApiKey"
             onChange={(e) => setLlmApiKey(e.target.value)}
-            placeholder={fr.llmApiKeyPlaceholder}
+            placeholder={translations.llmApiKeyPlaceholder}
             type="password"
             value={llmApiKey}
           />
@@ -162,9 +163,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
 
         <Button aria-label="Save LLM Settings" className="bg-primary hover:bg-accent text-primary-foreground" onClick={() => {
           localStorage.setItem('llmConfig', JSON.stringify({ provider: llmProvider, model: llmModelName, apiKey: llmApiKey }));
-          toast({ description: fr.llmSettingsSaved, title: fr.llmSettingsSaved });
+          toast({ description: translations.llmSettingsSaved, title: translations.llmSettingsSaved });
           onClose();
-        }} type="button">{fr.saveLlmSettings}</Button>
+        }} type="button">{translations.saveLlmSettings}</Button>
       </div>
     </Modal>
   );

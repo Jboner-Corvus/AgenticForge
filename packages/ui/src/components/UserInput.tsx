@@ -1,13 +1,15 @@
+import { useState } from 'react';
+import { useStore, AppState } from '../lib/store';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Paperclip, Send } from 'lucide-react';
-import { useState } from 'react';
-import { useStore } from '../lib/store';
+import { useLanguage } from '../lib/hooks/useLanguageHook';
 
 export const UserInput = () => {
+  const { translations } = useLanguage();
   const [inputValue, setInputValue] = useState('');
-  const startAgent = useStore((state) => state.startAgent);
-  const setMessageInputValue = useStore((state) => state.setMessageInputValue);
+  const startAgent = useStore((state: AppState) => state.startAgent);
+  const setMessageInputValue = useStore((state: AppState) => state.setMessageInputValue);
 
   const handleSendMessage = () => {
     if (inputValue.trim()) {
@@ -25,7 +27,7 @@ export const UserInput = () => {
       <Textarea
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
-        placeholder="Type your message..."
+        placeholder={translations.typeYourMessage}
         className="flex-1 resize-none min-h-[60px] rounded-full py-3 px-6 shadow-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 ease-in-out"
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {

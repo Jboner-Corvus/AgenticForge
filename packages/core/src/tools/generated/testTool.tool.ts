@@ -1,7 +1,7 @@
 // Outil généré par l'agent : test-tool
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../types.js';
+import type { Tool } from '../../types.js';
 
 export const testToolParams = z.object({ param1: z.string() });
 

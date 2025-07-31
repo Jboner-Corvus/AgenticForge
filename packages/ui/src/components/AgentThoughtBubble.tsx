@@ -16,7 +16,7 @@ export const AgentThoughtBubble: React.FC<ThoughtBubbleProps> = ({ content, time
 
   return (
     <Card
-      className="bg-muted/30 border-border text-muted-foreground my-2 animate-fade-in cursor-pointer hover:bg-muted/60 rounded-xl shadow-sm"
+      className="bg-muted/30 border-border text-muted-foreground animate-fade-in cursor-pointer hover:bg-muted/60 rounded-xl shadow-sm"
       onClick={toggleExpansion}
       role="button"
       tabIndex={0}

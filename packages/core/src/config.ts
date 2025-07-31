@@ -4,8 +4,7 @@ import { fileURLToPath } from 'url';
 // FICHIER : packages/core/src/config.ts
 import { z } from 'zod';
 
-import { getLogger } from './logger.js';
-import { LlmKeyManager } from './modules/llm/LlmKeyManager.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,7 +24,10 @@ const configSchema = z.object({
   HUGGINGFACE_API_KEY: z.string().optional(),
   JWT_SECRET: z.string().optional(),
   LLM_API_KEY: z.string().optional(), // Added LLM_API_KEY
-  
+  LLM_MODEL_NAME: z.string().default('gemini-pro'),
+  LLM_PROVIDER: z
+    .enum(['gemini', 'openai', 'mistral', 'huggingface', 'grok'])
+    .default('gemini'),
   LLM_PROVIDER_HIERARCHY: z
     .string()
     .default('huggingface,grok,gemini,openai,mistral')

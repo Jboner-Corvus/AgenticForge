@@ -1,4 +1,7 @@
-import { config } from '../config.js';
+
+
+
+import { getConfig } from '../config.js';
 import { getLogger } from '../logger.js';
 import { LLMContent } from '../modules/llm/llm-types.js';
 import {
@@ -39,7 +42,7 @@ class AnthropicProvider implements ILlmProvider {
     if (apiKey) {
       activeKey = {
         apiKey: apiKey,
-        apiModel: modelName || config.LLM_MODEL_NAME,
+        apiModel: modelName || getConfig().LLM_MODEL_NAME,
         apiProvider: 'anthropic',
         errorCount: 0,
         isPermanentlyDisabled: false,
@@ -75,7 +78,7 @@ class AnthropicProvider implements ILlmProvider {
     const requestBody: any = {
       max_tokens: 4096, // A reasonable default for Anthropic models
       messages: anthropicMessages,
-      model: modelName || config.LLM_MODEL_NAME,
+      model: modelName || getConfig().LLM_MODEL_NAME,
     };
 
     if (systemPrompt) {
@@ -86,7 +89,7 @@ class AnthropicProvider implements ILlmProvider {
 
     try {
       log.info(
-        `[LLM CALL] Sending request to model: ${modelName || config.LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
+        `[LLM CALL] Sending request to model: ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
       );
       const response = await fetch(apiUrl, {
         body,
@@ -208,7 +211,7 @@ class GeminiProvider implements ILlmProvider {
     if (apiKey) {
       activeKey = {
         apiKey: apiKey,
-        apiModel: modelName || config.LLM_MODEL_NAME,
+        apiModel: modelName || getConfig().LLM_MODEL_NAME,
         apiProvider: 'gemini', // Assuming provider based on the class
         errorCount: 0,
         isPermanentlyDisabled: false,
@@ -223,7 +226,7 @@ class GeminiProvider implements ILlmProvider {
       throw new LlmError(errorMessage);
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${modelName || config.LLM_MODEL_NAME}:generateContent?key=${activeKey.apiKey}`;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${modelName || getConfig().LLM_MODEL_NAME}:generateContent?key=${activeKey.apiKey}`;
 
     const geminiMessages = messages.map((msg) => {
       let role = msg.role;
@@ -264,7 +267,7 @@ class GeminiProvider implements ILlmProvider {
     try {
       // Log 2: Avant chaque appel LLM
       log.info(
-        `[LLM CALL] Envoi de la requête au modèle : ${config.LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
+        `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
       );
       const response = await fetch(apiUrl, {
         body,
@@ -385,7 +388,7 @@ class GrokProvider implements ILlmProvider {
     if (apiKey) {
       activeKey = {
         apiKey: apiKey,
-        apiModel: modelName || config.LLM_MODEL_NAME,
+        apiModel: modelName || getConfig().LLM_MODEL_NAME,
         apiProvider: 'grok',
         errorCount: 0,
         isPermanentlyDisabled: false,
@@ -413,16 +416,14 @@ class GrokProvider implements ILlmProvider {
 
     const requestBody = {
       messages: grokMessages,
-      model: modelName || config.LLM_MODEL_NAME, // Use modelName if provided, else fallback to config
+      model: modelName || getConfig().LLM_MODEL_NAME, // Use modelName if provided, else fallback to config
     };
 
     const body = JSON.stringify(requestBody);
 
     try {
       log.info(
-        `[LLM CALL] Sending request to model: ${
-          modelName || config.LLM_MODEL_NAME
-        } via ${activeKey.apiProvider}`,
+        `[LLM CALL] Sending request to model: ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
       );
       const response = await fetch(apiUrl, {
         body,
@@ -543,7 +544,7 @@ class HuggingFaceProvider implements ILlmProvider {
     if (apiKey) {
       activeKey = {
         apiKey: apiKey,
-        apiModel: modelName || config.LLM_MODEL_NAME,
+        apiModel: modelName || getConfig().LLM_MODEL_NAME,
         apiProvider: 'huggingface', // Assuming provider based on the class
         errorCount: 0,
         isPermanentlyDisabled: false,
@@ -558,28 +559,20 @@ class HuggingFaceProvider implements ILlmProvider {
       throw new LlmError(errorMessage);
     }
 
-    const apiUrl = `https://api-inference.huggingface.co/models/${modelName || config.LLM_MODEL_NAME}`;
-
-    const hfMessages = messages.map((msg) => ({
-      content: msg.parts.map((part) => part.text).join(''),
-      role: msg.role === 'user' ? 'user' : 'assistant',
-    }));
-
-    if (systemPrompt) {
-      hfMessages.unshift({ content: systemPrompt, role: 'system' });
-    }
+    const apiUrl = `https://api-inference.huggingface.co/models/${modelName || getConfig().LLM_MODEL_NAME}`;
 
     const requestBody = {
-      inputs: hfMessages.map((msg) => msg.content).join('\n'), // HuggingFace often takes a single string input
-      parameters: { max_new_tokens: 500 }, // Example parameter
+      inputs: messages.map((msg) => msg.parts.map((p) => p.text).join('')).join('\n'),
+      parameters: {
+        max_new_tokens: 4096, // A reasonable default for HuggingFace models
+      },
     };
 
     const body = JSON.stringify(requestBody);
 
     try {
-      // Log 2: Avant chaque appel LLM
       log.info(
-        `[LLM CALL] Envoi de la requête au modèle : ${modelName || config.LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
+        `[LLM CALL] Sending request to model: ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
       );
       const response = await fetch(apiUrl, {
         body,
@@ -697,7 +690,7 @@ class MistralProvider implements ILlmProvider {
     if (apiKey) {
       activeKey = {
         apiKey: apiKey,
-        apiModel: modelName || config.LLM_MODEL_NAME,
+        apiModel: modelName || getConfig().LLM_MODEL_NAME,
         apiProvider: 'mistral', // Assuming provider based on the class
         errorCount: 0,
         isPermanentlyDisabled: false,
@@ -725,7 +718,7 @@ class MistralProvider implements ILlmProvider {
 
     const requestBody = {
       messages: mistralMessages,
-      model: modelName || config.LLM_MODEL_NAME, // Use modelName if provided, else fallback to config
+      model: modelName || getConfig().LLM_MODEL_NAME, // Use modelName if provided, else fallback to config
     };
 
     const body = JSON.stringify(requestBody);
@@ -733,7 +726,7 @@ class MistralProvider implements ILlmProvider {
     try {
       // Log 2: Avant chaque appel LLM
       log.info(
-        `[LLM CALL] Envoi de la requête au modèle : ${config.LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
+        `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
       );
       const response = await fetch(apiUrl, {
         body,
@@ -856,7 +849,7 @@ class OpenAIProvider implements ILlmProvider {
     if (apiKey) {
       activeKey = {
         apiKey: apiKey,
-        apiModel: modelName || config.LLM_MODEL_NAME,
+        apiModel: modelName || getConfig().LLM_MODEL_NAME,
         apiProvider: 'openai', // Assuming provider based on the class
         errorCount: 0,
         isPermanentlyDisabled: false,
@@ -884,7 +877,7 @@ class OpenAIProvider implements ILlmProvider {
 
     const requestBody = {
       messages: openaiMessages,
-      model: modelName || config.LLM_MODEL_NAME, // Use modelName if provided, else fallback to config
+      model: modelName || getConfig().LLM_MODEL_NAME, // Use modelName if provided, else fallback to config
     };
 
     const body = JSON.stringify(requestBody);
@@ -892,7 +885,7 @@ class OpenAIProvider implements ILlmProvider {
     try {
       // Log 2: Avant chaque appel LLM
       log.info(
-        `[LLM CALL] Envoi de la requête au modèle : ${config.LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
+        `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
       );
       const response = await fetch(apiUrl, {
         body,

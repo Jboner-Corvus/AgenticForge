@@ -2,7 +2,7 @@
 import { Header } from './Header';
 import { useStore } from '../lib/store';
 
-export function HeaderContainer() {
+export function HeaderContainer({ setIsLoginModalOpen }: { setIsLoginModalOpen: (open: boolean) => void }) {
   const isControlPanelVisible = useStore((state) => state.isControlPanelVisible);
   const setIsControlPanelVisible = useStore((state) => state.setIsControlPanelVisible);
   const setIsSettingsModalOpen = useStore((state) => state.setIsSettingsModalOpen);
@@ -24,6 +24,7 @@ export function HeaderContainer() {
       toggleHighContrastMode={toggleHighContrastMode}
       isAuthenticated={isAuthenticated}
       setCurrentPage={setCurrentPage}
+      setIsLoginModalOpen={setIsLoginModalOpen}
     />
   );
 }

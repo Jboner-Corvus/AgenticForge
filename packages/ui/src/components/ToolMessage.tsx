@@ -16,7 +16,7 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({ message }) => {
   const detailLabel = isToolCall ? 'Parameters' : 'Result';
 
   return (
-    <div className="my-4 animate-fade-in">
+    <div className="animate-fade-in">
       <Card className="bg-muted/50 border-border rounded-xl shadow-sm">
         <CardHeader className="p-3">
           <CardTitle className="text-sm font-medium flex items-center">

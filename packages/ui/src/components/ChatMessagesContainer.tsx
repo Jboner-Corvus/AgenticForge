@@ -8,7 +8,7 @@ export function ChatMessagesContainer() {
   const debugLog = useStore((state) => state.debugLog);
 
   return (
-    <div className="flex-1 p-6 overflow-y-auto space-y-4">
+    <div className="flex-1 overflow-y-auto space-y-4">
       {messages.map((msg: ChatMessage) => (
         <Message key={msg.id} message={msg} />
       ))}

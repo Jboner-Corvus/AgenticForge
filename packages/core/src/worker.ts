@@ -3,14 +3,13 @@ import { spawn as _spawn } from 'child_process';
 import { Redis } from 'ioredis';
 import { Client as PgClient } from 'pg';
 
-import { Tool } from './types.js';
 import { config, loadConfig } from './config.js';
 import { getLoggerInstance } from './logger.js';
 import { Agent } from './modules/agent/agent.js';
-import { LlmKeyManager } from './modules/llm/LlmKeyManager.js';
 import { getRedisClientInstance } from './modules/redis/redisClient.js';
 import { SessionManager } from './modules/session/sessionManager.js';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.js';
+import { Tool } from './types.js';
 import { AppError, getErrDetails, UserError } from './utils/errorUtils.js';
 import { getTools } from './utils/toolLoader.js';
 
@@ -21,6 +20,8 @@ export async function initializeWorker(
   const _tools = await getTools();
   const _jobQueue = new Queue('tasks', { connection: redisConnection });
   const sessionManager = new SessionManager(pgClient);
+
+  
 
   
 
@@ -143,7 +144,7 @@ export async function processJob(
   try {
     const session = await _sessionManager.getSession(_job.data.sessionId);
     const activeLlmProvider = session.activeLlmProvider || 'gemini'; // Default to 'gemini' if not set
-    const { apiKey, llmApiKey, llmModelName, llmProvider } = _job.data;
+    const { llmApiKey, llmModelName, llmProvider } = _job.data;
     const agent = new Agent(
       _job,
       session,
@@ -151,9 +152,8 @@ export async function processJob(
       _tools,
       llmProvider || activeLlmProvider,
       _sessionManager,
-      llmApiKey || apiKey,
-      llmModelName,
       llmApiKey,
+      llmModelName,
     );
     const finalResponse = await agent.run();
 
@@ -229,9 +229,26 @@ export async function processJob(
   }
 }
 
+import { LlmKeyManager } from './modules/llm/LlmKeyManager.js';
+
 if (process.env.NODE_ENV !== 'test') {
   // Load configuration for the worker process
   await loadConfig();
+
+  if (config.LLM_API_KEY && config.LLM_PROVIDER && config.LLM_MODEL_NAME) {
+    await LlmKeyManager.addKey(
+      config.LLM_PROVIDER,
+      config.LLM_API_KEY,
+      config.LLM_MODEL_NAME,
+    );
+    getLoggerInstance().info(
+      `LLM API key for ${config.LLM_PROVIDER} added to KeyManager.`,
+    );
+  } else {
+    getLoggerInstance().warn(
+      `LLM_API_KEY, LLM_PROVIDER, or LLM_MODEL_NAME not fully configured in .env. LLM functionality may be limited.`,
+    );
+  }
 
   getLoggerInstance().info(
     `[INIT LLM] LLM API key management is now handled dynamically.`,

@@ -1,5 +1,5 @@
-import { Key, Server, Hammer, Code, Settings, Trash2, ListChecks, Cog, Play, History, Save, Edit, XCircle, Chrome, Send } from 'lucide-react';
-import { GoogleLogo, GithubLogo, DiscordLogo, TelegramLogo } from './icons/LlmLogos';
+import { Key, Server, Hammer, Code, Settings, Trash2, ListChecks, Play, History, Save, Edit, XCircle } from 'lucide-react';
+
 import { Input } from './ui/input';
 import { Modal } from './ui/modal';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
@@ -7,7 +7,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
-import { fr } from '../constants/fr';
+import { useLanguage } from '../lib/hooks/useLanguageHook';
 import { generateUUID } from '../lib/utils/uuid';
 import { useToast } from '../lib/hooks/useToast';
 import { useDraggableSidebar } from '../lib/hooks/useDraggablePane';
@@ -16,6 +16,7 @@ import { useStore } from '../lib/store';
 import { LoadingSpinner } from './LoadingSpinner';
 
 export const ControlPanel = memo(() => {
+  const { translations } = useLanguage();
   const codeExecutionEnabled = useStore((state) => state.codeExecutionEnabled);
   const serverHealthy = useStore((state) => state.serverHealthy);
   const sessionId = useStore((state) => state.sessionId);
@@ -56,21 +57,21 @@ export const ControlPanel = memo(() => {
   const handleClearHistory = useCallback((showMessage: boolean) => {
     clearMessages();
     if (showMessage) {
-      toast({ description: fr.historyCleared, title: fr.historyCleared });
+      toast({ description: translations.historyCleared, title: translations.historyCleared });
       addDebugLog(`[${new Date().toLocaleTimeString()}] Local history cleared.`);
     }
-  }, [clearMessages, addDebugLog, toast]);
+  }, [clearMessages, addDebugLog, toast, translations]);
 
   const handleNewSession = useCallback(() => {
     const oldSessionId = sessionId;
     const newSessionId = generateUUID();
     localStorage.setItem('agenticForgeSessionId', newSessionId);
     setSessionId(newSessionId);
-    addMessage({ type: 'agent_response', content: fr.newSessionCreated });
-    addDebugLog(`[${new Date().toLocaleTimeString()}] ${fr.newSession}: Old ID: ${oldSessionId}, New ID: ${newSessionId}`);
+    addMessage({ type: 'agent_response', content: translations.newSessionCreated });
+    addDebugLog(`[${new Date().toLocaleTimeString()}] ${translations.newSession}: Old ID: ${oldSessionId}, New ID: ${newSessionId}`);
     handleClearHistory(false);
     fetchAndDisplayToolCount();
-  }, [sessionId, fetchAndDisplayToolCount, handleClearHistory, addDebugLog, addMessage, setSessionId]);
+  }, [sessionId, fetchAndDisplayToolCount, handleClearHistory, addDebugLog, addMessage, setSessionId, translations]);
 
   const handleSaveCurrentSession = useCallback(() => {
     setIsSaveModalOpen(true);
@@ -132,38 +133,33 @@ export const ControlPanel = memo(() => {
         <div className="absolute top-0 right-0 w-2 h-full cursor-col-resize" onMouseDown={handleDragStart} />
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center"><ListChecks className="mr-2 h-4 w-4" />Status</h3>
+            <h3 className="text-lg font-semibold mb-4 flex items-center"><ListChecks className="mr-2 h-4 w-4" />{translations.agentStatus} & {translations.agentCapabilities}</h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <Label className="text-sm flex items-center"><Key className="mr-2 h-4 w-4" />{fr.sessionId}</Label>
+                <Label className="text-sm flex items-center"><Key className="mr-2 h-4 w-4" />{translations.sessionId}</Label>
                 <span className="text-sm text-muted-foreground">{sessionId ? `${sessionId.substring(0, 12)}...` : '--'}</span>
               </div>
               <div className="flex justify-between items-center">
-                <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4" />{fr.toolsDetected}</Label>
+                <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4" />{translations.toolsDetected}</Label>
                 <span className="text-sm text-muted-foreground">
                   {isLoadingTools ? <LoadingSpinner className="ml-2" /> : toolCount}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <Label className="text-sm flex items-center"><Server className="mr-2 h-4 w-4" />{fr.connectionStatus}</Label>
+                <Label className="text-sm flex items-center"><Server className="mr-2 h-4 w-4" />{translations.connectionStatus}</Label>
                 <Badge variant={serverHealthy ? 'success' : 'destructive'}>
-                  {serverHealthy ? fr.online : fr.offline}
+                  {serverHealthy ? translations.online : translations.offline}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
                 <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4" />Browser Status</Label>
                 <span className="text-sm text-muted-foreground">{browserStatus}</span>
               </div>
-            </div>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center"><Cog className="mr-2 h-4 w-4" />Capabilities</h3>
-            <div className="space-y-4">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="flex justify-between items-center">
-                      <Label className="text-sm flex items-center" htmlFor="toolCreationToggle"><Hammer className="mr-2 h-4 w-4" />{fr.toolCreation}</Label>
+                      <Label className="text-sm flex items-center" htmlFor="toolCreationToggle"><Hammer className="mr-2 h-4 w-4" />{translations.toolCreation}</Label>
                       <Switch checked={toolCreationEnabled} id="toolCreationToggle" onCheckedChange={setToolCreationEnabled} />
                     </div>
                   </TooltipTrigger>
@@ -176,7 +172,7 @@ export const ControlPanel = memo(() => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="flex justify-between items-center">
-                      <Label className="text-sm flex items-center" htmlFor="codeExecutionToggle"><Code className="mr-2 h-4 w-4" />{fr.codeExecution}</Label>
+                      <Label className="text-sm flex items-center" htmlFor="codeExecutionToggle"><Code className="mr-2 h-4 w-4" />{translations.codeExecution}</Label>
                       <Switch checked={codeExecutionEnabled} id="codeExecutionToggle" onCheckedChange={setCodeExecutionEnabled} />
                     </div>
                   </TooltipTrigger>
@@ -187,38 +183,39 @@ export const ControlPanel = memo(() => {
               </TooltipProvider>
             </div>
           </div>
+          
           <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center"><Play className="mr-2 h-4 w-4" />Actions</h3>
+            <h3 className="text-lg font-semibold mb-4 flex items-center"><History className="mr-2 h-4 w-4" />{translations.sessionManagement}</h3>
             <div className="space-y-2">
               <Button className="w-full flex items-center justify-center" onClick={handleNewSession} variant="secondary" disabled={isLoadingTools || isSavingSession || isLoadingSessions}>
                 {isLoadingTools ? <LoadingSpinner className="mr-2" /> : <Settings className="mr-2 h-4 w-4" />}
-                {fr.newSession}
+                {translations.newSession}
               </Button>
               <Button className="w-full flex items-center justify-center" onClick={() => handleClearHistory(true)} variant="destructive">
                 <Trash2 className="mr-2 h-4 w-4" />
-                {fr.clearHistory}
+                {translations.clearHistory}
               </Button>
               <Button className="w-full flex items-center justify-center" onClick={handleSaveCurrentSession} variant="secondary" disabled={isSavingSession}>
                 {isSavingSession ? <LoadingSpinner className="mr-2" /> : <Save className="mr-2 h-4 w-4" />}
-                Save Current Session
+                {translations.saveCurrentSession}
               </Button>
             </div>
           </div>
           <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center"><History className="mr-2 h-4 w-4" />History</h3>
+            <h3 className="text-lg font-semibold mb-4 flex items-center"><History className="mr-2 h-4 w-4" />{translations.sessionManagement}</h3>
             <div className="space-y-2">
               {isLoadingSessions ? (
                 <div className="flex justify-center items-center h-20">
                   <LoadingSpinner />
                 </div>
               ) : sessions.length === 0 ? (
-                <p className="text-muted-foreground">No sessions saved yet.</p>
+                <p className="text-muted-foreground">{translations.noSessionsSaved}</p>
               ) : (
                 sessions.map((session) => (
                   <div key={session.id} className="flex items-center justify-between p-2 border border-border rounded-md">
                     <span className="text-sm truncate" title={session.name}>
                       {session.name}
-                      {session.id === activeSessionId && <Badge variant="secondary" className="ml-2">Active</Badge>}
+                      {session.id === activeSessionId && <Badge variant="secondary" className="ml-2">{translations.active}</Badge>}
                     </span>
                     <div className="flex space-x-1">
                       <Button size="icon" variant="ghost" onClick={() => handleLoadSession(session.id)} aria-label="Load session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
@@ -236,35 +233,7 @@ export const ControlPanel = memo(() => {
               )}
             </div>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center"><Chrome className="mr-2 h-4 w-4" />Login</h3>
-            <div className="space-y-4">
-              <h4 className="text-md font-semibold">Email/Password Login</h4>
-              <Input placeholder="Email" type="email" aria-label="Email" />
-              <Input placeholder="Password" type="password" aria-label="Password" />
-              <Button className="w-full flex items-center justify-center" onClick={() => console.log('Email/Password Login')}><Send className="mr-2 h-4 w-4" />Login</Button>
-
-              <div className="relative flex py-5 items-center">
-                <div className="flex-grow border-t border-gray-300"></div>
-                <span className="flex-shrink mx-4 text-gray-400">OR</span>
-                <div className="flex-grow border-t border-gray-300"></div>
-              </div>
-
-              <h4 className="text-md font-semibold">OAuth Login</h4>
-              <Button className="w-full flex items-center justify-center" onClick={() => console.log('Login with Google')} variant="outline">
-                <GoogleLogo className="mr-2 h-4 w-4" />Login with Google
-              </Button>
-              <Button className="w-full flex items-center justify-center" onClick={() => window.location.href = '/api/auth/github'} variant="outline">
-                <GithubLogo className="mr-2 h-4 w-4" />Login with GitHub
-              </Button>
-              <Button className="w-full flex items-center justify-center" onClick={() => console.log('Login with Discord')} variant="outline">
-                <DiscordLogo className="mr-2 h-4 w-4" />Login with Discord
-              </Button>
-              <Button className="w-full flex items-center justify-center" onClick={() => console.log('Login with Telegram')} variant="outline">
-                <TelegramLogo className="mr-2 h-4 w-4" />Login with Telegram
-              </Button>
-            </div>
-          </div>
+          
         </div>
       </aside>
 

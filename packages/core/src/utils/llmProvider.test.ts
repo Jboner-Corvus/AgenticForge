@@ -11,8 +11,6 @@ vi.mock('../config', async (importOriginal) => {
     config: {
       ...original.config,
       LLM_API_KEYS: {},
-      LLM_MODEL_NAME: 'gemini-pro',
-      LLM_PROVIDER: 'gemini',
     },
   };
 });
@@ -62,21 +60,17 @@ describe('llmProvider', () => {
     vi.restoreAllMocks();
   });
 
-  it('should return the correct LLM provider based on config', () => {
-    config.LLM_PROVIDER = 'openai';
-    let provider = getLlmProvider(config.LLM_PROVIDER);
+  it('should return the correct LLM provider based on the provided name', () => {
+    let provider = getLlmProvider('openai');
     expect(provider.constructor.name).toBe('OpenAIProvider');
 
-    config.LLM_PROVIDER = 'mistral';
-    provider = getLlmProvider(config.LLM_PROVIDER);
+    provider = getLlmProvider('mistral');
     expect(provider.constructor.name).toBe('MistralProvider');
 
-    config.LLM_PROVIDER = 'huggingface';
-    provider = getLlmProvider(config.LLM_PROVIDER);
+    provider = getLlmProvider('huggingface');
     expect(provider.constructor.name).toBe('HuggingFaceProvider');
 
-    config.LLM_PROVIDER = 'gemini';
-    provider = getLlmProvider(config.LLM_PROVIDER);
+    provider = getLlmProvider('gemini');
     expect(provider.constructor.name).toBe('GeminiProvider');
   });
 

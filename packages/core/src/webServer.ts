@@ -36,13 +36,13 @@ export async function initializeWebServer(
 
   app.use(
     (
-      req: express.Request,
-      _res: express.Response,
-      next: express.NextFunction,
-    ) => {
-      (req as any).sessionManager = sessionManager;
-      next();
-    },
+        req: express.Request,
+        _res: express.Response,
+        _next: express.NextFunction,
+      ) => {
+        (req as any).sessionManager = sessionManager;
+        _next();
+      },
   );
 
   if (process.env.NODE_ENV !== 'production') {
@@ -55,12 +55,12 @@ export async function initializeWebServer(
       res: express.Response,
       next: express.NextFunction,
     ) => {
-      let sessionId =
+      let _sessionId =
         req.cookies.agenticforge_session_id || req.headers['x-session-id'];
 
-      if (!sessionId) {
-        sessionId = uuidv4();
-        res.cookie('agenticforge_session_id', sessionId, {
+      if (!_sessionId) {
+        _sessionId = uuidv4();
+        res.cookie('agenticforge_session_id', _sessionId, {
           httpOnly: true,
           maxAge: 7 * 24 * 60 * 60 * 1000,
           sameSite: 'lax',
@@ -75,9 +75,9 @@ export async function initializeWebServer(
             );
           });
       }
-      (req as any).sessionId = sessionId;
+      (req as any).sessionId = _sessionId;
       (req as any).redis = redisClient;
-      res.setHeader('X-Session-ID', sessionId);
+      res.setHeader('X-Session-ID', _sessionId);
       next();
     },
   );
@@ -168,10 +168,9 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      next: express.NextFunction,
+      _next: express.NextFunction,
     ) => {
       const { jobId } = req.params;
-      const sessionId = req.sessionId;
 
       res.writeHead(200, {
         'Cache-Control': 'no-cache',

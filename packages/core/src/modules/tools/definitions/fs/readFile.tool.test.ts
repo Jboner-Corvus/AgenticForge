@@ -4,7 +4,7 @@ import { promises as fs } from 'fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getLoggerInstance } from '../../../../logger.js';
-import { Ctx, ILlmProvider, SessionData, Tool } from '../../../../types.js';
+import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
 
 vi.mock('../../../../logger.js', () => ({
   getLoggerInstance: vi.fn(() => ({

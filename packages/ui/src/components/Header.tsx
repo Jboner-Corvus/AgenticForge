@@ -1,14 +1,14 @@
 
-import React, { memo, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useStore } from '../lib/store';
 
-import { fr } from '../constants/fr';
+import { useLanguage } from '../lib/hooks/useLanguageHook';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 import { Logo } from './Logo';
 
-import { Settings, PanelLeft, Sun, Moon, Bell, Maximize, Minimize, LayoutDashboard, Contrast, BarChart, Key, MessageSquare } from 'lucide-react';
+import { Settings, PanelLeft, Sun, Moon, Bell, Maximize, Minimize, LayoutDashboard, Contrast, BarChart, Key, MessageSquare, User } from 'lucide-react';
 
 interface HeaderProps {
   setIsControlPanelVisible: (visible: boolean) => void;
@@ -20,9 +20,10 @@ interface HeaderProps {
   toggleHighContrastMode: () => void;
   setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys') => void;
   isAuthenticated: boolean;
+  setIsLoginModalOpen: (open: boolean) => void;
 }
 
-const HeaderComponent: React.FC<HeaderProps> = ({
+export function Header({
   setIsControlPanelVisible,
   setIsSettingsModalOpen,
   isControlPanelVisible,
@@ -30,7 +31,10 @@ const HeaderComponent: React.FC<HeaderProps> = ({
   toggleDarkMode,
   toggleHighContrastMode,
   setCurrentPage,
-}) => {
+  isAuthenticated,
+  setIsLoginModalOpen,
+}: HeaderProps) {
+  const { translations } = useLanguage();
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   const handleFullscreenToggle = useCallback(() => {
@@ -60,6 +64,25 @@ const HeaderComponent: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center space-x-2">
+        {!isAuthenticated && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  aria-label={translations.login}
+                  onClick={() => setIsLoginModalOpen(true)}
+                  type="button"
+                  variant="ghost"
+                >
+                  <User size={20} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{translations.login}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -192,7 +215,7 @@ const HeaderComponent: React.FC<HeaderProps> = ({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{fr.notifications}</p>
+              <p>{translations.notifications}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -209,7 +232,7 @@ const HeaderComponent: React.FC<HeaderProps> = ({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{fr.settings}</p>
+              <p>{translations.settings}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -218,5 +241,3 @@ const HeaderComponent: React.FC<HeaderProps> = ({
     </header>
   );
 };
-
-export const Header = memo(HeaderComponent);

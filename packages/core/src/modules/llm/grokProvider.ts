@@ -27,20 +27,27 @@ export class GrokProvider implements ILlmProvider {
     messages: LLMContent[],
     systemPrompt?: string,
     apiKey?: string,
+    modelName?: string,
   ): Promise<string> {
     const log = getLogger().child({ module: 'GrokProvider' });
 
-    let activeKey: LlmApiKey | null;
+    let activeKey: LlmApiKey | null = null;
     if (apiKey) {
       activeKey = {
         apiKey: apiKey,
-        apiModel: config.LLM_MODEL_NAME,
+        apiModel: modelName || config.LLM_MODEL_NAME,
         apiProvider: 'grok',
         errorCount: 0,
         isPermanentlyDisabled: false,
       };
     } else {
       activeKey = await LlmKeyManager.getNextAvailableKey('grok');
+    }
+
+    if (!activeKey) {
+      const errorMessage = 'No Grok API key available.';
+      log.error(errorMessage);
+      throw new LlmError(errorMessage);
     }
 
     if (!activeKey) {
@@ -61,8 +68,8 @@ export class GrokProvider implements ILlmProvider {
     }
 
     const requestBody = {
+      apiModel: modelName || config.LLM_MODEL_NAME, // Use modelName from activeKey
       messages: grokMessages,
-      model: activeKey.apiModel, // Use modelName from activeKey
     };
 
     const body = JSON.stringify(requestBody);

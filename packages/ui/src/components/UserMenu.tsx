@@ -2,8 +2,10 @@ import React from 'react';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { useLanguage } from '../lib/hooks/useLanguageHook';
 
 export const UserMenu: React.FC = () => {
+  const { translations } = useLanguage();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -24,8 +26,8 @@ export const UserMenu: React.FC = () => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>Profile</DropdownMenuItem>
-        <DropdownMenuItem>Settings</DropdownMenuItem>
+        <DropdownMenuItem>{translations.profile}</DropdownMenuItem>
+        <DropdownMenuItem>{translations.settings}</DropdownMenuItem>
         <DropdownMenuSeparator />
         
       </DropdownMenuContent>

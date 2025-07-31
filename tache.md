@@ -23,10 +23,10 @@ For each test in the list, follow these 6 steps:
 
 ### Commandes à Tester
 
--   [ ] 1. Lister les fichiers et dossiers 
--   [ ] 2. Créer un fichier rapport.txt
--   [ ] 3. Lire le contenu du fichier rapport.txt
--   [ ] 4. Remplacer première par seconde
+-   [x] 1. Lister les fichiers et dossiers 
+-   [x] 2. Créer un fichier rapport.txt
+-   [x] 3. Lire le contenu du fichier rapport.txt
+-   [x] 4. Remplacer première par seconde
 -   [ ] 5. Exécuter une commande shell
 -   [ ] 6. Exécuter ls -la et montre la sortie. 
 -   [ ] 7. Faire une recherche web 
