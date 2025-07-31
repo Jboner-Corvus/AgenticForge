@@ -321,6 +321,7 @@ def run_sh_command(command: str, *args):
         "unit_tests": "/test/unit",
         "typecheck": "/typecheck",
         "all_checks": "/all-checks",
+        "unit_checks": "/unit-checks",
         "small_checks": "/small-checks",
     }
 

@@ -17,6 +17,7 @@ export async function initializeWorker(
   redisConnection: Redis,
   pgClient: PgClient,
 ) {
+  getLoggerInstance().info({ path: process.env.PATH }, 'Worker process.env.PATH at startup:');
   const _tools = await getTools();
   const _jobQueue = new Queue('tasks', { connection: redisConnection });
   const sessionManager = new SessionManager(pgClient);
