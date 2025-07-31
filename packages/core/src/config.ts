@@ -21,7 +21,7 @@ const configSchema = z.object({
 
   HISTORY_LOAD_LENGTH: z.coerce.number().default(50), // New config for loading only N recent messages
   HISTORY_MAX_LENGTH: z.coerce.number().default(1000),
-  HOST_PROJECT_PATH: z.string().default('/usr/src/app'),
+  HOST_PROJECT_PATH: z.string().default(process.cwd()),
   HUGGINGFACE_API_KEY: z.string().optional(),
   JWT_SECRET: z.string().optional(),
   LLM_API_KEY: z.string().optional(), // Added LLM_API_KEY
