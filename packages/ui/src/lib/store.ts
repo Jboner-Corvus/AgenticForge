@@ -46,6 +46,7 @@ export interface AppState {
   serverHealthy: boolean;
   sessionId: null | string;
   agentProgress: number;
+  isAuthenticated: boolean;
 
   // Loading states
   isLoadingSessions: boolean;
@@ -211,6 +212,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
   agentProgress: 0,
   isProcessing: false,
+  isAuthenticated: false,
   jobId: null,
   messageInputValue: '',
   serverHealthy: false,

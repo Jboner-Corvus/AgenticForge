@@ -27,7 +27,7 @@ export const UserMenu: React.FC = () => {
         <DropdownMenuItem>Profile</DropdownMenuItem>
         <DropdownMenuItem>Settings</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>Log out</DropdownMenuItem>
+        
       </DropdownMenuContent>
     </DropdownMenu>
   );

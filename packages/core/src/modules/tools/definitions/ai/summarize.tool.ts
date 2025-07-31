@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '@/types.js';
-
+import { Ctx, Tool } from '../../../../types.js';
 import { getLlmProvider } from '../../../../utils/llmProvider.js';
 import { getSummarizerPrompt } from './summarizer.prompt.js';
 

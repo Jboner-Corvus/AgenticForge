@@ -16,7 +16,7 @@ export * from './modules/session/sessionManager.js';
 export * from './modules/tools/definitions/index.js';
 export * from './modules/tools/toolRegistry.js';
 export * from './tracing.js';
-export * from './types.js';
+
 export * from './utils/asyncToolHelper.js';
 export * from './utils/constants.js';
 export * from './utils/errorUtils.js';

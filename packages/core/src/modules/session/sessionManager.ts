@@ -2,10 +2,15 @@ import { Job, Queue } from 'bullmq';
 import { Content } from 'fastmcp';
 import { Client as PgClient } from 'pg';
 
-import { Ctx, Message, SessionData } from '@/types.js';
-
 import { config } from '../../config.js';
 import { getLogger, Logger } from '../../logger.js';
+import {
+  ILlmProvider as _ILlmProvider,
+  MinimalJob as _MinimalJob,
+  Ctx,
+  Message,
+  SessionData,
+} from '../../types.js';
 import { getLlmProvider } from '../../utils/llmProvider.js';
 import { getRedisClientInstance } from '../redis/redisClient.js';
 import { summarizeTool } from '../tools/definitions/ai/summarize.tool.js';

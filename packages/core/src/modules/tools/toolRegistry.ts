@@ -1,8 +1,7 @@
 import { z, ZodTypeAny } from 'zod';
 
-import { Ctx, Tool } from '@/types.js';
-
 import { getLoggerInstance } from '../../logger.js';
+import { Ctx, Tool } from '../../types.js';
 import { AppError, UserError } from '../../utils/errorUtils.js';
 
 class ToolRegistry {

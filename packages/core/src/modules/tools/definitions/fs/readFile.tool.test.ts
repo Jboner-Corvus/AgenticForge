@@ -3,9 +3,8 @@ import { promises as fs } from 'fs';
 /// <reference types="vitest/globals" />
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Ctx, ILlmProvider, SessionData } from '@/types.js';
-
 import { getLoggerInstance } from '../../../../logger.js';
+import { Ctx, ILlmProvider, SessionData, Tool } from '../../../../types.js';
 
 vi.mock('../../../../logger.js', () => ({
   getLoggerInstance: vi.fn(() => ({

@@ -3,8 +3,7 @@ import type { Job, Queue } from 'bullmq';
 import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { z } from 'zod';
 
-import { Ctx, SessionData, Tool } from '@/types.js';
-
+import { Ctx, SessionData, Tool } from '../../types.js';
 import { getLlmProvider } from '../../utils/llmProvider.js';
 import { getTools } from '../../utils/toolLoader.js';
 import { getRedisClientInstance } from '../redis/redisClient.js';
@@ -56,11 +55,6 @@ vi.mock('../redis/redisClient.js', () => {
 });
 
 import { SessionManager as _SessionManager } from '../session/sessionManager.js';
-
-const _mockSessionManagerInstance = {
-  getSession: vi.fn(),
-  saveSession: vi.fn(),
-};
 
 vi.mock('../session/sessionManager', () => ({
   SessionManager: vi.fn(() => ({
@@ -238,7 +232,7 @@ describe('Agent Integration Tests', () => {
 `,
       );
 
-    mockedToolRegistryExecute.mockImplementation(async (name, params, ctx) => {
+    mockedToolRegistryExecute.mockImplementation(async (name, _params, ctx) => {
       if (name === 'test-tool') {
         return mockTestTool.execute({ arg: 'value' }, ctx);
       }

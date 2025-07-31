@@ -3,8 +3,19 @@
   "compilerOptions": {
     "composite": true,
     "lib": ["DOM"],
-    "types": ["vitest", "vite/client"]
+    "types": ["vitest", "vite/client"],
+    "paths": {
+      "@agenticforge/core": ["../core/src"],
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["vite.config.ts", "vitest.config.ts", "vitest.setup.ts", "src/**/*.ts", "src/**/*.tsx", "src/vitest.d.ts"],
+  "include": [
+    "vite.config.ts",
+    "vitest.config.ts",
+    "vitest.setup.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/vitest.d.ts"
+  ],
   "exclude": ["node_modules"]
 }

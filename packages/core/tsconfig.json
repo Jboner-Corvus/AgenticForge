@@ -22,6 +22,6 @@
     "allowImportingTsExtensions": true,
     "types": ["vitest/globals", "vitest", "express", "ioredis", "node"],
   },
-  "include": ["src", "src/**/*.test.ts", "vitest.config.ts", "test/mocks"],
+  "include": ["src", "src/**/*.test.ts", "vitest.config.ts", "test/mocks", "src/modules/tools/definitions/**/*.test.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,9 +1,8 @@
 import { Queue } from 'bullmq';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Ctx } from '@/types';
-import * as shellUtils from '@/utils/shellUtils';
-
+import { Ctx } from '../../../../types';
+import * as shellUtils from '../../../../utils/shellUtils';
 import { executeShellCommandTool } from './executeShellCommand.tool'; // Temp fix
 
 vi.mock('@/utils/shellUtils', async () => {
@@ -142,7 +141,7 @@ describe('executeShellCommandTool', () => {
     const stderrChunk1 = 'error\n';
 
     vi.spyOn(shellUtils, 'executeShellCommand').mockImplementation(
-      async (cmd: string, ctx: Ctx) => {
+      async (_cmd: string, ctx: Ctx) => {
         if (ctx.streamContent) {
           await ctx.streamContent([
             {

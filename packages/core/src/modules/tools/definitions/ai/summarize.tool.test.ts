@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
-import { Ctx } from '@/types';
-
+import { Ctx } from '../../../../types.js';
 import { ILlmProvider } from '../../../../types.js';
 import { getLlmProvider } from '../../../../utils/llmProvider.js';
 import { summarizeTool } from './summarize.tool.js';

@@ -1,7 +1,7 @@
 import { Job, Queue } from 'bullmq';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
-import { Ctx, ILlmProvider, SessionData } from '@/types.js';
+import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
 
 vi.mock('../../../../config', async () => {
   const actual = await vi.importActual('../../../../config');

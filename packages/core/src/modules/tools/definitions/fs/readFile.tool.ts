@@ -2,9 +2,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '@/types.js';
-
 import { config } from '../../../../config.js'; // Import config
+import { Ctx, Tool } from '../../../../types.js';
 
 export const readFileParams = z.object({
   end_line: z

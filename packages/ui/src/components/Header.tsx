@@ -8,8 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 
 import { Logo } from './Logo';
 
-import { Settings, PanelLeft, Sun, Moon, Bell, Maximize, Minimize, LayoutDashboard, Contrast, BarChart, Key } from 'lucide-react';
-import { UserMenu } from './UserMenu';
+import { Settings, PanelLeft, Sun, Moon, Bell, Maximize, Minimize, LayoutDashboard, Contrast, BarChart, Key, MessageSquare } from 'lucide-react';
 
 interface HeaderProps {
   setIsControlPanelVisible: (visible: boolean) => void;
@@ -19,11 +18,9 @@ interface HeaderProps {
   toggleDarkMode: () => void;
   isHighContrastMode: boolean;
   toggleHighContrastMode: () => void;
-  isAuthenticated: boolean;
   setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys') => void;
+  isAuthenticated: boolean;
 }
-
-import { LoginModal } from './LoginModal';
 
 const HeaderComponent: React.FC<HeaderProps> = ({
   setIsControlPanelVisible,
@@ -32,11 +29,9 @@ const HeaderComponent: React.FC<HeaderProps> = ({
   isDarkMode,
   toggleDarkMode,
   toggleHighContrastMode,
-  isAuthenticated,
   setCurrentPage,
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const handleFullscreenToggle = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -137,6 +132,23 @@ const HeaderComponent: React.FC<HeaderProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                aria-label="Chat"
+                onClick={() => setCurrentPage('chat')}
+                type="button"
+                variant="ghost"
+              >
+                <MessageSquare size={20} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Chat</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
                 aria-label="Leaderboard"
                 onClick={() => setCurrentPage('leaderboard')}
                 type="button"
@@ -201,19 +213,7 @@ const HeaderComponent: React.FC<HeaderProps> = ({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        {isAuthenticated ? (
-          <UserMenu />
-        ) : (
-          <Button
-            aria-label="Login"
-            onClick={() => setIsLoginModalOpen(true)}
-            type="button"
-            variant="ghost"
-          >
-            Login
-          </Button>
-        )}
-        <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
+        
       </div>
     </header>
   );

@@ -5,10 +5,14 @@ import _os from 'os';
 import path from 'path';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
-import { Ctx, ILlmProvider, SessionData } from '@/types.js';
-
 import { config } from '../../../../config.js';
 import { getLogger } from '../../../../logger.js';
+import {
+  Tool as _Tool,
+  Ctx,
+  ILlmProvider,
+  SessionData,
+} from '../../../../types.js';
 import { editFileTool } from './editFile.tool.js';
 
 vi.mock('fs', () => ({

@@ -112,13 +112,13 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const tools = await getTools();
         res.status(200).json(tools);
       } catch (_error) {
-        _next(_error);
+        next(_error);
       }
     },
   );
@@ -128,19 +128,18 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const { apiKey, llmApiKey, llmModelName, llmProvider, prompt } =
           req.body;
-        const _sessionId = req.sessionId;
 
         if (!prompt) {
           throw new AppError('Le prompt est manquant.', { statusCode: 400 });
         }
 
         getLoggerInstance().info(
-          { prompt, sessionId: _sessionId },
+          { prompt, sessionId: req.sessionId },
           'Nouveau message reçu',
         );
 
@@ -150,7 +149,7 @@ export async function initializeWebServer(
           llmModelName,
           llmProvider,
           prompt,
-          sessionId: _sessionId,
+          sessionId: req.sessionId,
         });
         req.job = _job;
 
@@ -159,7 +158,7 @@ export async function initializeWebServer(
           message: 'Requête reçue, traitement en cours.',
         });
       } catch (_error) {
-        _next(_error);
+        next(_error);
       }
     },
   );
@@ -169,10 +168,10 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       const { jobId } = req.params;
-      const _sessionId = req.sessionId;
+      const sessionId = req.sessionId;
 
       res.writeHead(200, {
         'Cache-Control': 'no-cache',
@@ -247,7 +246,7 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const { providerName } = req.body;
@@ -271,7 +270,7 @@ export async function initializeWebServer(
           .status(200)
           .json({ message: 'Active LLM provider updated successfully.' });
       } catch (_error) {
-        _next(_error);
+        next(_error);
       }
     },
   );
@@ -281,7 +280,7 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const sessionsCreated =
@@ -298,7 +297,7 @@ export async function initializeWebServer(
           tokensSaved: parseInt(tokensSaved, 10),
         });
       } catch (_error) {
-        _next(_error);
+        next(_error);
       }
     },
   );
@@ -308,7 +307,7 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const { id, messages, name, timestamp } = req.body;
@@ -333,7 +332,7 @@ export async function initializeWebServer(
         );
         res.status(200).json({ message: 'Session saved successfully.' });
       } catch (_error) {
-        _next(_error);
+        next(_error);
       }
     },
   );
@@ -343,7 +342,7 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const { id } = req.params;
@@ -353,7 +352,7 @@ export async function initializeWebServer(
         }
         res.status(200).json(sessionData);
       } catch (_error) {
-        _next(_error);
+        next(_error);
       }
     },
   );
@@ -363,7 +362,7 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const { id } = req.params;
@@ -374,7 +373,7 @@ export async function initializeWebServer(
         );
         res.status(200).json({ message: 'Session deleted successfully.' });
       } catch (_error) {
-        _next(_error);
+        next(_error);
       }
     },
   );
@@ -384,7 +383,7 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const { id } = req.params;
@@ -405,7 +404,7 @@ export async function initializeWebServer(
           session: updatedSession,
         });
       } catch (_error) {
-        _next(_error);
+        next(_error);
       }
     },
   );
@@ -415,7 +414,7 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const { key, provider } = req.body;
@@ -425,7 +424,7 @@ export async function initializeWebServer(
         await _LlmKeyManager.addKey(provider, key, config.LLM_MODEL_NAME);
         res.status(200).json({ message: 'LLM API key added successfully.' });
       } catch (_error) {
-        _next(_error);
+        next(_error);
       }
     },
   );
@@ -435,13 +434,13 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const keys = await _LlmKeyManager.getKeysForApi();
         res.status(200).json(keys);
       } catch (_error) {
-        _next(_error);
+        next(_error);
       }
     },
   );
@@ -451,7 +450,7 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const { index } = req.params;
@@ -462,7 +461,7 @@ export async function initializeWebServer(
         await _LlmKeyManager.removeKey(keyIndex);
         res.status(200).json({ message: 'LLM API key removed successfully.' });
       } catch (error) {
-        _next(error);
+        next(error);
       }
     },
   );
@@ -472,13 +471,13 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const sessions = await req.sessionManager!.getAllSessions();
         res.status(200).json(sessions);
       } catch (_error) {
-        _next(_error);
+        next(_error);
       }
     },
   );
@@ -500,7 +499,7 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const { code } = req.query;
@@ -584,7 +583,7 @@ export async function initializeWebServer(
 
         res.redirect('/?github_auth_success=true');
       } catch (error) {
-        _next(error);
+        next(error);
       }
     },
   );
@@ -594,7 +593,7 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const { jobId } = req.params;
@@ -608,7 +607,7 @@ export async function initializeWebServer(
 
         res.status(200).json({ message: 'Interruption signal sent.' });
       } catch (error) {
-        _next(error);
+        next(error);
       }
     },
   );
@@ -618,7 +617,7 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const { action } = req.params;
@@ -662,7 +661,7 @@ export async function initializeWebServer(
           });
         });
       } catch (error) {
-        _next(error);
+        next(error);
       }
     },
   );
@@ -672,7 +671,7 @@ export async function initializeWebServer(
     async (
       req: express.Request,
       res: express.Response,
-      _next: express.NextFunction,
+      next: express.NextFunction,
     ) => {
       try {
         const { jobId } = req.params;
@@ -688,7 +687,7 @@ export async function initializeWebServer(
 
         res.status(200).json({ jobId, progress, returnvalue, state });
       } catch (error) {
-        _next(error);
+        next(error);
       }
     },
   );

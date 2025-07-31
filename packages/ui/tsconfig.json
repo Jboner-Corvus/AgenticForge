@@ -21,7 +21,8 @@
     "erasableSyntaxOnly": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@agenticforge/core": ["../core/src"]
     },
     "rootDir": ".",
     "declaration": true,

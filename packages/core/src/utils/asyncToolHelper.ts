@@ -1,4 +1,4 @@
-import type { SessionData } from '@/types.js';
+import type { SessionData } from '../types.js';
 
 // src/utils/asyncToolHelper.ts (Corrigé pour SessionData)
 import { getLogger } from '../logger.js';

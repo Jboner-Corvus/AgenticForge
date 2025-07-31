@@ -2,10 +2,7 @@
 
 import type { Job, Queue } from 'bullmq';
 
-vi.mock('./modules/redis/redisClient', async (importOriginal) => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const actual =
-    await importOriginal<typeof import('./modules/redis/redisClient')>();
+vi.mock('./modules/redis/redisClient', async () => {
   const mockRedisClient = {
     del: vi.fn(),
     duplicate: vi.fn(() => mockRedisClient),
@@ -214,5 +211,7 @@ describe('processJob', () => {
       'job:testJobId:events',
       JSON.stringify({ content: 'Stream terminé.', type: 'close' }),
     );
+    // Explicitly assert that saveSession is NOT called in the error path
+    expect(_mockSessionManagerInstance.saveSession).not.toHaveBeenCalled();
   });
 });

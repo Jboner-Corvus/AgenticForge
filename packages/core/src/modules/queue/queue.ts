@@ -1,8 +1,7 @@
 import { Queue } from 'bullmq';
 
-import { SessionData } from '@/types.js';
-
 import { getLoggerInstance } from '../../logger.js';
+import { SessionData } from '../../types.js';
 import { getRedisClientInstance } from '../redis/redisClient.js';
 
 export interface AsyncTaskJobPayload<TParams> {

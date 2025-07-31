@@ -42,6 +42,7 @@ usage() {
     echo "   unit-tests     : Lance les tests unitaires (ne nécessite pas Docker)."
     echo "   typecheck      : Vérifie les types TypeScript."
     echo "   all-checks     : Lance toutes les vérifications (TypeCheck, Lint, Unit Tests, Format)."
+    echo "   small-checks   : Lance les vérifications (TypeCheck, Lint, Format) sans les tests."
     echo "   menu           : Affiche le menu interactif (défaut)."
     exit 1
 }
@@ -235,7 +236,7 @@ start_worker() {
         fi
     fi
 
-    echo -e "${COLOR_YELLOW}Démarrage du worker local en arrière-plan...${NC}"
+    echo -e "${COLOR_YELLOW}Démarrage du worker local en arrière-plan (hors Docker)...${NC}"
     cd "${SCRIPT_DIR}/packages/core"
     
     load_env_vars
@@ -254,7 +255,8 @@ start_worker() {
     
     local WORKER_PID=$!
     echo $WORKER_PID > "$PID_FILE"
-    echo -e "${COLOR_GREEN}✓ Worker démarré avec le PID ${WORKER_PID}. Logs disponibles dans worker.log.${NC}"
+    echo -e "${COLOR_GREEN}✓ Worker démarré localement (hors conteneur) avec le PID ${WORKER_PID}. Logs disponibles dans worker.log.${NC}"
+    echo -e "${COLOR_BLUE}Preuve d'exécution locale: le processus avec le PID ${WORKER_PID} est visible sur l'hôte."
     cd "${SCRIPT_DIR}"
 }
 
@@ -343,7 +345,7 @@ restart_all_services() {
 
 # Redémarre uniquement le worker.
 restart_worker() {
-    echo -e "${COLOR_YELLOW}Redémarrage du worker...${NC}"
+    echo -e "${COLOR_YELLOW}Redémarrage du worker (processus local hors Docker)...${NC}"
     rm -f "${SCRIPT_DIR}/worker.log"
     load_env_vars
     stop_worker
@@ -448,6 +450,11 @@ run_unit_tests() {
     return $test_exit_code
 }
 
+run_small_checks() {
+    echo -e "${COLOR_YELLOW}Lancement des vérifications rapides (TypeCheck, Lint) via le script Node.js...${NC}"
+    node "${SCRIPT_DIR}/run-checks.mjs"
+}
+
 run_all_checks() {
     # set -x # Enable shell debugging
     echo -e "${COLOR_YELLOW}Lancement de toutes les vérifications (TypeCheck, Lint, Test, Format)...${NC}"
@@ -471,15 +478,15 @@ run_all_checks() {
     # --- TypeCheck (UI & Core) ---
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour l'UI...${NC}"
     set -o pipefail
-    UI_TYPECHECK_OUTPUT=$(pnpm --filter @agenticforge/ui exec tsc --noEmit -p tsconfig.vitest.json 2>&1 | tee /dev/tty)
-    exit_code=$?
+    UI_TYPECHECK_OUTPUT=$(pnpm --filter @agenticforge/ui exec tsc --noEmit -p tsconfig.app.json 2>&1 | tee /dev/tty)
+    exit_code=${PIPESTATUS[0]}
     set +o pipefail
     if [ $exit_code -ne 0 ]; then
         FAILED_CHECKS+=("TypeCheck UI")
         while read -r line; do
             if [[ -n "$line" && "$line" == *"error TS"* ]]; then
                 ERROR_COUNT=$((ERROR_COUNT + 1))
-                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **TypeCheck (UI):** `${line}`\n"
+                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **TypeCheck (UI):** \`${line}\`\n"
             fi
         done < <(echo "$UI_TYPECHECK_OUTPUT")
     fi
@@ -487,7 +494,7 @@ run_all_checks() {
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour le Core...${NC}"
     set -o pipefail
     CORE_TYPECHECK_OUTPUT=$(pnpm --filter=@agenticforge/core exec tsc --noEmit 2>&1 | tee /dev/tty)
-    exit_code=$?
+    exit_code=${PIPESTATUS[0]}
     set +o pipefail
     if [ $exit_code -ne 0 ]; then
         FAILED_CHECKS+=("TypeCheck Core")
@@ -507,14 +514,14 @@ run_all_checks() {
     echo -e "${COLOR_CYAN}Lancement du linter pour @agenticforge/core...${NC}"
     set -o pipefail
     CORE_LINT_OUTPUT=$(pnpm --filter=@agenticforge/core lint 2>&1 | tee /dev/tty)
-    CORE_LINT_EXIT_CODE=$?
+    CORE_LINT_EXIT_CODE=${PIPESTATUS[0]}
     set +o pipefail
     if [ $CORE_LINT_EXIT_CODE -ne 0 ]; then
         FAILED_CHECKS+=("Lint (Core)")
         while read -r line; do
-            if [[ -n "$line" && ("$line" == *"error"* || "$line" == *"warning"*) && ! "$line" =~ ^packages/.*/lint: && ! "$line" =~ ^[0-9]+:[0-9]+ && ! "$line" =~ ^✖ ]]; then
+            if [[ -n "$line" && ("$line" == *"error"* || "$line" == *"warning"*) ]]; then
                 ERROR_COUNT=$((ERROR_COUNT + 1))
-                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Lint (Core):** `${line}`\n"
+                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Lint (Core):** \`${line}\`\n"
             fi
         done < <(echo "$CORE_LINT_OUTPUT")
     fi
@@ -523,14 +530,14 @@ run_all_checks() {
     echo -e "${COLOR_CYAN}Lancement du linter pour @agenticforge/ui...${NC}"
     set -o pipefail
     UI_LINT_OUTPUT=$(pnpm --filter=@agenticforge/ui lint 2>&1 | tee /dev/tty)
-    UI_LINT_EXIT_CODE=$?
+    UI_LINT_EXIT_CODE=${PIPESTATUS[0]}
     set +o pipefail
     if [ $UI_LINT_EXIT_CODE -ne 0 ]; then
         FAILED_CHECKS+=("Lint (UI)")
         while read -r line; do
-            if [[ -n "$line" && ("$line" == *"error"* || "$line" == *"warning"*) && ! "$line" =~ ^packages/.*/lint: && ! "$line" =~ ^[0-9]+:[0-9]+ && ! "$line" =~ ^✖ ]]; then
+            if [[ -n "$line" && ("$line" == *"error"* || "$line" == *"warning"*) ]]; then
                 ERROR_COUNT=$((ERROR_COUNT + 1))
-                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Lint (UI):** `${line}`\n"
+                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Lint (UI):** \`${line}\`\n"
             fi
         done < <(echo "$UI_LINT_OUTPUT")
     fi
@@ -543,7 +550,7 @@ run_all_checks() {
     echo -e "${COLOR_YELLOW}Lancement des tests unitaires...${NC}"
     set -o pipefail
     TEST_OUTPUT=$(NODE_OPTIONS="--max-old-space-size=32768" pnpm --filter=@agenticforge/core exec vitest run --exclude src/webServer.integration.test.ts 2>&1 | tee /dev/tty)
-    exit_code=$?
+    exit_code=${PIPESTATUS[0]}
     set +o pipefail
     if [ $exit_code -ne 0 ]; then
         FAILED_CHECKS+=("Tests")
@@ -591,8 +598,8 @@ run_all_checks() {
             ALL_CHECKS_OUTPUT+="\n- [ ] **Erreur Générale:** Une ou plusieurs vérifications ont échoué sans message d'erreur spécifique capturé. Veuillez examiner les logs ci-dessus.\n"
         fi
 
-        FAIL_MSG="\n---\n\n✗ ${#FAILED_CHECKS[@]} type(s) de vérification ont échoué : ${FAILED_CHECKS[*]}."
-        FAIL_MSG+="\nVeuillez consulter le fichier all-checks.md pour les ${ERROR_COUNT} erreur(s) détaillée(s).\n"
+        FAIL_MSG="\n---\n\n✗ ${#FAILED_CHECKS[@]} type(s) de vérification ont échoué : ${FAILED_CHECKS[*]}.\n"
+        FAIL_MSG+="Veuillez consulter le fichier all-checks.md pour les ${ERROR_COUNT} erreur(s) détaillée(s).\n"
         ALL_CHECKS_OUTPUT+="$FAIL_MSG"
         echo -e "${COLOR_RED}${FAIL_MSG}${NC}"
     fi
@@ -621,14 +628,11 @@ snow_menu() {
     printf "   9) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}  15) ${COLOR_BLUE}🐳 Logs Docker${NC}\n"
     echo ""
     echo -e "   ${COLOR_CYAN}Développement${NC}"
-    printf "  10) ${COLOR_BLUE}🔍 Lint${NC}             12) ${COLOR_BLUE}🧪 Tests (Intégration)${NC}
-"
-    printf "  11) ${COLOR_BLUE}✨ Format${NC}           13) ${COLOR_BLUE}📘 TypeCheck${NC}
-"
-    printf "  17) ${COLOR_BLUE}🚀 Tests (Unitaires)${NC}
-"
-    printf "  14) ${COLOR_BLUE}✅ Toutes les vérifications (Unitaires inclus)${NC}
-"
+    printf "  10) ${COLOR_BLUE}🔍 Lint${NC}             12) ${COLOR_BLUE}🧪 Tests (Intégration)${NC}\n"
+    printf "  11) ${COLOR_BLUE}✨ Format${NC}           13) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
+    printf "  17) ${COLOR_BLUE}🚀 Tests (Unitaires)${NC}\n"
+    printf "  14) ${COLOR_BLUE}✅ Toutes les vérifications (Unitaires inclus)${NC}\n"
+    printf "  18) ${COLOR_BLUE}✅ Vérifications rapides (sans tests)${NC}\n"
     echo ""
     printf "  16) ${COLOR_RED}🚪 Quitter${NC}\n"
     echo ""
@@ -665,6 +669,7 @@ if [ "$#" -gt 0 ]; then
         unit-tests) run_unit_tests ;;
         typecheck) run_typecheck ;;
         all-checks) run_all_checks ;;
+        small-checks) run_small_checks ;;
         menu) # Tombe dans la boucle du menu
             ;;
         *)
@@ -699,6 +704,7 @@ while true; do
         13) run_typecheck ;;
         14) run_all_checks ;;
         17) run_unit_tests ;;
+        18) run_small_checks ;;
         16)
             echo -e "${COLOR_GREEN}Au revoir!${NC}"
             exit 0
@@ -708,7 +714,7 @@ while true; do
             ;;
     esac
     # Ajoute une pause avant de réafficher le menu pour que l'utilisateur puisse voir la sortie
-    if [[ "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 17" =~ " $choice " ]]; then
+    if [[ "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 17 18" =~ " $choice " ]]; then
         read -n 1 -s -r -p "Appuyez sur une touche pour continuer..."
     fi
 done

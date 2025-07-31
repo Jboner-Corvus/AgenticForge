@@ -27,10 +27,9 @@ import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-import { Ctx, ILlmProvider, SessionData } from '@/types.js';
-
 import { config } from '../../../../config.js';
 import { getLoggerInstance } from '../../../../logger.js';
+import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
 
 const mockLogger = {
   child: vi.fn().mockReturnThis(),

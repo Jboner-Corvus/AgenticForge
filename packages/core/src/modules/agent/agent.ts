@@ -2,8 +2,8 @@ import { Job, Queue } from 'bullmq';
 import { Logger } from 'pino';
 import { z } from 'zod';
 
-import {
-  Ctx as _Ctx,
+import type {
+  Ctx,
   AgentResponseMessage,
   ErrorMessage,
   Message,
@@ -13,7 +13,7 @@ import {
   ToolCallMessage,
   ToolResultMessage,
   UserMessage,
-} from '@/types.js';
+} from '../../types.js';
 
 import { config } from '../../config.js';
 import { getLoggerInstance } from '../../logger.js';
@@ -53,7 +53,6 @@ export class Agent {
   private commandHistory: Command[] = [];
   private interrupted = false;
   private readonly job: Job<{ prompt: string }>;
-  private lastCommand: Command | undefined;
   private readonly log: Logger;
   private loopCounter = 0;
   private malformedResponseCounter = 0;
@@ -157,7 +156,7 @@ export class Agent {
           );
 
           const messagesForLlm: LLMContent[] = this.session.history
-            .map((message): LLMContent | null => {
+            .map((message: Message): LLMContent | null => {
               switch (message.type) {
                 case 'agent_canvas_output':
                   return null;
@@ -214,7 +213,7 @@ export class Agent {
                   return null;
               }
             })
-            .filter((m): m is LLMContent => m !== null);
+            .filter((m: LLMContent | null): m is LLMContent => m !== null);
 
           let llmResponse: string | undefined;
           let currentProviderIndex = config.LLM_PROVIDER_HIERARCHY.indexOf(
@@ -651,36 +650,5 @@ export class Agent {
         );
       },
     );
-  }
-
-  private summarizeToolResult(result: unknown): unknown {
-    const resultString =
-      typeof result === 'string' ? result : JSON.stringify(result, null, 2);
-    if (resultString.length > 5000) {
-      try {
-        const parsed = JSON.parse(resultString);
-        // If it's a JSON object, try to summarize it more intelligently
-        if (typeof parsed === 'object' && parsed !== null) {
-          const summary = {
-            ...Object.keys(parsed).reduce((acc, key) => {
-              const value = parsed[key];
-              if (typeof value === 'string') {
-                (acc as any)[key] =
-                  value.substring(0, 100) + (value.length > 100 ? '...' : '');
-              } else {
-                (acc as any)[key] = value;
-              }
-              return acc;
-            }, {}),
-            _summary: 'Object summarized due to size.',
-          };
-          return JSON.stringify(summary, null, 2);
-        }
-      } catch (_e) {
-        // Not a valid JSON, so just truncate
-      }
-      return resultString.substring(0, 4975) + '... (truncated)';
-    }
-    return resultString;
   }
 }

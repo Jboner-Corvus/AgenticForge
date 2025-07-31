@@ -3,8 +3,7 @@ import { spawn as _spawn } from 'child_process';
 import { Redis } from 'ioredis';
 import { Client as PgClient } from 'pg';
 
-import { Tool } from '@/types';
-
+import { Tool } from './types.js';
 import { config, loadConfig } from './config.js';
 import { getLoggerInstance } from './logger.js';
 import { Agent } from './modules/agent/agent.js';
@@ -23,16 +22,7 @@ export async function initializeWorker(
   const _jobQueue = new Queue('tasks', { connection: redisConnection });
   const sessionManager = new SessionManager(pgClient);
 
-  if (config.LLM_API_KEY && config.LLM_PROVIDER) {
-    await LlmKeyManager.addKey(
-      config.LLM_PROVIDER,
-      config.LLM_API_KEY,
-      config.LLM_MODEL_NAME,
-    );
-    getLoggerInstance().info(
-      `[INIT LLM] Added LLM API key for provider: ${config.LLM_PROVIDER} with model: ${config.LLM_MODEL_NAME}`,
-    );
-  }
+  
 
   const worker = new Worker(
     'tasks',
@@ -152,7 +142,7 @@ export async function processJob(
 
   try {
     const session = await _sessionManager.getSession(_job.data.sessionId);
-    const activeLlmProvider = session.activeLlmProvider || config.LLM_PROVIDER;
+    const activeLlmProvider = session.activeLlmProvider || 'gemini'; // Default to 'gemini' if not set
     const { apiKey, llmApiKey, llmModelName, llmProvider } = _job.data;
     const agent = new Agent(
       _job,
@@ -244,13 +234,7 @@ if (process.env.NODE_ENV !== 'test') {
   await loadConfig();
 
   getLoggerInstance().info(
-    `[INIT LLM] LLM_PROVIDER détecté : ${process.env.LLM_PROVIDER}`,
-  );
-  getLoggerInstance().info(
-    `[INIT LLM] LLM_API_KEY détecté : ${process.env.LLM_API_KEY || 'NON DÉTECTÉ'}`,
-  );
-  getLoggerInstance().info(
-    `[INIT LLM] LLM_MODEL_NAME détecté : ${process.env.LLM_MODEL_NAME}`,
+    `[INIT LLM] LLM API key management is now handled dynamically.`,
   );
 
   getLoggerInstance().info(

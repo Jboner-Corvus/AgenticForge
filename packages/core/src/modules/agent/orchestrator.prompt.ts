@@ -14,7 +14,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // FICHIER : src/prompts/orchestrator.prompt.ts
-import type { AgentSession, Message, Tool } from '@/types.js';
+import type { AgentSession, Message, Tool } from '../../types.js';
 
 import { getResponseJsonSchema } from './responseSchema.js';
 
@@ -178,7 +178,7 @@ ${message.content}`;
       break;
     default:
       // This ensures we handle all message types, or TypeScript will complain.
-      // @ts-expect-error - This is a guard for unhandled message types
+      // @ts-ignore - This is a guard for unhandled message types
       throw new Error(`Unknown message type: ${message.type}`);
   }
 

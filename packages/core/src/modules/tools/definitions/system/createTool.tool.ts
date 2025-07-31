@@ -3,7 +3,7 @@ import path from 'path';
 // src/tools/system/createTool.tool.ts
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '@/types.js';
+import type { Ctx, Tool } from '../../../../types.js';
 
 import { getErrDetails } from '../../../../utils/errorUtils.js';
 import { runQualityGate } from '../../../../utils/qualityGate.js';
@@ -25,7 +25,7 @@ const GENERATED_TOOLS_DIR = path.resolve(process.cwd(), 'src/tools/generated');
 const TOOL_TEMPLATE = `
 // Outil généré par l'agent : {{tool_name}}
 import { z } from 'zod';
-import type { Ctx, Tool } from '@/types.js';
+import type { Ctx, Tool } from '../../../../types.js';
 
 
 export const {{toolVarName}}Params = z.object({{parameters}});

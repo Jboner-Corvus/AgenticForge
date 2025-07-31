@@ -23,16 +23,16 @@ For each test in the list, follow these 6 steps:
 
 ### Commandes à Tester
 
--   [x] 1. Lister les fichiers et dossiers 
--   [x] 2. Créer un fichier rapport.txt
--   [x] 3. Lire le contenu du fichier rapport.txt
--   [x] 4. Remplacer première par seconde
--   [ ] 5. Exécuter une commande shell 
--   [ ] 6. Exécuter du code Python 
--   [ ] 7. Faire une recherche web
+-   [ ] 1. Lister les fichiers et dossiers 
+-   [ ] 2. Créer un fichier rapport.txt
+-   [ ] 3. Lire le contenu du fichier rapport.txt
+-   [ ] 4. Remplacer première par seconde
+-   [ ] 5. Exécuter une commande shell
+-   [ ] 6. Exécuter ls -la et montre la sortie. 
+-   [ ] 7. Faire une recherche web 
 -   [ ] 8. Naviguer sur une page web
 -   [ ] 9. Lister les outils disponibles
--   [ ] 10. Créer un nouvel outil dire_bonjour
+-   [ ] 10. Créer un nouvel outil dire_bonjour 
 -   [ ] 11. Créer et lire un fichier de tâches
 -   [ ] 12. Chercher la date et l'enregistrer
 -   [ ] 13. Écrire et exécuter un script de calcul
@@ -73,3 +73,6 @@ For each test in the list, follow these 6 steps:
 -   [ ] 48. Créer une micro-librairie Typescript et l'utiliser
 -   [ ] 49. Résoudre un problème logique en "Chain-of-Thought"
 -   [ ] 50. Développer les tests les plus critiques d'une grosse Biblio comme Fastmcp
+-   [ ] 51. Développer un outil pour faire la maintenance du systeme,
+-   [ ] 52. Développer un leger antivirus pour le systeme
+-   [ ] 53. Développer un antyspyware pour trouver des malwares

@@ -1,7 +1,7 @@
 import { Page } from 'playwright';
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '@/types.js';
+import type { Ctx, Tool } from '../../../../types.js';
 
 import { getRedisClientInstance } from '../../../redis/redisClient.js';
 import { getBrowser } from './browserManager.js';

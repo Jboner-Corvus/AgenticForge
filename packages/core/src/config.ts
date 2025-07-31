@@ -25,10 +25,7 @@ const configSchema = z.object({
   HUGGINGFACE_API_KEY: z.string().optional(),
   JWT_SECRET: z.string().optional(),
   LLM_API_KEY: z.string().optional(), // Added LLM_API_KEY
-  LLM_MODEL_NAME: z.string().default('gemini-pro'),
-  LLM_PROVIDER: z
-    .enum(['gemini', 'openai', 'mistral', 'huggingface', 'grok'])
-    .default('gemini'),
+  
   LLM_PROVIDER_HIERARCHY: z
     .string()
     .default('huggingface,grok,gemini,openai,mistral')
@@ -59,6 +56,7 @@ const configSchema = z.object({
   TAVILY_API_KEY: z.string().optional(),
   WEBHOOK_SECRET: z.string().optional(),
   WORKER_CONCURRENCY: z.coerce.number().default(5),
+  WORKER_WORKSPACE_PATH: z.string().optional(),
   // Standardized workspace path
   WORKSPACE_PATH: z.string().default('/home/demon/agentforge/workspace'),
 });
@@ -104,44 +102,7 @@ export async function loadConfig() {
   console.log('config.REDIS_HOST:', config.REDIS_HOST);
   console.log('config.LLM_API_KEY:', config.LLM_API_KEY);
 
-  // Add LLM API key if available and not already added
-  if (
-    process.env.LLM_API_KEY &&
-    !(await LlmKeyManager.hasAvailableKeys('gemini'))
-  ) {
-    await LlmKeyManager.addKey(
-      'gemini',
-      process.env.LLM_API_KEY,
-      config.LLM_MODEL_NAME,
-    );
-    getLogger().info('Gemini API key loaded from .env');
-  }
-
-  // Add HuggingFace API key if available and not already added
-  if (
-    process.env.HUGGINGFACE_API_KEY &&
-    !(await LlmKeyManager.hasAvailableKeys('huggingface'))
-  ) {
-    await LlmKeyManager.addKey(
-      'huggingface',
-      process.env.HUGGINGFACE_API_KEY,
-      config.LLM_MODEL_NAME,
-    );
-    getLogger().info('HuggingFace API key loaded from .env');
-  }
-
-  // Add Grok API key if available and not already added
-  if (
-    process.env.GROK_API_KEY &&
-    !(await LlmKeyManager.hasAvailableKeys('grok'))
-  ) {
-    await LlmKeyManager.addKey(
-      'grok',
-      process.env.GROK_API_KEY,
-      config.LLM_MODEL_NAME,
-    );
-    getLogger().info('Grok API key loaded from .env');
-  }
+  
 }
 
 // Initial load is now handled by the application's entry point (e.g., server-start.ts)

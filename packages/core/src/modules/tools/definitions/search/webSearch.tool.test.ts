@@ -1,9 +1,8 @@
 import { Queue } from 'bullmq';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Ctx, ILlmProvider, SessionData } from '@/types.js';
-
 import { getLoggerInstance } from '../../../../logger';
+import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
 
 // Define the mock for getLoggerInstance outside vi.mock to ensure consistency
 const mockLoggerInstance = {

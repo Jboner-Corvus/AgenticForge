@@ -1,8 +1,7 @@
 import { spawn } from 'child_process';
 
-import { Ctx } from '@/types';
-
 import { config } from '../config';
+import { Ctx } from '../types.js';
 
 export interface ShellCommandResult {
   exitCode: null | number;
@@ -15,11 +14,23 @@ export async function executeShellCommand(
   ctx: Ctx,
 ): Promise<ShellCommandResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, {
-      cwd: config.HOST_PROJECT_PATH,
+    const workingDir = config.WORKER_WORKSPACE_PATH || config.HOST_PROJECT_PATH;
+    const shellPath = process.env.SHELL || '/usr/bin/bash';
+    console.log(`[SHELLUTILS-DEBUG] shellPath: ${shellPath}`);
+
+    ctx.log.info(
+      {
+        cwd: workingDir,
+        path: process.env.PATH,
+        shell: shellPath,
+      },
+      'Executing shell command with environment:',
+    );
+
+    const child = spawn(shellPath, ['-c', command], {
+      cwd: workingDir,
       env: process.env,
-      shell: true,
-      stdio: 'pipe'
+      stdio: 'pipe',
     });
 
     let stdout = '';
@@ -50,6 +61,15 @@ export async function executeShellCommand(
     });
 
     child.on('error', (err: Error) => {
+      ctx.log.error(
+        {
+          cwd: workingDir,
+          err,
+          path: process.env.PATH,
+          shell: shellPath,
+        },
+        'Shell command execution failed',
+      );
       reject(err);
     });
   });

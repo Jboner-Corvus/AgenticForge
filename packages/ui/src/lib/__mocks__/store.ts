@@ -6,6 +6,7 @@ export const mockState: AppState = {
   agentStatus: null,
   toolStatus: '',
   authToken: 'test-token',
+  isAuthenticated: true,
   browserStatus: 'idle',
   clearDebugLog: vi.fn(),
   clearMessages: vi.fn(),

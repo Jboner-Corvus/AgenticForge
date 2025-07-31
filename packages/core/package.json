@@ -18,7 +18,7 @@
     "start:worker": "node dist/worker.js",
     "test": "NODE_OPTIONS=--max-old-space-size=32768 vitest run",
     "test:unit": "NODE_OPTIONS=--max-old-space-size=32768 vitest run --exclude 'src/webServer.integration.test.ts'",
-    "lint": "eslint --fix \"src/**/*.ts\"",
+    "lint": "eslint --max-warnings 0 --no-warn-ignored src/**/*.ts",
     "format": "prettier --write src/ && eslint --fix src/"
   },
   "dependencies": {

@@ -4,8 +4,7 @@ import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-import { AgentSession, Tool } from '@/types';
-
+import { AgentSession, Tool } from '../../types';
 import { getMasterPrompt } from './orchestrator.prompt';
 
 const __filename = fileURLToPath(import.meta.url);

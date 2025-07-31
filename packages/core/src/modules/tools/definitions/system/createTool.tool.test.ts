@@ -2,9 +2,8 @@ import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Ctx, ILlmProvider, SessionData } from '@/types.js';
-
 import { getLoggerInstance } from '../../../../logger.js';
+import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
 import { runQualityGate } from '../../../../utils/qualityGate';
 import { createToolTool } from './createTool.tool';
 

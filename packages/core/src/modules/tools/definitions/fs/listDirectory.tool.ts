@@ -2,9 +2,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '@/types.js';
-
 import { config } from '../../../../config.js';
+import { Ctx, Tool } from '../../../../types.js';
 
 const WORKSPACE_DIR = config.HOST_PROJECT_PATH;
 
@@ -45,9 +44,7 @@ export const listFilesTool: Tool<
       );
       const result = `Directory listing for '${listPath}':\n- ${fileList.join('\n- ')}`;
       ctx.log.info(`Listed files in directory: ${targetDir}`);
-      return fileList.length > 0
-        ? result
-        : `Directory '${listPath}' is empty.`;
+      return fileList.length > 0 ? result : `Directory '${listPath}' is empty.`;
     } catch (error: unknown) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return {

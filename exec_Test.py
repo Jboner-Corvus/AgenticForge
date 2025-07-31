@@ -144,7 +144,7 @@ def run_single_test(command_number_str: str):
     # --- Étape 1: Envoyer la requête POST initiale ---
     try:
         # Création du corps de la requête (payload)
-        payload = json.dumps({"prompt": prompt_text})
+        payload = json.dumps({"prompt": prompt_text, "llmModelName": "gemini-pro"})
 
         # Construction de la commande curl de manière sécurisée
         curl_command = [

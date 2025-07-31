@@ -21,7 +21,7 @@ export default function App() {
   const isControlPanelVisible = useStore((state) => state.isControlPanelVisible);
   const currentPage = useStore((state) => state.currentPage);
 
-  const { controlPanelWidth, setControlPanelWidth, canvasWidth, setCanvasWidth, handleMouseDownControlPanel, handleMouseDownCanvas } = useResizablePanel(300, 500);
+  const { controlPanelWidth, canvasWidth, setCanvasWidth, handleMouseDownCanvas } = useResizablePanel(300, 500);
 
   const renderMainContent = () => {
     switch (currentPage) {
@@ -58,24 +58,7 @@ export default function App() {
             style={{ width: controlPanelWidth }}
           >
             <ControlPanel />
-            <div
-              id="control-panel-divider"
-              role="separator"
-              aria-valuenow={controlPanelWidth}
-              aria-valuemin={100}
-              aria-valuemax={window.innerWidth / 2}
-              aria-controls="control-panel"
-              tabIndex={0}
-              onMouseDown={handleMouseDownControlPanel}
-              onKeyDown={(e) => {
-                if (e.key === 'ArrowLeft') {
-                  setControlPanelWidth(Math.max(100, controlPanelWidth - 10));
-                } else if (e.key === 'ArrowRight') {
-                  setControlPanelWidth(Math.min(window.innerWidth / 2, controlPanelWidth + 10));
-                }
-              }}
-              className="absolute top-0 right-0 w-2 h-full cursor-ew-resize bg-border hover:bg-primary transition-colors duration-200"
-            />
+            
           </div>
         )}
 
@@ -112,6 +95,7 @@ export default function App() {
                 }}
                 className="absolute top-0 left-0 w-2 h-full cursor-ew-resize bg-border hover:bg-primary transition-colors duration-200"
               />
+              
             </div>
           )}
 

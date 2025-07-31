@@ -65,8 +65,7 @@ vi.mock('../../config', async () => {
 
 import { Job, Queue } from 'bullmq';
 
-import { SessionData, Message as TestMessage } from '@/types';
-
+import { Message, SessionData } from '../../types';
 import { SessionManager } from './sessionManager';
 
 describe('SessionManager', () => {
@@ -145,7 +144,7 @@ describe('SessionManager', () => {
 
   it('should summarize history if it exceeds HISTORY_MAX_LENGTH', async () => {
     config.HISTORY_MAX_LENGTH = 5;
-    const longHistory: TestMessage[] = Array.from({ length: 10 }, (_, i) => ({
+    const longHistory: Message[] = Array.from({ length: 10 }, (_, i) => ({
       content: `Message ${i}`,
       id: `${i}`,
       timestamp: Date.now(),
@@ -167,9 +166,9 @@ describe('SessionManager', () => {
     expect(summarizeTool.execute).toHaveBeenCalled();
     expect(session.history.length).toBe(config.HISTORY_MAX_LENGTH);
     expect(session.history[0].type).toBe('agent_response');
-    expect(
-      (session.history[0] as { content: string } & TestMessage).content,
-    ).toContain('Summarized conversation');
+    expect((session.history[0] as { content: string }).content).toContain(
+      'Summarized conversation',
+    );
   });
 
   it('should delete a session from the database', async () => {

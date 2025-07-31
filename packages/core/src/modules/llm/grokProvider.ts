@@ -27,18 +27,17 @@ export class GrokProvider implements ILlmProvider {
     messages: LLMContent[],
     systemPrompt?: string,
     apiKey?: string,
-    modelName?: string, // Add modelName parameter
   ): Promise<string> {
     const log = getLogger().child({ module: 'GrokProvider' });
 
     let activeKey: LlmApiKey | null;
     if (apiKey) {
       activeKey = {
+        apiKey: apiKey,
+        apiModel: config.LLM_MODEL_NAME,
+        apiProvider: 'grok',
         errorCount: 0,
         isPermanentlyDisabled: false,
-        key: apiKey,
-        modelName: modelName || config.LLM_MODEL_NAME,
-        provider: 'grok',
       };
     } else {
       activeKey = await LlmKeyManager.getNextAvailableKey('grok');
@@ -63,24 +62,26 @@ export class GrokProvider implements ILlmProvider {
 
     const requestBody = {
       messages: grokMessages,
-      model: modelName || config.LLM_MODEL_NAME, // Use modelName if provided, else fallback to config
+      model: activeKey.apiModel, // Use modelName from activeKey
     };
 
     const body = JSON.stringify(requestBody);
 
     try {
       // Add a delay before making the LLM request
-      await new Promise(resolve => setTimeout(resolve, config.LLM_REQUEST_DELAY_MS));
+      await new Promise((resolve) =>
+        setTimeout(resolve, config.LLM_REQUEST_DELAY_MS),
+      );
 
       log.info(
         `[LLM CALL] Sending request to model: ${
-          modelName || config.LLM_MODEL_NAME
-        } via ${activeKey.provider}`,
+          activeKey.apiModel
+        } via ${activeKey.apiProvider}`,
       );
       const response = await fetch(apiUrl, {
         body,
         headers: {
-          Authorization: `Bearer ${activeKey.key}`,
+          Authorization: `Bearer ${activeKey.apiKey}`,
           'Content-Type': 'application/json',
         },
         method: 'POST',
@@ -92,8 +93,8 @@ export class GrokProvider implements ILlmProvider {
         log.error({ errorBody, status: response.status }, errorMessage);
         const errorType = this.getErrorType(response.status, errorBody);
         await LlmKeyManager.markKeyAsBad(
-          activeKey.provider,
-          activeKey.key,
+          activeKey.apiProvider,
+          activeKey.apiKey,
           errorType,
         );
         throw new LlmError(errorMessage);
@@ -112,8 +113,8 @@ export class GrokProvider implements ILlmProvider {
           JSON.stringify(data),
         );
         await LlmKeyManager.markKeyAsBad(
-          activeKey.provider,
-          activeKey.key,
+          activeKey.apiProvider,
+          activeKey.apiKey,
           errorType,
         );
         throw new LlmError(
@@ -140,7 +141,10 @@ export class GrokProvider implements ILlmProvider {
           );
         });
 
-      await LlmKeyManager.resetKeyStatus(activeKey.provider, activeKey.key);
+      await LlmKeyManager.resetKeyStatus(
+        activeKey.apiProvider,
+        activeKey.apiKey,
+      );
 
       return content.trim();
     } catch (_error) {
@@ -150,8 +154,8 @@ export class GrokProvider implements ILlmProvider {
       log.error({ _error }, 'Failed to get response from LLM');
       if (activeKey) {
         await LlmKeyManager.markKeyAsBad(
-          activeKey.provider,
-          activeKey.key,
+          activeKey.apiProvider,
+          activeKey.apiKey,
           LlmKeyErrorType.TEMPORARY,
         );
       }

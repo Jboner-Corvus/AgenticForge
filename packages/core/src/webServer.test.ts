@@ -2,7 +2,15 @@ import { Job } from 'bullmq';
 import express from 'express';
 import { Client } from 'pg';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, it, Mock, vi } from 'vitest';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  it,
+  Mock,
+  vi,
+} from 'vitest';
 
 vi.mock('fs/promises', () => ({
   readdir: vi.fn().mockResolvedValue(['file1.txt']),
@@ -10,7 +18,7 @@ vi.mock('fs/promises', () => ({
   stat: vi.fn().mockResolvedValue({ size: 10 }),
 }));
 
-import type { SessionData } from '@/types';
+import type { SessionData } from './types.js';
 
 import { mockRedis } from '../test/mocks/redisClient.mock';
 

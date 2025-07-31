@@ -1,8 +1,7 @@
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '@/types.js';
-
-import { executeShellCommand } from '@/utils/shellUtils.ts';
+import { Ctx, Tool } from '../../../../types.js';
+import { executeShellCommand } from '../../../../utils/shellUtils.js';
 
 export const executeShellCommandParams = z.object({
   command: z.string().describe('The shell command to execute.'),
@@ -30,6 +29,11 @@ export const executeShellCommandTool: Tool<
     args: z.infer<typeof executeShellCommandParams>,
     ctx: Ctx,
   ) => {
+    try {
+      await executeShellCommand('ls -l /bin/bash', ctx);
+    } catch (_) {
+      // ignore
+    }
     const detachCommand = args.detach ?? false; // Handle default here
 
     if (detachCommand) {

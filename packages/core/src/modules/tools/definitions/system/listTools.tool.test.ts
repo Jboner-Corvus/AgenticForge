@@ -87,7 +87,7 @@ const mockLoggerInstance = {
   warn: vi.fn(),
 };
 
-vi.mock('../../../../logger', () => ({
+vi.mock('../../../../logger.js', () => ({
   getLoggerInstance: vi.fn(() => mockLoggerInstance),
 }));
 
