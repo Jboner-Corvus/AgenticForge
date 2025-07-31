@@ -10,6 +10,7 @@ export function HeaderContainer() {
   const toggleDarkMode = useStore((state) => state.toggleDarkMode);
   const isHighContrastMode = useStore((state) => state.isHighContrastMode);
   const toggleHighContrastMode = useStore((state) => state.toggleHighContrastMode);
+  const setCurrentPage = useStore((state) => state.setCurrentPage);
 
   return (
     <Header
@@ -21,6 +22,7 @@ export function HeaderContainer() {
       isHighContrastMode={isHighContrastMode}
       toggleHighContrastMode={toggleHighContrastMode}
       isAuthenticated={false}
+      setCurrentPage={setCurrentPage}
     />
   );
 }

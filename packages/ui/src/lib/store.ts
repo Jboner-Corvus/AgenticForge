@@ -142,6 +142,8 @@ export interface AppState {
   toggleDarkMode: () => void;
   toggleIsCanvasVisible: () => void;
   clearCanvas: () => void;
+  currentPage: 'chat' | 'leaderboard' | 'llm-api-keys';
+  setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys') => void;
 
   // Session history actions
   saveSession: (name: string) => void;
@@ -481,6 +483,8 @@ export const useStore = create<AppState>((set, get) => ({
   toolCreationEnabled: true,
   updateSessionStatus: (status) => set({ sessionStatus: status }),
   toggleIsCanvasVisible: () => set((state) => ({ isCanvasVisible: !state.isCanvasVisible })),
+  currentPage: 'chat',
+  setCurrentPage: (page) => set({ currentPage: page }),
   startAgent: async () => {
     const { messageInputValue, authToken, sessionId, addDebugLog, setIsProcessing, setJobId, addMessage } = get();
 

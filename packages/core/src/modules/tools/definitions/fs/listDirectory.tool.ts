@@ -6,14 +6,14 @@ import type { Ctx, Tool } from '@/types.js';
 
 import { config } from '../../../../config.js';
 
-const WORKSPACE_DIR = config.WORKSPACE_PATH;
+const WORKSPACE_DIR = config.HOST_PROJECT_PATH;
 
 export const listFilesParams = z.object({
   path: z
     .string()
     .optional()
     .describe(
-      'The subdirectory to list within the workspace. Defaults to the root.',
+      'The subdirectory to list within the project. Defaults to the root.',
     ),
 });
 
@@ -29,13 +29,13 @@ export const listFilesTool: Tool<
   typeof listFilesOutput
 > = {
   description:
-    'Lists files and directories within a specified path in the workspace.',
+    'Lists files and directories within a specified path in the project.',
   execute: async (args: z.infer<typeof listFilesParams>, ctx: Ctx) => {
     const listPath = args.path || '.';
     const targetDir = path.resolve(WORKSPACE_DIR, listPath);
 
     if (!targetDir.startsWith(WORKSPACE_DIR)) {
-      return { erreur: 'Path is outside the allowed workspace directory.' };
+      return { erreur: 'Path is outside the allowed project directory.' };
     }
 
     try {
@@ -43,15 +43,15 @@ export const listFilesTool: Tool<
       const fileList = entries.map((entry) =>
         entry.isDirectory() ? `${entry.name}/` : entry.name,
       );
-      const result = `Directory listing for 'workspace/${listPath}':\n- ${fileList.join('\n- ')}`;
+      const result = `Directory listing for '${listPath}':\n- ${fileList.join('\n- ')}`;
       ctx.log.info(`Listed files in directory: ${targetDir}`);
       return fileList.length > 0
         ? result
-        : `Directory 'workspace/${listPath}' is empty.`;
+        : `Directory '${listPath}' is empty.`;
     } catch (error: unknown) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return {
-          erreur: `Directory not found at path: workspace/${listPath}`,
+          erreur: `Directory not found at path: ${listPath}`,
         };
       }
       ctx.log.error(
@@ -62,6 +62,7 @@ export const listFilesTool: Tool<
       };
     }
   },
+
   name: 'listFiles',
   parameters: listFilesParams,
 };

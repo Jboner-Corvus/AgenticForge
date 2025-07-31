@@ -46,7 +46,7 @@ services:
     ports:
       - "${PUBLIC_PORT:-8080}:3001"
     volumes:
-      - ./workspace:/usr/src/app/workspace
+      - ./workspace:/home/demon/agentforge/workspace
     depends_on:
       redis:
         condition: service_healthy

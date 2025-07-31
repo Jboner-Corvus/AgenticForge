@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 
 import { Logo } from './Logo';
 
-import { Settings, PanelLeft, Sun, Moon, Bell, Maximize, Minimize, LayoutDashboard, Contrast } from 'lucide-react';
+import { Settings, PanelLeft, Sun, Moon, Bell, Maximize, Minimize, LayoutDashboard, Contrast, BarChart, Key } from 'lucide-react';
 import { UserMenu } from './UserMenu';
 
 interface HeaderProps {
@@ -20,6 +20,7 @@ interface HeaderProps {
   isHighContrastMode: boolean;
   toggleHighContrastMode: () => void;
   isAuthenticated: boolean;
+  setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys') => void;
 }
 
 import { LoginModal } from './LoginModal';
@@ -32,6 +33,7 @@ const HeaderComponent: React.FC<HeaderProps> = ({
   toggleDarkMode,
   toggleHighContrastMode,
   isAuthenticated,
+  setCurrentPage,
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -128,6 +130,40 @@ const HeaderComponent: React.FC<HeaderProps> = ({
             </TooltipTrigger>
             <TooltipContent>
               <p>Toggle High Contrast Mode</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="Leaderboard"
+                onClick={() => setCurrentPage('leaderboard')}
+                type="button"
+                variant="ghost"
+              >
+                <BarChart size={20} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Leaderboard</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="LLM API Keys"
+                onClick={() => setCurrentPage('llm-api-keys')}
+                type="button"
+                variant="ghost"
+              >
+                <Key size={20} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>LLM API Keys</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

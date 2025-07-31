@@ -104,4 +104,6 @@ export const mockState: AppState = {
   setIsRemovingLlmApiKey: vi.fn(),
   setIsSettingActiveLlmApiKey: vi.fn(),
   setIsLoadingLeaderboardStats: vi.fn(),
+  currentPage: 'chat',
+  setCurrentPage: vi.fn(),
 };

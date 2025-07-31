@@ -238,12 +238,18 @@ start_worker() {
     echo -e "${COLOR_YELLOW}Démarrage du worker local en arrière-plan...${NC}"
     cd "${SCRIPT_DIR}/packages/core"
     
+    load_env_vars
+
     if [ "$NODE_ENV" = "production" ]; then
         echo -e "${COLOR_YELLOW}Démarrage du worker en mode production...${NC}"
-        POSTGRES_HOST=localhost NODE_OPTIONS='--enable-source-maps' pnpm exec node dist/worker.js > "${SCRIPT_DIR}/worker.log" 2>&1 &
+        export POSTGRES_HOST=localhost
+        export NODE_OPTIONS='--enable-source-maps'
+        pnpm exec node dist/worker.js > "${SCRIPT_DIR}/worker.log" 2>&1 &
     else
         echo -e "${COLOR_YELLOW}Démarrage du worker en mode développement...${NC}"
-        POSTGRES_HOST=localhost NODE_OPTIONS='--enable-source-maps' pnpm exec tsx watch src/worker.ts > "${SCRIPT_DIR}/worker.log" 2>&1 &
+        export POSTGRES_HOST=localhost
+        export NODE_OPTIONS='--enable-source-maps'
+        pnpm exec tsx watch src/worker.ts > "${SCRIPT_DIR}/worker.log" 2>&1 &
     fi
     
     local WORKER_PID=$!

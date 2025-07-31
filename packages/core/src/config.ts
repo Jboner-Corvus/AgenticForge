@@ -26,7 +26,6 @@ const configSchema = z.object({
   JWT_SECRET: z.string().optional(),
   LLM_API_KEY: z.string().optional(), // Added LLM_API_KEY
   LLM_MODEL_NAME: z.string().default('gemini-pro'),
-  LLM_REQUEST_DELAY_MS: z.coerce.number().default(4000), // Add a 4-second delay by default
   LLM_PROVIDER: z
     .enum(['gemini', 'openai', 'mistral', 'huggingface', 'grok'])
     .default('gemini'),
@@ -34,6 +33,7 @@ const configSchema = z.object({
     .string()
     .default('huggingface,grok,gemini,openai,mistral')
     .transform((str) => str.split(',').map((s) => s.trim())),
+  LLM_REQUEST_DELAY_MS: z.coerce.number().default(4000), // Add a 4-second delay by default
   LOG_LEVEL: z.string().default('debug'),
   MAX_FILE_SIZE_BYTES: z.coerce.number().default(10 * 1024 * 1024), // 10 MB
   MCP_API_KEY: z.string().optional(),
@@ -59,8 +59,8 @@ const configSchema = z.object({
   TAVILY_API_KEY: z.string().optional(),
   WEBHOOK_SECRET: z.string().optional(),
   WORKER_CONCURRENCY: z.coerce.number().default(5),
-  // Utilise process.cwd() pour garantir que le chemin est absolu et fiable
-  WORKSPACE_PATH: z.string().default(path.resolve(process.env.HOST_PROJECT_PATH || '/usr/src/app', 'workspace')),
+  // Standardized workspace path
+  WORKSPACE_PATH: z.string().default('/home/demon/agentforge/workspace'),
 });
 
 export type Config = z.infer<typeof configSchema>;

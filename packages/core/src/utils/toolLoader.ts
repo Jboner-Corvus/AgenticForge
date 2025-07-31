@@ -99,7 +99,7 @@ export function getToolsDir(): string {
     process.env.TOOLS_PATH ||
     (runningInDist
       ? path.join(__dirname, '..', 'modules', 'tools', 'definitions')
-      : path.resolve(__dirname, '..', 'modules', 'tools'));
+      : path.resolve(__dirname, '..', 'modules', 'tools', 'definitions'));
   getLogger().debug(`[getToolsDir] Constructed tools path: ${toolsPath}`);
   return toolsPath;
 }

@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 
 import { Ctx } from '@/types';
 
@@ -14,26 +14,43 @@ export async function executeShellCommand(
   command: string,
   ctx: Ctx,
 ): Promise<ShellCommandResult> {
-  return new Promise((resolve) => {
-    exec(command, { cwd: config.HOST_PROJECT_PATH }, (error, stdout, stderr) => {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, {
+      cwd: config.HOST_PROJECT_PATH,
+      env: process.env,
+      shell: true,
+      stdio: 'pipe'
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout?.on('data', (data: Buffer) => {
+      const chunk = data.toString();
+      stdout += chunk;
       if (ctx.streamContent) {
-        if (stdout) {
-          ctx.streamContent([
-            { content: stdout, toolName: 'executeShellCommand', type: 'stdout' },
-          ]);
-        }
-        if (stderr) {
-          ctx.streamContent([
-            { content: stderr, toolName: 'executeShellCommand', type: 'stderr' },
-          ]);
-        }
+        ctx.streamContent([
+          { content: chunk, toolName: 'executeShellCommand', type: 'stdout' },
+        ]);
       }
-      
-      if (error) {
-        resolve({ exitCode: error.code || 1, stderr, stdout });
-      } else {
-        resolve({ exitCode: 0, stderr, stdout });
+    });
+
+    child.stderr?.on('data', (data: Buffer) => {
+      const chunk = data.toString();
+      stderr += chunk;
+      if (ctx.streamContent) {
+        ctx.streamContent([
+          { content: chunk, toolName: 'executeShellCommand', type: 'stderr' },
+        ]);
       }
+    });
+
+    child.on('close', (code: null | number) => {
+      resolve({ exitCode: code, stderr, stdout });
+    });
+
+    child.on('error', (err: Error) => {
+      reject(err);
     });
   });
 }

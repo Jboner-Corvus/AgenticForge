@@ -12,13 +12,36 @@ import AgentOutputCanvas from './components/AgentOutputCanvas';
 import { HeaderContainer } from './components/HeaderContainer';
 import { SettingsModalContainer } from './components/SettingsModalContainer';
 import { ChatMessagesContainer } from './components/ChatMessagesContainer';
+import { LeaderboardPage } from './components/LeaderboardPage';
+import { LlmApiKeyManagementPage } from './components/LlmApiKeyManagementPage';
 import { useStore } from './lib/store';
 
 export default function App() {
   const isCanvasVisible = useStore((state) => state.isCanvasVisible);
   const isControlPanelVisible = useStore((state) => state.isControlPanelVisible);
+  const currentPage = useStore((state) => state.currentPage);
 
   const { controlPanelWidth, setControlPanelWidth, canvasWidth, setCanvasWidth, handleMouseDownControlPanel, handleMouseDownCanvas } = useResizablePanel(300, 500);
+
+  const renderMainContent = () => {
+    switch (currentPage) {
+      case 'chat':
+        return (
+          <div className={`flex flex-col h-full transition-all duration-500 ease-in-out flex-grow`}>
+            <ChatMessagesContainer />
+            <div className="p-6 flex items-center">
+                <UserInput />
+            </div>
+          </div>
+        );
+      case 'leaderboard':
+        return <LeaderboardPage />;
+      case 'llm-api-keys':
+        return <LlmApiKeyManagementPage />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -58,14 +81,7 @@ export default function App() {
 
         {/* Conteneur principal pour la discussion et le canevas */}
         <main className="flex-1 flex overflow-hidden gap-6 p-6">
-          
-          {/* Section de la discussion (largeur dynamique) */}
-          <div className={`flex flex-col h-full transition-all duration-500 ease-in-out flex-grow`}>
-            <ChatMessagesContainer />
-            <div className="p-6 flex items-center">
-                <UserInput />
-            </div>
-          </div>
+          {renderMainContent()}
 
           {/* Section du Canevas (apparaît et disparaît) */}
           {isCanvasVisible && (

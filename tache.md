@@ -12,7 +12,7 @@ For each test in the list, follow these 6 steps:
 2.  **Monitor Progress:** Check the end of `AgenticForge/worker.log` to see what's happening.
 3.  **Verify Result:**
     * Confirm the test's task was received and finished successfully.
-    * Check `AgenticForge/packages/core/workspace` to make sure the expected action (e.g., file created, data read) actually happened.
+    * Check `/home/demon/agentforge/workspace` to make sure the expected action (e.g., file created, data read) actually happened.
 4.  **Handle Failures:**
     * If a test fails or doesn't produce the right result, review the logs and code to find out why.
     * Fix the code or settings.
@@ -23,10 +23,10 @@ For each test in the list, follow these 6 steps:
 
 ### Commandes à Tester
 
--   [ ] 1. Lister les fichiers et dossiers 
--   [ ] 2. Créer un fichier rapport.txt
--   [ ] 3. Lire le contenu du fichier rapport.txt
--   [ ] 4. Remplacer première par seconde
+-   [x] 1. Lister les fichiers et dossiers 
+-   [x] 2. Créer un fichier rapport.txt
+-   [x] 3. Lire le contenu du fichier rapport.txt
+-   [x] 4. Remplacer première par seconde
 -   [ ] 5. Exécuter une commande shell 
 -   [ ] 6. Exécuter du code Python 
 -   [ ] 7. Faire une recherche web
