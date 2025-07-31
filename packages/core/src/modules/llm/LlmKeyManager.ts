@@ -12,6 +12,7 @@ export interface LlmApiKey {
   isPermanentlyDisabled?: boolean;
   key: string;
   lastUsed?: number;
+  modelName: string;
   provider: string;
 }
 
@@ -20,11 +21,15 @@ const MAX_TEMPORARY_ERROR_COUNT = 3; // Max consecutive temporary errors before 
 const TEMPORARY_DISABLE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 export class LlmKeyManager {
-  public static async addKey(provider: string, key: string): Promise<void> {
+  public static async addKey(
+    provider: string,
+    key: string,
+    modelName: string,
+  ): Promise<void> {
     const keys = await this.getKeys();
-    keys.push({ errorCount: 0, key, provider });
+    keys.push({ errorCount: 0, key, modelName, provider });
     await this.saveKeys(keys);
-    getLogger().info({ provider }, 'LLM API key added.');
+    getLogger().info({ key, modelName, provider }, 'LLM API key added.');
   }
 
   public static async getKeysForApi(): Promise<LlmApiKey[]> {
@@ -33,6 +38,7 @@ export class LlmKeyManager {
 
   public static async getNextAvailableKey(
     providerName?: string,
+    modelName?: string,
   ): Promise<LlmApiKey | null> {
     const keys = await this.getKeys();
     const now = Date.now();
@@ -42,6 +48,7 @@ export class LlmKeyManager {
       .filter(
         (key) =>
           (!providerName || key.provider === providerName) && // Filter by providerName
+          (!modelName || key.modelName === modelName) && // Filter by modelName
           !key.isPermanentlyDisabled &&
           (!key.isDisabledUntil || key.isDisabledUntil <= now),
       )
@@ -157,7 +164,11 @@ export class LlmKeyManager {
   }
 
   private static async getKeys(): Promise<LlmApiKey[]> {
-    const keysJson = await getRedisClientInstance().lrange(LLM_API_KEYS_REDIS_KEY, 0, -1);
+    const keysJson = await getRedisClientInstance().lrange(
+      LLM_API_KEYS_REDIS_KEY,
+      0,
+      -1,
+    );
     return keysJson.map((key: string) => JSON.parse(key));
   }
 

@@ -44,7 +44,6 @@ vi.mock('pg', () => ({
   })),
 }));
 
-
 import { SessionManager } from './modules/session/sessionManager';
 import * as toolLoader from './utils/toolLoader';
 
@@ -108,11 +107,14 @@ const mockConfigWatcher = {
 };
 
 vi.mock('./webServer', async () => {
-  const actual = await vi.importActual<typeof import('./webServer')>('./webServer');
+  const actual =
+    await vi.importActual<typeof import('./webServer')>('./webServer');
   return {
     ...actual,
     configWatcher: mockConfigWatcher,
-    initializeWebServer: vi.fn(actual.initializeWebServer) as typeof actual.initializeWebServer,
+    initializeWebServer: vi.fn(
+      actual.initializeWebServer,
+    ) as typeof actual.initializeWebServer,
   };
 });
 
@@ -122,9 +124,14 @@ describe('webServer', () => {
 
   beforeAll(async () => {
     const { initializeWebServer } = await import('./webServer');
-    const { getRedisClientInstance } = await import('./modules/redis/redisClient');
+    const { getRedisClientInstance } = await import(
+      './modules/redis/redisClient'
+    );
 
-    const webServer = await initializeWebServer(mockPgClient as any, getRedisClientInstance());
+    const webServer = await initializeWebServer(
+      mockPgClient as any,
+      getRedisClientInstance(),
+    );
     app = webServer.app;
     server = webServer.server;
   });

@@ -41,6 +41,7 @@ class AnthropicProvider implements ILlmProvider {
         errorCount: 0,
         isPermanentlyDisabled: false,
         key: apiKey,
+        modelName: modelName || config.LLM_MODEL_NAME,
         provider: 'anthropic',
       };
     } else {
@@ -206,6 +207,7 @@ class GeminiProvider implements ILlmProvider {
         errorCount: 0,
         isPermanentlyDisabled: false,
         key: apiKey,
+        modelName: modelName || config.LLM_MODEL_NAME,
         provider: 'gemini', // Assuming provider based on the class
       };
     } else {
@@ -217,6 +219,7 @@ class GeminiProvider implements ILlmProvider {
       log.error(errorMessage);
       throw new LlmError(errorMessage);
     }
+    
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${modelName || config.LLM_MODEL_NAME}:generateContent?key=${activeKey.key}`;
 
@@ -379,6 +382,7 @@ class GrokProvider implements ILlmProvider {
         errorCount: 0,
         isPermanentlyDisabled: false,
         key: apiKey,
+        modelName: modelName || config.LLM_MODEL_NAME,
         provider: 'grok',
       };
     } else {
@@ -533,6 +537,7 @@ class HuggingFaceProvider implements ILlmProvider {
         errorCount: 0,
         isPermanentlyDisabled: false,
         key: apiKey,
+        modelName: modelName || config.LLM_MODEL_NAME,
         provider: 'huggingface', // Assuming provider based on the class
       };
     } else {
@@ -683,6 +688,7 @@ class MistralProvider implements ILlmProvider {
         errorCount: 0,
         isPermanentlyDisabled: false,
         key: apiKey,
+        modelName: modelName || config.LLM_MODEL_NAME,
         provider: 'mistral', // Assuming provider based on the class
       };
     } else {
@@ -838,6 +844,7 @@ class OpenAIProvider implements ILlmProvider {
         errorCount: 0,
         isPermanentlyDisabled: false,
         key: apiKey,
+        modelName: modelName || config.LLM_MODEL_NAME,
         provider: 'openai', // Assuming provider based on the class
       };
     } else {

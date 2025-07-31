@@ -1,0 +1,24 @@
+{
+  "llm_errors": [
+    {
+      "code": "API_KEY_INVALID",
+      "http_status_code": 400,
+      "provider": "gemini",
+      "reason": "The provided API key is not valid for the Gemini API.",
+      "exact_message": "API key not valid. Please pass a valid API key.",
+      "why": "The API key used to authenticate with the Gemini API is either incorrect, expired, revoked, or does not have the necessary permissions. This error comes directly from the Gemini service, indicating a fundamental authentication failure.",
+      "how": "1. Verify the API key in `AgenticForge/.env` (LLM_API_KEY) against your Google Cloud Console or Gemini API dashboard.\n2. Ensure there are no typos or extra spaces.\n3. Generate a new API key if the existing one is compromised or suspected to be invalid.\n4. Check your Google Cloud project's billing status and API enablement.",
+      "last_seen": "2025-07-30T22:52:16.501Z"
+    },
+    {
+      "code": "RESOURCE_EXHAUSTED",
+      "http_status_code": 429,
+      "provider": "gemini",
+      "reason": "API quota exceeded for the Gemini API.",
+      "exact_message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits.",
+      "why": "You have sent too many requests to the Gemini API within a short period, exceeding your allocated quota. This is common with free-tier accounts or during heavy usage.",
+      "how": "1. Wait for the quota to reset (usually a few minutes).\n2. Review your usage patterns and optimize API calls.\n3. Consider upgrading your plan or requesting a quota increase from Google Cloud if this is a recurring issue.",
+      "last_seen": "2025-07-30T22:52:50.562Z"
+    }
+  ]
+}

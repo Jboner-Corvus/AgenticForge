@@ -9,6 +9,8 @@ async function startServer() {
   await loadConfig(); // Load configuration
   // Initialize logger after config is loaded
   const logger = getLoggerInstance();
+  logger.info(`Resolved WORKSPACE_PATH: ${config.WORKSPACE_PATH}`);
+  logger.info(`Resolved HOST_PROJECT_PATH: ${config.HOST_PROJECT_PATH}`);
   await new Promise((res) => setTimeout(res, 15000));
 
   let pgClient: null | PgClient = null;
@@ -20,7 +22,9 @@ async function startServer() {
       logger.info(`  Host: ${config.POSTGRES_HOST}`);
       logger.info(`  Port: ${config.POSTGRES_PORT}`);
       logger.info(`  User: ${config.POSTGRES_USER}`);
-      logger.info(`  Password: ${config.POSTGRES_PASSWORD ? '********' : 'undefined'}`);
+      logger.info(
+        `  Password: ${config.POSTGRES_PASSWORD ? '********' : 'undefined'}`,
+      );
       pgClient = new PgClient({
         database: config.POSTGRES_DB,
         host: config.POSTGRES_HOST,
@@ -42,9 +46,7 @@ async function startServer() {
   }
 
   if (!connected || !pgClient) {
-    logger.error(
-      'Could not connect to PostgreSQL after 5 attempts, exiting.',
-    );
+    logger.error('Could not connect to PostgreSQL after 5 attempts, exiting.');
     process.exit(1);
   }
 
@@ -52,8 +54,6 @@ async function startServer() {
     logger.error({ err }, 'PostgreSQL client error');
   });
 
-  
-  
   const redisClient = getRedisClientInstance();
   const { server } = await initializeWebServer(pgClient, redisClient);
 

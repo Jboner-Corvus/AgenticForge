@@ -15,9 +15,8 @@ export async function executeShellCommand(
   ctx: Ctx,
 ): Promise<ShellCommandResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, {
+    const child = spawn('/bin/sh', ['-c', command], {
       cwd: config.HOST_PROJECT_PATH,
-      shell: process.platform === 'win32' ? 'cmd.exe' : '/bin/bash',
       stdio: 'pipe',
     });
 

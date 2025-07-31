@@ -26,6 +26,7 @@ const configSchema = z.object({
   JWT_SECRET: z.string().optional(),
   LLM_API_KEY: z.string().optional(), // Added LLM_API_KEY
   LLM_MODEL_NAME: z.string().default('gemini-pro'),
+  LLM_REQUEST_DELAY_MS: z.coerce.number().default(4000), // Add a 4-second delay by default
   LLM_PROVIDER: z
     .enum(['gemini', 'openai', 'mistral', 'huggingface', 'grok'])
     .default('gemini'),
@@ -59,7 +60,7 @@ const configSchema = z.object({
   WEBHOOK_SECRET: z.string().optional(),
   WORKER_CONCURRENCY: z.coerce.number().default(5),
   // Utilise process.cwd() pour garantir que le chemin est absolu et fiable
-  WORKSPACE_PATH: z.string().default(path.resolve(process.cwd(), 'workspace')),
+  WORKSPACE_PATH: z.string().default(path.resolve(process.env.HOST_PROJECT_PATH || '/usr/src/app', 'workspace')),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -74,13 +75,26 @@ export async function loadConfig() {
   // Always load .env file to ensure consistent configuration across environments
   // The NODE_ENV check was removed to allow .env variables to be used in tests.
   // If specific test configurations are needed, they should be managed via test-specific .env files or direct environment variable setting in test scripts.
+  console.log('DEBUG: process.cwd():', process.cwd());
+  const envPath = path.resolve(__dirname, '..', '..', '..', '.env');
+  console.log('DEBUG: Resolved .env path:', envPath);
   const result = dotenv.config({
-    path: path.resolve(process.cwd(), '.env'),
+    path: envPath,
   });
 
   if (result.error) {
     console.warn(
       'Could not find .env file, using environment variables only.',
+      result.error,
+    );
+  } else if (result.parsed) {
+    console.log(
+      'DEBUG: .env file loaded successfully. Keys loaded:',
+      Object.keys(result.parsed),
+    );
+  } else {
+    console.log(
+      'DEBUG: .env file loaded, but no keys parsed (might be empty or malformed).',
     );
   }
 
@@ -88,13 +102,31 @@ export async function loadConfig() {
   console.log('Resolved WORKSPACE_PATH:', config.WORKSPACE_PATH);
   console.log('process.env.REDIS_HOST:', process.env.REDIS_HOST);
   console.log('config.REDIS_HOST:', config.REDIS_HOST);
+  console.log('config.LLM_API_KEY:', config.LLM_API_KEY);
+
+  // Add LLM API key if available and not already added
+  if (
+    process.env.LLM_API_KEY &&
+    !(await LlmKeyManager.hasAvailableKeys('gemini'))
+  ) {
+    await LlmKeyManager.addKey(
+      'gemini',
+      process.env.LLM_API_KEY,
+      config.LLM_MODEL_NAME,
+    );
+    getLogger().info('Gemini API key loaded from .env');
+  }
 
   // Add HuggingFace API key if available and not already added
   if (
     process.env.HUGGINGFACE_API_KEY &&
     !(await LlmKeyManager.hasAvailableKeys('huggingface'))
   ) {
-    await LlmKeyManager.addKey('huggingface', process.env.HUGGINGFACE_API_KEY);
+    await LlmKeyManager.addKey(
+      'huggingface',
+      process.env.HUGGINGFACE_API_KEY,
+      config.LLM_MODEL_NAME,
+    );
     getLogger().info('HuggingFace API key loaded from .env');
   }
 
@@ -103,7 +135,11 @@ export async function loadConfig() {
     process.env.GROK_API_KEY &&
     !(await LlmKeyManager.hasAvailableKeys('grok'))
   ) {
-    await LlmKeyManager.addKey('grok', process.env.GROK_API_KEY);
+    await LlmKeyManager.addKey(
+      'grok',
+      process.env.GROK_API_KEY,
+      config.LLM_MODEL_NAME,
+    );
     getLogger().info('Grok API key loaded from .env');
   }
 }

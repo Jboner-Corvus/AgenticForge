@@ -2,39 +2,33 @@
 ## 🧪 Procédure de Test Automatisée pour l'Agent
 ---
 
-**Objectif** : Exécuter de manière autonome une série de 50 tests prédéfinis, vérifier leur succès, et corriger les échecs si nécessaire.
+**Goal:** Automatically run 50 tests, check if they pass, and fix any failures.
 
-### Instructions pour l'Agent :
+### Agent Instructions:
 
-Vous devez parcourir la liste des tests ci-dessous. Pour chaque test, suivez les 6 procédure suivante obligatoirement  :
+For each test in the list, follow these 6 steps:
 
-1.  **Exécuter le Test** : Lancez le test correspondant en utilisant le script `AgenticForge/exec_Test.py` avec le numéro de commande approprié.
-    * **Exemple** : `python AgenticForge/exec_Test.py <numéro_du_test>`
-
-2.  **Surveiller l'Exécution** : Consultez la fin des logs du worker (`AgenticForge/worker.log`) pour suivre l'exécution de la tâche.
-
-3.  **Valider le Résultat** :
-    * Confirmez que la tâche associée au test a été reçue et s'est terminée avec succès.
-4.  * Vérifiez que l'action attendue par le test a bien été effectuée
-    (par exemple, un fichier créé, une donnée lue, une commande exécutée, etc.).
-
-5.  **Gérer les Échecs** :
-    * Si un test échoue ou ne produit pas le résultat attendu, analysez les logs et le code pour identifier la cause du problème.
-    * Corrigez le code ou la configuration nécessaire pour que le test puisse réussir.
-    * Ré-exécutez le test après la correction jusqu'à ce qu'il réussisse.
-
-6.  **Marquer le Test comme Terminé** : Une fois qu'un test a été exécuté avec succès et validé, marquez-le comme terminé. en editant ce fichier , tu peu rajouter tes probleme rencontré 
+1.  **Run the Test:** Use `python AgenticForge/exec_Test.py <test_number>` to start the test.
+2.  **Monitor Progress:** Check the end of `AgenticForge/worker.log` to see what's happening.
+3.  **Verify Result:**
+    * Confirm the test's task was received and finished successfully.
+    * Check `AgenticForge/packages/core/workspace` to make sure the expected action (e.g., file created, data read) actually happened.
+4.  **Handle Failures:**
+    * If a test fails or doesn't produce the right result, review the logs and code to find out why.
+    * Fix the code or settings.
+    * Rerun the test until it passes.
+5.  **Mark as Complete:** Once a test passes and is validated, mark it as finished in this file and add any issues you encountered.
 
 ---
 
 ### Commandes à Tester
 
--   [ ] 1. Lister les fichiers et dossiers
+-   [ ] 1. Lister les fichiers et dossiers 
 -   [ ] 2. Créer un fichier rapport.txt
 -   [ ] 3. Lire le contenu du fichier rapport.txt
 -   [ ] 4. Remplacer première par seconde
--   [ ] 5. Exécuter du code Python
--   [ ] 6. Exécuter une commande shell
+-   [ ] 5. Exécuter une commande shell 
+-   [ ] 6. Exécuter du code Python 
 -   [ ] 7. Faire une recherche web
 -   [ ] 8. Naviguer sur une page web
 -   [ ] 9. Lister les outils disponibles

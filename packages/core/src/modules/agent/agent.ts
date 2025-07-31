@@ -243,8 +243,8 @@ export class Agent {
               llmResponse = await getLlmProvider(providerToTry).getLlmResponse(
                 messagesForLlm,
                 orchestratorPrompt,
-                this.llmApiKey || this.apiKey, // Prioritize llmApiKey from constructor, then general apiKey
-                this.llmModelName, // Pass modelName to getLlmResponse
+                this.llmApiKey || this.apiKey,
+                this.llmModelName,
               );
               this.activeLlmProvider = providerToTry; // Update active provider on success
               this.session.activeLlmProvider = providerToTry; // Update session data

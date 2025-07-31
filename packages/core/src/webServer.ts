@@ -1,5 +1,3 @@
-
-
 import { exec } from 'child_process';
 import chokidar from 'chokidar';
 import cookieParser from 'cookie-parser';
@@ -29,7 +27,7 @@ export async function initializeWebServer(
   redisClient: Redis,
 ): Promise<{ app: Application; server: Server }> {
   const jobQueue = getJobQueue();
-  
+
   const app = express();
   const sessionManager = new SessionManager(pgClient);
   app.use(express.json());
@@ -424,7 +422,7 @@ export async function initializeWebServer(
         if (!provider || !key) {
           throw new AppError('Missing provider or key', { statusCode: 400 });
         }
-        await _LlmKeyManager.addKey(provider, key);
+        await _LlmKeyManager.addKey(provider, key, config.LLM_MODEL_NAME);
         res.status(200).json({ message: 'LLM API key added successfully.' });
       } catch (_error) {
         _next(_error);

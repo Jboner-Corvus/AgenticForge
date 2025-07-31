@@ -35,10 +35,12 @@ COPY package.json ./
 COPY .env ./
 
 # Install curl for healthcheck
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl bash
 
 # Supprimer pnpm si non nécessaire à l'exécution
 # RUN npm uninstall -g pnpm # Uncomment if pnpm is not needed at runtime
+
+RUN mkdir -p workspace
 
 EXPOSE 8080 3000
 

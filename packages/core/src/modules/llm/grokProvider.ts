@@ -37,6 +37,7 @@ export class GrokProvider implements ILlmProvider {
         errorCount: 0,
         isPermanentlyDisabled: false,
         key: apiKey,
+        modelName: modelName || config.LLM_MODEL_NAME,
         provider: 'grok',
       };
     } else {
@@ -68,6 +69,9 @@ export class GrokProvider implements ILlmProvider {
     const body = JSON.stringify(requestBody);
 
     try {
+      // Add a delay before making the LLM request
+      await new Promise(resolve => setTimeout(resolve, config.LLM_REQUEST_DELAY_MS));
+
       log.info(
         `[LLM CALL] Sending request to model: ${
           modelName || config.LLM_MODEL_NAME

@@ -168,7 +168,9 @@ describe('Agent Integration Tests', () => {
       }),
       unsubscribe: vi.fn(),
     };
-    (getRedisClientInstance().duplicate as Mock).mockReturnValue(mockRedisSubscriber);
+    (getRedisClientInstance().duplicate as Mock).mockReturnValue(
+      mockRedisSubscriber,
+    );
     (getRedisClientInstance().publish as Mock).mockResolvedValue(1);
 
     // Default mocks for LLM Key Manager

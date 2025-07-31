@@ -24,9 +24,13 @@ export async function initializeWorker(
   const sessionManager = new SessionManager(pgClient);
 
   if (config.LLM_API_KEY && config.LLM_PROVIDER) {
-    await LlmKeyManager.addKey(config.LLM_PROVIDER, config.LLM_API_KEY);
+    await LlmKeyManager.addKey(
+      config.LLM_PROVIDER,
+      config.LLM_API_KEY,
+      config.LLM_MODEL_NAME,
+    );
     getLoggerInstance().info(
-      `[INIT LLM] Added LLM API key for provider: ${config.LLM_PROVIDER}`,
+      `[INIT LLM] Added LLM API key for provider: ${config.LLM_PROVIDER} with model: ${config.LLM_MODEL_NAME}`,
     );
   }
 
@@ -201,10 +205,7 @@ export async function processJob(
     return finalResponse;
   } catch (error: unknown) {
     const errDetails = getErrDetails(error);
-    log.error(
-      { err: errDetails },
-      "Erreur dans l'exécution de l'agent",
-    );
+    log.error({ err: errDetails }, "Erreur dans l'exécution de l'agent");
 
     let errorMessage = errDetails.message;
     let eventType = 'error';
@@ -246,13 +247,15 @@ if (process.env.NODE_ENV !== 'test') {
     `[INIT LLM] LLM_PROVIDER détecté : ${process.env.LLM_PROVIDER}`,
   );
   getLoggerInstance().info(
-    `[INIT LLM] LLM_API_KEY (partiel) détecté : ${process.env.LLM_API_KEY ? process.env.LLM_API_KEY.substring(0, 5) + '...' : 'NON DÉTECTÉ'}`,
+    `[INIT LLM] LLM_API_KEY détecté : ${process.env.LLM_API_KEY || 'NON DÉTECTÉ'}`,
   );
   getLoggerInstance().info(
     `[INIT LLM] LLM_MODEL_NAME détecté : ${process.env.LLM_MODEL_NAME}`,
   );
 
-  getLoggerInstance().info(`PostgreSQL Host for Worker: ${config.POSTGRES_HOST}`);
+  getLoggerInstance().info(
+    `PostgreSQL Host for Worker: ${config.POSTGRES_HOST}`,
+  );
   const connectionString = `postgresql://${config.POSTGRES_USER}:${config.POSTGRES_PASSWORD}@${config.POSTGRES_HOST}:${config.POSTGRES_PORT}/${config.POSTGRES_DB}`;
   const redisConnection = getRedisClientInstance();
   const pgClient = new PgClient({

@@ -88,24 +88,7 @@ services:
 
   
 
-  worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: agentic_forge_worker
-    volumes:
-      - ./workspace:/usr/src/app/workspace
-    depends_on:
-      redis:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    environment: *common_env
-    mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
-    restart: unless-stopped
-    env_file: ./.env
-    networks:
-      - agentic_network
+  
 
   web:
     build:
