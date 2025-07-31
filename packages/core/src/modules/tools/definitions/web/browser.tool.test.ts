@@ -23,7 +23,7 @@ vi.mock('../../../redis/redisClient.js', () => ({
   },
 }));
 
-import { getLoggerInstance } from '@/logger.js';
+import { getLoggerInstance } from '../../logger';
 
 // Mock the logger to prevent console output during tests
 vi.mock('../../logger', () => ({

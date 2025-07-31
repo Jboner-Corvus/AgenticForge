@@ -75,13 +75,11 @@ export async function loadConfig() {
   // The NODE_ENV check was removed to allow .env variables to be used in tests.
   // If specific test configurations are needed, they should be managed via test-specific .env files or direct environment variable setting in test scripts.
   const result = dotenv.config({
-    path: path.resolve(process.cwd(), '.env'),
+    path: path.resolve(__dirname, '..', '..', '.env'), // Adjust path to point to the project root .env
   });
 
   if (result.error) {
-    console.warn(
-      'Could not find .env file, using environment variables only.',
-    );
+    console.warn('Could not find .env file, using environment variables only.');
   }
 
   config = configSchema.parse(process.env);

@@ -437,13 +437,13 @@ run_typecheck() {
 
 run_unit_tests() {
     echo -e "${COLOR_YELLOW}Lancement des tests unitaires...${NC}"
-    pnpm --filter=@agenticforge/core test:unit
+    NODE_OPTIONS="--max-old-space-size=4096" pnpm --filter=@agenticforge/core test:unit
     local test_exit_code=$?
     return $test_exit_code
 }
 
 run_all_checks() {
-    set -x # Enable shell debugging
+    #set -x # Enable shell debugging
     echo -e "${COLOR_YELLOW}Lancement de toutes les vérifications (TypeCheck, Lint, Test, Format)...${NC}"
 
     ALL_CHECKS_OUTPUT=""
@@ -464,10 +464,12 @@ run_all_checks() {
 
     # --- TypeCheck (UI & Core) ---
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour l'UI...${NC}"
+    echo -e "${COLOR_CYAN}Running: pnpm --filter @agenticforge/ui exec tsc --noEmit -p tsconfig.vitest.json${NC}"
     set -o pipefail
     UI_TYPECHECK_OUTPUT=$(pnpm --filter @agenticforge/ui exec tsc --noEmit -p tsconfig.vitest.json 2>&1 | tee /dev/tty)
     exit_code=$?
     set +o pipefail
+    echo -e "${COLOR_CYAN}TypeCheck UI Exit Code: $exit_code${NC}"
     if [ $exit_code -ne 0 ]; then
         FAILED_CHECKS+=("TypeCheck UI")
         while read -r line; do
@@ -479,10 +481,12 @@ run_all_checks() {
     fi
 
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour le Core...${NC}"
+    echo -e "${COLOR_CYAN}Running: pnpm --filter=@agenticforge/core exec tsc --noEmit${NC}"
     set -o pipefail
     CORE_TYPECHECK_OUTPUT=$(pnpm --filter=@agenticforge/core exec tsc --noEmit 2>&1 | tee /dev/tty)
     exit_code=$?
     set +o pipefail
+    echo -e "${COLOR_CYAN}TypeCheck Core Exit Code: $exit_code${NC}"
     if [ $exit_code -ne 0 ]; then
         FAILED_CHECKS+=("TypeCheck Core")
         while read -r line; do
@@ -494,15 +498,15 @@ run_all_checks() {
     fi
 
     # --- Lint ---
-    # Lancement du linter (vérification des erreurs) pour chaque package
     echo -e "${COLOR_YELLOW}Lancement du linter (vérification des erreurs)...${NC}"
 
-    # Linting pour le package 'core'
     echo -e "${COLOR_CYAN}Lancement du linter pour @agenticforge/core...${NC}"
+    echo -e "${COLOR_CYAN}Running: pnpm --filter=@agenticforge/core lint${NC}"
     set -o pipefail
     CORE_LINT_OUTPUT=$(pnpm --filter=@agenticforge/core lint 2>&1 | tee /dev/tty)
     CORE_LINT_EXIT_CODE=$?
     set +o pipefail
+    echo -e "${COLOR_CYAN}Lint Core Exit Code: $CORE_LINT_EXIT_CODE${NC}"
     if [ $CORE_LINT_EXIT_CODE -ne 0 ]; then
         FAILED_CHECKS+=("Lint (Core)")
         while read -r line; do
@@ -513,12 +517,13 @@ run_all_checks() {
         done < <(echo "$CORE_LINT_OUTPUT")
     fi
 
-    # Linting pour le package 'ui'
     echo -e "${COLOR_CYAN}Lancement du linter pour @agenticforge/ui...${NC}"
+    echo -e "${COLOR_CYAN}Running: pnpm --filter=@agenticforge/ui lint${NC}"
     set -o pipefail
     UI_LINT_OUTPUT=$(pnpm --filter=@agenticforge/ui lint 2>&1 | tee /dev/tty)
     UI_LINT_EXIT_CODE=$?
     set +o pipefail
+    echo -e "${COLOR_CYAN}Lint UI Exit Code: $UI_LINT_EXIT_CODE${NC}"
     if [ $UI_LINT_EXIT_CODE -ne 0 ]; then
         FAILED_CHECKS+=("Lint (UI)")
         while read -r line; do
@@ -530,15 +535,19 @@ run_all_checks() {
     fi
 
     echo -e "${COLOR_YELLOW}Lancement du linter (correction automatique)...${NC}"
+    echo -e "${COLOR_CYAN}Running: pnpm --filter=@agenticforge/core lint --fix${NC}"
     pnpm --filter=@agenticforge/core lint --fix > /dev/null 2>&1
+    echo -e "${COLOR_CYAN}Running: pnpm --filter=@agenticforge/ui lint --fix${NC}"
     pnpm --filter=@agenticforge/ui lint --fix > /dev/null 2>&1
 
     # --- Tests Unitaires (AVEC CAPTURE DE BLOCS DÉTAILLÉS) ---
     echo -e "${COLOR_YELLOW}Lancement des tests unitaires...${NC}"
+    echo -e "${COLOR_CYAN}Running: NODE_OPTIONS=\"--max-old-space-size=4096\" pnpm --filter=@agenticforge/core exec vitest run --exclude src/webServer.integration.test.ts${NC}"
     set -o pipefail
-    TEST_OUTPUT=$(pnpm --filter=@agenticforge/core exec vitest run --exclude src/webServer.integration.test.ts 2>&1 | tee /dev/tty)
+    TEST_OUTPUT=$(NODE_OPTIONS="--max-old-space-size=4096" pnpm --filter=@agenticforge/core exec vitest run --exclude src/webServer.integration.test.ts 2>&1 | tee /dev/tty)
     exit_code=$?
     set +o pipefail
+    echo -e "${COLOR_CYAN}Unit Tests Exit Code: $exit_code${NC}"
     if [ $exit_code -ne 0 ]; then
         FAILED_CHECKS+=("Tests")
         local capture_mode=0
@@ -573,6 +582,7 @@ run_all_checks() {
 
     # --- Format ---
     echo -e "${COLOR_YELLOW}Formatage du code...${NC}"
+    echo -e "${COLOR_CYAN}Running: pnpm --filter=@agenticforge/core format${NC}"
     pnpm --filter=@agenticforge/core format > /dev/null 2>&1
 
     # --- Génération du rapport final ---

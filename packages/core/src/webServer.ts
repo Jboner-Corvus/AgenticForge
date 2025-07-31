@@ -1,5 +1,3 @@
-
-
 import { exec } from 'child_process';
 import chokidar from 'chokidar';
 import cookieParser from 'cookie-parser';
@@ -29,7 +27,7 @@ export async function initializeWebServer(
   redisClient: Redis,
 ): Promise<{ app: Application; server: Server }> {
   const jobQueue = getJobQueue();
-  
+
   const app = express();
   const sessionManager = new SessionManager(pgClient);
   app.use(express.json());

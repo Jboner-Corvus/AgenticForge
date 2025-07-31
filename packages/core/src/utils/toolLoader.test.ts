@@ -1,6 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+// import * as v8 from 'v8'; // Import v8 for heap snapshots
 
 import { toolRegistry } from '../modules/tools/toolRegistry';
 import {
@@ -9,6 +10,18 @@ import {
   fileExtension,
   getToolsDir,
 } from './toolLoader';
+
+// Helper to take heap snapshots
+// function takeHeapSnapshot(name: string) {
+//   if (global.gc) {
+//     global.gc(); // Force garbage collection
+//   }
+//   const snapshotStream = v8.getHeapSnapshot();
+//   const filePath = path.join(process.cwd(), `heap-snapshot-${name}-${Date.now()}.heapsnapshot`);
+//   const fileStream = fs.createWriteStream(filePath);
+//   snapshotStream.pipe(fileStream);
+//   console.log(`Heap snapshot written to ${filePath}`);
+// }
 
 // Mock the entire toolRegistry module
 vi.mock('../modules/tools/toolRegistry', () => ({
@@ -93,6 +106,14 @@ describe('toolLoader', () => {
 
   afterEach(() => {
     vi.doUnmock('fs/promises');
+    const mockToolDir = getToolsDir();
+    const toolFilesToUnmock = [
+      path.join(mockToolDir, `testTool1${fileExtension}`),
+      path.join(mockToolDir, `testTool2${fileExtension}`),
+      path.join(mockToolDir, `errorTool${fileExtension}`),
+      path.join(mockToolDir, `invalidTool${fileExtension}`),
+    ];
+    toolFilesToUnmock.forEach(file => vi.doUnmock(file));
   });
 
   it('should discover and load tool files correctly', async () => {

@@ -1,5 +1,5 @@
 /// <reference types="vitest/globals" />
- 
+
 import { describe, vi } from 'vitest';
 
 vi.mock('../../../../config.js', async () => {
@@ -44,8 +44,6 @@ vi.mock('../../redis/redisClient.js', () => ({
     incrby: vi.fn(),
   },
 }));
-
-
 
 // Define the mock for getLoggerInstance outside vi.mock to ensure consistency
 const mockLoggerInstance = {

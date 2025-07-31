@@ -14,9 +14,14 @@ import type { SessionData } from '@/types';
 
 import { mockRedis } from '../test/mocks/redisClient.mock';
 
-vi.mock('./modules/redis/redisClient.js', () => ({
-  redisClient: mockRedis,
-}));
+vi.mock('./modules/redis/redisClient.js', async () => {
+  const actual = await vi.importActual<typeof import('./modules/redis/redisClient.js')>('./modules/redis/redisClient.js');
+  return {
+    ...actual,
+    getRedisClientInstance: vi.fn(() => mockRedis),
+    redisClient: mockRedis,
+  };
+});
 vi.mock('./logger.js', () => ({
   getLoggerInstance: vi.fn(() => ({
     child: vi.fn().mockReturnThis(),
@@ -43,7 +48,6 @@ vi.mock('pg', () => ({
     rows: [],
   })),
 }));
-
 
 import { SessionManager } from './modules/session/sessionManager';
 import * as toolLoader from './utils/toolLoader';
@@ -108,11 +112,14 @@ const mockConfigWatcher = {
 };
 
 vi.mock('./webServer', async () => {
-  const actual = await vi.importActual<typeof import('./webServer')>('./webServer');
+  const actual =
+    await vi.importActual<typeof import('./webServer')>('./webServer');
   return {
     ...actual,
     configWatcher: mockConfigWatcher,
-    initializeWebServer: vi.fn(actual.initializeWebServer) as typeof actual.initializeWebServer,
+    initializeWebServer: vi.fn(
+      actual.initializeWebServer,
+    ) as typeof actual.initializeWebServer,
   };
 });
 
@@ -120,11 +127,31 @@ describe('webServer', () => {
   let app: express.Application;
   let server: Server;
 
-  beforeAll(async () => {
-    const { initializeWebServer } = await import('./webServer');
-    const { getRedisClientInstance } = await import('./modules/redis/redisClient');
+  // Mock setInterval and clearInterval globally for these tests
+  const originalSetInterval = global.setInterval;
+  const originalClearInterval = global.clearInterval;
+  const activeIntervals = new Set<NodeJS.Timeout>();
 
-    const webServer = await initializeWebServer(mockPgClient as any, getRedisClientInstance());
+  beforeAll(async () => {
+    global.setInterval = vi.fn((cb, ms) => {
+      const id = originalSetInterval(cb, ms);
+      activeIntervals.add(id);
+      return id;
+    }) as any;
+    global.clearInterval = vi.fn((id) => {
+      originalClearInterval(id);
+      activeIntervals.delete(id);
+    }) as any;
+
+    const { initializeWebServer } = await import('./webServer');
+    const { getRedisClientInstance } = await import(
+      './modules/redis/redisClient'
+    );
+
+    const webServer = await initializeWebServer(
+      mockPgClient as any,
+      getRedisClientInstance(),
+    );
     app = webServer.app;
     server = webServer.server;
   });
@@ -148,6 +175,11 @@ describe('webServer', () => {
       await (mockRedis as any).quit();
     }
     await mockPgClient.end();
+
+    // Clear any remaining intervals
+    activeIntervals.forEach(clearInterval);
+    global.setInterval = originalSetInterval;
+    global.clearInterval = originalClearInterval;
   });
 
   beforeEach(() => {

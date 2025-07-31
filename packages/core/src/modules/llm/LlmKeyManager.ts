@@ -157,7 +157,11 @@ export class LlmKeyManager {
   }
 
   private static async getKeys(): Promise<LlmApiKey[]> {
-    const keysJson = await getRedisClientInstance().lrange(LLM_API_KEYS_REDIS_KEY, 0, -1);
+    const keysJson = await getRedisClientInstance().lrange(
+      LLM_API_KEYS_REDIS_KEY,
+      0,
+      -1,
+    );
     return keysJson.map((key: string) => JSON.parse(key));
   }
 

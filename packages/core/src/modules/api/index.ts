@@ -7,7 +7,6 @@ import { getLogger } from '../../logger.js';
 import { getRedisClientInstance } from '../../modules/redis/redisClient.js';
 import { initializeWebServer } from '../../webServer.js';
 
-
 async function startApplication() {
   const logger = getLogger();
   logger.info("Démarrage de l'application AgenticForge...");
@@ -21,7 +20,10 @@ async function startApplication() {
   try {
     // Démarrer le serveur web
     logger.info('Démarrage du serveur web...');
-    const { server } = await initializeWebServer(pgClient, getRedisClientInstance());
+    const { server } = await initializeWebServer(
+      pgClient,
+      getRedisClientInstance(),
+    );
     const port = config.PORT || 3001;
     server.listen(port, () => {
       logger.info(`Server listening on port ${port}`);

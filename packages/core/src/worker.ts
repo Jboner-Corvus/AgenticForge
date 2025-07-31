@@ -201,10 +201,7 @@ export async function processJob(
     return finalResponse;
   } catch (error: unknown) {
     const errDetails = getErrDetails(error);
-    log.error(
-      { err: errDetails },
-      "Erreur dans l'exécution de l'agent",
-    );
+    log.error({ err: errDetails }, "Erreur dans l'exécution de l'agent");
 
     let errorMessage = errDetails.message;
     let eventType = 'error';
@@ -252,7 +249,9 @@ if (process.env.NODE_ENV !== 'test') {
     `[INIT LLM] LLM_MODEL_NAME détecté : ${process.env.LLM_MODEL_NAME}`,
   );
 
-  getLoggerInstance().info(`PostgreSQL Host for Worker: ${config.POSTGRES_HOST}`);
+  getLoggerInstance().info(
+    `PostgreSQL Host for Worker: ${config.POSTGRES_HOST}`,
+  );
   const connectionString = `postgresql://${config.POSTGRES_USER}:${config.POSTGRES_PASSWORD}@${config.POSTGRES_HOST}:${config.POSTGRES_PORT}/${config.POSTGRES_DB}`;
   const redisConnection = getRedisClientInstance();
   const pgClient = new PgClient({

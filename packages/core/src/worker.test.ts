@@ -39,7 +39,7 @@ vi.mock('pg', () => ({
 vi.mock('./config', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./config')>();
   const mockedConfig = {
-    HISTORY_MAX_LENGTH: 10,
+    HISTORY_MAX_LENGTH: 5,
     LLM_PROVIDER: 'gemini', // Added missing config property
     REDIS_HOST: 'localhost',
     REDIS_PORT: 6379,
@@ -80,13 +80,14 @@ vi.mock('./logger', async (importOriginal) => {
   };
   const mockLogger = {
     child: vi.fn(() => mockChildLogger),
+    debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
   };
   return {
     ...actual,
-    _mockChildLogger: mockChildLogger, // Export the mockChildLogger
     _mockLogger: mockLogger, // Export the mockLogger
+    _mockChildLogger: mockChildLogger, // Export the mockChildLogger
     getLogger: vi.fn(() => mockLogger),
   };
 });
@@ -132,6 +133,8 @@ describe('processJob', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    // Ensure the mocked Redis connection is "quit" after each test
+    mockRedisConnection.quit();
   });
 
   it('should process a job successfully and return the final response', async () => {

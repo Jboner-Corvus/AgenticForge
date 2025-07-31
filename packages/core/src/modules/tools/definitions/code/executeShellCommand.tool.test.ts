@@ -6,8 +6,8 @@ import * as shellUtils from '@/utils/shellUtils';
 
 import { executeShellCommandTool } from './executeShellCommand.tool'; // Temp fix
 
-vi.mock('@/utils/shellUtils', async () => {
-  const actual = await vi.importActual('@/utils/shellUtils');
+vi.mock('../../../utils/shellUtils', async () => {
+  const actual = await vi.importActual('../../../utils/shellUtils');
   return {
     ...actual,
     executeShellCommand: vi.fn(),
