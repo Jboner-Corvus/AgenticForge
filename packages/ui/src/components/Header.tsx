@@ -1,11 +1,14 @@
-import { Settings, PanelLeft, Sun, Moon, Bell, Maximize, Minimize } from 'lucide-react';
-import React, { memo, useState, useCallback } from 'react';
 
-import { fr } from '../constants/fr';
+import { useState, useCallback } from 'react';
+import { useStore } from '../lib/store';
+
+import { useLanguage } from '../lib/hooks/useLanguageHook';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 import { Logo } from './Logo';
+
+import { Settings, PanelLeft, Sun, Moon, Bell, Maximize, Minimize, LayoutDashboard, Contrast, BarChart, Key, MessageSquare, User } from 'lucide-react';
 
 interface HeaderProps {
   setIsControlPanelVisible: (visible: boolean) => void;
@@ -13,15 +16,25 @@ interface HeaderProps {
   isControlPanelVisible: boolean;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
+  isHighContrastMode: boolean;
+  toggleHighContrastMode: () => void;
+  setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys') => void;
+  isAuthenticated: boolean;
+  setIsLoginModalOpen: (open: boolean) => void;
 }
 
-const HeaderComponent: React.FC<HeaderProps> = ({
+export function Header({
   setIsControlPanelVisible,
   setIsSettingsModalOpen,
   isControlPanelVisible,
   isDarkMode,
   toggleDarkMode,
-}) => {
+  toggleHighContrastMode,
+  setCurrentPage,
+  isAuthenticated,
+  setIsLoginModalOpen,
+}: HeaderProps) {
+  const { translations } = useLanguage();
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   const handleFullscreenToggle = useCallback(() => {
@@ -37,7 +50,7 @@ const HeaderComponent: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="flex items-center justify-between p-4 bg-gradient-to-r from-background to-secondary/50 border-b border-border">
+    <header className="sticky top-0 z-50 flex items-center justify-between p-4 bg-gradient-to-r from-background to-secondary/50 border-b border-border shadow-md">
       <div className="flex items-center space-x-4">
         <Button
           aria-label="Toggle Control Panel"
@@ -51,6 +64,25 @@ const HeaderComponent: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center space-x-2">
+        {!isAuthenticated && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  aria-label={translations.login}
+                  onClick={() => setIsLoginModalOpen(true)}
+                  type="button"
+                  variant="ghost"
+                >
+                  <User size={20} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{translations.login}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -65,6 +97,23 @@ const HeaderComponent: React.FC<HeaderProps> = ({
             </TooltipTrigger>
             <TooltipContent>
               <p>{isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="Toggle Canvas"
+                onClick={() => useStore.getState().setIsCanvasVisible(!useStore.getState().isCanvasVisible)}
+                type="button"
+                variant="ghost"
+              >
+                <LayoutDashboard size={20} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Afficher/Masquer le Canevas</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -89,6 +138,74 @@ const HeaderComponent: React.FC<HeaderProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                aria-label="Toggle High Contrast Mode"
+                onClick={toggleHighContrastMode}
+                type="button"
+                variant="ghost"
+              >
+                <Contrast size={20} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Toggle High Contrast Mode</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="Chat"
+                onClick={() => setCurrentPage('chat')}
+                type="button"
+                variant="ghost"
+              >
+                <MessageSquare size={20} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Chat</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="Leaderboard"
+                onClick={() => setCurrentPage('leaderboard')}
+                type="button"
+                variant="ghost"
+              >
+                <BarChart size={20} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Leaderboard</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="LLM API Keys"
+                onClick={() => setCurrentPage('llm-api-keys')}
+                type="button"
+                variant="ghost"
+              >
+                <Key size={20} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>LLM API Keys</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
                 aria-label="Notifications"
                 onClick={() => {}}
                 type="button"
@@ -98,7 +215,7 @@ const HeaderComponent: React.FC<HeaderProps> = ({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{fr.notifications}</p>
+              <p>{translations.notifications}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -115,13 +232,12 @@ const HeaderComponent: React.FC<HeaderProps> = ({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{fr.settings}</p>
+              <p>{translations.settings}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
+        
       </div>
     </header>
   );
 };
-
-export const Header = memo(HeaderComponent);

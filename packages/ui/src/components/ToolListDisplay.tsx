@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Tool } from '../lib/types';
+import type { Tool } from '../lib/types';
 
 interface ToolListDisplayProps {
   tools: Tool[];

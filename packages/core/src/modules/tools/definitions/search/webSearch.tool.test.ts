@@ -1,14 +1,22 @@
+import { Queue } from 'bullmq';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import loggerMock from '../../../../test/mocks/logger.js';
-vi.mock('../../../../logger.js', () => ({
-  default: loggerMock,
+import { getLoggerInstance } from '../../../../logger';
+import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
+
+// Define the mock for getLoggerInstance outside vi.mock to ensure consistency
+const mockLoggerInstance = {
+  child: vi.fn().mockReturnThis(),
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+};
+
+vi.mock('../../../../logger', () => ({
+  getLoggerInstance: vi.fn(() => mockLoggerInstance),
 }));
 
-import { Queue } from 'bullmq';
-
-import logger from '../../../../logger.js';
-import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
 import { webSearchTool } from './webSearch.tool.js';
 
 describe('webSearchTool', () => {
@@ -19,9 +27,14 @@ describe('webSearchTool', () => {
     vi.spyOn(global, 'fetch').mockRestore(); // Restore fetch mock
 
     mockCtx = {
-      job: { data: {}, id: 'test-job-id', isFailed: vi.fn(), name: 'test-job' },
+      job: {
+        data: { prompt: 'test prompt' },
+        id: 'test-job-id',
+        isFailed: vi.fn(),
+        name: 'test-job',
+      },
       llm: {} as ILlmProvider,
-      log: logger,
+      log: getLoggerInstance(),
       reportProgress: vi.fn(),
       session: {} as SessionData,
       streamContent: vi.fn(),
@@ -54,7 +67,7 @@ describe('webSearchTool', () => {
     const query = 'test search';
     const result = await webSearchTool.execute({ query }, mockCtx);
 
-    expect(loggerMock.info).toHaveBeenCalledWith(
+    expect(mockLoggerInstance.info).toHaveBeenCalledWith(
       `Performing web search for: "${query}"`,
     );
     expect(result).toContain('Test answer');
@@ -97,7 +110,7 @@ describe('webSearchTool', () => {
     expect(result).toEqual({
       erreur: 'DuckDuckGo API request failed: API error',
     });
-    expect(loggerMock.error).toHaveBeenCalled();
+    expect(mockLoggerInstance.error).toHaveBeenCalled();
   });
 
   it('should return an error message if the fetch call throws an exception', async () => {
@@ -110,6 +123,6 @@ describe('webSearchTool', () => {
     expect(result).toEqual({
       erreur: `An unexpected error occurred: ${errorMessage}`,
     });
-    expect(loggerMock.error).toHaveBeenCalled();
+    expect(mockLoggerInstance.error).toHaveBeenCalled();
   });
 });

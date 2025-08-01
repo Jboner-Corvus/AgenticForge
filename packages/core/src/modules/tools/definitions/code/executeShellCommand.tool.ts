@@ -1,17 +1,20 @@
-import { spawn } from 'child_process';
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../../../types.js';
-
-import { config } from '../../../../config.js';
-import { redis } from '../../../redis/redisClient.js';
+import { Ctx, Tool } from '../../../../types.js';
+import { executeShellCommand } from '../../../../utils/shellUtils.js';
 
 export const executeShellCommandParams = z.object({
   command: z.string().describe('The shell command to execute.'),
+  detach: z
+    .boolean()
+    .optional()
+    .describe(
+      'If true, the command will be executed in the background and the tool will return immediately.',
+    ),
 });
 
 export const executeShellCommandOutput = z.object({
-  exitCode: z.number(),
+  exitCode: z.number().nullable(),
   stderr: z.string(),
   stdout: z.string(),
 });
@@ -27,70 +30,47 @@ export const executeShellCommandTool: Tool<
     ctx: Ctx,
   ) => {
     try {
-      return await new Promise((resolve) => {
-        ctx.log.info(`Spawning shell command: ${args.command}`);
+      await executeShellCommand('ls -l /bin/bash', ctx);
+    } catch (_) {
+      // ignore
+    }
+    const detachCommand = args.detach ?? false; // Handle default here
 
-        const child = spawn(args.command, {
-          cwd: config.WORKSPACE_PATH,
-          shell: '/bin/bash',
-          stdio: 'pipe',
-        });
+    if (detachCommand) {
+      // Enqueue the command for background execution
+      const jobId = `shell-command-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      await ctx.taskQueue.add(
+        'execute-shell-command-detached', // Job name for the worker
+        {
+          command: args.command,
+          jobId: ctx.job!.id,
+          notificationChannel: `job:${ctx.job!.id}:events`,
+        },
+        { jobId: jobId, removeOnComplete: true, removeOnFail: true },
+      );
+      ctx.log.info(
+        `Enqueued detached shell command: ${args.command} with job ID: ${jobId}`,
+      );
+      return {
+        exitCode: 0,
+        stderr: '',
+        stdout: `Command "${args.command}" enqueued for background execution with job ID: ${jobId}. Results will be streamed to the frontend.`,
+      };
+    }
 
-        let stdout = '';
-        let stderr = '';
-
-        const streamToFrontend = (
-          type: 'stderr' | 'stdout',
-          content: string,
-        ) => {
-          const channel = `job:${ctx.job!.id}:events`;
-          const data = { data: { content, type }, type: 'tool_stream' };
-          redis.publish(channel, JSON.stringify(data));
-        };
-
-        child.stdout.on('data', (data: Buffer) => {
-          const chunk = data.toString();
-          stdout += chunk;
-          ctx.log.info(`[stdout] ${chunk}`);
-          streamToFrontend('stdout', chunk);
-        });
-
-        child.stderr.on('data', (data: Buffer) => {
-          const chunk = data.toString();
-          stderr += chunk;
-          ctx.log.error(`[stderr] ${chunk}`);
-          streamToFrontend('stderr', chunk);
-        });
-
-        child.on('error', (error) => {
-          ctx.log.error(
-            { err: error },
-            `Failed to start shell command: ${args.command}`,
-          );
-          resolve({
-            exitCode: 1, // Indicate an error exit code
-            stderr: stderr + `Failed to start command: ${error.message}`,
-            stdout: '',
-          });
-        });
-
-        child.on('close', (code) => {
-          const finalMessage = `--- COMMAND FINISHED ---\nExit Code: ${code}`;
-          ctx.log.info(finalMessage);
-          streamToFrontend('stdout', `\n${finalMessage}`);
-
-          resolve({
-            exitCode: code ?? 1, // Use 1 if code is null (e.g., killed by signal)
-            stderr,
-            stdout,
-          });
-        });
-      });
+    try {
+      const result = await executeShellCommand(args.command, ctx);
+      return result;
     } catch (error: unknown) {
-      ctx.log.error({ err: error }, `Error in executeShellCommandTool`);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      ctx.log.error(
+        { err: error },
+        `Error executing shell command: ${errorMessage}`,
+      );
       return {
         exitCode: 1,
-        stderr: `An unexpected error occurred: ${error instanceof Error ? error.message : String(error)}`,
+        stderr: `An unexpected error occurred: ${errorMessage}`,
         stdout: '',
       };
     }

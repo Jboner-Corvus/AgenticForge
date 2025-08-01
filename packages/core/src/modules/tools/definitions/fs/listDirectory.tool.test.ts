@@ -1,9 +1,9 @@
 /// <reference types="vitest/globals" />
 import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
-import { describe, expect, it, Mock, vi } from 'vitest';
+import { describe, expect, it, type Mock, vi } from 'vitest';
 
-import logger from '../../../../logger.js';
+import { getLoggerInstance } from '../../../../logger.js';
 import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
 import { listFilesTool } from './listDirectory.tool.js';
 
@@ -14,19 +14,19 @@ vi.mock('fs', () => ({
 }));
 
 vi.mock('../../../../logger.js', () => ({
-  default: {
+  getLoggerInstance: vi.fn(() => ({
     child: vi.fn().mockReturnThis(),
     debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
-  },
+  })),
 }));
 
 describe('listFilesTool', () => {
   const mockCtx: Ctx = {
     llm: {} as ILlmProvider,
-    log: logger,
+    log: getLoggerInstance(),
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),

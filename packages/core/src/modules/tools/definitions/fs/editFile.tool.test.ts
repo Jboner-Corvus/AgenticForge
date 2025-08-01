@@ -3,11 +3,16 @@ import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
 import _os from 'os';
 import path from 'path';
-import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
 import { config } from '../../../../config.js';
-import logger from '../../../../logger.js';
-import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
+import { getLogger } from '../../../../logger.js';
+import {
+  Tool as _Tool,
+  Ctx,
+  ILlmProvider,
+  SessionData,
+} from '../../../../types.js';
 import { editFileTool } from './editFile.tool.js';
 
 vi.mock('fs', () => ({
@@ -17,22 +22,26 @@ vi.mock('fs', () => ({
   },
 }));
 
-vi.mock('../../../logger.js', async () => {
-  const { default: pino } =
-    await vi.importActual<typeof import('pino')>('pino');
-  const mockLogger = pino({
-    enabled: false, // Disable logging output during tests
-    level: 'info',
-  });
+vi.mock('../../../../logger.js', async () => {
+  const actual = await vi.importActual<typeof import('../../../../logger.js')>(
+    '../../../../logger.js',
+  );
   return {
-    default: mockLogger,
+    ...actual,
+    getLogger: vi.fn(() => ({
+      child: vi.fn().mockReturnThis(),
+      debug: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+    })),
   };
 });
 
 describe('editFileTool', () => {
   const mockCtx: Ctx = {
     llm: {} as ILlmProvider,
-    log: logger,
+    log: getLogger(),
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),

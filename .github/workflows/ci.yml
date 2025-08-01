@@ -18,6 +18,16 @@ jobs:
   validate:
     # Utilise la dernière version d'Ubuntu comme environnement d'exécution
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7.2-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       # Étape 1 : Récupération du code du dépôt
@@ -54,6 +64,8 @@ jobs:
       # Exécute le script "test" de votre package.json avec Vitest
       - name: Run Tests
         run: pnpm run test
+        env:
+          REDIS_HOST: 127.0.0.1
 
       # Étape 7 : Compilation du projet
       # S'assure que le projet se compile correctement en TypeScript vers JavaScript

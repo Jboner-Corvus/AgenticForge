@@ -16,8 +16,17 @@ export const AgentThoughtBubble: React.FC<ThoughtBubbleProps> = ({ content, time
 
   return (
     <Card
-      className="bg-muted/30 border-border text-muted-foreground my-2 animate-fade-in cursor-pointer hover:bg-muted/60"
+      className="bg-muted/30 border-border text-muted-foreground animate-fade-in cursor-pointer hover:bg-muted/60 rounded-xl shadow-sm"
       onClick={toggleExpansion}
+      role="button"
+      tabIndex={0}
+      aria-expanded={isExpanded}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleExpansion();
+        }
+      }}
     >
       <CardContent className="p-2 flex items-center space-x-2">
         <Lightbulb className="h-5 w-5 text-yellow-500" />

@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 
-import { fr } from '../constants/fr';
+import { useLanguage } from '../lib/hooks/useLanguageHook';
 import { clientConfig } from '../config';
 import { testServerHealth } from '../lib/api';
 import { useStore } from '../lib/store';
@@ -10,6 +10,7 @@ function generateUUID() {
 }
 
 export const AppInitializer = () => {
+  const { translations } = useLanguage();
   const addDebugLog = useStore((state) => state.addDebugLog);
   const addMessage = useStore((state) => state.addMessage);
   const setAuthToken = useStore((state) => state.setAuthToken);
@@ -17,53 +18,86 @@ export const AppInitializer = () => {
   const setSessionId = useStore((state) => state.setSessionId);
   const setTokenStatus = useStore((state) => state.setTokenStatus);
   const fetchAndDisplayToolCount = useStore((state) => state.fetchAndDisplayToolCount);
+  const toggleDarkMode = useStore((state) => state.toggleDarkMode);
+  const toggleHighContrastMode = useStore((state) => state.toggleHighContrastMode);
 
   const initializeSession = useCallback(() => {
     let currentSessionId = localStorage.getItem('agenticForgeSessionId');
     if (!currentSessionId) {
       currentSessionId = generateUUID();
       localStorage.setItem('agenticForgeSessionId', currentSessionId);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${fr.newSessionGenerated}: ${currentSessionId}`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${translations.newSessionGenerated}: ${currentSessionId}`);
     } else {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${fr.sessionRetrieved}: ${currentSessionId}`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${translations.sessionRetrieved}: ${currentSessionId}`);
     }
     setSessionId(currentSessionId);
-  }, [addDebugLog, setSessionId]);
+  }, [addDebugLog, setSessionId, translations]);
 
   const checkServerHealth = useCallback(async () => {
-    addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${fr.checkingServerHealth}`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${translations.checkingServerHealth}`);
     try {
       const healthy = await testServerHealth();
       setServerHealthy(healthy);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [${healthy ? 'SUCCESS' : 'ERROR'}] ${fr.serverStatus}: ${healthy ? fr.serverOnline : fr.serverOffline}`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [${healthy ? 'SUCCESS' : 'ERROR'}] ${translations.serverStatus}: ${healthy ? translations.serverOnline : translations.serverOffline}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       setServerHealthy(false);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] ${fr.serverHealthCheckFailed}: ${message}`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] ${translations.serverHealthCheckFailed}: ${message}`);
     }
-  }, [addDebugLog, setServerHealthy]);
+  }, [addDebugLog, setServerHealthy, translations.checkingServerHealth, translations.serverOffline, translations.serverOnline, translations.serverStatus, translations.serverHealthCheckFailed]);
 
   const initializeAuthToken = useCallback(() => {
     const viteAuthToken = clientConfig.VITE_AUTH_TOKEN;
 
     if (viteAuthToken) {
       setAuthToken(viteAuthToken);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${fr.tokenLoadedFromEnv}.`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${translations.tokenLoadedFromEnv}.`);
       setTokenStatus(true);
       fetchAndDisplayToolCount();
     } else {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${fr.noTokenFound}.`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${translations.noTokenFound}.`);
       setTokenStatus(false);
     }
-  }, [addDebugLog, setAuthToken, setTokenStatus, fetchAndDisplayToolCount]);
+  }, [addDebugLog, setAuthToken, setTokenStatus, fetchAndDisplayToolCount, translations]);
 
   useEffect(() => {
-    addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${fr.interfaceInitialized}.`);
-    initializeSession();
-    initializeAuthToken();
-    checkServerHealth();
-    addMessage({      type: 'agent_response',      content: fr.agentReady,    });
-  }, [checkServerHealth, initializeAuthToken, initializeSession, addDebugLog, addMessage]);
+    const initialize = async () => {
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${translations.interfaceInitialized}.`);
+      initializeSession();
+      // Check for GitHub OAuth success redirect
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('github_auth_success') === 'true') {
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] GitHub OAuth success detected. Re-initializing auth token.`);
+        initializeAuthToken(); // Re-run to pick up new JWT from cookie
+        urlParams.delete('github_auth_success');
+        window.history.replaceState({}, document.title, `${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`);
+      }
+
+      initializeAuthToken();
+      await checkServerHealth();
+      await useStore.getState().initializeSessionAndMessages();
+      addMessage({ type: 'agent_response', content: translations.agentReady });
+
+      // Apply dark mode and high contrast mode based on initial store state
+      const isDarkMode = useStore.getState().isDarkMode;
+      const storedDarkMode = localStorage.getItem('agenticForgeDarkMode');
+      if (storedDarkMode === 'true' && !isDarkMode) {
+        toggleDarkMode();
+      } else if (storedDarkMode === 'false' && isDarkMode) {
+        toggleDarkMode();
+      }
+
+      const isHighContrastMode = useStore.getState().isHighContrastMode;
+      const storedHighContrastMode = localStorage.getItem('agenticForgeHighContrastMode');
+      if (storedHighContrastMode === 'true' && !isHighContrastMode) {
+        toggleHighContrastMode();
+      } else if (storedHighContrastMode === 'false' && isHighContrastMode) {
+        toggleHighContrastMode();
+      }
+    };
+
+    initialize();
+  }, [checkServerHealth, initializeAuthToken, initializeSession, addDebugLog, addMessage, toggleDarkMode, toggleHighContrastMode, translations.interfaceInitialized, translations.agentReady]);
 
   return null; // This component doesn't render anything visible
 };

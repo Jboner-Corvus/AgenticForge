@@ -1,0 +1,220 @@
+/// <reference types="vitest/globals" />
+
+import type { Job, Queue } from 'bullmq';
+
+import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+
+// Mock external dependencies
+vi.mock('./modules/redis/redisClient', async () => {
+  const mockRedisClient = {
+    del: vi.fn(),
+    duplicate: vi.fn(() => mockRedisClient),
+    get: vi.fn(),
+    incr: vi.fn(),
+    lrange: vi.fn().mockResolvedValue([]),
+    on: vi.fn(),
+    options: { host: 'localhost', port: 6379 },
+    publish: vi.fn(),
+    quit: vi.fn(),
+    rpush: vi.fn(),
+    set: vi.fn(),
+    subscribe: vi.fn(),
+    unsubscribe: vi.fn(),
+  } as any;
+  return {
+    getRedisClientInstance: vi.fn(() => mockRedisClient),
+  };
+});
+
+vi.mock('pg', () => ({
+  Client: vi.fn(() => ({
+    connect: vi.fn().mockResolvedValue(undefined),
+    end: vi.fn().mockResolvedValue(undefined),
+    query: vi.fn().mockResolvedValue({ rows: [] }),
+  })),
+}));
+
+vi.mock('./config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./config')>();
+  const mockedConfig = {
+    HISTORY_MAX_LENGTH: 10,
+    LLM_PROVIDER: 'gemini',
+    REDIS_HOST: 'localhost',
+    REDIS_PORT: 6379,
+  };
+  return {
+    ...actual,
+    config: mockedConfig,
+    getConfig: vi.fn(() => mockedConfig),
+  };
+});
+
+vi.mock('./logger', () => {
+  const mockChildLogger = {
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  };
+  const mockLogger = {
+    child: vi.fn(() => mockChildLogger),
+    error: vi.fn(),
+    info: vi.fn(),
+  };
+  return {
+    _mockChildLogger: mockChildLogger, // Export for direct access in tests
+    getLogger: vi.fn(() => mockLogger),
+    getLoggerInstance: vi.fn(() => mockLogger),
+  };
+});
+
+vi.mock('./modules/agent/agent');
+const _mockSessionManagerInstance = {
+  getSession: vi.fn(),
+  saveSession: vi.fn(),
+};
+vi.mock('./modules/session/sessionManager', () => ({
+  SessionManager: vi.fn(() => _mockSessionManagerInstance),
+}));
+
+vi.mock('./modules/tools/definitions/ai/summarize.tool', () => ({
+  summarizeTool: {
+    execute: vi.fn(),
+  },
+}));
+
+import { getConfig as _getConfig, config } from './config';
+import { getLoggerInstance } from './logger';
+import { Agent } from './modules/agent/agent';
+import * as _redis from './modules/redis/redisClient';
+import { getRedisClientInstance } from './modules/redis/redisClient';
+import { SessionManager as _SessionManager } from './modules/session/sessionManager';
+import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool';
+import { AppError as _AppError } from './utils/errorUtils';
+import { processJob } from './worker';
+
+describe('processJob', () => {
+  let mockJob: Partial<Job>;
+  let mockTools: any[];
+  let mockSessionData: any;
+  let mockJobQueue: Queue;
+  let mockRedisConnection: any;
+
+  beforeEach(() => {
+    mockJob = {
+      data: {
+        llmApiKey: 'testApiKey',
+        llmModelName: 'testModelName',
+        sessionId: 'testSessionId',
+      },
+      id: 'testJobId',
+      name: 'testJob',
+    };
+    mockTools = [];
+    mockSessionData = {
+      history: [],
+    };
+    mockJobQueue = {
+      add: vi.fn(),
+    } as any;
+    mockRedisConnection = getRedisClientInstance();
+
+    // Mock config.HISTORY_MAX_LENGTH for testing purposes
+    config.HISTORY_MAX_LENGTH = 10;
+
+    // Reset mocks
+    vi.clearAllMocks();
+    _mockSessionManagerInstance.getSession.mockResolvedValue(mockSessionData);
+    (Agent as Mock).mockImplementation(() => ({
+      run: vi.fn().mockResolvedValue('Agent final response'),
+    }));
+    (summarizeTool.execute as any).mockResolvedValue('Summarized conversation');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should process a job successfully and return the final response', async () => {
+    mockSessionData.history = Array(10).fill({
+      content: 'old message',
+      role: 'user',
+    }); // Ensure history exceeds max length after adding one more message
+    const result = await processJob(
+      mockJob as Job,
+      mockTools,
+      mockJobQueue,
+      _mockSessionManagerInstance as any,
+      mockRedisConnection,
+    );
+
+    expect(_mockSessionManagerInstance.getSession).toHaveBeenCalledWith(
+      'testSessionId',
+    );
+    expect(Agent).toHaveBeenCalledWith(
+      mockJob,
+      mockSessionData,
+      mockJobQueue,
+      mockTools,
+      'gemini',
+      _mockSessionManagerInstance,
+      mockJob.data.llmApiKey,
+      mockJob.data.llmModelName,
+    );
+    expect((Agent as any).mock.results[0].value.run).toHaveBeenCalled();
+    expect(mockSessionData.history).toContainEqual({
+      content: 'Summarized conversation',
+      id: expect.any(String),
+      timestamp: expect.any(Number),
+      type: 'agent_response',
+    });
+    expect(summarizeTool.execute).toHaveBeenCalled();
+    expect(_mockSessionManagerInstance.saveSession).toHaveBeenCalledWith(
+      mockSessionData,
+      mockJob,
+      mockJobQueue,
+    );
+    expect(mockRedisConnection.publish).toHaveBeenCalledWith(
+      'job:testJobId:events',
+      JSON.stringify({ content: 'Stream terminé.', type: 'close' }),
+    );
+    expect(result).toBe('Agent final response');
+  });
+
+  it('should handle AppError and publish an error event', async () => {
+    const errorMessage = 'This is an application error';
+    (Agent as any).mockImplementation(() => ({
+      run: vi.fn().mockRejectedValue(new _AppError(errorMessage)),
+    }));
+
+    await expect(
+      processJob(
+        mockJob as Job,
+        mockTools,
+        mockJobQueue,
+        _mockSessionManagerInstance as any,
+        mockRedisConnection,
+      ),
+    ).rejects.toThrow(_AppError);
+
+    expect(getLoggerInstance().child).toHaveBeenCalledWith({
+      jobId: 'testJobId',
+      sessionId: 'testSessionId',
+    });
+    const childLogger = (getLoggerInstance().child as Mock).mock.results[0]
+      .value;
+    expect(childLogger.error).toHaveBeenCalledWith(
+      expect.any(Object),
+      `Erreur dans l'exécution de l'agent`,
+    );
+    expect(mockRedisConnection.publish).toHaveBeenCalledWith(
+      'job:testJobId:events',
+      JSON.stringify({ message: errorMessage, type: 'error' }),
+    );
+    expect(mockRedisConnection.publish).toHaveBeenCalledWith(
+      'job:testJobId:events',
+      JSON.stringify({ content: 'Stream terminé.', type: 'close' }),
+    );
+    // Explicitly assert that saveSession is NOT called in the error path
+    expect(_mockSessionManagerInstance.saveSession).not.toHaveBeenCalled();
+  });
+});

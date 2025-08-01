@@ -34,26 +34,36 @@ export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
   execute: async (args: z.infer<typeof writeFileParams>, ctx: Ctx) => {
     const absolutePath = path.join(config.WORKSPACE_PATH, args.path);
 
+    // Final security check: ensure the resolved path is within the workspace
+    if (!absolutePath.startsWith(config.WORKSPACE_PATH)) {
+      return {
+        erreur: 'File path is outside the allowed workspace directory.',
+      };
+    }
+
     try {
-      // Assurer que le répertoire existe
+      // For very large content, skip the read/compare to avoid memory issues
+      if (args.content.length < 1024 * 1024) {
+        // 1MB threshold
+        if (
+          await fs
+            .stat(absolutePath)
+            .then(() => true)
+            .catch(() => false)
+        ) {
+          const currentContent = await fs.readFile(absolutePath, 'utf-8');
+          if (currentContent === args.content) {
+            const message = `File ${args.path} already contains the desired content. No changes made.`;
+            ctx.log.info(message);
+            return { message: message };
+          }
+        }
+      }
+
+      // Ensure the directory exists only if a write is necessary
       await fs
         .mkdir(path.dirname(absolutePath), { recursive: true })
         .catch(console.error);
-
-      // Vérifier si le fichier existe et si son contenu est identique
-      if (
-        await fs
-          .stat(absolutePath)
-          .then(() => true)
-          .catch(() => false)
-      ) {
-        const currentContent = await fs.readFile(absolutePath, 'utf-8');
-        if (currentContent === args.content) {
-          const message = `File ${args.path} already contains the desired content. No changes made.`;
-          ctx.log.info(message);
-          return { message: message };
-        }
-      }
 
       await fs.writeFile(absolutePath, args.content, 'utf-8');
 

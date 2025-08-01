@@ -25,7 +25,8 @@ const GENERATED_TOOLS_DIR = path.resolve(process.cwd(), 'src/tools/generated');
 const TOOL_TEMPLATE = `
 // Outil généré par l'agent : {{tool_name}}
 import { z } from 'zod';
-import type { Tool, Ctx } from '../../types.js';
+import type { Ctx, Tool } from '../../../../types.js';
+
 
 export const {{toolVarName}}Params = z.object({{parameters}});
 

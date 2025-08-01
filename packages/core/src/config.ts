@@ -1,29 +1,48 @@
+import * as dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
 // FICHIER : packages/core/src/config.ts
 import { z } from 'zod';
 
-// Résout correctement le chemin vers le fichier .env à la racine du projet.
-// const envPath = path.resolve(process.cwd(), '../../.env');
-// const result = dotenv.config({ path: envPath });
-
-// if (result.error) {
-//   console.warn('Could not find .env file, using environment variables only.');
-// }
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const configSchema = z.object({
   AGENT_MAX_ITERATIONS: z.coerce.number().default(10),
   AUTH_API_KEY: z.string().optional(),
   CODE_EXECUTION_TIMEOUT_MS: z.coerce.number().default(60000),
   CONTAINER_MEMORY_LIMIT: z.string().default('2g'),
+  GITHUB_CLIENT_ID: z.string().optional(),
+  GITHUB_CLIENT_SECRET: z.string().optional(),
+  GROK_API_KEY: z.string().optional(),
+
+  HISTORY_LOAD_LENGTH: z.coerce.number().default(50), // New config for loading only N recent messages
   HISTORY_MAX_LENGTH: z.coerce.number().default(1000),
-  HOST_PROJECT_PATH: z.string().default('/usr/src/app'),
-  LLM_API_KEY: z.string().optional(),
+  HOST_PROJECT_PATH: z.string().default(process.cwd()),
+  HUGGINGFACE_API_KEY: z.string().optional(),
+  JWT_SECRET: z.string().optional(),
+  LLM_API_KEY: z.string().optional(), // Added LLM_API_KEY
   LLM_MODEL_NAME: z.string().default('gemini-pro'),
-  LLM_PROVIDER: z.string().default('gemini'),
+  LLM_PROVIDER: z
+    .enum(['gemini', 'openai', 'mistral', 'huggingface', 'grok'])
+    .default('gemini'),
+  LLM_PROVIDER_HIERARCHY: z
+    .string()
+    .default('huggingface,grok,gemini,openai,mistral')
+    .transform((str) => str.split(',').map((s) => s.trim())),
+  LLM_REQUEST_DELAY_MS: z.coerce.number().default(4000), // Add a 4-second delay by default
+  LOG_LEVEL: z.string().default('debug'),
+  MAX_FILE_SIZE_BYTES: z.coerce.number().default(10 * 1024 * 1024), // 10 MB
   MCP_API_KEY: z.string().optional(),
   MCP_WEBHOOK_URL: z.string().optional(),
   NODE_ENV: z.string().default('development'),
   PORT: z.coerce.number().default(3001),
+
+  POSTGRES_DB: z.string().default('agenticforge'),
+  POSTGRES_HOST: z.string().default('postgres'),
+  POSTGRES_PASSWORD: z.string().optional(),
+  POSTGRES_PORT: z.coerce.number().default(5432),
+  POSTGRES_USER: z.string().default('user'),
 
   QUALITY_GATE_API_KEY: z.string().optional(),
   QUALITY_GATE_URL: z.string().optional(),
@@ -33,13 +52,56 @@ const configSchema = z.object({
   // CORRECTION : La valeur par défaut est maintenant alignée sur la configuration de Docker.
   REDIS_PORT: z.coerce.number().default(6379),
   REDIS_URL: z.string().optional(),
+  SESSION_EXPIRATION: z.coerce.number().default(7 * 24 * 60 * 60), // 7 days in seconds
   TAVILY_API_KEY: z.string().optional(),
   WEBHOOK_SECRET: z.string().optional(),
   WORKER_CONCURRENCY: z.coerce.number().default(5),
-  WORKSPACE_PATH: z.string().default(path.resolve(process.cwd(), 'workspace')),
+  WORKER_WORKSPACE_PATH: z.string().optional(),
+  // Standardized workspace path
+  WORKSPACE_PATH: z.string().default('/home/demon/agentforge/workspace'),
 });
 
-console.log('Current working directory:', process.cwd());
-export const config = configSchema.parse(process.env);
+export type Config = z.infer<typeof configSchema>;
 
-console.log('Resolved WORKSPACE_PATH:', config.WORKSPACE_PATH);
+export let config: Config = {} as Config;
+
+export function getConfig(): Config {
+  return config;
+}
+
+export async function loadConfig() {
+  // Always load .env file to ensure consistent configuration across environments
+  // The NODE_ENV check was removed to allow .env variables to be used in tests.
+  // If specific test configurations are needed, they should be managed via test-specific .env files or direct environment variable setting in test scripts.
+  console.log('DEBUG: process.cwd():', process.cwd());
+  const envPath = path.resolve(__dirname, '..', '..', '..', '.env');
+  console.log('DEBUG: Resolved .env path:', envPath);
+  const result = dotenv.config({
+    path: envPath,
+  });
+
+  if (result.error) {
+    console.warn(
+      'Could not find .env file, using environment variables only.',
+      result.error,
+    );
+  } else if (result.parsed) {
+    console.log(
+      'DEBUG: .env file loaded successfully. Keys loaded:',
+      Object.keys(result.parsed),
+    );
+  } else {
+    console.log(
+      'DEBUG: .env file loaded, but no keys parsed (might be empty or malformed).',
+    );
+  }
+
+  config = configSchema.parse(process.env);
+  console.log('Resolved WORKSPACE_PATH:', config.WORKSPACE_PATH);
+  console.log('process.env.REDIS_HOST:', process.env.REDIS_HOST);
+  console.log('config.REDIS_HOST:', config.REDIS_HOST);
+  console.log('config.LLM_API_KEY:', config.LLM_API_KEY);
+}
+
+// Initial load is now handled by the application's entry point (e.g., server-start.ts)
+// This prevents asynchronous operations from blocking module loading during tests.

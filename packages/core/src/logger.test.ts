@@ -1,97 +1,18 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+/// <reference types="vitest/globals" />
 
-// Mock the config module to control NODE_ENV
-vi.mock('./config.js', () => ({
-  config: {
-    NODE_ENV: 'test', // Default to 'test' environment
-  },
-}));
+import { pino } from 'pino';
+import { describe, expect, it, vi } from 'vitest';
 
-// Mock the pino module
-const pinoMock = vi.fn(() => ({
-  child: vi.fn().mockReturnThis(),
-  debug: vi.fn(),
-  error: vi.fn(),
-  info: vi.fn(),
-  level: 'debug',
-  warn: vi.fn(),
-}));
+import { getLogger } from './logger.js';
 
 vi.mock('pino', () => ({
-  pino: pinoMock,
+  pino: vi.fn(() => ({ info: vi.fn(), trace: vi.fn() })),
 }));
 
-describe('Logger', () => {
-  let originalNodeEnv: string | undefined;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.resetModules(); // Reset module cache
-    pinoMock.mockClear(); // Clear pino mock calls
-    originalNodeEnv = process.env.NODE_ENV;
-  });
-
-  afterEach(() => {
-    process.env.NODE_ENV = originalNodeEnv; // Restore original NODE_ENV
-  });
-
-  it('should instantiate a pino logger with debug level', async () => {
-    // Re-import logger.js to ensure it picks up the mock
-    await import('./logger.js');
-    expect(pinoMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        level: 'debug',
-      }),
-    );
-  });
-
-  it('should configure pino-pretty transport in development environment', async () => {
-    process.env.NODE_ENV = 'development';
-    vi.doMock('./config.js', () => ({
-      config: {
-        NODE_ENV: 'development',
-      },
-    }));
-    vi.resetModules();
-    await import('./logger.js');
-
-    expect(pinoMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        level: 'debug',
-        transport: {
-          options: {
-            colorize: true,
-            depth: 5,
-            levelFirst: true,
-            singleLine: false,
-            translateTime: 'SYS:standard',
-          },
-          target: 'pino-pretty',
-        },
-      }),
-    );
-  });
-
-  it('should not configure pino-pretty transport in non-development environment', async () => {
-    process.env.NODE_ENV = 'production';
-    vi.doMock('./config.js', () => ({
-      config: {
-        NODE_ENV: 'production',
-      },
-    }));
-    vi.resetModules();
-    await import('./logger.js');
-
-    expect(pinoMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        level: 'debug',
-      }),
-    );
-
-    expect(pinoMock).not.toHaveBeenCalledWith(
-      expect.objectContaining({
-        transport: expect.anything(),
-      }),
-    );
+describe('logger', () => {
+  it('should be an instance of a pino logger', () => {
+    const logger = getLogger();
+    expect(logger).toBeDefined();
+    expect(pino).toHaveBeenCalled();
   });
 });

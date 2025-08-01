@@ -2,32 +2,30 @@ import { Job, Queue } from 'bullmq';
 import { Logger } from 'pino';
 import { z } from 'zod';
 
+import type {
+  AgentResponseMessage,
+  ErrorMessage,
+  Message,
+  SessionData,
+  ThoughtMessage,
+  Tool,
+  ToolCallMessage,
+  ToolResultMessage,
+  UserMessage,
+} from '../../types.js';
+
 import { config } from '../../config.js';
-import logger from '../../logger.js';
-import { Ctx as _Ctx, SessionData, Tool } from '../../types.js';
-import { llmProvider } from '../../utils/llmProvider.js';
+import { getLoggerInstance } from '../../logger.js';
+import { LlmError } from '../../utils/LlmError.js';
+import { getLlmProvider } from '../../utils/llmProvider.js';
 import { LLMContent } from '../llm/llm-types.js';
-import { redis } from '../redis/redisClient.js';
+import { LlmKeyManager } from '../llm/LlmKeyManager.js';
+import { getRedisClientInstance } from '../redis/redisClient.js';
+import { SessionManager } from '../session/sessionManager.js';
 import { FinishToolSignal } from '../tools/definitions/index.js';
 import { toolRegistry } from '../tools/toolRegistry.js';
 import { getMasterPrompt } from './orchestrator.prompt.js';
-
-const llmResponseSchema = z.object({
-  answer: z.string().optional(),
-  canvas: z
-    .object({
-      content: z.string(),
-      contentType: z.enum(['html', 'markdown', 'url', 'text']),
-    })
-    .optional(),
-  command: z
-    .object({
-      name: z.string(),
-      params: z.unknown(),
-    })
-    .optional(),
-  thought: z.string().optional(),
-});
+import { llmResponseSchema } from './responseSchema.js';
 
 type ChannelData =
   | {
@@ -35,266 +33,621 @@ type ChannelData =
       contentType: 'html' | 'markdown' | 'text' | 'url';
       type: 'agent_canvas_output';
     }
+  | { content: string; toolName: string; type: 'tool_stream' } // Added toolName
   | { content: string; type: 'agent_response' }
   | { content: string; type: 'agent_thought' }
   | { content: string; type: 'raw_llm_response' }
   | { data: { args: unknown; name: string }; type: 'tool.start' }
-  | { result: unknown; toolName: string; type: 'tool_result' };
+  | { result: unknown; toolName: string; type: 'tool_result' }
+  | { type: 'agent_canvas_close' };
 
 interface Command {
   name: string;
-  params?: unknown;
+  params?: Record<string, unknown>;
 }
 
 export class Agent {
+  private activeLlmProvider: string; // New property
+  private apiKey?: string; // New property
+  private commandHistory: Command[] = [];
   private interrupted = false;
-  private readonly job: Job;
-  private lastCommand: Command | undefined;
+  private readonly job: Job<{ prompt: string }>;
   private readonly log: Logger;
   private loopCounter = 0;
+  private malformedResponseCounter = 0;
   private readonly session: SessionData;
+  private readonly sessionManager: SessionManager; // New property
+  private subscriber: any;
   private readonly taskQueue: Queue;
+
   private readonly tools: Tool<z.AnyZodObject, z.ZodTypeAny>[];
 
   constructor(
-    job: Job,
+    job: Job<{
+      apiKey?: string;
+      llmApiKey?: string;
+      llmModelName?: string;
+      llmProvider?: string;
+      prompt: string;
+    }>,
     session: SessionData,
     taskQueue: Queue,
-    tools?: Tool<z.AnyZodObject, z.ZodTypeAny>[],
+    tools: Tool<z.AnyZodObject, z.ZodTypeAny>[],
+    activeLlmProvider: string,
+    sessionManager: SessionManager,
+    apiKey?: string,
+    private readonly llmModelName?: string, // New property
+    private readonly llmApiKey?: string, // New property
   ) {
     this.job = job;
     this.session = session;
-    this.log = logger.child({ jobId: job.id, sessionId: session.id });
+    this.log = getLoggerInstance().child({
+      jobId: job.id,
+      sessionId: session.id,
+    });
     this.taskQueue = taskQueue;
     this.tools = tools ?? [];
+    this.activeLlmProvider = activeLlmProvider;
+    this.session.activeLlmProvider = activeLlmProvider; // Ensure session also has the active provider
+    this.sessionManager = sessionManager;
+    this.apiKey = apiKey;
   }
 
   public async run(): Promise<string> {
     this.log.info('Agent starting...');
-    const { prompt } = this.job.data;
-    this.session.history.push({ content: prompt, role: 'user' });
-
-    try {
-      this.tools.push(...toolRegistry.getAll());
-      this.log.info(
-        { count: this.tools.length },
-        'All tools are available in the registry.',
-      );
-    } catch (error) {
-      this.log.error({ error }, 'Agent run failed during tool loading');
-      return `Error: ${(error as Error).message}`;
-    }
-
     await this.setupInterruptListener();
+    try {
+      const jobData = this.job.data as { prompt: string };
+      const { prompt } = jobData;
 
-    let iterations = 0;
-    const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS ?? 10;
-
-    while (iterations < MAX_ITERATIONS) {
-      if (this.interrupted) {
-        this.log.info('Job has been interrupted.');
-        break;
-      }
-      if (await this.job.isFailed()) {
-        this.log.info('Job has failed.');
-        this.interrupted = true;
-        break;
-      }
-
-      iterations++;
-      const iterationLog = this.log.child({ iteration: iterations });
-      iterationLog.info(`Agent iteration starting`);
+      const newUserMessage: UserMessage = {
+        content: prompt,
+        id: crypto.randomUUID(),
+        timestamp: Date.now(),
+        type: 'user',
+      };
+      (this.session.history as Message[]).push(newUserMessage);
 
       try {
-        const orchestratorPrompt = getMasterPrompt(
-          { data: this.session, id: this.session.id },
-          this.tools,
+        this.tools.push(...toolRegistry.getAll());
+        getLoggerInstance().info(
+          { count: this.tools.length },
+          'All tools are available in the registry.',
         );
-
-        const messagesForLlm: LLMContent[] = this.session.history
-          .map((message): LLMContent | null => {
-            const role = message.role === 'tool' ? 'user' : message.role;
-            if (role === 'user' || role === 'model') {
-              return { parts: [{ text: message.content }], role };
-            }
-            return null;
-          })
-          .filter((m): m is LLMContent => m !== null);
-
-        const llmResponse = await llmProvider.getLlmResponse(
-          messagesForLlm,
-          orchestratorPrompt,
-        );
-        this.log.info({ llmResponse }, 'Raw LLM response');
-
-        if (typeof llmResponse !== 'string') {
-          throw new Error('The `generate` tool did not return a string.');
-        }
-
-        this.session.history.push({ content: llmResponse, role: 'model' });
-
-        const parsedResponse = this.parseLlmResponse(llmResponse, iterationLog);
-        const { answer, canvas, command, thought } = parsedResponse;
-
-        if (thought) {
-          iterationLog.info({ thought }, 'Agent thought');
-          this.publishToChannel({ content: thought, type: 'agent_thought' });
-        }
-        if (canvas) {
-          iterationLog.info({ canvas }, 'Agent canvas output');
-          this.publishToChannel({
-            content: canvas.content,
-            contentType: canvas.contentType,
-            type: 'agent_canvas_output',
-          });
-        }
-
-        if (answer) {
-          iterationLog.info({ answer }, 'Agent final answer');
-          this.publishToChannel({ content: answer, type: 'agent_response' });
-          return answer;
-        }
-
-        if (command) {
-          if (
-            this.lastCommand &&
-            JSON.stringify(this.lastCommand) === JSON.stringify(command)
-          ) {
-            this.loopCounter++;
-          } else {
-            this.loopCounter = 0;
-          }
-          this.lastCommand = command;
-
-          if (this.loopCounter > 3) {
-            this.log.warn('Loop detected. Breaking.');
-            return 'Agent stuck in a loop.';
-          }
-
-          const toolResult = await this.executeTool(command, iterationLog);
-          const resultForHistory = this.summarizeToolResult(toolResult);
-          this.session.history.push({
-            content: `Tool result: ${JSON.stringify(resultForHistory)}`,
-            role: 'tool',
-          });
-        } else if (!thought && !canvas) {
-          this.session.history.push({
-            content:
-              'You must provide a command, a thought, a canvas output, or a final answer.',
-            role: 'user',
-          });
-        }
-      } catch (error) {
-        if (error instanceof FinishToolSignal) {
-          this.log.info(
-            { answer: error.message },
-            'Agent finished by tool signal.',
-          );
-          return error.message;
-        }
-
-        const errorMessage = (error as Error).message;
-        iterationLog.error(
-          { error },
-          `Error in agent iteration: ${errorMessage}`,
-        );
-
-        if (errorMessage.includes('Failed to parse LLM response')) {
-          this.session.history.push({
-            content: `Your last response was not a valid command. You must choose a tool from the list or provide a final answer. Please try again. Last response: ${this.session.history.at(-1)?.content}`,
-            role: 'user',
-          });
+      } catch (_error) {
+        let errorMessage: string;
+        if (_error instanceof Error) {
+          errorMessage = _error.message;
         } else {
-          this.session.history.push({ content: errorMessage, role: 'tool' });
+          errorMessage = String(_error);
+        }
+        this.log.error(
+          {
+            error: _error instanceof Error ? _error : new Error(String(_error)),
+          },
+          `Agent run failed during tool loading: ${errorMessage}`,
+        );
+        return `Error: ${errorMessage}`;
+      }
+
+      let iterations = 0;
+      const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS ?? 10;
+
+      while (iterations < MAX_ITERATIONS) {
+        if (this.interrupted) {
+          this.log.info('Job has been interrupted.');
+          break;
+        }
+        if (await this.job.isFailed()) {
+          this.log.info('Job has failed.');
+          this.interrupted = true;
+          break;
+        }
+
+        iterations++;
+        const iterationLog = this.log.child({ iteration: iterations });
+        iterationLog.info(`Agent iteration starting`);
+
+        try {
+          const orchestratorPrompt = getMasterPrompt(
+            { data: this.session, id: String(this.session.id) },
+            this.tools,
+          );
+
+          const messagesForLlm: LLMContent[] = this.session.history
+            .map((message: Message): LLMContent | null => {
+              switch (message.type) {
+                case 'agent_canvas_output':
+                  return null;
+                case 'agent_response':
+                case 'agent_thought':
+                  const agentMessage = message as
+                    | AgentResponseMessage
+                    | ThoughtMessage;
+                  if (typeof agentMessage.content === 'string') {
+                    return {
+                      parts: [{ text: agentMessage.content }],
+                      role: 'model',
+                    };
+                  }
+                  return null;
+                case 'error':
+                  const errorMessage = message as ErrorMessage;
+                  return {
+                    parts: [{ text: `Error: ${errorMessage.content}` }],
+                    role: 'tool',
+                  };
+                case 'tool_call':
+                  const toolCallMessage = message as ToolCallMessage;
+                  return {
+                    parts: [
+                      {
+                        text: `Tool Call: ${toolCallMessage.toolName} with params ${JSON.stringify(toolCallMessage.params)}`,
+                      },
+                    ],
+                    role: 'tool',
+                  };
+                case 'tool_result':
+                  const toolResultMessage = message as ToolResultMessage;
+                  return {
+                    parts: [
+                      {
+                        text: `Tool Result: ${toolResultMessage.toolName} output: ${JSON.stringify(toolResultMessage.result)}`,
+                      },
+                    ],
+                    role: 'tool',
+                  };
+                case 'user':
+                  if (
+                    message.type === 'user' &&
+                    typeof message.content === 'string'
+                  ) {
+                    return {
+                      parts: [{ text: message.content }],
+                      role: 'user',
+                    } as LLMContent;
+                  }
+                  return null;
+                default:
+                  return null;
+              }
+            })
+            .filter((m: LLMContent | null): m is LLMContent => m !== null);
+
+          let llmResponse: string | undefined;
+          let currentProviderIndex = config.LLM_PROVIDER_HIERARCHY.indexOf(
+            this.activeLlmProvider,
+          );
+          if (currentProviderIndex === -1) {
+            currentProviderIndex = 0; // Default to first in hierarchy if current is not found
+          }
+
+          for (let i = 0; i < config.LLM_PROVIDER_HIERARCHY.length; i++) {
+            const providerToTry =
+              config.LLM_PROVIDER_HIERARCHY[
+                (currentProviderIndex + i) %
+                  config.LLM_PROVIDER_HIERARCHY.length
+              ];
+            this.log.info(
+              `Attempting LLM call with provider: ${providerToTry}`,
+            );
+            try {
+              if (!(await LlmKeyManager.hasAvailableKeys(providerToTry))) {
+                this.log.warn(
+                  `No available keys for provider ${providerToTry}. Skipping.`,
+                );
+                continue;
+              }
+              llmResponse = await getLlmProvider(providerToTry).getLlmResponse(
+                messagesForLlm,
+                orchestratorPrompt,
+                this.llmApiKey || this.apiKey,
+                this.llmModelName,
+              );
+              this.activeLlmProvider = providerToTry; // Update active provider on success
+              this.session.activeLlmProvider = providerToTry; // Update session data
+              await this.sessionManager.saveSession(
+                this.session,
+                this.job,
+                this.taskQueue,
+              ); // Persist session change
+              this.log.info(
+                { llmResponse, provider: providerToTry },
+                'Raw LLM response',
+              );
+              break; // Success, break out of provider loop
+            } catch (llmError) {
+              if (
+                llmError instanceof LlmError &&
+                llmError.message.includes('No LLM API key available')
+              ) {
+                this.log.warn(
+                  `No LLM API key available for ${providerToTry}. Trying next provider in hierarchy.`,
+                );
+                // Continue to next provider in hierarchy
+              } else {
+                // Re-throw other types of LLM errors immediately
+                throw llmError;
+              }
+            }
+          }
+
+          if (llmResponse === undefined) {
+            throw new LlmError(
+              'No LLM provider in the hierarchy could provide a response.',
+            );
+          }
+
+          if (this.interrupted) {
+            this.log.info('Job has been interrupted.');
+            break;
+          }
+
+          if (typeof llmResponse !== 'string' || llmResponse.trim() === '') {
+            this.log.error(
+              { llmResponse, type: typeof llmResponse },
+              'The `generate` tool did not return a string as expected or returned an empty string.',
+            );
+            this.session.history.push({
+              content:
+                'Error: The `generate` tool returned an unexpected non-string or empty response.',
+              id: crypto.randomUUID(),
+              timestamp: Date.now(),
+              type: 'error',
+            });
+            this.malformedResponseCounter++;
+            if (this.malformedResponseCounter > 2) {
+              this.log.error('Malformed response limit reached. Breaking.');
+              return 'Agent stopped due to persistent malformed responses.';
+            }
+            continue;
+          }
+
+          this.malformedResponseCounter = 0;
+
+          const parsedResponse = this.parseLlmResponse(
+            llmResponse,
+            iterationLog,
+          );
+          this.log.debug(
+            { parsedResponse },
+            'Parsed LLM response before answer check',
+          );
+          const { answer, canvas, command, thought } = parsedResponse;
+
+          if (answer) {
+            this.session.history.push({
+              content: answer,
+              id: crypto.randomUUID(),
+              timestamp: Date.now(),
+              type: 'agent_response',
+            });
+          } else if (thought) {
+            this.session.history.push({
+              content: thought,
+              id: crypto.randomUUID(),
+              timestamp: Date.now(),
+              type: 'agent_thought',
+            });
+          } else if (command) {
+            this.session.history.push({
+              id: crypto.randomUUID(),
+              params: (command.params as Record<string, unknown>) || {},
+              timestamp: Date.now(),
+              toolName: command.name,
+              type: 'tool_call',
+            });
+          } else if (canvas) {
+            this.session.history.push({
+              content: canvas.content,
+              contentType: canvas.contentType,
+              id: crypto.randomUUID(),
+              timestamp: Date.now(),
+              type: 'agent_canvas_output',
+            });
+          }
+
+          if (this.interrupted) {
+            this.log.info('Job has been interrupted.');
+            break;
+          }
+
+          if (thought) {
+            iterationLog.info({ thought }, 'Agent thought');
+            this.publishToChannel({ content: thought, type: 'agent_thought' });
+          }
+          if (canvas) {
+            iterationLog.info({ canvas }, 'Agent canvas output');
+            this.publishToChannel({
+              content: canvas.content,
+              contentType: canvas.contentType,
+              type: 'agent_canvas_output',
+            });
+            if (!command) {
+              this.publishToChannel({ type: 'agent_canvas_close' });
+              return 'Agent displayed content on the canvas.';
+            }
+          }
+
+          if (answer) {
+            iterationLog.info({ answer }, 'Agent final answer');
+            this.publishToChannel({ content: answer, type: 'agent_response' });
+            return answer;
+          }
+
+          if (command && command.name === 'finish') {
+            const finishResult = await this.executeTool(command, iterationLog);
+            if (
+              typeof finishResult === 'object' &&
+              finishResult !== null &&
+              'answer' in finishResult &&
+              typeof (finishResult as { answer: unknown }).answer === 'string'
+            ) {
+              const finalAnswer = (finishResult as { answer: string }).answer;
+              iterationLog.info(
+                { finalAnswer },
+                'Agent finished via finish tool',
+              );
+              this.publishToChannel({
+                content: finalAnswer,
+                type: 'agent_response',
+              });
+              this.session.history.push({
+                id: crypto.randomUUID(),
+                result: finishResult,
+                timestamp: Date.now(),
+                toolName: 'finish',
+                type: 'tool_result',
+              });
+              return finalAnswer;
+            } else {
+              // If finish tool doesn't return an object with 'answer', treat it as an error
+              const errorMessage = `Finish tool did not return a valid answer object: ${JSON.stringify(finishResult)}`;
+              iterationLog.error(errorMessage);
+              this.session.history.push({
+                content: `Error: ${errorMessage}`,
+                id: crypto.randomUUID(),
+                timestamp: Date.now(),
+                type: 'error',
+              });
+              return errorMessage;
+            }
+          } else if (command) {
+            this.commandHistory.push(command);
+            if (this.commandHistory.length > 5) {
+              this.commandHistory.shift();
+            }
+
+            const lastTwoCommands = this.commandHistory.slice(-2);
+            if (
+              this.commandHistory.length > 1 &&
+              JSON.stringify(lastTwoCommands[0]) ===
+                JSON.stringify(lastTwoCommands[1])
+            ) {
+              this.loopCounter++;
+            } else {
+              this.loopCounter = 0;
+            }
+
+            if (this.loopCounter > 2) {
+              this.log.warn('Loop detected. Breaking.');
+              return 'Agent stuck in a loop.';
+            }
+
+            const toolResult = await this.executeTool(command, iterationLog);
+            this.session.history.push({
+              id: crypto.randomUUID(),
+              result: toolResult as Record<string, unknown>,
+              timestamp: Date.now(),
+              toolName: command.name,
+              type: 'tool_result',
+            });
+            if (
+              typeof toolResult === 'string' &&
+              toolResult.startsWith('Error executing tool')
+            ) {
+              this.session.history.push({
+                content: `The tool execution failed with the following error: ${toolResult}. Please analyze the error and try a different approach. You can use another tool, or try to fix the problem with the previous tool.`,
+                id: crypto.randomUUID(),
+                timestamp: Date.now(),
+                type: 'error',
+              });
+            }
+          } else if (!thought && !canvas) {
+            this.session.history.push({
+              content:
+                'You must provide a command, a thought, a canvas output, or a final answer.',
+              id: crypto.randomUUID(),
+              timestamp: Date.now(),
+              type: 'error',
+            });
+          }
+        } catch (_error) {
+          if (_error instanceof FinishToolSignal) {
+            this.log.info(
+              { answer: _error.message },
+              'Agent finished by tool signal.',
+            );
+            this.publishToChannel({
+              content: _error.message,
+              type: 'agent_response',
+            });
+            return _error.message;
+          }
+
+          const errorMessage = (_error as Error).message;
+          iterationLog.error(
+            { error: _error },
+            `Error in agent iteration: ${errorMessage}`,
+          );
+
+          if (errorMessage.includes('Failed to parse LLM response')) {
+            this.session.history.push({
+              content:
+                'I was unable to parse your last response. Please ensure your response is a valid JSON object with the expected properties (`thought`, `command`, `canvas`, or `answer`). Check for syntax errors, missing commas, or unclosed brackets.',
+              id: crypto.randomUUID(),
+              timestamp: Date.now(),
+              type: 'error',
+            });
+            // Add the error message to history and continue the loop
+            continue;
+          } else if (errorMessage.includes('Error executing tool')) {
+            // This error is already handled by the logic above, so we just continue
+            continue;
+          } else {
+            this.session.history.push({
+              content: `An unexpected error occurred: ${errorMessage}`,
+              id: crypto.randomUUID(),
+              timestamp: Date.now(),
+              type: 'error',
+            });
+            this.interrupted = true;
+            return `Error in agent iteration: ${errorMessage}`;
+          }
         }
       }
-    }
 
-    if (this.interrupted) {
-      return 'Agent execution interrupted.';
+      if (this.interrupted) {
+        return 'Agent execution interrupted.';
+      }
+      if (iterations >= MAX_ITERATIONS) {
+        return 'Agent reached maximum iterations without a final answer.';
+      }
+      // If the loop finishes without returning, it means no final answer was provided
+      // and it wasn't interrupted, so it reached max iterations.
+      return 'Agent reached maximum iterations without a final answer.';
+    } catch (_error) {
+      if (_error instanceof FinishToolSignal) {
+        this.log.info(
+          { answer: _error.message },
+          'Agent finished by tool signal.',
+        );
+        this.publishToChannel({
+          content: _error.message,
+          type: 'agent_response',
+        });
+        return _error.message;
+      }
+      const errorMessage = (_error as Error).message;
+      this.log.error({ error: _error }, `Agent run failed: ${errorMessage}`);
+      return `Agent run failed: ${errorMessage}`;
+    } finally {
+      await this.cleanup();
     }
-    return 'Agent reached maximum iterations without a final answer.';
+  }
+
+  private async cleanup() {
+    if (this.subscriber) {
+      const channel = `job:${this.job.id}:interrupt`;
+      await this.subscriber.unsubscribe(channel);
+      await this.subscriber.quit();
+    }
   }
 
   private async executeTool(command: Command, log: Logger): Promise<unknown> {
     try {
+      this.publishToChannel({
+        data: { args: command.params, name: command.name },
+        type: 'tool.start',
+      });
       const result = await toolRegistry.execute(command.name, command.params, {
         job: this.job,
-        llm: llmProvider,
+        llm: getLlmProvider(this.activeLlmProvider),
         log,
         session: this.session,
         taskQueue: this.taskQueue,
       });
-      if (result instanceof FinishToolSignal) {
-        throw result;
-      }
+      this.publishToChannel({
+        result: result, // Removed 'as unknown'
+        toolName: command.name,
+        type: 'tool_result',
+      });
       return result;
-    } catch (error) {
-      if (error instanceof FinishToolSignal) {
-        throw error;
+    } catch (_error) {
+      if (_error instanceof FinishToolSignal) {
+        throw _error;
       }
-      log.error({ error }, `Error executing tool ${command.name}`);
-      throw new Error(
-        `Error executing tool ${command.name}: ${(error as Error).message}`,
-      );
+      const errorMessage = (_error as Error).message;
+      log.error({ error: _error }, `Error executing tool ${command.name}`);
+      this.publishToChannel({
+        result: { error: errorMessage },
+        toolName: command.name,
+        type: 'tool_result',
+      });
+      return `Error executing tool ${command.name}: ${errorMessage}`;
     }
   }
 
   private extractJsonFromMarkdown(text: string): string {
-    const match = text.match(/```(?:json)?\n([\s\S]+)\n```/);
-    return match ? match[1] : text;
+    const match = text.match(/```(?:json)?\s*\n([\s\S]+?)\n```/);
+    if (match && match[1]) {
+      try {
+        // Just validate, return the extracted string for the main parser
+        JSON.parse(match[1]);
+        return match[1];
+      } catch (error) {
+        // Le contenu n'est pas un JSON valide, on lance une erreur
+        throw new Error(
+          `Invalid JSON in markdown: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+      }
+    }
+    return text.trim();
   }
 
   private parseLlmResponse(llmResponse: string, log: Logger) {
     const jsonText = this.extractJsonFromMarkdown(llmResponse);
+    log.debug({ jsonText }, 'Attempting to parse LLM response');
     try {
       const parsed = JSON.parse(jsonText);
+      log.debug({ parsed }, 'Successfully parsed LLM response');
       return llmResponseSchema.parse(parsed);
     } catch (error) {
       log.error(
         { error, llmResponse: jsonText },
         'Failed to parse LLM response',
       );
-      throw new Error(`Failed to parse LLM response.`);
+      throw new Error(`Failed to parse LLM response: ${jsonText}`);
     }
   }
 
   private publishToChannel(data: ChannelData) {
-    this.job.updateProgress(data);
+    const channel = `job:${this.job.id}:events`;
+    const message = JSON.stringify(data);
+    getRedisClientInstance().publish(channel, message);
+    // Only send serializable and relevant data to updateProgress
+    const progressData = { ...data };
+    if (progressData.type === 'tool.start') {
+      // Avoid sending non-serializable data
+      delete (progressData.data as any).args;
+    }
+    this.job.updateProgress(progressData);
   }
 
   private async setupInterruptListener() {
-    const subscriber = redis.duplicate();
     const channel = `job:${this.job.id}:interrupt`;
+    this.subscriber = getRedisClientInstance().duplicate();
 
-    subscriber.on('message', (messageChannel, message) => {
-      this.log.info(`Received message from ${messageChannel}: ${message}`);
-      if (message === 'interrupt') {
+    const messageHandler = (messageChannel: string, message: string): void => {
+      if (messageChannel === channel) {
+        this.log.warn(`Interrupting job ${this.job.id}: ${message}`);
         this.interrupted = true;
-        subscriber.unsubscribe(channel);
-        subscriber.quit();
       }
-    });
+    };
 
-    await subscriber.subscribe(channel, (err, count) => {
-      if (err) {
-        this.log.error(err, 'Failed to subscribe to interrupt channel');
-        return;
-      }
-      this.log.info(`Subscribed to ${count} interrupt channels.`);
-    });
-  }
+    this.subscriber.on('message', messageHandler);
 
-  private summarizeToolResult(result: unknown): unknown {
-    if (typeof result === 'string' && result.length > 1000) {
-      return `${result.slice(0, 1000)}... (truncated)`;
-    }
-    if (typeof result === 'object' && result !== null) {
-      const json = JSON.stringify(result);
-      if (json.length > 1000) {
-        return `${json.slice(0, 1000)}... (truncated)`;
-      }
-    }
-    return result;
+    await this.subscriber.subscribe(
+      channel,
+      (err: Error | null, count: number) => {
+        if (err) {
+          this.log.error(err, `Error subscribing to ${channel}`);
+          return;
+        }
+        this.log.info(
+          `Subscribed to ${channel}. Total subscriptions: ${count}`,
+        );
+      },
+    );
   }
 }

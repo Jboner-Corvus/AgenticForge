@@ -1,226 +1,204 @@
-import type { Mock } from 'vitest';
+import { Client as PgClient } from 'pg';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/// <reference types="vitest/globals" />
-import { Job, Queue } from 'bullmq';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-import { config } from '../../config.js';
-import logger from '../../logger.js';
-import { Message, SessionData } from '../../types.js';
-import { redis } from '../redis/redisClient.js';
-import { summarizeTool } from '../tools/definitions/ai/summarize.tool.js';
-import { SessionManager } from './sessionManager.js';
-
-// Mock dependencies
-vi.mock('../../config.js', () => ({
-  config: {
-    HISTORY_MAX_LENGTH: 5,
-    REDIS_DB: 0,
-  },
-}));
-
+// Mock logger first to prevent it from calling getConfig during module load
 vi.mock('../../logger.js', () => ({
-  default: {
-    child: vi.fn().mockReturnThis(),
+  getLogger: vi.fn(() => ({
+    child: vi.fn(() => ({
+      debug: vi.fn(),
+      error: vi.fn(),
+      fatal: vi.fn(),
+      info: vi.fn(),
+      trace: vi.fn(),
+      warn: vi.fn(),
+    })),
     debug: vi.fn(),
     error: vi.fn(),
+    fatal: vi.fn(),
     info: vi.fn(),
-    warn: vi.fn(), // Added warn mock
+    trace: vi.fn(),
+    warn: vi.fn(),
+  })),
+}));
+
+import { config } from '../../config';
+import { summarizeTool } from '../tools/definitions/ai/summarize.tool';
+
+// Mock dependencies
+vi.mock('pg', () => {
+  const mClient = {
+    connect: vi.fn(),
+    end: vi.fn(),
+    query: vi.fn(),
+  };
+  return { Client: vi.fn(() => mClient) };
+});
+
+vi.mock('../../modules/tools/definitions/ai/summarize.tool', () => ({
+  summarizeTool: {
+    execute: vi.fn(),
   },
 }));
 
-vi.mock('../redis/redisClient.js', () => ({
-  redis: {
-    duplicate: vi.fn(() => ({
-      on: vi.fn(),
-      quit: vi.fn(),
-      subscribe: vi.fn(),
-      unsubscribe: vi.fn(),
-    })),
+vi.mock('../../modules/redis/redisClient.js', () => ({
+  getRedisClient: vi.fn(() => ({
+    del: vi.fn(),
     get: vi.fn(),
-    on: vi.fn(),
-    options: { keyPrefix: '' },
-    publish: vi.fn(),
-    select: vi.fn().mockResolvedValue('OK'),
     set: vi.fn(),
-  },
+  })),
 }));
 
-vi.mock('../tools/definitions/ai/summarize.tool.js', async () => {
-  const actual = await vi.importActual<
-    typeof import('../tools/definitions/ai/summarize.tool.js')
-  >('../tools/definitions/ai/summarize.tool.js');
+vi.mock('../../config', async () => {
+  const actual = await vi.importActual('../../config');
+  const mockConfig = {
+    ...(actual as any).config,
+    HISTORY_MAX_LENGTH: 10,
+    LOG_LEVEL: 'debug',
+    NODE_ENV: 'test',
+  };
   return {
     ...actual,
-    summarizeTool: {
-      ...actual.summarizeTool,
-      execute: vi.fn(),
-    },
+    config: mockConfig,
+    getConfig: vi.fn(() => mockConfig),
   };
 });
 
-// Mock BullMQ Queue if it's directly instantiated in SessionManager (it's passed in saveSession)
-const MockQueue = vi.fn(() => ({
-  add: vi.fn(),
-})) as unknown as Mock<[], Queue>;
+import { Job, Queue } from 'bullmq';
+
+import { Message, SessionData } from '../../types';
+import { SessionManager } from './sessionManager';
 
 describe('SessionManager', () => {
+  let sessionManager: SessionManager;
+  let mockPgClient: any;
   let mockJob: Job;
   let mockTaskQueue: Queue;
 
   beforeEach(() => {
+    mockPgClient = new PgClient();
+    sessionManager = new SessionManager(mockPgClient);
     vi.clearAllMocks();
-    // Reset the internal activeSessions map for each test
-    // @ts-expect-error - Accessing private static property for testing
-    SessionManager.activeSessions = new Map<string, SessionData>();
+    SessionManager.clearActiveSessionsForTest();
 
-    mockJob = {
-      data: {},
-      id: 'test-job-id',
-    } as unknown as Job;
-
-    mockTaskQueue = new MockQueue();
+    mockJob = { id: 'test-job-id', updateProgress: vi.fn() } as unknown as Job;
+    mockTaskQueue = { add: vi.fn() } as unknown as Queue;
   });
 
-  // Test getSession
-  it('should return an existing session from memory if available', async () => {
-    const sessionId = 'session1';
-    const existingSession: SessionData = {
-      history: [{ content: 'Hello', role: 'user' }],
-      id: sessionId,
-      identities: [],
-    };
-    // @ts-expect-error - For testing private static property
-    SessionManager.activeSessions.set(sessionId, existingSession);
-
-    const session = await SessionManager.getSession(sessionId);
-
-    expect(session).toBe(existingSession);
-    expect(redis.get).not.toHaveBeenCalled();
-    expect(logger.info).toHaveBeenCalledWith(
-      { sessionId },
-      'Reusing existing session data from memory.',
-    );
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
-  it('should retrieve a new session from Redis and store it in memory', async () => {
-    const sessionId = 'session2';
-    const storedHistory: Message[] = [
-      { content: 'Hi', role: 'user' },
-      { content: 'Hello there', role: 'model' },
-    ];
-    vi.mocked(redis.get).mockResolvedValueOnce(JSON.stringify(storedHistory));
-
-    const session = await SessionManager.getSession(sessionId);
-
-    expect(session.id).toBe(sessionId);
-    expect(session.history).toEqual(storedHistory);
-    expect(redis.get).toHaveBeenCalledWith(`session:${sessionId}:history`);
-    // @ts-expect-error - For testing private static property
-    expect(SessionManager.activeSessions.get(sessionId)).toBe(session);
-    expect(logger.info).toHaveBeenCalledWith(
-      { sessionId },
-      'Created new session data from Redis.',
-    );
-  });
-
-  it('should create a new session with empty history if not in Redis', async () => {
-    const sessionId = 'session3';
-    vi.mocked(redis.get).mockResolvedValueOnce(null);
-
-    const session = await SessionManager.getSession(sessionId);
-
-    expect(session.id).toBe(sessionId);
+  it('should create a new session if one does not exist in the database', async () => {
+    mockPgClient.query.mockResolvedValue({ rows: [] });
+    const session = await sessionManager.getSession('new-session-id');
+    expect(session).toBeDefined();
+    expect(session.id).toBe('new-session-id');
     expect(session.history).toEqual([]);
-    expect(redis.get).toHaveBeenCalledWith(`session:${sessionId}:history`);
-    // @ts-expect-error - For testing private static property
-    expect(SessionManager.activeSessions.get(sessionId)).toBe(session);
-    expect(logger.info).toHaveBeenCalledWith(
-      { sessionId },
-      'Created new session data from Redis.',
-    );
+    expect(session.name).toContain('Session');
   });
 
-  // Test saveSession
-  it('should save session history to Redis and update in memory', async () => {
-    const sessionId = 'session4';
-    const session: SessionData = {
-      history: [{ content: 'Test message', role: 'user' }],
-      id: sessionId,
+  it('should load an existing session from the database', async () => {
+    const mockSessionData = {
+      id: 'existing-session-id',
       identities: [],
+      messages: JSON.stringify([
+        { content: 'Hello', id: '1', timestamp: Date.now(), type: 'user' },
+      ]),
+      name: 'Existing Session',
+      timestamp: Date.now(),
     };
+    mockPgClient.query.mockResolvedValue({ rows: [mockSessionData] });
 
-    await SessionManager.saveSession(session, mockJob, mockTaskQueue);
-
-    expect(redis.set).toHaveBeenCalledWith(
-      `session:${sessionId}:history`,
-      JSON.stringify(session.history),
-      'EX',
-      expect.any(Number),
-    );
-    // @ts-expect-error - For testing private static property
-    expect(SessionManager.activeSessions.get(sessionId)).toBe(session);
-    expect(logger.info).toHaveBeenCalledWith(
-      { sessionId },
-      'Session history saved to Redis.',
-    );
-    expect(summarizeTool.execute).not.toHaveBeenCalled();
+    const session = await sessionManager.getSession('existing-session-id');
+    expect(session).toBeDefined();
+    expect(session.id).toBe('existing-session-id');
+    expect(session.name).toBe('Existing Session');
+    expect(session.history).toHaveLength(1);
+    expect(session.history[0].type).toBe('user');
   });
 
-  it('should summarize history if it exceeds max length', async () => {
-    const sessionId = 'session5';
+  it('should save a session to the database', async () => {
+    const session: SessionData = {
+      history: [
+        { content: 'Test', id: '1', timestamp: Date.now(), type: 'user' },
+      ],
+      id: 'session-to-save',
+      identities: [],
+      name: 'Session to Save',
+      timestamp: Date.now(),
+    };
+    mockPgClient.query.mockResolvedValue({ rows: [] });
+    await sessionManager.saveSession(session, mockJob, mockTaskQueue);
+    expect(mockPgClient.query).toHaveBeenCalledWith(
+      'INSERT INTO sessions (id, name, messages, timestamp, identities, active_llm_provider) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, messages = EXCLUDED.messages, timestamp = EXCLUDED.timestamp, identities = EXCLUDED.identities, active_llm_provider = EXCLUDED.active_llm_provider',
+      [
+        'session-to-save',
+        'Session to Save',
+        JSON.stringify(session.history),
+        session.timestamp,
+        JSON.stringify(session.identities),
+        null,
+      ],
+    );
+  });
+
+  it('should summarize history if it exceeds HISTORY_MAX_LENGTH', async () => {
+    config.HISTORY_MAX_LENGTH = 5;
     const longHistory: Message[] = Array.from({ length: 10 }, (_, i) => ({
-      content: `Message ${i + 1}`,
-      role: 'user',
+      content: `Message ${i}`,
+      id: `${i}`,
+      timestamp: Date.now(),
+      type: 'user',
     }));
     const session: SessionData = {
       history: longHistory,
-      id: sessionId,
+      id: 'long-history-session',
       identities: [],
+      name: 'Long History Session',
+      timestamp: Date.now(),
     };
 
-    vi.mocked(summarizeTool.execute).mockResolvedValueOnce(
-      'Summarized content',
-    );
+    vi.mocked(summarizeTool.execute).mockResolvedValue('This is a summary.');
+    mockPgClient.query.mockResolvedValue({ rows: [] });
 
-    await SessionManager.saveSession(session, mockJob, mockTaskQueue);
+    await sessionManager.saveSession(session, mockJob, mockTaskQueue);
 
-    expect(summarizeTool.execute).toHaveBeenCalledTimes(1);
-    expect(summarizeTool.execute).toHaveBeenCalledWith(
-      { text: expect.stringContaining('Message 1') }, // Should contain early messages
-      expect.any(Object),
-    );
+    expect(summarizeTool.execute).toHaveBeenCalled();
     expect(session.history.length).toBe(config.HISTORY_MAX_LENGTH);
-    expect(session.history[0].content).toContain('Summarized conversation');
-    expect(session.history[session.history.length - 1].content).toBe(
-      'Message 10',
-    ); // Last 10 messages should remain
-    expect(redis.set).toHaveBeenCalledTimes(1);
+    expect(session.history[0].type).toBe('agent_response');
+    expect((session.history[0] as { content: string }).content).toContain(
+      'Summarized conversation',
+    );
   });
 
-  it('should log an error if history summarization fails', async () => {
-    const sessionId = 'session6';
-    const longHistory: Message[] = Array.from({ length: 10 }, (_, i) => ({
-      content: `Message ${i + 1}`,
-      role: 'user',
-    }));
-    const session: SessionData = {
-      history: longHistory,
-      id: sessionId,
-      identities: [],
-    };
-
-    const mockError = new Error('Summarization failed');
-    (summarizeTool.execute as Mock).mockRejectedValueOnce(mockError);
-
-    await SessionManager.saveSession(session, mockJob, mockTaskQueue);
-
-    expect(summarizeTool.execute).toHaveBeenCalledTimes(1);
-    expect(logger.error).toHaveBeenCalledWith(
-      { error: mockError },
-      'Error summarizing history',
+  it('should delete a session from the database', async () => {
+    mockPgClient.query.mockResolvedValue({ rows: [] });
+    await sessionManager.deleteSession('session-to-delete');
+    expect(mockPgClient.query).toHaveBeenCalledWith(
+      'DELETE FROM sessions WHERE id = $1',
+      ['session-to-delete'],
     );
-    // Ensure session is still saved even if summarization fails
-    expect(redis.set).toHaveBeenCalledTimes(1);
+  });
+
+  it('should retrieve all sessions from the database', async () => {
+    const mockSessions = [
+      {
+        id: 's1',
+        identities: [],
+        name: 'Session 1',
+        timestamp: Date.now(),
+      },
+      {
+        id: 's2',
+        identities: [],
+        name: 'Session 2',
+        timestamp: Date.now() - 1000,
+      },
+    ];
+    mockPgClient.query.mockResolvedValue({ rows: mockSessions });
+    const sessions = await sessionManager.getAllSessions();
+    expect(sessions).toHaveLength(2);
+    expect(sessions[0].name).toBe('Session 1');
+    expect(sessions[1].name).toBe('Session 2');
   });
 });

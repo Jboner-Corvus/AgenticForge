@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 
 interface ModalProps {
   children: React.ReactNode;
@@ -9,19 +9,50 @@ interface ModalProps {
 }
 
 export const Modal: React.FC<ModalProps> = ({ children, isOpen, onClose, title }) => {
-  if (!isOpen) return null;
+  const modalRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const modalElement = modalRef.current;
+    if (modalElement) {
+      if (isOpen) {
+        if (!modalElement.open) {
+          modalElement.showModal();
+        }
+      } else {
+        if (modalElement.open) {
+          modalElement.close();
+        }
+      }
+    }
+  }, [isOpen]);
+
+  const handleBackdropClick = useCallback((event: React.MouseEvent<HTMLDialogElement>) => {
+    if (event.target === modalRef.current) {
+      onClose();
+    }
+  }, [onClose]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-      <div className="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
-        <div className="flex justify-between items-center border-b border-gray-700 pb-3 mb-4">
-          <h3 className="text-lg font-semibold text-white">{title}</h3>
-          <button className="text-gray-400 hover:text-white" onClick={onClose}>
-            &times;
-          </button>
-        </div>
-        <div>{children}</div>
+    <dialog
+      ref={modalRef}
+      onClose={onClose}
+      onClick={handleBackdropClick}
+      className="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative backdrop:bg-black backdrop:bg-opacity-50"
+      aria-labelledby="modal-title"
+      aria-modal="true"
+    >
+      <div className="flex justify-between items-center border-b border-gray-700 pb-3 mb-4">
+        <h3 id="modal-title" className="text-lg font-semibold text-white">{title}</h3>
+        <button
+          className="text-gray-400 hover:text-white absolute top-2 right-2 p-2"
+          onClick={onClose}
+          aria-label="Close modal"
+        >
+          <span className="sr-only">Close</span>
+          &times;
+        </button>
       </div>
-    </div>
+      <div>{children}</div>
+    </dialog>
   );
 };

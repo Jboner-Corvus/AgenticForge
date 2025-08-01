@@ -58,10 +58,23 @@ export default tseslint.config(
   {
     files: ["packages/core/**/*.ts", "packages/core/**/*.test.ts"],
     languageOptions: {
+      globals: {
+        afterEach: "readonly",
+        beforeAll: "readonly",
+        beforeEach: "readonly",
+        describe: "readonly",
+        expect: "readonly",
+        it: "readonly",
+        Mock: "readonly",
+        vi: "readonly",
+      },
       parserOptions: {
         project: ["./packages/core/tsconfig.eslint.json"],
         tsconfigRootDir: import.meta.dirname,
       },
+    },
+    rules: {
+      "no-case-declarations": "off",
     },
   }
 );

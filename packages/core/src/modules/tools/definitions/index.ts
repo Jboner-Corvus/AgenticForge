@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 // ATTENTION : Ce fichier est le point d'agrégation pour tous les outils de l'agent.
 // Il utilise `getTools` (défini dans `utils/toolLoader.js`) pour charger dynamiquement
 // les outils à partir des sous-dossiers de ce répertoire.
@@ -12,9 +14,7 @@
 // Assurez-vous que chaque outil a un nom unique, une description pertinente pour le LLM,
 // et un schéma de paramètres Zod correct.
 // packages/core/src/tools/index.ts
-import type { Ctx as _Ctx, Tool } from '@agenticforge/core/types.js';
-
-import { z } from 'zod';
+import type { Ctx as _Ctx, Tool } from '../../../types.js';
 
 import { getTools } from '../../../utils/toolLoader.js';
 import { finishTool, FinishToolSignal } from './system/finish.tool.js';
@@ -28,5 +28,4 @@ export const getAllTools = async (): Promise<
   return tools;
 };
 
-export type { Tool };
 export { FinishToolSignal };

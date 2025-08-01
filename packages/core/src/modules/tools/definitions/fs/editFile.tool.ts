@@ -2,9 +2,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../../../types.js';
-
 import { config } from '../../../../config.js';
+import { Ctx, Tool } from '../../../../types.js';
 
 // Un schéma de paramètres plus puissant pour l'édition
 export const editFileParams = z.object({
@@ -14,7 +13,6 @@ export const editFileParams = z.object({
   is_regex: z
     .boolean()
     .optional()
-    .default(false)
     .describe('Set to true if content_to_replace is a regex.'),
   new_content: z
     .string()
@@ -53,11 +51,16 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
         } as z.infer<typeof editFileOutput>;
       }
 
+      // NOTE: Add dedicated unit tests for path validation in editFile.tool.test.ts
+      // to cover edge cases and ensure strict confinement within WORKSPACE_PATH.
+
       try {
         const originalContent = await fs.readFile(absolutePath, 'utf-8');
         let modifiedContent: string;
 
-        if (args.is_regex) {
+        const useRegex = args.is_regex ?? false; // Handle default here
+
+        if (useRegex) {
           const regex = new RegExp(args.content_to_replace, 'g');
           modifiedContent = originalContent.replace(regex, args.new_content);
         } else {
@@ -99,6 +102,5 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
       }
     },
     name: 'editFile',
-    output: editFileOutput,
     parameters: editFileParams,
   };

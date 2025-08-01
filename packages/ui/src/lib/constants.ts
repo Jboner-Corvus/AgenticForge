@@ -37,7 +37,6 @@ export const DEFAULT_INSPECTOR_CONFIG: InspectorConfig = {
       "Session token for authenticating with the MCP Proxy Server (displayed in proxy console on startup)",
     is_session_item: true,
     label: "Proxy Session Token",
-    value: "",
   },
   MCP_PROXY_FULL_ADDRESS: {
     description:

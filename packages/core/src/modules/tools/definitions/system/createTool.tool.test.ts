@@ -2,12 +2,11 @@ import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import logger from '../../../../logger.js';
+import { getLoggerInstance } from '../../../../logger.js';
 import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
-import { runQualityGate } from '../../../../utils/qualityGate.js';
-import { createToolTool } from './createTool.tool.js';
+import { runQualityGate } from '../../../../utils/qualityGate';
+import { createToolTool } from './createTool.tool';
 
-// Mock dependencies
 vi.mock('fs', () => ({
   promises: {
     mkdir: vi.fn(() => Promise.resolve()),
@@ -15,20 +14,21 @@ vi.mock('fs', () => ({
   },
 }));
 
-vi.mock('../../../../utils/qualityGate.js', () => ({
-  runQualityGate: vi.fn(() =>
-    Promise.resolve({ output: 'Quality Gate Passed', success: true }),
-  ),
+vi.mock('../../../../utils/qualityGate', () => ({
+  runQualityGate: vi.fn(() => Promise.resolve({ output: '', success: true })),
 }));
 
+// Define the mock for getLoggerInstance outside vi.mock to ensure consistency
+const mockLoggerInstance = {
+  child: vi.fn().mockReturnThis(),
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+};
+
 vi.mock('../../../../logger.js', () => ({
-  default: {
-    child: vi.fn().mockReturnThis(),
-    debug: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-  },
+  getLoggerInstance: vi.fn(() => mockLoggerInstance),
 }));
 
 describe('createToolTool', () => {
@@ -38,7 +38,7 @@ describe('createToolTool', () => {
     vi.clearAllMocks();
     mockCtx = {
       llm: {} as ILlmProvider,
-      log: logger,
+      log: getLoggerInstance(),
       reportProgress: vi.fn(),
       session: {} as SessionData,
       streamContent: vi.fn(),
@@ -54,7 +54,7 @@ describe('createToolTool', () => {
       tool_name: 'test-tool',
     };
 
-    const warnSpy = vi.spyOn(mockCtx.log, 'warn');
+    const warnSpy = vi.spyOn(mockLoggerInstance, 'warn');
 
     const result = await createToolTool.execute(args, mockCtx);
 

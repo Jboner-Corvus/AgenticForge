@@ -3,7 +3,7 @@
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable", "WebWorker"],
-    "types": ["jest", "node"],
+    "types": ["vite/client", "vitest/globals", "vitest"],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -21,9 +21,10 @@
     "erasableSyntaxOnly": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@agenticforge/core": ["../core/src"]
     },
-    "rootDir": "src",
+    "rootDir": ".",
     "declaration": true,
     "declarationMap": true,
     "forceConsistentCasingInFileNames": true,
@@ -31,6 +32,6 @@
     "moduleDetection": "force",
     "sourceMap": true
   },
-  "include": ["src"],
+  "include": ["src", "tsconfig.vitest.json"],
   "exclude": ["node_modules", "dist"]
 }

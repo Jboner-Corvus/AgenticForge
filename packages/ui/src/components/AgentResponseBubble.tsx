@@ -1,10 +1,10 @@
-import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { useLanguage } from '../lib/hooks/useLanguageHook';
+import { useToast } from '../lib/hooks/useToast';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { Clipboard } from 'lucide-react';
-import { useToast } from '../lib/hooks/useToast';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface AgentResponseBubbleProps {
   content: string;
@@ -18,19 +18,20 @@ export const AgentResponseBubble: React.FC<AgentResponseBubbleProps> = ({
   timestamp,
 }) => {
   const { toast } = useToast();
+  const { translations } = useLanguage();
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
-    toast({ description: "Copied to clipboard!" });
+    toast({ description: translations.copiedToClipboard });
   };
 
   return (
     <div className="flex justify-start items-start gap-4 animate-slide-up" key={id}>
       <Avatar className="h-8 w-8">
-        <AvatarImage src="/avatars/agent.png" alt="Agent Avatar" />
-        <AvatarFallback>AI</AvatarFallback>
+        <AvatarImage src="/avatars/agent.png" alt={translations.agentAvatar} />
+        <AvatarFallback>{translations.ai}</AvatarFallback>
       </Avatar>
-      <div className="relative max-w-[70%] p-3 rounded-lg bg-secondary text-secondary-foreground shadow-md group">
+      <div className="relative max-w-[70%] p-3 rounded-2xl bg-secondary text-secondary-foreground shadow-lg group">
         <div className="message-content prose prose-invert">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {content}
@@ -44,6 +45,7 @@ export const AgentResponseBubble: React.FC<AgentResponseBubbleProps> = ({
           size="icon"
           className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={handleCopy}
+          aria-label={translations.copyAgentResponse}
         >
           <Clipboard className="h-4 w-4" />
         </Button>

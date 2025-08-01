@@ -4,7 +4,7 @@ import { AgentResponseBubble } from './AgentResponseBubble';
 import { ToolMessage } from './ToolMessage';
 import { AgentThoughtBubble } from './AgentThoughtBubble';
 import { ErrorMessage } from './ErrorMessage';
-import { ChatMessage } from '../types/chat';
+import type { ChatMessage } from '../types/chat';
 
 export const Message: React.FC<{ message: ChatMessage }> = ({ message }) => {
   switch (message.type) {
@@ -17,9 +17,12 @@ export const Message: React.FC<{ message: ChatMessage }> = ({ message }) => {
     case 'tool_result':
       return <ToolMessage message={message} />;
     case 'agent_thought':
-      return <AgentThoughtBubble content={message.content} />;
+      return <AgentThoughtBubble content={message.content} timestamp={new Date(message.timestamp).toLocaleTimeString()} />;
     case 'error':
       return <ErrorMessage content={message.content} />;
+    case 'agent_canvas_output':
+      // This message type is handled by the canvas itself, so we don't render it here.
+      return null;
     default:
       // Ensures that we handle all message types, or TypeScript will complain.
       

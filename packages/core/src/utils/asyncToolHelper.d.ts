@@ -1,4 +1,4 @@
-import type { SessionData } from '../types.js';
+import type { SessionData } from '@/types.js';
 
 import { type ErrorDetails } from './errorUtils.js';
 export interface EnqueueParams<TParams> {

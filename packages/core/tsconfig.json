@@ -1,12 +1,11 @@
 {
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "src",
-    "target": "es2022",
-    "module": "nodenext",
+    "rootDir": ".",
+    "target": "esnext",
+    "module": "esnext",
     "lib": ["es2022", "dom"],
-    "moduleResolution": "nodenext",
-    "types": ["node", "vitest/globals", "express"],
+    "moduleResolution": "bundler",
     "declaration": true,
     "declarationMap": true,
     "esModuleInterop": true,
@@ -18,10 +17,11 @@
     "baseUrl": ".",
     "allowJs": true,
     "paths": {
-      "@agenticforge/core/*": ["./src/*"],
-      "types": ["./src/types.ts"]
-    }
+      "@/*": ["src/*"]
+    },
+    "allowImportingTsExtensions": true,
+    "types": ["vitest/globals", "node", "express", "ioredis"]
   },
-  "include": ["src", "src/**/*.ts", "src/**/*.js", "src/types.js"],
+  "include": ["src", "src/**/*.test.ts", "vitest.config.ts", "test/mocks", "src/modules/tools/definitions/**/*.test.ts"],
   "exclude": ["node_modules", "dist"]
 }

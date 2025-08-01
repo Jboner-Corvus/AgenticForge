@@ -1,5 +1,14 @@
-// packages/core/src/llm-types.ts
+export interface LlmApiKey {
+  apiKey: string;
+  apiModel: string;
+  apiProvider: string;
+  errorCount: number;
+  isDisabledUntil?: number;
+  isPermanentlyDisabled?: boolean;
+  lastUsed?: number;
+}
+
 export interface LLMContent {
   parts: { text: string }[];
-  role: 'model' | 'user';
+  role: 'model' | 'tool' | 'user';
 }

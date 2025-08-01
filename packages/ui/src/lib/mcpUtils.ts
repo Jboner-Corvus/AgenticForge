@@ -5,12 +5,10 @@ export const getMCPProxyAddress = (config: InspectorConfig): string => {
   return (config.MCP_PROXY_FULL_ADDRESS?.value as string) || import.meta.env.VITE_MCP_PROXY_ADDRESS || "http://localhost:6277";
 };
 
-export const getMCPProxyAuthToken = (config: InspectorConfig): { header: string; token: string | undefined } => {
+export const getMCPProxyAuthToken = (): { header: string; token: string | undefined } => {
   return {
     header: 'X-MCP-Proxy-Auth', // Hardcoded as it's not in InspectorConfig directly
-    token:
-      (config.MCP_PROXY_AUTH_TOKEN?.value as string) ||
-      import.meta.env.VITE_MCP_PROXY_AUTH_TOKEN,
+    token: import.meta.env.VITE_MCP_PROXY_AUTH_TOKEN,
   };
 };
 

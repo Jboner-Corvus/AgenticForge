@@ -2,24 +2,28 @@
 import { Queue } from 'bullmq';
 import { describe, expect, it, vi } from 'vitest';
 
-import logger from '../../../../logger.js';
-import loggerMock from '../../../../test/mocks/logger.js';
+import { getLoggerInstance } from '../../../../logger.js';
 import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
+
+// Define the mock for getLoggerInstance outside vi.mock to ensure consistency
+const mockLoggerInstance = {
+  child: vi.fn().mockReturnThis(),
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+};
+
+vi.mock('../../../../logger.js', () => ({
+  getLoggerInstance: vi.fn(() => mockLoggerInstance),
+}));
+
 import { agentResponseTool } from './agentResponse.tool.js';
-vi.mock('../../../../logger.js', async () => {
-  const vitest = await import('vitest');
-  const loggerMock = await vitest.vi.importActual(
-    '../../../../test/mocks/logger.js',
-  );
-  return {
-    default: loggerMock.default,
-  };
-});
 
 describe('agentResponseTool', () => {
   const mockCtx: Ctx = {
     llm: {} as ILlmProvider,
-    log: logger,
+    log: getLoggerInstance(),
     reportProgress: vi.fn(),
     session: {} as SessionData,
     streamContent: vi.fn(),
@@ -30,7 +34,7 @@ describe('agentResponseTool', () => {
     const response = 'Hello, user!';
     const result = await agentResponseTool.execute({ response }, mockCtx);
     expect(result).toBe(response);
-    expect(loggerMock.info).toHaveBeenCalledWith('Responding to user', {
+    expect(mockLoggerInstance.info).toHaveBeenCalledWith('Responding to user', {
       args: { response },
     });
   });

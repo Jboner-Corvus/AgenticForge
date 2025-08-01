@@ -17,6 +17,27 @@ services:
     networks:
       - agentic_network
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: agentic_forge_postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-agenticforge}
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - agentic_network
+
   server:
     build:
       context: .
@@ -25,11 +46,13 @@ services:
     ports:
       - "${PUBLIC_PORT:-8080}:3001"
     volumes:
-      - ./workspace:/usr/src/app/workspace
+      - ./workspace:/home/demon/agentforge/workspace
     depends_on:
       redis:
         condition: service_healthy
-    environment:
+      postgres:
+        condition: service_healthy
+    environment: &common_env
       - NODE_ENV=production
       - DOCKER=true
       - HOST=0.0.0.0
@@ -39,6 +62,11 @@ services:
       - AUTH_TOKEN=${AUTH_TOKEN}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=${POSTGRES_DB:-agenticforge}
       - WEB_PORT=${WEB_PORT}
       - LLM_API_KEY=${LLM_API_KEY}
       - LLM_MODEL_NAME=${LLM_MODEL_NAME}
@@ -58,6 +86,10 @@ services:
     networks:
       - agentic_network
 
+  
+
+  
+
   web:
     build:
       context: .
@@ -68,25 +100,12 @@ services:
     depends_on:
       server:
         condition: service_healthy
-    environment:
-      - NODE_ENV=production
-      - WEB_PORT=3002
-      - HOST_PORT=${HOST_PORT}
-      - PORT=${PORT:-3001}
-      - LOG_LEVEL=${LOG_LEVEL}
-      - AUTH_TOKEN=${AUTH_TOKEN}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - LLM_API_KEY=${LLM_API_KEY}
-      - LLM_MODEL_NAME=${LLM_MODEL_NAME}
-      - SESSION_PORT=${SESSION_PORT}
-      - HOST_PROJECT_PATH=${HOST_PROJECT_PATH}
-      - TOOLS_PATH=/usr/src/app/packages/core/dist/tools
+    environment: *common_env
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://server:3001/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -114,6 +133,8 @@ services:
     
 
 volumes:
+  postgres_data:
+    driver: local
   redis_data:
     driver: local
 

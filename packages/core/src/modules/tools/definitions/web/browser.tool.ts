@@ -1,9 +1,10 @@
-import { chromium, Page } from 'playwright';
+import { Page } from 'playwright';
 import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../../../types.js';
 
-import { redis } from '../../../redis/redisClient.js';
+import { getRedisClientInstance } from '../../../redis/redisClient.js';
+import { getBrowser } from './browserManager.js';
 
 export const parameters = z.object({
   url: z.string().url().describe('The URL to navigate to.'),
@@ -31,7 +32,7 @@ const sendEvent = async (ctx: Ctx, type: string, data: unknown) => {
   if (ctx.job?.id) {
     const channel = `job:${ctx.job.id}:events`;
     const event = JSON.stringify({ data, type });
-    await redis.publish(channel, event);
+    await getRedisClientInstance().publish(channel, event);
     ctx.log.info({ channel, event }, 'Published event to Redis');
   }
 };
@@ -43,13 +44,10 @@ export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
     ctx.log.info(`Navigating to URL: ${args.url}`);
     await sendEvent(ctx, 'browser.navigating', { url: args.url });
 
-    let browser;
+    let page;
     try {
-      ctx.log.info('Launching browser...');
-      browser = await chromium.launch({});
-      ctx.log.info('Browser launched.');
-
-      const page = await browser.newPage();
+      const browser = await getBrowser();
+      page = await browser.newPage();
       ctx.log.info('New page created.');
       await sendEvent(ctx, 'browser.page.created', {});
 
@@ -69,6 +67,7 @@ export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
         length: content.length,
       });
 
+      await page.close();
       return {
         content: content,
         url: args.url,
@@ -80,18 +79,10 @@ export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
         message: err.message,
         url: args.url,
       });
-      return { erreur: `Error while Browse ${args.url}: ${err.message}` };
-    } finally {
-      if (browser) {
-        try {
-          ctx.log.info('Closing browser...');
-          await browser.close();
-          ctx.log.info('Browser closed.');
-        } catch (e) {
-          ctx.log.error(e, 'Failed to close browser');
-        }
+      if (page) {
+        await page.close();
       }
-      await sendEvent(ctx, 'browser.closed', {});
+      return { erreur: `Error while Browse ${args.url}: ${err.message}` };
     }
   },
   name: 'browser',

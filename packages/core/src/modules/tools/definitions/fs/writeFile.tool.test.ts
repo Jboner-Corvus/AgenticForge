@@ -22,34 +22,41 @@ vi.mock('fs', async () => {
   };
 });
 
-// Import logger mock separately and mock the logger module
-import loggerMock from '../../../../test/mocks/logger.js';
-vi.mock('../../../../logger.js', () => ({
-  default: loggerMock,
-}));
-
 // Then import other dependencies
 import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
 import path from 'path';
 
 import { config } from '../../../../config.js';
-import logger from '../../../../logger.js';
+import { getLoggerInstance } from '../../../../logger.js';
 import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
+
+const mockLogger = {
+  child: vi.fn().mockReturnThis(),
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+};
+
+vi.mock('../../../../logger.js', () => ({
+  getLoggerInstance: vi.fn(() => mockLogger),
+}));
 import { writeFile as writeFileTool } from './writeFile.tool.js';
 
 describe('writeFileTool', () => {
-  const mockCtx: Ctx = {
-    llm: {} as ILlmProvider,
-    log: logger,
-    reportProgress: vi.fn(),
-    session: {} as SessionData,
-    streamContent: vi.fn(),
-    taskQueue: {} as Queue,
-  };
+  let mockCtx: Ctx;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCtx = {
+      llm: {} as ILlmProvider,
+      log: getLoggerInstance(),
+      reportProgress: vi.fn(),
+      session: {} as SessionData,
+      streamContent: vi.fn(),
+      taskQueue: {} as Queue,
+    };
   });
 
   it('should write content to a new file', async () => {
@@ -122,6 +129,6 @@ describe('writeFileTool', () => {
     } else {
       throw new Error('Expected an object with an erreur property.');
     }
-    expect(loggerMock.error).toHaveBeenCalled();
+    expect(getLoggerInstance().error).toHaveBeenCalled();
   });
 });

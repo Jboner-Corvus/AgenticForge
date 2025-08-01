@@ -29,24 +29,16 @@ export class FinishToolSignal extends Error {
 export const finishTool: FinishTool = {
   description: "Call this tool when the user's goal is accomplished.",
   execute: async (args: string | z.infer<typeof parameters>, ctx: Ctx) => {
-    try {
-      if (!args) {
-        throw new Error(
-          'Invalid arguments provided to finishTool. A final answer is required.',
-        );
-      }
-      const finalResponse = typeof args === 'string' ? args : args.response;
-
-      ctx.log.info(`Goal accomplished: ${finalResponse}`);
-      throw new FinishToolSignal(finalResponse);
-    } catch (error: unknown) {
-      if (error instanceof FinishToolSignal) {
-        throw error;
-      }
-      const message = error instanceof Error ? error.message : String(error);
-      ctx.log.error({ err: error }, `Error in finishTool: ${message}`);
-      throw new Error(`An unexpected error occurred in finishTool: ${message}`);
+    if (!args) {
+      const message =
+        'Invalid arguments provided to finishTool. A final answer is required.';
+      ctx.log.error({ args }, `Error in finishTool: ${message}`);
+      throw new Error(message);
     }
+    const finalResponse = typeof args === 'string' ? args : args.response;
+
+    ctx.log.info(`Goal accomplished: ${finalResponse}`);
+    throw new FinishToolSignal(finalResponse);
   },
   name: 'finish',
   parameters,

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../../../types.js';
 
-import { getAllTools } from '../../../tools/definitions/index.js';
+import { getAllTools } from '../index.js';
 
 export const parameters = z.object({});
 

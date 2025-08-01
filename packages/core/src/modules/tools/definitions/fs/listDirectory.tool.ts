@@ -1,22 +1,18 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../../../types.js';
+import { config } from '../../../../config.js';
+import { Ctx, Tool } from '../../../../types.js';
 
-// CORRECTION : Le chemin est maintenant résolu en remontant de 5 niveaux depuis __dirname
-// pour atteindre la racine du projet, puis en ajoutant 'workspace'.
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const WORKSPACE_DIR = path.resolve(__dirname, '../../../../../workspace');
+const WORKSPACE_DIR = config.HOST_PROJECT_PATH;
 
 export const listFilesParams = z.object({
   path: z
     .string()
-    .default('.')
+    .optional()
     .describe(
-      'The subdirectory to list within the workspace. Defaults to the root.',
+      'The subdirectory to list within the project. Defaults to the root.',
     ),
 });
 
@@ -32,13 +28,13 @@ export const listFilesTool: Tool<
   typeof listFilesOutput
 > = {
   description:
-    'Lists files and directories within a specified path in the workspace.',
+    'Lists files and directories within a specified path in the project.',
   execute: async (args: z.infer<typeof listFilesParams>, ctx: Ctx) => {
-    const { path: listPath } = args;
+    const listPath = args.path || '.';
     const targetDir = path.resolve(WORKSPACE_DIR, listPath);
 
     if (!targetDir.startsWith(WORKSPACE_DIR)) {
-      return { erreur: 'Path is outside the allowed workspace directory.' };
+      return { erreur: 'Path is outside the allowed project directory.' };
     }
 
     try {
@@ -46,15 +42,13 @@ export const listFilesTool: Tool<
       const fileList = entries.map((entry) =>
         entry.isDirectory() ? `${entry.name}/` : entry.name,
       );
-      const result = `Directory listing for 'workspace/${listPath}':\n- ${fileList.join('\n- ')}`;
+      const result = `Directory listing for '${listPath}':\n- ${fileList.join('\n- ')}`;
       ctx.log.info(`Listed files in directory: ${targetDir}`);
-      return fileList.length > 0
-        ? result
-        : `Directory 'workspace/${listPath}' is empty.`;
+      return fileList.length > 0 ? result : `Directory '${listPath}' is empty.`;
     } catch (error: unknown) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return {
-          erreur: `Directory not found at path: workspace/${listPath}`,
+          erreur: `Directory not found at path: ${listPath}`,
         };
       }
       ctx.log.error(
@@ -65,6 +59,7 @@ export const listFilesTool: Tool<
       };
     }
   },
+
   name: 'listFiles',
   parameters: listFilesParams,
 };

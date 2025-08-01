@@ -1,5 +1,5 @@
 import React from 'react';
-import { ToolCallMessage, ToolResultMessage } from '../types/chat';
+import type { ToolCallMessage, ToolResultMessage } from '../types/chat';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Code } from 'lucide-react';
 
@@ -16,8 +16,8 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({ message }) => {
   const detailLabel = isToolCall ? 'Parameters' : 'Result';
 
   return (
-    <div className="my-4 animate-fade-in">
-      <Card className="bg-muted/50 border-border">
+    <div className="animate-fade-in">
+      <Card className="bg-muted/50 border-border rounded-xl shadow-sm">
         <CardHeader className="p-3">
           <CardTitle className="text-sm font-medium flex items-center">
             <Code className="h-4 w-4 mr-2" />

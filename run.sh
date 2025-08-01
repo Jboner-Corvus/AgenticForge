@@ -32,15 +32,18 @@ usage() {
     echo "   stop           : Arrête tous les services (Docker et worker local)."
     echo "   restart [worker]: Redémarre tous les services ou seulement le worker."
     echo "   status         : Affiche le statut des conteneurs Docker."
-    echo "   logs           : Affiche les 100 dernières lignes des logs du worker."
+    echo "   logs [docker]  : Affiche les 100 dernières lignes des logs du worker ou des conteneurs Docker."
     echo "   rebuild        : Force la reconstruction des images Docker et redémarre."
     echo "   clean-docker   : Nettoie le système Docker (supprime conteneurs, volumes, etc.)."
     echo "   shell          : Ouvre un shell dans le conteneur du serveur."
     echo "   lint           : Lance le linter sur le code."
     echo "   format         : Formate le code."
-    echo "   test           : Lance les tests."
+    echo "   test-integration: Lance les tests d'intégration (nécessite Docker)."
+    echo "   unit-tests     : Lance les tests unitaires (ne nécessite pas Docker)."
+    echo "   unit-checks    : Lance les tests unitaires un par un, avec un timeout de 30s."
     echo "   typecheck      : Vérifie les types TypeScript."
-    echo "   all-checks     : Lance toutes les vérifications (TypeCheck, Lint, Test, Format)."
+    echo "   all-checks     : Lance toutes les vérifications (TypeCheck, Lint, Unit Tests, Format)."
+    echo "   small-checks   : Lance les vérifications (TypeCheck, Lint, Format) sans les tests."
     echo "   menu           : Affiche le menu interactif (défaut)."
     exit 1
 }
@@ -119,10 +122,44 @@ check_redis_availability() {
         return 1
     fi
 
-    # Méthode 3: Avertissement et délai si aucun outil n'est disponible
-    echo -e "${COLOR_RED}AVERTISSEMENT: 'redis-cli' et 'nc' ne sont pas installés.${NC}"
+    # Méthode 3: Utiliser un conteneur Docker temporaire pour pinger Redis
+    if command -v docker &> /dev/null; then
+        echo "Info: 'redis-cli' et 'nc' non trouvés. Utilisation d'un conteneur Docker temporaire pour pinger Redis."
+        # Démarrer un conteneur redis-cli temporaire et le faire pinger le Redis principal
+        # Utilise --network host pour que le conteneur puisse accéder à localhost du host
+        # Ou, si Docker Compose est utilisé, il faut s'assurer que le conteneur temporaire est sur le même réseau
+        # Pour l'instant, on suppose que Redis est accessible via le réseau Docker Compose si démarré par docker-compose.
+        # Si Redis est sur localhost du host, --network host est nécessaire.
+        # Pour simplifier, on va pinger le service 'redis' du docker-compose network.
+        # Si le script est exécuté en dehors de docker-compose, cela peut échouer.
+        # Une approche plus robuste serait de pinger 'localhost' si le Redis est local,
+        # ou le nom du service 'redis' si on est dans un contexte docker-compose.
+        # Pour l'instant, on va pinger le service 'redis' du docker-compose network.
+        # Cela suppose que le script est exécuté dans un contexte où le réseau docker-compose est actif.
+
+        # Obtenir le nom du réseau Docker Compose
+        DOCKER_COMPOSE_PROJECT_NAME=$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]*//g')
+        DOCKER_NETWORK_NAME="${DOCKER_COMPOSE_PROJECT_NAME}_default" # Nom par défaut du réseau
+
+        echo -e "${COLOR_YELLOW}Tentative de ping de Redis via un conteneur Docker temporaire sur le réseau ${DOCKER_NETWORK_NAME}...${NC}"
+        for i in {1..30}; do
+            # Exécuter un conteneur temporaire sur le même réseau Docker Compose
+            if docker run --rm --network ${DOCKER_NETWORK_NAME} redis:alpine redis-cli -h redis -p ${REDIS_PORT_STD} ping > /dev/null 2>&1; then
+                echo -e "\n${COLOR_GREEN}✓ Redis est opérationnel via Docker. Ajout d'une pause de 2s...${NC}"
+                sleep 2 # Ajoute une pause de 2 secondes
+                return 0
+            fi
+            printf "."
+            sleep 1
+        done
+        echo -e "\n${COLOR_RED}✗ Timeout: Impossible de pinger Redis via Docker après 30 secondes.${NC}"
+        return 1
+    fi
+
+    # Méthode 4: Avertissement et délai si aucun outil n'est disponible (y compris Docker)
+    echo -e "${COLOR_RED}AVERTISSEMENT: 'redis-cli', 'nc' et 'docker' ne sont pas installés.${NC}"
     echo "Impossible de vérifier automatiquement si Redis est prêt."
-    echo "Suggestion pour Debian/Ubuntu: sudo apt-get update && sudo apt-get install redis-tools"
+    echo "Suggestion pour Debian/Ubuntu: sudo apt-get update && sudo apt-get install redis-tools docker.io"
     echo "Le script va continuer après un délai de sécurité de 15 secondes..."
     sleep 15
     return 0
@@ -151,7 +188,6 @@ load_env_vars() {
 # Arrête proprement le processus worker local.
 stop_worker() {
     echo -e "${COLOR_YELLOW}Arrêt du worker local...${NC}"
-    # Attempt to kill processes by name first for robustness
     pkill -f "tsx watch src/worker.ts" 2>/dev/null
     pkill -f "node --loader ts-node/esm src/worker.ts" 2>/dev/null
     pkill -f "node dist/worker.js" 2>/dev/null
@@ -163,9 +199,25 @@ stop_worker() {
         else
             echo -e "${COLOR_YELLOW}Impossible d'arrêter le worker (PID ${WORKER_PID}). Il n'était peut-être pas en cours d'exécution ou a déjà été tué.${NC}"
         fi
-        rm -f "${SCRIPT_DIR}/worker.pid" # Use -f to avoid error if file doesn't exist
+        rm -f "${SCRIPT_DIR}/worker.pid"
     else
         echo -e "${COLOR_YELLOW}Fichier worker.pid non trouvé. Le worker est déjà arrêté ou a été tué par pkill.${NC}"
+    fi
+}
+
+# Arrête le collecteur de logs Docker.
+stop_docker_log_collector() {
+    echo -e "${COLOR_YELLOW}Arrêt du collecteur de logs Docker...${NC}"
+    if [ -f "${SCRIPT_DIR}/docker-logs.pid" ]; then
+        DOCKER_LOG_PID=$(cat "${SCRIPT_DIR}/docker-logs.pid")
+        if kill $DOCKER_LOG_PID 2>/dev/null; then
+            echo -e "${COLOR_GREEN}✓ Collecteur de logs Docker (PID ${DOCKER_LOG_PID}) arrêté.${NC}"
+        else
+            echo -e "${COLOR_YELLOW}Impossible d'arrêter le collecteur de logs (PID ${DOCKER_LOG_PID}). Il n'était peut-être pas en cours d'exécution.${NC}"
+        fi
+        rm -f "${SCRIPT_DIR}/docker-logs.pid"
+    else
+        echo -e "${COLOR_YELLOW}Fichier docker-logs.pid non trouvé. Le collecteur est probablement déjà arrêté.${NC}"
     fi
 }
 
@@ -176,7 +228,6 @@ start_worker() {
     if [ -f "$PID_FILE" ]; then
         local PID
         PID=$(cat "$PID_FILE")
-        # kill -0 PID vérifie si le processus existe
         if kill -0 "$PID" > /dev/null 2>&1; then
             echo -e "${COLOR_YELLOW}✓ Le worker est déjà en cours d'exécution (PID: ${PID}).${NC}"
             return 0
@@ -186,16 +237,53 @@ start_worker() {
         fi
     fi
 
-    echo -e "${COLOR_YELLOW}Démarrage du worker local en arrière-plan...${NC}"
+    echo -e "${COLOR_YELLOW}Démarrage du worker local en arrière-plan (hors Docker)...${NC}"
     cd "${SCRIPT_DIR}/packages/core"
     
-    # Exécute le worker avec tsx et enregistre la sortie et le PID.
-    NODE_OPTIONS='--enable-source-maps' pnpm exec tsx watch src/worker.ts > "${SCRIPT_DIR}/worker.log" 2>&1 &
+    load_env_vars
+
+    echo "PATH before starting worker: $PATH" >> "${SCRIPT_DIR}/worker.log"
+
+    if [ "$NODE_ENV" = "production" ]; then
+        echo -e "${COLOR_YELLOW}Démarrage du worker en mode production...${NC}"
+        export POSTGRES_HOST=localhost
+        export NODE_OPTIONS='--enable-source-maps'
+        pnpm exec node dist/worker.js >> "${SCRIPT_DIR}/worker.log" 2>&1 &
+    else
+        echo -e "${COLOR_YELLOW}Démarrage du worker en mode développement...${NC}"
+        export POSTGRES_HOST=localhost
+        export NODE_OPTIONS='--enable-source-maps'
+        pnpm exec tsx watch src/worker.ts >> "${SCRIPT_DIR}/worker.log" 2>&1 &
+    fi
     
     local WORKER_PID=$!
     echo $WORKER_PID > "$PID_FILE"
-    echo -e "${COLOR_GREEN}✓ Worker démarré avec le PID ${WORKER_PID}. Logs disponibles dans worker.log.${NC}"
-    cd "${SCRIPT_DIR}" # Revenir au répertoire du script
+    echo -e "${COLOR_GREEN}✓ Worker démarré localement (hors conteneur) avec le PID ${WORKER_PID}. Logs disponibles dans worker.log.${NC}"
+    echo -e "${COLOR_BLUE}Preuve d'exécution locale: le processus avec le PID ${WORKER_PID} est visible sur l'hôte."
+    cd "${SCRIPT_DIR}"
+}
+
+# Démarre le collecteur de logs Docker en arrière-plan.
+start_docker_log_collector() {
+    local PID_FILE="${SCRIPT_DIR}/docker-logs.pid"
+
+    if [ -f "$PID_FILE" ]; then
+        local PID
+        PID=$(cat "$PID_FILE")
+        if kill -0 "$PID" > /dev/null 2>&1; then
+            echo -e "${COLOR_YELLOW}✓ Le collecteur de logs Docker est déjà en cours d'exécution (PID: ${PID}).${NC}"
+            return 0
+        else
+            echo -e "${COLOR_RED}✗ Fichier PID trouvé (stale), mais le processus n'existe pas. Nettoyage...${NC}"
+            rm "$PID_FILE"
+        fi
+    fi
+
+    echo -e "${COLOR_YELLOW}Démarrage du collecteur de logs Docker en arrière-plan...${NC}"
+    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" logs --follow > "${SCRIPT_DIR}/docker.log" 2>&1 &
+    local DOCKER_LOG_PID=$!
+    echo $DOCKER_LOG_PID > "$PID_FILE"
+    echo -e "${COLOR_GREEN}✓ Collecteur de logs Docker démarré avec le PID ${DOCKER_LOG_PID}. Logs disponibles dans docker.log.${NC}"
 }
 
 # Démarre tous les services dans le bon ordre.
@@ -204,12 +292,18 @@ start_services() {
     check_and_create_env
     load_env_vars
     stop_worker # S'assurer que l'ancien worker est bien arrêté.
+    stop_docker_log_collector # S'assurer que l'ancien collecteur est bien arrêté.
 
     # Avertissement sur le réseau Docker existant
     if docker network ls | grep -q "agentic_forge_network"; then
         PROJECT_NAME=$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]*//g')
-        if ! docker network inspect agentic_forge_network | grep -q "\"Name\": \"${PROJECT_NAME}_agentic_network\""; then
-             echo -e "${COLOR_YELLOW}AVERTISSEMENT: Un réseau 'agentic_forge_network' existe mais semble appartenir à un autre projet.${NC}"
+        EXISTING_NETWORK_PROJECT_LABEL=$(docker network inspect agentic_forge_network --format '{{ index .Labels "com.docker.compose.project" }}' 2>/dev/null)
+
+        # If the network exists and either:
+        # 1. It's not managed by docker compose (label is empty)
+        # 2. It's managed by a *different* docker compose project
+        if [[ -z "$EXISTING_NETWORK_PROJECT_LABEL" || "$EXISTING_NETWORK_PROJECT_LABEL" != "$PROJECT_NAME" ]]; then
+             echo -e "${COLOR_YELLOW}AVERTISSEMENT: Un réseau 'agentic_forge_network' existe et semble appartenir à un autre projet ou n'est pas géré par Docker Compose.${NC}"
              echo -e "${COLOR_YELLOW}Cela peut causer des problèmes. Il est fortement recommandé d'exécuter l'option '8) Nettoyer Docker'.${NC}"
         fi
     fi
@@ -228,7 +322,10 @@ start_services() {
         return 1
     fi
     
-    start_worker
+    if [ "$DOCKER" != "true" ]; then
+        start_worker
+    fi
+    start_docker_log_collector
 }
 
 # Arrête tous les services.
@@ -236,19 +333,23 @@ stop_services() {
     echo -e "${COLOR_YELLOW}Arrêt des services Docker...${NC}"
     docker compose -f "${SCRIPT_DIR}/docker-compose.yml" down
     stop_worker
+    stop_docker_log_collector
     echo -e "${COLOR_GREEN}✓ Services arrêtés.${NC}"
 }
 
 # Redémarre tous les services.
 restart_all_services() {
     echo -e "${COLOR_YELLOW}Redémarrage complet de tous les services...${NC}"
+    rm -f "${SCRIPT_DIR}/worker.log"
+    rm -f "${SCRIPT_DIR}/docker.log"
     stop_services
     start_services
 }
 
 # Redémarre uniquement le worker.
 restart_worker() {
-    echo -e "${COLOR_YELLOW}Redémarrage du worker...${NC}"
+    echo -e "${COLOR_YELLOW}Redémarrage du worker (processus local hors Docker)...${NC}"
+    rm -f "${SCRIPT_DIR}/worker.log"
     load_env_vars
     stop_worker
     start_worker
@@ -261,12 +362,22 @@ show_status() {
 }
 
 # Affiche les 100 dernières lignes des logs du worker.
-show_logs() {
+show_worker_logs() {
     echo -e "${COLOR_CYAN}--- Logs du Worker (100 dernières lignes) ---${NC}"
     if [ -f "${SCRIPT_DIR}/worker.log" ]; then
         tail -100 "${SCRIPT_DIR}/worker.log"
     else
         echo -e "${COLOR_RED}✗ Le fichier worker.log n'existe pas.${NC}"
+    fi
+}
+
+# Affiche les 100 dernières lignes des logs des conteneurs Docker.
+show_docker_logs() {
+    echo -e "${COLOR_CYAN}--- Logs des conteneurs Docker (100 dernières lignes) ---${NC}"
+    if [ -f "${SCRIPT_DIR}/docker.log" ]; then
+        tail -100 "${SCRIPT_DIR}/docker.log"
+    else
+        echo -e "${COLOR_RED}✗ Le fichier docker.log n'existe pas.${NC}"
     fi
 }
 
@@ -279,6 +390,8 @@ shell_access() {
 # Reconstruit les images Docker sans utiliser le cache.
 rebuild_services() {
     echo -e "${COLOR_YELLOW}Arrêt des services pour la reconstruction...${NC}"
+    rm -f "${SCRIPT_DIR}/worker.log"
+    rm -f "${SCRIPT_DIR}/docker.log"
     stop_services
 
     echo -e "${COLOR_YELLOW}Reconstruction forcée des images Docker (sans cache)...${NC}"
@@ -314,35 +427,222 @@ run_format() {
     pnpm --filter=@agenticforge/core format
 }
 
-run_tests() {
-    echo -e "${COLOR_YELLOW}Lancement des tests...${NC}"
+run_integration_tests() {
+    echo -e "${COLOR_YELLOW}Lancement des tests d'intégration...${NC}"
+    echo -e "${COLOR_YELLOW}Démarrage des services Docker pour l'environnement de test...${NC}"
+    start_services
+    echo -e "${COLOR_GREEN}Services Docker démarrés. Lancement des tests d'intégration...${NC}"
     pnpm --filter=@agenticforge/core test
+    local test_exit_code=$?
+    echo -e "${COLOR_YELLOW}Tests d'intégration terminés. Arrêt des services Docker...${NC}"
+    stop_services
+    return $test_exit_code
 }
 
 run_typecheck() {
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour l'UI...${NC}"
-    pnpm --filter=@agenticforge/ui exec tsc -b
+    pnpm --filter @agenticforge/ui exec tsc --noEmit -p tsconfig.vitest.json
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour le Core...${NC}"
     pnpm --filter=@agenticforge/core exec tsc --noEmit
 }
 
+run_unit_tests() {
+    echo -e "${COLOR_YELLOW}Lancement des tests unitaires...${NC}"
+    NODE_OPTIONS="--max-old-space-size=32768" pnpm --filter=@agenticforge/core test:unit
+    local test_exit_code=$?
+    return $test_exit_code
+}
+
+run_unit_checks() {
+    echo -e "${COLOR_BLUE}Lancement des tests unitaires un par un...${NC}"
+    echo -e "${COLOR_CYAN}Un timeout de 10 secondes est appliqué à chaque test.${NC}"
+    # Recherche des fichiers de test et exécution dans le package 'core'
+    find ./packages/core/src -type f -name "*.test.ts" ! -name "webServer.integration.test.ts" | while read -r test_file; do
+        echo -e "
+${COLOR_YELLOW}▶️  Exécution du test: ${test_file}${NC}"
+        # Utilisation de `timeout` pour limiter la durée de chaque test
+        # On utilise pnpm --filter pour s'assurer que la commande est exécutée dans le bon package
+        # Extraire le chemin relatif du fichier de test par rapport à packages/core
+        RELATIVE_TEST_FILE=$(echo "$test_file" | sed "s|./packages/core/||")
+        timeout 10s pnpm --filter=@agenticforge/core exec vitest run "$RELATIVE_TEST_FILE"
+        # Vérification du code de retour de la commande `timeout`
+        case $? in
+            0)
+                echo -e "${COLOR_GREEN}✓ Succès pour ${test_file}${NC}"
+                ;;
+            124)
+                echo -e "${COLOR_RED}✗ ÉCHEC : Timeout (10s) pour ${test_file}${NC}"
+                ;;
+            *)
+                echo -e "${COLOR_RED}✗ ÉCHEC : Le test ${test_file} a échoué.${NC}"
+                ;;
+        esac
+    done
+}
+
+run_small_checks() {
+    echo -e "${COLOR_YELLOW}Lancement des vérifications rapides (TypeCheck, Lint) via le script Node.js...${NC}"
+    node "${SCRIPT_DIR}/run-checks.mjs"
+}
+
 run_all_checks() {
+    # set -x # Enable shell debugging
     echo -e "${COLOR_YELLOW}Lancement de toutes les vérifications (TypeCheck, Lint, Test, Format)...${NC}"
-    run_typecheck && \
-    run_lint && \
-    run_tests && \
-    run_format
-    if [ $? -eq 0 ]; then
-        echo -e "${COLOR_GREEN}✓ Toutes les vérifications ont réussi.${NC}"
-    else
-        echo -e "${COLOR_RED}✗ Certaines vérifications ont échoué. Veuillez consulter les logs ci-dessus.${NC}"
+
+    ALL_CHECKS_OUTPUT=""
+    FAILED_CHECKS=()
+    ERROR_COUNT=0
+    local exit_code=0
+
+    # Ajouter l'en-tête au fichier de sortie
+    ALL_CHECKS_OUTPUT+="# TODO List: Résoudre les erreurs de vérification\n\n"
+    ALL_CHECKS_OUTPUT+="Ce document liste les problèmes identifiés par nos vérifications (TypeCheck, Lint, Test).\n\n"
+    ALL_CHECKS_OUTPUT+="La correction de chaque erreur doit se faire **uniquement en modifiant le code source** \n\n"
+    ALL_CHECKS_OUTPUT+="Les tests doivent etre unitaires.\n\n"
+    ALL_CHECKS_OUTPUT+="Il est interdit d'exécuter des commandes bash..\n\n" 
+    ALL_CHECKS_OUTPUT+="Il est interdit de lancer une vérification.\n\n"
+    ALL_CHECKS_OUTPUT+="Une fois la correction effectué, cochez la case \`[x]\`.\n\n"
+    ALL_CHECKS_OUTPUT+="---\n\n"
+    ALL_CHECKS_OUTPUT+="## Erreurs à corriger\n"
+
+    # --- TypeCheck (UI & Core) ---
+    echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour l'UI...${NC}"
+    set -o pipefail
+    UI_TYPECHECK_OUTPUT=$(pnpm --filter @agenticforge/ui exec tsc --noEmit -p tsconfig.app.json 2>&1 | tee /dev/tty)
+    exit_code=${PIPESTATUS[0]}
+    set +o pipefail
+    if [ $exit_code -ne 0 ]; then
+        FAILED_CHECKS+=("TypeCheck UI")
+        while read -r line; do
+            if [[ -n "$line" && "$line" == *"error TS"* ]]; then
+                ERROR_COUNT=$((ERROR_COUNT + 1))
+                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **TypeCheck (UI):** \`${line}\`\n"
+            fi
+        done < <(echo "$UI_TYPECHECK_OUTPUT")
     fi
+
+    echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour le Core...${NC}"
+    set -o pipefail
+    CORE_TYPECHECK_OUTPUT=$(pnpm --filter=@agenticforge/core exec tsc --noEmit 2>&1 | tee /dev/tty)
+    exit_code=${PIPESTATUS[0]}
+    set +o pipefail
+    if [ $exit_code -ne 0 ]; then
+        FAILED_CHECKS+=("TypeCheck Core")
+        while read -r line; do
+            if [[ -n "$line" && "$line" == *"error TS"* ]]; then
+                ERROR_COUNT=$((ERROR_COUNT + 1))
+                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **TypeCheck (Core):** \`${line}\`\n"
+            fi
+        done < <(echo "$CORE_TYPECHECK_OUTPUT")
+    fi
+
+    # --- Lint ---
+    # Lancement du linter (vérification des erreurs) pour chaque package
+    echo -e "${COLOR_YELLOW}Lancement du linter (vérification des erreurs)...${NC}"
+
+    # Linting pour le package 'core'
+    echo -e "${COLOR_CYAN}Lancement du linter pour @agenticforge/core...${NC}"
+    set -o pipefail
+    CORE_LINT_OUTPUT=$(pnpm --filter=@agenticforge/core lint 2>&1 | tee /dev/tty)
+    CORE_LINT_EXIT_CODE=${PIPESTATUS[0]}
+    set +o pipefail
+    if [ $CORE_LINT_EXIT_CODE -ne 0 ]; then
+        FAILED_CHECKS+=("Lint (Core)")
+        while read -r line; do
+            if [[ -n "$line" && ("$line" == *"error"* || "$line" == *"warning"*) ]]; then
+                ERROR_COUNT=$((ERROR_COUNT + 1))
+                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Lint (Core):** \`${line}\`\n"
+            fi
+        done < <(echo "$CORE_LINT_OUTPUT")
+    fi
+
+    # Linting pour le package 'ui'
+    echo -e "${COLOR_CYAN}Lancement du linter pour @agenticforge/ui...${NC}"
+    set -o pipefail
+    UI_LINT_OUTPUT=$(pnpm --filter=@agenticforge/ui lint 2>&1 | tee /dev/tty)
+    UI_LINT_EXIT_CODE=${PIPESTATUS[0]}
+    set +o pipefail
+    if [ $UI_LINT_EXIT_CODE -ne 0 ]; then
+        FAILED_CHECKS+=("Lint (UI)")
+        while read -r line; do
+            if [[ -n "$line" && ("$line" == *"error"* || "$line" == *"warning"*) ]]; then
+                ERROR_COUNT=$((ERROR_COUNT + 1))
+                ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Lint (UI):** \`${line}\`\n"
+            fi
+        done < <(echo "$UI_LINT_OUTPUT")
+    fi
+
+    echo -e "${COLOR_YELLOW}Lancement du linter (correction automatique)...${NC}"
+    pnpm --filter=@agenticforge/core lint --fix > /dev/null 2>&1
+    pnpm --filter=@agenticforge/ui lint --fix > /dev/null 2>&1
+
+    # --- Tests Unitaires (AVEC CAPTURE DE BLOCS DÉTAILLÉS) ---
+    echo -e "${COLOR_YELLOW}Lancement des tests unitaires...${NC}"
+    set -o pipefail
+    TEST_OUTPUT=$(NODE_OPTIONS="--max-old-space-size=32768" pnpm --filter=@agenticforge/core exec vitest run --exclude src/webServer.integration.test.ts 2>&1 | tee /dev/tty)
+    exit_code=${PIPESTATUS[0]}
+    set +o pipefail
+    if [ $exit_code -ne 0 ]; then
+        FAILED_CHECKS+=("Tests")
+        local capture_mode=0
+        local error_block=""
+
+        while IFS= read -r line; do
+            if [[ "$line" =~ ^[[:space:]]*FAIL || "$line" =~ ^⎯⎯⎯⎯⎯[[:space:]]*Uncaught[[:space:]]Exception || "$line" =~ ^⎯⎯⎯⎯[[:space:]]*Unhandled[[:space:]]Rejection || "$line" =~ ^⎯⎯⎯⎯⎯⎯[[:space:]]*Unhandled[[:space:]]Errors ]]; then
+                if [ $capture_mode -eq 1 ] && [ -n "$error_block" ]; then
+                    ERROR_COUNT=$((ERROR_COUNT + 1))
+                    ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Test Failure:**\n\`\`\`text\n${error_block}\n\`\`\`\n"
+                fi
+                capture_mode=1
+                error_block="$line"
+            elif [[ "$line" =~ ^⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\[[0-9]+/[0-9]+\] ]]; then
+                if [ $capture_mode -eq 1 ]; then
+                    ERROR_COUNT=$((ERROR_COUNT + 1))
+                    ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Test Failure:**\n\`\`\`text\n${error_block}\n\`\`\`\n"
+                    capture_mode=0
+                    error_block=""
+                fi
+            elif [ $capture_mode -eq 1 ]; then
+                error_block+="\n$line"
+            fi
+        done < <(echo "$TEST_OUTPUT")
+
+        if [ $capture_mode -eq 1 ] && [ -n "$error_block" ]; then
+            error_block_cleaned=$(echo -e "$error_block" | sed '/^ Test Files /,$d')
+            ERROR_COUNT=$((ERROR_COUNT + 1))
+            ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Test Failure:**\n\`\`\`text\n${error_block_cleaned}\n\`\`\`\n"
+        fi
+    fi
+
+    # --- Format ---
+    echo -e "${COLOR_YELLOW}Formatage du code...${NC}"
+    pnpm --filter=@agenticforge/core format > /dev/null 2>&1
+
+    # --- Génération du rapport final ---
+    if [ ${#FAILED_CHECKS[@]} -eq 0 ]; then
+        SUCCESS_MSG="\n---\n\n✓ Toutes les vérifications ont réussi.\n"
+        ALL_CHECKS_OUTPUT+="$SUCCESS_MSG"
+        echo -e "${COLOR_GREEN}${SUCCESS_MSG}${NC}"
+    else
+        if [ $ERROR_COUNT -eq 0 ]; then
+            ALL_CHECKS_OUTPUT+="\n- [ ] **Erreur Générale:** Une ou plusieurs vérifications ont échoué sans message d'erreur spécifique capturé. Veuillez examiner les logs ci-dessus.\n"
+        fi
+
+        FAIL_MSG="\n---\n\n✗ ${#FAILED_CHECKS[@]} type(s) de vérification ont échoué : ${FAILED_CHECKS[*]}.\n"
+        FAIL_MSG+="Veuillez consulter le fichier all-checks.md pour les ${ERROR_COUNT} erreur(s) détaillée(s).\n"
+        ALL_CHECKS_OUTPUT+="$FAIL_MSG"
+        echo -e "${COLOR_RED}${FAIL_MSG}${NC}"
+    fi
+
+    # Enlever les codes de couleur avant d'écrire dans le fichier
+    echo -e "$ALL_CHECKS_OUTPUT" | sed 's/\x1b\[[0-9;]*m//g' > all-checks.md
+    echo -e "${COLOR_YELLOW}Les résultats des vérifications ont été enregistrés dans all-checks.md.${NC}"
 }
 
 # ==============================================================================
 # UI du Menu
 # ==============================================================================
-show_menu() {
+snow_menu() {
     clear
     echo -e "${COLOR_ORANGE}"
     echo '   ╔══════════════════════════════════╗'
@@ -355,12 +655,16 @@ show_menu() {
     printf "   2) ${COLOR_YELLOW}🔄 Redémarrer tout${NC}   6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\n"
     printf "   3) ${COLOR_RED}🔴 Arrêter${NC}           7) ${COLOR_BLUE}🔨 Rebuild (no cache)${NC}\n"
     printf "   4) ${COLOR_CYAN}⚡ Statut${NC}            8) ${COLOR_RED}🧹 Nettoyer Docker${NC}\n"
-    printf "   9) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}\n"
+    printf "   9) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}  15) ${COLOR_BLUE}🐳 Logs Docker${NC}\n"
     echo ""
     echo -e "   ${COLOR_CYAN}Développement${NC}"
-    printf "  10) ${COLOR_BLUE}🔍 Lint${NC}             12) ${COLOR_BLUE}🧪 Tests${NC}\n"
-    printf "  11) ${COLOR_BLUE}✨ Format${NC}           13) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
-    printf "  14) ${COLOR_BLUE}✅ Toutes les vérifications${NC}\n"
+    printf "  10) ${COLOR_BLUE}🔍 Lint${NC}             12) ${COLOR_BLUE}🧪 Tests (Intégration)${NC}
+"    printf "  11) ${COLOR_BLUE}✨ Format${NC}           13) ${COLOR_BLUE}📘 TypeCheck${NC}
+"    printf "  17) ${COLOR_BLUE}🚀 Tests (Unitaires)${NC}
+"    printf "  19) ${COLOR_BLUE}🚀 Tests (Unitaires un par un avec timeout)${NC}
+"    printf "  14) ${COLOR_BLUE}✅ Toutes les vérifications (Unitaires inclus)${NC}
+"
+    printf "  18) ${COLOR_BLUE}✅ Vérifications rapides (sans tests)${NC}\n"
     echo ""
     printf "  16) ${COLOR_RED}🚪 Quitter${NC}\n"
     echo ""
@@ -382,15 +686,23 @@ if [ "$#" -gt 0 ]; then
             esac
             ;;
         status) show_status ;;
-        logs) show_logs ;;
+        logs)
+            case "$2" in
+                docker) show_docker_logs ;;
+                *) show_worker_logs ;;
+            esac
+            ;;
         rebuild) rebuild_services ;;
         clean-docker) clean_docker ;;
         shell) shell_access ;;
         lint) run_lint ;;
         format) run_format ;;
-        test) run_tests ;;
+        test-integration) run_integration_tests ;;
+        unit-tests) run_unit_tests ;;
+        unit-checks) run_unit_checks ;;
         typecheck) run_typecheck ;;
         all-checks) run_all_checks ;;
+        small-checks) run_small_checks ;;
         menu) # Tombe dans la boucle du menu
             ;;
         *)
@@ -405,7 +717,7 @@ fi
 
 # Boucle du menu interactif.
 while true; do
-    show_menu
+    snow_menu
     read -p "Votre choix : " choice
 
     case $choice in
@@ -413,16 +725,20 @@ while true; do
         2) restart_all_services ;;
         3) stop_services ;;
         4) show_status ;;
-        5) show_logs ;;
+        5) show_worker_logs ;;
         6) shell_access ;;
         7) rebuild_services ;;
         8) clean_docker ;;
         9) restart_worker ;;
+        15) show_docker_logs ;;
         10) run_lint ;;
         11) run_format ;;
-        12) run_tests ;;
+        12) run_integration_tests ;;
         13) run_typecheck ;;
+        19) run_unit_checks ;;
         14) run_all_checks ;;
+        17) run_unit_tests ;;
+        18) run_small_checks ;;
         16)
             echo -e "${COLOR_GREEN}Au revoir!${NC}"
             exit 0
@@ -432,7 +748,7 @@ while true; do
             ;;
     esac
     # Ajoute une pause avant de réafficher le menu pour que l'utilisateur puisse voir la sortie
-    if [[ "1 2 3 4 5 6 7 8 9 10 11 12 13 14" =~ " $choice " ]]; then
+    if [[ "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 17 18 19" =~ " $choice " ]]; then
         read -n 1 -s -r -p "Appuyez sur une touche pour continuer..."
     fi
 done

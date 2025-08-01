@@ -1,15 +1,33 @@
 // FICHIER : src/server.ts
 import '../../tracing.js'; // Initialize OpenTelemetry
-import logger from '../../logger.js';
-import { startWebServer } from '../../webServer.js';
+import { Client as PgClient } from 'pg';
+
+import { config } from '../../config.js';
+import { getLogger } from '../../logger.js';
+import { getRedisClientInstance } from '../../modules/redis/redisClient.js';
+import { initializeWebServer } from '../../webServer.js';
 
 async function startApplication() {
+  const logger = getLogger();
   logger.info("Démarrage de l'application AgenticForge...");
+
+  const pgClient = new PgClient({
+    connectionString: process.env.DATABASE_URL,
+  });
+  await pgClient.connect();
+  logger.info('Connected to PostgreSQL.');
 
   try {
     // Démarrer le serveur web
     logger.info('Démarrage du serveur web...');
-    await startWebServer();
+    const { server } = await initializeWebServer(
+      pgClient,
+      getRedisClientInstance(),
+    );
+    const port = config.PORT || 3001;
+    server.listen(port, () => {
+      logger.info(`Server listening on port ${port}`);
+    });
     logger.info('Serveur web AgenticForge démarré.');
   } catch (error) {
     logger.error(
@@ -21,6 +39,9 @@ async function startApplication() {
 }
 
 startApplication().catch((error) => {
-  logger.error(error, "Erreur critique lors du démarrage de l'application.");
+  getLogger().error(
+    error,
+    "Erreur critique lors du démarrage de l'application.",
+  );
   process.exit(1);
 });
