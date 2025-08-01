@@ -27,7 +27,7 @@ For each test in the list, follow these 6 steps:
 -   [x] 2. Créer un fichier rapport.txt
 -   [x] 3. Lire le contenu du fichier rapport.txt
 -   [x] 4. Remplacer première par seconde
--   [ ] 5. Exécuter une commande shell
+-   [x] 5. Exécuter une commande shell
 -   [ ] 6. Exécuter ls -la et montre la sortie. 
 -   [ ] 7. Faire une recherche web 
 -   [ ] 8. Naviguer sur une page web

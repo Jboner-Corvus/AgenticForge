@@ -218,10 +218,7 @@ function watchTools() {
 
   watcher.on('change', async (filePath) => {
     getLogger().info(`[watchTools] Tool file changed: ${filePath}`);
-    // Invalidate module cache for hot reloading
-    // This is a simplified approach and might not work for all scenarios
-    // For a robust solution, consider a custom module loader or process restart
-    delete require.cache[require.resolve(filePath)];
+
     await loadToolFile(filePath);
   });
 

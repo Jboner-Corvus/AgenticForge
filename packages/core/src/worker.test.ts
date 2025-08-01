@@ -2,6 +2,9 @@
 
 import type { Job, Queue } from 'bullmq';
 
+import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+
+// Mock external dependencies
 vi.mock('./modules/redis/redisClient', async () => {
   const mockRedisClient = {
     del: vi.fn(),
@@ -23,8 +26,6 @@ vi.mock('./modules/redis/redisClient', async () => {
   };
 });
 
-import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
-
 vi.mock('pg', () => ({
   Client: vi.fn(() => ({
     connect: vi.fn().mockResolvedValue(undefined),
@@ -37,7 +38,7 @@ vi.mock('./config', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./config')>();
   const mockedConfig = {
     HISTORY_MAX_LENGTH: 10,
-    LLM_PROVIDER: 'gemini', // Added missing config property
+    LLM_PROVIDER: 'gemini',
     REDIS_HOST: 'localhost',
     REDIS_PORT: 6379,
   };
@@ -48,28 +49,7 @@ vi.mock('./config', async (importOriginal) => {
   };
 });
 
-import { getConfig as _getConfig, config } from './config';
-import { getLogger } from './logger';
-import { Agent } from './modules/agent/agent';
-import * as _redis from './modules/redis/redisClient';
-import { getRedisClientInstance } from './modules/redis/redisClient';
-import { SessionManager as _SessionManager } from './modules/session/sessionManager';
-import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool';
-import { AppError as _AppError } from './utils/errorUtils';
-import { processJob } from './worker';
-
-// Mock external dependencies
-vi.mock('./modules/agent/agent');
-const _mockSessionManagerInstance = {
-  getSession: vi.fn(),
-  saveSession: vi.fn(),
-};
-vi.mock('./modules/session/sessionManager', () => ({
-  SessionManager: vi.fn(() => _mockSessionManagerInstance),
-}));
-
-vi.mock('./logger', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./logger')>();
+vi.mock('./logger', () => {
   const mockChildLogger = {
     debug: vi.fn(),
     error: vi.fn(),
@@ -81,17 +61,36 @@ vi.mock('./logger', async (importOriginal) => {
     info: vi.fn(),
   };
   return {
-    ...actual,
-    _mockChildLogger: mockChildLogger, // Export the mockChildLogger
-    _mockLogger: mockLogger, // Export the mockLogger
+    _mockChildLogger: mockChildLogger, // Export for direct access in tests
     getLogger: vi.fn(() => mockLogger),
+    getLoggerInstance: vi.fn(() => mockLogger),
   };
 });
+
+vi.mock('./modules/agent/agent');
+const _mockSessionManagerInstance = {
+  getSession: vi.fn(),
+  saveSession: vi.fn(),
+};
+vi.mock('./modules/session/sessionManager', () => ({
+  SessionManager: vi.fn(() => _mockSessionManagerInstance),
+}));
+
 vi.mock('./modules/tools/definitions/ai/summarize.tool', () => ({
   summarizeTool: {
     execute: vi.fn(),
   },
 }));
+
+import { getConfig as _getConfig, config } from './config';
+import { getLoggerInstance } from './logger';
+import { Agent } from './modules/agent/agent';
+import * as _redis from './modules/redis/redisClient';
+import { getRedisClientInstance } from './modules/redis/redisClient';
+import { SessionManager as _SessionManager } from './modules/session/sessionManager';
+import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool';
+import { AppError as _AppError } from './utils/errorUtils';
+import { processJob } from './worker';
 
 describe('processJob', () => {
   let mockJob: Partial<Job>;
@@ -102,7 +101,11 @@ describe('processJob', () => {
 
   beforeEach(() => {
     mockJob = {
-      data: { sessionId: 'testSessionId' },
+      data: {
+        llmApiKey: 'testApiKey',
+        llmModelName: 'testModelName',
+        sessionId: 'testSessionId',
+      },
       id: 'testJobId',
       name: 'testJob',
     };
@@ -154,9 +157,8 @@ describe('processJob', () => {
       mockTools,
       'gemini',
       _mockSessionManagerInstance,
-      undefined, // apiKey
-      undefined, // llmModelName
-      undefined, // llmApiKey
+      mockJob.data.llmApiKey,
+      mockJob.data.llmModelName,
     );
     expect((Agent as any).mock.results[0].value.run).toHaveBeenCalled();
     expect(mockSessionData.history).toContainEqual({
@@ -194,11 +196,12 @@ describe('processJob', () => {
       ),
     ).rejects.toThrow(_AppError);
 
-    expect(getLogger().child).toHaveBeenCalledWith({
+    expect(getLoggerInstance().child).toHaveBeenCalledWith({
       jobId: 'testJobId',
       sessionId: 'testSessionId',
     });
-    const childLogger = (getLogger().child as Mock).mock.results[0].value;
+    const childLogger = (getLoggerInstance().child as Mock).mock.results[0]
+      .value;
     expect(childLogger.error).toHaveBeenCalledWith(
       expect.any(Object),
       `Erreur dans l'exécution de l'agent`,

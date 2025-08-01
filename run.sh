@@ -40,6 +40,7 @@ usage() {
     echo "   format         : Formate le code."
     echo "   test-integration: Lance les tests d'intégration (nécessite Docker)."
     echo "   unit-tests     : Lance les tests unitaires (ne nécessite pas Docker)."
+    echo "   unit-checks    : Lance les tests unitaires un par un, avec un timeout de 30s."
     echo "   typecheck      : Vérifie les types TypeScript."
     echo "   all-checks     : Lance toutes les vérifications (TypeCheck, Lint, Unit Tests, Format)."
     echo "   small-checks   : Lance les vérifications (TypeCheck, Lint, Format) sans les tests."
@@ -452,6 +453,33 @@ run_unit_tests() {
     return $test_exit_code
 }
 
+run_unit_checks() {
+    echo -e "${COLOR_BLUE}Lancement des tests unitaires un par un...${NC}"
+    echo -e "${COLOR_CYAN}Un timeout de 10 secondes est appliqué à chaque test.${NC}"
+    # Recherche des fichiers de test et exécution dans le package 'core'
+    find ./packages/core/src -type f -name "*.test.ts" ! -name "webServer.integration.test.ts" | while read -r test_file; do
+        echo -e "
+${COLOR_YELLOW}▶️  Exécution du test: ${test_file}${NC}"
+        # Utilisation de `timeout` pour limiter la durée de chaque test
+        # On utilise pnpm --filter pour s'assurer que la commande est exécutée dans le bon package
+        # Extraire le chemin relatif du fichier de test par rapport à packages/core
+        RELATIVE_TEST_FILE=$(echo "$test_file" | sed "s|./packages/core/||")
+        timeout 10s pnpm --filter=@agenticforge/core exec vitest run "$RELATIVE_TEST_FILE"
+        # Vérification du code de retour de la commande `timeout`
+        case $? in
+            0)
+                echo -e "${COLOR_GREEN}✓ Succès pour ${test_file}${NC}"
+                ;;
+            124)
+                echo -e "${COLOR_RED}✗ ÉCHEC : Timeout (10s) pour ${test_file}${NC}"
+                ;;
+            *)
+                echo -e "${COLOR_RED}✗ ÉCHEC : Le test ${test_file} a échoué.${NC}"
+                ;;
+        esac
+    done
+}
+
 run_small_checks() {
     echo -e "${COLOR_YELLOW}Lancement des vérifications rapides (TypeCheck, Lint) via le script Node.js...${NC}"
     node "${SCRIPT_DIR}/run-checks.mjs"
@@ -630,10 +658,12 @@ snow_menu() {
     printf "   9) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}  15) ${COLOR_BLUE}🐳 Logs Docker${NC}\n"
     echo ""
     echo -e "   ${COLOR_CYAN}Développement${NC}"
-    printf "  10) ${COLOR_BLUE}🔍 Lint${NC}             12) ${COLOR_BLUE}🧪 Tests (Intégration)${NC}\n"
-    printf "  11) ${COLOR_BLUE}✨ Format${NC}           13) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
-    printf "  17) ${COLOR_BLUE}🚀 Tests (Unitaires)${NC}\n"
-    printf "  14) ${COLOR_BLUE}✅ Toutes les vérifications (Unitaires inclus)${NC}\n"
+    printf "  10) ${COLOR_BLUE}🔍 Lint${NC}             12) ${COLOR_BLUE}🧪 Tests (Intégration)${NC}
+"    printf "  11) ${COLOR_BLUE}✨ Format${NC}           13) ${COLOR_BLUE}📘 TypeCheck${NC}
+"    printf "  17) ${COLOR_BLUE}🚀 Tests (Unitaires)${NC}
+"    printf "  19) ${COLOR_BLUE}🚀 Tests (Unitaires un par un avec timeout)${NC}
+"    printf "  14) ${COLOR_BLUE}✅ Toutes les vérifications (Unitaires inclus)${NC}
+"
     printf "  18) ${COLOR_BLUE}✅ Vérifications rapides (sans tests)${NC}\n"
     echo ""
     printf "  16) ${COLOR_RED}🚪 Quitter${NC}\n"
@@ -669,6 +699,7 @@ if [ "$#" -gt 0 ]; then
         format) run_format ;;
         test-integration) run_integration_tests ;;
         unit-tests) run_unit_tests ;;
+        unit-checks) run_unit_checks ;;
         typecheck) run_typecheck ;;
         all-checks) run_all_checks ;;
         small-checks) run_small_checks ;;
@@ -704,6 +735,7 @@ while true; do
         11) run_format ;;
         12) run_integration_tests ;;
         13) run_typecheck ;;
+        19) run_unit_checks ;;
         14) run_all_checks ;;
         17) run_unit_tests ;;
         18) run_small_checks ;;
@@ -716,7 +748,7 @@ while true; do
             ;;
     esac
     # Ajoute une pause avant de réafficher le menu pour que l'utilisateur puisse voir la sortie
-    if [[ "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 17 18" =~ " $choice " ]]; then
+    if [[ "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 17 18 19" =~ " $choice " ]]; then
         read -n 1 -s -r -p "Appuyez sur une touche pour continuer..."
     fi
 done

@@ -36,13 +36,13 @@ export async function initializeWebServer(
 
   app.use(
     (
-        req: express.Request,
-        _res: express.Response,
-        _next: express.NextFunction,
-      ) => {
-        (req as any).sessionManager = sessionManager;
-        _next();
-      },
+      req: express.Request,
+      _res: express.Response,
+      _next: express.NextFunction,
+    ) => {
+      (req as any).sessionManager = sessionManager;
+      _next();
+    },
   );
 
   if (process.env.NODE_ENV !== 'production') {

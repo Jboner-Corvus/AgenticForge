@@ -15,7 +15,7 @@ export async function executeShellCommand(
 ): Promise<ShellCommandResult> {
   return new Promise((resolve, reject) => {
     const workingDir = config.WORKER_WORKSPACE_PATH || config.HOST_PROJECT_PATH;
-    const shellPath = process.env.SHELL || '/usr/bin/bash';
+    const shellPath = process.env.SHELL || '/bin/sh';
     console.log(`[SHELLUTILS-DEBUG] shellPath: ${shellPath}`);
 
     ctx.log.info(

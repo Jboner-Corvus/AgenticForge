@@ -1,6 +1,3 @@
-
-
-
 import { getConfig } from '../config.js';
 import { getLogger } from '../logger.js';
 import { LLMContent } from '../modules/llm/llm-types.js';
@@ -226,7 +223,7 @@ class GeminiProvider implements ILlmProvider {
       throw new LlmError(errorMessage);
     }
 
-        const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${modelName || getConfig().LLM_MODEL_NAME}:generateContent?key=${activeKey.apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${modelName || getConfig().LLM_MODEL_NAME}:generateContent?key=${activeKey.apiKey}`;
 
     const geminiMessages = messages.map((msg) => {
       let role = msg.role;
@@ -562,7 +559,9 @@ class HuggingFaceProvider implements ILlmProvider {
     const apiUrl = `https://api-inference.huggingface.co/models/${modelName || getConfig().LLM_MODEL_NAME}`;
 
     const requestBody = {
-      inputs: messages.map((msg) => msg.parts.map((p) => p.text).join('')).join('\n'),
+      inputs: messages
+        .map((msg) => msg.parts.map((p) => p.text).join(''))
+        .join('\n'),
       parameters: {
         max_new_tokens: 4096, // A reasonable default for HuggingFace models
       },

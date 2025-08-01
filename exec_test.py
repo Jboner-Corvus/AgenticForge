@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # ==============================================================================
-# 🧪 PROCÉDURE DE TEST STANDARD POUR L'AGENT
+# ⚗⚗ PROCÉDURE DE TEST STANDARD POUR L'AGENT
 # ==============================================================================
 # ---
 # Instructions :
@@ -11,7 +11,7 @@
 # Exécutez chaque commande ci-dessous, une par une, en utilisant ce script.
 # Pour chaque commande :
 #
-# # 1. Exécutez la requête via le script (ex: python exec_commande.py 1).
+# 1. Exécutez la requête via le script (ex: python exec_test.py 1).
 # 2. Consultez les logs du worker pour suivre l'exécution de la tâche.
 # 3. Confirmez que la tâche associée au prompt a été reçue, qu'elle s'est
 #    terminée avec succès et qu'elle a bien effectué son action.
@@ -26,21 +26,21 @@
 # Pour lancer une commande, utilisez la structure suivante dans votre terminal
 # (CMD, PowerShell, etc.) :
 #
-#   python exec_commande.py <numero_de_la_commande>
+#    python exec_test.py <numero_de_la_commande>
 #
 # Remplacez :
-#   - `exec_commande.py` par le nom de ce fichier.
-#   - `<numero_de_la_commande>` par le numéro de la tâche à exécuter (de 1 à 50).
+#    - `exec_test.py` par le nom de ce fichier.
+#    - `<numero_de_la_commande>` par le numéro de la tâche à exécuter (de 1 à 50).
 #
 # ---
 # Exemples pratiques :
 # ---
 #
 # 1. Pour lister les fichiers et dossiers (commande n°1) :
-#    python exec_commande.py 1
+#    python exec_test.py 1
 #
 # 2. Pour créer une archive du répertoire de travail (commande n°25) :
-#    python exec_commande.py 25
+#    python exec_test.py 25
 #
 # ==============================================================================
 
@@ -55,14 +55,14 @@ import requests
 # Mettez à jour ces variables avec les vôtres
 API_URL = "http://192.168.2.56:8080/api"
 API_TOKEN = "Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0"
-POLL_INTERVAL = 2  # secondes
+POLL_INTERVAL = 2   # secondes
 POLL_TIMEOUT = 60 # secondes
 
 # Configuration pour l'API run.sh
 RUN_SH_API_BASE_URL = "http://192.168.2.56:3005"
 
 # ==============================================================================
-# 💡 GUIDE DE DÉPANNAGE POUR L'AGENT 💡
+# ℹ⚡ GUIDE DE DÉPANNAGE POUR L'AGENT ⚡ℹ
 # ==============================================================================
 # Si ce script rencontre des problèmes, voici les points à vérifier :
 #
@@ -116,7 +116,7 @@ PROMPTS = [
     # 11-20 : Scénarios de complexité moyenne
     "11. Crée un fichier todo.txt avec trois lignes : - Tâche 1, - Tâche 2, - Tâche 3. Ensuite, lis le contenu de ce fichier pour confirmer.",
     "12. Utilise une commande shell pour obtenir la date actuelle au format AAAA-MM-JJ. Ensuite, écris cette date dans un fichier nommé date_du_jour.txt.",
-    "13. Écris un script Python nommé calcul.py qui calcule 125 * 8 et affiche le résultat. Ensuite, exécute ce script et donne-moi la réponse.",
+    "13. Écris un script Python nommé calcul.py qui calcule 125 * 8 et affiche le résultat. Ensuite, exécute ce script et donne-me la réponse.",
     "14. Utilise une commande shell pour compter le nombre total de fichiers et de dossiers dans le répertoire de travail et annonce le résultat.",
     "15. Navigue sur la page d'accueil de Wikipedia (https://fr.wikipedia.org), extrais tout le texte, puis fournis un résumé concis de ce contenu.",
     '16. Crée un fichier config.json avec le contenu {"user": "admin", "version": "2.1.0", "active": true}. Ensuite, lis ce fichier et dis-moi uniquement la valeur de la clé version.',
@@ -141,7 +141,7 @@ PROMPTS = [
     '31. Créer un Site Web Statique "Portfolio"',
     '32. Développer un Outil CLI Node pour Gérer des Tâches',
     '33. Mettre en Place une API Web Minimale avec Javascript pnpm',
-    '34. Créer un Composant React pour l\'UI Existante',
+    "34. Créer un Composant React pour l'UI Existante",
     '35. Scraper des Données Cosmologique et les Analyser',
     '36. Créer un Script d\'Initialisation de Projet',
     '37. Convertisseur Markdown vers HTML',
@@ -197,7 +197,7 @@ def run_single_test(command_number_str: str):
             f'{API_URL}/chat'
         ]
         
-        print(f"   Commande: {' '.join(shlex.quote(c) for c in curl_command)}")
+        print(f"  Commande: {' '.join(shlex.quote(c) for c in curl_command)}")
 
         # Exécution de la commande
         process = subprocess.run(
@@ -221,25 +221,25 @@ def run_single_test(command_number_str: str):
 
     except subprocess.CalledProcessError as e:
         print(f"❌ Erreur lors de l'exécution de la commande curl initiale.")
-        print(f"   Code de retour: {e.returncode}")
-        print(f"   Sortie standard (stdout): {e.stdout}")
-        print(f"   Sortie d'erreur (stderr): {e.stderr}")
-        print("💡 **Conseil pour l'agent :** Vérifiez que l'API principale est en cours d'exécution et accessible à `API_URL`.")
-        print("   Assurez-vous que le `API_TOKEN` est correct. Consultez les logs du serveur AgenticForge.")
+        print(f"  Code de retour: {e.returncode}")
+        print(f"  Sortie standard (stdout): {e.stdout}")
+        print(f"  Sortie d'erreur (stderr): {e.stderr}")
+        print("ℹ **Conseil pour l'agent :** Vérifiez que l'API principale est en cours d'exécution et accessible à `API_URL`.")
+        print("  Assurez-vous que le `API_TOKEN` est correct. Consultez les logs du serveur AgenticForge.")
         return
     except json.JSONDecodeError:
         print(f"❌ Erreur: Impossible de décoder la réponse JSON de la requête initiale.")
-        print(f"   Réponse reçue: {process.stdout}")
-        print("💡 **Conseil pour l'agent :** La réponse de l'API n'est pas un JSON valide. Vérifiez les logs du serveur AgenticForge pour des erreurs.")
+        print(f"  Réponse reçue: {process.stdout}")
+        print("ℹ **Conseil pour l'agent :** La réponse de l'API n'est pas un JSON valide. Vérifiez les logs du serveur AgenticForge pour des erreurs.")
         return
     except Exception as e:
         print(f"❌ Une erreur inattendue est survenue lors de l'envoi du job : {e}")
-        print("💡 **Conseil pour l'agent :** Vérifiez la connectivité réseau et l'état du serveur AgenticForge.")
+        print("ℹ **Conseil pour l'agent :** Vérifiez la connectivité réseau et l'état du serveur AgenticForge.")
         return
 
     # --- Étape 2: Interroger (poll) le statut du job ---
     status_url = f"{API_URL}/status/{job_id}"
-    print(f"🔄 Interrogation du statut du job sur {status_url}")
+    print(f"↩ Interrogation du statut du job sur {status_url}")
     
     start_time = time.time()
     while time.time() - start_time < POLL_TIMEOUT:
@@ -254,51 +254,51 @@ def run_single_test(command_number_str: str):
             status_data = json.loads(status_process.stdout)
             job_state = status_data.get('state')
             
-            print(f"   Statut actuel : {job_state}...")
+            print(f"  Statut actuel : {job_state}...")
 
             if job_state == 'completed':
                 return_value = status_data.get('returnvalue', {})
                 print("="*50)
                 print(f"✅ SUCCÈS : Le test #{command_number} est terminé.")
-                print(f"   Résultat final :")
+                print(f"  Résultat final :")
                 # Affiche le résultat joliment formaté
                 print(json.dumps(return_value, indent=2, ensure_ascii=False))
                 print("="*50)
                 return
 
             if job_state == 'failed':
-                error_info = status_data.get('error', 'Aucune information d\'erreur fournie.')
+                error_info = status_data.get('error', "Aucune information d'erreur fournie.")
                 print("="*50)
                 print(f"❌ ÉCHEC : Le test #{command_number} a échoué.")
-                print(f"   Raison de l\'échec : {error_info}")
-                print("💡 **Conseil pour l\'agent :** Le job a échoué. Examinez la `Raison de l\'échec` ci-dessus et les logs du worker AgenticForge.")
-                print("   Si l'échec est persistant ou inexpliqué, un `restart` complet (`python exec_Test.py run_sh restart`) peut aider.")
-                print("   Si le problème semble lié à l\'environnement Docker, envisagez un `clean_docker` suivi d\'un `rebuild`.")
+                print(f"  Raison de l'échec : {error_info}")
+                print("ℹ **Conseil pour l'agent :** Le job a échoué. Examinez la `Raison de l'échec` ci-dessus et les logs du worker AgenticForge.")
+                print("  Si l'échec est persistant ou inexpliqué, un `restart` complet (`python exec_test.py run_sh restart`) peut aider.")
+                print("  Si le problème semble lié à l'environnement Docker, envisagez un `clean_docker` suivi d'un `rebuild`.")
                 print("="*50)
                 return
 
             time.sleep(POLL_INTERVAL)
 
         except subprocess.CalledProcessError as e:
-            print(f"❌ Erreur lors de l\'interrogation du statut du job : {e.stderr}")
-            print("💡 **Conseil pour l\'agent :** Le serveur AgenticForge a retourné une erreur lors de la vérification du statut. Vérifiez ses logs.")
+            print(f"❌ Erreur lors de l'interrogation du statut du job : {e.stderr}")
+            print("ℹ **Conseil pour l'agent :** Le serveur AgenticForge a retourné une erreur lors de la vérification du statut. Vérifiez ses logs.")
             time.sleep(POLL_INTERVAL) # On attend avant de réessayer
         except json.JSONDecodeError:
-            print(f"❌ Erreur: Impossible de décoder la réponse JSON de l\'API de statut.")
-            print(f"   Réponse reçue : {status_process.stdout}")
-            print("💡 **Conseil pour l\'agent :** La réponse de l\'API de statut n\'est pas un JSON valide. Le serveur AgenticForge pourrait avoir un problème.")
+            print(f"❌ Erreur: Impossible de décoder la réponse JSON de l'API de statut.")
+            print(f"  Réponse reçue : {status_process.stdout}")
+            print("ℹ **Conseil pour l'agent :** La réponse de l'API de statut n'est pas un JSON valide. Le serveur AgenticForge pourrait avoir un problème.")
             return
         except Exception as e:
-            print(f"❌ Une erreur inattendue est survenue pendant l\'interrogation : {e}")
-            print("💡 **Conseil pour l\'agent :** Problème de connectivité ou erreur interne lors du polling. Vérifiez l\'état du serveur AgenticForge.")
+            print(f"❌ Une erreur inattendue est survenue pendant l'interrogation : {e}")
+            print("ℹ **Conseil pour l'agent :** Problème de connectivité ou erreur interne lors du polling. Vérifiez l'état du serveur AgenticForge.")
             return
     
     # Si la boucle se termine sans réponse
-    print(f"⏰ TIMEOUT : Le test #{command_number} n\'a pas abouti dans les {POLL_TIMEOUT} secondes imparties.")
-    print("💡 **Conseil pour l\'agent :** Le job a dépassé le temps imparti. Le worker AgenticForge est peut-être bloqué, ou la tâche est trop longue/complexe.")
-    print("   Vérifiez les logs du worker pour des indices sur la raison du blocage ou de l\'échec.")
-    print("   Un `restart` complet (`python exec_Test.py run_sh restart`) peut souvent résoudre les problèmes de blocage.")
-    print("   Si le problème persiste, un `clean_docker` suivi d\'un `rebuild` peut être nécessaire pour un environnement propre.")
+    print(f"⏰ TIMEOUT : Le test #{command_number} n'a pas abouti dans les {POLL_TIMEOUT} secondes imparties.")
+    print("ℹ **Conseil pour l'agent :** Le job a dépassé le temps imparti. Le worker AgenticForge est peut-être bloqué, ou la tâche est trop longue/complexe.")
+    print("  Vérifiez les logs du worker pour des indices sur la raison du blocage ou de l'échec.")
+    print("  Un `restart` complet (`python exec_test.py run_sh restart`) peut souvent résoudre les problèmes de blocage.")
+    print("  Si le problème persiste, un `clean_docker` suivi d'un `rebuild` peut être nécessaire pour un environnement propre.")
 
 
 def run_sh_command(command: str, *args):
@@ -328,7 +328,7 @@ def run_sh_command(command: str, *args):
     endpoint = endpoint_map.get(command)
     if not endpoint:
         print(f"❌ Erreur : Commande run.sh inconnue: {command}")
-        print("   Commandes disponibles : " + ", ".join(endpoint_map.keys()))
+        print("  Commandes disponibles : " + ", ".join(endpoint_map.keys()))
         return
 
     url = f"{RUN_SH_API_BASE_URL}{endpoint}"
@@ -345,20 +345,20 @@ def run_sh_command(command: str, *args):
         print(data.get("stderr", "(empty)"))
         # Conseils supplémentaires basés sur la sortie de la commande shell
         if data.get("stderr"):
-            print("💡 **Conseil pour l'agent :** La commande `run.sh` a retourné des erreurs. Lisez attentivement la sortie `stderr` ci-dessus.")
+            print("ℹ **Conseil pour l'agent :** La commande `run.sh` a retourné des erreurs. Lisez attentivement la sortie `stderr` ci-dessus.")
             if "docker" in command or "rebuild" in command or "test-integration" in command:
-                print("   Si le problème est lié à Docker, essayez de lancer `python exec_Test.py run_sh clean_docker` puis `rebuild`.")
+                print("  Si le problème est lié à Docker, essayez de lancer `python exec_test.py run_sh clean_docker` puis `rebuild`.")
             elif "lint" in command or "format" in command or "typecheck" in command or "checks" in command:
-                print("   Si le problème est lié à la qualité du code, lancez `python exec_Test.py run_sh small_checks` pour une vérification rapide.")
-            print("   Un `restart` complet (`python exec_Test.py run_sh restart`) peut parfois résoudre des problèmes transitoires.")
+                print("  Si le problème est lié à la qualité du code, lancez `python exec_test.py run_sh small_checks` pour une vérification rapide.")
+            print("  Un `restart` complet (`python exec_test.py run_sh restart`) peut parfois résoudre des problèmes transitoires.")
     except requests.exceptions.RequestException as e:
         print(f"❌ Erreur lors de l'appel de l'API run.sh: {e}")
         if hasattr(e, 'response') and e.response is not None:
-            print(f"   Statut HTTP: {e.response.status_code}")
-            print(f"   Réponse: {e.response.text}")
-        print("💡 **Conseil pour l'agent :** Impossible de se connecter à l'API run.sh. Vérifiez que `apirun/index.js` est bien lancé et écoute sur `http://localhost:3005`.")
-        print("   Examinez les logs de `node index.js` pour des erreurs de démarrage ou de routage.")
-        print("   Un `restart` de l'API (`node index.js` après l'avoir arrêté) peut être nécessaire.")
+            print(f"  Statut HTTP: {e.response.status_code}")
+            print(f"  Réponse: {e.response.text}")
+        print("ℹ **Conseil pour l'agent :** Impossible de se connecter à l'API run.sh. Vérifiez que `apirun/index.js` est bien lancé et écoute sur `http://localhost:3005`.")
+        print("  Examinez les logs de `node index.js` pour des erreurs de démarrage ou de routage.")
+        print("  Un `restart` de l'API (`node index.js` après l'avoir arrêté) peut être nécessaire.")
 
 
 if __name__ == "__main__":
@@ -370,19 +370,21 @@ if __name__ == "__main__":
         if sys.argv[1] == "run_sh":
             if len(sys.argv) < 3:
                 print("❌ Erreur : Veuillez spécifier une commande run.sh à exécuter.")
-                print("   Exemple : python exec_Test.py run_sh start")
+                print("  Exemple : python exec_test.py run_sh start")
             else:
                 run_sh_command(sys.argv[2], *sys.argv[3:])
         else:
             run_single_test(sys.argv[1])
     else:
         print("ℹ️  Veuillez spécifier un numéro de commande à exécuter.")
-        print(f"   Exemple : python {sys.argv[0]} 1")
+        print(f"  Exemple : python {sys.argv[0]} 1")
         print("\n--- run.sh API Commands ---")
-        print("   To run a run.sh command via the API, use: python exec_Test.py run_sh <command>")
-        print("   Example: python3 exec_Test.py run_sh start")
-        print("   Available commands: start, stop, restart, status, logs_worker, logs_docker, rebuild, clean_docker, restart_worker, lint, format, test_integration, unit_tests, typecheck, all_checks, small_checks")
+        print("  To run a run.sh command via the API, use: python exec_test.py run_sh <command>")
+        print("  Example: python3 exec_test.py run_sh start")
+        print("  Available commands: start, stop, restart, status, logs_worker, logs_docker, rebuild, clean_docker, restart_worker, lint, format, test_integration, unit_tests, typecheck, all_checks, small_checks")
+    
+    # Répétition de la section de l'aide pour plus de clarté
     print("\n--- run.sh API Commands ---")
-    print("   To run a run.sh command via the API, use: python exec_Test.py run_sh <command>")
-    print("   Example: python3 exec_Test.py run_sh start")
-    print("   Available commands: start, stop, restart, status, logs_worker, logs_docker, rebuild, clean_docker, restart_worker, lint, format, test_integration, unit_tests, typecheck, all_checks, small_checks")
+    print("  To run a run.sh command via the API, use: python exec_test.py run_sh <command>")
+    print("  Example: python exec_Test.py run_sh start")
+    print("  Available commands: start, stop, restart, status, logs_worker, logs_docker, rebuild, clean_docker, restart_worker, lint, format, test_integration, unit_tests, typecheck, all_checks, small_checks")

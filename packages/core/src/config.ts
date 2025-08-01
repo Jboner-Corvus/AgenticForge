@@ -4,8 +4,6 @@ import { fileURLToPath } from 'url';
 // FICHIER : packages/core/src/config.ts
 import { z } from 'zod';
 
-
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -103,8 +101,6 @@ export async function loadConfig() {
   console.log('process.env.REDIS_HOST:', process.env.REDIS_HOST);
   console.log('config.REDIS_HOST:', config.REDIS_HOST);
   console.log('config.LLM_API_KEY:', config.LLM_API_KEY);
-
-  
 }
 
 // Initial load is now handled by the application's entry point (e.g., server-start.ts)
