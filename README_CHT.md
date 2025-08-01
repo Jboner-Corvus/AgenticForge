@@ -8,9 +8,9 @@
   <img src="https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge" alt="Agentic Forge Logo">
 </p>
 <p align="center">
-  <strong>🌐 可用語言</strong><br>
-  <a href="README.md">English</a> • 
-  <a href="README_FR.md">Français</a> • 
+  <strong>🌐 Langues disponibles</strong><br>
+  <a href="README_EN.md">English</a> • 
+  <a href="README.md">Français</a> • 
   <a href="README_CHS.md">中文</a> • 
   <a href="README_CHT.md">繁體中文</a> • 
   <a href="README_JP.md">日本語</a> • 

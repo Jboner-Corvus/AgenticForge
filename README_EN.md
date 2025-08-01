@@ -8,15 +8,15 @@
   <img src="https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge" alt="Agentic Forge Logo">
 </p>
 <p align="center">
-  <strong>🌐 Available Languages</strong><br>
-  <a href="README.md">English</a> • 
-  <a href="README_FR.md">Français</a> • 
+  <strong>🌐 Langues disponibles</strong><br>
+  <a href="README_EN.md">English</a> • 
+  <a href="README.md">Français</a> • 
   <a href="README_CHS.md">中文</a> • 
   <a href="README_CHT.md">繁體中文</a> • 
   <a href="README_JP.md">日本語</a> • 
   <a href="README_PTBR.md">Português (Brasil)</a> • 
   <a href="README_ES.md">Español</a>
-</p> 
+</p>  
 <h3 align="center">
       A private and local alternative to MANUS.
 </h3>
