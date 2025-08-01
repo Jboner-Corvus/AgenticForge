@@ -3,7 +3,7 @@ import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
 import _os from 'os';
 import path from 'path';
-import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
 import { config } from '../../../../config.js';
 import { getLogger } from '../../../../logger.js';

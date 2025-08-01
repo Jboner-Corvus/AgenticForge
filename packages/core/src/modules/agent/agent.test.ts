@@ -232,14 +232,16 @@ describe('Agent Integration Tests', () => {
 `,
       );
 
-    mockedToolRegistryExecute.mockImplementation(async (name, _params, ctx) => {
-      if (name === 'test-tool') {
-        return mockTestTool.execute({ arg: 'value' }, ctx);
-      }
-      if (name === 'finish') {
-        return mockFinishTool.execute({ response: 'Final answer' }, ctx);
-      }
-    });
+    mockedToolRegistryExecute.mockImplementation(
+      async (name: any, _params: any, ctx: any) => {
+        if (name === 'test-tool') {
+          return mockTestTool.execute({ arg: 'value' }, ctx);
+        }
+        if (name === 'finish') {
+          return mockFinishTool.execute({ response: 'Final answer' }, ctx);
+        }
+      },
+    );
 
     const finalResponse = await agent.run();
 
@@ -308,7 +310,7 @@ describe('Agent Integration Tests', () => {
   });
 
   it('should stop if it reaches max iterations', async () => {
-    mockedGetLlmResponse.mockImplementation((messages) => {
+    mockedGetLlmResponse.mockImplementation((messages: any) => {
       const iteration = messages.length; // Use message history length to create unique commands
       return Promise.resolve(
         `
@@ -390,7 +392,7 @@ describe('Agent Integration Tests', () => {
 
   it('should not loop indefinitely on repeated tool errors', async () => {
     const errorMessage = 'Persistent tool error';
-    mockedGetLlmResponse.mockImplementation((messages) =>
+    mockedGetLlmResponse.mockImplementation((messages: any) =>
       Promise.resolve(
         `
 {

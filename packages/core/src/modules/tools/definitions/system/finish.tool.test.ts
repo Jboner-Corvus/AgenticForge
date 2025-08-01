@@ -1,5 +1,5 @@
 import { Job, Queue } from 'bullmq';
-import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
 import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
 

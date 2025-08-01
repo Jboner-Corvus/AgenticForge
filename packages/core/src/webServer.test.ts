@@ -58,6 +58,11 @@ vi.mock('./logger', () => {
 vi.mock('./modules/session/sessionManager', () => ({
   SessionManager: vi.fn(() => ({
     getSession: vi.fn().mockResolvedValue({ history: [] }),
+    renameSession: vi.fn().mockResolvedValue({
+      history: [],
+      id: 'testSessionId',
+      name: 'newSessionName',
+    }),
     saveSession: vi.fn(),
   })),
 }));
@@ -152,7 +157,7 @@ describe('initializeWebServer', () => {
   });
 
   it('should return 200 for /api/session', async () => {
-    const response = await request(app).get('/api/session');
+    const response = await request(app).post('/api/session');
     expect(response.statusCode).toBe(200);
   });
 

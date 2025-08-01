@@ -134,11 +134,7 @@ async function findToolFiles(
       logContext: "Erreur lors du parcours du répertoire d'outils.",
     });
 
-    // Re-throw ENOENT errors as they indicate a missing tools directory,
-    // which should be a fatal error for the application.
-    throw new Error(
-      `Impossible de lire le répertoire des outils '${dir}'. Détails: ${errDetails.message}`,
-    );
+    throw error; // Re-throw to ensure the error is propagated
   }
 
   return files;

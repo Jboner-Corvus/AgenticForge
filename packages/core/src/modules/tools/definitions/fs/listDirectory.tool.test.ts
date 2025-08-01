@@ -1,7 +1,7 @@
 /// <reference types="vitest/globals" />
 import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
-import { describe, expect, it, Mock, vi } from 'vitest';
+import { describe, expect, it, type Mock, vi } from 'vitest';
 
 import { getLoggerInstance } from '../../../../logger.js';
 import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';

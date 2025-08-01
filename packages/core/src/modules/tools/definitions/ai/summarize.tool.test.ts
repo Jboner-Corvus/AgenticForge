@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
 import { Ctx } from '../../../../types.js';
 import { ILlmProvider } from '../../../../types.js';
