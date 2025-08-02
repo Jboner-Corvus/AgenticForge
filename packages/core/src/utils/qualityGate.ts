@@ -1,11 +1,12 @@
 import { getLogger } from '../logger.js';
+import { Ctx } from '../types.js';
 import { executeShellCommand, ShellCommandResult } from './shellUtils.js';
 
 /**
  * Exécute une série de vérifications de qualité (types, format, lint) en exécutant des commandes shell.
  * @returns Un objet indiquant si toutes les vérifications ont réussi et la sortie combinée.
  */
-export async function runQualityGate(): Promise<{
+export async function runQualityGate(ctx: Ctx): Promise<{
   output: string;
   success: boolean;
 }> {
@@ -27,10 +28,7 @@ export async function runQualityGate(): Promise<{
   for (const { cmd, name } of commands) {
     outputMessages.push(`
 --- Running: ${name} ---`);
-    const result: ShellCommandResult = await executeShellCommand(
-      cmd,
-      {} as any,
-    );
+    const result: ShellCommandResult = await executeShellCommand(cmd, ctx);
     combinedOutput += `
 ${name} STDOUT:
 ${result.stdout || '(empty)'}`;

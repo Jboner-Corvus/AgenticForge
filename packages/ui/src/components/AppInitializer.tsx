@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 
-import { useLanguage } from '../lib/hooks/useLanguageHook';
+import { useLanguage } from '../lib/contexts/LanguageContext';
 import { clientConfig } from '../config';
 import { testServerHealth } from '../lib/api';
 import { useStore } from '../lib/store';

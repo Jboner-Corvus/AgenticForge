@@ -158,7 +158,5 @@ describe('toolLoader Integration Test', () => {
       // Assert
       expect(tools).toHaveLength(0);
     });
-
-    
   });
 });

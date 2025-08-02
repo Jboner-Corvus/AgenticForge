@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../../../types.js';
 
-import { getErrDetails } from '../../../../utils/errorUtils.js';
+import { AppError, UserError, getErrDetails } from '../../../../utils/errorUtils.js';
 import { runQualityGate } from '../../../../utils/qualityGate.js';
 
 export const parameters = z.object({
@@ -20,7 +20,10 @@ export const parameters = z.object({
     .describe("Nom de l'outil (kebab-case)."),
 });
 
-const GENERATED_TOOLS_DIR = path.resolve(process.cwd(), 'src/tools/generated');
+const GENERATED_TOOLS_DIR = path.resolve(
+  process.cwd(),
+  'packages/core/src/modules/tools/definitions/generated',
+);
 
 const TOOL_TEMPLATE = `
 // Outil généré par l'agent : {{tool_name}}
@@ -28,14 +31,14 @@ import { z } from 'zod';
 import type { Ctx, Tool } from '../../../../types.js';
 
 
-export const {{toolVarName}}Params = z.object({{parameters}});
+export const {{toolVarName}}Params = z.object({{{parameters}}});
 
 export const {{toolVarName}}Tool: Tool<typeof {{toolVarName}}Params> = {
   name: '{{tool_name}}',
   description: '{{description}}',
   parameters: {{toolVarName}}Params,
   execute: async (args, ctx: Ctx) => {
-    {{execute_function}}
+    {{{execute_function}}}
   },
 };
 `;
@@ -56,23 +59,26 @@ export const createToolTool: Tool<typeof parameters> = {
 
       const toolFileContent = TOOL_TEMPLATE.replace('{{tool_name}}', tool_name)
         .replace('{{toolVarName}}Params', `${toolVarName}Params`)
-        .replace('{{parameters}}', parameters)
+        .replace('{{{parameters}}}', parameters)
         .replace('{{toolVarName}}Tool', `${toolVarName}Tool`)
         .replace('{{toolVarName}}Params', `${toolVarName}Params`)
         .replace('{{tool_name}}', tool_name)
         .replace('{{description}}', description)
         .replace('{{toolVarName}}Params', `${toolVarName}Params`)
-        .replace('{{execute_function}}', execute_function);
+        .replace('{{{execute_function}}}', execute_function);
 
       await fs.mkdir(GENERATED_TOOLS_DIR, { recursive: true });
       await fs.writeFile(toolFilePath, toolFileContent, 'utf-8');
       let output = `Nouveau fichier d'outil '${toolFileName}' créé.\n`;
 
       ctx.log.info('Lancement du Quality Gate...');
-      const qualityResult = await runQualityGate();
+      const qualityResult = await runQualityGate(ctx);
       output += `\n${qualityResult.output}`;
 
       if (!qualityResult.success) {
+        ctx.log.error('Le Quality Gate a échoué', {
+          output: qualityResult.output,
+        });
         return { erreur: `Le Quality Gate a échoué: ${qualityResult.output}` };
       }
 

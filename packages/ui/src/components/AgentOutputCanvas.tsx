@@ -7,7 +7,7 @@ import remarkGfm from 'remark-gfm';
 import { X, Bot } from 'lucide-react';
 import { Button } from './ui/button';
 import { useStore } from '../lib/store';
-import { useLanguage } from '../lib/hooks/useLanguageHook';
+import { useLanguage } from '../lib/contexts/LanguageContext';
 
 const AgentOutputCanvas: React.FC = () => {
   const { translations } = useLanguage();

@@ -70,6 +70,34 @@ ASSISTANT's turn after receiving the file content:
 }
 ```
 
+Example of using `executeShellCommand`:
+
+USER:
+Execute `ls -la` in the current directory.
+
+ASSISTANT's turn (Reasoning -> Action):
+
+```json
+{
+  "thought": "The user wants to execute a shell command. I will use the `executeShellCommand` tool to run `ls -la`.",
+  "command": {
+    "name": "executeShellCommand",
+    "params": {
+      "command": "ls -la"
+    }
+  }
+}
+```
+
+ASSISTANT's turn after receiving the observation:
+
+```json
+{
+  "thought": "I have successfully executed the `ls -la` command. The output is in the observation. I will now provide the final answer.",
+  "answer": "The `ls -la` command was executed. Here is the output: [output from tool]"
+}
+```
+
 # Agent Persona and Core Directive
 
 ```

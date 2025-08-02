@@ -7,7 +7,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
-import { useLanguage } from '../lib/hooks/useLanguageHook';
+import { useLanguage } from '../lib/contexts/LanguageContext';
 import { generateUUID } from '../lib/utils/uuid';
 import { useToast } from '../lib/hooks/useToast';
 import { useDraggableSidebar } from '../lib/hooks/useDraggablePane';

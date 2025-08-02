@@ -3,7 +3,7 @@ import { useStore, AppState } from '../lib/store';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Paperclip, Send } from 'lucide-react';
-import { useLanguage } from '../lib/hooks/useLanguageHook';
+import { useLanguage } from '../lib/contexts/LanguageContext';
 
 export const UserInput = () => {
   const { translations } = useLanguage();

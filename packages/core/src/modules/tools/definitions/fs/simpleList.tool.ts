@@ -3,7 +3,9 @@ import { z } from 'zod';
 
 import type { Tool } from '../../../../types.js';
 
-export const simpleListParams = z.object({});
+export const simpleListParams = z.object({
+  detailed: z.boolean().optional(),
+});
 
 export const simpleListOutput = z.string();
 
@@ -11,10 +13,11 @@ export const simpleListTool: Tool<
   typeof simpleListParams,
   typeof simpleListOutput
 > = {
-  description: 'A simple tool to list files using ls -F.',
-  execute: async () => {
+  description: 'Provides a simple, non-detailed list of files and directories.',
+  execute: async (params) => {
     return new Promise((resolve) => {
-      exec('ls -F', (error, stdout, stderr) => {
+      const command = params.detailed ? 'ls -la' : 'ls -F';
+      exec(command, (error, stdout, stderr) => {
         if (error) {
           resolve(`error: ${error.message}`);
           return;

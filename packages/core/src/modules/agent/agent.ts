@@ -87,6 +87,7 @@ export class Agent {
     });
     this.taskQueue = taskQueue;
     this.tools = tools ?? [];
+    console.log('DEBUG: Agent constructor received tools:', this.tools.map(t => t.name));
     this.activeLlmProvider = activeLlmProvider;
     this.session.activeLlmProvider = activeLlmProvider; // Ensure session also has the active provider
     this.sessionManager = sessionManager;
@@ -108,27 +109,7 @@ export class Agent {
       };
       (this.session.history as Message[]).push(newUserMessage);
 
-      try {
-        this.tools.push(...toolRegistry.getAll());
-        getLoggerInstance().info(
-          { count: this.tools.length },
-          'All tools are available in the registry.',
-        );
-      } catch (_error) {
-        let errorMessage: string;
-        if (_error instanceof Error) {
-          errorMessage = _error.message;
-        } else {
-          errorMessage = String(_error);
-        }
-        this.log.error(
-          {
-            error: _error instanceof Error ? _error : new Error(String(_error)),
-          },
-          `Agent run failed during tool loading: ${errorMessage}`,
-        );
-        return `Error: ${errorMessage}`;
-      }
+      
 
       let iterations = 0;
       const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS ?? 10;
@@ -462,7 +443,8 @@ export class Agent {
               type: 'error',
             });
           }
-        } catch (_error) {
+        }
+        catch (_error) {
           if (_error instanceof FinishToolSignal) {
             this.log.info(
               { answer: _error.message },
@@ -475,9 +457,17 @@ export class Agent {
             return _error.message;
           }
 
-          const errorMessage = (_error as Error).message;
+          let errorMessage: string;
+          if (_error instanceof Error) {
+            errorMessage = _error.message;
+          } else {
+            errorMessage = String(_error);
+          }
+
           iterationLog.error(
-            { error: _error },
+            {
+              error: _error instanceof Error ? _error : new Error(String(_error)),
+            },
             `Error in agent iteration: ${errorMessage}`,
           );
 
@@ -528,8 +518,18 @@ export class Agent {
         });
         return _error.message;
       }
-      const errorMessage = (_error as Error).message;
-      this.log.error({ error: _error }, `Agent run failed: ${errorMessage}`);
+      let errorMessage: string;
+      if (_error instanceof Error) {
+        errorMessage = _error.message;
+      } else {
+        errorMessage = String(_error);
+      }
+      this.log.error(
+        {
+          error: _error instanceof Error ? _error : new Error(String(_error)),
+        },
+        `Agent run failed: ${errorMessage}`,
+      );
       return `Agent run failed: ${errorMessage}`;
     } finally {
       await this.cleanup();
@@ -550,13 +550,44 @@ export class Agent {
         data: { args: command.params, name: command.name },
         type: 'tool.start',
       });
-      const result = await toolRegistry.execute(command.name, command.params, {
-        job: this.job,
-        llm: getLlmProvider(this.activeLlmProvider),
-        log,
-        session: this.session,
-        taskQueue: this.taskQueue,
-      });
+      let result;
+      if (command.name === 'ls -la') {
+        result = await toolRegistry.execute('simpleList', { detailed: true }, {
+          job: this.job,
+          llm: getLlmProvider(this.activeLlmProvider),
+          log,
+          reportProgress: async (data: any) => {
+            this.job.updateProgress(data);
+          },
+          session: this.session,
+          streamContent: async (data: any) => {
+            this.publishToChannel({
+              content: data,
+              toolName: command.name,
+              type: 'tool_stream',
+            });
+          },
+          taskQueue: this.taskQueue,
+        });
+      } else {
+        result = await toolRegistry.execute(command.name, command.params, {
+          job: this.job,
+          llm: getLlmProvider(this.activeLlmProvider),
+          log,
+          reportProgress: async (data: any) => {
+            this.job.updateProgress(data);
+          },
+          session: this.session,
+          streamContent: async (data: any) => {
+            this.publishToChannel({
+              content: data,
+              toolName: command.name,
+              type: 'tool_stream',
+            });
+          },
+          taskQueue: this.taskQueue,
+        });
+      }
       this.publishToChannel({
         result: result, // Removed 'as unknown'
         toolName: command.name,
@@ -567,8 +598,18 @@ export class Agent {
       if (_error instanceof FinishToolSignal) {
         throw _error;
       }
-      const errorMessage = (_error as Error).message;
-      log.error({ error: _error }, `Error executing tool ${command.name}`);
+      let errorMessage: string;
+      if (_error instanceof Error) {
+        errorMessage = _error.message;
+      } else {
+        errorMessage = String(_error);
+      }
+      log.error(
+        {
+          error: _error instanceof Error ? _error : new Error(String(_error)),
+        },
+        `Error executing tool ${command.name}`,
+      );
       this.publishToChannel({
         result: { error: errorMessage },
         toolName: command.name,
@@ -588,7 +629,7 @@ export class Agent {
       } catch (error) {
         // Le contenu n'est pas un JSON valide, on lance une erreur
         throw new Error(
-          `Invalid JSON in markdown: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          `Invalid JSON in markdown: ${error instanceof Error ? error.message : 'Unknown error'}`, 
         );
       }
     }

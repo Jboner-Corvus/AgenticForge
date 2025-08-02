@@ -259,7 +259,7 @@ def run_single_test(command_number_str: str):
             if job_state == 'completed':
                 return_value = status_data.get('returnvalue', {})
                 print("="*50)
-                print(f"✅ SUCCÈS : Le test #{command_number} est terminé.")
+                print(f"Le test #{command_number} est terminé.")
                 print(f"  Résultat final :")
                 # Affiche le résultat joliment formaté
                 print(json.dumps(return_value, indent=2, ensure_ascii=False))
@@ -312,7 +312,10 @@ def run_sh_command(command: str, *args):
         "status": "/status",
         "logs_worker": "/logs/worker",
         "logs_docker": "/logs/docker",
-        "rebuild": "/rebuild",
+        "rebuild": "/rebuild-docker",
+        "rebuild_docker": "/rebuild-docker",
+        "rebuild_worker": "/rebuild-worker",
+        "rebuild_all": "/rebuild-all",
         "clean_docker": "/clean-docker",
         "restart_worker": "/restart/worker",
         "lint": "/lint",
@@ -356,9 +359,7 @@ def run_sh_command(command: str, *args):
         if hasattr(e, 'response') and e.response is not None:
             print(f"  Statut HTTP: {e.response.status_code}")
             print(f"  Réponse: {e.response.text}")
-        print("ℹ **Conseil pour l'agent :** Impossible de se connecter à l'API run.sh. Vérifiez que `apirun/index.js` est bien lancé et écoute sur `http://localhost:3005`.")
-        print("  Examinez les logs de `node index.js` pour des erreurs de démarrage ou de routage.")
-        print("  Un `restart` de l'API (`node index.js` après l'avoir arrêté) peut être nécessaire.")
+
 
 
 if __name__ == "__main__":
@@ -381,10 +382,11 @@ if __name__ == "__main__":
         print("\n--- run.sh API Commands ---")
         print("  To run a run.sh command via the API, use: python exec_test.py run_sh <command>")
         print("  Example: python3 exec_test.py run_sh start")
-        print("  Available commands: start, stop, restart, status, logs_worker, logs_docker, rebuild, clean_docker, restart_worker, lint, format, test_integration, unit_tests, typecheck, all_checks, small_checks")
+        print("  Available commands: start, stop, restart, status, logs_worker, logs_docker, rebuild_docker, rebuild_worker, rebuild_all, clean_docker, restart_worker, lint, format, test_integration, unit_tests, unit_checks, typecheck, all_checks, small_checks")
     
     # Répétition de la section de l'aide pour plus de clarté
-    print("\n--- run.sh API Commands ---")
+    print("""
+--- run.sh API Commands ---""")
     print("  To run a run.sh command via the API, use: python exec_test.py run_sh <command>")
     print("  Example: python exec_Test.py run_sh start")
-    print("  Available commands: start, stop, restart, status, logs_worker, logs_docker, rebuild, clean_docker, restart_worker, lint, format, test_integration, unit_tests, typecheck, all_checks, small_checks")
+    print("  Available commands: start, stop, restart, status, logs_worker, logs_docker, rebuild_docker, rebuild_worker, rebuild_all, clean_docker, restart_worker, lint, format, test_integration, unit_tests, unit_checks, typecheck, all_checks, small_checks")

@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import { access, constants } from 'fs/promises';
 
 import { config } from '../config';
 import { Ctx } from '../types.js';
@@ -13,11 +14,30 @@ export async function executeShellCommand(
   command: string,
   ctx: Ctx,
 ): Promise<ShellCommandResult> {
-  return new Promise((resolve, reject) => {
-    const workingDir = config.WORKER_WORKSPACE_PATH || config.HOST_PROJECT_PATH;
-    const shellPath = process.env.SHELL || '/bin/sh';
-    console.log(`[SHELLUTILS-DEBUG] shellPath: ${shellPath}`);
+  const workingDir = config.WORKER_WORKSPACE_PATH || config.HOST_PROJECT_PATH;
 
+  async function findBashPath(): Promise<string> {
+    const possiblePaths = ['/bin/bash', '/usr/bin/bash'];
+    for (const p of possiblePaths) {
+      try {
+        await access(p, constants.X_OK); // Check if file exists and is executable
+        return p;
+      } catch (_e) {
+        // Path not found or not executable, try next
+      }
+    }
+    throw new Error('Bash executable not found at expected paths.');
+  }
+
+  let shellPath: string;
+  try {
+    shellPath = await findBashPath();
+  } catch (error) {
+    ctx.log.error({ err: error }, 'Failed to find bash executable.');
+    throw error; // Re-throw the error to be caught by the caller
+  }
+
+  return new Promise((resolve, reject) => {
     ctx.log.info(
       {
         cwd: workingDir,
@@ -74,3 +94,6 @@ export async function executeShellCommand(
     });
   });
 }
+
+
+

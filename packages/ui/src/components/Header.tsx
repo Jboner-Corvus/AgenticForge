@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { useStore } from '../lib/store';
 
-import { useLanguage } from '../lib/hooks/useLanguageHook';
+import { useLanguage } from '../lib/contexts/LanguageContext';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 

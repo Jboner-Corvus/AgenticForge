@@ -41,7 +41,8 @@
     "vite-plugin-istanbul": "^7.1.0",
     "vite-plugin-mock": "^3.0.2",
     "vite-plugin-node-polyfills": "^0.24.0",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "playwright-core": "^1.45.0"
   },
   "dependencies": {
     "dotenv": "^16.6.1",

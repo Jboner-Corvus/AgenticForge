@@ -1,5 +1,5 @@
 // packages/core/src/modules/tools/definitions/web/browserManager.ts
-import { Browser, chromium } from 'playwright';
+import { Browser, chromium } from 'playwright-core';
 
 import { getLogger } from '../../../../logger.js';
 

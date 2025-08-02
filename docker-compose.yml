@@ -73,6 +73,7 @@ services:
       - GEMINI_API_KEY=${LLM_API_KEY}
       - SESSION_PORT=${SESSION_PORT}
       - HOST_PROJECT_PATH=${HOST_PROJECT_PATH}
+      - HOST_SYSTEM_PATH=/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       - TOOLS_PATH=/usr/src/app/packages/core/dist/tools
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped

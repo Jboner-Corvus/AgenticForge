@@ -8,7 +8,7 @@
 
 For each test in the list, follow these 6 steps:
 
-1.  **Run the Test:** Use `python AgenticForge/exec_Test.py <test_number>` to start the test.
+1.  **Run the Test:** Use `python AgenticForge/exec_test.py <test_number>` to start the test.
 2.  **Monitor Progress:** Check the end of `AgenticForge/worker.log` to see what's happening.
 3.  **Verify Result:**
     * Confirm the test's task was received and finished successfully.
@@ -76,3 +76,30 @@ For each test in the list, follow these 6 steps:
 -   [ ] 51. Développer un outil pour faire la maintenance du systeme,
 -   [ ] 52. Développer un leger antivirus pour le systeme
 -   [ ] 53. Développer un antyspyware pour trouver des malwares
+
+
+
+
+  Le vrai problème est plus technique et subtil. Voici la situation :
+
+   1. L'erreur `ENOENT`: L'erreur que je rencontre systématiquement est
+      spawn /bin/bash ENOENT. Ce code signifie que le processus Node.js qui
+       exécute les commandes ne trouve pas l'interpréteur de commandes
+      /bin/bash. Peu importe la commande que nous essayons (ls -la, date,
+      pwd), si l'interpréteur de commandes lui-même est introuvable, la
+      commande ne peut même pas être lancée.
+
+   2. Pourquoi `ls` a semblé fonctionner ? Vous avez raison de noter que ls
+       a semblé fonctionner lors du test 6. C'est parce que l'agent, après
+      avoir échoué à utiliser la commande shell standard, a utilisé un
+      outil de secours nommé simpleList. Cet outil de secours utilise une
+      méthode légèrement différente en interne pour exécuter ls -F, qui a
+      réussi à contourner le problème. Cependant, l'outil principal pour
+      toutes les autres commandes shell (run_shell_command) échoue
+      systématiquement.
+
+  En résumé : le problème n'est pas lié aux permissions ou à une
+  commande spécifique, mais à l'environnement d'exécution du worker qui
+  ne parvient pas à localiser le shell bash pour lancer des commandes
+  complexes. C'est pourquoi je dois sauter les tests qui dépendent de
+  cette fonctionnalité pour le moment.

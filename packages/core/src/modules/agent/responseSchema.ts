@@ -28,7 +28,7 @@ export const llmResponseSchema = z.object({
     .object({
       name: z.string().describe('The name of the tool to execute.'),
       params: z
-        .any()
+        .record(z.string(), z.any())
         .optional()
         .describe('The parameters for the tool, as a JSON object.'),
     })

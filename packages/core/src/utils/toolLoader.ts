@@ -44,15 +44,14 @@ export async function _internalLoadTools(): Promise<void> {
       `[_internalLoadTools] Found tool files: ${toolFiles.join(', ')}`,
     );
     for (const file of toolFiles) {
-      getLogger().info(
-        `[_internalLoadTools] Attempting to load tool file: ${file}`,
-      );
+      console.log(`[GEMINI-DEBUG] Loading tool file: ${file}`);
       await loadToolFile(file);
       getLogger().info(
         `[_internalLoadTools] Successfully loaded tool file: ${file}`,
       );
     }
-  } catch (error) {
+  }
+  catch (error) {
     getLogger().error({
       ...getErrDetails(error),
       logContext:
@@ -95,11 +94,13 @@ export async function getTools(): Promise<Tool[]> {
 export function getToolsDir(): string {
   getLogger().debug(`[getToolsDir] Running in dist: ${runningInDist}`);
   getLogger().debug(`[getToolsDir] __dirname: ${__dirname}`);
-  const toolsPath =
-    process.env.TOOLS_PATH ||
-    (runningInDist
-      ? path.join(__dirname, '..', 'modules', 'tools', 'definitions')
-      : path.resolve(__dirname, '..', 'modules', 'tools', 'definitions'));
+  getLogger().debug(`[getToolsDir] process.cwd(): ${process.cwd()}`);
+  getLogger().debug(`[getToolsDir] process.env.NODE_ENV: ${process.env.NODE_ENV}`);
+
+  const toolsPath = runningInDist
+    ? path.resolve(__dirname, 'modules', 'tools', 'definitions')
+    : path.resolve(__dirname, '..', 'src', 'modules', 'tools', 'definitions');
+
   getLogger().debug(`[getToolsDir] Constructed tools path: ${toolsPath}`);
   return toolsPath;
 }
@@ -126,7 +127,8 @@ async function findToolFiles(
         files.push(fullPath);
       }
     }
-  } catch (error) {
+  }
+  catch (error) {
     const errDetails = getErrDetails(error);
     getLogger().error({
       ...errDetails,
@@ -141,55 +143,40 @@ async function findToolFiles(
 }
 
 async function loadToolFile(file: string): Promise<void> {
+  const logger = getLogger();
+  logger.info({ file }, `[loadToolFile] Attempting to load tool file.`);
   try {
-    // NOTE: The cache-busting query parameter is a simple solution for development
-    // to ensure that the latest version of the tool is loaded on each restart.
-    // For production, a more robust strategy like restarting the worker process
-    // would be more reliable.
-    const module = await import(`${path.resolve(file)}?update=${Date.now()}`);
-    getLogger().info(
-      { file, moduleExports: Object.keys(module) },
-      `[loadToolFile] Loaded module`,
-    );
+    const module = await import(`${path.resolve(file)}?v=${Date.now()}`); // Cache-busting
+    logger.info({ file, moduleExports: Object.keys(module) }, `[loadToolFile] Successfully imported module.`);
 
     for (const exportName in module) {
       const exportedItem = module[exportName];
 
-      // Only attempt to parse if it looks like a tool (has name and description properties)
-      if (
-        typeof exportedItem === 'object' &&
-        exportedItem !== null &&
-        'name' in exportedItem &&
-        'description' in exportedItem
-      ) {
+      if (typeof exportedItem === 'object' && exportedItem !== null && 'name' in exportedItem) {
+        logger.info({ file, exportName }, `[loadToolFile] Found potential tool export.`);
         const parsedTool = toolSchema.safeParse(exportedItem);
+
         if (parsedTool.success) {
-          const tool = parsedTool.data;
-          getLogger().info(
-            { file, toolName: exportedItem.name },
-            `[loadToolFile] Registering tool`,
-          );
-          toolRegistry.register(tool as Tool);
+          const tool = parsedTool.data as Tool;
+          toolRegistry.register(tool);
           loadedToolFiles.add(file);
           fileToToolNameMap.set(file, tool.name);
+          logger.info({ file, toolName: tool.name }, `[loadToolFile] Successfully registered tool.`);
         } else {
-          getLogger().warn(
+          logger.warn(
             { errors: parsedTool.error.issues, exportName, file },
-            `[loadToolFile] Skipping invalid tool export due to schema mismatch.`,
+            `[loadToolFile] Skipping invalid tool export due to Zod schema mismatch.`
           );
         }
       } else {
-        getLogger().debug(
-          { exportName, file },
-          `[loadToolFile] Skipping non-tool export.`,
-        );
+        logger.debug({ exportName, file }, `[loadToolFile] Skipping non-tool export.`);
       }
     }
   } catch (error) {
-    getLogger().error({
+    logger.error({
       ...getErrDetails(error),
       file,
-      logContext: `[loadToolFile] Failed to dynamically load tool file.`,
+      logContext: `[loadToolFile] Failed to dynamically load or process tool file.`,
     });
   }
 }
@@ -201,7 +188,7 @@ function watchTools() {
   watcher = chokidar.watch(
     `${toolsDir}/**/*.tool.${runningInDist ? 'js' : 'ts'}`,
     {
-      ignored: /(^|[/\\])\../, // ignore dotfiles
+      ignored: /(^|\/|\\)\./, // ignore dotfiles
       ignoreInitial: true, // Don't trigger add events on startup
       persistent: true,
     },

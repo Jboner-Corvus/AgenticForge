@@ -1,7 +1,8 @@
 // packages/ui/src/App.tsx
 
 import { LoginModal } from './components/LoginModal';
-import { LanguageProvider } from './lib/hooks/useLanguage';
+import { LanguageProvider } from './lib/contexts/LanguageProvider';
+import { useLanguage } from './lib/contexts/LanguageContext';
 import { AppInitializer } from './components/AppInitializer';
 import { AnimatePresence } from 'framer-motion';
 
@@ -17,7 +18,7 @@ import { ChatMessagesContainer } from './components/ChatMessagesContainer';
 import { LeaderboardPage } from './components/LeaderboardPage';
 import { LlmApiKeyManagementPage } from './components/LlmApiKeyManagementPage';
 import { useStore } from './lib/store';
-import { useLanguage } from './lib/hooks/useLanguageHook';
+
 
 export default function App() {
   const isCanvasVisible = useStore((state) => state.isCanvasVisible);

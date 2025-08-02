@@ -13,6 +13,9 @@ import { Tool } from './types.js';
 import { AppError, getErrDetails, UserError } from './utils/errorUtils.js';
 import { getTools } from './utils/toolLoader.js';
 
+console.log('[WORKER-STARTUP] process.cwd():', process.cwd());
+console.log('[WORKER-STARTUP] process.env.PATH:', process.env.PATH);
+
 export async function initializeWorker(
   redisConnection: Redis,
   pgClient: PgClient,
@@ -21,7 +24,6 @@ export async function initializeWorker(
     { path: process.env.PATH },
     'Worker process.env.PATH at startup:',
   );
-  const _tools = await getTools();
   const _jobQueue = new Queue('tasks', { connection: redisConnection });
   const sessionManager = new SessionManager(pgClient);
 
@@ -31,7 +33,6 @@ export async function initializeWorker(
       if (_job.name === 'process-message') {
         return processJob(
           _job,
-          _tools,
           _jobQueue,
           sessionManager,
           redisConnection,
@@ -47,10 +48,28 @@ export async function initializeWorker(
         log.info(`Executing detached shell command: ${command}`);
 
         return new Promise((resolve, reject) => {
+          // --- Début du débogage ---
+          console.log('BullMQ Worker is starting a job.');
+          console.log(`process.cwd(): ${process.cwd()}`);
+          console.log(`HOST_SYSTEM_PATH: ${process.env.HOST_SYSTEM_PATH}`);
+          console.log(`PATH: ${process.env.PATH}`);
+          // --- Fin du débogage ---
+          const env = {
+            ...process.env,
+            PATH: process.env.HOST_SYSTEM_PATH || process.env.PATH,
+          };
+          console.log(`[WORKER-SPAWN-DEBUG] Spawning command: ${command}`);
+          console.log(`[WORKER-SPAWN-DEBUG] With shell: /usr/bin/env bash`);
+          console.log(
+            `[WORKER-SPAWN-DEBUG] With cwd: ${config.WORKSPACE_PATH}`,
+          );
+          console.log(`[WORKER-SPAWN-DEBUG] With env.PATH: ${env.PATH}`);
+
           const child = _spawn(command, {
             cwd: config.WORKSPACE_PATH,
-            detached: true,
-            shell: process.platform === 'win32' ? 'cmd.exe' : '/bin/bash',
+            detached: false,
+            env: env, // Utiliser l'environnement corrigé
+            shell: '/bin/sh', // Utiliser sh directement
             stdio: 'pipe',
           });
 
@@ -99,8 +118,7 @@ export async function initializeWorker(
             log.info(finalMessage);
             streamToFrontend(
               'stdout',
-              `
-${finalMessage}`,
+              `\n${finalMessage}`,
               'executeShellCommand',
             );
             resolve(`Detached command finished with code ${code}`);
@@ -128,7 +146,6 @@ ${finalMessage}`,
 
 export async function processJob(
   _job: Job,
-  _tools: Tool[],
   _jobQueue: Queue,
   _sessionManager: SessionManager,
   redisConnection: Redis,
@@ -142,6 +159,7 @@ export async function processJob(
   const channel = `job:${_job.id}:events`;
 
   try {
+    const tools = await getTools();
     const session = await _sessionManager.getSession(_job.data.sessionId);
     const activeLlmProvider = session.activeLlmProvider || 'gemini'; // Default to 'gemini' if not set
     const { llmApiKey, llmModelName, llmProvider } = _job.data;
@@ -149,7 +167,7 @@ export async function processJob(
       _job,
       session,
       _jobQueue,
-      _tools,
+      tools,
       llmProvider || activeLlmProvider,
       _sessionManager,
       llmApiKey,
