@@ -598,24 +598,32 @@ export class Agent {
       if (_error instanceof FinishToolSignal) {
         throw _error;
       }
-      let errorMessage: string;
-      if (_error instanceof Error) {
-        errorMessage = _error.message;
-      } else {
-        errorMessage = String(_error);
-      }
+      const errorDetails = _error instanceof Error ? { 
+        message: _error.message, 
+        stack: _error.stack, 
+        name: _error.name 
+      } : { 
+        message: String(_error), 
+        stack: '', 
+        name: 'UnknownError' 
+      };
+
       log.error(
-        {
-          error: _error instanceof Error ? _error : new Error(String(_error)),
+        { 
+          error: errorDetails,
+          tool: command.name,
+          params: command.params
         },
-        `Error executing tool ${command.name}`,
+        `Error executing tool ${command.name}`
       );
+
       this.publishToChannel({
-        result: { error: errorMessage },
+        result: { error: errorDetails },
         toolName: command.name,
         type: 'tool_result',
       });
-      return `Error executing tool ${command.name}: ${errorMessage}`;
+
+      return `Error executing tool ${command.name}: ${errorDetails.message}`;
     }
   }
 

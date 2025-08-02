@@ -407,6 +407,7 @@ clean_docker() {
 # Reconstruit le worker local (hors Docker).
 rebuild_worker() {
     echo -e "${COLOR_YELLOW}Reconstruction du worker local...${NC}"
+    rm -f "${SCRIPT_DIR}/worker.log"
     stop_worker
     cd "${SCRIPT_DIR}/packages/core"
     pnpm install

@@ -12,7 +12,9 @@ function getRedisClient(): Redis {
   if (!redisInstance) {
     const config = getConfig();
     const redisHost = config.REDIS_HOST;
-    const redisUrl = `redis://${redisHost}:${config.REDIS_PORT}`;
+    const redisPort = config.REDIS_PORT;
+    console.log(`DEBUG: Initializing Redis with host: ${redisHost}, port: ${redisPort}`);
+    const redisUrl = `redis://${redisHost}:${redisPort}`;
 
     redisInstance = new Redis(redisUrl, {
       db: config.REDIS_DB,

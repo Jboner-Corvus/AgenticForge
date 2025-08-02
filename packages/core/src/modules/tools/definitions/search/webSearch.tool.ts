@@ -1,3 +1,4 @@
+import { SearchEngineParser } from 'search-engine-parser';
 import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../../../types.js';
@@ -18,36 +19,23 @@ export const webSearchTool: Tool<
   typeof webSearchOutput
 > = {
   description:
-    'Performs a web search using the DuckDuckGo API to find up-to-date information.',
+    'Performs a web search using a search engine scraper to find up-to-date information.',
   execute: async (args: z.infer<typeof webSearchParams>, ctx: Ctx) => {
     try {
       ctx.log.info(`Performing web search for: "${args.query}"`);
+      const parser = new SearchEngineParser();
+      const results = await parser.search(args.query, ['google', 'duckduckgo']);
 
-      const response = await fetch(
-        `https://api.duckduckgo.com/?q=${encodeURIComponent(args.query)}&format=json`,
-      );
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        const errorMessage = `DuckDuckGo API request failed: ${errorBody}`;
-        ctx.log.error({ errorBody }, errorMessage);
-        return { erreur: errorMessage };
+      if (!results.results || results.results.length === 0) {
+        return 'No results found for this query.';
       }
 
-      const data = await response.json();
-
-      if (!data.AbstractText || data.AbstractText.length === 0) {
-        return 'No direct answer found for this query.';
-      }
-
-      const results = data.RelatedTopics.map(
-        (r: { FirstURL: string; Text: string }) =>
-          `- [${r.Text}](${r.FirstURL})`,
-      );
-      const summary = `Search Answer: ${data.AbstractText}
-
-Results:
-${results.join('\n')}`;
+      const summary = results.results
+        .map(
+          (r: { title: string; url: string; description: string }) =>
+            `### [${r.title}](${r.url})\n${r.description}`,
+        )
+        .join('\n\n');
 
       return summary;
     } catch (error: unknown) {

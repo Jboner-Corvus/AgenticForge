@@ -141,7 +141,6 @@ describe('processJob', () => {
     }); // Ensure history exceeds max length after adding one more message
     const result = await processJob(
       mockJob as Job,
-      mockTools,
       mockJobQueue,
       _mockSessionManagerInstance as any,
       mockRedisConnection,
@@ -189,7 +188,6 @@ describe('processJob', () => {
     await expect(
       processJob(
         mockJob as Job,
-        mockTools,
         mockJobQueue,
         _mockSessionManagerInstance as any,
         mockRedisConnection,

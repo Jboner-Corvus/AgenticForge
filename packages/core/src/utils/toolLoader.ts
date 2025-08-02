@@ -153,7 +153,7 @@ async function loadToolFile(file: string): Promise<void> {
       const exportedItem = module[exportName];
 
       if (typeof exportedItem === 'object' && exportedItem !== null && 'name' in exportedItem) {
-        logger.info({ file, exportName }, `[loadToolFile] Found potential tool export.`);
+        logger.info({ exportName, file }, `[loadToolFile] Found potential tool export.`);
         const parsedTool = toolSchema.safeParse(exportedItem);
 
         if (parsedTool.success) {
