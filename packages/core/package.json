@@ -16,9 +16,11 @@
     "clean": "rm -rf dist",
     "start:worker:dev": "NODE_ENV=development node --loader ts-node/esm src/worker.ts",
     "start:worker": "node dist/worker.js",
-    "test": "NODE_OPTIONS=--max-old-space-size=32768 vitest run",
-    "test:unit": "NODE_OPTIONS=--max-old-space-size=32768 vitest run --exclude 'src/webServer.integration.test.ts'",
+    "test": "vitest run",
+    "test:unit": "vitest run --mode unit",
+    "test:integration": "vitest run --mode integration",
     "lint": "eslint --fix --max-warnings 0 --no-warn-ignored src/**/*.ts",
+    "typecheck": "tsc --noEmit",
     "format": "prettier --write src/ && eslint --fix src/"
   },
   "dependencies": {

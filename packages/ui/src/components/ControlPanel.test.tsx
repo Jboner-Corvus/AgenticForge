@@ -9,6 +9,7 @@ import type { AppState } from '../lib/store';
 import { useToast } from '../lib/hooks/useToast';
 import { useDraggableSidebar } from '../lib/hooks/useDraggablePane';
 import { ControlPanel } from './ControlPanel';
+import { LanguageProvider } from '../lib/contexts/LanguageProvider';
 
 // Mock external hooks and modules
 vi.mock('../lib/store', async () => {
@@ -40,7 +41,7 @@ describe('ControlPanel', () => {
   });
 
   it('should render status tab with correct information', () => {
-    render(<ControlPanel />);
+    render(<LanguageProvider><ControlPanel /></LanguageProvider>);
     fireEvent.click(screen.getByText('Status'));
 
     expect(screen.getByText(/test-session-id/)).toBeInTheDocument();
@@ -50,7 +51,7 @@ describe('ControlPanel', () => {
   });
 
   it('should render capabilities tab with toggles', () => {
-    render(<ControlPanel />);
+    render(<LanguageProvider><ControlPanel /></LanguageProvider>);
     fireEvent.click(screen.getByText('Capabilities'));
 
     expect(screen.getByLabelText('Tool Creation')).toBeInTheDocument();
@@ -60,7 +61,7 @@ describe('ControlPanel', () => {
   });
 
   it('should toggle code execution enabled state', () => {
-    render(<ControlPanel />);
+    render(<LanguageProvider><ControlPanel /></LanguageProvider>);
     fireEvent.click(screen.getByText('Capabilities'));
 
     const codeExecutionToggle = screen.getByRole('switch', { name: /code execution/i });
@@ -69,7 +70,7 @@ describe('ControlPanel', () => {
   });
 
   it('should toggle tool creation enabled state', () => {
-    render(<ControlPanel />);
+    render(<LanguageProvider><ControlPanel /></LanguageProvider>);
     fireEvent.click(screen.getByText('Capabilities'));
 
     const toolCreationToggle = screen.getByRole('switch', { name: /tool creation/i });
@@ -78,7 +79,7 @@ describe('ControlPanel', () => {
   });
 
   it('should handle new session creation', () => {
-    render(<ControlPanel />);
+    render(<LanguageProvider><ControlPanel /></LanguageProvider>);
     fireEvent.click(screen.getByText('Actions'));
     fireEvent.click(screen.getByRole('button', { name: /new session/i }));
 
@@ -90,7 +91,7 @@ describe('ControlPanel', () => {
   });
 
   it('should clear history', () => {
-    render(<ControlPanel />);
+    render(<LanguageProvider><ControlPanel /></LanguageProvider>);
     fireEvent.click(screen.getByText('Actions'));
     fireEvent.click(screen.getByRole('button', { name: /clear history/i }));
 
@@ -99,7 +100,7 @@ describe('ControlPanel', () => {
   });
 
   it('should save current session', () => {
-    render(<ControlPanel />);
+    render(<LanguageProvider><ControlPanel /></LanguageProvider>);
     fireEvent.click(screen.getByText('Actions'));
     fireEvent.click(screen.getByRole('button', { name: /save current session/i }));
 
@@ -108,7 +109,7 @@ describe('ControlPanel', () => {
   });
 
   it('should render session history and allow loading/deleting/renaming', () => {
-    render(<ControlPanel />);
+    render(<LanguageProvider><ControlPanel /></LanguageProvider>);
     fireEvent.click(screen.getByText('History'));
 
     expect(screen.getByText('Session One')).toBeInTheDocument();
@@ -135,7 +136,7 @@ describe('ControlPanel', () => {
   });
 
   it('should render leaderboard stats', () => {
-    render(<ControlPanel />);
+    render(<LanguageProvider><ControlPanel /></LanguageProvider>);
     fireEvent.click(screen.getByText('Leaderboard'));
 
     expect(screen.getByText('Tokens Saved:')).toBeInTheDocument();
@@ -149,7 +150,7 @@ describe('ControlPanel', () => {
   });
 
   it('should handle LLM API key management', async () => {
-    render(<ControlPanel />);
+    render(<LanguageProvider><ControlPanel /></LanguageProvider>);
     fireEvent.click(screen.getByText('Login'));
 
     // Add API Key

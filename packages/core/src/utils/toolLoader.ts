@@ -211,6 +211,16 @@ async function loadToolFile(file: string): Promise<void> {
       }
     }
   } catch (error) {
+    // Special handling for browser tool which might have Playwright issues
+    if (file.includes('browser.tool')) {
+      logger.warn({
+        ...getErrDetails(error),
+        file,
+        logContext: `[loadToolFile] Failed to load browser tool (likely due to Playwright issues). This tool will be skipped.`,
+      });
+      return; // Skip this tool but continue loading others
+    }
+    
     logger.error({
       ...getErrDetails(error),
       file,

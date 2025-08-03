@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Clipboard } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { motion } from 'framer-motion';
 
 interface AgentResponseBubbleProps {
   content: string;
@@ -26,30 +27,46 @@ export const AgentResponseBubble: React.FC<AgentResponseBubbleProps> = ({
   };
 
   return (
-    <div className="flex justify-start items-start gap-4 animate-slide-up" key={id}>
-      <Avatar className="h-8 w-8">
+    <motion.div 
+      className="flex justify-start items-start gap-4"
+      key={id}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      whileHover={{ x: 2 }}
+    >
+      <Avatar className="h-10 w-10 ring-2 ring-indigo-300 dark:ring-indigo-700">
         <AvatarImage src="/avatars/agent.png" alt={translations.agentAvatar} />
-        <AvatarFallback>{translations.ai}</AvatarFallback>
+        <AvatarFallback className="bg-gradient-to-br from-indigo-400 to-purple-500 text-white">
+          {translations.ai}
+        </AvatarFallback>
       </Avatar>
-      <div className="relative max-w-[70%] p-3 rounded-2xl bg-secondary text-secondary-foreground shadow-lg group">
+      <div className="relative max-w-[80%] p-4 rounded-2xl bg-secondary text-secondary-foreground shadow-lg group border border-border hover:shadow-xl transition-shadow">
         <div className="message-content prose prose-invert">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {content}
           </ReactMarkdown>
         </div>
-        <div className="text-xs text-muted-foreground mt-1">
+        <div className="text-xs text-muted-foreground mt-2 flex items-center">
+          <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
           {timestamp}
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={handleCopy}
-          aria-label={translations.copyAgentResponse}
+        <motion.div
+          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
         >
-          <Clipboard className="h-4 w-4" />
-        </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="bg-background/80 hover:bg-background rounded-full shadow-md"
+            onClick={handleCopy}
+            aria-label={translations.copyAgentResponse}
+          >
+            <Clipboard className="h-4 w-4" />
+          </Button>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };

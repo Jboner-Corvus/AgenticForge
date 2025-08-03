@@ -6,13 +6,16 @@ import { UserInput } from './UserInput';
 import { useStore } from '../lib/store';
 import type { AppState } from '../lib/store';
 import type { UseBoundStore, StoreApi } from 'zustand';
+import { LanguageProvider } from '../lib/contexts/LanguageProvider';
 
 // Mock the useStore hook
 vi.mock('../lib/store', async () => {
   const actual = await vi.importActual<typeof import('../lib/store')>('../lib/store');
+  const useStore = vi.fn() as unknown as UseBoundStore<StoreApi<AppState>>;
+  (useStore as unknown as { getState: () => AppState }).getState = vi.fn();
   return {
     ...actual,
-    useStore: vi.fn() as Mock,
+    useStore,
   };
 });
 
@@ -24,16 +27,17 @@ describe('UserInput', () => {
 
     // @ts-expect-error: Mocking useStore
     (useStore as UseBoundStore<StoreApi<AppState>>).mockImplementation((selector: (state: AppState) => unknown) => selector(mockState));
+    (useStore.getState as Mock).mockReturnValue(mockState);
   });
 
   it('should render the input field and send button', () => {
-    render(<UserInput />);
+    render(<LanguageProvider><UserInput /></LanguageProvider>);
     expect(screen.getByPlaceholderText('Type your message...')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /send/i })).toBeInTheDocument();
   });
 
   it('should update the input value on change', () => {
-    render(<UserInput />);
+    render(<LanguageProvider><UserInput /></LanguageProvider>);
     const textarea = screen.getByPlaceholderText('Type your message...');
     fireEvent.change(textarea, { target: { value: 'New message' } });
     expect(useStore.getState().setMessageInputValue).toHaveBeenCalledWith('New message');
@@ -47,7 +51,7 @@ describe('UserInput', () => {
     // @ts-expect-error: Mocking useStore
     (useStore as UseBoundStore<StoreApi<AppState>>).mockImplementation((selector: (state: AppState) => unknown) => selector(mockState));
 
-    render(<UserInput />);
+    render(<LanguageProvider><UserInput /></LanguageProvider>);
     const sendButton = screen.getByRole('button', { name: /send/i });
     fireEvent.click(sendButton);
 
@@ -63,7 +67,7 @@ describe('UserInput', () => {
     // @ts-expect-error: Mocking useStore
     (useStore as UseBoundStore<StoreApi<AppState>>).mockImplementation((selector: (state: AppState) => unknown) => selector(mockState));
 
-    render(<UserInput />);
+    render(<LanguageProvider><UserInput /></LanguageProvider>);
     const textarea = screen.getByPlaceholderText('Type your message...');
     fireEvent.keyDown(textarea, { key: 'Enter', code: 'Enter' });
 
@@ -72,7 +76,7 @@ describe('UserInput', () => {
   });
 
   it('should not call startAgent or clear input on Shift+Enter key press', () => {
-    render(<UserInput />);
+    render(<LanguageProvider><UserInput /></LanguageProvider>);
     const textarea = screen.getByPlaceholderText('Type your message...');
     fireEvent.keyDown(textarea, { key: 'Enter', code: 'Enter', shiftKey: true });
 
@@ -81,7 +85,7 @@ describe('UserInput', () => {
   });
 
   it('should not send empty messages', () => {
-    render(<UserInput />);
+    render(<LanguageProvider><UserInput /></LanguageProvider>);
     const sendButton = screen.getByRole('button', { name: /send/i });
     fireEvent.click(sendButton);
 
@@ -97,7 +101,7 @@ describe('UserInput', () => {
     // @ts-expect-error: Mocking useStore
     (useStore as UseBoundStore<StoreApi<AppState>>).mockImplementation((selector: (state: AppState) => unknown) => selector(mockState));
 
-    render(<UserInput />);
+    render(<LanguageProvider><UserInput /></LanguageProvider>);
     const textarea = screen.getByPlaceholderText('Type your message...');
     const sendButton = screen.getByRole('button', { name: /send/i });
 

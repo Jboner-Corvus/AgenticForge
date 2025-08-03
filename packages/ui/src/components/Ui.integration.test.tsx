@@ -5,13 +5,18 @@ import { ControlPanel } from './ControlPanel';
 import { UserInput } from './UserInput';
 import { useStore } from '../lib/store';
 import type { AppState } from '../lib/store';
+import type { UseBoundStore, StoreApi } from 'zustand';
+import { useToast } from '../lib/hooks/useToast';
 
 // Mock external hooks and modules
 vi.mock('../lib/store', async () => {
   const actual = await vi.importActual('../lib/store');
+  const useStore = vi.fn() as unknown as UseBoundStore<StoreApi<AppState>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (useStore as any).getState = vi.fn();
   return {
     ...actual,
-    useStore: vi.fn(),
+    useStore,
   };
 });
 
@@ -19,12 +24,15 @@ vi.mock('../lib/hooks/useToast');
 vi.mock('../lib/hooks/useDraggablePane');
 
 import { mockState } from '../lib/__mocks__/store';
+import { LanguageProvider } from '../lib/contexts/LanguageProvider';
 
 describe('UI Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
     (useStore as unknown as Mock).mockImplementation((selector: (state: AppState) => unknown) => selector(mockState));
+    (useStore.getState as Mock).mockReturnValue(mockState);
+    (useToast as Mock).mockReturnValue({ toast: vi.fn() });
     
     // Mock window.prompt and window.confirm
     vi.spyOn(window, 'prompt').mockReturnValue('Test Session Name');
@@ -46,7 +54,7 @@ describe('UI Integration Tests', () => {
     
     (useStore as unknown as Mock).mockImplementation((selector: (state: AppState) => unknown) => selector(errorState));
     
-    render(<ControlPanel />);
+    render(<LanguageProvider><ControlPanel /></LanguageProvider>);
     fireEvent.click(screen.getByText('Status'));
     
     // Check that error is displayed
@@ -65,7 +73,7 @@ describe('UI Integration Tests', () => {
     
     (useStore as unknown as Mock).mockImplementation((selector: (state: AppState) => unknown) => selector(errorState));
     
-    render(<ControlPanel />);
+    render(<LanguageProvider><ControlPanel /></LanguageProvider>);
     fireEvent.click(screen.getByText('Status'));
     
     // Check that error is displayed
@@ -81,7 +89,7 @@ describe('UI Integration Tests', () => {
     
     (useStore as unknown as Mock).mockImplementation((selector: (state: AppState) => unknown) => selector(processingState));
     
-    render(<UserInput />);
+    render(<LanguageProvider><UserInput /></LanguageProvider>);
     
     const textarea = screen.getByPlaceholderText('Type your message...');
     const sendButton = screen.getByRole('button', { name: /send/i });
@@ -92,7 +100,7 @@ describe('UI Integration Tests', () => {
   });
 
   it('should handle empty user input gracefully', () => {
-    render(<UserInput />);
+    render(<LanguageProvider><UserInput /></LanguageProvider>);
     
     const sendButton = screen.getByRole('button', { name: /send/i });
     
@@ -115,7 +123,7 @@ describe('UI Integration Tests', () => {
     
     (useStore as unknown as Mock).mockImplementation((selector: (state: AppState) => unknown) => selector(errorState));
     
-    render(<ControlPanel />);
+    render(<LanguageProvider><ControlPanel /></LanguageProvider>);
     fireEvent.click(screen.getByText('Actions'));
     fireEvent.click(screen.getByRole('button', { name: /save current session/i }));
     

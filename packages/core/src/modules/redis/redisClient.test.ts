@@ -15,12 +15,12 @@ import { getRedisClientInstance } from './redisClient.js';
 
 // Mock the logger to prevent console output during tests
 vi.mock('../../logger', () => ({
-  logger: {
+  getLogger: () => ({
     debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
-  },
+  }),
 }));
 
 // No need to mock config for REDIS_HOST/PORT anymore as ioredis is mocked

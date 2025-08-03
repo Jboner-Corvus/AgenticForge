@@ -18,7 +18,9 @@ import { SettingsModalContainer } from './components/SettingsModalContainer';
 import { ChatMessagesContainer } from './components/ChatMessagesContainer';
 import { LeaderboardPage } from './components/LeaderboardPage';
 import { LlmApiKeyManagementPage } from './components/LlmApiKeyManagementPage';
+import { OAuthManagementPage } from './components/OAuthManagementPage';
 import { useStore } from './lib/store';
+import SubAgentCLIView from './components/SubAgentCLIView'; // Import the new component
 
 import TaskCounter from './components/TaskCounter';
 import './components/TaskCounter.css';
@@ -28,11 +30,20 @@ export default function App() {
   const isCanvasVisible = useStore((state) => state.isCanvasVisible);
   const isControlPanelVisible = useStore((state) => state.isControlPanelVisible);
   const currentPage = useStore((state) => state.currentPage);
+  const isCanvasPinned = useStore((state) => state.isCanvasPinned);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const { translations } = useLanguage();
+  const [delegatedJobId, setDelegatedJobId] = useState<string | null>(null);
   
 
   const { controlPanelWidth, canvasWidth, setCanvasWidth, handleMouseDownCanvas } = useResizablePanel(300, 500);
+
+  const handleDelegateClick = () => {
+    // In a real scenario, this would be triggered by the agent's response
+    // For now, we just set a dummy job ID to test the UI
+    const dummyJobId = 'c8a9-4f2c-8b1e-3a6d7f8c9b0a'; // Replace with a real one for testing if needed
+    setDelegatedJobId(dummyJobId);
+  };
 
   const renderMainContent = () => {
     switch (currentPage) {
@@ -42,7 +53,7 @@ export default function App() {
             <div className="flex-grow overflow-y-auto">
               <ChatMessagesContainer />
             </div>
-            <div className="p-6 flex items-center sticky bottom-0 bg-background border-t border-border">
+            <div className="p-spacious flex items-center sticky bottom-0 bg-background border-t border-border">
                 <UserInput />
             </div>
           </div>
@@ -51,6 +62,8 @@ export default function App() {
         return <LeaderboardPage />;
       case 'llm-api-keys':
         return <LlmApiKeyManagementPage />;
+      case 'oauth':
+        return <OAuthManagementPage />;
       default:
         return null;
     }
@@ -78,13 +91,24 @@ export default function App() {
           )}
 
           {/* Conteneur principal pour la discussion et le canevas */}
-          <main className="flex-1 overflow-hidden p-6 flex flex-col">
+          <main className="flex-1 overflow-hidden p-spacious flex flex-col">
             <div className="flex-1 overflow-hidden">
               {renderMainContent()}
             </div>
 
+            {/* Test button for delegation */}
+            <button onClick={handleDelegateClick} className="my-2 p-2 bg-blue-600 text-white rounded">
+              Test Delegate Task
+            </button>
+
+            {delegatedJobId && (
+              <div className="mt-4">
+                <SubAgentCLIView jobId={delegatedJobId} />
+              </div>
+            )}
+
             {/* Section du Canevas (apparaît et disparaît) */}
-            {isCanvasVisible && (
+            {(isCanvasVisible || isCanvasPinned) && (
               <div
                 className="flex-shrink-0 h-full relative mt-6"
                 style={{ width: canvasWidth, minWidth: '300px', maxWidth: '600px' }}

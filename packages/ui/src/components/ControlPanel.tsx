@@ -1,5 +1,5 @@
 import { Key, Server, Hammer, Code, Settings, Trash2, ListChecks, Play, History, Save, Edit, XCircle } from 'lucide-react';
-
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Modal } from './ui/modal';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
@@ -14,6 +14,7 @@ import { useDraggableSidebar } from '../lib/hooks/useDraggablePane';
 import { memo, useCallback, useState } from 'react';
 import { useStore } from '../lib/store';
 import { LoadingSpinner } from './LoadingSpinner';
+
 
 export const ControlPanel = memo(() => {
   const { translations } = useLanguage();
@@ -145,7 +146,6 @@ export const ControlPanel = memo(() => {
 
   const { handleDragStart } = useDraggableSidebar(320);
 
-  // Limit sessions to display to 10 most recent ones
   const MAX_DISPLAYED_SESSIONS = 10;
   const displayedSessions = sessions.slice(0, MAX_DISPLAYED_SESSIONS);
   const hasMoreSessions = sessions.length > MAX_DISPLAYED_SESSIONS;
@@ -153,39 +153,49 @@ export const ControlPanel = memo(() => {
   return (
     <>
       <aside
-        className="p-4 bg-gradient-to-b from-background to-secondary/50 border-r border-border overflow-y-auto flex-shrink-0 relative pt-8"
+        className="p-4 bg-gradient-to-b from-background to-secondary/30 border-r border-border overflow-y-auto flex-shrink-0 relative pt-8 shadow-lg"
         style={{ width: '100%' }}
       >
         <div className="absolute top-0 right-0 w-2 h-full cursor-col-resize" onMouseDown={handleDragStart} />
         <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center"><ListChecks className="mr-2 h-4 w-4" />{translations.agentStatus} & {translations.agentCapabilities}</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <Label className="text-sm flex items-center"><Key className="mr-2 h-4 w-4" />{translations.sessionId}</Label>
-                <span className="text-sm text-muted-foreground">{sessionId ? `${sessionId.substring(0, 12)}...` : '--'}</span>
+          <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
+            <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-md">
+              <CardTitle className="flex items-center text-lg"><ListChecks className="mr-2 h-5 w-5" />{translations.agentStatus}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
+                <Label className="text-sm flex items-center"><Key className="mr-2 h-4 w-4 text-blue-500" />{translations.sessionId}</Label>
+                <span className="text-sm text-muted-foreground font-mono">{sessionId ? `${sessionId.substring(0, 12)}...` : '--'}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4" />{translations.toolsDetected}</Label>
-                <span className="text-sm text-muted-foreground">
-                  {isLoadingTools ? <LoadingSpinner className="ml-2" /> : toolCount}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <Label className="text-sm flex items-center"><Server className="mr-2 h-4 w-4" />{translations.connectionStatus}</Label>
+              <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
+                <Label className="text-sm flex items-center"><Server className="mr-2 h-4 w-4 text-green-500" />{translations.connectionStatus}</Label>
                 <Badge variant={serverHealthy ? 'success' : 'destructive'}>
                   {serverHealthy ? translations.online : translations.offline}
                 </Badge>
               </div>
-              <div className="flex justify-between items-center">
-                <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4" />Browser Status</Label>
+              <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
+                <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4 text-purple-500" />Browser Status</Label>
                 <span className="text-sm text-muted-foreground">{browserStatus}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
+            <CardHeader className="bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-t-md">
+              <CardTitle className="flex items-center text-lg"><Settings className="mr-2 h-5 w-5" />{translations.agentCapabilities}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
+                <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4 text-orange-500" />{translations.toolsDetected}</Label>
+                <span className="text-sm text-muted-foreground">
+                  {isLoadingTools ? <LoadingSpinner className="ml-2" /> : toolCount}
+                </span>
               </div>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex justify-between items-center">
-                      <Label className="text-sm flex items-center" htmlFor="toolCreationToggle"><Hammer className="mr-2 h-4 w-4" />{translations.toolCreation}</Label>
+                    <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
+                      <Label className="text-sm flex items-center" htmlFor="toolCreationToggle"><Hammer className="mr-2 h-4 w-4 text-yellow-500" />{translations.toolCreation}</Label>
                       <Switch checked={toolCreationEnabled} id="toolCreationToggle" onCheckedChange={setToolCreationEnabled} />
                     </div>
                   </TooltipTrigger>
@@ -197,8 +207,8 @@ export const ControlPanel = memo(() => {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex justify-between items-center">
-                      <Label className="text-sm flex items-center" htmlFor="codeExecutionToggle"><Code className="mr-2 h-4 w-4" />{translations.codeExecution}</Label>
+                    <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
+                      <Label className="text-sm flex items-center" htmlFor="codeExecutionToggle"><Code className="mr-2 h-4 w-4 text-red-500" />{translations.codeExecution}</Label>
                       <Switch checked={codeExecutionEnabled} id="codeExecutionToggle" onCheckedChange={setCodeExecutionEnabled} />
                     </div>
                   </TooltipTrigger>
@@ -207,47 +217,60 @@ export const ControlPanel = memo(() => {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
           
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center"><History className="mr-2 h-4 w-4" />{translations.sessionManagement}</h3>
-            <div className="space-y-2">
-              <Button className="w-full flex items-center justify-center" onClick={handleNewSession} variant="secondary" disabled={isLoadingTools || isSavingSession || isLoadingSessions}>
-                {isLoadingTools ? <LoadingSpinner className="mr-2" /> : <Settings className="mr-2 h-4 w-4" />}
-                {translations.newSession}
-              </Button>
-              <Button className="w-full flex items-center justify-center" onClick={() => handleClearHistory(true)} variant="destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
-                {translations.clearHistory}
-              </Button>
-              <Button className="w-full flex items-center justify-center" onClick={handleSaveCurrentSession} variant="secondary" disabled={isSavingSession}>
-                {isSavingSession ? <LoadingSpinner className="mr-2" /> : <Save className="mr-2 h-4 w-4" />}
-                {translations.saveCurrentSession}
-              </Button>
-              {sessions.length > 1 && (
-                <Button 
-                  className="w-full flex items-center justify-center" 
-                  onClick={handleDeleteAllSessions} 
-                  variant="destructive"
-                  disabled={isLoadingSessions || isDeletingSession || isRenamingSession}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete All Sessions
+          <Card className="shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-t-md">
+              <CardTitle className="flex items-center text-lg"><History className="mr-2 h-5 w-5" />{translations.sessionManagement}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-4">
+              <div className="transition-all duration-200 hover:scale-105">
+                <Button className="w-full flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white" onClick={handleNewSession} variant="secondary" disabled={isLoadingTools || isSavingSession || isLoadingSessions}>
+                  {isLoadingTools ? <LoadingSpinner className="mr-2" /> : <Settings className="mr-2 h-4 w-4" />}
+                  {translations.newSession}
                 </Button>
+              </div>
+              <div className="transition-all duration-200 hover:scale-105">
+                <Button className="w-full flex items-center justify-center bg-red-500 hover:bg-red-600 text-white" onClick={() => handleClearHistory(true)} variant="destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {translations.clearHistory}
+                </Button>
+              </div>
+              <div className="transition-all duration-200 hover:scale-105">
+                <Button className="w-full flex items-center justify-center bg-green-500 hover:bg-green-600 text-white" onClick={handleSaveCurrentSession} variant="secondary" disabled={isSavingSession}>
+                  {isSavingSession ? <LoadingSpinner className="mr-2" /> : <Save className="mr-2 h-4 w-4" />}
+                  {translations.saveCurrentSession}
+                </Button>
+              </div>
+              {sessions.length > 1 && (
+                <div className="transition-all duration-200 hover:scale-105">
+                  <Button 
+                    className="w-full flex items-center justify-center bg-red-500 hover:bg-red-600 text-white" 
+                    onClick={handleDeleteAllSessions} 
+                    variant="destructive"
+                    disabled={isLoadingSessions || isDeletingSession || isRenamingSession}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete All Sessions
+                  </Button>
+                </div>
               )}
-            </div>
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold flex items-center"><History className="mr-2 h-4 w-4" />{translations.sessionManagement}</h3>
-              {hasMoreSessions && (
-                <span className="text-xs text-muted-foreground">
-                  Showing {displayedSessions.length} of {sessions.length} sessions
-                </span>
-              )}
-            </div>
-            <div className="space-y-2">
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-t-md">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center text-lg"><History className="mr-2 h-5 w-5" />{translations.savedSessions}</CardTitle>
+                {hasMoreSessions && (
+                  <span className="text-xs text-blue-100">
+                    {displayedSessions.length}/{sessions.length}
+                  </span>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2 pt-4">
               {isLoadingSessions ? (
                 <div className="flex justify-center items-center h-20">
                   <LoadingSpinner />
@@ -256,28 +279,50 @@ export const ControlPanel = memo(() => {
                 <p className="text-muted-foreground">{translations.noSessionsSaved}</p>
               ) : (
                 displayedSessions.map((session) => (
-                  <div key={session.id} className="flex items-center justify-between p-2 border border-border rounded-md">
+                  <div key={session.id} className="flex items-center justify-between p-2 border border-border rounded-md hover:bg-accent transition-all duration-200 hover:scale-105 transform">
                     <span className="text-sm truncate" title={session.name}>
-                      {session.name.length > 25 ? `${session.name.substring(0, 25)}...` : session.name}
+                      {session.name.length > 20 ? `${session.name.substring(0, 20)}...` : session.name}
                       {session.id === activeSessionId && <Badge variant="secondary" className="ml-2">{translations.active}</Badge>}
                     </span>
                     <div className="flex space-x-1">
-                      <Button size="icon" variant="ghost" onClick={() => handleLoadSession(session.id)} aria-label="Load session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
-                        <Play className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleOpenRenameModal(session)} aria-label="Rename session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleDeleteSession(session.id)} aria-label="Delete session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
-                        <XCircle className="h-4 w-4" />
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="transition-all duration-200 transform hover:scale-110">
+                              <Button size="icon" variant="ghost" onClick={() => handleLoadSession(session.id)} aria-label="Load session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
+                                <Play className="h-4 w-4 text-green-500" />
+                              </Button>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Load Session</p></TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="transition-all duration-200 transform hover:scale-110">
+                              <Button size="icon" variant="ghost" onClick={() => handleOpenRenameModal(session)} aria-label="Rename session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
+                                <Edit className="h-4 w-4 text-blue-500" />
+                              </Button>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Rename Session</p></TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="transition-all duration-200 transform hover:scale-110">
+                              <Button size="icon" variant="ghost" onClick={() => handleDeleteSession(session.id)} aria-label="Delete session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
+                                <XCircle className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Delete Session</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </div>
                 ))
               )}
-            </div>
-          </div>
-          
+            </CardContent>
+          </Card>
         </div>
       </aside>
 

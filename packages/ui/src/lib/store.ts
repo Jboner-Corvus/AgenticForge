@@ -65,6 +65,7 @@ export interface AppState {
   canvasContent: string;
   canvasType: 'html' | 'markdown' | 'url' | 'text';
   isCanvasVisible: boolean;
+  isCanvasPinned: boolean;
   isControlPanelVisible: boolean;
   isSettingsModalOpen: boolean;
   isDarkMode: boolean;
@@ -141,13 +142,14 @@ export interface AppState {
   setCanvasContent: (content: string) => void;
   setCanvasType: (type: 'html' | 'markdown' | 'url' | 'text') => void;
   setIsCanvasVisible: (isVisible: boolean) => void;
+  setCanvasPinned: (isPinned: boolean) => void;
   setIsControlPanelVisible: (isVisible: boolean) => void;
   setIsSettingsModalOpen: (isOpen: boolean) => void;
   toggleDarkMode: () => void;
   toggleIsCanvasVisible: () => void;
   clearCanvas: () => void;
-  currentPage: 'chat' | 'leaderboard' | 'llm-api-keys';
-  setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys') => void;
+  currentPage: 'chat' | 'leaderboard' | 'llm-api-keys' | 'oauth';
+  setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys' | 'oauth') => void;
 
   // Session history actions
   saveSession: (name: string) => void;
@@ -226,6 +228,7 @@ export const useStore = create<AppState>((set, get) => ({
   canvasContent: '',
   canvasType: 'text',
   isCanvasVisible: false,
+  isCanvasPinned: false,
   isControlPanelVisible: true,
   isSettingsModalOpen: false,
   isDarkMode: false,
@@ -302,6 +305,7 @@ export const useStore = create<AppState>((set, get) => ({
   setCanvasContent: (content) => set({ canvasContent: content }),
   setCanvasType: (type) => set({ canvasType: type }),
   setIsCanvasVisible: (isVisible: boolean) => set({ isCanvasVisible: isVisible }),
+  setCanvasPinned: (isPinned: boolean) => set({ isCanvasPinned: isPinned }),
   setIsControlPanelVisible: (isVisible: boolean) => set({ isControlPanelVisible: isVisible }),
   setIsSettingsModalOpen: (isOpen: boolean) => set({ isSettingsModalOpen: isOpen }),
   toggleDarkMode: () => set((state) => {
@@ -393,7 +397,10 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  clearCanvas: () => set({ canvasContent: '', isCanvasVisible: false }),
+  clearCanvas: () => set((state) => ({ 
+  canvasContent: '', 
+  isCanvasVisible: state.isCanvasPinned ? true : false 
+})),
 
   // Caching actions
   setCache: (key: string, data: unknown) => set((state) => ({

@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Paperclip, Send } from 'lucide-react';
 import { useLanguage } from '../lib/contexts/LanguageContext';
+import { LoadingSpinner } from './LoadingSpinner';
 
 export const UserInput = () => {
   const { translations } = useLanguage();
@@ -21,27 +22,38 @@ export const UserInput = () => {
   };
 
   return (
-    <div className="flex items-center gap-2 w-full">
-      <Button variant="ghost" size="icon" disabled={isProcessing}>
+    <div className="flex items-center gap-4 w-full">
+      <Button variant="ghost" size="icon" disabled={isProcessing} className="hover:bg-accent rounded-full">
         <Paperclip className="h-5 w-5" />
       </Button>
-      <Textarea
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        placeholder={translations.typeYourMessage}
-        className="flex-1 resize-none min-h-[60px] rounded-full py-3 px-6 shadow-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 ease-in-out"
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey && !isProcessing) {
-            e.preventDefault();
-            handleSendMessage();
-          }
-        }}
-        disabled={isProcessing}
-        style={{ borderRadius: '30px' }}
-      />
-      <Button onClick={handleSendMessage} size="icon" disabled={isProcessing || !inputValue.trim()}>
-        <Send className="h-5 w-5" />
-      </Button>
+      <div className="relative flex-grow">
+        <Textarea
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder={translations.typeYourMessage}
+          className="flex-1 resize-none min-h-[50px] rounded-full py-3 px-6 pr-16 shadow-sm border-border focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 ease-in-out"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !isProcessing) {
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
+          disabled={isProcessing}
+          style={{ borderRadius: '30px' }}
+        />
+        {isProcessing ? (
+          <LoadingSpinner className="absolute right-5 top-1/2 -translate-y-1/2" />
+        ) : (
+          <Button 
+            onClick={handleSendMessage} 
+            size="icon" 
+            disabled={!inputValue.trim()}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-primary hover:bg-primary/90 h-9 w-9"
+          >
+            <Send className="h-5 w-5" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

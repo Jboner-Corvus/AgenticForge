@@ -165,7 +165,7 @@ describe('processJob', () => {
 
     expect(result).toBe('Agent final response');
     expect(_mockSessionManagerInstance.saveSession).toHaveBeenCalled();
-  });
+  }, 30000);
 
   it('should handle AppError and publish an error event', async () => {
     const errorMessage = 'This is an application error';

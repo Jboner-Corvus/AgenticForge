@@ -1,11 +1,27 @@
-import type { Page } from 'playwright';
-
 import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../../../types.js';
 
 import { getRedisClientInstance } from '../../../../modules/redis/redisClient.js';
-import { getBrowser } from './browserManager.js';
+
+// Dynamically import Playwright to handle potential import errors
+let getBrowser: (() => Promise<any>) | null = null;
+let getPageContent: ((page: any) => Promise<string>) | null = null;
+
+try {
+  const browserManager = await import('./browserManager.js');
+  getBrowser = browserManager.getBrowser;
+  
+  getPageContent = async (page: any): Promise<string> => {
+    const mainContent = await page.evaluate(() => {
+      const main = document.querySelector('main') || document.body;
+      return main.innerText;
+    });
+    return mainContent.replace(/\s\s+/g, ' ').trim();
+  };
+} catch (error) {
+  console.error('Failed to import Playwright dependencies:', error);
+}
 
 export const parameters = z.object({
   url: z.string().url().describe('The URL to navigate to.'),
@@ -21,14 +37,6 @@ export const browserOutput = z.union([
   }),
 ]);
 
-async function getPageContent(page: Page): Promise<string> {
-  const mainContent = await page.evaluate(() => {
-    const main = document.querySelector('main') || document.body;
-    return main.innerText;
-  });
-  return mainContent.replace(/\s\s+/g, ' ').trim();
-}
-
 const sendEvent = async (ctx: Ctx, type: string, data: unknown) => {
   if (ctx.job?.id) {
     const channel = `job:${ctx.job.id}:events`;
@@ -42,6 +50,13 @@ export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
   description:
     'Navigates to a URL using a headless Chromium browser and returns its textual content. Ideal for modern websites with JavaScript.',
   execute: async (args: z.infer<typeof parameters>, ctx: Ctx) => {
+    // Check if Playwright is available
+    if (!getBrowser || !getPageContent) {
+      return { 
+        erreur: 'Browser tool is not available due to missing Playwright dependencies.' 
+      };
+    }
+    
     ctx.log.info(`Navigating to URL: ${args.url}`);
     await sendEvent(ctx, 'browser.navigating', { url: args.url });
 
