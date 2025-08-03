@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="assets/title.png" alt="Agentic Forge Logo" width="250">
+  <img src="assets/title.png" alt="G-Forge Logo" width="250">
 </p>
 
-<h1 align="center">AgenticForge</h1>
+<h1 align="center">G-Forge</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge" alt="Agentic Forge Logo">
+  <img src="https://img.shields.io/badge/🔨-G_Forge-orange?style=for-the-badge" alt="G-Forge Logo">
 </p>
 <p align="center">
   <strong>🌐 Langues disponibles</strong><br>
@@ -39,11 +39,11 @@
     <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm">
 </p>
 
-## 為什麼選擇Agentic Forge？
+## 為什麼選擇G-Forge？
 
 🔒 **完全本地化和私有** - 一切都在您的機器上運行——無雲端，無資料共享。您的檔案、對話和工具保持私有。
 
-🛠️ **自我工具鍛造** - Agentic Forge可以創建自己的工具——當它缺乏某種能力時，它會編寫程式碼來構建它。
+🛠️ **自我工具鍛造** - G-Forge可以創建自己的工具——當它缺乏某種能力時，它會編寫程式碼來構建它。
 
 💻 **自主程式設計助手** - 需要程式碼？它可以用Python、TypeScript、Bash等編寫、除錯和執行程式——無需監督。
 
@@ -51,7 +51,7 @@
 
 📋 **規劃並執行複雜任務** - 從檔案管理到網路爬取——它可以將大型任務分解為步驟，並鍛造工具來完成工作。
 
-🌐 **智能網路導航** - Agentic Forge可以自主瀏覽網際網路——搜尋、閱讀、提取資訊、自動化任務——全部無需干預。
+🌐 **智能網路導航** - G-Forge可以自主瀏覽網際網路——搜尋、閱讀、提取資訊、自動化任務——全部無需干預。
 
 🚀 **由FastMCP驅動** - 使用MCP（模型上下文協議）和FastMCP作為超高效能框架——真正的LLM交互火箭。
 
@@ -323,10 +323,10 @@ curl -X POST http://localhost:8080/api/v1/agent/stream \
 
 ## 管理控制台（`run.sh`）
 
-互動式控制台提供對您的Agentic Forge實例的完全控制：
+互動式控制台提供對您的G-Forge實例的完全控制：
 
 ```
-🔨 Agentic Forge - 管理控制台
+🔨 G-Forge - 管理控制台
 ────────────────────────────────────────
 
    Docker & 服務
@@ -458,7 +458,7 @@ export const allTools: Tool<any>[] = [
 
 ## 致謝
 
-- **[FastMCP](https://github.com/punkpeye/fastmcp)**：超高效能MCP框架 - 驅動Agentic Forge的火箭 🚀
+- **[FastMCP](https://github.com/punkpeye/fastmcp)**：超高效能MCP框架 - 驅動G-Forge的火箭 🚀
 - **[模型上下文協議（MCP）](https://modelcontextprotocol.io/)**：LLM交互的革命性協議
 - **[Docker](https://docker.com)**：容器化和隔離
 - **[Redis](https://redis.io)**：高效能資料結構

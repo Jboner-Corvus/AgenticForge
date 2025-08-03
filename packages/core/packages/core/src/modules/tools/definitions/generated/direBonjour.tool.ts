@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { Ctx, Tool } from '../../../../types.js';
 
 
-export const direBonjourParams = z.object(z.object({}));
+export const direBonjourParams = z.object({ "type": "object", "properties": {}, "additionalProperties": false });
 
 export const direBonjourTool: Tool<typeof direBonjourParams> = {
   name: 'dire_bonjour',

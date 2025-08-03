@@ -108,8 +108,8 @@ PROMPTS = [
     "4. Dans rapport.txt, remplace première par seconde.",
     '5. Exécute la commande shell "echo $SHELL && which bash" et montre la sortie.',
     "6. Exécute ls -la et montre la sortie.",
-    "7. Fais une recherche web sur : dernières avancées en intelligence artificielle.",
-    "8. Navigue sur https://www.lemonde.fr et résume les titres principaux.",
+    "7. Fais une recherche web (avec API) sur : dernières avancées en intelligence artificielle.",
+    "8. Navigue sur https://www.lemonde.fr et résume les titres principaux avec webNavigate.",
     "9. Quels sont tous les outils que tu peux utiliser ? Liste-les.",
     '10. Crée un nouvel outil nommé dire_bonjour qui ne prend aucun paramètre et retourne la chaîne "Bonjour le monde !".',
     

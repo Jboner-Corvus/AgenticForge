@@ -55,8 +55,31 @@ export const AppInitializer = () => {
       setTokenStatus(true);
       fetchAndDisplayToolCount();
     } else {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${translations.noTokenFound}.`);
-      setTokenStatus(false);
+      // Try to get JWT from cookie as fallback
+      const name = 'agenticforge_jwt=';
+      const decodedCookie = decodeURIComponent(document.cookie);
+      const ca = decodedCookie.split(';');
+      let jwtToken = null;
+      for(let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') {
+          c = c.substring(1);
+        }
+        if (c.indexOf(name) === 0) {
+          jwtToken = c.substring(name.length, c.length);
+          break;
+        }
+      }
+      
+      if (jwtToken) {
+        setAuthToken(jwtToken);
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${translations.tokenLoadedFromCookie}.`);
+        setTokenStatus(true);
+        fetchAndDisplayToolCount();
+      } else {
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${translations.noTokenFound}.`);
+        setTokenStatus(false);
+      }
     }
   }, [addDebugLog, setAuthToken, setTokenStatus, fetchAndDisplayToolCount, translations]);
 

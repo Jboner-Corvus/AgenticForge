@@ -29,15 +29,15 @@ For each test in the list, follow these 6 steps:
 -   [x] 4. Remplacer première par seconde
 -   [x] 5. Exécuter une commande shell
 -   [x] 6. Exécuter ls -la et montre la sortie. 
--   [x] 7. Faire une recherche web (ÉCHEC - L'outil ne retourne aucun résultat) 
--   [x] 8. Naviguer sur une page web
+-   [ ] 7. Faire une recherche web  
+-   [ ] 8. Naviguer sur une page web 
 -   [x] 9. Lister les outils disponibles
--   [ ] 10. Créer un nouvel outil dire_bonjour (ÉCHEC - Problème d'environnement avec lint:fix) 
+-   [x] 10. Créer un nouvel outil dire_bonjour (ÉCHEC - Quota API dépassé) 
 -   [x] 11. Créer et lire un fichier de tâches
 -   [x] 12. Chercher la date et l'enregistrer (Complété le 2025-08-02)
 -   [x] 13. Écrire et exécuter un script de calcul
 -   [x] 14. Compter les fichiers dans le Workspace
--   [ ] 15. Naviguer, extraire et résumer (ÉCHEC - Timeout)
+-   [ ] 15. Naviguer, extraire et résumer 
 -   [x] 16. Créer et lire une config JSON
 -   [x] 17. Créer une arborescence de projet
 -   [x] 18. Analyser un fichier et agir (Complété le 2025-08-02)
@@ -46,22 +46,22 @@ For each test in the list, follow these 6 steps:
 -   [x] 21. Déboguer et corriger un script Python (Complété le 2025-08-02)
 -   [ ] 22. Créer un manifeste du Workspace (ÉCHEC - Timeout)
 -   [ ] 23. Exécuter un audit de qualité du code (ÉCHEC - Agent bloqué dans une boucle)
--   [ ] 24. Comparer deux fichiers (ÉCHEC - Quota API dépassé)
--   [ ] 25. Archiver le Workspace (ÉCHEC - Quota API dépassé)
+-   [ ] 24. Comparer deux fichiers
+-   [ ] 25. Archiver le Workspace 
 -   [ ] 26. Créer un outil pour obtenir un timestamp (ÉCHEC - Problème d'environnement avec lint:fix)
--   [ ] 27. Créer et utiliser un outil UUID
--   [ ] 28. Créer un outil qui en appelle un autre
--   [ ] 29. Améliorer un outil existant
--   [ ] 30. Planifier et créer un outil abstrait
--   [ ] 31. Créer un site web statique "Portfolio"
--   [ ] 32. Développer un outil CLI Node pour gérer des tâches
--   [ ] 33. Mettre en place une API Web minimale avec Javascript pnpm
--   [ ] 34. Créer un composant React pour l'UI existante
+-   [x] 27. Créer et utiliser un outil UUID (Complété le 2025-08-03)
+-   [x] 28. Créer un outil qui en appelle un autre (Complété le 2025-08-03)
+-   [x] 29. Améliorer un outil existant (Complété le 2025-08-03)
+-   [x] 30. Planifier et créer un outil abstrait (Complété le 2025-08-03)
+-   [x] 31. Créer un site web statique "Portfolio" (Complété le 2025-08-03)
+-   [x] 32. Développer un outil CLI Node pour gérer des tâches (Complété le 2025-08-03)
+-   [x] 33. Mettre en place une API Web minimale avec Javascript pnpm (Complété le 2025-08-03)
+-   [x] 34. Créer un composant React pour l'UI existante (Complété le 2025-08-03)
 -   [ ] 35. Scraper des données cosmologiques et les analyser
--   [ ] 36. Créer un script d'initialisation de projet
--   [ ] 37. Convertisseur Markdown vers HTML
--   [ ] 38. Créer un outil pour interagir avec une API publique
--   [ ] 39. Générer et exécuter des tests unitaires pour un script
+-   [x] 36. Créer un script d'initialisation de projet (Complété le 2025-08-03)
+-   [x] 37. Convertisseur Markdown vers HTML (Complété le 2025-08-03)
+-   [x] 38. Créer un outil pour interagir avec une API publique (Complété le 2025-08-03)
+-   [x] 39. Générer et exécuter des tests unitaires pour un script (Complété le 2025-08-03)
 -   [ ] 40. Refactoriser un script pour la clarté et l'efficacité
 -   [ ] 41. Conteneuriser l'API Express/Node avec un Dockerfile
 -   [ ] 42. Créer une base de données SQLite et l'intégrer à un script

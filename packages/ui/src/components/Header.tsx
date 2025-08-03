@@ -1,5 +1,4 @@
 
-import { useState, useCallback } from 'react';
 import { useStore } from '../lib/store';
 
 import { useLanguage } from '../lib/contexts/LanguageContext';
@@ -8,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 
 import { Logo } from './Logo';
 
-import { Settings, PanelLeft, Sun, Moon, Bell, Maximize, Minimize, LayoutDashboard, Contrast, BarChart, Key, MessageSquare, User } from 'lucide-react';
+import { Settings, PanelLeft, Sun, Moon, Bell, LayoutDashboard, BarChart, Key, MessageSquare } from 'lucide-react';
 
 interface HeaderProps {
   setIsControlPanelVisible: (visible: boolean) => void;
@@ -19,8 +18,6 @@ interface HeaderProps {
   isHighContrastMode: boolean;
   toggleHighContrastMode: () => void;
   setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys') => void;
-  isAuthenticated: boolean;
-  setIsLoginModalOpen: (open: boolean) => void;
 }
 
 export function Header({
@@ -29,25 +26,11 @@ export function Header({
   isControlPanelVisible,
   isDarkMode,
   toggleDarkMode,
+  isHighContrastMode,
   toggleHighContrastMode,
   setCurrentPage,
-  isAuthenticated,
-  setIsLoginModalOpen,
 }: HeaderProps) {
   const { translations } = useLanguage();
-  const [isFullScreen, setIsFullScreen] = useState(false);
-
-  const handleFullscreenToggle = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullScreen(true);
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullScreen(false);
-      }
-    }
-  }, []);
 
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between p-4 bg-gradient-to-r from-background to-secondary/50 border-b border-border shadow-md">
@@ -64,25 +47,6 @@ export function Header({
       </div>
 
       <div className="flex items-center space-x-2">
-        {!isAuthenticated && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  aria-label={translations.login}
-                  onClick={() => setIsLoginModalOpen(true)}
-                  type="button"
-                  variant="ghost"
-                >
-                  <User size={20} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{translations.login}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -104,6 +68,28 @@ export function Header({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                aria-label={isHighContrastMode ? "Disable High Contrast" : "Enable High Contrast"}
+                onClick={toggleHighContrastMode}
+                type="button"
+                variant="ghost"
+              >
+                <span className="sr-only">{isHighContrastMode ? "Disable High Contrast" : "Enable High Contrast"}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 3a9 9 0 0 0-9 9 9 9 0 0 0 9 9 9 9 0 0 0 9-9 9 9 0 0 0-9-9z" />
+                  <path d="M12 8v8" />
+                  <path d="M8 12h8" />
+                </svg>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{isHighContrastMode ? "Disable High Contrast" : "Enable High Contrast"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
                 aria-label="Toggle Canvas"
                 onClick={() => useStore.getState().setIsCanvasVisible(!useStore.getState().isCanvasVisible)}
                 type="button"
@@ -114,40 +100,6 @@ export function Header({
             </TooltipTrigger>
             <TooltipContent>
               <p>Afficher/Masquer le Canevas</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="Toggle Fullscreen"
-                onClick={handleFullscreenToggle}
-                type="button"
-                variant="ghost"
-              >
-                {isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Toggle Fullscreen</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="Toggle High Contrast Mode"
-                onClick={toggleHighContrastMode}
-                type="button"
-                variant="ghost"
-              >
-                <Contrast size={20} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Toggle High Contrast Mode</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -236,7 +188,6 @@ export function Header({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        
       </div>
     </header>
   );

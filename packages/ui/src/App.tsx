@@ -20,6 +20,9 @@ import { LeaderboardPage } from './components/LeaderboardPage';
 import { LlmApiKeyManagementPage } from './components/LlmApiKeyManagementPage';
 import { useStore } from './lib/store';
 
+import TaskCounter from './components/TaskCounter';
+import './components/TaskCounter.css';
+
 
 export default function App() {
   const isCanvasVisible = useStore((state) => state.isCanvasVisible);
@@ -36,8 +39,10 @@ export default function App() {
       case 'chat':
         return (
           <div className={`flex flex-col h-full transition-all duration-500 ease-in-out flex-grow`}>
-            <ChatMessagesContainer />
-            <div className="p-6 flex items-center">
+            <div className="flex-grow overflow-y-auto">
+              <ChatMessagesContainer />
+            </div>
+            <div className="p-6 flex items-center sticky bottom-0 bg-background border-t border-border">
                 <UserInput />
             </div>
           </div>
@@ -54,17 +59,18 @@ export default function App() {
   return (
     <LanguageProvider>
       <div className="min-h-screen flex flex-col bg-background text-foreground">
-        <AppInitializer />
-        <HeaderContainer setIsLoginModalOpen={setIsLoginModalOpen} />
-        <Suspense fallback={<div>Loading Settings...</div>}>
-          <SettingsModalContainer />
-        </Suspense>
+          <AppInitializer />
+          <HeaderContainer />
+          <TaskCounter completedTasks={22} totalTasks={53} />
+          <Suspense fallback={<div>Loading Settings...</div>}>
+            <SettingsModalContainer />
+          </Suspense>
 
         <div className="flex flex-1 overflow-hidden">
           {isControlPanelVisible && (
             <div
               className="flex-shrink-0 overflow-hidden relative"
-              style={{ width: controlPanelWidth }}
+              style={{ width: controlPanelWidth, minWidth: '250px', maxWidth: '400px' }}
             >
               <ControlPanel />
               
@@ -72,14 +78,16 @@ export default function App() {
           )}
 
           {/* Conteneur principal pour la discussion et le canevas */}
-          <main className="grid grid-cols-1 md:grid-cols-2 flex-1 overflow-hidden gap-6 p-6">
-            {renderMainContent()}
+          <main className="flex-1 overflow-hidden p-6 flex flex-col">
+            <div className="flex-1 overflow-hidden">
+              {renderMainContent()}
+            </div>
 
             {/* Section du Canevas (apparaît et disparaît) */}
             {isCanvasVisible && (
               <div
-                className="flex-shrink-0 h-full relative"
-                style={{ width: canvasWidth }}
+                className="flex-shrink-0 h-full relative mt-6"
+                style={{ width: canvasWidth, minWidth: '300px', maxWidth: '600px' }}
               >
                 <AnimatePresence>
                   <Suspense fallback={<div>Loading Canvas...</div>}>

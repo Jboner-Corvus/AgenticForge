@@ -1,7 +1,7 @@
 services:
   redis:
     image: redis:7.2-alpine
-    container_name: agentic_forge_redis
+    container_name: g_forge_redis
     command: redis-server --port 6379
     ports:
       - "6379:6379"
@@ -19,13 +19,13 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: agentic_forge_postgres
+    container_name: g_forge_postgres
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-agenticforge}
+      POSTGRES_DB: ${POSTGRES_DB:-gforge}
       POSTGRES_USER: ${POSTGRES_USER:-user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
     healthcheck:
@@ -42,7 +42,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: agentic_forge_server
+    container_name: g_forge_server
     ports:
       - "${PUBLIC_PORT:-8080}:3001"
     volumes:
@@ -66,7 +66,7 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_USER=${POSTGRES_USER:-user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
-      - POSTGRES_DB=${POSTGRES_DB:-agenticforge}
+      - POSTGRES_DB=${POSTGRES_DB:-gforge}
       - WEB_PORT=${WEB_PORT}
       - LLM_API_KEY=${LLM_API_KEY}
       - LLM_MODEL_NAME=${LLM_MODEL_NAME}
@@ -95,7 +95,7 @@ services:
     build:
       context: .
       dockerfile: packages/ui/Dockerfile.web.nginx
-    container_name: agentic_forge_web
+    container_name: g_forge_web
     ports:
       - "${WEB_PORT:-3002}:3000"
     depends_on:
@@ -142,4 +142,4 @@ volumes:
 networks:
   agentic_network:
     driver: bridge
-    name: agentic_forge_network
+    name: g_forge_network

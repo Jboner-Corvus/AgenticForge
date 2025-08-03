@@ -34,6 +34,7 @@ export const ControlPanel = memo(() => {
   const saveSession = useStore((state) => state.saveSession);
   const loadSession = useStore((state) => state.loadSession);
   const deleteSession = useStore((state) => state.deleteSession);
+  const deleteAllSessions = useStore((state) => state.deleteAllSessions);
   const renameSession = useStore((state) => state.renameSession);
 
   // Loading states
@@ -53,6 +54,7 @@ export const ControlPanel = memo(() => {
   const [saveSessionInput, setSaveSessionInput] = useState('');
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
   const [sessionToDeleteId, setSessionToDeleteId] = useState<string | null>(null);
+  const [isDeleteAllConfirmModalOpen, setIsDeleteAllConfirmModalOpen] = useState(false);
 
   const handleClearHistory = useCallback((showMessage: boolean) => {
     clearMessages();
@@ -97,6 +99,10 @@ export const ControlPanel = memo(() => {
     setIsDeleteConfirmModalOpen(true);
   }, []);
 
+  const handleDeleteAllSessions = useCallback(() => {
+    setIsDeleteAllConfirmModalOpen(true);
+  }, []);
+
   const handleConfirmDeleteSession = useCallback(() => {
     if (sessionToDeleteId) {
       deleteSession(sessionToDeleteId);
@@ -105,6 +111,21 @@ export const ControlPanel = memo(() => {
       setSessionToDeleteId(null);
     }
   }, [deleteSession, sessionToDeleteId, toast]);
+
+  const handleConfirmDeleteAllSessions = useCallback(async () => {
+    try {
+      await deleteAllSessions();
+      toast({ description: "All sessions deleted!", title: "Sessions Deleted" });
+    } catch (error) {
+      toast({ 
+        description: "Failed to delete all sessions", 
+        title: "Error", 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsDeleteAllConfirmModalOpen(false);
+    }
+  }, [deleteAllSessions, toast]);
 
   const handleOpenRenameModal = useCallback((session: { id: string; name: string }) => {
     setSessionToRename(session);
@@ -122,13 +143,18 @@ export const ControlPanel = memo(() => {
     }
   }, [sessionToRename, newSessionName, renameSession, toast]);
 
-  const { handleDragStart, width } = useDraggableSidebar(320);
+  const { handleDragStart } = useDraggableSidebar(320);
+
+  // Limit sessions to display to 10 most recent ones
+  const MAX_DISPLAYED_SESSIONS = 10;
+  const displayedSessions = sessions.slice(0, MAX_DISPLAYED_SESSIONS);
+  const hasMoreSessions = sessions.length > MAX_DISPLAYED_SESSIONS;
 
   return (
     <>
       <aside
         className="p-4 bg-gradient-to-b from-background to-secondary/50 border-r border-border overflow-y-auto flex-shrink-0 relative pt-8"
-        style={{ width }}
+        style={{ width: '100%' }}
       >
         <div className="absolute top-0 right-0 w-2 h-full cursor-col-resize" onMouseDown={handleDragStart} />
         <div className="space-y-6">
@@ -199,10 +225,28 @@ export const ControlPanel = memo(() => {
                 {isSavingSession ? <LoadingSpinner className="mr-2" /> : <Save className="mr-2 h-4 w-4" />}
                 {translations.saveCurrentSession}
               </Button>
+              {sessions.length > 1 && (
+                <Button 
+                  className="w-full flex items-center justify-center" 
+                  onClick={handleDeleteAllSessions} 
+                  variant="destructive"
+                  disabled={isLoadingSessions || isDeletingSession || isRenamingSession}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete All Sessions
+                </Button>
+              )}
             </div>
           </div>
           <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center"><History className="mr-2 h-4 w-4" />{translations.sessionManagement}</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold flex items-center"><History className="mr-2 h-4 w-4" />{translations.sessionManagement}</h3>
+              {hasMoreSessions && (
+                <span className="text-xs text-muted-foreground">
+                  Showing {displayedSessions.length} of {sessions.length} sessions
+                </span>
+              )}
+            </div>
             <div className="space-y-2">
               {isLoadingSessions ? (
                 <div className="flex justify-center items-center h-20">
@@ -211,10 +255,10 @@ export const ControlPanel = memo(() => {
               ) : sessions.length === 0 ? (
                 <p className="text-muted-foreground">{translations.noSessionsSaved}</p>
               ) : (
-                sessions.map((session) => (
+                displayedSessions.map((session) => (
                   <div key={session.id} className="flex items-center justify-between p-2 border border-border rounded-md">
                     <span className="text-sm truncate" title={session.name}>
-                      {session.name}
+                      {session.name.length > 25 ? `${session.name.substring(0, 25)}...` : session.name}
                       {session.id === activeSessionId && <Badge variant="secondary" className="ml-2">{translations.active}</Badge>}
                     </span>
                     <div className="flex space-x-1">
@@ -243,6 +287,8 @@ export const ControlPanel = memo(() => {
             onChange={(e) => setNewSessionName(e.target.value)}
             placeholder="New session name"
             aria-label="New session name"
+            name="newSessionName"
+            autoComplete="off"
           />
           <div className="flex justify-end space-x-2 mt-4">
             <Button variant="outline" onClick={() => setIsRenameModalOpen(false)}>Cancel</Button>
@@ -256,6 +302,8 @@ export const ControlPanel = memo(() => {
           onChange={(e) => setSaveSessionInput(e.target.value)}
           placeholder="Session name"
           aria-label="Session name"
+          name="saveSessionInput"
+          autoComplete="off"
         />
         <div className="flex justify-end space-x-2 mt-4">
           <Button variant="outline" onClick={() => setIsSaveModalOpen(false)}>Cancel</Button>
@@ -268,6 +316,14 @@ export const ControlPanel = memo(() => {
         <div className="flex justify-end space-x-2 mt-4">
           <Button variant="outline" onClick={() => setIsDeleteConfirmModalOpen(false)}>Cancel</Button>
           <Button variant="destructive" onClick={handleConfirmDeleteSession}>Delete</Button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={isDeleteAllConfirmModalOpen} onClose={() => setIsDeleteAllConfirmModalOpen(false)} title="Confirm Deletion">
+        <p>Are you sure you want to delete ALL sessions? This action cannot be undone and will remove {sessions.length} sessions.</p>
+        <div className="flex justify-end space-x-2 mt-4">
+          <Button variant="outline" onClick={() => setIsDeleteAllConfirmModalOpen(false)}>Cancel</Button>
+          <Button variant="destructive" onClick={handleConfirmDeleteAllSessions}>Delete All</Button>
         </div>
       </Modal>
     </>

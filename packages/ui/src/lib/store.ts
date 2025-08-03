@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { getTools, saveSessionApi, loadSessionApi, deleteSessionApi, renameSessionApi, addLlmApiKeyApi, removeLlmApiKeyApi, getLeaderboardStats, getLlmApiKeysApi, loadAllSessionsApi, setActiveLlmProviderApi } from './api';
+import { getTools, saveSessionApi, loadSessionApi, deleteSessionApi, renameSessionApi, addLlmApiKeyApi, removeLlmApiKeyApi, editLlmApiKeyApi, getLeaderboardStats, getLlmApiKeysApi, loadAllSessionsApi, setActiveLlmProviderApi } from './api';
 import type { SessionData } from './api';
 import { generateUUID } from './utils/uuid';
 import { type ChatMessage as ExternalChatMessage, type NewChatMessage } from '../types/chat.d';
@@ -19,6 +19,8 @@ interface Session {
 interface LlmApiKey {
   provider: string;
   key: string;
+  baseUrl?: string;
+  model?: string;
 }
 
 interface ToastOptions {
@@ -72,8 +74,9 @@ export interface AppState {
   // LLM API Key Management
   llmApiKeys: LlmApiKey[];
   activeLlmApiKeyIndex: number;
-  addLlmApiKey: (provider: string, key: string) => void;
+  addLlmApiKey: (provider: string, key: string, baseUrl?: string, model?: string) => void;
   removeLlmApiKey: (index: number) => void;
+  editLlmApiKey: (index: number, provider: string, key: string, baseUrl?: string, model?: string) => void;
   setActiveLlmApiKey: (index: number) => void;
 
   // Caching
@@ -150,6 +153,7 @@ export interface AppState {
   saveSession: (name: string) => void;
   loadSession: (id: string) => void;
   deleteSession: (id: string) => void;
+  deleteAllSessions: () => void;
   renameSession: (id: string, newName: string) => void;
 
   
@@ -322,13 +326,13 @@ export const useStore = create<AppState>((set, get) => ({
   }),
 
   // LLM API Key Management actions
-  addLlmApiKey: (provider: string, key: string) => async () => {
+  addLlmApiKey: (provider: string, key: string, baseUrl?: string, model?: string) => async () => {
     const { setIsAddingLlmApiKey } = get();
     setIsAddingLlmApiKey(true);
     try {
-      await addLlmApiKeyApi(provider, key);
+      await addLlmApiKeyApi(provider, key, baseUrl, model);
       const llmApiKeys = get().llmApiKeys; // Get current keys
-      set({ llmApiKeys: [...llmApiKeys, { provider, key }] });
+      set({ llmApiKeys: [...llmApiKeys, { provider, key, baseUrl, model }] });
     } catch (error) {
       console.error("Failed to add LLM API key to backend:", error);
     } finally {
@@ -346,6 +350,25 @@ export const useStore = create<AppState>((set, get) => ({
       console.error("Failed to remove LLM API key from backend:", error);
     } finally {
       setIsRemovingLlmApiKey(false);
+    }
+  },
+  editLlmApiKey: (index: number, provider: string, key: string, baseUrl?: string, model?: string) => async () => {
+    const { setIsRemovingLlmApiKey, setIsAddingLlmApiKey } = get();
+    setIsRemovingLlmApiKey(true);
+    try {
+      // Edit the key using the API
+      await editLlmApiKeyApi(index, provider, key, baseUrl, model);
+      
+      // Update the state
+      const llmApiKeys = get().llmApiKeys;
+      const newKeys = [...llmApiKeys];
+      newKeys[index] = { provider, key, baseUrl, model };
+      set({ llmApiKeys: newKeys });
+    } catch (error) {
+      console.error("Failed to edit LLM API key:", error);
+    } finally {
+      setIsRemovingLlmApiKey(false);
+      setIsAddingLlmApiKey(false);
     }
   },
   setActiveLlmApiKey: (index: number) => async () => {
@@ -462,6 +485,24 @@ export const useStore = create<AppState>((set, get) => ({
       setIsDeletingSession(false);
     }
   },
+  deleteAllSessions: () => async () => {
+    const { sessions, setIsDeletingSession } = get();
+    setIsDeletingSession(true);
+    try {
+      // Delete all sessions from backend
+      for (const session of sessions) {
+        await deleteSessionApi(session.id);
+      }
+      // Clear all sessions from local storage
+      localStorage.removeItem('agenticForgeSessions');
+      // Update state
+      set({ sessions: [], activeSessionId: null });
+    } catch (error) {
+      console.error("Failed to delete all sessions from backend:", error);
+    } finally {
+      setIsDeletingSession(false);
+    }
+  },
   renameSession: (id: string, newName: string) => async () => {
     const { setIsRenamingSession } = get();
     setIsRenamingSession(true);
@@ -522,11 +563,30 @@ export const useStore = create<AppState>((set, get) => ({
     }
 
     try {
+      // Try to get JWT from cookie as fallback
+      let authHeader = `Bearer ${authToken}`;
+      const name = 'agenticforge_jwt=';
+      const decodedCookie = decodeURIComponent(document.cookie);
+      const ca = decodedCookie.split(';');
+      for(let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') {
+          c = c.substring(1);
+        }
+        if (c.indexOf(name) === 0) {
+          const jwtToken = c.substring(name.length, c.length);
+          if (jwtToken) {
+            authHeader = 'Bearer ' + jwtToken;
+          }
+          break;
+        }
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
+          Authorization: authHeader,
           'X-Session-ID': sessionId,
         },
         body: JSON.stringify({
@@ -575,7 +635,8 @@ export const useStore = create<AppState>((set, get) => ({
     // No explicit loading state for this as it's usually quick and part of init
     try {
       const keys = await getLlmApiKeysApi();
-      keys.forEach((llmKey: { provider: string; key: string }) => addLlmApiKey(llmKey.provider, llmKey.key));
+      keys.forEach((llmKey: { provider: string; key: string; baseUrl?: string; model?: string }) => 
+        addLlmApiKey(llmKey.provider, llmKey.key, llmKey.baseUrl, llmKey.model));
       if (keys.length > 0) {
         setActiveLlmApiKey(0);
       }

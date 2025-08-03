@@ -1,7 +1,7 @@
 {
-  "name": "agentic-forge-monorepo",
+  "name": "g-forge-monorepo",
   "version": "1.0.0",
-  "description": "AgenticForge Monorepo",
+  "description": "G-Forge Monorepo",
   "private": true,
   "type": "module",
   "workspaces": [

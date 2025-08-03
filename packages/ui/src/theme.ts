@@ -1,20 +1,20 @@
 
 export const theme = {
   colors: {
-    primary: 'hsl(240, 5.9%, 10%)',
-    secondary: 'hsl(240, 4.8%, 95.9%)',
-    accent: 'hsl(240, 5.9%, 10%)',
-    background: 'hsl(0, 0%, 100%)',
-    text: 'hsl(240, 5.9%, 10%)',
-    border: 'hsl(240, 5.9%, 90%)',
-    success: 'hsl(142.1, 76.2%, 36.3%)',
-    warning: 'hsl(47.9, 95.8%, 53.1%)',
-    error: 'hsl(0, 84.2%, 60.2%)',
-    info: 'hsl(217.2, 91.2%, 59.8%)',
+    primary: 'hsl(217, 91%, 60%)', // Vibrant blue
+    secondary: 'hsl(217, 30%, 95%)', // Light blue-gray background
+    accent: 'hsl(270, 80%, 60%)', // Purple accent
+    background: 'hsl(0, 0%, 99%)', // Almost white background
+    text: 'hsl(217, 20%, 25%)', // Dark blue-gray for text
+    border: 'hsl(217, 20%, 90%)', // Light border color
+    success: 'hsl(142, 76%, 36%)', // Green for success
+    warning: 'hsl(48, 96%, 53%)', // Amber for warnings
+    error: 'hsl(0, 84%, 60%)', // Red for errors
+    info: 'hsl(217, 91%, 60%)', // Blue for info
   },
   fonts: {
-    body: 'Inter, sans-serif',
-    heading: 'Inter, sans-serif',
+    body: 'Poppins, sans-serif',
+    heading: 'Poppins, sans-serif',
   },
   fontSizes: {
     xs: '0.75rem',
@@ -37,8 +37,8 @@ export const theme = {
     '2xl': '3rem',
   },
   radii: {
-    sm: '0.25rem',
-    md: '0.5rem',
+    sm: '0.375rem',
+    md: '0.625rem',
     lg: '1rem',
     full: '9999px',
   },

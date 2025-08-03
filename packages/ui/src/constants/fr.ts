@@ -9,6 +9,7 @@ export const fr = {
   serverOffline: "Hors ligne",
   serverHealthCheckFailed: "Échec de la vérification de la santé du serveur",
   tokenLoadedFromEnv: "Token chargé depuis l'environnement (VITE_AUTH_TOKEN)",
+  tokenLoadedFromCookie: "Token chargé depuis le cookie",
   tokenLoadedFromLocalStorage: "Token chargé depuis localStorage",
   noTokenFound: "Aucun token trouvé",
   interfaceInitialized: "Interface initialisée (useEffect)",

@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="assets/title.png" alt="Agentic Forge Logo" width="250">
+  <img src="assets/title.png" alt="G-Forge Logo" width="250">
 </p>
 
-<h1 align="center">AgenticForge</h1>
+<h1 align="center">G-Forge</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge" alt="Agentic Forge Logo">
+  <img src="https://img.shields.io/badge/🔨-G_Forge-orange?style=for-the-badge" alt="G-Forge Logo">
 </p>
 <p align="center">
   <strong>🌐 Langues disponibles</strong><br>
@@ -39,7 +39,7 @@
     <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm">
 </p>
 
-## 为什么选择Agentic Forge？
+## 为什么选择G-Forge？
 
 🔒 **⚠️ 警告**：初始启动可能需要10-15分钟，因为要下载Docker镜像并初始化服务。等待日志中出现`backend: "GET /health HTTP/1.1" 200 OK`。
 
@@ -110,10 +110,10 @@ curl -X POST http://localhost:8080/api/v1/agent/stream \
 
 ## 管理控制台（`run.sh`）
 
-交互式控制台提供对您的Agentic Forge实例的完全控制：
+交互式控制台提供对您的G-Forge实例的完全控制：
 
 ```
-🔨 Agentic Forge - 管理控制台
+🔨 G-Forge - 管理控制台
 ────────────────────────────────────────
 
    Docker & 服务
@@ -245,7 +245,7 @@ export const allTools: Tool<any>[] = [
 
 ## 致谢
 
-- **[FastMCP](https://github.com/punkpeye/fastmcp)**：超高性能MCP框架 - 驱动Agentic Forge的火箭 🚀
+- **[FastMCP](https://github.com/punkpeye/fastmcp)**：超高性能MCP框架 - 驱动G-Forge的火箭 🚀
 - **[模型上下文协议（MCP）](https://modelcontextprotocol.io/)**：LLM交互的革命性协议
 - **[Docker](https://docker.com)**：容器化和隔离
 - **[Redis](https://redis.io)**：高性能数据结构
@@ -264,7 +264,7 @@ export const allTools: Tool<any>[] = [
 
 <div align="center">
 
-**🔨 铁匠锻造他的锤子。** **🤖 Agentic Forge锻造自己的能力。**
+**🔨 铁匠锻造他的锤子。** **🤖 G-Forge锻造自己的能力。**
 
 _锻造您的技术未来。_
 
@@ -272,7 +272,7 @@ _锻造您的技术未来。_
 
 </div>完全本地化和私有** - 一切都在您的机器上运行——无云端，无数据共享。您的文件、对话和工具保持私有。
 
-🛠️ **自我工具锻造** - Agentic Forge可以创建自己的工具——当它缺乏某种能力时，它会编写代码来构建它。
+🛠️ **自我工具锻造** - G-Forge可以创建自己的工具——当它缺乏某种能力时，它会编写代码来构建它。
 
 💻 **自主编程助手** - 需要代码？它可以用Python、TypeScript、Bash等编写、调试和执行程序——无需监督。
 
@@ -280,7 +280,7 @@ _锻造您的技术未来。_
 
 📋 **规划并执行复杂任务** - 从文件管理到网络抓取——它可以将大型任务分解为步骤，并锻造工具来完成工作。
 
-🌐 **智能网络导航** - Agentic Forge可以自主浏览互联网——搜索、阅读、提取信息、自动化任务——全部无需干预。
+🌐 **智能网络导航** - G-Forge可以自主浏览互联网——搜索、阅读、提取信息、自动化任务——全部无需干预。
 
 🚀 **由FastMCP驱动** - 使用MCP（模型上下文协议）和FastMCP作为超高性能框架——真正的LLM交互火箭。
 

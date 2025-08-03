@@ -48,34 +48,39 @@ export async function sendMessage(
   authToken: null | string,
   sessionId: null | string,
   onMessage: (event: MessageEvent) => void,
-  onError: (error: Event) => void,
+  onError: (error: Event | Error) => void,
 ): Promise<{ jobId: string; eventSource: EventSource }> {
-  const response = await fetch('/api/chat', { // <-- URL Relative
-    method: 'POST',
-    headers: getAuthHeaders(authToken, sessionId),
-    body: JSON.stringify({ prompt }),
-  });
+  try {
+    const response = await fetch('/api/chat', { // <-- URL Relative
+      method: 'POST',
+      headers: getAuthHeaders(authToken, sessionId),
+      body: JSON.stringify({ prompt }),
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    // NOTE: Ensure the backend always returns meaningful error messages
-    // for better client-side debugging and user feedback.
-    throw new Error(errorData.message || `Erreur du serveur`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      // NOTE: Ensure the backend always returns meaningful error messages
+      // for better client-side debugging and user feedback.
+      throw new Error(errorData.message || `Erreur du serveur: ${response.status} ${response.statusText}`);
+    }
+
+    const { jobId } = await response.json();
+    
+    // Établit la connexion SSE pour les mises à jour en streaming
+    const eventSource = new EventSource(`/api/chat/stream/${jobId}`); // <-- URL Relative
+
+    eventSource.onmessage = onMessage;
+    eventSource.onerror = (error) => {
+      console.error(`EventSource failed:`, error);
+      onError(error);
+      // eventSource.close(); // Do not close here, let the hook manage it
+    };
+
+    return { jobId, eventSource };
+  } catch (error) {
+    console.error('Error in sendMessage:', error);
+    throw error;
   }
-
-  const { jobId } = await response.json();
-  
-  // Établit la connexion SSE pour les mises à jour en streaming
-  const eventSource = new EventSource(`/api/chat/stream/${jobId}`); // <-- URL Relative
-
-  eventSource.onmessage = onMessage;
-  eventSource.onerror = (error) => {
-    console.error(`EventSource failed:`, error);
-    onError(error);
-    // eventSource.close(); // Do not close here, let the hook manage it
-  };
-
-  return { jobId, eventSource };
 }
 
 /**
@@ -216,16 +221,18 @@ export async function getLeaderboardStats(): Promise<{
 interface LlmApiKey {
   provider: string;
   key: string;
+  baseUrl?: string;
+  model?: string;
 }
 
 /**
  * Ajoute une clé API LLM.
  */
-export async function addLlmApiKeyApi(provider: string, key: string): Promise<void> {
+export async function addLlmApiKeyApi(provider: string, key: string, baseUrl?: string, model?: string): Promise<void> {
   const response = await fetch('/api/llm-api-keys', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ provider, key }),
+    body: JSON.stringify({ provider, key, baseUrl, model }),
   });
   if (!response.ok) {
     const errorData = await response.json();
@@ -255,6 +262,21 @@ export async function removeLlmApiKeyApi(index: number): Promise<void> {
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || `Erreur lors de la suppression de la clé API LLM`);
+  }
+}
+
+/**
+ * Met à jour une clé API LLM par index.
+ */
+export async function editLlmApiKeyApi(index: number, provider: string, key: string, baseUrl?: string, model?: string): Promise<void> {
+  const response = await fetch(`/api/llm-api-keys/${index}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ provider, key, baseUrl, model }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || `Erreur lors de la mise à jour de la clé API LLM`);
   }
 }
 

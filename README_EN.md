@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="assets/title.png" alt="Agentic Forge Logo" width="250">
+  <img src="assets/title.png" alt="G-Forge Logo" width="250">
 </p>
 
-<h1 align="center">AgenticForge</h1>
+<h1 align="center">G-Forge</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge" alt="Agentic Forge Logo">
+  <img src="https://img.shields.io/badge/🔨-G_Forge-orange?style=for-the-badge" alt="G-Forge Logo">
 </p>
 <p align="center">
   <strong>🌐 Langues disponibles</strong><br>
@@ -39,11 +39,11 @@
     <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm">
 </p>
 
-## Why Agentic Forge?
+## Why G-Forge?
 
 🔒 **Fully Local and Private** - Everything runs on your machine — no cloud, no data sharing. Your files, conversations and tools remain private.
 
-🛠️ **Self-Tool Forging** - Agentic Forge can create its own tools — when it lacks a capability, it writes the code to build it.
+🛠️ **Self-Tool Forging** - G-Forge can create its own tools — when it lacks a capability, it writes the code to build it.
 
 💻 **Autonomous Coding Assistant** - Need code? It can write, debug and execute programs in Python, TypeScript, Bash and more — without supervision.
 
@@ -51,7 +51,7 @@
 
 📋 **Plans and Executes Complex Tasks** - From file management to web scraping — it can divide large tasks into steps and forge the tools to accomplish the work.
 
-🌐 **Smart Web Navigation** - Agentic Forge can browse the internet autonomously — search, read, extract info, automate tasks — all without intervention.
+🌐 **Smart Web Navigation** - G-Forge can browse the internet autonomously — search, read, extract info, automate tasks — all without intervention.
 
 🚀 **Powered by FastMCP** - Uses the MCP (Model Context Protocol) with FastMCP as ultra-performant framework — a real rocket for LLM interactions.
 
@@ -321,26 +321,26 @@ Once your services are running, try these examples:
 
 ---
 
-## Management Console (`run.sh`)
+### Management Console (`run.sh`)
 
-The interactive console provides complete control over your Agentic Forge instance:
+The interactive console provides complete control over your G-Forge instance:
 
 ```
-🔨 Agentic Forge - Management Console
-────────────────────────────────────────
+   ╔══════════════════════════════════╗
+   ║           G - F O R G E          ║
+   ╚══════════════════════════════════╝
+──────────────────────────────────────────
+  Docker & Services
+   1) 🟢 Start            5) 📊 Logs
+   2) 🔄 Restart          6) 🐚 Shell (Container)
+   3) 🔴 Stop             7) 🔨 Rebuild (no cache)
+   4) ⚡ Status           8) 🧹 Clean Docker
 
-   Docker & Services
-1) 🟢 Start        5) 📊 Logs
-2) 🔄 Restart      6) 🐚 Shell
-3) 🔴 Stop         7) 🔨 Rebuild
-4) ⚡ Status       8) 🧹 Clean
+  Development
+  10) 🔍 Lint            12) 🧪 Tests
+  11) ✨ Format          13) 📘 TypeCheck
 
-   Development & Quality
-10) 🔍 Lint        13) 🧪 Tests
-11) ✨ Format      14) 📘 TypeCheck
-12) 🧽 Clean       15) 📋 Audit
-
-16) 🚪 Exit
+  16) 🚪 Quit
 ```
 
 ### Key Commands
@@ -458,7 +458,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Acknowledgments
 
-- **[FastMCP](https://github.com/punkpeye/fastmcp)**: Ultra-performant MCP framework - the rocket that powers Agentic Forge 🚀
+- **[FastMCP](https://github.com/punkpeye/fastmcp)**: Ultra-performant MCP framework - the rocket that powers G-Forge 🚀
 - **[Model Context Protocol (MCP)](https://modelcontextprotocol.io/)**: Revolutionary protocol for LLM interaction
 - **[Docker](https://docker.com)**: Containerization and isolation
 - **[Redis](https://redis.io)**: High-performance data structures
@@ -477,7 +477,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 <div align="center">
 
-**🔨 A blacksmith forges his hammers.** **🤖 Agentic Forge forges its own capabilities.**
+**🔨 A blacksmith forges his hammers.** **🤖 G-Forge forges its own capabilities.**
 
 _Forge your technological future._
 

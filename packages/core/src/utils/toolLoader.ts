@@ -33,6 +33,7 @@ export const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
  * @returns Une promesse qui se résout avec un tableau de tous les outils chargés.
  */
 export async function _internalLoadTools(): Promise<void> {
+  console.log(`[_internalLoadTools] Starting to load tools dynamically.`);
   getLogger().info(`[_internalLoadTools] Starting to load tools dynamically.`);
   const toolsDir = getToolsDir();
 
@@ -40,17 +41,28 @@ export async function _internalLoadTools(): Promise<void> {
   try {
     toolFiles = await findToolFiles(toolsDir, fileExtension);
 
+    console.log(
+      `[_internalLoadTools] Found tool files: ${toolFiles.join(', ')}`
+    );
     getLogger().info(
       `[_internalLoadTools] Found tool files: ${toolFiles.join(', ')}`,
     );
     for (const file of toolFiles) {
       console.log(`[GEMINI-DEBUG] Loading tool file: ${file}`);
       await loadToolFile(file);
+      console.log(
+        `[_internalLoadTools] Successfully loaded tool file: ${file}`
+      );
       getLogger().info(
         `[_internalLoadTools] Successfully loaded tool file: ${file}`,
       );
     }
   } catch (error) {
+    console.error({
+      ...getErrDetails(error),
+      logContext:
+        '[_internalLoadTools] Error during tool file discovery or loading.',
+    });
     getLogger().error({
       ...getErrDetails(error),
       logContext:
@@ -58,6 +70,9 @@ export async function _internalLoadTools(): Promise<void> {
     });
     throw error; // Re-throw to ensure the error is propagated
   }
+  console.log(
+    `${toolRegistry.getAll().length} tools have been loaded dynamically.`
+  );
   getLogger().info(
     `${toolRegistry.getAll().length} tools have been loaded dynamically.`,
   );
@@ -103,6 +118,8 @@ export function getToolsDir(): string {
     `[getToolsDir] process.env.NODE_ENV: ${process.env.NODE_ENV}`,
   );
 
+  // In production (dist), tools are in dist/modules/tools/definitions
+  // In development, they're in src/modules/tools/definitions
   const toolsPath = runningInDist
     ? path.resolve(__dirname, 'modules', 'tools', 'definitions')
     : path.resolve(__dirname, '..', 'modules', 'tools', 'definitions');
@@ -204,10 +221,20 @@ async function loadToolFile(file: string): Promise<void> {
 
 function watchTools() {
   const toolsDir = getToolsDir();
+  const generatedToolsDir = path.join(
+    process.cwd(),
+    runningInDist ? 'dist/tools/generated' : 'packages/core/src/tools/generated'
+  );
+  
   getLogger().info(`[watchTools] Watching for tool changes in: ${toolsDir}`);
+  getLogger().info(`[watchTools] Also watching generated tools in: ${generatedToolsDir}`);
 
+  // Watch both the main tools directory and the generated tools directory
   watcher = chokidar.watch(
-    `${toolsDir}/**/*.tool.${runningInDist ? 'js' : 'ts'}`,
+    [
+      `${toolsDir}/**/*.tool.${runningInDist ? 'js' : 'ts'}`,
+      `${generatedToolsDir}/**/*.tool.${runningInDist ? 'js' : 'ts'}`
+    ],
     {
       ignored: /(^|\/|\\)\./, // ignore dotfiles
       ignoreInitial: true, // Don't trigger add events on startup

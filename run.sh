@@ -290,12 +290,12 @@ start_services() {
     stop_docker_log_collector # S'assurer que l'ancien collecteur est bien arrêté.
 
     # Avertissement sur le réseau Docker existant
-    if docker network ls | grep -q "agentic_forge_network"; then
+    if docker network ls | grep -q "g_forge_network"; then
         PROJECT_NAME=$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]*//g')
-        EXISTING_NETWORK_PROJECT_LABEL=$(docker network inspect agentic_forge_network --format '{{ index .Labels "com.docker.compose.project" }}' 2>/dev/null)
+        EXISTING_NETWORK_PROJECT_LABEL=$(docker network inspect g_forge_network --format '{{ index .Labels "com.docker.compose.project" }}' 2>/dev/null)
 
         if [[ -z "$EXISTING_NETWORK_PROJECT_LABEL" || "$EXISTING_NETWORK_PROJECT_LABEL" != "$PROJECT_NAME" ]]; then
-             echo -e "${COLOR_YELLOW}AVERTISSEMENT: Un réseau 'agentic_forge_network' existe et semble appartenir à un autre projet ou n'est pas géré par Docker Compose.${NC}"
+             echo -e "${COLOR_YELLOW}AVERTISSEMENT: Un réseau 'g_forge_network' existe et semble appartenir à un autre projet ou n'est pas géré par Docker Compose.${NC}"
              echo -e "${COLOR_YELLOW}Cela peut causer des problèmes. Il est fortement recommandé d'exécuter l'option '8) Nettoyer Docker'.${NC}"
         fi
     fi
@@ -512,7 +512,8 @@ run_all_checks() {
 
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour l'UI...${NC}"
     set -o pipefail
-    UI_TYPECHECK_OUTPUT=$(pnpm --filter @agenticforge/ui exec tsc --noEmit -p tsconfig.app.json 2>&1 | tee /dev/tty)
+    UI_TYPECHECK_OUTPUT=$(pnpm --filter @gforge/ui exec tsc --noEmit -p tsconfig.app.json 2>&1)
+    echo "$UI_TYPECHECK_OUTPUT"
     exit_code=${PIPESTATUS[0]}
     set +o pipefail
     if [ $exit_code -ne 0 ]; then
@@ -527,7 +528,8 @@ run_all_checks() {
 
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript pour le Core...${NC}"
     set -o pipefail
-    CORE_TYPECHECK_OUTPUT=$(pnpm --filter=@agenticforge/core exec tsc --noEmit 2>&1 | tee /dev/tty)
+    CORE_TYPECHECK_OUTPUT=$(pnpm --filter=@gforge/core exec tsc --noEmit 2>&1)
+    echo "$CORE_TYPECHECK_OUTPUT"
     exit_code=${PIPESTATUS[0]}
     set +o pipefail
     if [ $exit_code -ne 0 ]; then
@@ -544,7 +546,8 @@ run_all_checks() {
 
     echo -e "${COLOR_CYAN}Lancement du linter pour @agenticforge/core...${NC}"
     set -o pipefail
-    CORE_LINT_OUTPUT=$(pnpm --filter=@agenticforge/core lint 2>&1 | tee /dev/tty)
+    CORE_LINT_OUTPUT=$(pnpm --filter=@gforge/core lint 2>&1)
+    echo "$CORE_LINT_OUTPUT"
     CORE_LINT_EXIT_CODE=${PIPESTATUS[0]}
     set +o pipefail
     if [ $CORE_LINT_EXIT_CODE -ne 0 ]; then
@@ -559,7 +562,8 @@ run_all_checks() {
 
     echo -e "${COLOR_CYAN}Lancement du linter pour @agenticforge/ui...${NC}"
     set -o pipefail
-    UI_LINT_OUTPUT=$(pnpm --filter=@agenticforge/ui lint 2>&1 | tee /dev/tty)
+    UI_LINT_OUTPUT=$(pnpm --filter=@gforge/ui lint 2>&1)
+    echo "$UI_LINT_OUTPUT"
     UI_LINT_EXIT_CODE=${PIPESTATUS[0]}
     set +o pipefail
     if [ $UI_LINT_EXIT_CODE -ne 0 ]; then
@@ -578,7 +582,8 @@ run_all_checks() {
 
     echo -e "${COLOR_YELLOW}Lancement des tests unitaires...${NC}"
     set -o pipefail
-    TEST_OUTPUT=$(NODE_OPTIONS="--max-old-space-size=32768" pnpm --filter=@agenticforge/core exec vitest run --exclude src/webServer.integration.test.ts 2>&1 | tee /dev/tty)
+    TEST_OUTPUT=$(NODE_OPTIONS="--max-old-space-size=32768" pnpm --filter=@agenticforge/core exec vitest run --exclude src/webServer.integration.test.ts 2>&1)
+    echo "$TEST_OUTPUT"
     exit_code=${PIPESTATUS[0]}
     set +o pipefail
     if [ $exit_code -ne 0 ]; then
@@ -590,26 +595,42 @@ run_all_checks() {
             if [[ "$line" =~ ^[[:space:]]*FAIL || "$line" =~ ^⎯⎯⎯⎯⎯[[:space:]]*Uncaught[[:space:]]Exception || "$line" =~ ^⎯⎯⎯⎯[[:space:]]*Unhandled[[:space:]]Rejection || "$line" =~ ^⎯⎯⎯⎯⎯⎯[[:space:]]*Unhandled[[:space:]]Errors ]]; then
                 if [ $capture_mode -eq 1 ] && [ -n "$error_block" ]; then
                     ERROR_COUNT=$((ERROR_COUNT + 1))
-                    ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Test Failure:**\n\`\`\`text\n${error_block}\n\`\`\`\n"
+                    ALL_CHECKS_OUTPUT+="
+${ERROR_COUNT}. [ ] **Test Failure:**
+```text
+${error_block}
+```
+"
                 fi
                 capture_mode=1
                 error_block="$line"
             elif [[ "$line" =~ ^⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\[[0-9]+/[0-9]+\] ]]; then
                 if [ $capture_mode -eq 1 ]; then
                     ERROR_COUNT=$((ERROR_COUNT + 1))
-                    ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Test Failure:**\n\`\`\`text\n${error_block}\n\`\`\`\n"
+                    ALL_CHECKS_OUTPUT+="
+${ERROR_COUNT}. [ ] **Test Failure:**
+```text
+${error_block}
+```
+"
                     capture_mode=0
                     error_block=""
                 fi
             elif [ $capture_mode -eq 1 ]; then
-                error_block+="\n$line"
+                error_block+="
+$line"
             fi
         done < <(echo "$TEST_OUTPUT")
 
         if [ $capture_mode -eq 1 ] && [ -n "$error_block" ]; then
             error_block_cleaned=$(echo -e "$error_block" | sed '/^ Test Files /,$d')
             ERROR_COUNT=$((ERROR_COUNT + 1))
-            ALL_CHECKS_OUTPUT+="\n${ERROR_COUNT}. [ ] **Test Failure:**\n\`\`\`text\n${error_block_cleaned}\n\`\`\`\n"
+            ALL_CHECKS_OUTPUT+="
+${ERROR_COUNT}. [ ] **Test Failure:**
+```text
+${error_block_cleaned}
+```
+"
         fi
     fi
 
@@ -642,7 +663,7 @@ snow_menu() {
     clear
     echo -e "${COLOR_ORANGE}"
     echo '    ╔══════════════════════════════════╗'
-    echo '    ║      A G E N T I C  F O R G E      ║'
+    echo '    ║           G - F O R G E          ║'
     echo '    ╚══════════════════════════════════╝'
     echo -e "${NC}"
     echo -e "──────────────────────────────────────────"

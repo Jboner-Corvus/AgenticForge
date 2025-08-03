@@ -141,117 +141,128 @@ export const useAgentStream = () => {
     };
 
     const onMessage = (event: MessageEvent) => {
-      const data: StreamMessage = JSON.parse(event.data) as StreamMessage;
+      try {
+        // Handle heartbeat messages
+        if (event.data === 'heartbeat') {
+          // Just ignore heartbeat messages
+          return;
+        }
 
-      switch (data.type) {
-        case 'tool_stream':
-          if (data.data?.content) {
-            useStore.setState(produce((state: { messages: ChatMessage[] }) => {
-              const lastMessage = state.messages[state.messages.length - 1];
-              const getLastToolName = (messages: ChatMessage[]): string | undefined => {
-                for (let i = messages.length - 1; i >= 0; i--) {
-                  const message = messages[i];
-                  if (message.type === 'tool_call' || message.type === 'tool_result') {
-                    return message.toolName;
+        const data: StreamMessage = JSON.parse(event.data) as StreamMessage;
+
+        switch (data.type) {
+          case 'tool_stream':
+            if (data.data?.content) {
+              useStore.setState(produce((state: { messages: ChatMessage[] }) => {
+                const lastMessage = state.messages[state.messages.length - 1];
+                const getLastToolName = (messages: ChatMessage[]): string | undefined => {
+                  for (let i = messages.length - 1; i >= 0; i--) {
+                    const message = messages[i];
+                    if (message.type === 'tool_call' || message.type === 'tool_result') {
+                      return message.toolName;
+                    }
                   }
-                }
-                return undefined;
-              };
-              const inferredToolName = getLastToolName(state.messages);
-
-              // Prioritize toolName from the stream message itself
-              const streamToolName = data.toolName || data.data?.name;
-              const finalToolName = streamToolName || inferredToolName || 'unknown_tool';
-
-              if (isAgentToolResult(lastMessage) && lastMessage.toolName === finalToolName) {
-                lastMessage.result.output += data.data?.content ?? '';
-              } else {
-                const newToolResult: ToolResultMessage = {
-                  id: crypto.randomUUID(),
-                  timestamp: Date.now(),
-                  type: 'tool_result',
-                  toolName: finalToolName,
-                  result: { output: data.data?.content ?? '' },
+                  return undefined;
                 };
-                state.messages.push(newToolResult);
-              }
-            }));
+                const inferredToolName = getLastToolName(state.messages);
+
+                // Prioritize toolName from the stream message itself
+                const streamToolName = data.toolName || data.data?.name;
+                const finalToolName = streamToolName || inferredToolName || 'unknown_tool';
+
+                if (isAgentToolResult(lastMessage) && lastMessage.toolName === finalToolName) {
+                  lastMessage.result.output += data.data?.content ?? '';
+                } else {
+                  const newToolResult: ToolResultMessage = {
+                    id: crypto.randomUUID(),
+                    timestamp: Date.now(),
+                    type: 'tool_result',
+                    toolName: finalToolName,
+                    result: { output: data.data?.content ?? '' },
+                  };
+                  state.messages.push(newToolResult);
+                }
+              }));
+            }
+            break;
+          case 'agent_thought':
+            if (data.content) handleThought(data.content);
+            break;
+          case 'tool_call': {
+            // This case is now handled by 'tool.start' from the backend
+            // The LLM's tool_call response is just an instruction, not a confirmation of execution start.
+            break;
           }
-          break;
-        case 'agent_thought':
-          if (data.content) handleThought(data.content);
-          break;
-        case 'tool_call': {
-          // This case is now handled by 'tool.start' from the backend
-          // The LLM's tool_call response is just an instruction, not a confirmation of execution start.
-          break;
-        }
-        case 'tool.start': { // New case for backend's tool.start event
-          const toolName = data.data?.name;
-          const params = data.data?.args;
-          if (toolName && params) {
-            handleToolCall(toolName, params as Record<string, unknown>); // Cast params to correct type
+          case 'tool.start': { // New case for backend's tool.start event
+            const toolName = data.data?.name;
+            const params = data.data?.args;
+            if (toolName && params) {
+              handleToolCall(toolName, params as Record<string, unknown>); // Cast params to correct type
+            }
+            break;
           }
-          break;
-        }
-        case 'tool_result': {
-          if (data.toolName && data.result && data.toolName !== 'finish') {
-            handleToolResult(data.toolName, data.result);
+          case 'tool_result': {
+            if (data.toolName && data.result && data.toolName !== 'finish') {
+              handleToolResult(data.toolName, data.result);
+            }
+            break;
           }
-          break;
-        }
-        case 'agent_response':
-          if (data.content) {
-            handleMessage(data.content);
-          }
-          break;
-        case 'raw_llm_response':
-          if (data.content) addDebugLog(`[LLM_RAW] ${data.content}`);
-          break;
-        case 'error':
-          if (data.message) handleError(new Error(data.message));
-          break;
-        case 'quota_exceeded':
+          case 'agent_response':
+            if (data.content) {
+              handleMessage(data.content);
+            }
+            break;
+          case 'raw_llm_response':
+            if (data.content) addDebugLog(`[LLM_RAW] ${data.content}`);
+            break;
+          case 'error':
             if (data.message) handleError(new Error(data.message));
             break;
-        case 'browser.navigating':
-          setBrowserStatus(`Navigating to ${data.data?.url}`);
-          break;
-        case 'browser.page.created':
-          setBrowserStatus('Page created');
-          break;
-        case 'browser.page.loaded':
-          setBrowserStatus(`Page loaded: ${data.data?.url}`);
-          break;
-        case 'browser.content.extracted':
-          setBrowserStatus(`Content extracted: ${data.data?.length} bytes`);
-          break;
-        case 'browser.error':
-          setBrowserStatus(`Error: ${data.data?.message}`);
-          break;
-        case 'browser.closed':
-          setBrowserStatus('Browser closed');
-          break;
-        case 'agent_canvas_output':
-          if (data.content && data.contentType) {
-            const canvasOutputMessage: NewChatMessage = {
-              type: 'agent_canvas_output',
-              content: data.content,
-              contentType: data.contentType,
-            };
-            addMessage(canvasOutputMessage);
-            addDebugLog(`[DISPLAY_OUTPUT] Type: ${data.contentType}, Content length: ${data.content.length}`);
-          }
-          break;
-        case 'agent_canvas_close':
-          handleClose();
-          break;
-        case 'close':
-          setTimeout(() => {
+          case 'quota_exceeded':
+              if (data.message) handleError(new Error(data.message));
+              break;
+          case 'browser.navigating':
+            setBrowserStatus(`Navigating to ${data.data?.url}`);
+            break;
+          case 'browser.page.created':
+            setBrowserStatus('Page created');
+            break;
+          case 'browser.page.loaded':
+            setBrowserStatus(`Page loaded: ${data.data?.url}`);
+            break;
+          case 'browser.content.extracted':
+            setBrowserStatus(`Content extracted: ${data.data?.length} bytes`);
+            break;
+          case 'browser.error':
+            setBrowserStatus(`Error: ${data.data?.message}`);
+            break;
+          case 'browser.closed':
+            setBrowserStatus('Browser closed');
+            break;
+          case 'agent_canvas_output':
+            if (data.content && data.contentType) {
+              const canvasOutputMessage: NewChatMessage = {
+                type: 'agent_canvas_output',
+                content: data.content,
+                contentType: data.contentType,
+              };
+              addMessage(canvasOutputMessage);
+              addDebugLog(`[DISPLAY_OUTPUT] Type: ${data.contentType}, Content length: ${data.content.length}`);
+            }
+            break;
+          case 'agent_canvas_close':
             handleClose();
-            setAgentProgress(100);
-          }, 500); // Add a small delay to allow UI to update
-          break;
+            break;
+          case 'close':
+            setTimeout(() => {
+              handleClose();
+              setAgentProgress(100);
+            }, 500); // Add a small delay to allow UI to update
+            break;
+        }
+      } catch (error) {
+        console.error('Error processing SSE message:', error);
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Error processing SSE message: ${error instanceof Error ? error.message : String(error)}`);
       }
     };
 
@@ -261,7 +272,10 @@ export const useAgentStream = () => {
         authToken,
         sessionId,
         onMessage,
-        (error) => handleError(error instanceof Error ? error : new Error(String(error))),
+        (error) => {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+          handleError(new Error(errorMessage));
+        },
       );
       setJobId(jobId);
       eventSourceRef.current = eventSource; // Store EventSource instance

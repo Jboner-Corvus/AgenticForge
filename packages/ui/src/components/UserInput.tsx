@@ -10,9 +10,10 @@ export const UserInput = () => {
   const [inputValue, setInputValue] = useState('');
   const startAgent = useStore((state: AppState) => state.startAgent);
   const setMessageInputValue = useStore((state: AppState) => state.setMessageInputValue);
+  const isProcessing = useStore((state: AppState) => state.isProcessing);
 
   const handleSendMessage = () => {
-    if (inputValue.trim()) {
+    if (inputValue.trim() && !isProcessing) {
       setMessageInputValue(inputValue);
       startAgent();
       setInputValue('');
@@ -21,7 +22,7 @@ export const UserInput = () => {
 
   return (
     <div className="flex items-center gap-2 w-full">
-      <Button variant="ghost" size="icon">
+      <Button variant="ghost" size="icon" disabled={isProcessing}>
         <Paperclip className="h-5 w-5" />
       </Button>
       <Textarea
@@ -30,14 +31,15 @@ export const UserInput = () => {
         placeholder={translations.typeYourMessage}
         className="flex-1 resize-none min-h-[60px] rounded-full py-3 px-6 shadow-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 ease-in-out"
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
+          if (e.key === 'Enter' && !e.shiftKey && !isProcessing) {
             e.preventDefault();
             handleSendMessage();
           }
         }}
+        disabled={isProcessing}
         style={{ borderRadius: '30px' }}
       />
-      <Button onClick={handleSendMessage} size="icon">
+      <Button onClick={handleSendMessage} size="icon" disabled={isProcessing || !inputValue.trim()}>
         <Send className="h-5 w-5" />
       </Button>
     </div>

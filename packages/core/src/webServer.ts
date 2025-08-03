@@ -416,11 +416,16 @@ export async function initializeWebServer(
       next: express.NextFunction,
     ) => {
       try {
-        const { key, provider } = req.body;
+        const { baseUrl, key, model, provider } = req.body;
         if (!provider || !key) {
           throw new AppError('Missing provider or key', { statusCode: 400 });
         }
-        await _LlmKeyManager.addKey(provider, key, config.LLM_MODEL_NAME);
+        await _LlmKeyManager.addKey(
+          provider,
+          key,
+          model || config.LLM_MODEL_NAME,
+          baseUrl,
+        );
         res.status(200).json({ message: 'LLM API key added successfully.' });
       } catch (_error) {
         next(_error);
@@ -459,6 +464,44 @@ export async function initializeWebServer(
         }
         await _LlmKeyManager.removeKey(keyIndex);
         res.status(200).json({ message: 'LLM API key removed successfully.' });
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  app.put(
+    '/api/llm-api-keys/:index',
+    async (
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction,
+    ) => {
+      try {
+        const { index } = req.params;
+        const { baseUrl, key, model, provider } = req.body;
+        const keyIndex = parseInt(index, 10);
+
+        if (isNaN(keyIndex)) {
+          throw new AppError('Invalid index', { statusCode: 400 });
+        }
+
+        if (!provider || !key) {
+          throw new AppError('Missing provider or key', { statusCode: 400 });
+        }
+
+        // Remove the old key
+        await _LlmKeyManager.removeKey(keyIndex);
+
+        // Add the updated key
+        await _LlmKeyManager.addKey(
+          provider,
+          key,
+          model || config.LLM_MODEL_NAME,
+          baseUrl,
+        );
+
+        res.status(200).json({ message: 'LLM API key updated successfully.' });
       } catch (error) {
         next(error);
       }

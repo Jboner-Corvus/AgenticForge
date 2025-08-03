@@ -38,7 +38,7 @@ const configSchema = z.object({
   NODE_ENV: z.string().default('development'),
   PORT: z.coerce.number().default(3001),
 
-  POSTGRES_DB: z.string().default('agenticforge'),
+  POSTGRES_DB: z.string().default('gforge'),
   POSTGRES_HOST: z.string().default('postgres'),
   POSTGRES_PASSWORD: z.string().optional(),
   POSTGRES_PORT: z.coerce.number().default(5432),

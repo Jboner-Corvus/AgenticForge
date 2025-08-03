@@ -23,6 +23,13 @@ export async function initializeWorker(
     { path: process.env.PATH },
     'Worker process.env.PATH at startup:',
   );
+  
+  // Afficher les outils détectés au démarrage
+  const tools = await getTools();
+  console.log(`[WORKER-STARTUP] ${tools.length} tools detected:`);
+  tools.forEach(tool => console.log(`[WORKER-STARTUP] - ${tool.name}`));
+  getLoggerInstance().info(`${tools.length} tools detected at startup`);
+  
   const _jobQueue = new Queue('tasks', { connection: redisConnection });
   const sessionManager = new SessionManager(pgClient);
 
@@ -136,6 +143,7 @@ export async function initializeWorker(
     getLoggerInstance().error({ err }, `Le job ${_job?.id} a échoué`);
   });
 
+  console.log('Worker initialisé et prêt à traiter les jobs.');
   getLoggerInstance().info('Worker initialisé et prêt à traiter les jobs.');
   return worker;
 }

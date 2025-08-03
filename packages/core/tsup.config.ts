@@ -125,8 +125,10 @@ export default defineConfig({
   noExternal: [],
   target: 'es2022',
   shims: true,
-  assets: [{
-    from: ['./src/modules/agent/system.prompt.md'],
-    to: ['./dist/system.prompt.md']
-  }],
+  assets: [
+    {
+      from: ['./src/modules/agent/system.prompt.md'],
+      to: ['./dist/system.prompt.md']
+    }
+  ],
 });

@@ -19,7 +19,7 @@ export const Logo: React.FC = () => {
         <path d="M14 10L18 14L14 18L10 14L14 10Z" />
         <path d="M10 14L6 18L2 14L6 10L10 14Z" />
       </svg>
-      <span className="text-xl font-bold">Agentic Forge</span>
+      <span className="text-xl font-bold">G-Forge</span>
     </div>
   );
 };
