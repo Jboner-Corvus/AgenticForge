@@ -3,6 +3,7 @@
 import { LoginModal } from './components/LoginModal';
 import { LanguageProvider } from './lib/contexts/LanguageProvider';
 import { useLanguage } from './lib/contexts/LanguageContext';
+
 import { AppInitializer } from './components/AppInitializer';
 import { AnimatePresence } from 'framer-motion';
 
@@ -26,6 +27,7 @@ export default function App() {
   const currentPage = useStore((state) => state.currentPage);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const { translations } = useLanguage();
+  
 
   const { controlPanelWidth, canvasWidth, setCanvasWidth, handleMouseDownCanvas } = useResizablePanel(300, 500);
 

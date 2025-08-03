@@ -87,7 +87,10 @@ export class Agent {
     });
     this.taskQueue = taskQueue;
     this.tools = tools ?? [];
-    console.log('DEBUG: Agent constructor received tools:', this.tools.map(t => t.name));
+    console.log(
+      'DEBUG: Agent constructor received tools:',
+      this.tools.map((t) => t.name),
+    );
     this.activeLlmProvider = activeLlmProvider;
     this.session.activeLlmProvider = activeLlmProvider; // Ensure session also has the active provider
     this.sessionManager = sessionManager;
@@ -108,8 +111,6 @@ export class Agent {
         type: 'user',
       };
       (this.session.history as Message[]).push(newUserMessage);
-
-      
 
       let iterations = 0;
       const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS ?? 10;
@@ -443,8 +444,7 @@ export class Agent {
               type: 'error',
             });
           }
-        }
-        catch (_error) {
+        } catch (_error) {
           if (_error instanceof FinishToolSignal) {
             this.log.info(
               { answer: _error.message },
@@ -466,7 +466,8 @@ export class Agent {
 
           iterationLog.error(
             {
-              error: _error instanceof Error ? _error : new Error(String(_error)),
+              error:
+                _error instanceof Error ? _error : new Error(String(_error)),
             },
             `Error in agent iteration: ${errorMessage}`,
           );
@@ -552,23 +553,27 @@ export class Agent {
       });
       let result;
       if (command.name === 'ls -la') {
-        result = await toolRegistry.execute('simpleList', { detailed: true }, {
-          job: this.job,
-          llm: getLlmProvider(this.activeLlmProvider),
-          log,
-          reportProgress: async (data: any) => {
-            this.job.updateProgress(data);
+        result = await toolRegistry.execute(
+          'simpleList',
+          { detailed: true },
+          {
+            job: this.job,
+            llm: getLlmProvider(this.activeLlmProvider),
+            log,
+            reportProgress: async (data: any) => {
+              this.job.updateProgress(data);
+            },
+            session: this.session,
+            streamContent: async (data: any) => {
+              this.publishToChannel({
+                content: data,
+                toolName: command.name,
+                type: 'tool_stream',
+              });
+            },
+            taskQueue: this.taskQueue,
           },
-          session: this.session,
-          streamContent: async (data: any) => {
-            this.publishToChannel({
-              content: data,
-              toolName: command.name,
-              type: 'tool_stream',
-            });
-          },
-          taskQueue: this.taskQueue,
-        });
+        );
       } else {
         result = await toolRegistry.execute(command.name, command.params, {
           job: this.job,
@@ -598,23 +603,26 @@ export class Agent {
       if (_error instanceof FinishToolSignal) {
         throw _error;
       }
-      const errorDetails = _error instanceof Error ? { 
-        message: _error.message, 
-        stack: _error.stack, 
-        name: _error.name 
-      } : { 
-        message: String(_error), 
-        stack: '', 
-        name: 'UnknownError' 
-      };
+      const errorDetails =
+        _error instanceof Error
+          ? {
+              message: _error.message,
+              name: _error.name,
+              stack: _error.stack,
+            }
+          : {
+              message: String(_error),
+              name: 'UnknownError',
+              stack: '',
+            };
 
       log.error(
-        { 
+        {
           error: errorDetails,
+          params: command.params,
           tool: command.name,
-          params: command.params
         },
-        `Error executing tool ${command.name}`
+        `Error executing tool ${command.name}`,
       );
 
       this.publishToChannel({
@@ -637,7 +645,7 @@ export class Agent {
       } catch (error) {
         // Le contenu n'est pas un JSON valide, on lance une erreur
         throw new Error(
-          `Invalid JSON in markdown: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+          `Invalid JSON in markdown: ${error instanceof Error ? error.message : 'Unknown error'}`,
         );
       }
     }

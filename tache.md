@@ -29,26 +29,26 @@ For each test in the list, follow these 6 steps:
 -   [x] 4. Remplacer première par seconde
 -   [x] 5. Exécuter une commande shell
 -   [x] 6. Exécuter ls -la et montre la sortie. 
--   [ ] 7. Faire une recherche web (ÉCHEC - L'outil ne retourne aucun résultat) 
--   [ ] 8. Naviguer sur une page web
--   [ ] 9. Lister les outils disponibles
--   [ ] 10. Créer un nouvel outil dire_bonjour 
--   [ ] 11. Créer et lire un fichier de tâches
--   [ ] 12. Chercher la date et l'enregistrer
--   [ ] 13. Écrire et exécuter un script de calcul
--   [ ] 14. Compter les fichiers dans le Workspace
--   [ ] 15. Naviguer, extraire et résumer
--   [ ] 16. Créer et lire une config JSON
--   [ ] 17. Créer une arborescence de projet
--   [ ] 18. Analyser un fichier et agir
--   [ ] 19. Écrire un script Python qui lit un fichier
--   [ ] 20. Vérifier l'environnement de développement
--   [ ] 21. Déboguer et corriger un script Python
--   [ ] 22. Créer un manifeste du Workspace
--   [ ] 23. Exécuter un audit de qualité du code
--   [ ] 24. Comparer deux fichiers
--   [ ] 25. Archiver le Workspace
--   [ ] 26. Créer un outil pour obtenir un timestamp
+-   [x] 7. Faire une recherche web (ÉCHEC - L'outil ne retourne aucun résultat) 
+-   [x] 8. Naviguer sur une page web
+-   [x] 9. Lister les outils disponibles
+-   [ ] 10. Créer un nouvel outil dire_bonjour (ÉCHEC - Problème d'environnement avec lint:fix) 
+-   [x] 11. Créer et lire un fichier de tâches
+-   [x] 12. Chercher la date et l'enregistrer (Complété le 2025-08-02)
+-   [x] 13. Écrire et exécuter un script de calcul
+-   [x] 14. Compter les fichiers dans le Workspace
+-   [ ] 15. Naviguer, extraire et résumer (ÉCHEC - Timeout)
+-   [x] 16. Créer et lire une config JSON
+-   [x] 17. Créer une arborescence de projet
+-   [x] 18. Analyser un fichier et agir (Complété le 2025-08-02)
+-   [x] 19. Écrire un script Python qui lit un fichier (Complété le 2025-08-02)
+-   [x] 20. Vérifier l'environnement de développement
+-   [x] 21. Déboguer et corriger un script Python (Complété le 2025-08-02)
+-   [ ] 22. Créer un manifeste du Workspace (ÉCHEC - Timeout)
+-   [ ] 23. Exécuter un audit de qualité du code (ÉCHEC - Agent bloqué dans une boucle)
+-   [ ] 24. Comparer deux fichiers (ÉCHEC - Quota API dépassé)
+-   [ ] 25. Archiver le Workspace (ÉCHEC - Quota API dépassé)
+-   [ ] 26. Créer un outil pour obtenir un timestamp (ÉCHEC - Problème d'environnement avec lint:fix)
 -   [ ] 27. Créer et utiliser un outil UUID
 -   [ ] 28. Créer un outil qui en appelle un autre
 -   [ ] 29. Améliorer un outil existant

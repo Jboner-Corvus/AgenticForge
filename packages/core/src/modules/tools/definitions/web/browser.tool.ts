@@ -1,13 +1,11 @@
-/// <reference types="playwright" />
-
 import type { Page } from 'playwright';
-import { z } from 'zod';
-import { fileURLToPath } from 'url';
-import path from 'path';
 
-import { getBrowser } from './browserManager.js';
-import { getRedisClientInstance } from '../../../../modules/redis/redisClient.js';
+import { z } from 'zod';
+
 import type { Ctx, Tool } from '../../../../types.js';
+
+import { getRedisClientInstance } from '../../../../modules/redis/redisClient.js';
+import { getBrowser } from './browserManager.js';
 
 export const parameters = z.object({
   url: z.string().url().describe('The URL to navigate to.'),

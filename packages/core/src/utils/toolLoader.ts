@@ -50,8 +50,7 @@ export async function _internalLoadTools(): Promise<void> {
         `[_internalLoadTools] Successfully loaded tool file: ${file}`,
       );
     }
-  }
-  catch (error) {
+  } catch (error) {
     getLogger().error({
       ...getErrDetails(error),
       logContext:
@@ -92,14 +91,21 @@ export async function getTools(): Promise<Tool[]> {
 
 // Fonction pour obtenir dynamiquement le répertoire des outils
 export function getToolsDir(): string {
+  // Check if TOOLS_PATH environment variable is set (used in tests)
+  if (process.env.TOOLS_PATH) {
+    return process.env.TOOLS_PATH;
+  }
+
   getLogger().debug(`[getToolsDir] Running in dist: ${runningInDist}`);
   getLogger().debug(`[getToolsDir] __dirname: ${__dirname}`);
   getLogger().debug(`[getToolsDir] process.cwd(): ${process.cwd()}`);
-  getLogger().debug(`[getToolsDir] process.env.NODE_ENV: ${process.env.NODE_ENV}`);
+  getLogger().debug(
+    `[getToolsDir] process.env.NODE_ENV: ${process.env.NODE_ENV}`,
+  );
 
   const toolsPath = runningInDist
     ? path.resolve(__dirname, 'modules', 'tools', 'definitions')
-    : path.resolve(__dirname, '..', 'src', 'modules', 'tools', 'definitions');
+    : path.resolve(__dirname, '..', 'modules', 'tools', 'definitions');
 
   getLogger().debug(`[getToolsDir] Constructed tools path: ${toolsPath}`);
   return toolsPath;
@@ -127,8 +133,7 @@ async function findToolFiles(
         files.push(fullPath);
       }
     }
-  }
-  catch (error) {
+  } catch (error) {
     const errDetails = getErrDetails(error);
     getLogger().error({
       ...errDetails,
@@ -147,13 +152,23 @@ async function loadToolFile(file: string): Promise<void> {
   logger.info({ file }, `[loadToolFile] Attempting to load tool file.`);
   try {
     const module = await import(`${path.resolve(file)}?v=${Date.now()}`); // Cache-busting
-    logger.info({ file, moduleExports: Object.keys(module) }, `[loadToolFile] Successfully imported module.`);
+    logger.info(
+      { file, moduleExports: Object.keys(module) },
+      `[loadToolFile] Successfully imported module.`,
+    );
 
     for (const exportName in module) {
       const exportedItem = module[exportName];
 
-      if (typeof exportedItem === 'object' && exportedItem !== null && 'name' in exportedItem) {
-        logger.info({ exportName, file }, `[loadToolFile] Found potential tool export.`);
+      if (
+        typeof exportedItem === 'object' &&
+        exportedItem !== null &&
+        'name' in exportedItem
+      ) {
+        logger.info(
+          { exportName, file },
+          `[loadToolFile] Found potential tool export.`,
+        );
         const parsedTool = toolSchema.safeParse(exportedItem);
 
         if (parsedTool.success) {
@@ -161,15 +176,21 @@ async function loadToolFile(file: string): Promise<void> {
           toolRegistry.register(tool);
           loadedToolFiles.add(file);
           fileToToolNameMap.set(file, tool.name);
-          logger.info({ file, toolName: tool.name }, `[loadToolFile] Successfully registered tool.`);
+          logger.info(
+            { file, toolName: tool.name },
+            `[loadToolFile] Successfully registered tool.`,
+          );
         } else {
           logger.warn(
             { errors: parsedTool.error.issues, exportName, file },
-            `[loadToolFile] Skipping invalid tool export due to Zod schema mismatch.`
+            `[loadToolFile] Skipping invalid tool export due to Zod schema mismatch.`,
           );
         }
       } else {
-        logger.debug({ exportName, file }, `[loadToolFile] Skipping non-tool export.`);
+        logger.debug(
+          { exportName, file },
+          `[loadToolFile] Skipping non-tool export.`,
+        );
       }
     }
   } catch (error) {

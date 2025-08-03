@@ -9,7 +9,6 @@ import { Agent } from './modules/agent/agent.js';
 import { getRedisClientInstance } from './modules/redis/redisClient.js';
 import { SessionManager } from './modules/session/sessionManager.js';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.js';
-import { Tool } from './types.js';
 import { AppError, getErrDetails, UserError } from './utils/errorUtils.js';
 import { getTools } from './utils/toolLoader.js';
 
@@ -31,12 +30,7 @@ export async function initializeWorker(
     'tasks',
     async (_job) => {
       if (_job.name === 'process-message') {
-        return processJob(
-          _job,
-          _jobQueue,
-          sessionManager,
-          redisConnection,
-        );
+        return processJob(_job, _jobQueue, sessionManager, redisConnection);
       }
 
       if (_job.name === 'execute-shell-command-detached') {
@@ -129,6 +123,8 @@ export async function initializeWorker(
     {
       concurrency: config.WORKER_CONCURRENCY,
       connection: redisConnection,
+      maxStalledCount: config.WORKER_MAX_STALLED_COUNT,
+      stalledInterval: config.WORKER_STALLED_INTERVAL_MS,
     },
   );
 
@@ -195,7 +191,25 @@ export async function processJob(
           log: log,
           reportProgress: async () => {},
           session: session,
-          streamContent: async () => {},
+          streamContent: async (data: { content: string; type: string }) => {
+            if (data.type === 'tool_code_image') {
+              redisConnection.publish(
+                channel,
+                JSON.stringify({
+                  content: data.content,
+                  type: 'tool_code_image',
+                }),
+              );
+            } else {
+              redisConnection.publish(
+                channel,
+                JSON.stringify({
+                  content: data.content,
+                  type: 'tool_code',
+                }),
+              );
+            }
+          },
           taskQueue: _jobQueue,
         },
       );

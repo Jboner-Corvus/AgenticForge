@@ -56,6 +56,8 @@ const configSchema = z.object({
   TAVILY_API_KEY: z.string().optional(),
   WEBHOOK_SECRET: z.string().optional(),
   WORKER_CONCURRENCY: z.coerce.number().default(5),
+  WORKER_MAX_STALLED_COUNT: z.coerce.number().default(3),
+  WORKER_STALLED_INTERVAL_MS: z.coerce.number().default(30000), // 30 seconds
   WORKER_WORKSPACE_PATH: z.string().optional(),
   // Standardized workspace path
   WORKSPACE_PATH: z.string().default('/home/demon/agentforge/workspace'),

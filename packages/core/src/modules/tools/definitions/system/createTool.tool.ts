@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../../../types.js';
 
-import { AppError, UserError, getErrDetails } from '../../../../utils/errorUtils.js';
+import { getErrDetails } from '../../../../utils/errorUtils.js';
 import { runQualityGate } from '../../../../utils/qualityGate.js';
 
 export const parameters = z.object({
@@ -67,6 +67,7 @@ export const createToolTool: Tool<typeof parameters> = {
         .replace('{{toolVarName}}Params', `${toolVarName}Params`)
         .replace('{{{execute_function}}}', execute_function);
 
+      // Ensure the directory exists before writing the file
       await fs.mkdir(GENERATED_TOOLS_DIR, { recursive: true });
       await fs.writeFile(toolFilePath, toolFileContent, 'utf-8');
       let output = `Nouveau fichier d'outil '${toolFileName}' créé.\n`;
@@ -79,7 +80,12 @@ export const createToolTool: Tool<typeof parameters> = {
         ctx.log.error('Le Quality Gate a échoué', {
           output: qualityResult.output,
         });
-        return { erreur: `Le Quality Gate a échoué: ${qualityResult.output}` };
+        // Even if quality gate fails, we should still inform the user about the file creation
+        return {
+          message: `Outil '${tool_name}' créé mais le Quality Gate a échoué.`,
+          output,
+          qualityGateResult: qualityResult,
+        };
       }
 
       const successMessage = `Outil '${tool_name}' créé et validé.`;

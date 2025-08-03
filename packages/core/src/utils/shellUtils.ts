@@ -94,6 +94,3 @@ export async function executeShellCommand(
     });
   });
 }
-
-
-

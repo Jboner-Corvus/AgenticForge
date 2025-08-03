@@ -6,9 +6,6 @@ import type { Ctx, Tool } from '../../../../types.js';
 
 import { config } from '../../../../config.js';
 
-
-
-
 export const writeFileParams = z.object({
   content: z.string().describe('The full content to write to the file.'),
   path: z
