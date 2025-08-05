@@ -24,6 +24,11 @@ export default defineConfig(({ mode }) => {
         ...(isIntegration ? [] : integrationTestPaths) // Exclude integration tests from unit runs
       ],
       setupFiles: ['src/test/setup.ts'],
+      // Reduce verbosity
+      reporters: ['default'],
+      silent: true,
+      hideSkippedTests: true,
+      logHeapUsage: false,
     },
   };
 });

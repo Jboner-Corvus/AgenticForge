@@ -5,8 +5,8 @@ import { Language, Translations } from '../types/language';
 import { LanguageContext } from './LanguageContext';
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
-  const [language, setLanguage] = useState<Language>('fr');
-  const [translations, setTranslations] = useState<Translations>(fr);
+  const [language, setLanguage] = useState<Language>('en');
+  const [translations, setTranslations] = useState<Translations>(en);
 
   useEffect(() => {
     const savedLanguage = localStorage.getItem('language') as Language;

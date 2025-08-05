@@ -49,6 +49,7 @@ export const UserInput = () => {
             size="icon" 
             disabled={!inputValue.trim()}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-primary hover:bg-primary/90 h-9 w-9"
+            aria-label="Send message"
           >
             <Send className="h-5 w-5" />
           </Button>

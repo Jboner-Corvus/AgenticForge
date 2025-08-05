@@ -1,4 +1,5 @@
 import type { AppState } from '../store';
+import { vi } from 'vitest';
 
 export const mockState: AppState = {
   addDebugLog: vi.fn(),
@@ -112,3 +113,13 @@ export const mockState: AppState = {
   currentPage: 'chat',
   setCurrentPage: vi.fn(),
 };
+
+// Create a proper mock for useStore that includes getState
+const useStoreMock = Object.assign(
+  vi.fn((selector) => selector(mockState)),
+  {
+    getState: vi.fn(() => mockState),
+  }
+);
+
+export { useStoreMock as useStore };

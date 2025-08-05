@@ -278,13 +278,45 @@ run_format() {
 run_typecheck() {
     cd "${SCRIPT_DIR}"
     echo -e "${COLOR_YELLOW}Vérification des types TypeScript...${NC}"
-    pnpm run typecheck
+    local output_file
+    output_file=$(mktemp)
+    pnpm run typecheck >"$output_file" 2>&1
+    local exit_code=$?
+    echo "$output_file" > /tmp/typecheck_output_file
+    if [ $exit_code -ne 0 ]; then
+        cat "$output_file"
+    fi
+    return $exit_code
 }
 
 run_unit_tests() {
     cd "${SCRIPT_DIR}"
     echo -e "${COLOR_YELLOW}Lancement des tests unitaires...${NC}"
-    pnpm run test:unit
+    # Run tests and capture output
+    local output_file=$(mktemp)
+    pnpm run test:unit >"$output_file" 2>&1
+    local exit_code=$?
+    
+    # Show summary information
+    echo "=== Résumé des tests unitaires ==="
+    grep -E "(Test Files|Tests|Duration)" "$output_file" | tail -3
+    
+    # Show any failures
+    if [ $exit_code -ne 0 ]; then
+        echo ""
+        echo -e "${COLOR_RED}Erreurs détectées :${NC}"
+        # Extract just the key failure information without verbose logs
+        grep -E "(FAILED|ERROR|failed|erreur)" "$output_file" | head -10
+    fi
+    
+    # Save error details for report generation
+    echo "$output_file" > /tmp/unit_test_output_file
+    
+    # Clean up temp file
+    # rm -f "$output_file"  # Don't remove yet, needed for report generation
+    
+    # Return the actual exit code
+    return $exit_code
 }
 
 run_integration_tests() {
@@ -293,8 +325,15 @@ run_integration_tests() {
     echo -e "${COLOR_YELLOW}Démarrage des services Docker pour l'environnement de test...${NC}"
     start_services
     echo -e "${COLOR_GREEN}Services Docker démarrés. Lancement des tests...${NC}"
-    pnpm run test:integration
+    
+    # Run tests with limited output, but preserve full details in reports
+    local output
+    output=$(pnpm run test:integration 2>&1)
     local test_exit_code=$?
+    
+    # Show only summary information (last 10 lines instead of 20)
+    echo "$output" | tail -10
+    
     echo -e "${COLOR_YELLOW}Tests terminés. Arrêt des services Docker...${NC}"
     stop_services
     return $test_exit_code
@@ -304,34 +343,59 @@ run_all_tests() {
     run_unit_tests && run_integration_tests
 }
 
-run_small_checks() {
-    cd "${SCRIPT_DIR}"
-    local start_time=$(date +%s)
-    echo -e "${COLOR_YELLOW}Lancement des vérifications rapides (Lint, TypeCheck)...${NC}"
-    
-    if run_lint && run_typecheck; then
-        write_small_checks_report
-        local end_time=$(date +%s)
-        local duration=$((end_time - start_time))
-        echo -e "${COLOR_GREEN}✓ Toutes les vérifications rapides ont été exécutées avec succès en ${duration} secondes.${NC}"
-        return 0
-    else
-        local end_time=$(date +%s)
-        local duration=$((end_time - start_time))
-        echo -e "${COLOR_RED}✗ Les vérifications rapides ont échoué après ${duration} secondes.${NC}"
+_run_core_checks() {
+    echo -e "${COLOR_YELLOW}Exécution du linter...${NC}"
+    if ! run_lint; then
+        echo -e "${COLOR_RED}✗ Le linter a échoué.${NC}"
+        write_all_checks_report "failed" "lint"
         return 1
     fi
+    
+    echo -e "${COLOR_YELLOW}Vérification des types...${NC}"
+    if ! run_typecheck; then
+        echo -e "${COLOR_RED}✗ La vérification des types a échoué.${NC}"
+        write_all_checks_report "failed" "typecheck"
+        return 1
+    fi
+    
+    return 0
 }
 
-write_small_checks_report() {
-    local report_file="small-checks.md"
-    echo -e "${COLOR_YELLOW}Génération du rapport des vérifications rapides...${NC}"
+run_small_checks() {
+    cd "${SCRIPT_DIR}"
+    local start_time
+    start_time=$(date +%s)
+    echo -e "${COLOR_YELLOW}Lancement des vérifications rapides (Lint, TypeCheck)...${NC}"
+    
+    if ! _run_core_checks; then
+        local end_time
+        end_time=$(date +%s)
+        local duration=$((end_time - start_time))
+        echo -e "${COLOR_RED}✗ Les vérifications rapides ont échoué après ${duration} secondes.${NC}"
+        echo -e "${COLOR_CYAN}Consultez le fichier all-checks.md pour le rapport.${NC}"
+        return 1
+    fi
+    
+    write_all_checks_report "success" "small_checks"
+    local end_time
+    end_time=$(date +%s)
+    local duration=$((end_time - start_time))
+    echo -e "${COLOR_GREEN}✓ Toutes les vérifications rapides ont été exécutées avec succès en ${duration} secondes.${NC}"
+    echo -e "${COLOR_CYAN}Consultez le fichier all-checks.md pour le rapport.${NC}"
+    return 0
+}
+
+write_all_checks_report() {
+    local status=$1  # "success" or "failed"
+    local failed_step=$2  # "lint", "typecheck", or "unit_tests"
+    local report_file="all-checks.md"
+    echo -e "${COLOR_YELLOW}Génération du rapport complet des vérifications...${NC}"
     
     # Create markdown report header
     cat > "$report_file" << 'EOF'
-# Rapport des vérifications rapides
+# Rapport complet des vérifications
 
-Ce document résume les résultats des vérifications rapides (Lint, TypeCheck).
+Ce document résume les résultats de toutes les vérifications (Lint, TypeCheck, Tests Unitaires).
 
 ---
 
@@ -340,35 +404,179 @@ Ce document résume les résultats des vérifications rapides (Lint, TypeCheck).
 EOF
 
     # Add status indicators
-    echo "✅ Lint" >> "$report_file"
-    echo "✅ TypeCheck" >> "$report_file"
+    if [ "$failed_step" = "lint" ]; then
+        echo "❌ Lint" >> "$report_file"
+    else
+        echo "✅ Lint" >> "$report_file"
+    fi
     
+    if [ "$failed_step" = "typecheck" ]; then
+        echo "❌ TypeCheck" >> "$report_file"
+    else
+        echo "✅ TypeCheck" >> "$report_file"
+    fi
+    
+    if [ "$status" = "success" ] || [ "$failed_step" != "unit_tests" ]; then
+        echo "✅ Tests Unitaires" >> "$report_file"
+    else
+        echo "❌ Tests Unitaires" >> "$report_file"
+    fi
+
     echo "" >> "$report_file"
     echo "---" >> "$report_file"
     echo "" >> "$report_file"
-    echo "Toutes les vérifications rapides ont été exécutées avec succès." >> "$report_file"
+
+    if [ "$status" = "success" ]; then
+        echo "Toutes les vérifications ont été exécutées avec succès." >> "$report_file"
+    else
+        echo "## Détails des erreurs" >> "$report_file"
+        echo "" >> "$report_file"
+        
+        if [ "$failed_step" = "unit_tests" ] && [ -f /tmp/unit_test_output_file ]; then
+            local output_file
+            output_file=$(cat /tmp/unit_test_output_file)
+            
+            local failed_tests
+            failed_tests=$(grep -cE "FAIL|ERROR" "$output_file" | grep -v "failed" || echo 0)
+            echo "### Tests Unitaires: $failed_tests erreur(s) détectée(s)" >> "$report_file"
+            echo "" >> "$report_file"
+            
+            awk \
+            \
+            '\
+            function end_block() {
+                if (in_error_block) {
+                    print "```"
+                    in_error_block = 0
+                }
+            }
+            BEGIN { error_num = 1; in_error_block = 0; }
+            / FAIL | ERROR / {
+                end_block()
+                print "\n#### Erreur " error_num++ "\n"
+                print "**Description:**"
+                print "```"
+                print $0
+                in_error_block = 1
+                next
+            }
+            /^(Test Files:|Tests:|Duration:)/ {
+                end_block()
+                print "\n---\n**Résumé des tests:**\n"
+                print $0
+                next
+            }
+            in_error_block {
+                print $0
+            }
+            END {
+                end_block()
+            }
+            ' \
+            "$output_file" >> "$report_file"
+
+        elif [ "$failed_step" = "lint" ]; then
+            echo "### Le linter a échoué" >> "$report_file"
+            echo "Veuillez vérifier les logs de la console pour les détails." >> "$report_file"
+        
+        elif [ "$failed_step" = "typecheck" ] && [ -f /tmp/typecheck_output_file ]; then
+            local output_file
+            output_file=$(cat /tmp/typecheck_output_file)
+            echo "### La vérification des types a échoué" >> "$report_file"
+            echo "" >> "$report_file"
+            
+            local error_count
+            error_count=$(grep -cE "error TS[0-9]{4,}" "$output_file" || echo 0)
+            echo "Nombre total d'erreurs : $error_count" >> "$report_file"
+            echo "" >> "$report_file"
+
+            echo "**Détails des erreurs :**" >> "$report_file"
+            echo '```' >> "$report_file"
+            grep -E "error TS[0-9]{4,}|found [0-9]+ error" "$output_file" >> "$report_file"
+            echo '```' >> "$report_file"
+
+        else
+            echo "### Une erreur inattendue est survenue" >> "$report_file"
+        fi
+        echo "" >> "$report_file"
+        echo "Certaines vérifications ont échoué." >> "$report_file"
+    fi
+    
     echo "" >> "$report_file"
+    echo "---" >> "$report_file"
     echo "Généré le: $(date)" >> "$report_file"
     
-    echo -e "${COLOR_GREEN}✓ Rapport des vérifications rapides enregistré dans $report_file${NC}"
+    echo -e "${COLOR_GREEN}✓ Rapport complet des vérifications enregistré dans $report_file${NC}"
 }
+
 
 run_all_checks() {
     cd "${SCRIPT_DIR}"
-    local start_time=$(date +%s)
+    local start_time
+    start_time=$(date +%s)
     echo -e "${COLOR_YELLOW}Lancement de TOUTES les vérifications (Lint, TypeCheck, Tests Unitaires)...${NC}"
-    
-    if run_lint && run_typecheck && run_unit_tests; then
-        local end_time=$(date +%s)
-        local duration=$((end_time - start_time))
-        echo -e "${COLOR_GREEN}✓ Toutes les vérifications ont été exécutées avec succès en ${duration} secondes.${NC}"
-        return 0
-    else
-        local end_time=$(date +%s)
-        local duration=$((end_time - start_time))
-        echo -e "${COLOR_RED}✗ Les vérifications ont échoué après ${duration} secondes.${NC}"
+
+    # Fonction pour nettoyer les fichiers temporaires
+    cleanup_temp_files() {
+        if [ -f /tmp/unit_test_output_file ]; then
+            rm -f "$(cat /tmp/unit_test_output_file 2>/dev/null)"
+            rm -f /tmp/unit_test_output_file
+        fi
+        if [ -f /tmp/typecheck_output_file ]; then
+            rm -f "$(cat /tmp/typecheck_output_file 2>/dev/null)"
+            rm -f /tmp/typecheck_output_file
+        fi
+    }
+
+    # Assurer le nettoyage à la sortie du script
+    trap cleanup_temp_files EXIT
+
+    # Exécution du linter
+    echo -e "${COLOR_YELLOW}Exécution du linter...${NC}"
+    if ! run_lint; then
+        echo -e "${COLOR_RED}✗ Le linter a échoué.${NC}"
+        write_all_checks_report "failed" "lint"
         return 1
     fi
+    
+    # Vérification des types
+    echo -e "${COLOR_YELLOW}Vérification des types...${NC}"
+    if ! run_typecheck; then
+        echo -e "${COLOR_RED}✗ La vérification des types a échoué.${NC}"
+        write_all_checks_report "failed" "typecheck"
+        return 1
+    fi
+    
+    # Exécution des tests unitaires
+    echo -e "${COLOR_YELLOW}Exécution des tests unitaires...${NC}"
+    if ! run_unit_tests; then
+        echo -e "${COLOR_RED}✗ Les tests unitaires ont échoué.${NC}"
+        write_all_checks_report "failed" "unit_tests"
+        local end_time
+        end_time=$(date +%s)
+        local duration=$((end_time - start_time))
+        
+        if [ -f /tmp/unit_test_output_file ]; then
+            local output_file
+            output_file=$(cat /tmp/unit_test_output_file)
+            local failed_tests
+            failed_tests=$(grep -cE "(failed|FAILED)" "$output_file")
+            echo -e "${COLOR_RED}✗ $failed_tests erreurs de tests unitaires détectées.${NC}"
+        fi
+        
+        echo -e "${COLOR_RED}✗ Certaines vérifications ont échoué après ${duration} secondes.${NC}"
+        echo -e "${COLOR_CYAN}Consultez le fichier all-checks.md pour une liste complète des vérifications.${NC}"
+        return 1
+    fi
+    
+    # Succès
+    write_all_checks_report "success"
+    local end_time
+    end_time=$(date +%s)
+    local duration=$((end_time - start_time))
+    echo -e "${COLOR_GREEN}✓ Toutes les vérifications ont été exécutées avec succès en ${duration} secondes.${NC}"
+    echo -e "${COLOR_CYAN}Consultez le fichier all-checks.md pour une liste complète des vérifications.${NC}"
+    return 0
 }
 
 # ==============================================================================
@@ -385,27 +593,18 @@ show_menu() {
     echo -e "    ${COLOR_CYAN}Docker & Services${NC}"
     printf "    1) ${COLOR_GREEN}🟢 Démarrer${NC}            5) ${COLOR_BLUE}📊 Logs Worker${NC}\n"
     printf "    2) ${COLOR_YELLOW}🔄 Redémarrer tout${NC}     6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\n"
-    printf "    3) ${COLOR_RED}🔴 Arrêter${NC}              7) ${COLOR_BLUE}🔨 Rebuild Docker${NC}
-"
-    printf "    4) ${COLOR_CYAN}⚡ Statut${NC}              8) ${COLOR_RED}🧹 Nettoyer Docker${NC}
-"
-    printf "    9) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}    15) ${COLOR_BLUE}🐳 Logs Docker${NC}
-"
-    printf "   20) ${COLOR_BLUE}🔨 Rebuild Worker${NC}
-"
-    printf "   21) ${COLOR_BLUE}🔨 Rebuild All${NC}
-"
+    printf "    3) ${COLOR_RED}🔴 Arrêter${NC}              7) ${COLOR_BLUE}🔨 Rebuild Docker${NC}\n"
+    printf "    4) ${COLOR_CYAN}⚡ Statut${NC}              8) ${COLOR_RED}🧹 Nettoyer Docker${NC}\n"
+    printf "    9) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}    15) ${COLOR_BLUE}🐳 Logs Docker${NC}\n"
+    printf "   20) ${COLOR_BLUE}🔨 Rebuild Worker${NC}\n"
+    printf "   21) ${COLOR_BLUE}🔨 Rebuild All${NC}\n"
     echo ""
     echo -e "    ${COLOR_CYAN}Développement & Vérifications${NC}"
     printf "   10) ${COLOR_BLUE}🔍 Lint${NC}                 13) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
-    printf "   11) ${COLOR_BLUE}✨ Format${NC}               14) ${COLOR_BLUE}✅ Checks Rapides (Lint, Types, Tests Unitaires)${NC}
-"
-    printf "   12) ${COLOR_BLUE}🧪 Tests (Unitaires)${NC}     17) ${COLOR_BLUE}🚀 TOUS les Checks (incl. Tests d'Intégration)${NC}
-"
-    printf "   18) ${COLOR_BLUE}🧪 Tests (Intégration)${NC}
-"
-    printf "   19) ${COLOR_BLUE}🧪 Lancer TOUS les tests${NC}
-"
+    printf "   11) ${COLOR_BLUE}✨ Format${NC}               14) ${COLOR_BLUE}✅ Checks Rapides (Lint, Types)${NC}\n"
+    printf "   12) ${COLOR_BLUE}🧪 Tests (Unitaires)${NC}     17) ${COLOR_BLUE}🚀 TOUS les Checks (Lint, Types, Tests Unitaires)${NC}\n"
+    printf "   18) ${COLOR_BLUE}🧪 Tests (Intégration)${NC}\n"
+    printf "   19) ${COLOR_BLUE}🧪 Lancer TOUS les tests${NC}\n"
     echo ""
     printf "   16) ${COLOR_RED}🚪 Quitter${NC}\n"
     echo ""

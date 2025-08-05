@@ -31,6 +31,11 @@ export default defineConfig(({ mode }) => {
         enabled: true,
         include: ['src/**/*.ts', 'src/**/*.tsx'],
       },
+      // Reduce verbosity
+      reporters: ['default'],
+      silent: true,
+      hideSkippedTests: true,
+      logHeapUsage: false,
     },
     resolve: {
       alias: {
