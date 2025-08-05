@@ -99,7 +99,8 @@ describe('useAgentStream', () => {
     });
 
     // Get the EventSource instance from the mock
-    const eventSourceInstance = (sendMessage as Mock).mock.results[0].value.eventSource;
+    const mockReturn = (sendMessage as Mock).mock.results[0].value;
+    const eventSourceInstance = mockReturn.eventSource;
     const onMessage = eventSourceInstance.onmessage;
 
     act(() => {
@@ -122,7 +123,8 @@ describe('useAgentStream', () => {
       await result.current.startAgent();
     });
 
-    const eventSourceInstance = (sendMessage as Mock).mock.results[0].value.eventSource;
+    const mockReturn = (sendMessage as Mock).mock.results[0].value;
+    const eventSourceInstance = mockReturn.eventSource;
     const onMessage = eventSourceInstance.onmessage;
 
     act(() => {
@@ -147,7 +149,8 @@ describe('useAgentStream', () => {
       await result.current.startAgent();
     });
 
-    const eventSourceInstance = (sendMessage as Mock).mock.results[0].value.eventSource;
+    const mockReturn = (sendMessage as Mock).mock.results[0].value;
+    const eventSourceInstance = mockReturn.eventSource;
     const onMessage = eventSourceInstance.onmessage;
 
     act(() => {
@@ -222,7 +225,7 @@ describe('useAgentStream', () => {
       await result.current.startAgent();
     });
 
-    const eventSourceInstance = (EventSourcePolyfill as unknown as Mock).mock.results[0].value;
+    const eventSourceInstance = (sendMessage as Mock).mock.results[0].value.eventSource;
     const onMessage = eventSourceInstance.onmessage;
 
     act(() => {
@@ -247,7 +250,7 @@ describe('useAgentStream', () => {
       await result.current.startAgent();
     });
 
-    const eventSourceInstance = (EventSourcePolyfill as unknown as Mock).mock.results[0].value;
+    const eventSourceInstance = (sendMessage as Mock).mock.results[0].value.eventSource;
 
     await act(async () => {
       await result.current.interruptAgent();
@@ -271,7 +274,7 @@ describe('useAgentStream', () => {
       await result.current.startAgent();
     });
 
-    const eventSourceInstance = (EventSourcePolyfill as unknown as Mock).mock.results[0].value;
+    const eventSourceInstance = (sendMessage as Mock).mock.results[0].value.eventSource;
     const onMessage = eventSourceInstance.onmessage;
 
     act(() => {
@@ -295,7 +298,7 @@ describe('useAgentStream', () => {
       await result.current.startAgent();
     });
 
-    const eventSourceInstance = (EventSourcePolyfill as unknown as Mock).mock.results[0].value;
+    const eventSourceInstance = (sendMessage as Mock).mock.results[0].value.eventSource;
     const onMessage = eventSourceInstance.onmessage;
 
     // Simulate an initial tool_result message
@@ -327,7 +330,7 @@ describe('useAgentStream', () => {
       await result.current.startAgent();
     });
 
-    const eventSourceInstance = (EventSourcePolyfill as unknown as Mock).mock.results[0].value;
+    const eventSourceInstance = (sendMessage as Mock).mock.results[0].value.eventSource;
     const onMessage = eventSourceInstance.onmessage;
 
     // Simulate a tool_stream message without a preceding tool_result
@@ -352,13 +355,13 @@ describe('useAgentStream', () => {
       await result.current.startAgent();
     });
 
-    const eventSourceInstance = (EventSourcePolyfill as unknown as Mock).mock.results[0].value;
+    const eventSourceInstance = (sendMessage as Mock).mock.results[0].value.eventSource;
     const onMessage = eventSourceInstance.onmessage;
 
     // Simulate a tool_call message with a different toolName
     act(() => {
       if (onMessage) {
-        onMessage.call(eventSourceInstance, { data: JSON.stringify({ type: 'tool_call', toolName: 'anotherTool', params: {} }), type: 'message', lastEventId: '', target: null } as MessageEvent);
+        onMessage.call(eventSourceInstance, { data: JSON.stringify({ type: 'tool.start', data: { name: 'anotherTool', args: {} } }), type: 'message', lastEventId: '', target: null } as MessageEvent);
       }
     });
 
@@ -384,7 +387,7 @@ describe('useAgentStream', () => {
       await result.current.startAgent();
     });
 
-    const eventSourceInstance = (EventSourcePolyfill as unknown as Mock).mock.results[0].value;
+    const eventSourceInstance = (sendMessage as Mock).mock.results[0].value.eventSource;
     const onMessage = eventSourceInstance.onmessage;
 
     // Simulate an initial tool_result message with a non-executeShellCommand toolName
