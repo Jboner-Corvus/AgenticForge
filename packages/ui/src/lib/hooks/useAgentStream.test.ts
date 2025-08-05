@@ -175,7 +175,8 @@ describe('useAgentStream', () => {
       await result.current.startAgent();
     });
 
-    const eventSourceInstance = (sendMessage as Mock).mock.results[0].value.eventSource;
+    const mockReturn = (sendMessage as Mock).mock.results[0].value;
+    const eventSourceInstance = mockReturn.eventSource;
     const onMessage = eventSourceInstance.onmessage;
 
     act(() => {
