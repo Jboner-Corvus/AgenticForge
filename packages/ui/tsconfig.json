@@ -32,6 +32,6 @@
     "moduleDetection": "force",
     "sourceMap": true
   },
-  "include": ["src", "tsconfig.vitest.json"],
+  "include": ["src", "tsconfig.vitest.json", "src/**/*.test.tsx", "src/**/__tests__/**/*.tsx"],
   "exclude": ["node_modules", "dist"]
 }

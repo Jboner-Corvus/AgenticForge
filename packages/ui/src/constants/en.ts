@@ -152,5 +152,9 @@ export const en = {
   agentHtmlOutput: "Agent HTML Output",
   agentUrlOutput: "Agent URL Output",
   agentOutputCanvas: "Agent Output Canvas",
+  welcomeTitle: "Welcome to AgenticForge!",
+  welcomeMessage: "To get started, please set up your authentication and LLM API keys.",
+  setupAuthToken: "Set up Auth Token",
+  setupLLMKeys: "Set up LLM Keys",
   history: "History",
 };

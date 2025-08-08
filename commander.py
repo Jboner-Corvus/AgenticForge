@@ -22,7 +22,7 @@ class AgenticForgeTester:
 
     def __init__(self):
         """Initialize the tester with configuration."""
-        self.api_url = "http://192.168.2.56:8080/api"
+        self.api_url = "http://localhost:8080/api"
         self.api_token = "Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0"
         self.poll_interval = 2  # secondes
         self.poll_timeout = 60  # secondes
@@ -193,139 +193,160 @@ class RunShExecutor:
     """Class for executing run.sh commands via API."""
 
     def __init__(self):
-        """Initialize with API base URL."""
-        self.run_sh_api_base_url = "http://localhost:3005"
-        self.endpoint_map = {
-            "start": "/start",
-            "stop": "/stop",
-            "restart": "/restart",
-            "status": "/status",
-            "logs_worker": "/logs/worker",
-            "logs_docker": "/logs/docker",
-            "rebuild": "/rebuild-docker",
-            "rebuild_docker": "/rebuild-docker",
-            "rebuild_worker": "/rebuild-worker",
-            "rebuild_all": "/rebuild-all",
-            "clean_docker": "/clean-docker",
-            "restart_worker": "/restart/worker",
-            "lint": "/lint",
-            "format": "/format",
-            "test_integration": "/test/integration",
-            "unit_tests": "/test/unit",
-            "typecheck": "/typecheck",
-            "all_checks": "/all-checks",
-            "unit_checks": "/unit-checks",
-            "small_checks": "/small-checks",
-        }
+        """Initialize with API configuration."""
+        self.api_base_url = "http://localhost:3005"
+        self.script_dir = os.path.dirname(os.path.abspath(__file__))
 
     def execute_command(self, command: str, stream: bool = False, *args) -> None:
         """
         Execute a run.sh command via API.
         """
-        # Use streaming endpoint if requested
-        endpoint = self.endpoint_map.get(command)
+        # Map commands to API endpoints
+        endpoint_map = {
+            "start": "start",
+            "stop": "stop", 
+            "restart": "restart",
+            "status": "status",
+            "logs_worker": "logs/worker",
+            "logs_docker": "logs/docker",
+            "rebuild": "rebuild",
+            "rebuild_docker": "rebuild-docker",
+            "rebuild_worker": "rebuild-worker",
+            "rebuild_all": "rebuild-all",
+            "clean_docker": "clean-docker",
+            "restart_worker": "restart/worker",
+            "lint": "lint",
+            "format": "format",
+            "test_integration": "test/integration",
+            "unit_tests": "test/unit",
+            "typecheck": "typecheck",
+            "all_checks": "all-checks",
+            "unit_checks": "unit-checks",
+            "small_checks": "small-checks",
+        }
+
+        endpoint = endpoint_map.get(command)
         if not endpoint:
-            print(f"❌ Error: Unknown run.sh command: {command}")
-            print("  Available commands: " + ", ".join(self.endpoint_map.keys()))
+            print(f"❌ Error: Unknown command: {command}")
+            print("  Available commands: " + ", ".join(endpoint_map.keys()))
             return
 
-        # Add /stream prefix for streaming endpoints
+        # Use stream endpoint if stream=True, otherwise use simple endpoint
         if stream:
-            endpoint = "/stream" + endpoint
+            url = f"{self.api_base_url}/stream/{endpoint}"
+            print(f"▶️  Executing streaming command: {url}")
+            self._execute_streaming_request(url, command)
+        else:
+            url = f"{self.api_base_url}/{endpoint}"
+            print(f"▶️  Executing command: {url}")
+            self._execute_simple_request(url, command)
 
-        url = f"{self.run_sh_api_base_url}{endpoint}"
-        print(f"▶️  Executing run.sh command via API: {url}")
-
+    def _execute_simple_request(self, url: str, command: str) -> None:
+        """Execute a simple API request."""
         try:
-            if stream:
-                # Stream the response for real-time output
-                with requests.get(url, stream=True) as response:
-                    response.raise_for_status()
-                    print("✅ Command started. Streaming output:")
-                    for line in response.iter_lines():
-                        if line:
-                            decoded_line = line.decode('utf-8')
-                            if decoded_line.startswith('data: '):
-                                data = json.loads(decoded_line[6:])  # Remove 'data: ' prefix
-                                if data['type'] == 'stdout':
-                                    print(data['data'], end='')
-                                elif data['type'] == 'stderr':
-                                    print(f"STDERR: {data['data']}", end='')
-                                elif data['type'] == 'error':
-                                    print(f"❌ Error: {data['message']}")
-                                elif data['type'] == 'end':
-                                    print(f"\n✅ Command completed with exit code {data['code']}")
-                                    # Check if command succeeded but tests/tasks failed
-                                    if data['code'] == 0:
-                                        # For test commands, check for failures in output
-                                        if command in ["test_integration", "unit_tests", "all_checks", "unit_checks", "small_checks"]:
-                                            print("ℹ **Agent tip:** Even though the command succeeded (exit code 0), check the output above for test failures.")
-                                            print("  If tests failed, examine the logs for detailed error information:")
-                                            print("    - Worker logs: `python commander.py run_sh logs_worker`")
-                                            print("    - Docker logs: `python commander.py run_sh logs_docker`")
-                                    else:
-                                        print("ℹ **Agent tip:** Command failed with non-zero exit code. Check the output above for error details.")
-                                        print("  For troubleshooting:")
-                                        print("    - Check logs: `python commander.py run_sh logs_worker` or `logs_docker`")
-                                        print("    - Restart services: `python commander.py run_sh restart`")
-                                        print("    - Clean and rebuild: `python commander.py run_sh clean_docker` then `rebuild`")
-                            else:
-                                print(decoded_line)
-            else:
-                # Simple execution (backward compatibility)
-                response = requests.get(url)
-                response.raise_for_status()
-                data = response.json()
-                exit_code = data.get("exitCode", 0)
-                
-                if exit_code == 0:
-                    print("✅ Command executed successfully.")
-                else:
-                    print(f"❌ Command failed with exit code {exit_code}.")
-                
+            # Set timeout based on command type
+            timeout = self._get_timeout_for_command(command)
+            timeout_str = f"{timeout//60} minutes" if timeout >= 60 else f"{timeout} seconds"
+            print(f"⏰ Timeout set to: {timeout_str}")
+            
+            response = requests.get(url, timeout=timeout)
+            
+            if response.status_code == 200:
+                print("✅ Command executed successfully.")
+                result = response.json()
                 print("--- STDOUT ---")
-                stdout_content = data.get("stdout", "(empty)")
-                print(stdout_content)
+                print(result.get('stdout', '(empty)'))
                 print("--- STDERR ---")
-                stderr_content = data.get("stderr", "(empty)")
-                print(stderr_content)
-                
-                # Additional tips based on shell command output
-                if stderr_content and stderr_content != "(empty)":
-                    print("ℹ **Agent tip:** The `run.sh` command returned errors. Carefully read the `stderr` output above.")
-                    if "docker" in command or "rebuild" in command or "test-integration" in command:
-                        print("  If the issue is Docker-related, try running `python commander.py run_sh clean_docker` then `rebuild`.")
-                    elif "lint" in command or "format" in command or "typecheck" in command or "checks" in command:
-                        print("  If the issue is code quality-related, run `python commander.py run_sh small_checks` for a quick check.")
-                    print("  A full `restart` (`python commander.py run_sh restart`) can sometimes resolve transient issues.")
-                elif exit_code == 0:
-                    # Command succeeded, but check for test/task failures in output
-                    if command in ["test_integration", "unit_tests", "all_checks", "unit_checks", "small_checks"]:
-                        # Look for failure indicators in test output
-                        failure_indicators = ["FAILED", "failed", "ERROR", "Error", "FAILURE"]
-                        has_failures = any(indicator in stdout_content for indicator in failure_indicators)
+                print(result.get('stderr', '(empty)'))
+            else:
+                print(f"❌ Command failed with status code {response.status_code}.")
+                print("--- ERROR ---")
+                print(response.text)
+        except requests.exceptions.Timeout:
+            timeout_str = f"{timeout//60} minutes" if timeout >= 60 else f"{timeout} seconds"
+            print(f"⏰ Request timed out after {timeout_str}.")
+        except requests.exceptions.ConnectionError:
+            print("❌ Connection error. Make sure the API server is running on http://localhost:3005")
+        except Exception as e:
+            print(f"❌ Error executing command: {e}")
+
+    def _execute_streaming_request(self, url: str, command: str) -> None:
+        """Execute a streaming API request."""
+        try:
+            timeout = self._get_timeout_for_command(command)
+            timeout_str = f"{timeout//60} minutes" if timeout >= 60 else f"{timeout} seconds"
+            print(f"🔄 Starting streaming request (timeout: {timeout_str})...")
+            response = requests.get(url, stream=True, timeout=timeout)
+            
+            if response.status_code != 200:
+                print(f"❌ Command failed with status code {response.status_code}.")
+                print("--- ERROR ---")
+                print(response.text)
+                return
+
+            print("📡 Streaming output:")
+            for line in response.iter_lines():
+                if line:
+                    try:
+                        # Parse Server-Sent Events format
+                        line_str = line.decode('utf-8')
+                        if line_str.startswith('data: '):
+                            data = json.loads(line_str[6:])  # Remove 'data: ' prefix
+                            
+                            if data.get('type') == 'start':
+                                print(f"🚀 Started: {data.get('command', 'Unknown command')}")
+                            elif data.get('type') == 'stdout':
+                                print(f"📤 {data.get('data', '').rstrip()}")
+                            elif data.get('type') == 'stderr':
+                                print(f"🚨 {data.get('data', '').rstrip()}")
+                            elif data.get('type') == 'end':
+                                code = data.get('code', 0)
+                                if code == 0:
+                                    print("✅ Command completed successfully.")
+                                else:
+                                    print(f"❌ Command failed with exit code {code}.")
+                            elif data.get('type') == 'error':
+                                print(f"💥 Error: {data.get('message', 'Unknown error')}")
+                    except (json.JSONDecodeError, UnicodeDecodeError):
+                        # Skip malformed lines
+                        continue
                         
-                        if has_failures:
-                            print("\n⚠️  WARNING: Command succeeded but tests/tasks failed!")
-                            print("  The run.sh command completed successfully, but tests or tasks within it failed.")
-                            print("  This often indicates issues with the implementation or test logic.")
-                            print("\n  📋 Agent tip:")
-                            print("    1. Carefully review the STDOUT output above for specific failure details")
-                            print("    2. Check the worker logs: `python commander.py run_sh logs_worker`")
-                            print("    3. Check the Docker logs: `python commander.py run_sh logs_docker`")
-                            print("    4. Verify the implementation and test logic")
-                            print("    5. Consider restarting the worker: `python commander.py run_sh restart_worker`")
-                            print("    6. If the issue persists, rebuild the worker: `python commander.py run_sh rebuild_worker`")
-                        else:
-                            print("✅ All tests/checks passed successfully.")
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Error calling run.sh API: {e}")
-            if hasattr(e, 'response') and e.response is not None:
-                print(f"  HTTP Status: {e.response.status_code}")
-                print(f"  Response: {e.response.text}")
-            print("ℹ **Agent tip:** Network or API connectivity issue.")
-            print("  Check that the run.sh API server is running and accessible.")
-            print("  Verify the API URL: http://192.168.2.56:3005")
+        except requests.exceptions.Timeout:
+            timeout_str = f"{timeout//60} minutes" if timeout >= 60 else f"{timeout} seconds"
+            print(f"⏰ Streaming request timed out after {timeout_str}.")
+        except requests.exceptions.ConnectionError:
+            print("❌ Connection error. Make sure the API server is running on http://localhost:3005")
+        except Exception as e:
+            print(f"❌ Error executing streaming command: {e}")
+
+    def _get_timeout_for_command(self, command: str) -> int:
+        """Get appropriate timeout for different command types."""
+        # Long operations that can take 10+ minutes
+        long_commands = [
+            "rebuild_all", "rebuild-all", "rebuild_docker", "rebuild-docker",
+            "rebuild_worker", "rebuild-worker", "clean_docker", "clean-docker"
+        ]
+        
+        # Medium operations that can take 5+ minutes  
+        medium_commands = [
+            "all_checks", "all-checks", "test_integration", "test/integration",
+            "unit_tests", "test/unit", "restart", "start"
+        ]
+        
+        # Quick operations (under 2 minutes)
+        quick_commands = [
+            "lint", "format", "typecheck", "small_checks", "small-checks",
+            "status", "stop", "logs/worker", "logs/docker"
+        ]
+        
+        if command in long_commands:
+            return 1800  # 30 minutes - no timeout issues!
+        elif command in medium_commands:
+            return 900   # 15 minutes
+        elif command in quick_commands:
+            return 300   # 5 minutes
+        else:
+            return 600   # 10 minutes default
 
 
 def main():
@@ -357,8 +378,17 @@ def main():
         print("  To run a run.sh command via the API, use: python commander.py run_sh <command>")
         print("  Example: python commander.py run_sh start")
         print("  For real-time output streaming: python commander.py run_sh --stream <command>")
-        executor = RunShExecutor()
-        print("  Available commands: " + ", ".join(executor.endpoint_map.keys()))
+        endpoint_map = {
+            "start": "start", "stop": "stop", "restart": "restart", "status": "status",
+            "logs_worker": "logs/worker", "logs_docker": "logs/docker", 
+            "rebuild": "rebuild", "rebuild_docker": "rebuild-docker",
+            "rebuild_worker": "rebuild-worker", "rebuild_all": "rebuild-all",
+            "clean_docker": "clean-docker", "restart_worker": "restart/worker",
+            "lint": "lint", "format": "format", "test_integration": "test/integration",
+            "unit_tests": "test/unit", "typecheck": "typecheck", "all_checks": "all-checks",
+            "unit_checks": "unit-checks", "small_checks": "small-checks",
+        }
+        print("  Available commands: " + ", ".join(endpoint_map.keys()))
 
 
 if __name__ == "__main__":

@@ -44,10 +44,7 @@ COPY package.json ./
 COPY .env ./
 
 # Install curl for healthcheck
-RUN apk add --no-cache curl bash
-
-# Explicitly link /bin/sh to /bin/bash
-RUN ln -sf /bin/bash /bin/sh
+RUN apk add --no-cache curl
 
 # Supprimer pnpm si non nécessaire à l'exécution
 # RUN npm uninstall -g pnpm # Uncomment if pnpm is not needed at runtime

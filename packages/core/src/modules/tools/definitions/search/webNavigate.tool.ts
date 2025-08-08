@@ -24,12 +24,19 @@ export const webNavigateTool: Tool<
     try {
       ctx.log.info(`Navigating to: "${args.url}"`);
       
-      // Fetch the page content
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      // Fetch the page content with timeout
       const response = await fetch(args.url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; AgenticForge/1.0; +https://example.com/bot)'
-        }
+        },
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -49,6 +56,10 @@ export const webNavigateTool: Tool<
           // Remove script and style elements
           $('script, style').remove();
           result = $('body').text().replace(/\s+/g, ' ').trim();
+          // Limit the text length to prevent overly long responses
+          if (result.length > 2000) {
+            result = result.substring(0, 2000) + '...';
+          }
           break;
           
         case 'summarize':
@@ -92,6 +103,11 @@ export const webNavigateTool: Tool<
         { err: error },
         'Failed to navigate to web page.',
       );
+      if (error instanceof Error && error.name === 'AbortError') {
+        return {
+          result: 'Request timed out while trying to navigate to the web page.'
+        };
+      }
       return {
         result: `An unexpected error occurred: ${error instanceof Error ? error.message : String(error)}`,
       };

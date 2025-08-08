@@ -12,6 +12,7 @@ export const UserInput = () => {
   const startAgent = useStore((state: AppState) => state.startAgent);
   const setMessageInputValue = useStore((state: AppState) => state.setMessageInputValue);
   const isProcessing = useStore((state: AppState) => state.isProcessing);
+  const tokenStatus = useStore((state: AppState) => state.tokenStatus);
 
   const handleSendMessage = () => {
     if (inputValue.trim() && !isProcessing) {
@@ -28,6 +29,7 @@ export const UserInput = () => {
       </Button>
       <div className="relative flex-grow">
         <Textarea
+          name="user-input"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder={translations.typeYourMessage}
@@ -38,7 +40,7 @@ export const UserInput = () => {
               handleSendMessage();
             }
           }}
-          disabled={isProcessing}
+          disabled={isProcessing || !tokenStatus}
           style={{ borderRadius: '30px' }}
         />
         {isProcessing ? (
@@ -47,7 +49,7 @@ export const UserInput = () => {
           <Button 
             onClick={handleSendMessage} 
             size="icon" 
-            disabled={!inputValue.trim()}
+            disabled={!inputValue.trim() || !tokenStatus}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-primary hover:bg-primary/90 h-9 w-9"
             aria-label="Send message"
           >

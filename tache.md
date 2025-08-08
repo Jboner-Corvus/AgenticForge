@@ -8,7 +8,7 @@
 
 For each test in the list, follow these 6 steps:
 
-1.  **Run the Test:** Use `python AgenticForge/exec_test.py <test_number>` to start the test.
+1.  **Run the Test:** Use `python AgenticForge/commander.py <test_number>` to start the test.
 2.  **Monitor Progress:** Check the end of `AgenticForge/worker.log` to see what's happening.
 3.  **Verify Result:**
     * Confirm the test's task was received and finished successfully.

@@ -1,13 +1,17 @@
-import type { AppState } from '../store';
 import { vi } from 'vitest';
+import { create } from 'zustand';
+import { AppState } from '../store';
 
 export const mockState: AppState = {
+  startAgent: vi.fn(),
+  setMessageInputValue: vi.fn(),
+  isProcessing: false,
+  messageInputValue: '',
   addDebugLog: vi.fn(),
   addMessage: vi.fn(),
   agentStatus: null,
   toolStatus: '',
-  authToken: 'test-token',
-  isAuthenticated: true,
+  authToken: null,
   browserStatus: 'idle',
   clearDebugLog: vi.fn(),
   clearMessages: vi.fn(),
@@ -15,24 +19,33 @@ export const mockState: AppState = {
   debugLog: [],
   messages: [],
   fetchAndDisplayToolCount: vi.fn(),
-  isProcessing: false,
   jobId: null,
-  messageInputValue: '',
   serverHealthy: true,
-  sessionId: 'test-session-id',
+  sessionId: 'session-1',
   agentProgress: 0,
+  isAuthenticated: false,
+  activeCliJobId: null,
+  setActiveCliJobId: vi.fn(),
+  isLoadingSessions: false,
+  isLoadingTools: false,
+  isSavingSession: false,
+  isDeletingSession: false,
+  isRenamingSession: false,
+  isAddingLlmApiKey: false,
+  isRemovingLlmApiKey: false,
+  isSettingActiveLlmApiKey: false,
+  isLoadingLeaderboardStats: false,
   canvasContent: '',
   canvasType: 'text',
-  isCanvasPinned: false,
   isCanvasVisible: false,
-  setCanvasPinned: vi.fn(),
+  isCanvasPinned: false,
   isControlPanelVisible: true,
   isSettingsModalOpen: false,
   isDarkMode: false,
-  isHighContrastMode: false,
-  toggleHighContrastMode: vi.fn(),
-  llmApiKeys: [{ provider: 'openai', key: 'sk-12345' }],
-  activeLlmApiKeyIndex: 0,
+  isDebugLogVisible: false,
+  toggleDebugLogVisibility: vi.fn(),
+  llmApiKeys: [],
+  activeLlmApiKeyIndex: -1,
   addLlmApiKey: vi.fn(),
   removeLlmApiKey: vi.fn(),
   editLlmApiKey: vi.fn(),
@@ -41,18 +54,18 @@ export const mockState: AppState = {
   setCache: vi.fn(),
   clearCache: vi.fn(),
   leaderboardStats: {
-    tokensSaved: 100,
-    successfulRuns: 10,
-    sessionsCreated: 5,
-    apiKeysAdded: 1,
+    tokensSaved: 0,
+    successfulRuns: 0,
+    sessionsCreated: 0,
+    apiKeysAdded: 0,
   },
   updateLeaderboardStats: vi.fn(),
   sessions: [
-    { id: 'session1', name: 'Session One', messages: [], timestamp: 1 },
-    { id: 'session2', name: 'Session Two', messages: [], timestamp: 2 },
+    { id: 'session-1', name: 'Session One', timestamp: Date.now(), status: 'active', messages: [] },
+    { id: 'session-2', name: 'Session Two', timestamp: Date.now() - 1000 * 60 * 60, status: 'completed', messages: [] },
   ],
-  activeSessionId: 'session1',
-  sessionStatus: 'valid',
+  activeSessionId: 'session-1', // Set an active session for the test
+  sessionStatus: 'unknown',
   setAgentStatus: vi.fn(),
   setToolStatus: vi.fn(),
   setAuthToken: vi.fn(),
@@ -60,49 +73,13 @@ export const mockState: AppState = {
   setCodeExecutionEnabled: vi.fn(),
   setIsProcessing: vi.fn(),
   setJobId: vi.fn(),
-  setMessageInputValue: vi.fn(),
   setServerHealthy: vi.fn(),
   setAgentProgress: vi.fn(),
   setSessionId: vi.fn(),
   setSessionStatus: vi.fn(),
   streamCloseFunc: null,
-  setTokenStatus: vi.fn(),
-  setToolCount: vi.fn(),
-  setToolCreationEnabled: vi.fn(),
-  setSessions: vi.fn(),
-  setMessages: vi.fn(),
-  setActiveSessionId: vi.fn(),
-  setCanvasContent: vi.fn(),
-  setCanvasType: vi.fn(),
-  setIsCanvasVisible: vi.fn(),
-  setIsControlPanelVisible: vi.fn(),
-  setIsSettingsModalOpen: vi.fn(),
-  toggleDarkMode: vi.fn(),
-  toggleIsCanvasVisible: vi.fn(),
-  clearCanvas: vi.fn(),
-  saveSession: vi.fn(),
-  loadSession: vi.fn(),
-  deleteSession: vi.fn(),
-  deleteAllSessions: vi.fn(),
-  renameSession: vi.fn(),
-  tokenStatus: false,
-  toolCount: 5,
-  toolCreationEnabled: true,
-  updateSessionStatus: vi.fn(),
-  startAgent: vi.fn(),
-  initializeSessionAndMessages: vi.fn(),
-  toast: vi.fn(),
-  isLoadingSessions: false,
-  isLoadingTools: false,
   setIsLoadingSessions: vi.fn(),
   setIsLoadingTools: vi.fn(),
-  isSavingSession: false,
-  isDeletingSession: false,
-  isRenamingSession: false,
-  isAddingLlmApiKey: false,
-  isRemovingLlmApiKey: false,
-  isSettingActiveLlmApiKey: false,
-  isLoadingLeaderboardStats: false,
   setIsSavingSession: vi.fn(),
   setIsDeletingSession: vi.fn(),
   setIsRenamingSession: vi.fn(),
@@ -110,16 +87,57 @@ export const mockState: AppState = {
   setIsRemovingLlmApiKey: vi.fn(),
   setIsSettingActiveLlmApiKey: vi.fn(),
   setIsLoadingLeaderboardStats: vi.fn(),
+  setTokenStatus: vi.fn(),
+  setToolCount: vi.fn(),
+  setToolCreationEnabled: vi.fn(),
+  setSessions: vi.fn(),
+  setMessages: vi.fn(),
+  setActiveSessionId: vi.fn(),
+  toast: vi.fn(),
+  setCanvasContent: vi.fn(),
+  setCanvasType: vi.fn(),
+  setIsCanvasVisible: vi.fn(),
+  setCanvasPinned: vi.fn(),
+  setIsControlPanelVisible: vi.fn(),
+  setIsSettingsModalOpen: vi.fn(),
+  toggleDarkMode: vi.fn(),
+  toggleIsCanvasVisible: vi.fn(),
+  clearCanvas: vi.fn(),
   currentPage: 'chat',
   setCurrentPage: vi.fn(),
+  saveSession: vi.fn(),
+  loadSession: vi.fn(),
+  deleteSession: vi.fn(),
+  deleteAllSessions: vi.fn(),
+  renameSession: vi.fn(),
+  tokenStatus: true,
+  toolCount: 0,
+  toolCreationEnabled: true,
+  updateSessionStatus: vi.fn(),
+  initializeSessionAndMessages: vi.fn(),
 };
 
-// Create a proper mock for useStore that includes getState
-const useStoreMock = Object.assign(
-  vi.fn((selector) => selector(mockState)),
-  {
-    getState: vi.fn(() => mockState),
-  }
-);
+export const useStore = create<AppState>(() => mockState);
 
-export { useStoreMock as useStore };
+// Function to reset the mock store to its initial state
+export const resetMockStore = () => {
+  for (const key in mockState) {
+    if (Object.prototype.hasOwnProperty.call(mockState, key)) {
+      const value = mockState[key as keyof AppState];
+      if (typeof value === 'function' && vi.isMockFunction(value)) {
+        value.mockClear();
+      }
+    }
+  }
+  // Reset specific state properties to their initial values
+  mockState.isProcessing = false;
+  mockState.messageInputValue = '';
+  mockState.sessions = [
+    { id: 'session-1', name: 'Session One', timestamp: Date.now(), status: 'active', messages: [] },
+    { id: 'session-2', name: 'Session Two', timestamp: Date.now() - 1000 * 60 * 60, status: 'completed', messages: [] },
+  ];
+  mockState.activeSessionId = 'session-1';
+  mockState.sessionId = 'session-1';
+  mockState.tokenStatus = false;
+  // ... reset other relevant state properties
+};

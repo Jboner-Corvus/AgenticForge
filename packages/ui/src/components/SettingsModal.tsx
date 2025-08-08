@@ -49,7 +49,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         <div className="flex items-center space-x-2">
           <Label className="text-sm" htmlFor="authToken">{translations.authToken}</Label>
           <Input
-            aria-label="Authentication Token Input"
             autoComplete="off"
             className="w-full bg-input border-border text-foreground placeholder-muted-foreground"
             id="authToken"

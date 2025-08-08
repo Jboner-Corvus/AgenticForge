@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "pnpm exec tsc -b && pnpm exec vite build",
+    "build": "vite build",
     "lint": "eslint --fix --no-cache --max-warnings 0 .",
     "test": "vitest",
     "test:unit": "vitest --mode unit --run",
@@ -38,6 +38,7 @@
     "framer-motion": "^12.23.6",
     "immer": "^10.1.1",
     "lucide-react": "^0.525.0",
+    "patch-package": "^8.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",

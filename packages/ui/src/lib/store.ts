@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import { getTools, saveSessionApi, loadSessionApi, deleteSessionApi, renameSessionApi, addLlmApiKeyApi, removeLlmApiKeyApi, editLlmApiKeyApi, getLeaderboardStats, getLlmApiKeysApi, loadAllSessionsApi, setActiveLlmProviderApi } from './api';
 import type { SessionData } from './api';
+import { getTranslations } from './translations';
 import { generateUUID } from './utils/uuid';
 import { type ChatMessage as ExternalChatMessage, type NewChatMessage } from '../types/chat.d';
 
@@ -14,6 +15,7 @@ interface Session {
   name: string;
   messages: ExternalChatMessage[]; // Use ChatMessage from types/chat.ts here
   timestamp: number;
+  status?: string; // Added status property
 }
 
 interface LlmApiKey {
@@ -49,6 +51,8 @@ export interface AppState {
   sessionId: null | string;
   agentProgress: number;
   isAuthenticated: boolean;
+  activeCliJobId: string | null;
+  setActiveCliJobId: (jobId: string | null) => void;
 
   // Loading states
   isLoadingSessions: boolean;
@@ -69,16 +73,16 @@ export interface AppState {
   isControlPanelVisible: boolean;
   isSettingsModalOpen: boolean;
   isDarkMode: boolean;
-  isHighContrastMode: boolean;
-  toggleHighContrastMode: () => void;
+  isDebugLogVisible: boolean;
+  toggleDebugLogVisibility: () => void;
 
   // LLM API Key Management
   llmApiKeys: LlmApiKey[];
   activeLlmApiKeyIndex: number;
-  addLlmApiKey: (provider: string, key: string, baseUrl?: string, model?: string) => void;
-  removeLlmApiKey: (index: number) => void;
-  editLlmApiKey: (index: number, provider: string, key: string, baseUrl?: string, model?: string) => void;
-  setActiveLlmApiKey: (index: number) => void;
+  addLlmApiKey: (provider: string, key: string, baseUrl?: string, model?: string) => Promise<void>;
+  removeLlmApiKey: (index: number) => Promise<void>;
+  editLlmApiKey: (index: number, provider: string, key: string, baseUrl?: string, model?: string) => Promise<void>;
+  setActiveLlmApiKey: (index: number) => Promise<void>;
 
   // Caching
   cache: Record<string, { data: unknown; timestamp: number }>;
@@ -168,7 +172,14 @@ export interface AppState {
 }
 
 export const useStore = create<AppState>((set, get) => ({
-  addDebugLog: (log) => set((state) => ({ debugLog: [...state.debugLog, log] })),
+  addDebugLog: (log) => {
+    // Defensive check for undefined logs
+    if (log === undefined || log === null || log === 'undefined') {
+      console.warn('Attempted to log undefined/null value:', log);
+      return;
+    }
+    set((state) => ({ debugLog: [...state.debugLog, log] }));
+  },
   addMessage: (message) =>
     set((state) => {
       const baseProps = { id: generateUUID(), timestamp: Date.now() };
@@ -200,17 +211,18 @@ export const useStore = create<AppState>((set, get) => ({
     }
 
     setIsLoadingTools(true);
-    addDebugLog(`[${new Date().toLocaleTimeString()}] [REQUEST] Récupération de la liste des outils...`);
+    const translations = getTranslations();
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [REQUEST] ${translations.fetchingToolsList}`);
     try {
       const tools = (await getTools(authToken, sessionId)) as { name: string }[];
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [SUCCESS] ${tools.length} outils trouvés.`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [SUCCESS] ${tools.length} ${translations.toolsFound}.`);
       setToolCount(tools.length);
       updateSessionStatus('valid');
       setCache(cacheKey, tools);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Erreur getTools: ${message}`);
-      setToolCount('Erreur');
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] ${translations.getToolsError}: ${message}`);
+      setToolCount(translations.error);
       updateSessionStatus('error');
     } finally {
       setIsLoadingTools(false);
@@ -223,16 +235,17 @@ export const useStore = create<AppState>((set, get) => ({
   messageInputValue: '',
   serverHealthy: false,
   sessionId: null,
+  activeCliJobId: null,
 
   // Canvas state initialization
   canvasContent: '',
   canvasType: 'text',
   isCanvasVisible: false,
   isCanvasPinned: false,
-  isControlPanelVisible: true,
+  isControlPanelVisible: false,
   isSettingsModalOpen: false,
   isDarkMode: false,
-  isHighContrastMode: false,
+  isDebugLogVisible: false,
 
   // Session history initialization
   sessions: [],
@@ -282,6 +295,7 @@ export const useStore = create<AppState>((set, get) => ({
   setSessionId: (sessionId) => set({ sessionId }),
   setSessionStatus: (sessionStatus) => set({ sessionStatus }),
   setStreamCloseFunc: (func: (() => void) | null) => set({ streamCloseFunc: func }),
+  setActiveCliJobId: (jobId) => set({ activeCliJobId: jobId }),
 
   // Loading state setters
   setIsLoadingSessions: (isLoadingSessions) => set({ isLoadingSessions }),
@@ -318,32 +332,24 @@ export const useStore = create<AppState>((set, get) => ({
     }
     return { isDarkMode: newDarkMode };
   }),
-  toggleHighContrastMode: () => set((state) => {
-    const newHighContrastMode = !state.isHighContrastMode;
-    localStorage.setItem('agenticForgeHighContrastMode', String(newHighContrastMode));
-    if (newHighContrastMode) {
-      document.documentElement.classList.add('high-contrast');
-    } else {
-      document.documentElement.classList.remove('high-contrast');
-    }
-    return { isHighContrastMode: newHighContrastMode };
-  }),
+  toggleDebugLogVisibility: () => set((state) => ({ isDebugLogVisible: !state.isDebugLogVisible })),
 
   // LLM API Key Management actions
-  addLlmApiKey: (provider: string, key: string, baseUrl?: string, model?: string) => async () => {
-    const { setIsAddingLlmApiKey } = get();
+  addLlmApiKey: async (provider: string, key: string, baseUrl?: string, model?: string) => {
+    const { setIsAddingLlmApiKey, updateLeaderboardStats } = get();
     setIsAddingLlmApiKey(true);
     try {
       await addLlmApiKeyApi(provider, key, baseUrl, model);
       const llmApiKeys = get().llmApiKeys; // Get current keys
       set({ llmApiKeys: [...llmApiKeys, { provider, key, baseUrl, model }] });
+      updateLeaderboardStats({ apiKeysAdded: 1 });
     } catch (error) {
       console.error("Failed to add LLM API key to backend:", error);
     } finally {
       setIsAddingLlmApiKey(false);
     }
   },
-  removeLlmApiKey: (index: number) => async () => {
+  removeLlmApiKey: async (index: number) => {
     const { setIsRemovingLlmApiKey } = get();
     setIsRemovingLlmApiKey(true);
     try {
@@ -356,7 +362,7 @@ export const useStore = create<AppState>((set, get) => ({
       setIsRemovingLlmApiKey(false);
     }
   },
-  editLlmApiKey: (index: number, provider: string, key: string, baseUrl?: string, model?: string) => async () => {
+  editLlmApiKey: async (index: number, provider: string, key: string, baseUrl?: string, model?: string) => {
     const { setIsRemovingLlmApiKey, setIsAddingLlmApiKey } = get();
     setIsRemovingLlmApiKey(true);
     try {
@@ -375,7 +381,7 @@ export const useStore = create<AppState>((set, get) => ({
       setIsAddingLlmApiKey(false);
     }
   },
-  setActiveLlmApiKey: (index: number) => async () => {
+  setActiveLlmApiKey: async (index: number) => {
     const { llmApiKeys, authToken, sessionId, addDebugLog, toast, setIsSettingActiveLlmApiKey } = get();
     if (index < 0 || index >= llmApiKeys.length) {
       console.error("Invalid LLM API key index.");
@@ -428,7 +434,7 @@ export const useStore = create<AppState>((set, get) => ({
   // Session history actions
   // Session history actions
   saveSession: (name: string) => async () => {
-    const { sessionId, messages, sessions, setIsSavingSession } = get();
+    const { sessionId, messages, sessions, setIsSavingSession, updateLeaderboardStats } = get();
     if (!sessionId) return;
 
     const sessionToSave: Session = {
@@ -451,6 +457,7 @@ export const useStore = create<AppState>((set, get) => ({
       const updatedSessions = [...sessions.filter(s => s.id !== sessionId), sessionToSave];
       localStorage.setItem('agenticForgeSessions', JSON.stringify(updatedSessions));
       set({ sessions: updatedSessions });
+      updateLeaderboardStats({ sessionsCreated: 1 });
     } catch (error) {
       console.error("Failed to save session to backend:", error);
     } finally {
@@ -589,6 +596,8 @@ export const useStore = create<AppState>((set, get) => ({
         }
       }
 
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Making request to /api/chat with auth header: ${authHeader.substring(0, 20)}...`);
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -605,6 +614,8 @@ export const useStore = create<AppState>((set, get) => ({
         }),
       });
 
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Response status: ${response.status}`);
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to send message to agent');
@@ -617,9 +628,31 @@ export const useStore = create<AppState>((set, get) => ({
       // Clear input after sending
       set({ messageInputValue: '' });
 
+      const eventSource = new EventSource(`/api/chat/stream/${data.jobId}`);
+      eventSource.onmessage = (event) => {
+        if (event.data === 'heartbeat') return;
+        const eventData = JSON.parse(event.data);
+        if (eventData.type === 'agent-response') {
+          addMessage({
+            type: 'agent',
+            content: eventData.content,
+          });
+        } else if (eventData.type === 'job-completion') {
+          eventSource.close();
+          setIsProcessing(false);
+        }
+      };
+      eventSource.onerror = (error) => {
+        const errorMessage = error instanceof Event ? 'Connection lost' : String(error);
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] EventSource failed: ${errorMessage}`);
+        eventSource.close();
+        setIsProcessing(false);
+      };
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Error sending message: ${errorMessage}`);
+      console.error('Error sending message to agent:', error);
       setIsProcessing(false);
     }
   },
@@ -642,10 +675,11 @@ export const useStore = create<AppState>((set, get) => ({
     // No explicit loading state for this as it's usually quick and part of init
     try {
       const keys = await getLlmApiKeysApi();
-      keys.forEach((llmKey: { provider: string; key: string; baseUrl?: string; model?: string }) => 
-        addLlmApiKey(llmKey.provider, llmKey.key, llmKey.baseUrl, llmKey.model));
+      for (const llmKey of keys) {
+        await addLlmApiKey(llmKey.provider, llmKey.key, llmKey.baseUrl, llmKey.model);
+      }
       if (keys.length > 0) {
-        setActiveLlmApiKey(0);
+        await setActiveLlmApiKey(0);
       }
     } catch (error) {
       console.error("Failed to fetch LLM API keys:", error);

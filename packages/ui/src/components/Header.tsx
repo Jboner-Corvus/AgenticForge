@@ -1,4 +1,3 @@
-
 import { useStore } from '../lib/store';
 
 import { useLanguage } from '../lib/contexts/LanguageContext';
@@ -7,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 
 import { Logo } from './Logo';
 
-import { Settings, PanelLeft, Sun, Moon, Bell, LayoutDashboard, BarChart, Key, MessageSquare } from 'lucide-react';
+import { Settings, PanelLeft, Sun, Moon, Bell, LayoutDashboard, BarChart, Key, MessageSquare, Bug } from 'lucide-react';
 
 interface HeaderProps {
   setIsControlPanelVisible: (visible: boolean) => void;
@@ -15,9 +14,8 @@ interface HeaderProps {
   isControlPanelVisible: boolean;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
-  isHighContrastMode: boolean;
-  toggleHighContrastMode: () => void;
   setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys' | 'oauth') => void;
+  toggleDebugLogVisibility: () => void;
 }
 
 export function Header({
@@ -26,9 +24,8 @@ export function Header({
   isControlPanelVisible,
   isDarkMode,
   toggleDarkMode,
-  isHighContrastMode,
-  toggleHighContrastMode,
   setCurrentPage,
+  toggleDebugLogVisibility,
 }: HeaderProps) {
   const { translations } = useLanguage();
 
@@ -61,28 +58,6 @@ export function Header({
             </TooltipTrigger>
             <TooltipContent>
               <p>{isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label={isHighContrastMode ? "Disable High Contrast" : "Enable High Contrast"}
-                onClick={toggleHighContrastMode}
-                type="button"
-                variant="ghost"
-              >
-                <span className="sr-only">{isHighContrastMode ? "Disable High Contrast" : "Enable High Contrast"}</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 3a9 9 0 0 0-9 9 9 9 0 0 0 9 9 9 9 0 0 0 9-9 9 9 0 0 0-9-9z" />
-                  <path d="M12 8v8" />
-                  <path d="M8 12h8" />
-                </svg>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{isHighContrastMode ? "Disable High Contrast" : "Enable High Contrast"}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -177,16 +152,16 @@ export function Header({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-label="Notifications"
-                onClick={() => {}}
+                aria-label="Debug Log"
+                onClick={toggleDebugLogVisibility}
                 type="button"
                 variant="ghost"
               >
-                <Bell size={20} />
+                <Bug size={20} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{translations.notifications}</p>
+              <p>Debug Log</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -207,7 +182,23 @@ export function Header({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="Notifications"
+                type="button"
+                variant="ghost"
+              >
+                <Bell size={20} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{translations.notifications}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </header>
   );
-};
+}

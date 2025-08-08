@@ -120,9 +120,18 @@ export function getToolsDir(): string {
 
   // In production (dist), tools are in dist/modules/tools/definitions
   // In development, they're in src/modules/tools/definitions
-  const toolsPath = runningInDist
-    ? path.resolve(__dirname, 'modules', 'tools', 'definitions')
-    : path.resolve(__dirname, '..', 'modules', 'tools', 'definitions');
+  let toolsPath: string;
+  
+  if (runningInDist) {
+    // When running in Docker, __dirname might be "." so we need to use process.cwd()
+    if (__dirname === '.' || __dirname === process.cwd()) {
+      toolsPath = path.resolve(process.cwd(), 'packages', 'core', 'dist', 'modules', 'tools', 'definitions');
+    } else {
+      toolsPath = path.resolve(__dirname, 'modules', 'tools', 'definitions');
+    }
+  } else {
+    toolsPath = path.resolve(__dirname, '..', 'modules', 'tools', 'definitions');
+  }
 
   getLogger().debug(`[getToolsDir] Constructed tools path: ${toolsPath}`);
   return toolsPath;

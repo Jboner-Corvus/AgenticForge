@@ -32,6 +32,7 @@ usage() {
     echo "   rebuild-worker : Reconstruit et red\u00e9marre le worker local."
     echo "   rebuild-all    : Reconstruit l\'int\u00e9gralit\u00e9 du projet (Docker et worker local)."
     echo "   clean-docker   : Nettoie le syst\u00e8me Docker (supprime conteneurs, volumes, etc.)."
+    echo "   clean-caches   : Nettoie TOUS les caches (pnpm, Vite, TypeScript, Docker)."
     echo "   shell          : Ouvre un shell dans le conteneur du serveur."
     echo "   lint           : Lance le linter sur le code."
     echo "   format         : Formate le code."
@@ -230,9 +231,18 @@ shell_access() {
 
 rebuild_docker() {
     cd "${SCRIPT_DIR}"
-    echo -e "${COLOR_YELLOW}Reconstruction forc\u00e9e des images Docker...${NC}"
+    echo -e "${COLOR_YELLOW}Reconstruction forcée des images Docker...${NC}"
     rm -f "${SCRIPT_DIR}/worker.log" "${SCRIPT_DIR}/docker.log"
     stop_services
+    
+    # Build the UI on the host first
+    echo -e "${COLOR_YELLOW}Construction de l'interface utilisateur...${NC}"
+    cd "${SCRIPT_DIR}/packages/ui"
+    pnpm install --prod=false
+    pnpm build
+    
+    # Then build the Docker images
+    cd "${SCRIPT_DIR}"
     docker compose -f "${SCRIPT_DIR}/docker-compose.yml" build --no-cache
     start_services
 }
@@ -243,6 +253,38 @@ clean_docker() {
     docker compose -f "${SCRIPT_DIR}/docker-compose.yml" down -v --remove-orphans
     docker network prune -f
     echo -e "${COLOR_GREEN}✓ Nettoyage termin\u00e9.${NC}"
+}
+
+clean_all_caches() {
+    cd "${SCRIPT_DIR}"
+    echo -e "${COLOR_YELLOW}🧹 Nettoyage de TOUS les caches (pnpm, Vite, TypeScript, Docker)...${NC}"
+    
+    # Cache pnpm global
+    pnpm store prune
+    
+    # UI caches
+    cd "${SCRIPT_DIR}/packages/ui"
+    rm -rf node_modules/.vite/
+    rm -rf node_modules/.cache/
+    rm -rf dist/
+    rm -f tsconfig*.tsbuildinfo
+    
+    # Core caches  
+    cd "${SCRIPT_DIR}/packages/core"
+    rm -rf node_modules/.cache/
+    rm -rf dist/
+    rm -f tsconfig*.tsbuildinfo
+    
+    # Root level caches
+    cd "${SCRIPT_DIR}"
+    rm -rf node_modules/.cache/
+    rm -f tsconfig*.tsbuildinfo
+    
+    # Docker caches (images et build cache)
+    docker builder prune -af
+    docker image prune -af
+    
+    echo -e "${COLOR_GREEN}✓ Tous les caches ont été nettoyés.${NC}"
 }
 
 rebuild_worker() {
@@ -257,8 +299,57 @@ rebuild_worker() {
 }
 
 rebuild_all() {
-    rebuild_docker
-    rebuild_worker
+    cd "${SCRIPT_DIR}"
+    echo -e "${COLOR_YELLOW}Reconstruction complète avec nettoyage total des caches...${NC}"
+    rm -f "${SCRIPT_DIR}/worker.log" "${SCRIPT_DIR}/docker.log"
+    
+    # Arrêt complet
+    stop_services
+    
+    # 🧹 NETTOYAGE TOTAL DES CACHES
+    echo -e "${COLOR_YELLOW}🧹 Nettoyage des caches pour forcer la prise en compte des nouvelles configs...${NC}"
+    
+    # Nettoyer les caches pnpm
+    pnpm store prune
+    
+    # UI: Nettoyage complet
+    cd "${SCRIPT_DIR}/packages/ui"
+    echo -e "${COLOR_YELLOW}🧹 Nettoyage cache UI (Vite, TypeScript, node_modules)...${NC}"
+    rm -rf node_modules/.vite/
+    rm -rf dist/
+    rm -f tsconfig.tsbuildinfo
+    rm -f tsconfig.*.tsbuildinfo
+    rm -rf node_modules/.cache/
+    
+    # Réinstallation et rebuild UI avec cache forcé
+    echo -e "${COLOR_YELLOW}📦 Réinstallation des dépendances UI...${NC}"
+    pnpm install --prod=false --force
+    echo -e "${COLOR_YELLOW}🔨 Reconstruction UI (avec nouvelles configs)...${NC}"
+    pnpm build
+    
+    # Core: Nettoyage complet  
+    cd "${SCRIPT_DIR}/packages/core"
+    echo -e "${COLOR_YELLOW}🧹 Nettoyage cache Core package...${NC}"
+    rm -rf dist/
+    rm -rf node_modules/.cache/
+    rm -f tsconfig.tsbuildinfo
+    rm -f tsconfig.*.tsbuildinfo
+    
+    # Build Core package avec cache forcé
+    cd "${SCRIPT_DIR}"
+    echo -e "${COLOR_YELLOW}📦 Réinstallation des dépendances Core...${NC}"
+    pnpm --filter @agenticforge/core install --force
+    echo -e "${COLOR_YELLOW}🔨 Reconstruction du package 'core'...${NC}"
+    pnpm --filter @agenticforge/core build
+    
+    # 🐳 REBUILD DOCKER COMPLET
+    echo -e "${COLOR_YELLOW}🐳 Reconstruction forcée des images Docker (--no-cache)...${NC}"
+    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" build --no-cache --pull
+    
+    # Redémarrage complet
+    echo -e "${COLOR_YELLOW}🚀 Redémarrage des services...${NC}"
+    start_services
+    echo -e "${COLOR_GREEN}✅ Reconstruction complète terminée avec prise en compte des nouvelles configs !${NC}"
 }
 
 # ==============================================================================
@@ -569,6 +660,7 @@ show_menu() {
     printf "    9) ${COLOR_YELLOW}🔄 Red\u00e9marrer worker${NC}    15) ${COLOR_BLUE}🐳 Logs Docker${NC}\n"
     printf "   20) ${COLOR_BLUE}🔨 Rebuild Worker${NC}\n"
     printf "   21) ${COLOR_BLUE}🔨 Rebuild All${NC}\n"
+    printf "   22) ${COLOR_RED}🧹 Clean All Caches${NC}\n"
     echo ""
     echo -e "    ${COLOR_CYAN}D\u00e9veloppement & V\u00e9rifications${NC}"
     printf "   10) ${COLOR_BLUE}🔍 Lint${NC}                 13) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
@@ -607,7 +699,8 @@ main() {
             rebuild-all) rebuild_all ;; 
             rebuild-docker|rebuild) rebuild_docker ;; 
             rebuild-worker) rebuild_worker ;; 
-            clean-docker) clean_docker ;; 
+            clean-docker) clean_docker ;;
+            clean-caches) clean_all_caches ;; 
             shell) shell_access ;; 
             lint) run_lint ;; 
             format) run_format ;; 
@@ -651,7 +744,8 @@ main() {
             18) run_integration_tests ;; 
             19) run_all_tests ;; 
             20) rebuild_worker ;; 
-            21) rebuild_all ;; 
+            21) rebuild_all ;;
+            22) clean_all_caches ;; 
             *) echo -e "${COLOR_RED}Option invalide, veuillez r\u00e9essayer.${NC}" ;; 
         esac
         echo -e "\nAppuyez sur Entree pour continuer..."

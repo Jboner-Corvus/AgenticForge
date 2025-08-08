@@ -25,13 +25,16 @@ interface StreamMessage {
     | 'browser.error'
     | 'browser.closed'
     | 'agent_canvas_output'
-    | 'agent_canvas_close';
+    | 'agent_canvas_close'
+    | 'cli_task_start'
+    | 'cli_task_end';
   content?: string;
   contentType?: 'html' | 'markdown' | 'url' | 'text';
   toolName?: string; // Added toolName here
   params?: Record<string, unknown>;
   result?: Record<string, unknown>;
   message?: string;
+  jobId?: string; // For CLI tasks
   data?: {
     name?: string;
     args?: Record<string, unknown>;
@@ -66,6 +69,7 @@ export const useAgentStream = () => {
     addDebugLog,
     setAgentProgress,
     setBrowserStatus,
+    setActiveCliJobId,
   } = useStore();
 
   const startAgent = useCallback(async () => {
@@ -81,10 +85,24 @@ export const useAgentStream = () => {
     setMessageInputValue('');
 
     const handleClose = () => {
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] handleClose called. Current EventSource state: ${eventSourceRef.current?.readyState}`);
+      // Force console log to debug
+      if (window.console?.log) {
+        window.console.log('handleClose called. Current EventSource state:', eventSourceRef.current?.readyState);
+      }
+      
       setIsProcessing(false);
       setJobId(null);
-      eventSourceRef.current?.close(); // Close the EventSource
-      eventSourceRef.current = null;
+      
+      if (eventSourceRef.current) {
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Closing EventSource connection`);
+        if (window.console?.log) {
+          window.console.log('Closing EventSource connection');
+        }
+        eventSourceRef.current.close(); // Close the EventSource
+        eventSourceRef.current = null;
+      }
+      
       setAgentStatus(null);
     };
 
@@ -95,6 +113,7 @@ export const useAgentStream = () => {
       };
       addMessage(errorMessage);
       addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] ${error.message}`);
+      console.error('Agent stream error:', error);
       setIsProcessing(false);
       handleClose(); // Ensure EventSource is closed on error
     };
@@ -142,13 +161,21 @@ export const useAgentStream = () => {
 
     const onMessage = (event: MessageEvent) => {
       try {
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [STREAM] Raw SSE message received: ${event.data}`);
+        console.log('Raw SSE message received:', event.data);
+
         // Handle heartbeat messages
         if (event.data === 'heartbeat') {
           // Just ignore heartbeat messages
+          addDebugLog(`[${new Date().toLocaleTimeString()}] [STREAM] Heartbeat message received and ignored`);
           return;
         }
 
         const data: StreamMessage = JSON.parse(event.data) as StreamMessage;
+        console.log('Parsed SSE message:', data);
+
+        // Log all incoming messages for debugging
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [STREAM] Received message type: ${data.type}`);
 
         switch (data.type) {
           case 'tool_stream':
@@ -179,7 +206,7 @@ export const useAgentStream = () => {
                     type: 'tool_result',
                     toolName: finalToolName,
                     result: { output: data.data?.content ?? '' },
-                  };
+                  } as ToolResultMessage; // Explicitly cast to avoid type issues
                   state.messages.push(newToolResult);
                 }
               }));
@@ -253,12 +280,26 @@ export const useAgentStream = () => {
           case 'agent_canvas_close':
             handleClose();
             break;
+          case 'cli_task_start':
+            if (data.jobId) {
+              setActiveCliJobId(data.jobId);
+            }
+            break;
+          case 'cli_task_end':
+            setActiveCliJobId(null);
+            break;
           case 'close':
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Received 'close' message from server`);
+            console.log('Received close message from server');
             setTimeout(() => {
               handleClose();
               setAgentProgress(100);
             }, 500); // Add a small delay to allow UI to update
             break;
+          default:
+            // Handle unknown message types
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [WARN] Unknown message type received: ${data.type}`);
+            console.warn('Unknown message type received:', data);
         }
       } catch (error) {
         console.error('Error processing SSE message:', error);
@@ -267,6 +308,9 @@ export const useAgentStream = () => {
     };
 
     try {
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Starting agent with message: ${goal}`);
+      console.log('Starting agent with message:', goal);
+      
       const { jobId, eventSource } = await sendMessage(
         goal,
         authToken,
@@ -274,12 +318,29 @@ export const useAgentStream = () => {
         onMessage,
         (error) => {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+          addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] EventSource error callback: ${errorMessage}`);
+          console.error('EventSource error callback:', error);
           handleError(new Error(errorMessage));
         },
+        addDebugLog // Pass the debug logger
       );
+      console.log('EventSource created:', eventSource);
+      console.log('EventSource URL:', eventSource.url);
+      console.log('EventSource readyState:', eventSource.readyState);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] EventSource created with URL: ${eventSource.url}`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] EventSource initial readyState: ${eventSource.readyState}`);
       setJobId(jobId);
       eventSourceRef.current = eventSource; // Store EventSource instance
+      
+      // Monitor EventSource state changes
+      setTimeout(() => {
+        if (eventSourceRef.current) {
+          addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] EventSource state after 1s: ${eventSourceRef.current.readyState}`);
+          console.log('EventSource state after 1s:', eventSourceRef.current.readyState);
+        }
+      }, 1000);
     } catch (error) {
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Failed to create EventSource: ${error instanceof Error ? error.message : String(error)}`);
       handleError(error instanceof Error ? error : new Error(String(error)));
     }
   }, [
@@ -294,6 +355,7 @@ export const useAgentStream = () => {
     addDebugLog,
     setAgentProgress,
     setBrowserStatus,
+    setActiveCliJobId,
   ]);
 
   const interruptAgent = useCallback(async () => {

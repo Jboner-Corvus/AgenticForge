@@ -1,12 +1,12 @@
 import { GripVertical, Plus, Trash2, Save, Info } from 'lucide-react';
 import { memo, useState, useEffect } from 'react';
 import { useStore } from '../lib/store';
-import { LlmLogo, OpenAILogo, AnthropicLogo, GeminiLogo, MistralLogo, GrokLogo, OllamaLogo, OpenRouterLogo } from './icons/LlmLogos';
+import { OpenAILogo, AnthropicLogo, GeminiLogo, MistralLogo, GrokLogo, OllamaLogo, OpenRouterLogo } from './icons/LlmLogos';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { LoadingSpinner } from './LoadingSpinner';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent, CardHeader } from './ui/card';
 import { useToast } from '../lib/hooks/useToast';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -20,7 +20,7 @@ interface LlmProviderConfig {
   baseUrl?: string;
 }
 
-const MAIN_PROVIDERS: LlmProviderConfig[] = [
+const INITIAL_PROVIDERS: LlmProviderConfig[] = [
   { id: 'openai', name: 'OpenAI', logo: OpenAILogo, models: ['gpt-4.5', 'gpt-3'], baseUrl: 'https://api.openai.com/v1' },
   { id: 'anthropic', name: 'Anthropic', logo: AnthropicLogo, models: ['claude-sonnet-4'], baseUrl: 'https://api.anthropic.com' },
   { id: 'gemini', name: 'Google Gemini', logo: GeminiLogo, models: ['gemini-2.5-flash', 'gemini-2.5-pro'], baseUrl: 'https://generativelanguage.googleapis.com' },
@@ -73,6 +73,8 @@ const SortableApiKeyItem: React.FC<SortableApiKeyItemProps> = ({ id, apiKey, ind
       </Button>
       <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
       <Input
+        id={`api-key-${index}`}
+        name={`api-key-${index}`}
         type="password"
         placeholder="Enter API Token"
         value={apiKey}
@@ -90,7 +92,7 @@ const SortableApiKeyItem: React.FC<SortableApiKeyItemProps> = ({ id, apiKey, ind
   );
 };
 
-const ProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
+const ProviderCard = ({ provider, dragHandleProps }: { provider: LlmProviderConfig, dragHandleProps?: Record<string, unknown> }) => {
   const { toast } = useToast();
   const llmApiKeys = useStore((state) => state.llmApiKeys);
   const addLlmApiKey = useStore((state) => state.addLlmApiKey);
@@ -115,11 +117,11 @@ const ProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
     setApiKeys([...apiKeys, { id: `key-new-${apiKeys.length}`, key: '' }]);
   };
 
-  const handleRemoveInput = (index: number) => {
+  const handleRemoveInput = async (index: number) => {
     const keyToRemove = apiKeys[index].key;
     const globalIndex = llmApiKeys.findIndex(k => k.key === keyToRemove && k.provider === provider.id);
     if (globalIndex !== -1) {
-      removeLlmApiKey(globalIndex);
+      await removeLlmApiKey(globalIndex);
     }
     const newKeys = apiKeys.filter((_, i) => i !== index);
     setApiKeys(newKeys);
@@ -131,23 +133,21 @@ const ProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
     setApiKeys(newKeys);
   };
 
-  const handleSaveKeys = () => {
+  const handleSaveKeys = async () => {
     const existingKeys = llmApiKeys.filter(k => k.provider === provider.id);
     
-    // Remove all existing keys for this provider
-    existingKeys.forEach(key => {
+    for (const key of existingKeys) {
       const globalIndex = llmApiKeys.findIndex(k => k.key === key.key && k.provider === provider.id);
       if (globalIndex !== -1) {
-        removeLlmApiKey(globalIndex);
+        await removeLlmApiKey(globalIndex);
       }
-    });
+    }
 
-    // Add keys in the new order
-    apiKeys.forEach(apiKey => {
+    for (const apiKey of apiKeys) {
       if (apiKey.key.trim()) {
-        addLlmApiKey(provider.id, apiKey.key, provider.baseUrl, provider.models[0]);
+        await addLlmApiKey(provider.id, apiKey.key, provider.baseUrl, provider.models[0]);
       }
-    });
+    }
     toast({ title: "Success", description: `API keys for ${provider.name} saved.` });
   };
 
@@ -172,89 +172,133 @@ const ProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
   const Logo = provider.logo;
 
   return (
+    <Card className={`overflow-hidden shadow-lg ${colors.bg} transition-all duration-300`}>
+      <CardHeader className={`${colors.header} p-4`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              {...dragHandleProps} 
+              className="cursor-grab active:cursor-grabbing mr-2"
+            >
+              <GripVertical className="h-5 w-5 text-white" />
+            </Button>
+            <Logo className="h-8 w-8 mr-3 text-white" />
+            <span className="text-xl font-bold text-white">{provider.name}</span>
+          </div>
+          <Button 
+            size="sm" 
+            onClick={handleAddInput} 
+            variant="secondary"
+            className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+          >
+            <Plus className="h-4 w-4 mr-1" /> Add Token
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="p-4 space-y-4">
+        <div>
+          <label className="text-sm font-medium mb-2 block flex items-center">
+            API Tokens (Drag to reorder)
+            <Info className="h-4 w-4 ml-1 text-muted-foreground" />
+          </label>
+          <DndContext id={`api-tokens-dnd-${provider.id}`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext id={`api-tokens-sortable-${provider.id}`} items={apiKeys.map(k => k.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {apiKeys.map((apiKey, index) => (
+                  <SortableApiKeyItem
+                    key={apiKey.id}
+                    id={apiKey.id}
+                    apiKey={apiKey.key}
+                    index={index}
+                    onKeyChange={handleKeyChange}
+                    onRemove={handleRemoveInput}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-2 block flex items-center">
+            Available Models
+            <Info className="h-4 w-4 ml-1 text-muted-foreground" />
+          </label>
+          <div id={`available-models-${provider.id}`} className="flex flex-wrap gap-2">
+            {provider.models.map(model => (
+              <motion.div
+                key={model}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Badge className={`${colors.badge} px-3 py-1`}>
+                  {model}
+                </Badge>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button 
+            onClick={handleSaveKeys} 
+            disabled={isAddingLlmApiKey}
+            className={`${colors.hover} text-white transition-all duration-300`}
+          >
+            {isAddingLlmApiKey ? <LoadingSpinner className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+            Save {provider.name} Keys
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const SortableProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: provider.id });
+
+  const style = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    transition,
+  };
+
+  return (
     <motion.div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
       whileHover={{ y: -5 }}
     >
-      <Card className={`overflow-hidden shadow-lg ${colors.bg} transition-all duration-300`}>
-        <CardHeader className={`${colors.header} p-4`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Logo className="h-8 w-8 mr-3 text-white" />
-              <CardTitle className="text-xl font-bold text-white">{provider.name}</CardTitle>
-            </div>
-            <Button 
-              size="sm" 
-              onClick={handleAddInput} 
-              variant="secondary"
-              className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-            >
-              <Plus className="h-4 w-4 mr-1" /> Add Token
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-4 space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block flex items-center">
-              API Tokens (Drag to reorder)
-              <Info className="h-4 w-4 ml-1 text-muted-foreground" />
-            </label>
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={apiKeys.map(k => k.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">
-                  {apiKeys.map((apiKey, index) => (
-                    <SortableApiKeyItem
-                      key={apiKey.id}
-                      id={apiKey.id}
-                      apiKey={apiKey.key}
-                      index={index}
-                      onKeyChange={handleKeyChange}
-                      onRemove={handleRemoveInput}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-2 block flex items-center">
-              Available Models
-              <Info className="h-4 w-4 ml-1 text-muted-foreground" />
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {provider.models.map(model => (
-                <motion.div
-                  key={model}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Badge className={`${colors.badge} px-3 py-1`}>
-                    {model}
-                  </Badge>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button 
-              onClick={handleSaveKeys} 
-              disabled={isAddingLlmApiKey}
-              className={`${colors.hover} text-white transition-all duration-300`}
-            >
-              {isAddingLlmApiKey ? <LoadingSpinner className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-              Save {provider.name} Keys
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <ProviderCard provider={provider} dragHandleProps={listeners} />
     </motion.div>
   );
 };
 
 export const LlmApiKeyManagementPage = memo(() => {
+  const [providers, setProviders] = useState<LlmProviderConfig[]>(INITIAL_PROVIDERS);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setProviders((items) => {
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
   return (
     <motion.div 
       className="p-6 max-w-6xl mx-auto"
@@ -262,25 +306,40 @@ export const LlmApiKeyManagementPage = memo(() => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <motion.h2 
-        className="text-2xl font-bold mb-6 flex items-center"
-        initial={{ x: -20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
+      <motion.div
+        className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg"
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.1, duration: 0.3 }}
       >
-        <LlmLogo provider="default" className="h-6 w-6 mr-3" />
-        LLM API Key Management
-      </motion.h2>
-      <motion.div 
-        className="grid grid-cols-1 md:grid-cols-2 gap-6"
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.3 }}
-      >
-        {MAIN_PROVIDERS.map((provider) => (
-          <ProviderCard key={provider.id} provider={provider} />
-        ))}
+        <h2 className="text-lg font-semibold text-blue-800 mb-2">Authentication Setup</h2>
+        <p className="text-sm text-blue-700">
+          To use the agent, you need to provide a valid authentication token. 
+          This can be done in two ways:
+        </p>
+        <ol className="list-decimal list-inside mt-2 text-sm text-blue-700 space-y-1">
+          <li>Connect through OAuth providers (GitHub, Google, Twitter) in the OAuth Management section</li>
+          <li>Manually enter your bearer token below for any provider</li>
+        </ol>
+        <p className="mt-2 text-sm text-blue-700">
+          For manual setup, enter your bearer token in the appropriate field below and click "Save Keys".
+        </p>
       </motion.div>
+      
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={providers.map(p => p.id)} strategy={verticalListSortingStrategy}>
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.3 }}
+          >
+            {providers.map((provider) => (
+              <SortableProviderCard key={provider.id} provider={provider} />
+            ))}
+          </motion.div>
+        </SortableContext>
+      </DndContext>
     </motion.div>
   );
 });

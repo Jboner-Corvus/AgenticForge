@@ -1,34 +1,40 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import type { Mock } from 'vitest';
 import { UserInput } from './UserInput';
 import { LanguageProvider } from '../lib/contexts/LanguageProvider';
+import { useStore } from '../lib/store';
+import { resetMockStore } from '../lib/__mocks__/store';
 
-// Mock the useStore hook
 vi.mock('../lib/store', async () => {
+  const actual = await vi.importActual('../lib/store');
   const mod = await import('../lib/__mocks__/store');
   return {
+    ...actual,
     useStore: mod.useStore,
+    resetMockStore: mod.resetMockStore,
   };
 });
-
 vi.mock('../lib/contexts/LanguageProvider', async () => {
   const mod = await import('../lib/__mocks__/LanguageProvider');
   return mod;
 });
 
-import { useStore } from '../lib/store';
-import { mockState } from '../lib/__mocks__/store';
-
 describe('UserInput', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  let startAgentSpy: Mock<[], Promise<void>>;
+  let setMessageInputValueSpy: Mock<[string], void>;
 
-    // Reset all mock functions in mockState
-    Object.keys(mockState).forEach(key => {
-      const k = key as keyof typeof mockState;
-      if (typeof mockState[k] === 'function') {
-        (mockState[k] as ReturnType<typeof vi.fn>).mockClear();
-      }
+  beforeEach(() => {
+    resetMockStore(); // Reset the store before each test
+    startAgentSpy = vi.fn(() => Promise.resolve()); // Explicitly type return as Promise<void>
+    setMessageInputValueSpy = vi.fn();
+    useStore.setState({
+      startAgent: startAgentSpy,
+      setMessageInputValue: setMessageInputValueSpy,
+      isProcessing: false, // Reset to default for most tests
+      messageInputValue: '',
+      tokenStatus: true, // Assuming tokenStatus is true by default for most tests
     });
   });
 
@@ -72,8 +78,8 @@ describe('UserInput', () => {
     // Press Enter
     fireEvent.keyDown(textarea, { key: 'Enter', code: 'Enter' });
 
-    expect(useStore.getState().startAgent).toHaveBeenCalled();
-    expect(useStore.getState().setMessageInputValue).toHaveBeenCalledWith('Test message via Enter');
+    expect(startAgentSpy).toHaveBeenCalled();
+    expect(setMessageInputValueSpy).toHaveBeenCalledWith('Test message via Enter');
     expect(textarea).toHaveValue(''); // Input should be cleared
   });
 
@@ -101,15 +107,12 @@ describe('UserInput', () => {
     expect(useStore.getState().setMessageInputValue).not.toHaveBeenCalled();
   });
 
-  it('should disable input and button when processing', () => {
-    // Set processing state
-    mockState.isProcessing = true;
-
+  it('should disable input and show loading spinner when processing', () => {
+    useStore.setState({ isProcessing: true });
     render(<LanguageProvider><UserInput /></LanguageProvider>);
     const textarea = screen.getByPlaceholderText('Type your message...');
     
-    // Check that the send button is not in the document (replaced by spinner)
-    expect(screen.queryByRole('button', { name: /send message/i })).not.toBeInTheDocument();
     expect(textarea).toBeDisabled();
+    expect(screen.getByLabelText('Loading')).toBeInTheDocument(); // Check for the LoadingSpinner
   });
 });

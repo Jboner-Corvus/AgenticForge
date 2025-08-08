@@ -129,6 +129,10 @@ export default defineConfig({
     {
       from: ['./src/modules/agent/system.prompt.md'],
       to: ['./dist/system.prompt.md']
+    },
+    {
+      from: ['./src/tools'],
+      to: ['./dist/tools']
     }
   ],
 });

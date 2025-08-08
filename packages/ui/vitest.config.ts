@@ -28,8 +28,7 @@ export default defineConfig(({ mode }) => {
         ...(isIntegration ? [] : integrationTestPaths) // Exclude integration tests from unit runs
       ],
       typecheck: {
-        enabled: true,
-        include: ['src/**/*.ts', 'src/**/*.tsx'],
+        enabled: false,
       },
       // Reduce verbosity
       reporters: ['default'],

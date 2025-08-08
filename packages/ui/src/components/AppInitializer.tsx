@@ -19,7 +19,6 @@ export const AppInitializer = () => {
   const setTokenStatus = useStore((state) => state.setTokenStatus);
   const fetchAndDisplayToolCount = useStore((state) => state.fetchAndDisplayToolCount);
   const toggleDarkMode = useStore((state) => state.toggleDarkMode);
-  const toggleHighContrastMode = useStore((state) => state.toggleHighContrastMode);
 
   const initializeSession = useCallback(() => {
     let currentSessionId = localStorage.getItem('agenticForgeSessionId');
@@ -47,7 +46,7 @@ export const AppInitializer = () => {
   }, [addDebugLog, setServerHealthy, translations.checkingServerHealth, translations.serverOffline, translations.serverOnline, translations.serverStatus, translations.serverHealthCheckFailed]);
 
   const initializeAuthToken = useCallback(() => {
-    const viteAuthToken = clientConfig.VITE_AUTH_TOKEN;
+    const viteAuthToken = clientConfig.VITE_AUTH_TOKEN || clientConfig.AUTH_TOKEN;
 
     if (viteAuthToken) {
       setAuthToken(viteAuthToken);
@@ -101,7 +100,7 @@ export const AppInitializer = () => {
       await useStore.getState().initializeSessionAndMessages();
       addMessage({ type: 'agent_response', content: translations.agentReady });
 
-      // Apply dark mode and high contrast mode based on initial store state
+      // Apply dark mode based on initial store state
       const isDarkMode = useStore.getState().isDarkMode;
       const storedDarkMode = localStorage.getItem('agenticForgeDarkMode');
       if (storedDarkMode === 'true' && !isDarkMode) {
@@ -109,18 +108,10 @@ export const AppInitializer = () => {
       } else if (storedDarkMode === 'false' && isDarkMode) {
         toggleDarkMode();
       }
-
-      const isHighContrastMode = useStore.getState().isHighContrastMode;
-      const storedHighContrastMode = localStorage.getItem('agenticForgeHighContrastMode');
-      if (storedHighContrastMode === 'true' && !isHighContrastMode) {
-        toggleHighContrastMode();
-      } else if (storedHighContrastMode === 'false' && isHighContrastMode) {
-        toggleHighContrastMode();
-      }
     };
 
     initialize();
-  }, [checkServerHealth, initializeAuthToken, initializeSession, addDebugLog, addMessage, toggleDarkMode, toggleHighContrastMode, translations.interfaceInitialized, translations.agentReady]);
+  }, [checkServerHealth, initializeAuthToken, initializeSession, addDebugLog, addMessage, toggleDarkMode, translations.interfaceInitialized, translations.agentReady]);
 
   return null; // This component doesn't render anything visible
 };

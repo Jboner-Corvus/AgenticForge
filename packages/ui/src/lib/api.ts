@@ -49,6 +49,7 @@ export async function sendMessage(
   sessionId: null | string,
   onMessage: (event: MessageEvent) => void,
   onError: (error: Event | Error) => void,
+  addDebugLog?: (message: string) => void,
 ): Promise<{ jobId: string; eventSource: EventSource }> {
   try {
     const response = await fetch('/api/chat', { // <-- URL Relative
@@ -56,6 +57,9 @@ export async function sendMessage(
       headers: getAuthHeaders(authToken, sessionId),
       body: JSON.stringify({ prompt }),
     });
+
+    console.log('sendMessage response:', response);
+    addDebugLog?.(`[API] sendMessage response status: ${response.status}`);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -65,20 +69,54 @@ export async function sendMessage(
     }
 
     const { jobId } = await response.json();
+    console.log('Job ID received:', jobId);
+    addDebugLog?.(`[API] Job ID received: ${jobId}`);
     
     // Établit la connexion SSE pour les mises à jour en streaming
-    const eventSource = new EventSource(`/api/chat/stream/${jobId}`); // <-- URL Relative
+    // Try relative URL first (works with proxy), fallback to direct backend if needed
+    const eventSourceUrl = `/api/chat/stream/${jobId}`;
+    console.log('Creating EventSource with URL:', eventSourceUrl);
+    addDebugLog?.(`[SSE] Creating EventSource with URL: ${eventSourceUrl}`);
+    
+    const eventSource = new EventSource(eventSourceUrl);
 
-    eventSource.onmessage = onMessage;
+    eventSource.onmessage = (event) => {
+      // Force debug logs even in production
+      if (window.console?.log) {
+        window.console.log('EventSource received message:', event.data);
+      }
+      addDebugLog?.(`[SSE] EventSource received message: ${event.data}`);
+      onMessage(event);
+    };
+    
     eventSource.onerror = (error) => {
       console.error(`EventSource failed:`, error);
+      console.error('EventSource readyState:', eventSource.readyState);
+      console.error('EventSource url:', eventSource.url);
+      addDebugLog?.(`[SSE ERROR] EventSource failed. ReadyState: ${eventSource.readyState}, URL: ${eventSource.url}`);
       onError(error);
       // eventSource.close(); // Do not close here, let the hook manage it
     };
 
-    return { jobId, eventSource };
+    // Add event listeners for debugging
+    eventSource.onopen = () => {
+      console.log('EventSource connection opened successfully');
+      console.log('EventSource readyState:', eventSource.readyState);
+      addDebugLog?.(`[SSE] EventSource connection opened. ReadyState: ${eventSource.readyState}`);
+    };
+
+    eventSource.addEventListener('close', () => {
+      console.log('EventSource close event received');
+      addDebugLog?.(`[SSE] EventSource close event received`);
+    });
+
+    console.log('EventSource instance created:', eventSource);
+    addDebugLog?.(`[SSE] EventSource instance created successfully`);
+
+    return { jobId, eventSource } as { jobId: string; eventSource: EventSource };
   } catch (error) {
     console.error('Error in sendMessage:', error);
+    addDebugLog?.(`[API ERROR] Error in sendMessage: ${error instanceof Error ? error.message : String(error)}`);
     throw error;
   }
 }

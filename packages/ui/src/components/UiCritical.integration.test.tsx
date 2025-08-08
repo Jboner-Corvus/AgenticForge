@@ -28,7 +28,6 @@ vi.mock('../lib/contexts/LanguageProvider', async () => {
 });
 
 import { useStore } from '../lib/store';
-import { mockState } from '../lib/__mocks__/store';
 import { LanguageProvider } from '../lib/contexts/LanguageProvider';
 
 // Wrapper function to provide context for components
@@ -61,7 +60,7 @@ describe('UI - Critical Tests', () => {
   it('should disable UI elements when processing', () => {
     // Modify mock state to simulate processing state
     const processingState = {
-      ...mockState,
+      ...useStore.getState(),
       isProcessing: true,
     };
     
@@ -80,7 +79,7 @@ describe('UI - Critical Tests', () => {
   it('should handle empty user input gracefully', () => {
     // Set processing state to false for this test
     const notProcessingState = {
-      ...mockState,
+      ...useStore.getState(),
       isProcessing: false,
     };
     
