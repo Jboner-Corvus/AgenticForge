@@ -4,12 +4,29 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../../../types.js';
 
-import { config } from '../../../../config.js'; // Import config
+import { config } from '../../../../config.js';
 
 export const writeFileParams = z.object({
-  content: z.string().describe('The full content to write to the file.'),
+  content: z
+    .string()
+    .max(50 * 1024 * 1024, 'Le contenu ne peut pas dépasser 50MB')
+    .describe('The full content to write to the file.'),
   path: z
     .string()
+    .min(1, 'Le chemin ne peut pas être vide')
+    .max(255, 'Le chemin ne peut pas dépasser 255 caractères')
+    .refine(
+      (path) => !path.includes('..'),
+      'Le chemin ne peut pas contenir ".." pour des raisons de sécurité',
+    )
+    .refine(
+      (path) => !/^\//.test(path),
+      'Le chemin doit être relatif (ne pas commencer par "/")',
+    )
+    .refine(
+      (path) => !/[<>:"|?*\x00-\x1f]/.test(path),
+      'Le chemin contient des caractères invalides',
+    )
     .describe(
       'The path to the file inside the workspace. Will be created if it does not exist.',
     ),
@@ -32,16 +49,29 @@ export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
   description:
     'Writes content to a file, overwriting it. Creates the file and directories if they do not exist.',
   execute: async (args: z.infer<typeof writeFileParams>, ctx: Ctx) => {
-    const absolutePath = path.join(config.WORKSPACE_PATH, args.path);
-
-    // Final security check: ensure the resolved path is within the workspace
-    if (!absolutePath.startsWith(config.WORKSPACE_PATH)) {
-      return {
-        erreur: 'File path is outside the allowed workspace directory.',
-      };
-    }
-
     try {
+      // Validation supplémentaire du workspace
+      if (!config.WORKSPACE_PATH) {
+        throw new Error('WORKSPACE_PATH non configuré dans la configuration');
+      }
+
+      const absolutePath = path.resolve(path.join(config.WORKSPACE_PATH, args.path));
+
+      // Vérifications de sécurité multiples
+      if (!absolutePath.startsWith(path.resolve(config.WORKSPACE_PATH))) {
+        return {
+          erreur: 'Chemin de fichier en dehors du répertoire de travail autorisé.',
+        };
+      }
+
+      // Vérifier que le répertoire parent existe ou peut être créé
+      const parentDir = path.dirname(absolutePath);
+      if (!parentDir.startsWith(path.resolve(config.WORKSPACE_PATH))) {
+        return {
+          erreur: 'Répertoire parent en dehors de l\'espace de travail autorisé.',
+        };
+      }
+
       // For very large content, skip the read/compare to avoid memory issues
       if (args.content.length < 1024 * 1024) {
         // 1MB threshold
@@ -72,8 +102,26 @@ export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
       return { message: successMessage };
     } catch (error: unknown) {
       ctx.log.error({ err: error }, `Failed to write file: ${args.path}`);
+      
+      // Gestion d'erreurs détaillée
+      let errorMessage = 'Erreur inconnue lors de l\'écriture du fichier';
+      if (error instanceof Error) {
+        const nodeError = error as NodeJS.ErrnoException;
+        if (nodeError.code === 'EACCES') {
+          errorMessage = 'Permission refusée pour écrire le fichier';
+        } else if (nodeError.code === 'ENOSPC') {
+          errorMessage = 'Espace disque insuffisant';
+        } else if (nodeError.code === 'EMFILE' || nodeError.code === 'ENFILE') {
+          errorMessage = 'Trop de fichiers ouverts simultanément';
+        } else if (nodeError.code === 'ENOTDIR') {
+          errorMessage = 'Un élément du chemin n\'est pas un répertoire';
+        } else {
+          errorMessage = `Erreur d'écriture: ${nodeError.message}`;
+        }
+      }
+      
       return {
-        erreur: `Could not write file: ${(error as Error).message || error}`,
+        erreur: errorMessage,
       };
     }
   },

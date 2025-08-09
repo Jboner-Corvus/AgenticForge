@@ -1,0 +1,17 @@
+--- a/node_modules/.pnpm/@vitejs+plugin-react@4.7.0_vite@5.4.19_@types+node@24.1.0_/node_modules/@vitejs/plugin-react/dist/index.js
++++ b/node_modules/.pnpm/@vitejs+plugin-react@4.7.0_vite@5.4.19_@types+node@24.1.0_/node_modules/@vitejs/plugin-react/dist/index.js
+@@ -248,12 +248,7 @@
+ 				if (id === runtimePublicPath) return readFileSync(refreshRuntimePath, "utf-8").replace(/__README_URL__/g, "https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react");
+ 			}
+ 		},
+-		transformIndexHtml(_, config) {
+-			if (!skipFastRefresh) return [{
+-				tag: "script",
+-				attrs: { type: "module" },
+-				children: getPreambleCode(config.server.config.base)
+-			}];
+-		}
++		transformIndexHtml: undefined
+ 	};
+ 	return [viteBabel, viteReactRefresh];
+ }

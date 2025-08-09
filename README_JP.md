@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="assets/title.png" alt="Agentic Forge Logo" width="250">
+  <img src="assets/title.png" alt="G-Forge Logo" width="250">
 </p>
 
-<h1 align="center">AgenticForge</h1>
+<h1 align="center">G-Forge</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge" alt="Agentic Forge Logo">
+  <img src="https://img.shields.io/badge/🔨-G_Forge-orange?style=for-the-badge" alt="G-Forge Logo">
 </p>
 <p align="center">
   <strong>🌐 Langues disponibles</strong><br>
@@ -39,11 +39,11 @@
     <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm">
 </p>
 
-## なぜAgentic Forgeを選ぶのか？
+## なぜG-Forgeを選ぶのか？
 
 🔒 **完全ローカルかつプライベート** - すべてがあなたのマシン上で動作 — クラウドなし、データ共有なし。あなたのファイル、会話、ツールはプライベートに保たれます。
 
-🛠️ **セルフツール鍛造** - Agentic Forgeは独自のツールを作成できます — 能力が不足している場合、それを構築するコードを書きます。
+🛠️ **セルフツール鍛造** - G-Forgeは独自のツールを作成できます — 能力が不足している場合、それを構築するコードを書きます。
 
 💻 **自律的コーディングアシスタント** - コードが必要？Python、TypeScript、Bashなどでプログラムを書き、デバッグし、実行できます — 監督なしで。
 
@@ -51,7 +51,7 @@
 
 📋 **複雑なタスクの計画と実行** - ファイル管理からWebスクレイピングまで — 大きなタスクをステップに分割し、作業を達成するためのツールを鍛造できます。
 
-🌐 **スマートWeb ナビゲーション** - Agentic Forgeは自律的にインターネットを閲覧できます — 検索、読み取り、情報抽出、タスクの自動化 — すべて介入なしで。
+🌐 **スマートWeb ナビゲーション** - G-Forgeは自律的にインターネットを閲覧できます — 検索、読み取り、情報抽出、タスクの自動化 — すべて介入なしで。
 
 🚀 **FastMCPで駆動** - MCP（Model Context Protocol）とFastMCPを超高性能フレームワークとして使用 — LLM相互作用のための真のロケット。
 
@@ -323,10 +323,10 @@ curl -X POST http://localhost:8080/api/v1/agent/stream \
 
 ## 管理コンソール（`run.sh`）
 
-インタラクティブコンソールは、Agentic Forgeインスタンスの完全な制御を提供します：
+インタラクティブコンソールは、G-Forgeインスタンスの完全な制御を提供します：
 
 ```
-🔨 Agentic Forge - 管理コンソール
+🔨 G-Forge - 管理コンソール
 ────────────────────────────────────────
 
    Docker & サービス
@@ -458,7 +458,7 @@ export const allTools: Tool<any>[] = [
 
 ## 謝辞
 
-- **[FastMCP](https://github.com/punkpeye/fastmcp)**：超高性能MCPフレームワーク - Agentic Forgeを動かすロケット 🚀
+- **[FastMCP](https://github.com/punkpeye/fastmcp)**：超高性能MCPフレームワーク - G-Forgeを動かすロケット 🚀
 - **[Model Context Protocol (MCP)](https://modelcontextprotocol.io/)**：LLM相互作用のための革命的なプロトコル
 - **[Docker](https://docker.com)**：コンテナ化と分離
 - **[Redis](https://redis.io)**：高性能データ構造
@@ -477,7 +477,7 @@ export const allTools: Tool<any>[] = [
 
 <div align="center">
 
-**🔨 鍛冶屋は自分のハンマーを鍛造する。** **🤖 Agentic Forgeは自分の能力を鍛造する。**
+**🔨 鍛冶屋は自分のハンマーを鍛造する。** **🤖 G-Forgeは自分の能力を鍛造する。**
 
 _あなたの技術的未来を鍛造しよう。_
 

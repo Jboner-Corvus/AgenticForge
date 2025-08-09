@@ -15,6 +15,15 @@ class AnthropicProvider implements ILlmProvider {
     if (statusCode === 401 || statusCode === 403) {
       return LlmKeyErrorType.PERMANENT;
     } else if (statusCode === 429) {
+      // Rate limit exceeded - could be temporary or permanent depending on error message
+      if (
+        _errorBody.includes('quota') ||
+        _errorBody.includes('limit') ||
+        _errorBody.includes('exceeded')
+      ) {
+        // Quota/limit exceeded errors are typically permanent for the billing period
+        return LlmKeyErrorType.PERMANENT;
+      }
       return LlmKeyErrorType.TEMPORARY;
     } else if (statusCode >= 500) {
       return LlmKeyErrorType.TEMPORARY;
@@ -54,7 +63,7 @@ class AnthropicProvider implements ILlmProvider {
       throw new LlmError(errorMessage);
     }
 
-    const apiUrl = 'https://api.anthropic.com/v1/messages';
+    const apiUrl = activeKey.baseUrl || 'https://api.anthropic.com/v1/messages';
 
     const anthropicMessages = messages.map((msg) => {
       let role: 'assistant' | 'user' = 'user';
@@ -182,6 +191,14 @@ class GeminiProvider implements ILlmProvider {
       return LlmKeyErrorType.PERMANENT;
     } else if (statusCode === 429) {
       // Too Many Requests - rate limit
+      // Check if it's a quota/limit exceeded error (permanent for billing period)
+      if (
+        _errorBody.includes('quota') ||
+        _errorBody.includes('limit') ||
+        _errorBody.includes('exceeded')
+      ) {
+        return LlmKeyErrorType.PERMANENT;
+      }
       return LlmKeyErrorType.TEMPORARY;
     } else if (statusCode >= 500) {
       // Server errors - temporary issues
@@ -223,7 +240,9 @@ class GeminiProvider implements ILlmProvider {
       throw new LlmError(errorMessage);
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/${modelName || getConfig().LLM_MODEL_NAME}:generateContent?key=${activeKey.apiKey}`;
+    const baseUrl =
+      activeKey.baseUrl || 'https://generativelanguage.googleapis.com/v1';
+    const apiUrl = `${baseUrl}/models/${modelName || getConfig().LLM_MODEL_NAME}:generateContent?key=${activeKey.apiKey}`;
 
     const geminiMessages = messages.map((msg) => {
       let role = msg.role;
@@ -361,6 +380,15 @@ class GrokProvider implements ILlmProvider {
     if (statusCode === 401 || statusCode === 403) {
       return LlmKeyErrorType.PERMANENT;
     } else if (statusCode === 429) {
+      // Rate limit exceeded - could be temporary or permanent depending on error message
+      if (
+        _errorBody.includes('quota') ||
+        _errorBody.includes('limit') ||
+        _errorBody.includes('exceeded')
+      ) {
+        // Quota/limit exceeded errors are typically permanent for the billing period
+        return LlmKeyErrorType.PERMANENT;
+      }
       return LlmKeyErrorType.TEMPORARY;
     } else if (statusCode >= 500) {
       return LlmKeyErrorType.TEMPORARY;
@@ -400,7 +428,8 @@ class GrokProvider implements ILlmProvider {
       throw new LlmError(errorMessage);
     }
 
-    const apiUrl = 'https://api.grok.com/v1/chat/completions'; // Adjust if Grok has a different API endpoint
+    const apiUrl =
+      activeKey.baseUrl || 'https://api.grok.com/v1/chat/completions'; // Adjust if Grok has a different API endpoint
 
     const grokMessages = messages.map((msg) => ({
       content: msg.parts.map((part) => part.text).join(''),
@@ -515,6 +544,14 @@ class HuggingFaceProvider implements ILlmProvider {
       return LlmKeyErrorType.PERMANENT;
     } else if (statusCode === 429) {
       // Too Many Requests - rate limit
+      // Check if it's a quota/limit exceeded error (permanent for billing period)
+      if (
+        _errorBody.includes('quota') ||
+        _errorBody.includes('limit') ||
+        _errorBody.includes('exceeded')
+      ) {
+        return LlmKeyErrorType.PERMANENT;
+      }
       return LlmKeyErrorType.TEMPORARY;
     } else if (statusCode >= 500) {
       // Server errors - temporary issues
@@ -556,7 +593,8 @@ class HuggingFaceProvider implements ILlmProvider {
       throw new LlmError(errorMessage);
     }
 
-    const apiUrl = `https://api-inference.huggingface.co/models/${modelName || getConfig().LLM_MODEL_NAME}`;
+    const baseUrl = activeKey.baseUrl || 'https://api-inference.huggingface.co';
+    const apiUrl = `${baseUrl}/models/${modelName || getConfig().LLM_MODEL_NAME}`;
 
     const requestBody = {
       inputs: messages
@@ -668,6 +706,14 @@ class MistralProvider implements ILlmProvider {
       return LlmKeyErrorType.PERMANENT;
     } else if (statusCode === 429) {
       // Too Many Requests - rate limit
+      // Check if it's a quota/limit exceeded error (permanent for billing period)
+      if (
+        _errorBody.includes('quota') ||
+        _errorBody.includes('limit') ||
+        _errorBody.includes('exceeded')
+      ) {
+        return LlmKeyErrorType.PERMANENT;
+      }
       return LlmKeyErrorType.TEMPORARY;
     } else if (statusCode >= 500) {
       // Server errors - temporary issues
@@ -704,7 +750,8 @@ class MistralProvider implements ILlmProvider {
       throw new LlmError(errorMessage);
     }
 
-    const apiUrl = 'https://api.mistral.ai/v1/chat/completions';
+    const apiUrl =
+      activeKey.baseUrl || 'https://api.mistral.ai/v1/chat/completions';
 
     const mistralMessages = messages.map((msg) => ({
       content: msg.parts.map((part) => part.text).join(''),
@@ -822,6 +869,14 @@ class OpenAIProvider implements ILlmProvider {
       return LlmKeyErrorType.PERMANENT;
     } else if (statusCode === 429) {
       // Too Many Requests - rate limit
+      // Check if it's a quota/limit exceeded error (permanent for billing period)
+      if (
+        _errorBody.includes('quota') ||
+        _errorBody.includes('limit') ||
+        _errorBody.includes('exceeded')
+      ) {
+        return LlmKeyErrorType.PERMANENT;
+      }
       return LlmKeyErrorType.TEMPORARY;
     } else if (statusCode >= 500) {
       // Server errors - temporary issues
@@ -863,7 +918,8 @@ class OpenAIProvider implements ILlmProvider {
       throw new LlmError(errorMessage);
     }
 
-    const apiUrl = 'https://api.openai.com/v1/chat/completions';
+    const apiUrl =
+      activeKey.baseUrl || 'https://api.openai.com/v1/chat/completions';
 
     const openaiMessages = messages.map((msg) => ({
       content: msg.parts.map((part) => part.text).join(''),

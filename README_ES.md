@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="assets/title.png" alt="Agentic Forge Logo" width="250">
+  <img src="assets/title.png" alt="G-Forge Logo" width="250">
 </p>
 
-<h1 align="center">AgenticForge</h1>
+<h1 align="center">G-Forge</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge" alt="Agentic Forge Logo">
+  <img src="https://img.shields.io/badge/🔨-G_Forge-orange?style=for-the-badge" alt="G-Forge Logo">
 </p>
 <p align="center">
   <strong>🌐 Langues disponibles</strong><br>
@@ -39,11 +39,11 @@
     <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm">
 </p>
 
-## ¿Por qué Agentic Forge?
+## ¿Por qué G-Forge?
 
 🔒 **Completamente Local y Privado** - Todo funciona en su máquina — sin nube, sin compartir datos. Sus archivos, conversaciones y herramientas permanecen privados.
 
-🛠️ **Auto-Forjado de Herramientas** - Agentic Forge puede crear sus propias herramientas — cuando le falta una capacidad, escribe el código para construirla.
+🛠️ **Auto-Forjado de Herramientas** - G-Forge puede crear sus propias herramientas — cuando le falta una capacidad, escribe el código para construirla.
 
 💻 **Asistente de Codificación Autónomo** - ¿Necesita código? Puede escribir, depurar y ejecutar programas en Python, TypeScript, Bash y más — sin supervisión.
 
@@ -51,7 +51,7 @@
 
 📋 **Planifica y Ejecuta Tareas Complejas** - Desde gestión de archivos hasta web scraping — puede dividir grandes tareas en pasos y forjar las herramientas para realizar el trabajo.
 
-🌐 **Navegación Web Inteligente** - Agentic Forge puede navegar por internet de forma autónoma — buscar, leer, extraer información, automatizar tareas — todo sin intervención.
+🌐 **Navegación Web Inteligente** - G-Forge puede navegar por internet de forma autónoma — buscar, leer, extraer información, automatizar tareas — todo sin intervención.
 
 🚀 **Impulsado por FastMCP** - Utiliza el protocolo MCP (Model Context Protocol) con FastMCP como framework ultra-performante — un verdadero cohete para interacciones LLM.
 

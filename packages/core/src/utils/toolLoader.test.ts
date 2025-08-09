@@ -89,7 +89,7 @@ describe('toolLoader Integration Test', () => {
       const validToolContent = `
         import { z } from 'zod';
         export const myTestTool = {
-          name: 'myTestTool',
+          name: 'myTool',
           description: 'A test tool',
           parameters: z.object({ param1: z.string() }),
           execute: () => 'result',
@@ -102,7 +102,7 @@ describe('toolLoader Integration Test', () => {
 
       // Assert
       expect(tools).toHaveLength(1);
-      expect(tools[0].name).toBe('myTestTool');
+      expect(tools[0].name).toBe('myTool');
     });
 
     it('should load multiple tool files', async () => {
@@ -158,7 +158,5 @@ describe('toolLoader Integration Test', () => {
       // Assert
       expect(tools).toHaveLength(0);
     });
-
-    
   });
 });

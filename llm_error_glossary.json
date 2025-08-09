@@ -22,3 +22,20 @@
     }
   ]
 }
+
+
+
+✕ [API Error: OpenAI API error: 429 Rate limit exceeded:
+  free-models-per-day-high-balance. ]
+
+
+│ ... first 436 lines hidden ...                            │
+│        at async                                           │
+│    file:///usr/lib/node_modules/@qwen-code/qwen-code/bund │
+│    le/gemini.js:255228:34                                 │
+│ ✖  OpenAI API Streaming Error: 429 Rate limit exceeded:   │
+│    free-models-per-day-high-balance.                      │
+│ ✖  Error when talking to Gemini API Full report available │
+│    at:                                                    │
+│    /tmp/gemini-client-error-Turn.run-sendMessageStream-20 │
+│    25-08-03T16-45-12-595Z.json   

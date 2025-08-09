@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="assets/title.png" alt="Agentic Forge Logo" width="250">
+  <img src="assets/title.png" alt="G-Forge Logo" width="250">
 </p>
 
-<h1 align="center">AgenticForge</h1>
+<h1 align="center">G-Forge</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge" alt="Agentic Forge Logo">
+  <img src="https://img.shields.io/badge/🔨-G_Forge-orange?style=for-the-badge" alt="G-Forge Logo">
 </p>
 <p align="center">
   <strong>🌐 Langues disponibles</strong><br>
@@ -39,11 +39,11 @@
     <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm">
 </p>
 
-## Por que Agentic Forge?
+## Por que G-Forge?
 
 🔒 **Totalmente Local e Privado** - Tudo funciona em sua máquina — sem nuvem, sem compartilhamento de dados. Seus arquivos, conversas e ferramentas permanecem privados.
 
-🛠️ **Auto-Forjamento de Ferramentas** - Agentic Forge pode criar suas próprias ferramentas — quando lhe falta uma capacidade, ele escreve o código para construí-la.
+🛠️ **Auto-Forjamento de Ferramentas** - G-Forge pode criar suas próprias ferramentas — quando lhe falta uma capacidade, ele escreve o código para construí-la.
 
 💻 **Assistente de Codificação Autônomo** - Precisa de código? Ele pode escrever, debugar e executar programas em Python, TypeScript, Bash e mais — sem supervisão.
 
@@ -51,7 +51,7 @@
 
 📋 **Planeja e Executa Tarefas Complexas** - Desde gerenciamento de arquivos até web scraping — ele pode dividir grandes tarefas em etapas e forjar as ferramentas para realizar o trabalho.
 
-🌐 **Navegação Web Inteligente** - Agentic Forge pode navegar na internet autonomamente — pesquisar, ler, extrair informações, automatizar tarefas — tudo sem intervenção.
+🌐 **Navegação Web Inteligente** - G-Forge pode navegar na internet autonomamente — pesquisar, ler, extrair informações, automatizar tarefas — tudo sem intervenção.
 
 🚀 **Alimentado pelo FastMCP** - Usa o protocolo MCP (Model Context Protocol) com FastMCP como framework ultra-performático — um verdadeiro foguete para interações LLM.
 
@@ -323,10 +323,10 @@ Uma vez que seus serviços estão executando, tente estes exemplos:
 
 ## Console de Gerenciamento (`run.sh`)
 
-O console interativo fornece controle completo sobre sua instância do Agentic Forge:
+O console interativo fornece controle completo sobre sua instância do G-Forge:
 
 ```
-🔨 Agentic Forge - Console de Gerenciamento
+🔨 G-Forge - Console de Gerenciamento
 ────────────────────────────────────────
 
    Docker & Serviços
@@ -458,7 +458,7 @@ Este projeto está licenciado sob a Licença MIT. Veja o arquivo [LICENSE](LICEN
 
 ## Agradecimentos
 
-- **[FastMCP](https://github.com/punkpeye/fastmcp)**: Framework MCP ultra-performático - o foguete que alimenta o Agentic Forge 🚀
+- **[FastMCP](https://github.com/punkpeye/fastmcp)**: Framework MCP ultra-performático - o foguete que alimenta o G-Forge 🚀
 - **[Model Context Protocol (MCP)](https://modelcontextprotocol.io/)**: Protocolo revolucionário para interação LLM
 - **[Docker](https://docker.com)**: Containerização e isolamento
 - **[Redis](https://redis.io)**: Estruturas de dados de alta performance
@@ -477,7 +477,7 @@ Este projeto está licenciado sob a Licença MIT. Veja o arquivo [LICENSE](LICEN
 
 <div align="center">
 
-**🔨 Um ferreiro forja seus martelos.** **🤖 Agentic Forge forja suas próprias capacidades.**
+**🔨 Um ferreiro forja seus martelos.** **🤖 G-Forge forja suas próprias capacidades.**
 
 _Forje seu futuro tecnológico._
 

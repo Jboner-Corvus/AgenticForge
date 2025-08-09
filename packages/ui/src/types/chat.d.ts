@@ -47,8 +47,14 @@ export interface AgentCanvasOutputMessage extends BaseMessage {
   contentType: 'html' | 'markdown' | 'url' | 'text';
 }
 
+export interface AgentMessage extends BaseMessage {
+  type: 'agent';
+  content: string;
+}
+
 export type ChatMessage =
   | UserMessage
+  | AgentMessage
   | AgentResponseMessage
   | ToolCallMessage
   | ToolResultMessage
@@ -59,6 +65,7 @@ export type ChatMessage =
 
 export type NewChatMessage =
   | { type: 'user'; content: string }
+  | { type: 'agent'; content: string }
   | { type: 'agent_response'; content: string }
   | { type: 'tool_call'; toolName: string; params: Record<string, unknown> }
   | { type: 'tool_result'; toolName: string; result: { output: string | Record<string, unknown> } }

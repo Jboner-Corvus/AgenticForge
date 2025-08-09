@@ -93,6 +93,7 @@ export interface SessionData {
   identities: Array<{ id: string; type: string }>;
   metadata?: Record<string, unknown>;
   name: string;
+  status?: string; // Added status property
   timestamp: number;
   workingContext?: {
     currentFile?: string;

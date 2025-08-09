@@ -73,6 +73,7 @@ class ToolRegistry {
       throw new UserError(`Tool with name ${tool.name} already registered.`);
     }
     this.tools.set(tool.name, tool);
+    console.log(`Tool registered: ${tool.name}`);
     getLoggerInstance().debug(
       { parameters: tool.parameters.shape, toolName: tool.name },
       `Tool registered: ${tool.name}`,

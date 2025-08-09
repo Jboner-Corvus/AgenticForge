@@ -13,7 +13,7 @@ export const UserMessageBubble: React.FC<UserMessageBubbleProps> = ({
   return (
     <div className="flex justify-end items-end space-x-2 animate-slide-up">
       <div className="flex flex-col items-end">
-        <div className="bg-primary text-primary-foreground p-3 rounded-lg max-w-xs break-words shadow-md">
+        <div className="bg-primary text-primary-foreground p-3 rounded-xl max-w-xs break-words shadow-md">
           {content}
         </div>
         <span className="text-xs text-muted-foreground mt-1">{timestamp}</span>

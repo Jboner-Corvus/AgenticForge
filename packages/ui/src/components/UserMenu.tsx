@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
-import { useLanguage } from '../lib/hooks/useLanguageHook';
+import { useLanguage } from '../lib/contexts/LanguageContext';
 
 export const UserMenu: React.FC = () => {
   const { translations } = useLanguage();

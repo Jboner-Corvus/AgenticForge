@@ -1,0 +1,60 @@
+prompts:
+  # 1-10 : Commandes de base (fichiers, shell, web, outils)
+  - "1. Liste tous les fichiers et dossiers dans le répertoire de travail."
+  - "2. Crée un fichier nommé rapport.txt et écris dedans : Ceci est la première ligne."
+  - "3. Lis le contenu du fichier rapport.txt."
+  - "4. Dans rapport.txt, remplace première par seconde."
+  - '5. Exécute la commande shell "echo $SHELL && which bash" et montre la sortie.'
+  - "6. Exécute ls -la et montre la sortie."
+  - "7. Fais une recherche web (avec API) sur : dernières avancées en intelligence artificielle."
+  - "8. Navigue sur https://www.lemonde.fr et résume les titres principaux avec webNavigate."
+  - "9. Quels sont tous les outils que tu peux utiliser ? Liste-les."
+  - '10. Crée un nouvel outil nommé dire_bonjour qui ne prend aucun paramètre et retourne la chaîne "Bonjour le monde !".'
+
+  # 11-20 : Scénarios de complexité moyenne
+  - "11. Crée un fichier todo.txt avec trois lignes : - Tâche 1, - Tâche 2, - Tâche 3. Ensuite, lis le contenu de ce fichier pour confirmer."
+  - "12. Utilise une commande shell pour obtenir la date actuelle au format AAAA-MM-JJ. Ensuite, écris cette date dans un fichier nommé date_du_jour.txt."
+  - "13. Écris un script Python nommé calcul.py qui calcule 125 * 8 et affiche le résultat. Ensuite, exécute ce script et donne-me la réponse."
+  - "14. Utilise une commande shell pour compter le nombre total de fichiers et de dossiers dans le répertoire de travail et annonce le résultat."
+  - "15. Navigue sur la page d'accueil de Wikipedia (https://fr.wikipedia.org), extrais tout le texte, puis fournis un résumé concis de ce contenu."
+  - '16. Crée un fichier config.json avec le contenu {"user": "admin", "version": "2.1.0", "active": true}. Ensuite, lis ce fichier et dis-moi uniquement la valeur de la clé version.'
+  - "17. Crée une arborescence de projet dans le workspace : un dossier parent nommé webapp, et à l'intérieur, deux sous-dossiers : src et assets."
+  - "18. Lis le fichier todo.txt. Si le fichier contient Tâche 2, remplace cette ligne par - Tâche 2 (Terminée). Sinon, ajoute une nouvelle ligne : - Tâche 4."
+  - "19. Écris un script Python word_counter.py qui ouvre et lit le fichier projet_alpha.md, compte le nombre de mots, et affiche le total. Exécute ensuite ce script."
+  - "20. Exécute la commande pnpm -v pour vérifier la version du gestionnaire de paquets dans l'environnement de développement."
+
+  # 21-30 : Débogage et création d'outils
+  - '21. Crée un fichier bug.py avec le code suivant: print(hello). Exécute-le. Tu devrais obtenir une NameError. Corrige le script pour qu''il affiche correctement la chaîne de caractères "hello", puis exécute-le à nouveau.'
+  - '22. Analyse le contenu complet du répertoire de travail. Crée un fichier manifest.json qui liste tous les fichiers présents avec leur taille en octets. Le format doit être un tableau d''objets, par exemple [{"nom": "fichier1.txt", "taille": 123}].'
+  - "23. Je veux m'assurer que le code est propre. Exécute la commande de linting du projet et rapporte la sortie complète."
+  - '24. Crée un fichier A.txt avec "hello" et un fichier B.txt avec "world". Lis les deux fichiers et dis-moi s''ils ont le même contenu.'
+  - "25. Utilise la commande tar pour créer une archive workspace.tar.gz de tout le contenu du répertoire de travail."
+  - "26. Crée un outil nommé get-timestamp qui ne prend aucun paramètre et retourne la date et l'heure actuelles au format ISO 8601. La fonction execute doit simplement contenir return new Date().toISOString();."
+  - "27. J'ai besoin d'un outil pour générer des UUID. Crée un outil nommé generate-uuid qui utilise la fonction crypto.randomUUID() de Node.js. Après sa création, utilise-le immédiatement pour générer un UUID et l'afficher."
+  - "28. Crée un outil log-activity qui prend un paramètre message. Cet outil doit utiliser writeFile pour ajouter le message précédé d'un timestamp dans un fichier activity.log. Crée cet outil."
+  - "29. Lis le code de l'outil listFiles. Crée une nouvelle version de cet outil nommée listFiles-recursive qui utilise une commande shell (find . -print) pour lister les fichiers de manière récursive. Enregistre-le comme un nouvel outil."
+  - '30. Je dois souvent vérifier si des sites web sont en ligne. Crée un outil check-website-status qui prend une url en paramètre. Cet outil doit utiliser Python et la librairie requests pour faire une requête GET à l''URL et retourner "En ligne" si le code de statut est 200, et "Hors ligne" sinon. Crée cet outil pour moi.'
+
+  # 31-40 : Projets et développement
+  - '31. Créer un Site Web Statique "Portfolio"'
+  - '32. Développer un Outil CLI Node pour Gérer des Tâches'
+  - '33. Mettre en Place une API Web Minimale avec Javascript pnpm'
+  - "34. Créer un Composant React pour l'UI Existante"
+  - '35. Scraper des Données Cosmologique et les Analyser'
+  - '36. Créer un Script d''Initialisation de Projet'
+  - '37. Convertisseur Markdown vers HTML'
+  - '38. Créer un Outil pour Interagir avec une API Publique'
+  - '39. Générer et Exécuter des Tests Unitaires pour un Script'
+  - '40. Refactoriser un Script pour la Clarté et l''Efficacité'
+
+  # 41-50 : Tâches avancées
+  - '41. Conteneuriser l''API Express/Node avec un Dockerfile'
+  - '42. Créer une Base de Données SQLite et l''Intégrer à un Script'
+  - '43. Développer une Application "Livre d''Or" Full-Stack'
+  - '44. Automatiser des Tâches Basées sur un Fichier YAML'
+  - '45. Écrire un Script de "Benchmark" de Performance'
+  - '46. Générer la Documentation Technique d''un Projet'
+  - '47. Créer un Workflow Git (Branches et Merge)'
+  - '48. Créer une Micro-Librairie Typescript et l''Utiliser'
+  - '49. Résoudre un Problème Logique en "Chain-of-Thought"'
+  - '50. Developpe les test les plus critique d une grosse Biblio comme Fastmcp'

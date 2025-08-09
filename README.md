@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="assets/title.png" alt="Agentic Forge Logo" width="250">
+  <img src="assets/title.png" alt="G-Forge Logo" width="250">
 </p>
 
-<h1 align="center">AgenticForge</h1>
+<h1 align="center">G-Forge</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/🔨-Agentic_Forge-orange?style=for-the-badge" alt="Agentic Forge Logo">
+  <img src="https://img.shields.io/badge/🔨-G_Forge-orange?style=for-the-badge" alt="G-Forge Logo">
 </p>
 <p align="center">
   <strong>🌐 Langues disponibles</strong><br>
@@ -28,7 +28,7 @@
 </p>
 <br>
 <p align="center">
-    <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square&logo=opensource&logoColor=white" alt="MIT License"> <img src="https://img.shields.io/github/stars/Jboner-Corvus/AgenticForge?style=flat-square&logo=github&color=gold" alt="Stars"> <img src="https://img.shields.io/github/forks/Jboner-Corvus/AgenticForge?style=flat-square&logo=git&color=blue" alt="Forks"> <img src="https://img.shields.io/github/issues/Jboner-Corvus/AgenticForge?style=flat-square&logo=github" alt="Issues">
+    <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square&logo=opensource&logoColor=white" alt="MIT License"> <img src="https://img.shields.io/github/stars/Jboner-Corvus/G-Forge?style=flat-square&logo=github&color=gold" alt="Stars"> <img src="https://img.shields.io/github/forks/Jboner-Corvus/G-Forge?style=flat-square&logo=git&color=blue" alt="Forks"> <img src="https://img.shields.io/github/issues/Jboner-Corvus/G-Forge?style=flat-square&logo=github" alt="Issues">
 </p>
 <p align="center">
     <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
@@ -39,11 +39,11 @@
     <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm">
 </p>
 
-## Pourquoi Agentic Forge ?
+## Pourquoi G-Forge ?
 
 🔒 **Entièrement Local et Privé** - Tout fonctionne sur votre machine — pas de cloud, pas de partage de données. Vos fichiers, conversations et outils restent privés.
 
-🛠️ **Auto-Forge d'Outils** - Agentic Forge peut créer ses propres outils — quand une capacité lui manque, il écrit le code pour la construire.
+🛠️ **Auto-Forge d'Outils** - G-Forge peut créer ses propres outils — quand une capacité lui manque, il écrit le code pour la construire.
 
 💻 **Assistant de Codage Autonome** - Besoin de code ? Il peut écrire, déboguer et exécuter des programmes en Python, TypeScript, Bash et plus — sans supervision.
 
@@ -51,7 +51,7 @@
 
 📋 **Planifie et Exécute des Tâches Complexes** - De la gestion de fichiers au scraping web — il peut diviser les grandes tâches en étapes et forger les outils pour accomplir le travail.
 
-🌐 **Navigation Web Intelligente** - Agentic Forge peut naviguer sur internet de manière autonome — rechercher, lire, extraire des infos, automatiser des tâches — le tout sans intervention.
+🌐 **Navigation Web Intelligente** - G-Forge peut naviguer sur internet de manière autonome — rechercher, lire, extraire des infos, automatiser des tâches — le tout sans intervention.
 
 🚀 **Propulsé par FastMCP** - Utilise le protocole MCP (Model Context Protocol) avec FastMCP comme framework ultra-performant — une véritable fusée pour les interactions LLM.
 
@@ -85,8 +85,8 @@ Avant de commencer, assurez-vous d'avoir les logiciels suivants installés :
 ## 1. Cloner le dépôt
 
 ```bash
-git clone https://github.com/votre-username/agentic-forge.git
-cd agentic-forge
+git clone https://github.com/votre-username/g-forge.git
+cd g-forge
 ```
 
 ## 2. Lancer le script de gestion
@@ -315,13 +315,13 @@ Une fois vos services en marche, essayez ces exemples :
 
 ---
 
-## Console de Gestion (`run.sh`)
+### Console de Gestion (`run.sh`)
 
-La console interactive fournit un contrôle complet sur votre instance Agentic Forge :
+La console interactive fournit un contrôle complet sur votre instance G-Forge :
 
 ```
    ╔══════════════════════════════════╗
-   ║      A G E N T I C  F O R G E    ║
+   ║           G - F O R G E          ║
    ╚══════════════════════════════════╝
 ──────────────────────────────────────────
   Docker & Services
@@ -385,7 +385,7 @@ sequenceDiagram
 ### Structure du Projet
 
 ```
-agentic-forge/
+g-forge/
 ├── packages/
 │   ├── core/                  # Code source du Backend et du Worker
 │   │   ├── src/
@@ -453,7 +453,7 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour les détails.
 
 ## Remerciements
 
-- **[FastMCP](https://github.com/punkpeye/fastmcp)** : Framework MCP ultra-performant - la fusée qui propulse Agentic Forge 🚀
+- **[FastMCP](https://github.com/punkpeye/fastmcp)** : Framework MCP ultra-performant - la fusée qui propulse G-Forge 🚀
 - **[Model Context Protocol (MCP)](https://modelcontextprotocol.io/)** : Protocole révolutionnaire pour l'interaction avec les LLMs
 - **[Docker](https://docker.com)** : Conteneurisation et isolation
 - **[Redis](https://redis.io)** : Structures de données haute performance
@@ -464,15 +464,15 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour les détails.
 
 ## Support
 
-- **Issues** : [GitHub Issues](https://github.com/votre-username/agentic-forge/issues)
-- **Discussions** : [GitHub Discussions](https://github.com/votre-username/agentic-forge/discussions)
-- **Documentation** : [Wiki du Projet](https://github.com/votre-username/agentic-forge/wiki)
+- **Issues** : [GitHub Issues](https://github.com/votre-username/g-forge/issues)
+- **Discussions** : [GitHub Discussions](https://github.com/votre-username/g-forge/discussions)
+- **Documentation** : [Wiki du Projet](https://github.com/votre-username/g-forge/wiki)
 
 ---
 
 <div align="center">
 
-**🔨 Un forgeron forge ses marteaux.** **🤖 Agentic Forge forge ses propres capacités.**
+**🔨 Un forgeron forge ses marteaux.** **🤖 G-Forge forge ses propres capacités.**
 
 _Forgez votre avenir technologique._
 

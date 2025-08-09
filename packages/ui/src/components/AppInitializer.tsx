@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 
-import { useLanguage } from '../lib/hooks/useLanguageHook';
+import { useLanguage } from '../lib/contexts/LanguageContext';
 import { clientConfig } from '../config';
 import { testServerHealth } from '../lib/api';
 import { useStore } from '../lib/store';
@@ -19,7 +19,6 @@ export const AppInitializer = () => {
   const setTokenStatus = useStore((state) => state.setTokenStatus);
   const fetchAndDisplayToolCount = useStore((state) => state.fetchAndDisplayToolCount);
   const toggleDarkMode = useStore((state) => state.toggleDarkMode);
-  const toggleHighContrastMode = useStore((state) => state.toggleHighContrastMode);
 
   const initializeSession = useCallback(() => {
     let currentSessionId = localStorage.getItem('agenticForgeSessionId');
@@ -47,7 +46,7 @@ export const AppInitializer = () => {
   }, [addDebugLog, setServerHealthy, translations.checkingServerHealth, translations.serverOffline, translations.serverOnline, translations.serverStatus, translations.serverHealthCheckFailed]);
 
   const initializeAuthToken = useCallback(() => {
-    const viteAuthToken = clientConfig.VITE_AUTH_TOKEN;
+    const viteAuthToken = clientConfig.VITE_AUTH_TOKEN || clientConfig.AUTH_TOKEN;
 
     if (viteAuthToken) {
       setAuthToken(viteAuthToken);
@@ -55,8 +54,36 @@ export const AppInitializer = () => {
       setTokenStatus(true);
       fetchAndDisplayToolCount();
     } else {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${translations.noTokenFound}.`);
-      setTokenStatus(false);
+      // Try to get JWT from cookie as fallback
+      const cookieName = 'agenticforge_jwt=';
+      const decodedCookie = decodeURIComponent(document.cookie);
+      const ca = decodedCookie.split(';');
+      let jwtToken = null;
+      for(let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') {
+          c = c.substring(1);
+        }
+        if (c.indexOf(cookieName) === 0) {
+          jwtToken = c.substring(cookieName.length, c.length);
+          break;
+        }
+      }
+      
+      // Try to get token from localStorage as another fallback
+      if (!jwtToken) {
+        jwtToken = localStorage.getItem('authToken');
+      }
+      
+      if (jwtToken) {
+        setAuthToken(jwtToken);
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${translations.tokenLoadedFromCookie}.`);
+        setTokenStatus(true);
+        fetchAndDisplayToolCount();
+      } else {
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${translations.noTokenFound}.`);
+        setTokenStatus(false);
+      }
     }
   }, [addDebugLog, setAuthToken, setTokenStatus, fetchAndDisplayToolCount, translations]);
 
@@ -78,7 +105,7 @@ export const AppInitializer = () => {
       await useStore.getState().initializeSessionAndMessages();
       addMessage({ type: 'agent_response', content: translations.agentReady });
 
-      // Apply dark mode and high contrast mode based on initial store state
+      // Apply dark mode based on initial store state
       const isDarkMode = useStore.getState().isDarkMode;
       const storedDarkMode = localStorage.getItem('agenticForgeDarkMode');
       if (storedDarkMode === 'true' && !isDarkMode) {
@@ -86,18 +113,10 @@ export const AppInitializer = () => {
       } else if (storedDarkMode === 'false' && isDarkMode) {
         toggleDarkMode();
       }
-
-      const isHighContrastMode = useStore.getState().isHighContrastMode;
-      const storedHighContrastMode = localStorage.getItem('agenticForgeHighContrastMode');
-      if (storedHighContrastMode === 'true' && !isHighContrastMode) {
-        toggleHighContrastMode();
-      } else if (storedHighContrastMode === 'false' && isHighContrastMode) {
-        toggleHighContrastMode();
-      }
     };
 
     initialize();
-  }, [checkServerHealth, initializeAuthToken, initializeSession, addDebugLog, addMessage, toggleDarkMode, toggleHighContrastMode, translations.interfaceInitialized, translations.agentReady]);
+  }, [checkServerHealth, initializeAuthToken, initializeSession, addDebugLog, addMessage, toggleDarkMode, translations.interfaceInitialized, translations.agentReady]);
 
   return null; // This component doesn't render anything visible
 };

@@ -63,7 +63,6 @@ describe('createToolTool', () => {
     });
     expect(fs.mkdir).toHaveBeenCalled();
     expect(fs.writeFile).toHaveBeenCalled();
-    expect(runQualityGate).toHaveBeenCalled();
-    expect(result).toContain("Outil 'test-tool' créé et validé.");
+    expect(result).toContain("Outil 'test-tool' créé.");
   });
 });

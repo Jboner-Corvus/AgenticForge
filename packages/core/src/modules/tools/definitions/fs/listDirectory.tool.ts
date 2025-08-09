@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { config } from '../../../../config.js';
 import { Ctx, Tool } from '../../../../types.js';
 
-const WORKSPACE_DIR = config.HOST_PROJECT_PATH;
+const WORKSPACE_DIR = config.WORKER_WORKSPACE_PATH || config.HOST_PROJECT_PATH;
 
 export const listFilesParams = z.object({
   path: z

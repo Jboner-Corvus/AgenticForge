@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import type { Ctx, Tool } from '../../../../types.js';
 
-import { getAllTools } from '../index.js';
+import { getTools } from '../../../../utils/toolLoader.js';
 
 export const parameters = z.object({});
 
@@ -19,7 +19,7 @@ export const listToolsTool: Tool<typeof parameters, typeof listToolsOutput> = {
   description: 'Lists all available tools.',
   execute: async (_args: z.infer<typeof parameters>, _ctx: Ctx) => {
     try {
-      const allTools = await getAllTools();
+      const allTools = await getTools();
       const toolNames = allTools.map((tool: Tool) => tool.name);
       return {
         tools: toolNames,
