@@ -30,7 +30,10 @@ vi.mock('../lib/contexts/LanguageProvider', async () => {
   return mod;
 });
 
+vi.mock('../lib/hooks/useAgentStream');
+
 import { useStore } from '../lib/store';
+import { useAgentStream } from '../lib/hooks/useAgentStream';
 import { LanguageProvider } from '../lib/contexts/LanguageProvider';
 
 // Wrapper function to provide context for components
@@ -82,6 +85,11 @@ describe('UI Integration Tests', () => {
   });
 
   it('should handle empty user input gracefully', () => {
+    const startAgentMock = vi.fn();
+    (useAgentStream as Mock).mockReturnValue({
+        startAgent: startAgentMock,
+    });
+
     // Set processing state to false for this test
     const notProcessingState = {
       ...useStore.getState(),
@@ -98,7 +106,7 @@ describe('UI Integration Tests', () => {
     fireEvent.click(sendButton);
     
     // Verify that startAgent is not called for empty input
-    expect(useStore.getState().startAgent).not.toHaveBeenCalled();
+    expect(startAgentMock).not.toHaveBeenCalled();
   });
 
   it('should handle network errors in session management', () => {

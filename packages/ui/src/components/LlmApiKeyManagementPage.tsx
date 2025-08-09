@@ -1,15 +1,13 @@
-import { GripVertical, Plus, Trash2, Save, Info } from 'lucide-react';
+import { Save, Info, CheckCircle, Settings, Key, Zap, Shield } from 'lucide-react';
 import { memo, useState, useEffect } from 'react';
 import { useStore } from '../lib/store';
-import { OpenAILogo, AnthropicLogo, GeminiLogo, MistralLogo, GrokLogo, OllamaLogo, OpenRouterLogo } from './icons/LlmLogos';
+import { OpenAILogo, AnthropicLogo, GeminiLogo } from './icons/LlmLogos';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { LoadingSpinner } from './LoadingSpinner';
-import { Card, CardContent, CardHeader } from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { useToast } from '../lib/hooks/useToast';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { motion } from 'framer-motion';
 
 interface LlmProviderConfig {
@@ -18,328 +16,341 @@ interface LlmProviderConfig {
   logo: React.ComponentType<{ className?: string }>;
   models: string[];
   baseUrl?: string;
+  description: string;
 }
 
-const INITIAL_PROVIDERS: LlmProviderConfig[] = [
-  { id: 'openai', name: 'OpenAI', logo: OpenAILogo, models: ['gpt-4.5', 'gpt-3'], baseUrl: 'https://api.openai.com/v1' },
-  { id: 'anthropic', name: 'Anthropic', logo: AnthropicLogo, models: ['claude-sonnet-4'], baseUrl: 'https://api.anthropic.com' },
-  { id: 'gemini', name: 'Google Gemini', logo: GeminiLogo, models: ['gemini-2.5-flash', 'gemini-2.5-pro'], baseUrl: 'https://generativelanguage.googleapis.com' },
-  { id: 'mistral', name: 'Mistral AI', logo: MistralLogo, models: ['mistral-large', 'mistral-medium', 'mistral-small'], baseUrl: 'https://api.mistral.ai/v1' },
-  { id: 'grok', name: 'Grok', logo: GrokLogo, models: ['grok3', 'grok4', 'grok4heavy'], baseUrl: 'https://api.x.ai/v1' },
-  { id: 'ollama', name: 'Ollama', logo: OllamaLogo, models: ['(URL and API key required - uses Bearer authentication)'], baseUrl: 'http://localhost:11434/v1' },
-  { id: 'openrouter', name: 'OpenRouter', logo: OpenRouterLogo, models: ['moonshotai/kimi-k2:free', 'qwen/qwen3-coder:free'], baseUrl: 'https://openrouter.ai/api/v1' },
+const PROVIDERS: LlmProviderConfig[] = [
+  { 
+    id: 'openai', 
+    name: 'OpenAI', 
+    logo: OpenAILogo, 
+    models: ['gpt-4o', 'gpt-4o-mini'], 
+    baseUrl: 'https://api.openai.com/v1',
+    description: 'ChatGPT et GPT-4. Excellent pour le raisonnement et la génération de code.'
+  },
+  { 
+    id: 'anthropic', 
+    name: 'Anthropic', 
+    logo: AnthropicLogo, 
+    models: ['claude-3-5-sonnet'], 
+    baseUrl: 'https://api.anthropic.com',
+    description: 'Claude 3.5. Très performant pour l\'analyse et les tâches complexes.'
+  },
+  { 
+    id: 'gemini', 
+    name: 'Google Gemini', 
+    logo: GeminiLogo, 
+    models: ['gemini-1.5-pro', 'gemini-1.5-flash'], 
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    description: 'Modèles Google. Gratuit avec des limites généreuses.'
+  },
 ];
 
-const PROVIDER_COLORS: Record<string, { bg: string; header: string; badge: string; hover: string }> = {
-  openai: { bg: 'bg-gradient-to-br from-purple-50 to-blue-50', header: 'bg-gradient-to-r from-purple-500 to-blue-500', badge: 'bg-purple-100 text-purple-800', hover: 'hover:from-purple-500 hover:to-blue-600' },
-  anthropic: { bg: 'bg-gradient-to-br from-orange-50 to-red-50', header: 'bg-gradient-to-r from-orange-500 to-red-500', badge: 'bg-orange-100 text-orange-800', hover: 'hover:from-orange-500 hover:to-red-600' },
-  gemini: { bg: 'bg-gradient-to-br from-blue-50 to-green-50', header: 'bg-gradient-to-r from-blue-500 to-green-500', badge: 'bg-blue-100 text-blue-800', hover: 'hover:from-blue-500 hover:to-green-600' },
-  mistral: { bg: 'bg-gradient-to-br from-amber-50 to-yellow-50', header: 'bg-gradient-to-r from-amber-500 to-yellow-500', badge: 'bg-amber-100 text-amber-800', hover: 'hover:from-amber-500 hover:to-yellow-600' },
-  grok: { bg: 'bg-gradient-to-br from-gray-50 to-slate-50', header: 'bg-gradient-to-r from-gray-500 to-slate-500', badge: 'bg-gray-100 text-gray-800', hover: 'hover:from-gray-500 hover:to-slate-600' },
-  ollama: { bg: 'bg-gradient-to-br from-emerald-50 to-teal-50', header: 'bg-gradient-to-r from-emerald-500 to-teal-500', badge: 'bg-emerald-100 text-emerald-800', hover: 'hover:from-emerald-500 hover:to-teal-600' },
-  openrouter: { bg: 'bg-gradient-to-br from-indigo-50 to-violet-50', header: 'bg-gradient-to-r from-indigo-500 to-violet-500', badge: 'bg-indigo-100 text-indigo-800', hover: 'hover:from-indigo-500 hover:to-violet-600' },
-};
-
-interface SortableApiKeyItemProps {
-    id: string;
-    apiKey: string;
-    index: number;
-    onKeyChange: (index: number, value: string) => void;
-    onRemove: (index: number) => void;
-}
-
-const SortableApiKeyItem: React.FC<SortableApiKeyItemProps> = ({ id, apiKey, index, onKeyChange, onRemove }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
-
-  const style = {
-    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    transition,
-  };
+// Status Banner simplifié
+const StatusBanner = () => {
+  const llmApiKeys = useStore((state) => state.llmApiKeys);
+  const hasKeys = llmApiKeys.length > 0;
+  const totalKeys = llmApiKeys.length;
 
   return (
-    <motion.div 
-      ref={setNodeRef} 
-      style={style} 
-      {...attributes}
-      className="flex items-center gap-2 bg-background p-2 rounded-md shadow-sm"
+    <motion.div
+      className={`mb-8 p-6 rounded-xl border-2 ${hasKeys 
+        ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' 
+        : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
+      }`}
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
     >
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        {...listeners} 
-        className="cursor-grab active:cursor-grabbing"
-      >
-        <GripVertical className="h-5 w-5 text-muted-foreground" />
-      </Button>
-      <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
-      <Input
-        id={`api-key-${index}`}
-        name={`api-key-${index}`}
-        type="password"
-        placeholder="Enter API Token"
-        value={apiKey}
-        onChange={(e) => onKeyChange(index, e.target.value)}
-        className="flex-1"
-      />
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        onClick={() => onRemove(index)}
-      >
-        <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500 transition-colors" />
-      </Button>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          {hasKeys ? (
+            <CheckCircle className="h-12 w-12 text-green-600" />
+          ) : (
+            <Key className="h-12 w-12 text-blue-600" />
+          )}
+          <div>
+            <h1 className={`text-2xl font-bold ${hasKeys ? 'text-green-800' : 'text-blue-800'}`}>
+              {hasKeys ? `${totalKeys} clé(s) configurée(s)` : 'Configuration des clés LLM'}
+            </h1>
+            <p className={`text-sm ${hasKeys ? 'text-green-700' : 'text-blue-700'}`}>
+              {hasKeys 
+                ? 'Votre configuration est active. Les clés tournent automatiquement.' 
+                : 'Ajoutez vos clés API pour utiliser différents modèles LLM'}
+            </p>
+          </div>
+        </div>
+        {!hasKeys && (
+          <div className="hidden md:flex space-x-6">
+            <div className="flex items-center space-x-2 text-blue-700">
+              <Zap className="h-5 w-5" />
+              <span className="text-sm font-medium">Rotation automatique</span>
+            </div>
+            <div className="flex items-center space-x-2 text-blue-700">
+              <Shield className="h-5 w-5" />
+              <span className="text-sm font-medium">Gestion d'erreurs</span>
+            </div>
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 };
 
-const ProviderCard = ({ provider, dragHandleProps }: { provider: LlmProviderConfig, dragHandleProps?: Record<string, unknown> }) => {
+// Composant Provider simplifié
+const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
   const { toast } = useToast();
   const llmApiKeys = useStore((state) => state.llmApiKeys);
   const addLlmApiKey = useStore((state) => state.addLlmApiKey);
   const removeLlmApiKey = useStore((state) => state.removeLlmApiKey);
   const isAddingLlmApiKey = useStore((state) => state.isAddingLlmApiKey);
 
-  const [apiKeys, setApiKeys] = useState<{ id: string; key: string }[]>([]);
-  const colors = PROVIDER_COLORS[provider.id] || PROVIDER_COLORS.openai;
+  const [apiKey, setApiKey] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const providerKeys = llmApiKeys.filter(k => k.provider === provider.id);
+  const hasKey = providerKeys.length > 0;
+  const keyCount = providerKeys.length;
 
   useEffect(() => {
-    const existingKeys = llmApiKeys
-      .filter(k => k.provider === provider.id)
-      .map((k, index) => ({ id: `key-${index}-${k.key}`, key: k.key }));
-    if (existingKeys.length > 0) {
-      setApiKeys(existingKeys);
-    } else {
-      setApiKeys([{ id: `key-new-0`, key: '' }]);
+    if (providerKeys.length > 0) {
+      setApiKey(providerKeys[0].key);
     }
-  }, [llmApiKeys, provider.id]);
+  }, [providerKeys]);
 
-  const handleAddInput = () => {
-    setApiKeys([...apiKeys, { id: `key-new-${apiKeys.length}`, key: '' }]);
-  };
-
-  const handleRemoveInput = async (index: number) => {
-    const keyToRemove = apiKeys[index].key;
-    const globalIndex = llmApiKeys.findIndex(k => k.key === keyToRemove && k.provider === provider.id);
-    if (globalIndex !== -1) {
-      await removeLlmApiKey(globalIndex);
+  const handleSave = async () => {
+    if (!apiKey.trim()) {
+      toast({ title: "Erreur", description: "Veuillez entrer une clé API", variant: "destructive" });
+      return;
     }
-    const newKeys = apiKeys.filter((_, i) => i !== index);
-    setApiKeys(newKeys);
-  };
 
-  const handleKeyChange = (index: number, value: string) => {
-    const newKeys = [...apiKeys];
-    newKeys[index].key = value;
-    setApiKeys(newKeys);
-  };
-
-  const handleSaveKeys = async () => {
-    const existingKeys = llmApiKeys.filter(k => k.provider === provider.id);
-    
-    for (const key of existingKeys) {
+    // Supprimer les anciennes clés pour ce provider
+    for (const key of providerKeys) {
       const globalIndex = llmApiKeys.findIndex(k => k.key === key.key && k.provider === provider.id);
       if (globalIndex !== -1) {
         await removeLlmApiKey(globalIndex);
       }
     }
 
-    for (const apiKey of apiKeys) {
-      if (apiKey.key.trim()) {
-        await addLlmApiKey(provider.id, apiKey.key, provider.baseUrl, provider.models[0]);
-      }
-    }
-    toast({ title: "Success", description: `API keys for ${provider.name} saved.` });
+    // Ajouter la nouvelle clé
+    await addLlmApiKey(provider.id, apiKey, provider.baseUrl, provider.models[0]);
+    toast({ title: "Succès", description: `Clé ${provider.name} sauvegardée` });
   };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setApiKeys((items) => {
-        const oldIndex = items.findIndex(item => item.id === active.id);
-        const newIndex = items.findIndex(item => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
+  const handleRemove = async () => {
+    for (const key of providerKeys) {
+      const globalIndex = llmApiKeys.findIndex(k => k.key === key.key && k.provider === provider.id);
+      if (globalIndex !== -1) {
+        await removeLlmApiKey(globalIndex);
+      }
     }
+    setApiKey('');
+    toast({ title: "Supprimé", description: `Clé ${provider.name} supprimée` });
   };
 
   const Logo = provider.logo;
 
   return (
-    <Card className={`overflow-hidden shadow-lg ${colors.bg} transition-all duration-300`}>
-      <CardHeader className={`${colors.header} p-4`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              {...dragHandleProps} 
-              className="cursor-grab active:cursor-grabbing mr-2"
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.2 }}
+    >
+      <Card className={`overflow-hidden transition-all duration-200 ${
+        hasKey 
+          ? 'ring-2 ring-green-200 bg-green-50/50' 
+          : 'hover:shadow-md border-gray-200'
+      }`}>
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <Logo className="h-10 w-10 text-gray-700" />
+              <div>
+                <div className="flex items-center space-x-2">
+                  <h3 className="text-lg font-semibold text-gray-900">{provider.name}</h3>
+                  {hasKey && (
+                    <Badge className="bg-green-100 text-green-800 border-green-200">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Active
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600 mt-1">{provider.description}</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
             >
-              <GripVertical className="h-5 w-5 text-white" />
+              <Info className="h-4 w-4" />
             </Button>
-            <Logo className="h-8 w-8 mr-3 text-white" />
-            <span className="text-xl font-bold text-white">{provider.name}</span>
           </div>
-          <Button 
-            size="sm" 
-            onClick={handleAddInput} 
-            variant="secondary"
-            className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-          >
-            <Plus className="h-4 w-4 mr-1" /> Add Token
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="p-4 space-y-4">
-        <div>
-          <label className="text-sm font-medium mb-2 block flex items-center">
-            API Tokens (Drag to reorder)
-            <Info className="h-4 w-4 ml-1 text-muted-foreground" />
-          </label>
-          <DndContext id={`api-tokens-dnd-${provider.id}`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext id={`api-tokens-sortable-${provider.id}`} items={apiKeys.map(k => k.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2">
-                {apiKeys.map((apiKey, index) => (
-                  <SortableApiKeyItem
-                    key={apiKey.id}
-                    id={apiKey.id}
-                    apiKey={apiKey.key}
-                    index={index}
-                    onKeyChange={handleKeyChange}
-                    onRemove={handleRemoveInput}
-                  />
+
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-4 p-3 bg-gray-50 rounded-lg"
+            >
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Modèles disponibles:</h4>
+              <div className="flex flex-wrap gap-2">
+                {provider.models.map(model => (
+                  <Badge key={model} variant="secondary" className="text-xs">
+                    {model}
+                  </Badge>
                 ))}
               </div>
-            </SortableContext>
-          </DndContext>
-        </div>
-        <div>
-          <label className="text-sm font-medium mb-2 block flex items-center">
-            Available Models
-            <Info className="h-4 w-4 ml-1 text-muted-foreground" />
-          </label>
-          <div id={`available-models-${provider.id}`} className="flex flex-wrap gap-2">
-            {provider.models.map(model => (
-              <motion.div
-                key={model}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Badge className={`${colors.badge} px-3 py-1`}>
-                  {model}
-                </Badge>
-              </motion.div>
-            ))}
+            </motion.div>
+          )}
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Clé API
+              </label>
+              <Input
+                type="password"
+                placeholder="Entrez votre clé API..."
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-gray-500">
+                {hasKey ? `${keyCount} clé(s) configurée(s)` : 'Aucune clé configurée'}
+              </div>
+              <div className="flex space-x-2">
+                {hasKey && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRemove}
+                    disabled={isAddingLlmApiKey}
+                  >
+                    Supprimer
+                  </Button>
+                )}
+                <Button
+                  onClick={handleSave}
+                  disabled={isAddingLlmApiKey || !apiKey.trim()}
+                  size="sm"
+                >
+                  {isAddingLlmApiKey ? (
+                    <LoadingSpinner className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Sauvegarder
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="flex justify-end">
-          <Button 
-            onClick={handleSaveKeys} 
-            disabled={isAddingLlmApiKey}
-            className={`${colors.hover} text-white transition-all duration-300`}
-          >
-            {isAddingLlmApiKey ? <LoadingSpinner className="mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
-            Save {provider.name} Keys
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 };
 
-const SortableProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: provider.id });
+// Info section pour les nouveaux utilisateurs
+const OnboardingInfo = () => {
+  const llmApiKeys = useStore((state) => state.llmApiKeys);
+  const hasKeys = llmApiKeys.length > 0;
+  const [isVisible, setIsVisible] = useState(!hasKeys);
 
-  const style = {
-    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    transition,
-  };
+  if (hasKeys && !isVisible) return null;
 
   return (
     <motion.div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3 }}
-      whileHover={{ y: -5 }}
+      className="mb-8 p-6 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
     >
-      <ProviderCard provider={provider} dragHandleProps={listeners} />
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
+            <Key className="h-5 w-5 text-purple-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-purple-800">Premier pas</h3>
+            <p className="text-sm text-purple-600">Configurez votre première clé LLM</p>
+          </div>
+        </div>
+        {hasKeys && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsVisible(false)}
+            className="text-purple-600"
+          >
+            ×
+          </Button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+        <div className="flex items-start space-x-3">
+          <div className="h-6 w-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="text-xs font-semibold text-purple-600">1</span>
+          </div>
+          <div>
+            <p className="font-medium text-purple-800">Choisissez un provider</p>
+            <p className="text-purple-600">Gemini offre un niveau gratuit généreux</p>
+          </div>
+        </div>
+        <div className="flex items-start space-x-3">
+          <div className="h-6 w-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="text-xs font-semibold text-purple-600">2</span>
+          </div>
+          <div>
+            <p className="font-medium text-purple-800">Ajoutez votre clé API</p>
+            <p className="text-purple-600">Obtenez-la depuis le site du provider</p>
+          </div>
+        </div>
+        <div className="flex items-start space-x-3">
+          <div className="h-6 w-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="text-xs font-semibold text-purple-600">3</span>
+          </div>
+          <div>
+            <p className="font-medium text-purple-800">Sauvegardez</p>
+            <p className="text-purple-600">Votre agent est prêt à fonctionner !</p>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 };
 
 export const LlmApiKeyManagementPage = memo(() => {
-  const [providers, setProviders] = useState<LlmProviderConfig[]>(INITIAL_PROVIDERS);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setProviders((items) => {
-        const oldIndex = items.findIndex(item => item.id === active.id);
-        const newIndex = items.findIndex(item => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
-
   return (
-    <motion.div 
-      className="p-6 max-w-6xl mx-auto"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <motion.div
-        className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg"
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.1, duration: 0.3 }}
-      >
-        <h2 className="text-lg font-semibold text-blue-800 mb-2">Authentication Setup</h2>
-        <p className="text-sm text-blue-700">
-          To use the agent, you need to provide a valid authentication token. 
-          This can be done in two ways:
-        </p>
-        <ol className="list-decimal list-inside mt-2 text-sm text-blue-700 space-y-1">
-          <li>Connect through OAuth providers (GitHub, Google, Twitter) in the OAuth Management section</li>
-          <li>Manually enter your bearer token below for any provider</li>
-        </ol>
-        <p className="mt-2 text-sm text-blue-700">
-          For manual setup, enter your bearer token in the appropriate field below and click "Save Keys".
-        </p>
-      </motion.div>
+    <div className="p-6 max-w-6xl mx-auto">
+      <StatusBanner />
+      <OnboardingInfo />
       
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={providers.map(p => p.id)} strategy={verticalListSortingStrategy}>
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 gap-6"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.3 }}
-          >
-            {providers.map((provider) => (
-              <SortableProviderCard key={provider.id} provider={provider} />
-            ))}
-          </motion.div>
-        </SortableContext>
-      </DndContext>
-    </motion.div>
+      <div className="space-y-6">
+        <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+          <Settings className="h-5 w-5 mr-2" />
+          Providers disponibles
+        </h2>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {PROVIDERS.map((provider) => (
+            <SimpleProviderCard key={provider.id} provider={provider} />
+          ))}
+        </div>
+
+        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">💡 Conseils</h3>
+          <ul className="text-sm text-gray-600 space-y-1">
+            <li>• Vous pouvez configurer plusieurs providers pour une redondance automatique</li>
+            <li>• En cas d'erreur sur une clé, le système bascule automatiquement vers la suivante</li>
+            <li>• Les clés sont stockées de manière sécurisée et chiffrées</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   );
 });

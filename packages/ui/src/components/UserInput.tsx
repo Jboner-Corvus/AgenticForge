@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStore, AppState } from '../lib/store';
+import { useAgentStream } from '../lib/hooks/useAgentStream';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Paperclip, Send } from 'lucide-react';
@@ -9,7 +10,7 @@ import { LoadingSpinner } from './LoadingSpinner';
 export const UserInput = () => {
   const { translations } = useLanguage();
   const [inputValue, setInputValue] = useState('');
-  const startAgent = useStore((state: AppState) => state.startAgent);
+  const { startAgent } = useAgentStream();
   const setMessageInputValue = useStore((state: AppState) => state.setMessageInputValue);
   const isProcessing = useStore((state: AppState) => state.isProcessing);
   const tokenStatus = useStore((state: AppState) => state.tokenStatus);

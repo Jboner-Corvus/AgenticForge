@@ -25,7 +25,7 @@ const loadedToolFiles = new Set<string>();
 const fileToToolNameMap = new Map<string, string>();
 let watcher: chokidar.FSWatcher | null = null;
 
-const runningInDist = process.env.NODE_ENV === 'production';
+const runningInDist = process.env.NODE_ENV === 'production' || __dirname.includes('dist');
 export const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
 
 /**

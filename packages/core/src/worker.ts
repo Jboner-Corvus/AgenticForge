@@ -162,6 +162,10 @@ export async function processJob(
 
   const channel = `job:${_job.id}:events`;
 
+  // Add a small delay to ensure frontend can establish EventSource connection
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  log.info(`Job ${_job.id} starting after synchronization delay`);
+
   try {
     const tools = await getTools();
     const session = await _sessionManager.getSession(_job.data.sessionId);

@@ -70,11 +70,46 @@ export const useAgentStream = () => {
     setAgentProgress,
     setBrowserStatus,
     setActiveCliJobId,
+    setCanvasContent,
+    setCanvasType,
+    setIsCanvasVisible,
   } = useStore();
 
   const startAgent = useCallback(async () => {
-    if (!messageInputValue.trim()) return;
+    console.log('🚀 [useAgentStream] startAgent called');
+    console.log('📝 [useAgentStream] messageInputValue:', messageInputValue);
+    console.log('🔐 [useAgentStream] authToken available:', !!authToken);
+    console.log('🆔 [useAgentStream] sessionId available:', !!sessionId);
+    
+    if (!messageInputValue.trim()) {
+      console.warn('⚠️ [useAgentStream] Empty message, aborting');
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [WARNING] Message vide, envoi annulé`);
+      return;
+    }
 
+    if (!authToken) {
+      console.error('❌ [useAgentStream] No authToken available');
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Token d'authentification manquant`);
+      const errorMessage: NewChatMessage = {
+        type: 'error',
+        content: 'Token d\'authentification manquant. Veuillez vous reconnecter.',
+      };
+      addMessage(errorMessage);
+      return;
+    }
+
+    if (!sessionId) {
+      console.error('❌ [useAgentStream] No sessionId available');
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] ID de session manquant`);
+      const errorMessage: NewChatMessage = {
+        type: 'error',
+        content: 'ID de session manquant. Veuillez recharger la page.',
+      };
+      addMessage(errorMessage);
+      return;
+    }
+
+    console.log('✅ [useAgentStream] Starting agent process...');
     setIsProcessing(true);
     const userMessage: NewChatMessage = {
       type: 'user',
@@ -83,6 +118,8 @@ export const useAgentStream = () => {
     addMessage(userMessage);
     const goal = messageInputValue;
     setMessageInputValue('');
+    
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🚀 Démarrage de l'agent avec le message: "${goal}"`);
 
     const handleClose = () => {
       addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] handleClose called. Current EventSource state: ${eventSourceRef.current?.readyState}`);
@@ -107,13 +144,21 @@ export const useAgentStream = () => {
     };
 
     const handleError = (error: Error) => {
+      console.error('❌ [useAgentStream] ERROR:', error);
       const errorMessage: NewChatMessage = {
         type: 'error',
-        content: `An error occurred: ${error.message}`,
+        content: `🚨 ERREUR AGENT: ${error.message}`,
       };
       addMessage(errorMessage);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] ${error.message}`);
-      console.error('Agent stream error:', error);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] 🚨 ERREUR CRITIQUE: ${error.message}`);
+      console.error('🔥 Agent stream error details:', {
+        error,
+        message: error.message,
+        stack: error.stack,
+        authToken: !!authToken,
+        sessionId: !!sessionId,
+        eventSourceState: eventSourceRef.current?.readyState,
+      });
       setIsProcessing(false);
       handleClose(); // Ensure EventSource is closed on error
     };
@@ -161,21 +206,31 @@ export const useAgentStream = () => {
 
     const onMessage = (event: MessageEvent) => {
       try {
-        addDebugLog(`[${new Date().toLocaleTimeString()}] [STREAM] Raw SSE message received: ${event.data}`);
-        console.log('Raw SSE message received:', event.data);
+        console.log('📨 [useAgentStream] Raw SSE message received:', event.data);
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [STREAM] 📨 Message SSE reçu: ${event.data}`);
 
         // Handle heartbeat messages
-        if (event.data === 'heartbeat') {
-          // Just ignore heartbeat messages
-          addDebugLog(`[${new Date().toLocaleTimeString()}] [STREAM] Heartbeat message received and ignored`);
+        if (event.data === 'heartbeat' || event.data.includes('heartbeat')) {
+          console.log('💓 [useAgentStream] Heartbeat received');
+          addDebugLog(`[${new Date().toLocaleTimeString()}] [STREAM] 💓 Heartbeat reçu et ignoré`);
           return;
         }
 
-        const data: StreamMessage = JSON.parse(event.data) as StreamMessage;
-        console.log('Parsed SSE message:', data);
+        let data: StreamMessage;
+        try {
+          data = JSON.parse(event.data) as StreamMessage;
+        } catch (parseError) {
+          console.error('❌ [useAgentStream] Failed to parse SSE message:', parseError);
+          console.error('❌ [useAgentStream] Raw data was:', event.data);
+          addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] 🚨 Impossible de parser le message SSE: ${event.data}`);
+          return;
+        }
 
+        console.log('📋 [useAgentStream] Parsed SSE message:', data);
+        console.log(`🏷️ [useAgentStream] Message type: ${data.type}`);
+        
         // Log all incoming messages for debugging
-        addDebugLog(`[${new Date().toLocaleTimeString()}] [STREAM] Received message type: ${data.type}`);
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [STREAM] 🏷️ Type de message reçu: ${data.type}`);
 
         switch (data.type) {
           case 'tool_stream':
@@ -223,6 +278,33 @@ export const useAgentStream = () => {
           case 'tool.start': { // New case for backend's tool.start event
             const toolName = data.data?.name;
             const params = data.data?.args;
+            
+            // Handle canvas output if present in tool args
+            if (params && typeof params === 'object' && 'canvas' in params) {
+              const canvas = params.canvas as { content: string; contentType: 'html' | 'markdown' | 'url' | 'text' };
+              console.log('🎨 [useAgentStream] CANVAS OUTPUT received!');
+              console.log('🎨 [useAgentStream] Canvas content type:', canvas.contentType);
+              console.log('🎨 [useAgentStream] Canvas content length:', canvas.content.length);
+              
+              addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas reçu ! Type: ${canvas.contentType}, Taille: ${canvas.content.length}`);
+              
+              // Update canvas in store
+              setCanvasContent(canvas.content);
+              setCanvasType(canvas.contentType);
+              setIsCanvasVisible(true);
+              
+              console.log('🎨 [useAgentStream] Canvas content updated in store!');
+              addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas mis à jour dans le store et rendu visible!`);
+              
+              // Send canvas output message
+              const canvasMessage: NewChatMessage = {
+                type: 'agent_canvas_output',
+                content: canvas.content,
+                contentType: canvas.contentType,
+              };
+              addMessage(canvasMessage);
+            }
+            
             if (toolName && params) {
               handleToolCall(toolName, params as Record<string, unknown>); // Cast params to correct type
             }
@@ -235,8 +317,16 @@ export const useAgentStream = () => {
             break;
           }
           case 'agent_response':
+            console.log('🤖 [useAgentStream] AGENT_RESPONSE received!');
+            console.log('🤖 [useAgentStream] Content:', data.content);
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [STREAM] 🤖 RÉPONSE AGENT reçue !`);
             if (data.content) {
+              console.log('✅ [useAgentStream] Processing agent response...');
+              addDebugLog(`[${new Date().toLocaleTimeString()}] [SUCCESS] 🎉 Traitement de la réponse agent: "${data.content.substring(0, 100)}..."`);
               handleMessage(data.content);
+            } else {
+              console.warn('⚠️ [useAgentStream] Agent response has no content!');
+              addDebugLog(`[${new Date().toLocaleTimeString()}] [WARNING] 🚨 Réponse agent sans contenu !`);
             }
             break;
           case 'raw_llm_response':
@@ -308,8 +398,8 @@ export const useAgentStream = () => {
     };
 
     try {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Starting agent with message: ${goal}`);
-      console.log('Starting agent with message:', goal);
+      console.log('🔄 [useAgentStream] Calling sendMessage...');
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🔄 Appel de sendMessage pour: ${goal}`);
       
       const { jobId, eventSource } = await sendMessage(
         goal,
@@ -318,29 +408,55 @@ export const useAgentStream = () => {
         onMessage,
         (error) => {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-          addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] EventSource error callback: ${errorMessage}`);
-          console.error('EventSource error callback:', error);
+          console.error('🚨 [useAgentStream] EventSource error callback:', error);
+          addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] 🚨 EventSource error callback: ${errorMessage}`);
           handleError(new Error(errorMessage));
         },
         addDebugLog // Pass the debug logger
       );
-      console.log('EventSource created:', eventSource);
-      console.log('EventSource URL:', eventSource.url);
-      console.log('EventSource readyState:', eventSource.readyState);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] EventSource created with URL: ${eventSource.url}`);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] EventSource initial readyState: ${eventSource.readyState}`);
+      
+      console.log('✅ [useAgentStream] EventSource created successfully!');
+      console.log('🆔 [useAgentStream] Job ID:', jobId);
+      console.log('🌐 [useAgentStream] EventSource URL:', eventSource.url);
+      console.log('📊 [useAgentStream] EventSource readyState:', eventSource.readyState);
+      console.log('🎯 [useAgentStream] EventSource object:', eventSource);
+      
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [SUCCESS] ✅ EventSource créé avec succès !`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🆔 Job ID: ${jobId}`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🌐 URL EventSource: ${eventSource.url}`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 📊 État initial EventSource: ${eventSource.readyState}`);
+      
       setJobId(jobId);
       eventSourceRef.current = eventSource; // Store EventSource instance
       
-      // Monitor EventSource state changes
-      setTimeout(() => {
+      // Monitor EventSource state changes with more detailed logging
+      const monitorInterval = setInterval(() => {
         if (eventSourceRef.current) {
-          addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] EventSource state after 1s: ${eventSourceRef.current.readyState}`);
-          console.log('EventSource state after 1s:', eventSourceRef.current.readyState);
+          const state = eventSourceRef.current.readyState;
+          const stateText = state === 0 ? 'CONNECTING' : state === 1 ? 'OPEN' : 'CLOSED';
+          console.log(`📊 [useAgentStream] EventSource state check: ${state} (${stateText})`);
+          addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 📊 État EventSource: ${state} (${stateText})`);
+          
+          if (state === 2) { // CLOSED
+            console.warn('⚠️ [useAgentStream] EventSource closed unexpectedly!');
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [WARNING] ⚠️ EventSource fermé de manière inattendue !`);
+            clearInterval(monitorInterval);
+          }
+        } else {
+          console.warn('⚠️ [useAgentStream] EventSource reference lost!');
+          clearInterval(monitorInterval);
         }
-      }, 1000);
+      }, 2000);
+      
+      // Clear monitoring after 30 seconds
+      setTimeout(() => {
+        clearInterval(monitorInterval);
+        console.log('🔄 [useAgentStream] Stopped monitoring EventSource state');
+      }, 30000);
+      
     } catch (error) {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Failed to create EventSource: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('🚨 [useAgentStream] CRITICAL ERROR during sendMessage:', error);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] 🚨 ERREUR CRITIQUE lors de sendMessage: ${error instanceof Error ? error.message : String(error)}`);
       handleError(error instanceof Error ? error : new Error(String(error)));
     }
   }, [
@@ -356,6 +472,9 @@ export const useAgentStream = () => {
     setAgentProgress,
     setBrowserStatus,
     setActiveCliJobId,
+    setCanvasContent,
+    setCanvasType,
+    setIsCanvasVisible, // Rétabli car utilisé dans startAgent
   ]);
 
   const interruptAgent = useCallback(async () => {

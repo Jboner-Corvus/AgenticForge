@@ -1,16 +1,18 @@
 import { useStore } from '../lib/store';
 
-import { useLanguage } from '../lib/contexts/LanguageContext';
+// import { useLanguage } from '../lib/contexts/LanguageContext'; // Supprimé: never used
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
-import { Logo } from './Logo';
+// import { Logo } from './Logo'; // Supprimé: never used
+import { ConnectionStatus } from './ConnectionStatus';
 
-import { Settings, PanelLeft, Sun, Moon, Bell, LayoutDashboard, BarChart, Key, MessageSquare, Bug } from 'lucide-react';
+// import { Settings, PanelLeft, Sun, Moon, Bell, LayoutDashboard, BarChart, Key, MessageSquare, Bug } from 'lucide-react'; // Supprimé: never used
+import { PanelLeft, Sun, Moon, LayoutDashboard, BarChart, Key, MessageSquare, Bug } from 'lucide-react';
 
 interface HeaderProps {
   setIsControlPanelVisible: (visible: boolean) => void;
-  setIsSettingsModalOpen: (open: boolean) => void;
+  // setIsSettingsModalOpen: (open: boolean) => void; // Supprimé: never used
   isControlPanelVisible: boolean;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
@@ -20,14 +22,14 @@ interface HeaderProps {
 
 export function Header({
   setIsControlPanelVisible,
-  setIsSettingsModalOpen,
+  // setIsSettingsModalOpen, // Supprimé
   isControlPanelVisible,
   isDarkMode,
   toggleDarkMode,
   setCurrentPage,
   toggleDebugLogVisibility,
 }: HeaderProps) {
-  const { translations } = useLanguage();
+  // const { translations } = useLanguage(); // Supprimé: never used
 
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between p-4 bg-gradient-to-r from-background to-secondary/50 border-b border-border shadow-md">
@@ -40,7 +42,7 @@ export function Header({
         >
           <PanelLeft />
         </Button>
-        <Logo />
+        <ConnectionStatus />
       </div>
 
       <div className="flex items-center space-x-2">
@@ -162,39 +164,6 @@ export function Header({
             </TooltipTrigger>
             <TooltipContent>
               <p>Debug Log</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="Settings"
-                onClick={() => setIsSettingsModalOpen(true)}
-                type="button"
-                variant="ghost"
-              >
-                <Settings size={20} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{translations.settings}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="Notifications"
-                type="button"
-                variant="ghost"
-              >
-                <Bell size={20} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{translations.notifications}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

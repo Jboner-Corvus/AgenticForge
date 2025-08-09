@@ -3,7 +3,6 @@ import { create } from 'zustand';
 import { AppState } from '../store';
 
 export const mockState: AppState = {
-  startAgent: vi.fn(),
   setMessageInputValue: vi.fn(),
   isProcessing: false,
   messageInputValue: '',

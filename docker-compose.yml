@@ -74,7 +74,7 @@ services:
       - SESSION_PORT=${SESSION_PORT}
       - HOST_PROJECT_PATH=${HOST_PROJECT_PATH}
       - HOST_SYSTEM_PATH=/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-      - TOOLS_PATH=/usr/src/app/packages/core/dist/tools
+      - TOOLS_PATH=/usr/src/app/packages/core/dist/modules/tools/definitions
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env

@@ -1,4 +1,4 @@
-import { Key, Server, Hammer, Code, ListChecks, Play, History, Save, Edit, XCircle, AlertTriangle } from 'lucide-react';
+import { Key, Server, Hammer, ListChecks, Play, History, Save, Edit, XCircle, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Modal } from './ui/modal';
@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Label } from './ui/label';
-import { Switch } from './ui/switch';
+// import { Switch } from './ui/switch'; // Supprimé: never used
 import { useLanguage } from '../lib/contexts/LanguageContext';
 import { useToast } from '../lib/hooks/useToast';
 import { useDraggableSidebar } from '../lib/hooks/useDraggablePane';
@@ -17,13 +17,13 @@ import { LoadingSpinner } from './LoadingSpinner';
 
 export const ControlPanel = memo(() => {
   const { translations } = useLanguage();
-  const codeExecutionEnabled = useStore((state) => state.codeExecutionEnabled);
+  // const codeExecutionEnabled = useStore((state) => state.codeExecutionEnabled); // Supprimé: never used
   const serverHealthy = useStore((state) => state.serverHealthy);
   const sessionId = useStore((state) => state.sessionId);
   const toolCount = useStore((state) => state.toolCount);
-  const toolCreationEnabled = useStore((state) => state.toolCreationEnabled);
-  const setCodeExecutionEnabled = useStore((state) => state.setCodeExecutionEnabled);
-  const setToolCreationEnabled = useStore((state) => state.setToolCreationEnabled);
+  // const toolCreationEnabled = useStore((state) => state.toolCreationEnabled); // Supprimé: never used
+  // const setCodeExecutionEnabled = useStore((state) => state.setCodeExecutionEnabled); // Supprimé: never used
+  // const setToolCreationEnabled = useStore((state) => state.setToolCreationEnabled); // Supprimé: never used
   const sessions = useStore((state) => state.sessions);
   const activeSessionId = useStore((state) => state.activeSessionId);
   const saveSession = useStore((state) => state.saveSession);
@@ -184,33 +184,7 @@ export const ControlPanel = memo(() => {
                   )}
                 </span>
               </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
-                      <Label className="text-sm flex items-center" htmlFor="toolCreationToggle"><Hammer className="mr-2 h-4 w-4 text-yellow-500" />{translations.toolCreation}</Label>
-                      <Switch checked={toolCreationEnabled} id="toolCreationToggle" onCheckedChange={setToolCreationEnabled} />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Allow the agent to create new tools based on its needs.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
-                      <Label className="text-sm flex items-center" htmlFor="codeExecutionToggle"><Code className="mr-2 h-4 w-4 text-red-500" />{translations.codeExecution}</Label>
-                      <Switch checked={codeExecutionEnabled} id="codeExecutionToggle" onCheckedChange={setCodeExecutionEnabled} />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Allow the agent to execute code directly in the environment.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardContent>
+              </CardContent>
           </Card>
           
           <Card className="shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">

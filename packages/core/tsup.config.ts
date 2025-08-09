@@ -6,6 +6,8 @@ export default defineConfig({
     'src/webServer.ts', 
     'src/worker.ts', 
     'src/server-start.ts',
+    'src/utils/toolLoader.ts',
+    'src/modules/tools/toolRegistry.ts',
     'src/modules/tools/definitions/**/*.ts'
   ],
   format: ['esm'],

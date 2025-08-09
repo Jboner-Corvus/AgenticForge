@@ -671,7 +671,9 @@ export class Agent {
   private publishToChannel(data: ChannelData) {
     const channel = `job:${this.job.id}:events`;
     const message = JSON.stringify(data);
+    this.log.info({ channel, message, dataType: data.type }, '[PUBLISH] Publishing message to Redis channel');
     getRedisClientInstance().publish(channel, message);
+    this.log.info('[PUBLISH] Message published to Redis successfully');
     // Only send serializable and relevant data to updateProgress
     const progressData = { ...data };
     if (progressData.type === 'tool.start') {

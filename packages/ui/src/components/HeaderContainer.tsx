@@ -9,7 +9,7 @@ export function HeaderContainer() {
   const toggleDarkMode = useStore((state) => state.toggleDarkMode);
   const setCurrentPage = useStore((state) => state.setCurrentPage);
   const toggleDebugLogVisibility = useStore((state) => state.toggleDebugLogVisibility);
-  const setIsSettingsModalOpen = useStore((state) => state.setIsSettingsModalOpen);
+  // const setIsSettingsModalOpen = useStore((state) => state.setIsSettingsModalOpen); // Supprimé: never used
 
   return (
     <Header
@@ -19,7 +19,7 @@ export function HeaderContainer() {
       toggleDarkMode={toggleDarkMode}
       setCurrentPage={setCurrentPage}
       toggleDebugLogVisibility={toggleDebugLogVisibility}
-      setIsSettingsModalOpen={setIsSettingsModalOpen}
+      // setIsSettingsModalOpen={setIsSettingsModalOpen} {/* Supprimé: never used in Header */}
     />
   );
 }

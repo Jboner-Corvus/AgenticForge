@@ -12,7 +12,7 @@ function getAuthHeaders(
   };
 
   // Try to get JWT from cookie
-  const name = 'agenticforge_jwt=';
+  const cookieName = 'agenticforge_jwt=';
   const decodedCookie = decodeURIComponent(document.cookie);
   const ca = decodedCookie.split(';');
   for(let i = 0; i < ca.length; i++) {
@@ -20,12 +20,20 @@ function getAuthHeaders(
     while (c.charAt(0) === ' ') {
       c = c.substring(1);
     }
-    if (c.indexOf(name) === 0) {
-      const jwtToken = c.substring(name.length, c.length);
+    if (c.indexOf(cookieName) === 0) {
+      const jwtToken = c.substring(cookieName.length, c.length);
       if (jwtToken) {
         headers['Authorization'] = 'Bearer ' + jwtToken;
       }
       break;
+    }
+  }
+
+  // Try to get token from localStorage as fallback
+  if (!headers['Authorization']) {
+    const localStorageToken = localStorage.getItem('authToken');
+    if (localStorageToken) {
+      headers['Authorization'] = 'Bearer ' + localStorageToken;
     }
   }
 
@@ -52,66 +60,128 @@ export async function sendMessage(
   addDebugLog?: (message: string) => void,
 ): Promise<{ jobId: string; eventSource: EventSource }> {
   try {
+    console.log('🚀 [sendMessage] Starting request to /api/chat');
+    console.log('📝 [sendMessage] Prompt length:', prompt.length);
+    console.log('🔐 [sendMessage] AuthToken available:', !!authToken);
+    console.log('🆔 [sendMessage] SessionId:', sessionId);
+    
+    const headers = getAuthHeaders(authToken, sessionId);
+    console.log('📋 [sendMessage] Request headers:', Object.keys(headers));
+    
+    addDebugLog?.(`[API] 🚀 Envoi de la requête vers /api/chat avec prompt de ${prompt.length} caractères`);
+
     const response = await fetch('/api/chat', { // <-- URL Relative
       method: 'POST',
-      headers: getAuthHeaders(authToken, sessionId),
+      headers,
       body: JSON.stringify({ prompt }),
     });
 
-    console.log('sendMessage response:', response);
-    addDebugLog?.(`[API] sendMessage response status: ${response.status}`);
+    console.log('📡 [sendMessage] Response received!');
+    console.log('📊 [sendMessage] Response status:', response.status);
+    console.log('🏷️ [sendMessage] Response headers:', response.headers);
+    
+    addDebugLog?.(`[API] 📡 Réponse reçue avec status: ${response.status}`);
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      // NOTE: Ensure the backend always returns meaningful error messages
-      // for better client-side debugging and user feedback.
-      throw new Error(errorData.message || `Erreur du serveur: ${response.status} ${response.statusText}`);
+      console.error('❌ [sendMessage] Response not OK!');
+      let errorData;
+      try {
+        errorData = await response.json();
+        console.error('❌ [sendMessage] Error data:', errorData);
+      } catch (jsonError) {
+        console.error('❌ [sendMessage] Failed to parse error response:', jsonError);
+        errorData = { message: `HTTP ${response.status} ${response.statusText}` };
+      }
+      
+      const errorMessage = errorData.message || `Erreur du serveur: ${response.status} ${response.statusText}`;
+      console.error('🚨 [sendMessage] Final error:', errorMessage);
+      addDebugLog?.(`[API] 🚨 ERREUR: ${errorMessage}`);
+      throw new Error(errorMessage);
     }
 
-    const { jobId } = await response.json();
-    console.log('Job ID received:', jobId);
-    addDebugLog?.(`[API] Job ID received: ${jobId}`);
+    let responseData;
+    try {
+      responseData = await response.json();
+      console.log('✅ [sendMessage] Response data:', responseData);
+    } catch (jsonError) {
+      console.error('❌ [sendMessage] Failed to parse success response:', jsonError);
+      addDebugLog?.(`[API] ❌ Impossible de parser la réponse JSON`);
+      throw new Error('Invalid JSON response from server');
+    }
+
+    const { jobId } = responseData;
+    if (!jobId) {
+      console.error('❌ [sendMessage] No jobId in response!');
+      addDebugLog?.(`[API] ❌ Aucun jobId dans la réponse !`);
+      throw new Error('No job ID received from server');
+    }
+    
+    console.log('🆔 [sendMessage] Job ID received:', jobId);
+    addDebugLog?.(`[API] ✅ Job ID reçu: ${jobId}`);
     
     // Établit la connexion SSE pour les mises à jour en streaming
-    // Try relative URL first (works with proxy), fallback to direct backend if needed
     const eventSourceUrl = `/api/chat/stream/${jobId}`;
-    console.log('Creating EventSource with URL:', eventSourceUrl);
-    addDebugLog?.(`[SSE] Creating EventSource with URL: ${eventSourceUrl}`);
+    console.log('🔗 [sendMessage] Creating EventSource with URL:', eventSourceUrl);
+    addDebugLog?.(`[SSE] 🔗 Création EventSource avec URL: ${eventSourceUrl}`);
     
     const eventSource = new EventSource(eventSourceUrl);
+    console.log('📡 [sendMessage] EventSource instance created:', eventSource);
 
     eventSource.onmessage = (event) => {
-      // Force debug logs even in production
-      if (window.console?.log) {
-        window.console.log('EventSource received message:', event.data);
-      }
-      addDebugLog?.(`[SSE] EventSource received message: ${event.data}`);
+      console.log('📨 [EventSource] Message received:', event.data);
+      addDebugLog?.(`[SSE] 📨 Message EventSource reçu: ${event.data}`);
       onMessage(event);
     };
     
     eventSource.onerror = (error) => {
-      console.error(`EventSource failed:`, error);
-      console.error('EventSource readyState:', eventSource.readyState);
-      console.error('EventSource url:', eventSource.url);
-      addDebugLog?.(`[SSE ERROR] EventSource failed. ReadyState: ${eventSource.readyState}, URL: ${eventSource.url}`);
+      console.error('🚨 [EventSource] ERROR occurred!');
+      console.error('🚨 [EventSource] Error details:', error);
+      console.error('📊 [EventSource] ReadyState:', eventSource.readyState);
+      console.error('🌐 [EventSource] URL:', eventSource.url);
+      console.error('🎯 [EventSource] EventSource object:', eventSource);
+      
+      const stateText = eventSource.readyState === 0 ? 'CONNECTING' : 
+                       eventSource.readyState === 1 ? 'OPEN' : 'CLOSED';
+      
+      addDebugLog?.(`[SSE ERROR] 🚨 EventSource échec ! État: ${eventSource.readyState} (${stateText}), URL: ${eventSource.url}`);
+      
+      if (eventSource.readyState === 2) {
+        console.error('💥 [EventSource] Connection permanently closed!');
+        addDebugLog?.(`[SSE ERROR] 💥 Connexion EventSource fermée définitivement !`);
+      }
+      
       onError(error);
       // eventSource.close(); // Do not close here, let the hook manage it
     };
 
     // Add event listeners for debugging
     eventSource.onopen = () => {
-      console.log('EventSource connection opened successfully');
-      console.log('EventSource readyState:', eventSource.readyState);
-      addDebugLog?.(`[SSE] EventSource connection opened. ReadyState: ${eventSource.readyState}`);
+      console.log('✅ [EventSource] Connection opened successfully!');
+      console.log('📊 [EventSource] ReadyState:', eventSource.readyState);
+      console.log('🌐 [EventSource] Connected to URL:', eventSource.url);
+      addDebugLog?.(`[SSE] ✅ Connexion EventSource ouverte avec succès ! État: ${eventSource.readyState}`);
     };
 
     eventSource.addEventListener('close', () => {
-      console.log('EventSource close event received');
-      addDebugLog?.(`[SSE] EventSource close event received`);
+      console.log('🔚 [EventSource] Close event received');
+      addDebugLog?.(`[SSE] 🔚 Événement de fermeture EventSource reçu`);
     });
 
-    console.log('EventSource instance created:', eventSource);
-    addDebugLog?.(`[SSE] EventSource instance created successfully`);
+    // Monitor connection state
+    setTimeout(() => {
+      const state = eventSource.readyState;
+      const stateText = state === 0 ? 'CONNECTING' : state === 1 ? 'OPEN' : 'CLOSED';
+      console.log(`📊 [EventSource] State after 1s: ${state} (${stateText})`);
+      addDebugLog?.(`[SSE] 📊 État EventSource après 1s: ${state} (${stateText})`);
+      
+      if (state === 2) {
+        console.warn('⚠️ [EventSource] Connection closed after 1s - potential problem!');
+        addDebugLog?.(`[SSE] ⚠️ Connexion fermée après 1s - problème potentiel !`);
+      }
+    }, 1000);
+
+    console.log('🎯 [sendMessage] EventSource setup completed');
+    addDebugLog?.(`[SSE] 🎯 Configuration EventSource terminée avec succès`);
 
     return { jobId, eventSource } as { jobId: string; eventSource: EventSource };
   } catch (error) {
@@ -267,6 +337,11 @@ interface LlmApiKey {
  * Ajoute une clé API LLM.
  */
 export async function addLlmApiKeyApi(provider: string, key: string, baseUrl?: string, model?: string): Promise<void> {
+  // --- DEBOGAGE: Log uniquement si les données obligatoires sont manquantes ---
+  if (!provider || !key) {
+    console.warn("WARNING addLlmApiKeyApi: Missing provider or key!", { provider, key, baseUrl, model });
+  }
+  // --- FIN DEBOGAGE ---
   const response = await fetch('/api/llm-api-keys', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

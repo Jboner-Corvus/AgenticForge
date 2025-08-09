@@ -154,7 +154,8 @@ export async function initializeWebServer(
       ) => {
         try {
           const tools = await getTools();
-          res.status(200).json(tools);
+          const toolNames = tools.map((tool) => ({ name: tool.name }));
+          res.status(200).json(toolNames);
         } catch (_error) {
           next(_error);
         }
@@ -220,19 +221,24 @@ export async function initializeWebServer(
         const channel = `job:${jobId}:events`;
 
         await subscriber.subscribe(channel);
-        getLoggerInstance().info(`Subscribed to ${channel} for SSE.`);
+        getLoggerInstance().info(`[SSE] Subscribed to ${channel} for SSE. Client connected.`);
 
         subscriber.on('message', (channel: string, message: string) => {
           getLoggerInstance().info(
             { channel, message },
-            'Received message from Redis channel',
+            '[SSE] Received message from Redis channel - sending to client',
           );
           res.write('data: ' + message + '\n\n');
         });
 
+        // Send initial heartbeat immediately
+        res.write(`data: {"type":"heartbeat","timestamp":${Date.now()}}\n\n`);
+        getLoggerInstance().info(`[SSE] Initial heartbeat sent to client`);
+
         const heartbeatInterval = setInterval(() => {
-          res.write(`data: heartbeat\n\n`);
-        }, 15000);
+          res.write(`data: {"type":"heartbeat","timestamp":${Date.now()}}\n\n`);
+          getLoggerInstance().info(`[SSE] Heartbeat sent to client`);
+        }, 10000);
 
         req.on('close', () => {
           getLoggerInstance().info(

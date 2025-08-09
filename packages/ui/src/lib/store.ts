@@ -167,7 +167,6 @@ export interface AppState {
   toolCount: number | string;
   toolCreationEnabled: boolean;
   updateSessionStatus: (status: 'error' | 'unknown' | 'valid') => void;
-  startAgent: () => Promise<void>;
   initializeSessionAndMessages: () => Promise<void>;
 }
 
@@ -197,15 +196,24 @@ export const useStore = create<AppState>((set, get) => ({
   messages: [],
   fetchAndDisplayToolCount: async () => {
     const { addDebugLog, authToken, sessionId, setToolCount, updateSessionStatus, cache, setCache, setIsLoadingTools } = get();
-    if (!authToken || !sessionId) return;
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [DEBUG] fetchAndDisplayToolCount called. authToken: ${authToken ? 'set' : 'null'}, sessionId: ${sessionId ? 'set' : 'null'}`);
+    
+    // Type guard: ensure authToken and sessionId are not null
+    if (!authToken || !sessionId) {
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [DEBUG] authToken or sessionId is null, returning early.`);
+      return;
+    }
+    // After this point, TypeScript knows authToken and sessionId are strings
+    const token: string = authToken;
+    const id: string = sessionId;
 
-    const cacheKey = `tools_${sessionId}`;
+    const cacheKey = `tools_${id}`;
     const cachedData = cache[cacheKey];
     const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
     if (cachedData && (Date.now() - cachedData.timestamp < CACHE_DURATION)) {
       addDebugLog(`[${new Date().toLocaleTimeString()}] [CACHE] Using cached tools data.`);
-            setToolCount((cachedData.data as { name: string }[]).length);
+      setToolCount((cachedData.data as { name: string }[]).length);
       updateSessionStatus('valid');
       return;
     }
@@ -214,7 +222,7 @@ export const useStore = create<AppState>((set, get) => ({
     const translations = getTranslations();
     addDebugLog(`[${new Date().toLocaleTimeString()}] [REQUEST] ${translations.fetchingToolsList}`);
     try {
-      const tools = (await getTools(authToken, sessionId)) as { name: string }[];
+      const tools = (await getTools(token, id)) as { name: string }[];
       addDebugLog(`[${new Date().toLocaleTimeString()}] [SUCCESS] ${tools.length} ${translations.toolsFound}.`);
       setToolCount(tools.length);
       updateSessionStatus('valid');
@@ -542,120 +550,6 @@ export const useStore = create<AppState>((set, get) => ({
   toggleIsCanvasVisible: () => set((state) => ({ isCanvasVisible: !state.isCanvasVisible })),
   currentPage: 'chat',
   setCurrentPage: (page) => set({ currentPage: page }),
-  startAgent: async () => {
-    const { messageInputValue, authToken, sessionId, addDebugLog, setIsProcessing, setJobId, addMessage } = get();
-
-    if (!messageInputValue.trim()) {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [WARN] Message input is empty.`);
-      return;
-    }
-
-    if (!authToken || !sessionId) {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Missing authentication token or session ID.`);
-      return;
-    }
-
-    setIsProcessing(true);
-    addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Sending message to agent...`);
-
-    // Add user message to history immediately
-    addMessage({
-      type: 'user',
-      content: messageInputValue,
-    });
-
-    const storedLlmConfig = localStorage.getItem('llmConfig');
-    let llmProvider: string | undefined;
-    let llmModelName: string | undefined;
-    let llmApiKey: string | undefined;
-
-    if (storedLlmConfig) {
-      const parsedConfig = JSON.parse(storedLlmConfig);
-      llmProvider = parsedConfig.provider;
-      llmModelName = parsedConfig.model;
-      llmApiKey = parsedConfig.apiKey;
-    }
-
-    try {
-      // Try to get JWT from cookie as fallback
-      let authHeader = `Bearer ${authToken}`;
-      const name = 'agenticforge_jwt=';
-      const decodedCookie = decodeURIComponent(document.cookie);
-      const ca = decodedCookie.split(';');
-      for(let i = 0; i < ca.length; i++) {
-        let c = ca[i];
-        while (c.charAt(0) === ' ') {
-          c = c.substring(1);
-        }
-        if (c.indexOf(name) === 0) {
-          const jwtToken = c.substring(name.length, c.length);
-          if (jwtToken) {
-            authHeader = 'Bearer ' + jwtToken;
-          }
-          break;
-        }
-      }
-
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Making request to /api/chat with auth header: ${authHeader.substring(0, 20)}...`);
-
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: authHeader,
-          'X-Session-ID': sessionId,
-        },
-        body: JSON.stringify({
-          prompt: messageInputValue,
-          apiKey: authToken, // This is the general auth token, not LLM specific
-          llmProvider,
-          llmModelName,
-          llmApiKey,
-        }),
-      });
-
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Response status: ${response.status}`);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send message to agent');
-      }
-
-      const data = await response.json();
-      setJobId(data.jobId);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [SUCCESS] Message sent. Job ID: ${data.jobId}`);
-
-      // Clear input after sending
-      set({ messageInputValue: '' });
-
-      const eventSource = new EventSource(`/api/chat/stream/${data.jobId}`);
-      eventSource.onmessage = (event) => {
-        if (event.data === 'heartbeat') return;
-        const eventData = JSON.parse(event.data);
-        if (eventData.type === 'agent-response') {
-          addMessage({
-            type: 'agent',
-            content: eventData.content,
-          });
-        } else if (eventData.type === 'job-completion') {
-          eventSource.close();
-          setIsProcessing(false);
-        }
-      };
-      eventSource.onerror = (error) => {
-        const errorMessage = error instanceof Event ? 'Connection lost' : String(error);
-        addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] EventSource failed: ${errorMessage}`);
-        eventSource.close();
-        setIsProcessing(false);
-      };
-
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Error sending message: ${errorMessage}`);
-      console.error('Error sending message to agent:', error);
-      setIsProcessing(false);
-    }
-  },
   toast: () => {},
   initializeSessionAndMessages: async () => {
     const { setSessions, setActiveSessionId, setMessages, setSessionId, addDebugLog, updateLeaderboardStats, addLlmApiKey, setActiveLlmApiKey, setIsLoadingLeaderboardStats, setIsLoadingSessions } = get();

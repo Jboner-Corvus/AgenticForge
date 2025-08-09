@@ -55,7 +55,7 @@ export const AppInitializer = () => {
       fetchAndDisplayToolCount();
     } else {
       // Try to get JWT from cookie as fallback
-      const name = 'agenticforge_jwt=';
+      const cookieName = 'agenticforge_jwt=';
       const decodedCookie = decodeURIComponent(document.cookie);
       const ca = decodedCookie.split(';');
       let jwtToken = null;
@@ -64,10 +64,15 @@ export const AppInitializer = () => {
         while (c.charAt(0) === ' ') {
           c = c.substring(1);
         }
-        if (c.indexOf(name) === 0) {
-          jwtToken = c.substring(name.length, c.length);
+        if (c.indexOf(cookieName) === 0) {
+          jwtToken = c.substring(cookieName.length, c.length);
           break;
         }
+      }
+      
+      // Try to get token from localStorage as another fallback
+      if (!jwtToken) {
+        jwtToken = localStorage.getItem('authToken');
       }
       
       if (jwtToken) {
