@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useStore } from '../store';
 
-
-
-export const useResizablePanel = (initialControlPanelWidth: number, _initialCanvasWidth: number) => {
+export const useResizablePanel = (initialControlPanelWidth: number, initialCanvasWidth: number) => {
   const [controlPanelWidth, setControlPanelWidth] = useState(initialControlPanelWidth);
   const isResizingControlPanel = useRef(false);
   const isResizingCanvas = useRef(false);
+  const setCanvasWidth = useStore(state => state.setCanvasWidth);
+  const canvasWidth = useStore(state => state.canvasWidth);
 
   const handleMouseDownControlPanel = useCallback((e: React.MouseEvent) => {
     isResizingControlPanel.current = true;
@@ -25,11 +26,12 @@ export const useResizablePanel = (initialControlPanelWidth: number, _initialCanv
       }
     } else if (isResizingCanvas.current) {
       const newWidth = window.innerWidth - e.clientX;
-      if (newWidth > 300 && newWidth < window.innerWidth * 0.8) {
-        // We're not setting the canvas width here anymore, just validating the resize
+      const maxWidth = Math.min(800, window.innerWidth * 0.6);
+      if (newWidth >= 300 && newWidth <= maxWidth) {
+        setCanvasWidth(newWidth);
       }
     }
-  }, []);
+  }, [setCanvasWidth]);
 
   const handleMouseUp = useCallback(() => {
     isResizingControlPanel.current = false;
@@ -49,6 +51,8 @@ export const useResizablePanel = (initialControlPanelWidth: number, _initialCanv
   return {
     controlPanelWidth,
     setControlPanelWidth,
+    canvasWidth,
+    setCanvasWidth,
     handleMouseDownControlPanel,
     handleMouseDownCanvas,
   };

@@ -36,20 +36,20 @@ export default function App() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const { translations } = useLanguage();
   
-  const { controlPanelWidth, handleMouseDownCanvas } = useResizablePanel(300, 500);
+  const { controlPanelWidth, handleMouseDownCanvas, setCanvasWidth } = useResizablePanel(300, 500);
 
   // Hook pour ajuster la largeur du canvas lors du redimensionnement de la fenêtre
   useEffect(() => {
     const handleResize = () => {
       const maxCanvasWidth = Math.min(800, window.innerWidth * 0.6);
       if (canvasWidth > maxCanvasWidth) {
-        useStore.getState().setCanvasWidth(maxCanvasWidth);
+        setCanvasWidth(maxCanvasWidth);
       }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [canvasWidth]);
+  }, [canvasWidth, setCanvasWidth]);
 
   const renderMainContent = () => {
     switch (currentPage) {
@@ -143,10 +143,10 @@ export default function App() {
                     onKeyDown={(e) => {
                       if (e.key === 'ArrowLeft') {
                         const newWidth = Math.min(window.innerWidth * 0.6, canvasWidth + 10);
-                        useStore.getState().setCanvasWidth(newWidth);
+                        setCanvasWidth(newWidth);
                       } else if (e.key === 'ArrowRight') {
                         const newWidth = Math.max(300, canvasWidth - 10);
-                        useStore.getState().setCanvasWidth(newWidth);
+                        setCanvasWidth(newWidth);
                       }
                     }}
                     className="absolute top-0 left-0 w-2 h-full cursor-ew-resize bg-border hover:bg-primary transition-colors duration-200 z-10"

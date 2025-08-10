@@ -29,6 +29,7 @@ usage() {
     echo "   status         : Affiche le statut des conteneurs Docker."
     echo "   logs [docker]  : Affiche les 100 derni\u00e8res lignes des logs du worker ou des conteneurs Docker."
     echo "   rebuild-docker : Force la reconstruction des images Docker et red\u00e9marre."
+    echo "   rebuild-web    : Reconstruit rapidement le frontend et red\\u00e9marre le serveur web."
     echo "   rebuild-worker : Reconstruit et red\u00e9marre le worker local."
     echo "   rebuild-all    : Reconstruit l\'int\u00e9gralit\u00e9 du projet (Docker et worker local)."
     echo "   clean-docker   : Nettoie le syst\u00e8me Docker (supprime conteneurs, volumes, etc.)."
@@ -285,6 +286,30 @@ clean_all_caches() {
     docker image prune -af
     
     echo -e "${COLOR_GREEN}✓ Tous les caches ont été nettoyés.${NC}"
+}
+
+rebuild_web() {
+    echo -e "${COLOR_YELLOW}Reconstruction rapide du frontend...${NC}"
+    
+    # Arrêter les services
+    stop_services
+    
+    # Nettoyer les caches frontend uniquement
+    echo -e "${COLOR_YELLOW}Nettoyage des caches frontend...${NC}"
+    cd "${SCRIPT_DIR}/packages/ui"
+    rm -rf dist/
+    rm -rf node_modules/.vite/
+    
+    # Reconstruire le frontend
+    echo -e "${COLOR_YELLOW}Reconstruction du frontend...${NC}"
+    pnpm install --prod=false
+    pnpm build
+    
+    # Redémarrer les services
+    echo -e "${COLOR_YELLOW}Redémarrage des services...${NC}"
+    start_services
+    
+    echo -e "${COLOR_GREEN}✓ Frontend reconstruit et services redémarrés.${NC}"
 }
 
 rebuild_worker() {
@@ -646,28 +671,33 @@ run_all_checks() {
 # ==============================================================================
 show_menu() {
     clear
-    echo -e "${COLOR_ORANGE}"
+    echo -e \"${COLOR_ORANGE}\"
     echo '    ╔══════════════════════════════════╗'
     echo '    ║        A G E N T I C F O R G E   ║'
     echo '    ╚══════════════════════════════════╝'
-    echo -e "${NC}"
-    echo -e "──────────────────────────────────────────"
-    echo -e "    ${COLOR_CYAN}Docker & Services${NC}"
-    printf "    1) ${COLOR_GREEN}🟢 D\u00e9marrer${NC}            5) ${COLOR_BLUE}📊 Logs Worker${NC}\n"
-    printf "    2) ${COLOR_YELLOW}🔄 Red\u00e9marrer tout${NC}     6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\n"
-    printf "    3) ${COLOR_RED}🔴 Arr\u00eater${NC}              7) ${COLOR_BLUE}🔨 Rebuild Docker${NC}\n"
-    printf "    4) ${COLOR_CYAN}⚡ Statut${NC}              8) ${COLOR_RED}🧹 Nettoyer Docker${NC}\n"
-    printf "    9) ${COLOR_YELLOW}🔄 Red\u00e9marrer worker${NC}    15) ${COLOR_BLUE}🐳 Logs Docker${NC}\n"
-    printf "   20) ${COLOR_BLUE}🔨 Rebuild Worker${NC}\n"
-    printf "   21) ${COLOR_BLUE}🔨 Rebuild All${NC}\n"
-    printf "   22) ${COLOR_RED}🧹 Clean All Caches${NC}\n"
-    echo ""
-    echo -e "    ${COLOR_CYAN}D\u00e9veloppement & V\u00e9rifications${NC}"
-    printf "   10) ${COLOR_BLUE}🔍 Lint${NC}                 13) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
-    printf "   11) ${COLOR_BLUE}✨ Format${NC}               14) ${COLOR_BLUE}✅ Checks Rapides (Lint, Types)${NC}\n"
-    printf "   12) ${COLOR_BLUE}🧪 Tests (Unitaires)${NC}     17) ${COLOR_BLUE}🚀 TOUS les Checks (Lint, Types, Tests Unitaires)${NC}\n"
-    printf "   18) ${COLOR_BLUE}🧪 Tests (Int\u00e9gration)${NC}\n"
-    printf "   19) ${COLOR_BLUE}🧪 Lancer TOUS les tests${NC}\n"
+    echo -e \"${NC}\"
+    echo -e \"──────────────────────────────────────────\"
+    echo -e \"    ${COLOR_CYAN}Docker & Services${NC}\"
+    printf \"    1) ${COLOR_GREEN}🟢 Démarrer${NC}            5) ${COLOR_BLUE}📊 Logs Worker${NC}\\n\"
+    printf \"    2) ${COLOR_YELLOW}🔄 Redémarrer tout${NC}     6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\\n\"
+    printf \"    3) ${COLOR_RED}🔴 Arrêter${NC}              7) ${COLOR_BLUE}🔨 Rebuild Docker${NC}\\n\"
+    printf \"    4) ${COLOR_CYAN}⚡ Statut${NC}              8) ${COLOR_BLUE}🔨 Rebuild Web${NC}\\n\"
+    printf \"    9) ${COLOR_RED}🧹 Nettoyer Docker${NC}\\n\"
+    printf \"   10) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}    16) ${COLOR_BLUE}🐳 Logs Docker${NC}\\n\"
+    printf \"   21) ${COLOR_BLUE}🔨 Rebuild Worker${NC}\\n\"
+    printf \"   22) ${COLOR_BLUE}🔨 Rebuild All${NC}\\n\"
+    printf \"   23) ${COLOR_RED}🧹 Clean All Caches${NC}\\n\"
+    echo \"\"
+    echo -e \"    ${COLOR_CYAN}Développement & Vérifications${NC}\"
+    printf \"   11) ${COLOR_BLUE}🔍 Lint${NC}                 14) ${COLOR_BLUE}📘 TypeCheck${NC}\\n\"
+    printf \"   12) ${COLOR_BLUE}✨ Format${NC}               15) ${COLOR_BLUE}✅ Checks Rapides (Lint, Types)${NC}\\n\"
+    printf \"   13) ${COLOR_BLUE}🧪 Tests (Unitaires)${NC}     18) ${COLOR_BLUE}🚀 TOUS les Checks (Lint, Types, Tests Unitaires)${NC}\\n\"
+    printf \"   19) ${COLOR_BLUE}🧪 Tests (Intégration)${NC}\\n\"
+    printf \"   20) ${COLOR_BLUE}🧪 Lancer TOUS les tests${NC}\\n\"
+    echo \"\"
+    printf \"   17) ${COLOR_RED}🚪 Quitter${NC}\\n\"
+    echo \"\"
+}    printf "   19) ${COLOR_BLUE}🧪 Lancer TOUS les tests${NC}\n"
     echo ""
     printf "   16) ${COLOR_RED}🚪 Quitter${NC}\n"
     echo ""
@@ -696,6 +726,7 @@ main() {
                     *) show_logs "${SCRIPT_DIR}/worker.log" "Worker" ;; 
                 esac 
                 ;; 
+            rebuild-web) rebuild_web ;; 
             rebuild-all) rebuild_all ;; 
             rebuild-docker|rebuild) rebuild_docker ;; 
             rebuild-worker) rebuild_worker ;; 
@@ -731,21 +762,22 @@ main() {
             5) show_logs "${SCRIPT_DIR}/worker.log" "Worker" ;; 
             6) shell_access ;; 
             7) rebuild_docker ;; 
-            8) clean_docker ;; 
-            9) restart_worker ;; 
-            10) run_lint ;; 
-            11) run_format ;; 
-            12) run_unit_tests ;; 
-            13) run_typecheck ;; 
-            14) run_small_checks ;; 
-            15) show_logs "${SCRIPT_DIR}/docker.log" "Docker" ;; 
-            16) echo -e "${COLOR_CYAN}Au revoir !${NC}"; exit 0 ;; 
-            17) run_all_checks ;; 
-            18) run_integration_tests ;; 
-            19) run_all_tests ;; 
-            20) rebuild_worker ;; 
-            21) rebuild_all ;;
-            22) clean_all_caches ;; 
+            8) rebuild_web ;;
+            9) clean_docker ;; 
+            10) restart_worker ;; 
+            11) run_lint ;; 
+            12) run_format ;; 
+            13) run_unit_tests ;; 
+            14) run_typecheck ;; 
+            15) run_small_checks ;; 
+            16) show_logs "${SCRIPT_DIR}/docker.log" "Docker"" ;; 
+            17) echo -e "${COLOR_CYAN}Au revoir !${NC}"; exit 0 ;; 
+            18) run_all_checks ;; 
+            19) run_integration_tests ;; 
+            20) run_all_tests ;; 
+            21) rebuild_worker ;; 
+            22) rebuild_all ;;
+            23) clean_all_caches ;; 
             *) echo -e "${COLOR_RED}Option invalide, veuillez r\u00e9essayer.${NC}" ;; 
         esac
         echo -e "\nAppuyez sur Entree pour continuer..."

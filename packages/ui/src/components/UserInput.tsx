@@ -11,14 +11,12 @@ export const UserInput = () => {
   const { translations } = useLanguage();
   const [inputValue, setInputValue] = useState('');
   const { startAgent } = useAgentStream();
-  const setMessageInputValue = useStore((state: AppState) => state.setMessageInputValue);
   const isProcessing = useStore((state: AppState) => state.isProcessing);
   const tokenStatus = useStore((state: AppState) => state.tokenStatus);
 
   const handleSendMessage = () => {
     if (inputValue.trim() && !isProcessing) {
-      setMessageInputValue(inputValue);
-      startAgent();
+      startAgent(inputValue);
       setInputValue('');
     }
   };

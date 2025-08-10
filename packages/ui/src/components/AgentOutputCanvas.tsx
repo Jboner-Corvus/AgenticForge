@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { 
   X, Bot, Pin, PinOff, RefreshCw, ChevronDown, Trash2, History, 
-  Maximize2, Minimize2, Copy, Download 
+  Maximize2, Minimize2, Copy, Download, Settings2
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { 
@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from './ui/dropdown-menu';
+import { Slider } from './ui/slider';
 import { useStore } from '../lib/store';
 import { useLanguage } from '../lib/contexts/LanguageContext';
 import { useToast } from '../lib/hooks/useToast';
@@ -25,14 +26,7 @@ const AgentOutputCanvas: React.FC = () => {
   const navigateToCanvas = useStore((state) => state.navigateToCanvas);
   const removeCanvasFromHistory = useStore((state) => state.removeCanvasFromHistory);
   const clearCanvasHistory = useStore((state) => state.clearCanvasHistory);
-  const { 
-    canvasContent, 
-    canvasType, 
-    isCanvasPinned, 
-    canvasHistory, 
-    currentCanvasIndex,
-    isCanvasFullscreen
-  } = useStore();
+  const canvasWidth = useStore((state) => state.canvasWidth);
   const [iframeKey, setIframeKey] = useState(0);
   const [hasIframeError, setHasIframeError] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -338,6 +332,44 @@ const AgentOutputCanvas: React.FC = () => {
               <RefreshCw className="h-4 w-4" />
             </Button>
           )}
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-900/30 h-8 w-8"
+                title="Paramètres du canvas"
+              >
+                <Settings2 className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel>Paramètres du Canvas</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className="p-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm">Largeur</span>
+                  <span className="text-sm font-medium">{Math.round(canvasWidth)}px</span>
+                </div>
+                <Slider
+                  value={[canvasWidth]}
+                  onValueChange={(value) => {
+                    const newWidth = Math.max(300, Math.min(800, value[0]));
+                    useStore.getState().setCanvasWidth(newWidth);
+                  }}
+                  min={300}
+                  max={800}
+                  step={10}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <span>300px</span>
+                  <span>800px</span>
+                </div>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           <Button 
             variant="ghost" 

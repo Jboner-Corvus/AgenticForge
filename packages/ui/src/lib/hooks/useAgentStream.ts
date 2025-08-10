@@ -60,7 +60,6 @@ export const useAgentStream = () => {
   const {
     addMessage,
     authToken,
-    messageInputValue,
     sessionId,
     setIsProcessing,
     setJobId,
@@ -73,13 +72,13 @@ export const useAgentStream = () => {
     addCanvasToHistory,
   } = useStore();
 
-  const startAgent = useCallback(async () => {
+  const startAgent = useCallback(async (message: string) => {
     console.log('🚀 [useAgentStream] startAgent called');
-    console.log('📝 [useAgentStream] messageInputValue:', messageInputValue);
+    console.log('📝 [useAgentStream] message:', message);
     console.log('🔐 [useAgentStream] authToken available:', !!authToken);
     console.log('🆔 [useAgentStream] sessionId available:', !!sessionId);
     
-    if (!messageInputValue.trim()) {
+    if (!message.trim()) {
       console.warn('⚠️ [useAgentStream] Empty message, aborting');
       addDebugLog(`[${new Date().toLocaleTimeString()}] [WARNING] Message vide, envoi annulé`);
       return;
@@ -111,10 +110,10 @@ export const useAgentStream = () => {
     setIsProcessing(true);
     const userMessage: NewChatMessage = {
       type: 'user',
-      content: messageInputValue,
+      content: message,
     };
     addMessage(userMessage);
-    const goal = messageInputValue;
+    const goal = message;
     setMessageInputValue('');
     
     addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🚀 Démarrage de l'agent avec le message: "${goal}"`);
@@ -477,7 +476,6 @@ export const useAgentStream = () => {
     addMessage,
     setIsProcessing,
     setJobId,
-    messageInputValue,
     setMessageInputValue,
     setAgentStatus,
     addDebugLog,
