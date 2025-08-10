@@ -62,7 +62,7 @@ export const fr = {
   connectGitHub: 'Connecter GitHub',
   connectGoogle: 'Connecter Google',
   connectTwitter: 'Connecter Twitter',
-  oauthExplanation: 'OAuth vous permet de vous authentifier de manière sécurisée via des fournisseurs tiers.',
+  oauthExplanation: 'OAuth vous permet de vous authentifier de manière sécurisée.',
   // Store translations for API calls
   fetchingToolsList: 'Récupération de la liste des outils...',
   toolsFound: 'outils trouvés',
@@ -139,7 +139,7 @@ export const en = {
   connectGitHub: 'Connect GitHub',
   connectGoogle: 'Connect Google',
   connectTwitter: 'Connect Twitter',
-  oauthExplanation: 'OAuth allows you to authenticate securely via third-party providers.',
+  oauthExplanation: 'OAuth allows you to authenticate securely.',
   // Store translations for API calls
   fetchingToolsList: 'Fetching tools list...',
   toolsFound: 'tools found',

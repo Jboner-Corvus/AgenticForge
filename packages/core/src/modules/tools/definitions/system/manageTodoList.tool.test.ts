@@ -1,10 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { manageTodoListTool } from './manageTodoList.tool';
 import { sendToCanvas } from '../../../../utils/canvasUtils.js';
+import { getRedisClientInstance } from '../../../../modules/redis/redisClient.js';
 
 // Mock the canvasUtils
 vi.mock('../../../../utils/canvasUtils.js', () => ({
   sendToCanvas: vi.fn(),
+}));
+
+// Mock the redis client
+vi.mock('../../../../modules/redis/redisClient.js', () => ({
+  getRedisClientInstance: vi.fn(() => ({
+    publish: vi.fn(),
+  })),
 }));
 
 describe('manageTodoListTool', () => {
@@ -65,7 +73,10 @@ describe('manageTodoListTool', () => {
       expect(result.todos).toHaveLength(2);
       expect(result.todos[0].content).toBe('Task 1');
     }
-    expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', expect.stringContaining('Todo List'), 'html');
+    // Check that sendToCanvas was called with HTML template (first call)
+    expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', expect.stringContaining('<!DOCTYPE html>'), 'html');
+    // Check that sendToCanvas was also called with JSON data
+    expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', expect.stringContaining('"type":"todo_list"'), 'json');
     expect(mockCtx.log.info).toHaveBeenCalledWith('Created 2 todos');
   });
 
@@ -78,6 +89,9 @@ describe('manageTodoListTool', () => {
       todos: [{ id: '1', content: 'Task 1', status: 'pending' as const }],
     }, mockCtx);
     
+    // Clear previous calls
+    vi.clearAllMocks();
+    
     // Then update status
     const result = await manageTodoListTool.execute({
       action: 'update',
@@ -89,30 +103,28 @@ describe('manageTodoListTool', () => {
     if ('todos' in result && result.todos) {
       expect(result.todos[0].status).toBe('completed');
     }
+    // Check that sendToCanvas was called with JSON data
+    expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', expect.stringContaining('"type":"todo_list"'), 'json');
     expect(mockCtx.log.info).toHaveBeenCalledWith('Updated todo 1 to status completed');
   });
 
   it('should display todos successfully', async () => {
     const mockCtx = createMockContext('test-job-id');
     
-    // First create todos
-    await manageTodoListTool.execute({
+    // Create and display todos in one go (template should be sent)
+    const result = await manageTodoListTool.execute({
       action: 'create',
       todos: [
         { id: '1', content: 'Task 1', status: 'pending' as const },
         { id: '2', content: 'Task 2', status: 'completed' as const },
       ],
-    }, mockCtx);
-    
-    // Then display
-    const result = await manageTodoListTool.execute({
-      action: 'display',
       title: 'My Tasks'
     }, mockCtx);
     
     expect(result).toHaveProperty('success', true);
-    expect(result).toHaveProperty('message', 'Displayed 2 todo items');
-    expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', expect.stringContaining('My Tasks'), 'html');
+    expect(result).toHaveProperty('message', 'Created 2 todo items');
+    // Check that sendToCanvas was called with JSON data (template may have been sent already in this session)
+    expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', expect.stringContaining('"type":"todo_list"'), 'json');
   });
 
   it('should clear todos successfully', async () => {

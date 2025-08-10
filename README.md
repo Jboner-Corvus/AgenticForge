@@ -3,10 +3,6 @@
 </p>
 
 <h1 align="center">AgenticForge</h1>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/🔨-AgenticForge-orange?style=for-the-badge" alt="AgenticForge Logo">
-</p>
 <p align="center">
   <strong>🌐 Langues disponibles</strong><br>
   <a href="README_EN.md">English</a> • 
@@ -27,9 +23,6 @@
   </em>
 </p>
 <br>
-<p align="center">
-    <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square&logo=opensource&logoColor=white" alt="MIT License"> <img src="https://img.shields.io/github/stars/Jboner-Corvus/G-Forge?style=flat-square&logo=github&color=gold" alt="Stars"> <img src="https://img.shields.io/github/forks/Jboner-Corvus/G-Forge?style=flat-square&logo=git&color=blue" alt="Forks"> <img src="https://img.shields.io/github/issues/Jboner-Corvus/G-Forge?style=flat-square&logo=github" alt="Issues">
-</p>
 <p align="center">
     <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
     <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
@@ -85,6 +78,12 @@
   npm install -g pnpm
   ```
 - **Git** : Pour cloner le projet
+
+### 🖥️ Compatibilité Système
+
+> **AgenticForge** est conçu pour être déployé sur **Linux** ou **macOS**.  
+> **Windows n'est pas officiellement supporté** pour le serveur ou les workers, en raison de dépendances systèmes spécifiques (Docker, shell scripts, etc.).  
+> Une version **client léger** pour Windows pourrait être envisagée dans le futur, mais reste **expérimentale**.
 
 ---
 
@@ -162,7 +161,7 @@ REDIS_PASSWORD=""        # Laissez vide pour un usage local
 
 # Intelligence Artificielle
 LLM_API_KEY="votre_cle_api_preferee"
-LLM_MODEL_NAME="gemini-2.0-flash-exp"   # ou "gpt-4o", "claude-3.5-sonnet"
+LLM_MODEL_NAME="gemini-2.5-pro"   # ou "gpt-5", "claude-3.5-sonnet"
 LLM_API_BASE_URL=""      # Auto-détecté selon le modèle
 
 # Routeur de clés API (pour éviter les limites)
@@ -200,8 +199,8 @@ LLM_API_KEY_TERTIARY="claude-xxxxxxxxxxxxxxxxx"  # Anthropic
 
 | Fournisseur | Modèles Recommandés | Obtenir une clé API |
 |-------------|---------------------|---------------------|
-| **Google AI** | `gemini-2.0-flash-exp` | [aistudio.google.com](https://aistudio.google.com/keys) |
-| **OpenAI** | `gpt-4o`, `gpt-4o-mini` | [platform.openai.com](https://platform.openai.com/signup) |
+| **Google AI** | `gemini-2.5-pro`, `flash-2.5-pro` | [aistudio.google.com](https://aistudio.google.com/keys) |
+| **OpenAI** | `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `gpt-4o`, `gpt-4o-mini` | [platform.openai.com](https://platform.openai.com/signup) |
 | **Anthropic** | `claude-3.5-sonnet` | [console.anthropic.com](https://console.anthropic.com/) |
 | **DeepSeek** | `deepseek-chat` | [platform.deepseek.com](https://platform.deepseek.com) |
 

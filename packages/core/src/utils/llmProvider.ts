@@ -1,14 +1,11 @@
 import { getConfig } from '../config.js';
 import { getLogger } from '../logger.js';
-import { LLMContent } from '../modules/llm/llm-types.js';
-import {
-  LlmApiKey,
-  LlmKeyErrorType,
-  LlmKeyManager,
-} from '../modules/llm/LlmKeyManager.js';
+import { ILlmProvider, LLMContent, LlmError } from '../modules/llm/llm-types.js';
+import { LlmApiKey, LlmKeyManager } from '../modules/llm/LlmKeyManager.js';
+import { LlmKeyErrorType } from '../modules/llm/LlmKeyManager.js';
+import { QwenProvider } from '../modules/llm/qwenProvider.js';
 import { getRedisClientInstance } from '../modules/redis/redisClient.js';
-import { ILlmProvider } from '../types.js';
-import { LlmError } from './LlmError.js';
+import { Gpt5Provider } from './gpt5Provider.js';
 
 class AnthropicProvider implements ILlmProvider {
   public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
@@ -74,11 +71,11 @@ class AnthropicProvider implements ILlmProvider {
         // We'll convert tool outputs to user messages for now.
         // A more sophisticated approach might involve tool use in Anthropic's API.
         return {
-          content: `Tool output: ${msg.parts.map((p) => p.text).join('')}`,
+          content: `Tool output: ${msg.parts.map((p: { text: string }) => p.text).join('')}`,
           role: 'user',
         };
       }
-      return { content: msg.parts.map((p) => p.text).join(''), role };
+      return { content: msg.parts.map((p: { text: string }) => p.text).join(''), role };
     });
 
     const requestBody: any = {
@@ -147,7 +144,7 @@ class AnthropicProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum, part) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -252,7 +249,7 @@ class GeminiProvider implements ILlmProvider {
         // Gemini API does not directly support 'tool' role in 'contents'.
         // Convert tool outputs to user messages.
         role = 'user';
-        parts = [{ text: `Tool output: ${parts.map((p) => p.text).join('')}` }];
+        parts = [{ text: `Tool output: ${parts.map((p: { text: string }) => p.text).join('')}` }];
       }
 
       return { parts, role };
@@ -336,7 +333,7 @@ class GeminiProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum, part) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -500,7 +497,7 @@ class GrokProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum, part) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -598,7 +595,7 @@ class HuggingFaceProvider implements ILlmProvider {
 
     const requestBody = {
       inputs: messages
-        .map((msg) => msg.parts.map((p) => p.text).join(''))
+        .map((msg) => msg.parts.map((p: { text: string }) => p.text).join(''))
         .join('\n'),
       parameters: {
         max_new_tokens: 4096, // A reasonable default for HuggingFace models
@@ -661,7 +658,7 @@ class HuggingFaceProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum, part) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -824,7 +821,7 @@ class MistralProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum, part) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -992,7 +989,7 @@ class OpenAIProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum, part) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -1030,8 +1027,186 @@ class OpenAIProvider implements ILlmProvider {
   }
 }
 
-export function getLlmProvider(providerName: string): ILlmProvider {
+class OpenRouterProvider implements ILlmProvider {
+  public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
+    if (statusCode === 401 || statusCode === 403) {
+      // Unauthorized, Forbidden - likely invalid API key
+      return LlmKeyErrorType.PERMANENT;
+    } else if (statusCode === 429) {
+      // Too Many Requests - rate limit
+      // Check if it's a quota/limit exceeded error (permanent for billing period)
+      if (
+        _errorBody.includes('quota') ||
+        _errorBody.includes('limit') ||
+        _errorBody.includes('exceeded')
+      ) {
+        return LlmKeyErrorType.PERMANENT;
+      }
+      return LlmKeyErrorType.TEMPORARY;
+    } else if (statusCode >= 500) {
+      // Server errors - temporary issues
+      return LlmKeyErrorType.TEMPORARY;
+    } else if (
+      _errorBody.includes('invalid_api_key') ||
+      _errorBody.includes('Incorrect API key')
+    ) {
+      return LlmKeyErrorType.PERMANENT;
+    }
+    // Default to temporary for unknown errors
+    return LlmKeyErrorType.TEMPORARY;
+  }
+
+  public async getLlmResponse(
+    messages: LLMContent[],
+    systemPrompt?: string,
+    apiKey?: string,
+    modelName?: string,
+  ): Promise<string> {
+    const log = getLogger().child({ module: 'OpenRouterProvider' });
+
+    let activeKey: LlmApiKey | null;
+    if (apiKey) {
+      activeKey = {
+        apiKey: apiKey,
+        apiModel: modelName || getConfig().LLM_MODEL_NAME,
+        apiProvider: 'openrouter', // Assuming provider based on the class
+        errorCount: 0,
+        isPermanentlyDisabled: false,
+      };
+    } else {
+      activeKey = await LlmKeyManager.getNextAvailableKey('openrouter');
+    }
+
+    if (!activeKey) {
+      const errorMessage = 'No LLM API key available.';
+      log.error(errorMessage);
+      throw new LlmError(errorMessage);
+    }
+
+    const apiUrl =
+      activeKey.baseUrl || 'https://openrouter.ai/api/v1/chat/completions';
+
+    const openRouterMessages = messages.map((msg) => ({
+      content: msg.parts.map((part) => part.text).join(''),
+      role: msg.role === 'user' ? 'user' : 'model',
+    }));
+
+    if (systemPrompt) {
+      openRouterMessages.unshift({ content: systemPrompt, role: 'system' });
+    }
+
+    const requestBody = {
+      messages: openRouterMessages,
+      model: modelName || getConfig().LLM_MODEL_NAME, // Use modelName if provided, else fallback to config
+    };
+
+    const body = JSON.stringify(requestBody);
+
+    try {
+      // Add a delay before making the LLM request to avoid rate limiting
+      await new Promise((resolve) =>
+        setTimeout(resolve, getConfig().LLM_REQUEST_DELAY_MS),
+      );
+
+      // Log 2: Avant chaque appel LLM
+      log.info(
+        `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
+      );
+      const response = await fetch(apiUrl, {
+        body,
+        headers: {
+          Authorization: `Bearer ${activeKey.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        const errorMessage = `OpenRouter API request failed with status ${response.status}: ${errorBody}`;
+        log.error({ errorBody, status: response.status }, errorMessage);
+        const errorType = this.getErrorType(response.status, errorBody);
+        await LlmKeyManager.markKeyAsBad(
+          activeKey.apiProvider,
+          activeKey.apiKey,
+          errorType,
+        );
+        throw new LlmError(errorMessage);
+      }
+
+      const data = await response.json();
+
+      const content = data.choices?.[0]?.message?.content;
+      if (content === undefined || content === null) {
+        log.error(
+          { response: data },
+          'Invalid response structure from OpenRouter API',
+        );
+        const errorType = this.getErrorType(
+          response.status,
+          JSON.stringify(data),
+        );
+        await LlmKeyManager.markKeyAsBad(
+          activeKey.apiProvider,
+          activeKey.apiKey,
+          errorType,
+        );
+        throw new LlmError(
+          'Invalid response structure from OpenRouter API. The model may have returned an empty response.',
+        );
+      }
+
+      // Placeholder for token counting
+      const estimatedTokens =
+        messages.reduce(
+          (sum, msg) =>
+            sum +
+            msg.parts.reduce(
+              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
+              0,
+            ),
+          0,
+        ) + content.length;
+      getRedisClientInstance()
+        .incrby('leaderboard:tokensSaved', estimatedTokens)
+        .catch((_error: unknown) => {
+          getLogger().error(
+            { _error },
+            'Failed to increment tokensSaved in Redis',
+          );
+        });
+
+      await LlmKeyManager.resetKeyStatus(
+        activeKey.apiProvider,
+        activeKey.apiKey,
+      );
+
+      return content.trim();
+    } catch (_error) {
+      if (_error instanceof LlmError) {
+        throw _error;
+      }
+      log.error({ _error }, 'Failed to get response from LLM');
+      if (activeKey) {
+        // Assume network errors or unhandled exceptions are temporary
+        await LlmKeyManager.markKeyAsBad(
+          activeKey.apiProvider,
+          activeKey.apiKey,
+          LlmKeyErrorType.TEMPORARY,
+        );
+      }
+      throw new LlmError('Failed to communicate with the LLM.');
+    }
+  }
+}
+
+export function getLlmProvider(providerName: string, modelName?: string): ILlmProvider {
   let currentLlmProvider: ILlmProvider;
+
+  // Check if it's a GPT-5 model
+  if (providerName === 'openai' && modelName && modelName.startsWith('gpt-5')) {
+    return new Gpt5Provider();
+  }
 
   switch (providerName) {
     case 'anthropic':
@@ -1050,8 +1225,14 @@ export function getLlmProvider(providerName: string): ILlmProvider {
       currentLlmProvider = new MistralProvider();
       break;
     case 'openai':
-      currentLlmProvider = new OpenAIProvider();
-      break;
+        currentLlmProvider = new OpenAIProvider();
+        break;
+    case 'openrouter':
+        currentLlmProvider = new OpenRouterProvider();
+        break;
+    case 'qwen':
+        currentLlmProvider = new QwenProvider();
+        break;
     default:
       getLogger().warn(
         `Unknown LLM provider requested: ${providerName}. Defaulting to GeminiProvider.`,

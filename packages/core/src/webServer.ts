@@ -2,6 +2,7 @@ import { exec } from 'child_process';
 import chokidar from 'chokidar';
 import cookieParser from 'cookie-parser';
 import express, { type Application } from 'express';
+import { createHash, randomBytes } from 'crypto';
 import { Server } from 'http';
 import { Redis } from 'ioredis';
 import jwt from 'jsonwebtoken';
@@ -119,7 +120,8 @@ export async function initializeWebServer(
         
         if (
           req.path === '/api/health' ||
-          req.path.startsWith('/api/auth/github')
+          req.path.startsWith('/api/auth/github') ||
+          req.path.startsWith('/api/auth/qwen')
         ) {
           return next();
         }
@@ -718,6 +720,185 @@ export async function initializeWebServer(
       },
     );
 
+    // Qwen OAuth 2.0 with PKCE
+    app.get('/api/auth/qwen', (req: express.Request, res: express.Response) => {
+      const qwenClientId = config.QWEN_CLIENT_ID;
+      if (!qwenClientId) {
+        return res
+          .status(500)
+          .json({ error: 'Qwen Client ID not configured.' });
+      }
+
+      // Generate code verifier for PKCE
+      const codeVerifier = randomBytes(32).toString('hex');
+      
+      // Generate code challenge (SHA256 hash of code verifier, then base64url encoded)
+      const codeChallenge = createHash('sha256')
+        .update(codeVerifier)
+        .digest('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+
+      // Store code verifier in Redis with a 10-minute expiration
+      if (req.sessionId) {
+        redisClient.set(
+          `qwen:codeVerifier:${req.sessionId}`,
+          codeVerifier,
+          'EX',
+          600,
+        );
+        getLoggerInstance().info(
+          { sessionId: req.sessionId },
+          'Qwen code verifier stored in Redis for PKCE.',
+        );
+      }
+
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/qwen/callback`;
+      const qwenAuthUrl = `https://qianwen.aliyun.com/oauth2/v1/authorize?response_type=code&client_id=${qwenClientId}&redirect_uri=${redirectUri}&scope=https://qianwen.aliyun.com/api&code_challenge=${codeChallenge}&code_challenge_method=S256`;
+      res.redirect(qwenAuthUrl);
+    });
+
+    app.get(
+      '/api/auth/qwen/callback',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const code = Array.isArray(req.query.code) ? req.query.code[0] : req.query.code;
+          const qwenClientId = config.QWEN_CLIENT_ID;
+          const qwenClientSecret = config.QWEN_CLIENT_SECRET;
+
+          getLoggerInstance().info(
+            { code: code ? `${String(code).substring(0, 10)}...` : 'undefined' },
+            'Qwen OAuth callback received',
+          );
+
+          if (!code || !qwenClientId || !qwenClientSecret) {
+            getLoggerInstance().error(
+              { code, qwenClientId: qwenClientId ? '***REDACTED***' : 'undefined', qwenClientSecret: qwenClientSecret ? '***REDACTED***' : 'undefined' },
+              'Missing code or Qwen credentials',
+            );
+            throw new AppError('Missing code or Qwen credentials',
+              {
+                statusCode: 400,
+              },
+            );
+          }
+
+          // Retrieve code verifier from Redis
+          let codeVerifier = null;
+          if (req.sessionId) {
+            codeVerifier = await redisClient.get(
+              `qwen:codeVerifier:${req.sessionId}`,
+            );
+            // Delete the code verifier after retrieving it (one-time use)
+            await redisClient.del(`qwen:codeVerifier:${req.sessionId}`);
+            
+            if (!codeVerifier) {
+              getLoggerInstance().error(
+                { sessionId: req.sessionId },
+                'Code verifier not found in Redis for Qwen PKCE flow',
+              );
+              throw new AppError('Code verifier not found for PKCE flow',
+                {
+                  statusCode: 400,
+                },
+              );
+            }
+          }
+
+          const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/qwen/callback`;
+          
+          const tokenResponse = await fetch(
+            'https://qianwen.aliyun.com/oauth2/v1/token',
+            {
+              body: JSON.stringify({
+                client_id: qwenClientId,
+                client_secret: qwenClientSecret,
+                code: String(code),
+                code_verifier: codeVerifier,
+                grant_type: 'authorization_code',
+                redirect_uri: redirectUri,
+              }),
+              headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+              },
+              method: 'POST',
+            },
+          );
+
+          const tokenData = await tokenResponse.json();
+
+          if (tokenData.error) {
+            const loggedTokenData = { ...tokenData };
+            if (loggedTokenData.access_token) {
+              loggedTokenData.access_token = '***REDACTED***';
+            }
+            getLoggerInstance().error(
+              { tokenData: loggedTokenData },
+              'Qwen OAuth Error',
+            );
+            throw new AppError(
+              `Qwen OAuth error: ${tokenData.error_description || tokenData.error}`,
+              { statusCode: 400 },
+            );
+          }
+
+          const accessToken = tokenData.access_token;
+          getLoggerInstance().info(
+            { accessToken: '***REDACTED***' },
+            'Qwen access token received',
+          );
+
+          if (req.sessionId) {
+            await redisClient.set(
+              `qwen:accessToken:${req.sessionId}`,
+              accessToken,
+              'EX',
+              3600,
+            );
+            getLoggerInstance().info(
+              { accessToken: '***REDACTED***', sessionId: req.sessionId },
+              'Qwen access token stored in Redis.',
+            );
+
+            if (config.JWT_SECRET) {
+              const userId = req.sessionId;
+              const token = jwt.sign({ userId }, config.JWT_SECRET, {
+                expiresIn: '1h',
+              });
+              res.cookie('agenticforge_jwt', token, {
+                httpOnly: true,
+                maxAge: 3600 * 1000,
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production',
+              });
+              getLoggerInstance().info(
+                { userId, token: `${token.substring(0, 20)}...` },
+                'JWT issued and sent to frontend.',
+              );
+            } else {
+              getLoggerInstance().warn(
+                'JWT_SECRET is not configured, skipping JWT issuance.',
+              );
+            }
+          }
+
+          res.redirect('/?qwen_auth_success=true');
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error in Qwen OAuth callback',
+          );
+          next(error);
+        }
+      },
+    );
+
     app.post(
       '/api/interrupt/:jobId',
       async (
@@ -862,6 +1043,119 @@ export async function initializeWebServer(
             message: 'Contenu envoyé au canvas avec succès' 
           });
         } catch (error) {
+          next(error);
+        }
+      },
+    );
+
+    // Check if Qwen is connected for the current session
+    app.get(
+      '/api/auth/qwen/status',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          if (!req.sessionId) {
+            return res.status(400).json({ error: 'Session ID is missing.' });
+          }
+
+          // Check if Qwen access token exists in Redis for this session
+          const qwenAccessToken = await redisClient.get(
+            `qwen:accessToken:${req.sessionId}`,
+          );
+
+          res.status(200).json({
+            connected: !!qwenAccessToken,
+            message: qwenAccessToken 
+              ? 'Qwen is connected' 
+              : 'Qwen is not connected',
+          });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error checking Qwen connection status',
+          );
+          next(error);
+        }
+      },
+    );
+
+    // Get Qwen credentials from local file ~/.qwen/oauth_creds.json
+    app.get(
+      '/api/auth/qwen/credentials',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Import fs module for file operations
+          const fs = await import('fs');
+          const os = await import('os');
+          const path = await import('path');
+
+          // Construct the path to the Qwen credentials file
+          const qwenDir = path.join(os.homedir(), '.qwen');
+          const credsFile = path.join(qwenDir, 'oauth_creds.json');
+
+          // Check if the file exists
+          if (!fs.existsSync(credsFile)) {
+            return res.status(404).json({
+              error: 'Qwen credentials file not found',
+              message: 'Please authenticate with Qwen first to create the credentials file',
+            });
+          }
+
+          // Read the credentials file
+          const credsData = fs.readFileSync(credsFile, 'utf8');
+          const creds = JSON.parse(credsData);
+
+          // Return only the access token
+          res.status(200).json({
+            accessToken: creds.access_token,
+          });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error reading Qwen credentials file',
+          );
+          next(error);
+        }
+      },
+    );
+
+    // Logout from Qwen (clear token from Redis)
+    app.post(
+      '/api/auth/qwen/logout',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          if (!req.sessionId) {
+            return res.status(400).json({ error: 'Session ID is missing.' });
+          }
+
+          // Remove Qwen access token from Redis for this session
+          await redisClient.del(`qwen:accessToken:${req.sessionId}`);
+
+          getLoggerInstance().info(
+            { sessionId: req.sessionId },
+            'Qwen access token removed from Redis.',
+          );
+
+          res.status(200).json({
+            success: true,
+            message: 'Successfully logged out from Qwen',
+          });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error logging out from Qwen',
+          );
           next(error);
         }
       },

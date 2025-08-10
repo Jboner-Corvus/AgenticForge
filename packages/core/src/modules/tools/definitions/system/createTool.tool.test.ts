@@ -63,6 +63,6 @@ describe('createToolTool', () => {
     });
     expect(fs.mkdir).toHaveBeenCalled();
     expect(fs.writeFile).toHaveBeenCalled();
-    expect(result).toContain("Outil 'test-tool' créé.");
+    expect(result).toContain("Outil 'test-tool' généré avec schémas Zod");
   });
 });

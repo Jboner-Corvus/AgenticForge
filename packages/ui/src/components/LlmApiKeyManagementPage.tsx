@@ -1,13 +1,13 @@
 import { Save, Info, CheckCircle, Settings, Key, Zap, Shield } from 'lucide-react';
 import { memo, useState, useEffect } from 'react';
 import { useStore } from '../lib/store';
-import { OpenAILogo, AnthropicLogo, GeminiLogo } from './icons/LlmLogos';
+import { OpenAILogo, GeminiLogo, QwenLogo } from './icons/LlmLogos';
+import { OpenRouterLogo } from './icons/LlmLogos/OpenRouterLogo';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { LoadingSpinner } from './LoadingSpinner';
 import { Card, CardContent } from './ui/card';
-import { useToast } from '../lib/hooks/useToast';
 import { motion } from 'framer-motion';
 
 interface LlmProviderConfig {
@@ -20,33 +20,55 @@ interface LlmProviderConfig {
 }
 
 const PROVIDERS: LlmProviderConfig[] = [
+  // Hiérarchie des fournisseurs:
+  // 1. OpenAI (gpt-5)
   { 
     id: 'openai', 
     name: 'OpenAI', 
     logo: OpenAILogo, 
-    models: ['gpt-4o', 'gpt-4o-mini'], 
+    models: ['gpt-5'], 
     baseUrl: 'https://api.openai.com/v1',
-    description: 'ChatGPT et GPT-4. Excellent pour le raisonnement et la génération de code.'
+    description: 'GPT-5 est le modèle le plus avancé d\'OpenAI avec des capacités de raisonnement améliorées.'
   },
+  // 2. Google Gemini (gemini-2.5-pro)
   { 
-    id: 'anthropic', 
-    name: 'Anthropic', 
-    logo: AnthropicLogo, 
-    models: ['claude-3-5-sonnet'], 
-    baseUrl: 'https://api.anthropic.com',
-    description: 'Claude 3.5. Très performant pour l\'analyse et les tâches complexes.'
-  },
-  { 
-    id: 'gemini', 
-    name: 'Google Gemini', 
+    id: 'gemini-pro', 
+    name: 'Google Gemini Pro', 
     logo: GeminiLogo, 
-    models: ['gemini-1.5-pro', 'gemini-1.5-flash'], 
+    models: ['gemini-2.5-pro'], 
     baseUrl: 'https://generativelanguage.googleapis.com',
-    description: 'Modèles Google. Gratuit avec des limites généreuses.'
+    description: 'Modèle Google Gemini 2.5 Pro. Haute performance avec des capacités avancées.'
+  },
+  // 3. Qwen (qwen3-coder-plus)
+  {
+    id: 'qwen',
+    name: 'Qwen (Tongyi Lab)',
+    logo: QwenLogo,
+    models: ['qwen3-coder-plus'],
+    baseUrl: 'https://portal.qwen.ai/v1',
+    description: 'Qwen 3 Coder Plus d\'Alibaba Cloud. Modèle spécialisé pour le développement logiciel.'
+  },
+  // 4. OpenRouter (qwen/qwen3-235b-a22b:free)
+  { 
+    id: 'openrouter', 
+    name: 'OpenRouter (Qwen 3 235B)', 
+    logo: OpenRouterLogo,
+    models: ['qwen/qwen3-235b-a22b:free'], 
+    baseUrl: 'https://openrouter.ai/api/v1',
+    description: 'OpenRouter avec modèle Qwen 3 235B gratuit - Fonctionne parfaitement ✅'
+  },
+  // 5. Google Gemini (gemini-2.5-flash)
+  { 
+    id: 'gemini-flash', 
+    name: 'Google Gemini Flash', 
+    logo: GeminiLogo, 
+    models: ['gemini-2.5-flash'], 
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    description: 'Modèle Google Gemini 2.5 Flash. Version rapide et économique.'
   },
 ];
 
-// Status Banner simplifié
+// Status Banner avec thème gothique
 const StatusBanner = () => {
   const llmApiKeys = useStore((state) => state.llmApiKeys);
   const hasKeys = llmApiKeys.length > 0;
@@ -54,9 +76,10 @@ const StatusBanner = () => {
 
   return (
     <motion.div
-      className={`mb-8 p-6 rounded-xl border-2 ${hasKeys 
-        ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' 
-        : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
+      className={`mb-8 p-6 rounded-xl border-2 backdrop-blur-sm ${
+        hasKeys 
+          ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50' 
+          : 'bg-gradient-to-r from-purple-900/30 to-indigo-900/30 border-purple-700/50'
       }`}
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -64,15 +87,23 @@ const StatusBanner = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           {hasKeys ? (
-            <CheckCircle className="h-12 w-12 text-green-600" />
+            <div className="bg-green-900/50 p-3 rounded-full border border-green-700/50">
+              <CheckCircle className="h-12 w-12 text-green-400" />
+            </div>
           ) : (
-            <Key className="h-12 w-12 text-blue-600" />
+            <div className="bg-purple-900/50 p-3 rounded-full border border-purple-700/50">
+              <Key className="h-12 w-12 text-purple-400" />
+            </div>
           )}
           <div>
-            <h1 className={`text-2xl font-bold ${hasKeys ? 'text-green-800' : 'text-blue-800'}`}>
+            <h1 className={`text-2xl font-bold ${
+              hasKeys ? 'text-green-300' : 'text-purple-300'
+            }`}>
               {hasKeys ? `${totalKeys} clé(s) configurée(s)` : 'Configuration des clés LLM'}
             </h1>
-            <p className={`text-sm ${hasKeys ? 'text-green-700' : 'text-blue-700'}`}>
+            <p className={`text-sm ${
+              hasKeys ? 'text-green-400/80' : 'text-purple-400/80'
+            }`}>
               {hasKeys 
                 ? 'Votre configuration est active. Les clés tournent automatiquement.' 
                 : 'Ajoutez vos clés API pour utiliser différents modèles LLM'}
@@ -81,11 +112,11 @@ const StatusBanner = () => {
         </div>
         {!hasKeys && (
           <div className="hidden md:flex space-x-6">
-            <div className="flex items-center space-x-2 text-blue-700">
+            <div className="flex items-center space-x-2 text-purple-400/80">
               <Zap className="h-5 w-5" />
               <span className="text-sm font-medium">Rotation automatique</span>
             </div>
-            <div className="flex items-center space-x-2 text-blue-700">
+            <div className="flex items-center space-x-2 text-purple-400/80">
               <Shield className="h-5 w-5" />
               <span className="text-sm font-medium">Gestion d'erreurs</span>
             </div>
@@ -96,9 +127,8 @@ const StatusBanner = () => {
   );
 };
 
-// Composant Provider simplifié
+// Composant Provider avec thème gothique professionnel
 const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
-  const { toast } = useToast();
   const llmApiKeys = useStore((state) => state.llmApiKeys);
   const addLlmApiKey = useStore((state) => state.addLlmApiKey);
   const removeLlmApiKey = useStore((state) => state.removeLlmApiKey);
@@ -110,6 +140,7 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
   const providerKeys = llmApiKeys.filter(k => k.provider === provider.id);
   const hasKey = providerKeys.length > 0;
   const keyCount = providerKeys.length;
+  const activeModel = hasKey ? providerKeys[0].model : provider.models[0];
 
   useEffect(() => {
     if (providerKeys.length > 0) {
@@ -119,7 +150,6 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
 
   const handleSave = async () => {
     if (!apiKey.trim()) {
-      toast({ title: "Erreur", description: "Veuillez entrer une clé API", variant: "destructive" });
       return;
     }
 
@@ -131,9 +161,8 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
       }
     }
 
-    // Ajouter la nouvelle clé
+    // Ajouter la nouvelle clé avec le modèle principal du provider
     await addLlmApiKey(provider.id, apiKey, provider.baseUrl, provider.models[0]);
-    toast({ title: "Succès", description: `Clé ${provider.name} sauvegardée` });
   };
 
   const handleRemove = async () => {
@@ -144,7 +173,6 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
       }
     }
     setApiKey('');
-    toast({ title: "Supprimé", description: `Clé ${provider.name} supprimée` });
   };
 
   const Logo = provider.logo;
@@ -153,75 +181,118 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
-      transition={{ duration: 0.2 }}
+      whileHover={{ y: -5 }}
+      transition={{ duration: 0.3 }}
+      className="h-full"
     >
-      <Card className={`overflow-hidden transition-all duration-200 ${
-        hasKey 
-          ? 'ring-2 ring-green-200 bg-green-50/50' 
-          : 'hover:shadow-md border-gray-200'
-      }`}>
-        <CardContent className="p-6">
+      <Card className={`overflow-hidden transition-all duration-300 h-full flex flex-col
+        bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700
+        shadow-xl hover:shadow-2xl hover:border-purple-500/50
+        ${hasKey ? 'ring-2 ring-purple-500/30' : ''}`}>
+        <CardContent className="p-6 flex-grow flex flex-col">
+          {/* En-tête de la carte avec logo et informations */}
           <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <Logo className="h-10 w-10 text-gray-700" />
+            <div className="flex items-center space-x-4">
+              <div className="bg-gray-800 p-2 rounded-lg border border-gray-600">
+                <Logo className="h-10 w-10 text-purple-400" />
+              </div>
               <div>
                 <div className="flex items-center space-x-2">
-                  <h3 className="text-lg font-semibold text-gray-900">{provider.name}</h3>
+                  <h3 className="text-xl font-bold text-white">{provider.name}</h3>
                   {hasKey && (
-                    <Badge className="bg-green-100 text-green-800 border-green-200">
+                    <Badge className="bg-green-900/50 text-green-300 border border-green-700/50">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Active
                     </Badge>
                   )}
                 </div>
-                <p className="text-sm text-gray-600 mt-1">{provider.description}</p>
+                <p className="text-sm text-gray-400 mt-1 max-w-xs">{provider.description}</p>
+                {hasKey && (
+                  <div className="mt-2">
+                    <Badge className="bg-purple-900/50 text-purple-300 border border-purple-700/50 text-xs">
+                      <Zap className="h-3 w-3 mr-1 inline" />
+                      Modèle: {activeModel}
+                    </Badge>
+                  </div>
+                )}
               </div>
             </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsExpanded(!isExpanded)}
+              className="text-gray-400 hover:text-white hover:bg-gray-700/50"
             >
-              <Info className="h-4 w-4" />
+              <Info className="h-5 w-5" />
             </Button>
           </div>
 
+          {/* Section détaillée des modèles */}
           {isExpanded && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mb-4 p-3 bg-gray-50 rounded-lg"
+              className="mb-4 p-4 bg-gray-800/50 rounded-lg border border-gray-700"
             >
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Modèles disponibles:</h4>
-              <div className="flex flex-wrap gap-2">
-                {provider.models.map(model => (
-                  <Badge key={model} variant="secondary" className="text-xs">
-                    {model}
-                  </Badge>
-                ))}
+              <h4 className="text-sm font-semibold text-purple-300 mb-3 flex items-center">
+                <Settings className="h-4 w-4 mr-2" />
+                Modèle{provider.models.length > 1 ? 's' : ''} disponible{provider.models.length > 1 ? 's' : ''}
+              </h4>
+              <div className="space-y-2">
+                <div className="text-xs text-gray-400">Modèle principal utilisé:</div>
+                <Badge className="bg-purple-900/50 text-purple-300 border border-purple-700/50">
+                  {provider.models[0]}
+                </Badge>
+                {provider.models.length > 1 && (
+                  <>
+                    <div className="text-xs text-gray-400 mt-3">Autres modèles supportés:</div>
+                    <div className="flex flex-wrap gap-2">
+                      {provider.models.slice(1).map(model => (
+                        <Badge 
+                          key={model} 
+                          className="bg-gray-700/50 text-gray-300 border border-gray-600 hover:bg-gray-600/50"
+                        >
+                          {model}
+                        </Badge>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </motion.div>
           )}
 
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+          {/* Section de configuration de la clé API */}
+          <div className="flex-grow flex flex-col justify-end space-y-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-300">
                 Clé API
               </label>
-              <Input
-                type="password"
-                placeholder="Entrez votre clé API..."
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="w-full"
-              />
+              <div className="relative">
+                <Input
+                  type="password"
+                  placeholder="Entrez votre clé API..."
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  className="w-full bg-gray-800 border-gray-700 text-white placeholder-gray-500
+                    focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500/50"
+                />
+                {hasKey && (
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center pt-2">
               <div className="text-sm text-gray-500">
-                {hasKey ? `${keyCount} clé(s) configurée(s)` : 'Aucune clé configurée'}
+                {hasKey ? (
+                  <span className="text-green-400/80">🔑 {keyCount} clé{keyCount > 1 ? 's' : ''} configurée{keyCount > 1 ? 's' : ''}</span>
+                ) : (
+                  <span className="text-amber-400/80">🔒 Aucune clé configurée</span>
+                )}
               </div>
               <div className="flex space-x-2">
                 {hasKey && (
@@ -230,6 +301,7 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
                     size="sm"
                     onClick={handleRemove}
                     disabled={isAddingLlmApiKey}
+                    className="border-red-500/50 text-red-400 hover:bg-red-900/30 hover:text-red-300"
                   >
                     Supprimer
                   </Button>
@@ -238,6 +310,8 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
                   onClick={handleSave}
                   disabled={isAddingLlmApiKey || !apiKey.trim()}
                   size="sm"
+                  className="bg-purple-700 hover:bg-purple-600 text-white
+                    disabled:bg-gray-700 disabled:text-gray-500"
                 >
                   {isAddingLlmApiKey ? (
                     <LoadingSpinner className="h-4 w-4 mr-2" />
@@ -255,7 +329,7 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
   );
 };
 
-// Info section pour les nouveaux utilisateurs
+// Info section pour les nouveaux utilisateurs avec thème gothique
 const OnboardingInfo = () => {
   const llmApiKeys = useStore((state) => state.llmApiKeys);
   const hasKeys = llmApiKeys.length > 0;
@@ -265,18 +339,18 @@ const OnboardingInfo = () => {
 
   return (
     <motion.div
-      className="mb-8 p-6 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl"
+      className="mb-8 p-6 bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-700/50 rounded-xl backdrop-blur-sm"
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
     >
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
-            <Key className="h-5 w-5 text-purple-600" />
+          <div className="h-12 w-12 bg-purple-900/50 rounded-full flex items-center justify-center border border-purple-700/50">
+            <Key className="h-6 w-6 text-purple-400" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-purple-800">Premier pas</h3>
-            <p className="text-sm text-purple-600">Configurez votre première clé LLM</p>
+            <h3 className="text-xl font-bold text-purple-300">Premier pas</h3>
+            <p className="text-sm text-purple-400/80">Configurez votre première clé LLM</p>
           </div>
         </div>
         {hasKeys && (
@@ -284,7 +358,7 @@ const OnboardingInfo = () => {
             variant="ghost"
             size="sm"
             onClick={() => setIsVisible(false)}
-            className="text-purple-600"
+            className="text-purple-400 hover:text-white hover:bg-purple-800/50"
           >
             ×
           </Button>
@@ -292,31 +366,31 @@ const OnboardingInfo = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-        <div className="flex items-start space-x-3">
-          <div className="h-6 w-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-            <span className="text-xs font-semibold text-purple-600">1</span>
+        <div className="flex items-start space-x-3 p-3 bg-purple-900/20 rounded-lg border border-purple-800/30">
+          <div className="h-8 w-8 bg-purple-800/50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 border border-purple-700/50">
+            <span className="text-sm font-bold text-purple-300">1</span>
           </div>
           <div>
-            <p className="font-medium text-purple-800">Choisissez un provider</p>
-            <p className="text-purple-600">Gemini offre un niveau gratuit généreux</p>
+            <p className="font-semibold text-purple-300">Choisissez un provider</p>
+            <p className="text-purple-400/80 mt-1">Gemini offre un niveau gratuit généreux</p>
           </div>
         </div>
-        <div className="flex items-start space-x-3">
-          <div className="h-6 w-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-            <span className="text-xs font-semibold text-purple-600">2</span>
+        <div className="flex items-start space-x-3 p-3 bg-purple-900/20 rounded-lg border border-purple-800/30">
+          <div className="h-8 w-8 bg-purple-800/50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 border border-purple-700/50">
+            <span className="text-sm font-bold text-purple-300">2</span>
           </div>
           <div>
-            <p className="font-medium text-purple-800">Ajoutez votre clé API</p>
-            <p className="text-purple-600">Obtenez-la depuis le site du provider</p>
+            <p className="font-semibold text-purple-300">Ajoutez votre clé API</p>
+            <p className="text-purple-400/80 mt-1">Obtenez-la depuis le site du provider</p>
           </div>
         </div>
-        <div className="flex items-start space-x-3">
-          <div className="h-6 w-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-            <span className="text-xs font-semibold text-purple-600">3</span>
+        <div className="flex items-start space-x-3 p-3 bg-purple-900/20 rounded-lg border border-purple-800/30">
+          <div className="h-8 w-8 bg-purple-800/50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 border border-purple-700/50">
+            <span className="text-sm font-bold text-purple-300">3</span>
           </div>
           <div>
-            <p className="font-medium text-purple-800">Sauvegardez</p>
-            <p className="text-purple-600">Votre agent est prêt à fonctionner !</p>
+            <p className="font-semibold text-purple-300">Sauvegardez</p>
+            <p className="text-purple-400/80 mt-1">Votre agent est prêt à fonctionner !</p>
           </div>
         </div>
       </div>
@@ -326,14 +400,14 @@ const OnboardingInfo = () => {
 
 export const LlmApiKeyManagementPage = memo(() => {
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-6xl mx-auto bg-gray-900 min-h-screen">
       <StatusBanner />
       <OnboardingInfo />
       
       <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-          <Settings className="h-5 w-5 mr-2" />
-          Providers disponibles
+        <h2 className="text-2xl font-bold text-white flex items-center">
+          <Settings className="h-6 w-6 mr-3 text-purple-400" />
+          Fournisseurs disponibles
         </h2>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -342,12 +416,24 @@ export const LlmApiKeyManagementPage = memo(() => {
           ))}
         </div>
 
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">💡 Conseils</h3>
-          <ul className="text-sm text-gray-600 space-y-1">
-            <li>• Vous pouvez configurer plusieurs providers pour une redondance automatique</li>
-            <li>• En cas d'erreur sur une clé, le système bascule automatiquement vers la suivante</li>
-            <li>• Les clés sont stockées de manière sécurisée et chiffrées</li>
+        <div className="mt-8 p-6 bg-gray-800/50 rounded-xl border border-gray-700 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold text-gray-200 mb-3 flex items-center">
+            <Shield className="h-5 w-5 mr-2 text-amber-400" />
+            Conseils de configuration
+          </h3>
+          <ul className="text-gray-400 space-y-2">
+            <li className="flex items-start">
+              <div className="h-2 w-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+              <span>Vous pouvez configurer plusieurs providers pour une redondance automatique</span>
+            </li>
+            <li className="flex items-start">
+              <div className="h-2 w-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+              <span>En cas d'erreur sur une clé, le système bascule automatiquement vers la suivante selon la hiérarchie</span>
+            </li>
+            <li className="flex items-start">
+              <div className="h-2 w-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+              <span>Les clés sont stockées de manière sécurisée et chiffrées localement</span>
+            </li>
           </ul>
         </div>
       </div>

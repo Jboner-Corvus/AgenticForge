@@ -15,6 +15,8 @@ const configSchema = z.object({
   GITHUB_CLIENT_ID: z.string().optional(),
   GITHUB_CLIENT_SECRET: z.string().optional(),
   GROK_API_KEY: z.string().optional(),
+  QWEN_CLIENT_ID: z.string().optional(),
+  QWEN_CLIENT_SECRET: z.string().optional(),
 
   HISTORY_LOAD_LENGTH: z.coerce.number().default(50), // New config for loading only N recent messages
   HISTORY_MAX_LENGTH: z.coerce.number().default(1000),
@@ -22,13 +24,13 @@ const configSchema = z.object({
   HUGGINGFACE_API_KEY: z.string().optional(),
   JWT_SECRET: z.string().optional(),
   LLM_API_KEY: z.string().optional(), // Added LLM_API_KEY
-  LLM_MODEL_NAME: z.string().default('gemini-pro'),
+  LLM_MODEL_NAME: z.string().default('gemini-2.5-pro'),
   LLM_PROVIDER: z
-    .enum(['gemini', 'openai', 'mistral', 'huggingface', 'grok'])
+    .enum(['gemini', 'openai', 'mistral', 'huggingface', 'grok', 'openrouter', 'qwen'])
     .default('gemini'),
   LLM_PROVIDER_HIERARCHY: z
     .string()
-    .default('huggingface,grok,gemini,openai,mistral')
+    .default('huggingface,grok,gemini,openai,mistral,openrouter,qwen')
     .transform((str) => str.split(',').map((s) => s.trim())),
   LLM_REQUEST_DELAY_MS: z.coerce.number().default(4000), // Add a 4-second delay by default
   LOG_LEVEL: z.string().default('debug'),

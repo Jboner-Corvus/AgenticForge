@@ -1,5 +1,4 @@
 import { useLanguage } from '../lib/contexts/LanguageContext';
-import { useToast } from '../lib/hooks/useToast';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { Clipboard } from 'lucide-react';
@@ -18,12 +17,10 @@ export const AgentResponseBubble: React.FC<AgentResponseBubbleProps> = ({
   id,
   timestamp,
 }) => {
-  const { toast } = useToast();
   const { translations } = useLanguage();
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
-    toast({ description: translations.copiedToClipboard });
   };
 
   return (

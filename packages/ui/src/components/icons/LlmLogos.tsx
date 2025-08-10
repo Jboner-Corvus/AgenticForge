@@ -49,6 +49,10 @@ export const OpenRouterLogo: React.FC<{ className?: string }> = ({ className }) 
   <span className={className}>OpenRouter</span>
 );
 
+export const QwenLogo: React.FC<{ className?: string }> = ({ className }) => (
+  <span className={className}>Qwen</span>
+);
+
 export const LlmLogo: React.FC<LlmLogoProps> = ({ provider, className }) => {
   switch (provider) {
     case 'openai':
@@ -65,6 +69,8 @@ export const LlmLogo: React.FC<LlmLogoProps> = ({ provider, className }) => {
       return <OllamaLogo className={className} />;
     case 'openrouter':
       return <OpenRouterLogo className={className} />;
+    case 'qwen':
+      return <QwenLogo className={className} />;
     default:
       return <span className={className}>{provider}</span>;
   }

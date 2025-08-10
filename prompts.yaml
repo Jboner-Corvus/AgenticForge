@@ -40,18 +40,18 @@ prompts:
   - '32. Développer un Outil CLI Node pour Gérer des Tâches'
   - '33. Mettre en Place une API Web Minimale avec Javascript pnpm'
   - "34. Créer un Composant React pour l'UI Existante"
-  - '35. Scraper des Données Cosmologique et les Analyser'
+  - '35. Scraper des Données Cosmologique et les Analyser. Source des données : NASA HEASARC. Type de données : Fond diffus cosmologique (CMB). Type d''analyse : Analyse statistique et visualisation des spectres de puissance. Format de sortie : Fichier JSON.'
   - '36. Créer un Script d''Initialisation de Projet'
   - '37. Convertisseur Markdown vers HTML'
   - '38. Créer un Outil pour Interagir avec une API Publique'
   - '39. Générer et Exécuter des Tests Unitaires pour un Script'
-  - '40. Refactoriser un Script pour la Clarté et l''Efficacité'
+  - '40. Refactoriser un Script pour la Clarté et l''Efficacité. Script à refactoriser : le script de calcul de la tâche 13. Objectif : Améliorer la clarté du code et son efficacité. [PRÉCISION NÉCESSAIRE : Chemin du fichier source à refactoriser]'
 
   # 41-50 : Tâches avancées
-  - '41. Conteneuriser l''API Express/Node avec un Dockerfile'
+  - '41. Conteneuriser l''API Express/Node avec un Dockerfile. Le projet se trouve dans le dossier minimal-api-project.'
   - '42. Créer une Base de Données SQLite et l''Intégrer à un Script'
-  - '43. Développer une Application "Livre d''Or" Full-Stack'
-  - '44. Automatiser des Tâches Basées sur un Fichier YAML'
+  - '43. Développer une Application "Livre d''Or" Full-Stack. Frontend : SPA avec React. Backend : Node.js avec Express. Base de données : SQLite. Fonctionnalités : Ajouter un message (avec nom/pseudo), Lister tous les messages.'
+  - '44. Automatiser des Tâches Basées sur un Fichier YAML. Exemple de structure YAML : {tasks: [{name: "create_folder", path: "./new_folder"}, {name: "download_file", url: "http://example.com/file.txt", destination: "./downloaded_file.txt"}]}. Les tâches doivent être exécutées séquentiellement. Langage : Python.'
   - '45. Écrire un Script de "Benchmark" de Performance'
   - '46. Générer la Documentation Technique d''un Projet'
   - '47. Créer un Workflow Git (Branches et Merge)'

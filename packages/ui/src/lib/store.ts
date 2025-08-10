@@ -73,6 +73,10 @@ export interface AppState {
   isCanvasFullscreen: boolean;
   canvasWidth: number;
   
+  // Todo List state
+  isTodoListVisible: boolean;
+  setIsTodoListVisible: (isVisible: boolean) => void;
+  
   // Canvas history for navigation
   canvasHistory: Array<{
     id: string;
@@ -273,6 +277,8 @@ export const useStore = create<AppState>((set, get) => ({
   canvasWidth: 500,
   canvasHistory: [],
   currentCanvasIndex: -1,
+  isTodoListVisible: false,
+  setIsTodoListVisible: (isVisible: boolean) => set({ isTodoListVisible: isVisible }),
   isControlPanelVisible: false,
   isSettingsModalOpen: false,
   isDarkMode: false,
@@ -693,9 +699,12 @@ export const useStore = create<AppState>((set, get) => ({
   toggleIsCanvasVisible: () => set((state) => ({ isCanvasVisible: !state.isCanvasVisible })),
   currentPage: 'chat',
   setCurrentPage: (page) => set({ currentPage: page }),
-  toast: () => {},
+  toast: (options) => {
+    // This will be overridden by the actual toast implementation
+    console.log('Toast called with options:', options);
+  },
   initializeSessionAndMessages: async () => {
-    const { setSessions, setActiveSessionId, setMessages, setSessionId, addDebugLog, updateLeaderboardStats, addLlmApiKey, setActiveLlmApiKey, setIsLoadingLeaderboardStats, setIsLoadingSessions } = get();
+    const { setSessions, setActiveSessionId, setMessages, setSessionId, addDebugLog, updateLeaderboardStats, setIsLoadingLeaderboardStats, setIsLoadingSessions } = get();
 
     // Load leaderboard stats from backend
     setIsLoadingLeaderboardStats(true);
@@ -712,11 +721,11 @@ export const useStore = create<AppState>((set, get) => ({
     // No explicit loading state for this as it's usually quick and part of init
     try {
       const keys = await getLlmApiKeysApi();
-      for (const llmKey of keys) {
-        await addLlmApiKey(llmKey.provider, llmKey.key, llmKey.baseUrl, llmKey.model);
-      }
-      if (keys.length > 0) {
-        await setActiveLlmApiKey(0);
+      const validKeys = keys.filter(key => key.provider && key.key);
+      
+      if (validKeys.length > 0) {
+        // Set all keys at once instead of one by one to avoid multiple re-renders
+        set({ llmApiKeys: validKeys, activeLlmApiKeyIndex: 0 });
       }
     } catch (error) {
       console.error("Failed to fetch LLM API keys:", error);
