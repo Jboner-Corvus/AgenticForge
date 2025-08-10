@@ -39,152 +39,121 @@ export function Header({
     setIsCanvasVisible(!isCanvasVisible);
   };
 
+  // Configuration des boutons avec des styles améliorés
+  const buttonConfig = [
+    {
+      icon: ListTodo,
+      onClick: toggleTodoListVisibility,
+      label: isTodoListVisible ? "Masquer la Liste des Tâches" : "Afficher la Liste des Tâches",
+      ariaLabel: "Toggle Todo List",
+      active: isTodoListVisible
+    },
+    {
+      icon: isDarkMode ? Sun : Moon,
+      onClick: toggleDarkMode,
+      label: isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode",
+      ariaLabel: isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode",
+      active: false
+    },
+    {
+      icon: LayoutDashboard,
+      onClick: handleToggleCanvas,
+      label: "Afficher/Masquer le Canevas",
+      ariaLabel: "Toggle Canvas",
+      active: isCanvasVisible
+    },
+    {
+      icon: MessageSquare,
+      onClick: () => setCurrentPage('chat'),
+      label: "Chat",
+      ariaLabel: "Chat",
+      active: false
+    },
+    {
+      icon: BarChart,
+      onClick: () => setCurrentPage('leaderboard'),
+      label: "Leaderboard",
+      ariaLabel: "Leaderboard",
+      active: false
+    },
+    {
+      icon: Key,
+      onClick: () => setCurrentPage('llm-api-keys'),
+      label: "LLM API Keys",
+      ariaLabel: "LLM API Keys",
+      active: false
+    },
+    {
+      icon: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      ),
+      onClick: () => setCurrentPage('oauth'),
+      label: "OAuth Management",
+      ariaLabel: "OAuth Management",
+      active: false
+    },
+    {
+      icon: Bug,
+      onClick: toggleDebugLogVisibility,
+      label: "Debug Log",
+      ariaLabel: "Debug Log",
+      active: false
+    }
+  ];
+
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between p-4 bg-gradient-to-r from-background to-secondary/50 border-b border-border shadow-md">
+    <header className="sticky top-0 z-50 flex items-center justify-between p-4 bg-gradient-to-r from-gray-900 to-gray-800 border-b border-gray-700 shadow-2xl backdrop-blur-sm">
       <div className="flex items-center space-x-4">
         <Button
           aria-label="Toggle Control Panel"
           onClick={() => setIsControlPanelVisible(!isControlPanelVisible)}
           type="button"
-          variant="ghost"
+          className="bg-gray-800/50 hover:bg-gray-700/50 text-gray-200 border border-gray-700 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
         >
-          <PanelLeft />
+          <PanelLeft className="h-5 w-5" />
         </Button>
         <Logo size="sm" showText={true} />
         <ConnectionStatus />
       </div>
 
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-1">
         <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="Toggle Todo List"
-                onClick={toggleTodoListVisibility}
-                type="button"
-                variant="ghost"
-              >
-                <ListTodo size={20} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{isTodoListVisible ? "Masquer la Liste des Tâches" : "Afficher la Liste des Tâches"}</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-                onClick={toggleDarkMode}
-                type="button"
-                variant="ghost"
-              >
-                {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="Toggle Canvas"
-                onClick={handleToggleCanvas}
-                type="button"
-                variant="ghost"
-              >
-                <LayoutDashboard size={20} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Afficher/Masquer le Canevas</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="Chat"
-                onClick={() => setCurrentPage('chat')}
-                type="button"
-                variant="ghost"
-              >
-                <MessageSquare size={20} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Chat</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="Leaderboard"
-                onClick={() => setCurrentPage('leaderboard')}
-                type="button"
-                variant="ghost"
-              >
-                <BarChart size={20} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Leaderboard</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="LLM API Keys"
-                onClick={() => setCurrentPage('llm-api-keys')}
-                type="button"
-                variant="ghost"
-              >
-                <Key size={20} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>LLM API Keys</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="OAuth Management"
-                onClick={() => setCurrentPage('oauth')}
-                type="button"
-                variant="ghost"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>OAuth Management</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="Debug Log"
-                onClick={toggleDebugLogVisibility}
-                type="button"
-                variant="ghost"
-              >
-                <Bug size={20} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Debug Log</p>
-            </TooltipContent>
-          </Tooltip>
+          {buttonConfig.map((button, index) => {
+            const Icon = button.icon;
+            return (
+              <Tooltip key={index}>
+                <TooltipTrigger asChild>
+                  <Button
+                    aria-label={button.ariaLabel}
+                    onClick={button.onClick}
+                    type="button"
+                    className={`
+                      relative bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 border border-gray-700 
+                      rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg
+                      ${button.active ? 'bg-purple-900/50 border-purple-700/50 text-purple-300 shadow-lg' : ''}
+                      h-10 w-10 p-0 mx-1
+                    `}
+                  >
+                    <Icon size={20} />
+                    {button.active && (
+                      <span className="absolute top-0 right-0 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+                      </span>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent 
+                  className="bg-gray-800 text-gray-200 border border-gray-700 rounded-lg shadow-lg"
+                  side="bottom"
+                >
+                  <p>{button.label}</p>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
         </TooltipProvider>
       </div>
     </header>

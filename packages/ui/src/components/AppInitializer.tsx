@@ -18,7 +18,6 @@ export const AppInitializer = () => {
   const setSessionId = useStore((state) => state.setSessionId);
   const setTokenStatus = useStore((state) => state.setTokenStatus);
   const fetchAndDisplayToolCount = useStore((state) => state.fetchAndDisplayToolCount);
-  const toggleDarkMode = useStore((state) => state.toggleDarkMode);
 
   const initializeSession = useCallback(() => {
     let currentSessionId = localStorage.getItem('agenticForgeSessionId');
@@ -113,7 +112,7 @@ export const AppInitializer = () => {
     return () => {
       mounted = false;
     };
-  }, []); // No dependencies to prevent loops
+  }, [addDebugLog, addMessage, checkServerHealth, initializeAuthToken, initializeSession, translations.agentReady, translations.interfaceInitialized]);
 
   return null; // This component doesn't render anything visible
 };

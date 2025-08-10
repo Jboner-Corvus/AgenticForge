@@ -3,7 +3,7 @@ import { useStore, AppState } from '../lib/store';
 import { useAgentStream } from '../lib/hooks/useAgentStream';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { Paperclip, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { useLanguage } from '../lib/contexts/LanguageContext';
 import { LoadingSpinner } from './LoadingSpinner';
 
@@ -23,9 +23,6 @@ export const UserInput = () => {
 
   return (
     <div className="flex items-center gap-4 w-full">
-      <Button variant="ghost" size="icon" disabled={isProcessing} className="hover:bg-accent rounded-full">
-        <Paperclip className="h-5 w-5" />
-      </Button>
       <div className="relative flex-grow">
         <Textarea
           name="user-input"

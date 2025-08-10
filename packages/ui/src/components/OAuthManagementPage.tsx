@@ -5,7 +5,7 @@ import { useLanguage } from '../lib/contexts/LanguageContext';
 import { useStore } from '../lib/store';
 import { LoadingSpinner } from './LoadingSpinner';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { AlertTriangle, Github, Chrome, Twitter, ChevronDown, ChevronRight, Key, Bot } from 'lucide-react';
+import { AlertTriangle, Github, Chrome, Twitter, ChevronDown, ChevronRight, Key, Bot, Shield, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -39,39 +39,39 @@ export const OAuthManagementPage = () => {
     }
   };
 
-  // Provider-specific configurations with uniform colors
+  // Provider-specific configurations with gothic theme colors
   const PROVIDER_CONFIG = {
     github: {
       name: translations.githubIntegration,
       icon: Github,
-      connectedColor: 'bg-gray-100 border-gray-300',
-      disconnectedColor: 'bg-gray-50 border-gray-200',
-      buttonConnect: 'bg-gray-800 hover:bg-gray-700 text-white',
-      buttonDisconnect: 'bg-gray-500 hover:bg-gray-600 text-white'
+      connectedColor: 'bg-gray-800/50 border-green-700/50',
+      disconnectedColor: 'bg-gray-800/30 border-gray-700/50',
+      buttonConnect: 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-600',
+      buttonDisconnect: 'bg-red-900/50 hover:bg-red-800/50 text-red-300 border border-red-700/50'
     },
     google: {
       name: translations.googleIntegration,
       icon: Chrome,
-      connectedColor: 'bg-gray-100 border-gray-300',
-      disconnectedColor: 'bg-gray-50 border-gray-200',
-      buttonConnect: 'bg-gray-800 hover:bg-gray-700 text-white',
-      buttonDisconnect: 'bg-gray-500 hover:bg-gray-600 text-white'
+      connectedColor: 'bg-gray-800/50 border-green-700/50',
+      disconnectedColor: 'bg-gray-800/30 border-gray-700/50',
+      buttonConnect: 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-600',
+      buttonDisconnect: 'bg-red-900/50 hover:bg-red-800/50 text-red-300 border border-red-700/50'
     },
     twitter: {
       name: translations.twitterIntegration,
       icon: Twitter,
-      connectedColor: 'bg-gray-100 border-gray-300',
-      disconnectedColor: 'bg-gray-50 border-gray-200',
-      buttonConnect: 'bg-gray-800 hover:bg-gray-700 text-white',
-      buttonDisconnect: 'bg-gray-500 hover:bg-gray-600 text-white'
+      connectedColor: 'bg-gray-800/50 border-green-700/50',
+      disconnectedColor: 'bg-gray-800/30 border-gray-700/50',
+      buttonConnect: 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-600',
+      buttonDisconnect: 'bg-red-900/50 hover:bg-red-800/50 text-red-300 border border-red-700/50'
     },
     qwen: {
-      name: 'Qwen.AI Chat',
+      name: 'Qwen.AI Chat 2000',
       icon: Bot,
-      connectedColor: 'bg-purple-100 border-purple-300',
-      disconnectedColor: 'bg-purple-50 border-purple-200',
-      buttonConnect: 'bg-purple-600 hover:bg-purple-700 text-white',
-      buttonDisconnect: 'bg-purple-500 hover:bg-purple-600 text-white'
+      connectedColor: 'bg-purple-900/30 border-purple-700/50',
+      disconnectedColor: 'bg-purple-900/20 border-purple-800/30',
+      buttonConnect: 'bg-purple-700 hover:bg-purple-600 text-white border border-purple-600',
+      buttonDisconnect: 'bg-purple-900/50 hover:bg-purple-800/50 text-purple-300 border border-purple-700/50'
     }
   };
 
@@ -229,16 +229,63 @@ export const OAuthManagementPage = () => {
     }
   };
 
-  const handleQwenLogin = () => {
+  const handleQwenLogin = async () => {
     try {
-      // Log the attempt to initiate Qwen OAuth
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Initiating Qwen OAuth flow`);
+      // Log the attempt to check Qwen credentials
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Checking Qwen.AI Chat 2000 credentials`);
       
-      // Redirect to Qwen OAuth endpoint
-      window.location.href = '/api/auth/qwen';
+      // Try to read Qwen credentials from .qwen directory
+      try {
+        const response = await fetch('/api/auth/qwen/credentials', {
+          method: 'GET',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.accessToken) {
+            // Display the access token in debug logs
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Qwen.AI Chat 2000 Access Token found: ${data.accessToken.substring(0, 20)}...`);
+            
+            // Update state to show connected
+            setIsQwenConnected(true);
+            
+            // Show the access token in an alert with copy functionality
+            const token = data.accessToken;
+            const tokenDisplay = `${token.substring(0, 30)}...${token.substring(token.length - 10)}`;
+            
+            // Create a temporary input element to copy the token
+            const tempInput = document.createElement('input');
+            tempInput.value = token;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            
+            // Show alert with token information
+            alert(`Qwen.AI Chat 2000 Access Token found and copied to clipboard!
+
+Token: ${tokenDisplay}
+
+The full token has been copied to your clipboard.`);
+          } else {
+            // No credentials found, redirect to OAuth flow
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] No Qwen.AI Chat 2000 credentials found, initiating OAuth flow`);
+            window.location.href = '/api/auth/qwen';
+          }
+        } else {
+          // API error, fallback to OAuth flow
+          addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] API error checking credentials, initiating OAuth flow`);
+          window.location.href = '/api/auth/qwen';
+        }
+      } catch (error) {
+        // Error reading credentials, fallback to OAuth flow
+        console.error('Error checking Qwen credentials:', error);
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Error checking Qwen credentials: ${error instanceof Error ? error.message : String(error)}, initiating OAuth flow`);
+        window.location.href = '/api/auth/qwen';
+      }
     } catch (error) {
-      console.error('Error initiating Qwen OAuth:', error);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Error initiating Qwen OAuth: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('Error checking Qwen.AI Chat 2000 credentials:', error);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Error checking Qwen.AI Chat 2000 credentials: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -254,19 +301,19 @@ export const OAuthManagementPage = () => {
         setIsQwenConnected(false);
         
         // Add debug log
-        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Qwen.AI OAuth token removed.`);
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Qwen.AI Chat 2000 OAuth token removed.`);
       } else {
         throw new Error('Failed to logout from Qwen');
       }
     } catch (error) {
-      console.error('Error removing Qwen.AI OAuth token:', error);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Error removing Qwen.AI OAuth token: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('Error removing Qwen.AI Chat 2000 OAuth token:', error);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Error removing Qwen.AI Chat 2000 OAuth token: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
   return (
     <motion.div 
-      className="container mx-auto py-8"
+      className="container mx-auto py-8 bg-gray-900 min-h-screen"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -276,25 +323,28 @@ export const OAuthManagementPage = () => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.1, duration: 0.3 }}
       >
-        <Card className="max-w-2xl mx-auto shadow-lg">
-          <CardHeader className="bg-gray-100 text-gray-800 rounded-t-lg">
-            <CardTitle className="text-2xl">{translations.oauthManagement}</CardTitle>
-            <CardDescription className="text-gray-600">
+        <Card className="max-w-2xl mx-auto shadow-2xl bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700">
+          <CardHeader className="bg-gradient-to-r from-purple-900/30 to-indigo-900/30 text-white rounded-t-lg border-b border-gray-700">
+            <CardTitle className="text-2xl flex items-center">
+              <Shield className="mr-3 h-6 w-6 text-purple-400" />
+              {translations.oauthManagement}
+            </CardTitle>
+            <CardDescription className="text-gray-300">
               {translations.oauthManagementDescription}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <div className="space-y-4">
-              <h3 className="text-lg font-medium flex items-center">
-                <Key className="mr-2 h-5 w-5" />
+              <h3 className="text-lg font-bold flex items-center text-white">
+                <Key className="mr-2 h-5 w-5 text-purple-400" />
                 {translations.authToken}
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-400">
                 To use the agent, you need to provide a valid authentication token. 
                 This token is used to authenticate your requests to the backend API.
               </p>
               <div className="space-y-2">
-                <Label htmlFor="bearerToken">{translations.authToken}</Label>
+                <Label htmlFor="bearerToken" className="text-gray-300">Bearer Token</Label>
                 <Input
                   id="bearerToken"
                   name="bearerToken"
@@ -302,11 +352,14 @@ export const OAuthManagementPage = () => {
                   placeholder={translations.authTokenPlaceholder}
                   value={bearerToken}
                   onChange={(e) => setBearerToken(e.target.value)}
+                  className="bg-gray-800 border-gray-700 text-white placeholder-gray-500
+                    focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500/50"
                 />
               </div>
               <Button 
                 onClick={handleSaveToken}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                className="w-full bg-purple-700 hover:bg-purple-600 text-white
+                  disabled:bg-gray-700 disabled:text-gray-500 border border-purple-600"
                 disabled={!bearerToken.trim()}
               >
                 {translations.saveToken}
@@ -318,10 +371,10 @@ export const OAuthManagementPage = () => {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.3 }}
             >
-              <Alert variant="default" className="border-2 border-blue-500 bg-blue-50">
-                <AlertTriangle className="h-5 w-5 text-blue-600" />
-                <AlertTitle className="font-bold text-blue-800">Authentication Setup</AlertTitle>
-                <AlertDescription className="text-blue-700">
+              <Alert variant="default" className="border-2 border-blue-700/50 bg-blue-900/20 backdrop-blur-sm">
+                <AlertTriangle className="h-5 w-5 text-blue-400" />
+                <AlertTitle className="font-bold text-blue-300">Authentication Setup</AlertTitle>
+                <AlertDescription className="text-blue-400/80">
                   <p className="mb-2">
                     To use the agent, you need to authenticate with one of the supported providers below.
                     After connecting, your authentication token will be automatically set up for use with the agent.
@@ -338,10 +391,10 @@ export const OAuthManagementPage = () => {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.3 }}
             >
-              <Alert variant="default" className="border-2 border-yellow-500 bg-yellow-50">
-                <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                <AlertTitle className="font-bold text-yellow-800">{translations.securityWarning}</AlertTitle>
-                <AlertDescription className="text-yellow-700">
+              <Alert variant="default" className="border-2 border-amber-700/50 bg-amber-900/20 backdrop-blur-sm">
+                <AlertTriangle className="h-5 w-5 text-amber-400" />
+                <AlertTitle className="font-bold text-amber-300">{translations.securityWarning}</AlertTitle>
+                <AlertDescription className="text-amber-400/80">
                   {translations.oauthSecurityWarning}
                 </AlertDescription>
               </Alert>
@@ -355,29 +408,29 @@ export const OAuthManagementPage = () => {
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.3, duration: 0.3 }}
               >
-                <h3 className="text-lg font-medium flex items-center text-foreground">
-                  <Github className="mr-2 h-5 w-5" />
+                <h3 className="text-lg font-bold flex items-center text-white">
+                  <Github className="mr-2 h-5 w-5 text-gray-400" />
                   {PROVIDER_CONFIG.github.name}
                 </h3>
                 
                 {isCheckingStatus ? (
-                  <div className="flex items-center justify-center py-4">
+                  <div className="flex items-center justify-center py-4 bg-gray-800/50 rounded-lg border border-gray-700">
                     <LoadingSpinner />
-                    <span className="ml-2 text-gray-600">{translations.checkingStatus}</span>
+                    <span className="ml-2 text-gray-400">{translations.checkingStatus}</span>
                   </div>
                 ) : (
                   <motion.div 
-                    className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-300 ${
+                    className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-300 backdrop-blur-sm ${
                       isGitHubConnected 
                         ? PROVIDER_CONFIG.github.connectedColor 
                         : PROVIDER_CONFIG.github.disconnectedColor
                     }`}
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ y: -2 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
                     <div>
-                      <p className="font-medium text-gray-800">{translations.githubConnectionStatus}</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="font-medium text-white">{translations.githubConnectionStatus}</p>
+                      <p className="text-sm text-gray-400">
                         {isGitHubConnected 
                           ? translations.githubConnected 
                           : translations.githubNotConnected}
@@ -412,29 +465,29 @@ export const OAuthManagementPage = () => {
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.4, duration: 0.3 }}
               >
-                <h3 className="text-lg font-medium flex items-center text-foreground">
-                  <Chrome className="mr-2 h-5 w-5" />
+                <h3 className="text-lg font-bold flex items-center text-white">
+                  <Chrome className="mr-2 h-5 w-5 text-blue-400" />
                   {PROVIDER_CONFIG.google.name}
                 </h3>
                 
                 {isCheckingStatus ? (
-                  <div className="flex items-center justify-center py-4">
+                  <div className="flex items-center justify-center py-4 bg-gray-800/50 rounded-lg border border-gray-700">
                     <LoadingSpinner />
-                    <span className="ml-2 text-gray-600">{translations.checkingStatus}</span>
+                    <span className="ml-2 text-gray-400">{translations.checkingStatus}</span>
                   </div>
                 ) : (
                   <motion.div 
-                    className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-300 ${
+                    className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-300 backdrop-blur-sm ${
                       isGoogleConnected 
                         ? PROVIDER_CONFIG.google.connectedColor 
                         : PROVIDER_CONFIG.google.disconnectedColor
                     }`}
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ y: -2 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
                     <div>
-                      <p className="font-medium text-gray-800">{translations.googleConnectionStatus}</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="font-medium text-white">{translations.googleConnectionStatus}</p>
+                      <p className="text-sm text-gray-400">
                         {isGoogleConnected 
                           ? translations.googleConnected 
                           : translations.googleNotConnected}
@@ -469,29 +522,29 @@ export const OAuthManagementPage = () => {
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.5, duration: 0.3 }}
               >
-                <h3 className="text-lg font-medium flex items-center text-foreground">
-                  <Twitter className="mr-2 h-5 w-5" />
+                <h3 className="text-lg font-bold flex items-center text-white">
+                  <Twitter className="mr-2 h-5 w-5 text-sky-400" />
                   {PROVIDER_CONFIG.twitter.name}
                 </h3>
                 
                 {isCheckingStatus ? (
-                  <div className="flex items-center justify-center py-4">
+                  <div className="flex items-center justify-center py-4 bg-gray-800/50 rounded-lg border border-gray-700">
                     <LoadingSpinner />
-                    <span className="ml-2 text-gray-600">{translations.checkingStatus}</span>
+                    <span className="ml-2 text-gray-400">{translations.checkingStatus}</span>
                   </div>
                 ) : (
                   <motion.div 
-                    className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-300 ${
+                    className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-300 backdrop-blur-sm ${
                       isTwitterConnected 
                         ? PROVIDER_CONFIG.twitter.connectedColor 
                         : PROVIDER_CONFIG.twitter.disconnectedColor
                     }`}
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ y: -2 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
                     <div>
-                      <p className="font-medium text-gray-800">{translations.twitterConnectionStatus}</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="font-medium text-white">{translations.twitterConnectionStatus}</p>
+                      <p className="text-sm text-gray-400">
                         {isTwitterConnected 
                           ? translations.twitterConnected 
                           : translations.twitterNotConnected}
@@ -519,43 +572,48 @@ export const OAuthManagementPage = () => {
                 )}
               </motion.div>
 
-              {/* Qwen.AI Integration */}
+              {/* Qwen.AI Chat 2000 Integration */}
               <motion.div 
                 className="space-y-4"
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.6, duration: 0.3 }}
               >
-                <h3 className="text-lg font-medium flex items-center text-foreground">
-                  <Bot className="mr-2 h-5 w-5" />
+                <h3 className="text-lg font-bold flex items-center text-white">
+                  <Bot className="mr-2 h-5 w-5 text-purple-400" />
                   {PROVIDER_CONFIG.qwen.name}
                 </h3>
                 
                 {isCheckingStatus ? (
-                  <div className="flex items-center justify-center py-4">
+                  <div className="flex items-center justify-center py-4 bg-gray-800/50 rounded-lg border border-gray-700">
                     <LoadingSpinner />
-                    <span className="ml-2 text-gray-600">{translations.checkingStatus}</span>
+                    <span className="ml-2 text-gray-400">{translations.checkingStatus}</span>
                   </div>
                 ) : (
                   <motion.div 
-                    className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-300 ${
+                    className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-300 backdrop-blur-sm ${
                       isQwenConnected 
                         ? PROVIDER_CONFIG.qwen.connectedColor 
                         : PROVIDER_CONFIG.qwen.disconnectedColor
                     }`}
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ y: -2 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
                     <div>
-                      <p className="font-medium text-gray-800">Qwen.AI Chat Status</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="font-medium text-white">Qwen.AI Chat 2000 Status</p>
+                      <p className="text-sm text-gray-400">
                         {isQwenConnected 
-                          ? 'Qwen.AI Chat ouvert - Prêt à utiliser' 
-                          : 'Accès direct à https://chat.qwen.ai/'}
+                          ? 'Qwen.AI Chat 2000 ready - 2000 free requests/day' 
+                          : 'Check for local credentials or connect to Qwen.AI'}
                       </p>
-                      <p className="text-xs text-purple-600 mt-1">
-                        Interface IA avancée avec modèles Qwen dernière génération
+                      <p className="text-xs text-purple-400/80 mt-1">
+                        Advanced AI interface with Qwen models - 2000 free requests per day
                       </p>
+                      {isQwenConnected && (
+                        <p className="text-xs text-green-400/90 mt-1">
+                          ✓ Access token found and copied to clipboard
+                        </p>
+                      )}
                     </div>
                     <div>
                       {isQwenConnected ? (
@@ -571,7 +629,7 @@ export const OAuthManagementPage = () => {
                           onClick={handleQwenLogin}
                           className={PROVIDER_CONFIG.qwen.buttonConnect}
                         >
-                          Ouvrir Qwen.AI
+                          Check & Copy Token
                         </Button>
                       )}
                     </div>
@@ -581,60 +639,43 @@ export const OAuthManagementPage = () => {
             </div>
             
             <motion.div 
-              className="text-sm text-gray-600 p-4 bg-gray-50 rounded-lg"
+              className="text-sm p-4 bg-gray-800/50 rounded-lg border border-gray-700 backdrop-blur-sm"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.6, duration: 0.3 }}
             >
-              <p>{translations.oauthExplanation}</p>
-            </motion.div>
-            
-            {/* Backend Bearer Token Display (for debugging) */}
-            <motion.div 
-              className="text-sm p-4 bg-gray-50 rounded-lg border border-gray-200"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.7, duration: 0.3 }}
-            >
-              <h4 className="font-medium text-gray-800 mb-2">Backend Bearer Token (Debug Info)</h4>
-              <div className="font-mono text-xs break-all text-gray-600">
-                {(() => {
-                  const token = localStorage.getItem('authToken') || 
-                    document.cookie.split(';').find(c => c.trim().startsWith('authToken='))?.split('=')[1] ||
-                    'Not found';
-                  return token !== 'Not found' ? `${token.substring(0, 30)}...` : token;
-                })()}
-              </div>
-              <p className="mt-2 text-gray-600">
-                This token is used to authenticate with the backend API.
-              </p>
+              <h4 className="font-bold text-white mb-2 flex items-center">
+                <Zap className="mr-2 h-4 w-4 text-amber-400" />
+                {translations.oauthExplanationTitle}
+              </h4>
+              <p className="text-gray-400">{translations.oauthExplanation}</p>
             </motion.div>
             
             {/* Collapsible Debug History Section */}
             <motion.div 
-              className="border border-gray-200 rounded-lg"
+              className="border border-gray-700 rounded-lg bg-gray-800/50 backdrop-blur-sm"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.8, duration: 0.3 }}
             >
               <button
-                className="flex items-center justify-between w-full p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-t-lg"
+                className="flex items-center justify-between w-full p-4 text-left hover:bg-gray-700/50 rounded-t-lg"
                 onClick={() => setIsHistoryOpen(!isHistoryOpen)}
               >
-                <h4 className="font-medium text-gray-800">Debug History</h4>
+                <h4 className="font-bold text-white">Debug History</h4>
                 {isHistoryOpen ? (
-                  <ChevronDown className="h-5 w-5 text-gray-600" />
+                  <ChevronDown className="h-5 w-5 text-gray-400" />
                 ) : (
-                  <ChevronRight className="h-5 w-5 text-gray-600" />
+                  <ChevronRight className="h-5 w-5 text-gray-400" />
                 )}
               </button>
               
               {isHistoryOpen && (
-                <div className="p-4 bg-white max-h-60 overflow-y-auto">
+                <div className="p-4 bg-gray-900/30 max-h-60 overflow-y-auto border-t border-gray-700">
                   {debugLogs.length > 0 ? (
                     <ul className="space-y-2">
                       {debugLogs.map((log: string, index: number) => (
-                        <li key={index} className="text-xs font-mono text-gray-600">
+                        <li key={index} className="text-xs font-mono text-gray-400 p-2 bg-gray-900/50 rounded border border-gray-700">
                           {log}
                         </li>
                       ))}
@@ -644,30 +685,6 @@ export const OAuthManagementPage = () => {
                   )}
                 </div>
               )}
-            </motion.div>
-            
-            {/* Manual Token Setup Instructions */}
-            <motion.div 
-              className="border border-gray-200 rounded-lg p-4 bg-gray-50"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.9, duration: 0.3 }}
-            >
-              <h4 className="font-medium text-gray-800 mb-2">Manual Token Setup</h4>
-              <p className="text-sm text-gray-600 mb-3">
-                If you prefer to set up your authentication token manually:
-              </p>
-              <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
-                <li>Go to the LLM API Key Management page</li>
-                <li>Add your bearer token in the appropriate field</li>
-                <li>Save the configuration</li>
-              </ol>
-              <Button 
-                className="mt-3 w-full bg-gray-800 hover:bg-gray-700 text-white"
-                onClick={() => useStore.getState().setCurrentPage('llm-api-keys')}
-              >
-                Go to LLM API Key Management
-              </Button>
             </motion.div>
           </CardContent>
         </Card>

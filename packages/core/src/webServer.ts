@@ -1082,6 +1082,50 @@ export async function initializeWebServer(
       },
     );
 
+    // Get Qwen credentials from local file ~/.qwen/oauth_creds.json
+    app.get(
+      '/api/auth/qwen/credentials',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Import fs module for file operations
+          const fs = await import('fs');
+          const os = await import('os');
+          const path = await import('path');
+
+          // Construct the path to the Qwen credentials file
+          const qwenDir = path.join(os.homedir(), '.qwen');
+          const credsFile = path.join(qwenDir, 'oauth_creds.json');
+
+          // Check if the file exists
+          if (!fs.existsSync(credsFile)) {
+            return res.status(404).json({
+              error: 'Qwen credentials file not found',
+              message: 'Please authenticate with Qwen first to create the credentials file',
+            });
+          }
+
+          // Read the credentials file
+          const credsData = fs.readFileSync(credsFile, 'utf8');
+          const creds = JSON.parse(credsData);
+
+          // Return only the access token
+          res.status(200).json({
+            accessToken: creds.access_token,
+          });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error reading Qwen credentials file',
+          );
+          next(error);
+        }
+      },
+    );
+
     // Logout from Qwen (clear token from Redis)
     app.post(
       '/api/auth/qwen/logout',

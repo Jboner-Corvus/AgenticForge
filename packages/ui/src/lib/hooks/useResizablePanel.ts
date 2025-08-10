@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useStore } from '../store';
 
 export const useResizablePanel = (initialControlPanelWidth: number) => {

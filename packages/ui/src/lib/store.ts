@@ -704,7 +704,7 @@ export const useStore = create<AppState>((set, get) => ({
     console.log('Toast called with options:', options);
   },
   initializeSessionAndMessages: async () => {
-    const { setSessions, setActiveSessionId, setMessages, setSessionId, addDebugLog, updateLeaderboardStats, addLlmApiKey, setActiveLlmApiKey, setIsLoadingLeaderboardStats, setIsLoadingSessions } = get();
+    const { setSessions, setActiveSessionId, setMessages, setSessionId, addDebugLog, updateLeaderboardStats, setIsLoadingLeaderboardStats, setIsLoadingSessions } = get();
 
     // Load leaderboard stats from backend
     setIsLoadingLeaderboardStats(true);

@@ -55,7 +55,7 @@ export function TodoListPanel() {
           const data = JSON.parse(event.data);
           if (data.type === 'todo_list') {
             setTodoData(data);
-            setIsVisible(true);
+            setIsTodoListVisible(true);
           }
         } catch (error) {
           console.error('Error parsing todo data:', error);
@@ -72,7 +72,7 @@ export function TodoListPanel() {
         wsRef.current.close();
       }
     };
-  }, [jobId, isProcessing]);
+  }, [jobId, isProcessing, setIsTodoListVisible]);
 
   const closePanel = () => {
     setIsTodoListVisible(false);
