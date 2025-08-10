@@ -63,7 +63,7 @@ describe('useAgentStream', () => {
     useStore.setState({ messageInputValue: '' });
 
     await act(async () => {
-      await result.current.startAgent();
+      await result.current.startAgent('Test message');
     });
 
     expect(sendMessage).not.toHaveBeenCalled();
@@ -77,7 +77,7 @@ describe('useAgentStream', () => {
     const { result } = renderHook(() => useAgentStream());
 
     await act(async () => {
-      await result.current.startAgent();
+      await result.current.startAgent('Test message');
     });
 
     expect(useStore.getState().isProcessing).toBe(true);
@@ -107,7 +107,7 @@ describe('useAgentStream', () => {
     const { result } = renderHook(() => useAgentStream());
 
     await act(async () => {
-      await result.current.startAgent();
+      await result.current.startAgent('Test message');
     });
 
     // Verify sendMessage was called
@@ -145,7 +145,7 @@ describe('useAgentStream', () => {
     const { result } = renderHook(() => useAgentStream());
 
     await act(async () => {
-      await result.current.startAgent();
+      await result.current.startAgent('Test message');
     });
 
     // Verify sendMessage was called
@@ -185,7 +185,7 @@ describe('useAgentStream', () => {
     const { result } = renderHook(() => useAgentStream());
 
     await act(async () => {
-      await result.current.startAgent();
+      await result.current.startAgent('Test message');
     });
 
     // Verify sendMessage was called
@@ -225,7 +225,7 @@ describe('useAgentStream', () => {
     const { result } = renderHook(() => useAgentStream());
 
     await act(async () => {
-      await result.current.startAgent();
+      await result.current.startAgent('Test message');
     });
 
     // Verify sendMessage was called
@@ -264,7 +264,7 @@ describe('useAgentStream', () => {
     const { result } = renderHook(() => useAgentStream());
 
     await act(async () => {
-      await result.current.startAgent();
+      await result.current.startAgent('Test message');
     });
 
     // Verify sendMessage was called
@@ -300,7 +300,7 @@ describe('useAgentStream', () => {
     const { result } = renderHook(() => useAgentStream());
 
     await act(async () => {
-      await result.current.startAgent();
+      await result.current.startAgent('Test message');
     });
 
     // Verify sendMessage was called
@@ -339,7 +339,7 @@ describe('useAgentStream', () => {
     const { result } = renderHook(() => useAgentStream());
 
     await act(async () => {
-      await result.current.startAgent();
+      await result.current.startAgent('Test message');
     });
 
     // Verify sendMessage was called
@@ -377,7 +377,7 @@ describe('useAgentStream', () => {
     const { result } = renderHook(() => useAgentStream());
 
     await act(async () => {
-      await result.current.startAgent();
+      await result.current.startAgent('Test message');
     });
 
     // Verify sendMessage was called
@@ -416,7 +416,7 @@ describe('useAgentStream', () => {
     const { result } = renderHook(() => useAgentStream());
 
     await act(async () => {
-      await result.current.startAgent();
+      await result.current.startAgent('Test message');
     });
 
     // Verify sendMessage was called
@@ -472,7 +472,7 @@ describe('useAgentStream', () => {
     const { result } = renderHook(() => useAgentStream());
 
     await act(async () => {
-      await result.current.startAgent();
+      await result.current.startAgent('Test message');
     });
 
     // Verify sendMessage was called
@@ -511,7 +511,7 @@ describe('useAgentStream', () => {
     const { result } = renderHook(() => useAgentStream());
 
     await act(async () => {
-      await result.current.startAgent();
+      await result.current.startAgent('Test message');
     });
 
     // Verify sendMessage was called
@@ -555,7 +555,7 @@ describe('useAgentStream', () => {
     const { result } = renderHook(() => useAgentStream());
 
     await act(async () => {
-      await result.current.startAgent();
+      await result.current.startAgent('Test message');
     });
 
     // Verify sendMessage was called

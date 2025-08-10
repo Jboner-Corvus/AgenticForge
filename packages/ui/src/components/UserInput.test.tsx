@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import type { Mock } from 'vitest';
 import { UserInput } from './UserInput';
 import { LanguageProvider } from '../lib/contexts/LanguageProvider';
 import { useStore } from '../lib/store';
@@ -30,15 +29,12 @@ vi.mock('../lib/hooks/useAgentStream', () => ({
 }));
 
 describe('UserInput', () => {
-  let setMessageInputValueSpy: Mock<[string], void>;
 
   beforeEach(() => {
     resetMockStore(); // Reset the store before each test
     mockStartAgent = vi.fn(() => Promise.resolve()); 
-    setMessageInputValueSpy = vi.fn();
     
     useStore.setState({
-      setMessageInputValue: setMessageInputValueSpy,
       isProcessing: false, // Reset to default for most tests
       messageInputValue: '',
       tokenStatus: true, // Assuming tokenStatus is true by default for most tests
@@ -70,8 +66,7 @@ describe('UserInput', () => {
     // Click send button
     fireEvent.click(sendButton);
 
-    expect(mockStartAgent).toHaveBeenCalled();
-    expect(setMessageInputValueSpy).toHaveBeenCalledWith('Test message');
+    expect(mockStartAgent).toHaveBeenCalledWith('Test message');
     expect(textarea).toHaveValue(''); // Input should be cleared
   });
 
@@ -85,8 +80,7 @@ describe('UserInput', () => {
     // Press Enter
     fireEvent.keyDown(textarea, { key: 'Enter', code: 'Enter' });
 
-    expect(mockStartAgent).toHaveBeenCalled();
-    expect(setMessageInputValueSpy).toHaveBeenCalledWith('Test message via Enter');
+    expect(mockStartAgent).toHaveBeenCalledWith('Test message via Enter');
     expect(textarea).toHaveValue(''); // Input should be cleared
   });
 
@@ -101,7 +95,6 @@ describe('UserInput', () => {
     fireEvent.keyDown(textarea, { key: 'Enter', code: 'Enter', shiftKey: true });
 
     expect(mockStartAgent).not.toHaveBeenCalled();
-    expect(setMessageInputValueSpy).not.toHaveBeenCalled();
     expect(textarea).toHaveValue('Test message via Shift+Enter'); // Input should not be cleared
   });
 
@@ -111,7 +104,6 @@ describe('UserInput', () => {
     fireEvent.click(sendButton);
 
     expect(mockStartAgent).not.toHaveBeenCalled();
-    expect(setMessageInputValueSpy).not.toHaveBeenCalled();
   });
 
   it('should disable input and show loading spinner when processing', () => {

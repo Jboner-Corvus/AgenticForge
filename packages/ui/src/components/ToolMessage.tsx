@@ -7,7 +7,6 @@ import {
   FileText, 
   Search, 
   Globe, 
-  Database,
   Settings,
   ChevronDown,
   ChevronRight,
@@ -83,7 +82,7 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({ message }) => {
   const isToolCall = message.type === 'tool_call';
   const toolName = message.toolName;
   const details = isToolCall ? message.params : message.result;
-  const description = formatToolDescription(toolName, isToolCall, message.params, isToolCall ? undefined : message.result);
+  const description = formatToolDescription(toolName, isToolCall, isToolCall ? message.params : undefined, isToolCall ? undefined : message.result);
   const { icon: StatusIcon, color: statusColor, bgColor, status } = getStatusInfo(isToolCall, isToolCall ? undefined : message.result);
   const ToolIcon = getToolIcon(toolName);
 

@@ -678,28 +678,24 @@ show_menu() {
     echo -e \"${NC}\"
     echo -e \"──────────────────────────────────────────\"
     echo -e \"    ${COLOR_CYAN}Docker & Services${NC}\"
-    printf \"    1) ${COLOR_GREEN}🟢 Démarrer${NC}            5) ${COLOR_BLUE}📊 Logs Worker${NC}\\n\"
-    printf \"    2) ${COLOR_YELLOW}🔄 Redémarrer tout${NC}     6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\\n\"
-    printf \"    3) ${COLOR_RED}🔴 Arrêter${NC}              7) ${COLOR_BLUE}🔨 Rebuild Docker${NC}\\n\"
-    printf \"    4) ${COLOR_CYAN}⚡ Statut${NC}              8) ${COLOR_BLUE}🔨 Rebuild Web${NC}\\n\"
-    printf \"    9) ${COLOR_RED}🧹 Nettoyer Docker${NC}\\n\"
-    printf \"   10) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}    16) ${COLOR_BLUE}🐳 Logs Docker${NC}\\n\"
-    printf \"   21) ${COLOR_BLUE}🔨 Rebuild Worker${NC}\\n\"
-    printf \"   22) ${COLOR_BLUE}🔨 Rebuild All${NC}\\n\"
-    printf \"   23) ${COLOR_RED}🧹 Clean All Caches${NC}\\n\"
-    echo \"\"
-    echo -e \"    ${COLOR_CYAN}Développement & Vérifications${NC}\"
-    printf \"   11) ${COLOR_BLUE}🔍 Lint${NC}                 14) ${COLOR_BLUE}📘 TypeCheck${NC}\\n\"
-    printf \"   12) ${COLOR_BLUE}✨ Format${NC}               15) ${COLOR_BLUE}✅ Checks Rapides (Lint, Types)${NC}\\n\"
-    printf \"   13) ${COLOR_BLUE}🧪 Tests (Unitaires)${NC}     18) ${COLOR_BLUE}🚀 TOUS les Checks (Lint, Types, Tests Unitaires)${NC}\\n\"
-    printf \"   19) ${COLOR_BLUE}🧪 Tests (Intégration)${NC}\\n\"
-    printf \"   20) ${COLOR_BLUE}🧪 Lancer TOUS les tests${NC}\\n\"
-    echo \"\"
-    printf \"   17) ${COLOR_RED}🚪 Quitter${NC}\\n\"
-    echo \"\"
-}    printf "   19) ${COLOR_BLUE}🧪 Lancer TOUS les tests${NC}\n"
+    printf "    1) ${COLOR_GREEN}🟢 Démarrer${NC}            5) ${COLOR_BLUE}📊 Logs Worker${NC}\\n"
+    printf "    2) ${COLOR_YELLOW}🔄 Redémarrer tout${NC}     6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\\n"
+    printf "    3) ${COLOR_RED}🔴 Arrêter${NC}              7) ${COLOR_BLUE}🔨 Rebuild Docker${NC}\\n"
+    printf "    4) ${COLOR_CYAN}⚡ Statut${NC}              8) ${COLOR_BLUE}🔨 Rebuild Web${NC}\\n"
+    printf "    9) ${COLOR_RED}🧹 Nettoyer Docker${NC}\\n"
+    printf "   10) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}    16) ${COLOR_BLUE}🐳 Logs Docker${NC}\\n"
+    printf "   21) ${COLOR_BLUE}🔨 Rebuild Worker${NC}\\n"
+    printf "   22) ${COLOR_BLUE}🔨 Rebuild All${NC}\\n"
+    printf "   23) ${COLOR_RED}🧹 Clean All Caches${NC}\\n"
     echo ""
-    printf "   16) ${COLOR_RED}🚪 Quitter${NC}\n"
+    echo -e "    ${COLOR_CYAN}Développement & Vérifications${NC}"
+    printf "   11) ${COLOR_BLUE}🔍 Lint${NC}                 14) ${COLOR_BLUE}📘 TypeCheck${NC}\\n"
+    printf "   12) ${COLOR_BLUE}✨ Format${NC}               15) ${COLOR_BLUE}✅ Checks Rapides (Lint, Types)${NC}\\n"
+    printf "   13) ${COLOR_BLUE}🧪 Tests (Unitaires)${NC}     18) ${COLOR_BLUE}🚀 TOUS les Checks (Lint, Types, Tests Unitaires)${NC}\\n"
+    printf "   19) ${COLOR_BLUE}🧪 Tests (Intégration)${NC}\\n"
+    printf "   20) ${COLOR_BLUE}🧪 Lancer TOUS les tests${NC}\\n"
+    echo ""
+    printf "   17) ${COLOR_RED}🚪 Quitter${NC}\\n"
     echo ""
 }
 
@@ -770,7 +766,7 @@ main() {
             13) run_unit_tests ;; 
             14) run_typecheck ;; 
             15) run_small_checks ;; 
-            16) show_logs "${SCRIPT_DIR}/docker.log" "Docker"" ;; 
+            16) show_logs "${SCRIPT_DIR}/docker.log" "Docker" ;; 
             17) echo -e "${COLOR_CYAN}Au revoir !${NC}"; exit 0 ;; 
             18) run_all_checks ;; 
             19) run_integration_tests ;; 

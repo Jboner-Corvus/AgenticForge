@@ -36,7 +36,7 @@ export default function App() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const { translations } = useLanguage();
   
-  const { controlPanelWidth, handleMouseDownCanvas, setCanvasWidth } = useResizablePanel(300, 500);
+  const { controlPanelWidth, handleMouseDownCanvas, setCanvasWidth } = useResizablePanel(300);
 
   // Hook pour ajuster la largeur du canvas lors du redimensionnement de la fenêtre
   useEffect(() => {

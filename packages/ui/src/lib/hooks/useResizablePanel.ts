@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useStore } from '../store';
 
-export const useResizablePanel = (initialControlPanelWidth: number, initialCanvasWidth: number) => {
+export const useResizablePanel = (initialControlPanelWidth: number) => {
   const [controlPanelWidth, setControlPanelWidth] = useState(initialControlPanelWidth);
   const isResizingControlPanel = useRef(false);
   const isResizingCanvas = useRef(false);

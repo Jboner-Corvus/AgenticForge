@@ -449,7 +449,7 @@ export const useAgentStream = () => {
             if (useStore.getState().isProcessing) {
               console.log('🔄 [useAgentStream] Attempting to reconnect...');
               addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🔄 Tentative de reconnexion...`);
-              setTimeout(() => startAgent(), 3000);
+              setTimeout(() => startAgent('Reconnection attempt'), 3000);
             }
           }
         } else {

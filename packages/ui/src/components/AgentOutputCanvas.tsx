@@ -27,6 +27,12 @@ const AgentOutputCanvas: React.FC = () => {
   const removeCanvasFromHistory = useStore((state) => state.removeCanvasFromHistory);
   const clearCanvasHistory = useStore((state) => state.clearCanvasHistory);
   const canvasWidth = useStore((state) => state.canvasWidth);
+  const canvasContent = useStore((state) => state.canvasContent);
+  const canvasType = useStore((state) => state.canvasType);
+  const isCanvasPinned = useStore((state) => state.isCanvasPinned);
+  const isCanvasFullscreen = useStore((state) => state.isCanvasFullscreen);
+  const canvasHistory = useStore((state) => state.canvasHistory);
+  const currentCanvasIndex = useStore((state) => state.currentCanvasIndex);
   const [iframeKey, setIframeKey] = useState(0);
   const [hasIframeError, setHasIframeError] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -39,7 +45,7 @@ const AgentOutputCanvas: React.FC = () => {
   useEffect(() => {
     setHasIframeError(false);
     setIframeKey(prev => prev + 1); // Force re-render iframe
-  }, [canvasContent, canvasType]);
+  }, []);
 
   const canvasVariants: Variants = {
     hidden: { 
