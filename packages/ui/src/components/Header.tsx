@@ -4,7 +4,7 @@ import { useStore } from '../lib/store';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
-// import { Logo } from './Logo'; // Supprimé: never used
+import { Logo } from './Logo';
 import { ConnectionStatus } from './ConnectionStatus';
 
 // import { Settings, PanelLeft, Sun, Moon, Bell, LayoutDashboard, BarChart, Key, MessageSquare, Bug } from 'lucide-react'; // Supprimé: never used
@@ -42,6 +42,7 @@ export function Header({
         >
           <PanelLeft />
         </Button>
+        <Logo size="sm" showText={true} />
         <ConnectionStatus />
       </div>
 

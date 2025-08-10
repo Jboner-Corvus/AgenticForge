@@ -6,7 +6,6 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Modal } from './ui/modal';
-import { useToast } from '../lib/hooks/useToast';
 import { LoadingSpinner } from './LoadingSpinner';
 import { Switch } from './ui/switch';
 
@@ -31,28 +30,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [tokenInputValue, setTokenInputValue] = useState<string>('');
   const [tempCanvasWidth, setTempCanvasWidth] = useState<number>(canvasWidth);
 
-  const { toast } = useToast();
 
   const handleSaveToken = useCallback(() => {
     const tokenValue = tokenInputValue.trim();
     setAuthToken(tokenValue);
     if (tokenValue) {
-      toast({ description: translations.tokenSaved, title: translations.tokenSaved });
       addDebugLog(`[${new Date().toLocaleTimeString()}] ${translations.newTokenSaved}.`);
       fetchAndDisplayToolCount();
     } else {
-      toast({ description: translations.tokenRemoved, title: translations.tokenRemoved });
       addDebugLog(`[${new Date().toLocaleTimeString()}] ${translations.tokenDeleted}.`);
       setToolCount(0);
     }
     setTokenStatus(!!tokenValue);
     onClose();
-  }, [fetchAndDisplayToolCount, tokenInputValue, addDebugLog, setAuthToken, setToolCount, setTokenStatus, toast, onClose, translations]);
+  }, [fetchAndDisplayToolCount, tokenInputValue, addDebugLog, setAuthToken, setToolCount, setTokenStatus, onClose, translations]);
 
   const handleSaveCanvasSettings = useCallback(() => {
     setCanvasWidth(tempCanvasWidth);
-    toast({ description: "Paramètres du canevas enregistrés", title: "Paramètres enregistrés" });
-  }, [tempCanvasWidth, setCanvasWidth, toast]);
+  }, [tempCanvasWidth, setCanvasWidth]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={translations.settings}>

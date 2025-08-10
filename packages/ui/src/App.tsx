@@ -11,7 +11,6 @@ import { ControlPanel } from './components/ControlPanel';
 import { UserInput } from './components/UserInput';
 import { Suspense, useState, useEffect } from 'react';
 import { useResizablePanel } from './lib/hooks/useResizablePanel';
-import { Toaster } from './components/ui/toaster';
 import AgentOutputCanvas from './components/AgentOutputCanvas';
 import { HeaderContainer } from './components/HeaderContainer';
 import { SettingsModalContainer } from './components/SettingsModalContainer';
@@ -173,7 +172,6 @@ export default function App() {
             )}
           </main>
         </div>
-        <Toaster />
         <DebugLogContainer />
         <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
         

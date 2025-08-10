@@ -1,10 +1,10 @@
 import { getConfig } from '../config.js';
 import { getLogger } from '../logger.js';
+import { ILlmProvider, LLMContent, LlmError } from '../modules/llm/llm-types.js';
 import { LlmApiKey, LlmKeyManager } from '../modules/llm/LlmKeyManager.js';
+import { LlmKeyErrorType } from '../modules/llm/LlmKeyManager.js';
 import { getRedisClientInstance } from '../modules/redis/redisClient.js';
 import { Gpt5Provider } from './gpt5Provider.js';
-import { LLMContent } from '../modules/llm/llm-types.js';
-import { LlmKeyErrorType } from '../modules/llm/LlmKeyManager.js';
 
 class AnthropicProvider implements ILlmProvider {
   public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
@@ -143,7 +143,7 @@ class AnthropicProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum, part) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -248,7 +248,7 @@ class GeminiProvider implements ILlmProvider {
         // Gemini API does not directly support 'tool' role in 'contents'.
         // Convert tool outputs to user messages.
         role = 'user';
-        parts = [{ text: `Tool output: ${parts.map((p) => p.text).join('')}` }];
+        parts = [{ text: `Tool output: ${parts.map((p: { text: string }) => p.text).join('')}` }];
       }
 
       return { parts, role };
@@ -332,7 +332,7 @@ class GeminiProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum, part) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -496,7 +496,7 @@ class GrokProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum, part) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -594,7 +594,7 @@ class HuggingFaceProvider implements ILlmProvider {
 
     const requestBody = {
       inputs: messages
-        .map((msg) => msg.parts.map((p) => p.text).join(''))
+        .map((msg) => msg.parts.map((p: { text: string }) => p.text).join(''))
         .join('\n'),
       parameters: {
         max_new_tokens: 4096, // A reasonable default for HuggingFace models
@@ -657,7 +657,7 @@ class HuggingFaceProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum, part) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -820,7 +820,7 @@ class MistralProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum, part) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -988,7 +988,7 @@ class OpenAIProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum, part) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -1102,6 +1102,11 @@ class OpenRouterProvider implements ILlmProvider {
     const body = JSON.stringify(requestBody);
 
     try {
+      // Add a delay before making the LLM request to avoid rate limiting
+      await new Promise((resolve) =>
+        setTimeout(resolve, getConfig().LLM_REQUEST_DELAY_MS),
+      );
+
       // Log 2: Avant chaque appel LLM
       log.info(
         `[LLM CALL] Envoi de la requête au modèle : ${modelName || 'z-ai/glm-4.5-air:free'} via ${activeKey.apiProvider}`,
@@ -1156,7 +1161,7 @@ class OpenRouterProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum, part) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
               0,
             ),
           0,

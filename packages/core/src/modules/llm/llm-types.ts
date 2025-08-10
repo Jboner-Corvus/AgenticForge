@@ -1,3 +1,5 @@
+import { LlmKeyErrorType } from './LlmKeyManager.js';
+
 export interface LlmApiKey {
   apiKey: string;
   apiModel: string;
@@ -23,3 +25,12 @@ export interface ILlmProvider {
     modelName?: string,
   ): Promise<string>;
 }
+
+export class LlmError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'LlmError';
+  }
+}
+
+export { LlmKeyErrorType };

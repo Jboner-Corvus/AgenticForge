@@ -57,7 +57,7 @@ For each test in the list, follow these 6 steps:
 -   [x] 32. Développer un outil CLI Node pour gérer des tâches (Complété le 2025-08-03)
 -   [x] 33. Mettre en place une API Web minimale avec Javascript pnpm (Complété le 2025-08-03)
 -   [x] 34. Créer un composant React pour l'UI existante (Complété le 2025-08-03)
--   [ ] 35. Scraper des données cosmologiques et les analyser (Nécessite des précisions supplémentaires dans prompts.yaml)
+-   [x] 35. Scraper des données cosmologiques et les analyser (ÉCHEC - Erreur API LLM "Incorrect role information" le 2025-08-09)
 -   [x] 36. Créer un script d'initialisation de projet (Complété le 2025-08-03)
 -   [x] 37. Convertisseur Markdown vers HTML (Complété le 2025-08-03)
 -   [x] 38. Créer un outil pour interagir avec une API publique (Complété le 2025-08-03)

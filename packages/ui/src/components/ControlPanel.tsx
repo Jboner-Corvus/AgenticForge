@@ -8,12 +8,10 @@ import { Badge } from './ui/badge';
 import { Label } from './ui/label';
 // import { Switch } from './ui/switch'; // Supprimé: never used
 import { useLanguage } from '../lib/contexts/LanguageContext';
-import { useToast } from '../lib/hooks/useToast';
 import { useDraggableSidebar } from '../lib/hooks/useDraggablePane';
 import { memo, useCallback, useState } from 'react';
 import { useStore } from '../lib/store';
 import { LoadingSpinner } from './LoadingSpinner';
-import TestCanvasDisplay from './TestCanvasDisplay';
 
 
 export const ControlPanel = memo(() => {
@@ -41,7 +39,6 @@ export const ControlPanel = memo(() => {
   const isRenamingSession = useStore((state) => state.isRenamingSession);
 
   const browserStatus = useStore((state) => state.browserStatus);
-  const { toast } = useToast();
 
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [sessionToRename, setSessionToRename] = useState<{ id: string; name: string } | null>(null);
@@ -60,16 +57,14 @@ export const ControlPanel = memo(() => {
   const handleConfirmSaveSession = useCallback(() => {
     if (saveSessionInput.trim()) {
       saveSession(saveSessionInput.trim());
-      toast({ description: "Session saved!", title: "Session Saved" });
       setIsSaveModalOpen(false);
       setSaveSessionInput('');
     }
-  }, [saveSession, saveSessionInput, toast]);
+  }, [saveSession, saveSessionInput]);
 
   const handleLoadSession = useCallback((id: string) => {
     loadSession(id);
-    toast({ description: "Session loaded!", title: "Session Loaded" });
-  }, [loadSession, toast]);
+  }, [loadSession]);
 
   const handleDeleteSession = useCallback((id: string) => {
     setSessionToDeleteId(id);
@@ -79,11 +74,10 @@ export const ControlPanel = memo(() => {
   const handleConfirmDeleteSession = useCallback(() => {
     if (sessionToDeleteId) {
       deleteSession(sessionToDeleteId);
-      toast({ description: "Session deleted!", title: "Session Deleted" });
       setIsDeleteConfirmModalOpen(false);
       setSessionToDeleteId(null);
     }
-  }, [deleteSession, sessionToDeleteId, toast]);
+  }, [deleteSession, sessionToDeleteId]);
 
   const handleOpenRenameModal = useCallback((session: { id: string; name: string }) => {
     setSessionToRename(session);
@@ -94,12 +88,11 @@ export const ControlPanel = memo(() => {
   const handleConfirmRename = useCallback(() => {
     if (sessionToRename && newSessionName.trim()) {
       renameSession(sessionToRename.id, newSessionName.trim());
-      toast({ description: "Session renamed!", title: "Session Renamed" });
       setIsRenameModalOpen(false);
       setSessionToRename(null);
       setNewSessionName('');
     }
-  }, [sessionToRename, newSessionName, renameSession, toast]);
+  }, [sessionToRename, newSessionName, renameSession]);
 
   const { handleDragStart } = useDraggableSidebar(320);
 
@@ -312,15 +305,6 @@ export const ControlPanel = memo(() => {
         </div>
       </Modal>
       
-      {/* Test Canvas Display Component */}
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle>Canvas Test</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <TestCanvasDisplay />
-        </CardContent>
-      </Card>
     </>
   );
 });

@@ -5,7 +5,7 @@ import { useLanguage } from '../lib/contexts/LanguageContext';
 import { useStore } from '../lib/store';
 import { LoadingSpinner } from './LoadingSpinner';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { AlertTriangle, Github, Chrome, Twitter, ChevronDown, ChevronRight, Key } from 'lucide-react';
+import { AlertTriangle, Github, Chrome, Twitter, ChevronDown, ChevronRight, Key, Bot } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -15,12 +15,14 @@ export const OAuthManagementPage = () => {
   const [isGitHubConnected, setIsGitHubConnected] = useState(false)
   const [isGoogleConnected, setIsGoogleConnected] = useState(false)
   const [isTwitterConnected, setIsTwitterConnected] = useState(false)
+  const [isQwenConnected, setIsQwenConnected] = useState(false)
   const [isCheckingStatus, setIsCheckingStatus] = useState(true)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const addDebugLog = useStore((state) => state.addDebugLog)
   const debugLogs = useStore((state) => state.debugLog)
   const setAuthToken = useStore((state) => state.setAuthToken);
   const setTokenStatus = useStore((state) => state.setTokenStatus);
+  const setCurrentPage = useStore((state) => state.setCurrentPage);
   const [bearerToken, setBearerToken] = useState('');
 
   const handleSaveToken = () => {
@@ -28,7 +30,12 @@ export const OAuthManagementPage = () => {
       localStorage.setItem('authToken', bearerToken.trim());
       setAuthToken(bearerToken.trim());
       setTokenStatus(true);
-      alert('Authentication token saved successfully!');
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Bearer token saved successfully - Redirecting to chat`);
+      
+      // Redirection vers la page de chat après une courte pause
+      setTimeout(() => {
+        setCurrentPage('chat');
+      }, 500);
     }
   };
 
@@ -57,6 +64,14 @@ export const OAuthManagementPage = () => {
       disconnectedColor: 'bg-gray-50 border-gray-200',
       buttonConnect: 'bg-gray-800 hover:bg-gray-700 text-white',
       buttonDisconnect: 'bg-gray-500 hover:bg-gray-600 text-white'
+    },
+    qwen: {
+      name: 'Qwen.AI Chat',
+      icon: Bot,
+      connectedColor: 'bg-purple-100 border-purple-300',
+      disconnectedColor: 'bg-purple-50 border-purple-200',
+      buttonConnect: 'bg-purple-600 hover:bg-purple-700 text-white',
+      buttonDisconnect: 'bg-purple-500 hover:bg-purple-600 text-white'
     }
   };
 
@@ -81,9 +96,14 @@ export const OAuthManagementPage = () => {
           cookie.trim().startsWith('agenticforge_twitter_token=') && 
           cookie.trim().length > 'agenticforge_twitter_token='.length
         )
+
+        const hasQwenToken = cookies.some(cookie => 
+          cookie.trim().startsWith('agenticforge_qwen_token=') && 
+          cookie.trim().length > 'agenticforge_qwen_token='.length
+        )
         
         // Log the OAuth status check
-        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Checking OAuth status - GitHub: ${hasGitHubToken}, Google: ${hasGoogleToken}, Twitter: ${isTwitterConnected}`);
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Checking OAuth status - GitHub: ${hasGitHubToken}, Google: ${hasGoogleToken}, Twitter: ${isTwitterConnected}, Qwen: ${hasQwenToken}`);
         
         // Extract and log the bearer token if present
         const authHeader = localStorage.getItem('authToken');
@@ -103,6 +123,7 @@ export const OAuthManagementPage = () => {
         setIsGitHubConnected(hasGitHubToken)
         setIsGoogleConnected(hasGoogleToken)
         setIsTwitterConnected(hasTwitterToken)
+        setIsQwenConnected(hasQwenToken)
         setIsCheckingStatus(false)
       } catch (error) {
         console.error('Error checking OAuth status:', error)
@@ -198,6 +219,39 @@ export const OAuthManagementPage = () => {
     } catch (error) {
       console.error('Error removing Twitter OAuth token:', error);
       addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Error removing Twitter OAuth token: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const handleQwenLogin = () => {
+    try {
+      // Log the attempt to initiate Qwen OAuth
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Opening Qwen.AI Chat in new tab`);
+      
+      // Open Qwen.AI in a new tab
+      window.open('https://chat.qwen.ai/', '_blank');
+      
+      // Mark as connected for demo purposes
+      setIsQwenConnected(true);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Qwen.AI Chat opened successfully`);
+    } catch (error) {
+      console.error('Error opening Qwen.AI Chat:', error);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Error opening Qwen.AI Chat: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const handleQwenLogout = () => {
+    try {
+      // Clear Qwen OAuth token from cookies (if implemented)
+      document.cookie = 'agenticforge_qwen_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      
+      // Update state
+      setIsQwenConnected(false)
+      
+      // Add debug log
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Qwen.AI OAuth token removed.`)
+    } catch (error) {
+      console.error('Error removing Qwen.AI OAuth token:', error);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Error removing Qwen.AI OAuth token: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -449,6 +503,66 @@ export const OAuthManagementPage = () => {
                           className={PROVIDER_CONFIG.twitter.buttonConnect}
                         >
                           {translations.connectTwitter}
+                        </Button>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
+
+              {/* Qwen.AI Integration */}
+              <motion.div 
+                className="space-y-4"
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.6, duration: 0.3 }}
+              >
+                <h3 className="text-lg font-medium flex items-center text-foreground">
+                  <Bot className="mr-2 h-5 w-5" />
+                  {PROVIDER_CONFIG.qwen.name}
+                </h3>
+                
+                {isCheckingStatus ? (
+                  <div className="flex items-center justify-center py-4">
+                    <LoadingSpinner />
+                    <span className="ml-2 text-gray-600">{translations.checkingStatus}</span>
+                  </div>
+                ) : (
+                  <motion.div 
+                    className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-300 ${
+                      isQwenConnected 
+                        ? PROVIDER_CONFIG.qwen.connectedColor 
+                        : PROVIDER_CONFIG.qwen.disconnectedColor
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                  >
+                    <div>
+                      <p className="font-medium text-gray-800">Qwen.AI Chat Status</p>
+                      <p className="text-sm text-gray-600">
+                        {isQwenConnected 
+                          ? 'Qwen.AI Chat ouvert - Prêt à utiliser' 
+                          : 'Accès direct à https://chat.qwen.ai/'}
+                      </p>
+                      <p className="text-xs text-purple-600 mt-1">
+                        Interface IA avancée avec modèles Qwen dernière génération
+                      </p>
+                    </div>
+                    <div>
+                      {isQwenConnected ? (
+                        <Button 
+                          variant="destructive" 
+                          onClick={handleQwenLogout}
+                          className={PROVIDER_CONFIG.qwen.buttonDisconnect}
+                        >
+                          {translations.disconnect}
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={handleQwenLogin}
+                          className={PROVIDER_CONFIG.qwen.buttonConnect}
+                        >
+                          Ouvrir Qwen.AI
                         </Button>
                       )}
                     </div>

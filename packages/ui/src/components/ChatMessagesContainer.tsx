@@ -38,19 +38,31 @@ export function ChatMessagesContainer() {
             exit={{ opacity: 0, y: -20 }}
             layout
           >
-            <Alert className="bg-blue-50 border-blue-400 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300">
-              <Rocket className="h-4 w-4" />
-              <AlertTitle>{translations.welcomeTitle}</AlertTitle>
-              <AlertDescription>
-                {translations.welcomeMessage}
-                <div className="mt-4 flex gap-4">
-                  <Button variant="outline" size="sm" onClick={() => setCurrentPage('oauth')} className="flex items-center gap-2">
+            <Alert className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 text-blue-900 dark:from-blue-900/20 dark:to-indigo-900/20 dark:border-blue-600 dark:text-blue-200 shadow-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Rocket className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <AlertTitle className="text-lg font-semibold">{translations.welcomeTitle}</AlertTitle>
+              </div>
+              <AlertDescription className="space-y-4">
+                <p className="text-sm">{translations.welcomeMessage}</p>
+                <div className="flex flex-wrap gap-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setCurrentPage('oauth')} 
+                    className="flex items-center gap-2 bg-white/80 hover:bg-white dark:bg-blue-900/40 dark:hover:bg-blue-900/60 border-blue-200 hover:border-blue-300 dark:border-blue-700 transition-all duration-200"
+                  >
                     <Key className="h-4 w-4" />
-                    {translations.setupAuthToken}
+                    <span className="font-medium">{translations.setupAuthToken}</span>
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => setCurrentPage('llm-api-keys')} className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setCurrentPage('llm-api-keys')} 
+                    className="flex items-center gap-2 bg-white/80 hover:bg-white dark:bg-indigo-900/40 dark:hover:bg-indigo-900/60 border-indigo-200 hover:border-indigo-300 dark:border-indigo-700 transition-all duration-200"
+                  >
                     <Settings className="h-4 w-4" />
-                    {translations.setupLLMKeys}
+                    <span className="font-medium">{translations.setupLLMKeys}</span>
                   </Button>
                 </div>
               </AlertDescription>

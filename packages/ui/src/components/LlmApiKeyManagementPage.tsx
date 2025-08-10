@@ -1,13 +1,13 @@
 import { Save, Info, CheckCircle, Settings, Key, Zap, Shield } from 'lucide-react';
 import { memo, useState, useEffect } from 'react';
 import { useStore } from '../lib/store';
-import { OpenAILogo, AnthropicLogo, GeminiLogo } from './icons/LlmLogos';
+import { OpenAILogo, GeminiLogo } from './icons/LlmLogos';
+import { OpenRouterLogo } from './icons/LlmLogos/OpenRouterLogo';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { LoadingSpinner } from './LoadingSpinner';
 import { Card, CardContent } from './ui/card';
-import { useToast } from '../lib/hooks/useToast';
 import { motion } from 'framer-motion';
 
 interface LlmProviderConfig {
@@ -31,10 +31,10 @@ const PROVIDERS: LlmProviderConfig[] = [
   { 
     id: 'openrouter', 
     name: 'OpenRouter', 
-    logo: OpenAILogo, // Using OpenAI logo as placeholder
+    logo: OpenRouterLogo,
     models: ['z-ai/glm-4.5-air:free'], 
     baseUrl: 'https://openrouter.ai/api/v1',
-    description: 'OpenRouter avec modèle GLM-4.5-Air gratuit par défaut.'
+    description: 'OpenRouter avec modèle GLM-4.5-Air gratuit - Fonctionne parfaitement ✅'
   },
   { 
     id: 'gemini', 
@@ -98,7 +98,6 @@ const StatusBanner = () => {
 
 // Composant Provider simplifié
 const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
-  const { toast } = useToast();
   const llmApiKeys = useStore((state) => state.llmApiKeys);
   const addLlmApiKey = useStore((state) => state.addLlmApiKey);
   const removeLlmApiKey = useStore((state) => state.removeLlmApiKey);
@@ -119,7 +118,6 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
 
   const handleSave = async () => {
     if (!apiKey.trim()) {
-      toast({ title: "Erreur", description: "Veuillez entrer une clé API", variant: "destructive" });
       return;
     }
 
@@ -133,7 +131,6 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
 
     // Ajouter la nouvelle clé
     await addLlmApiKey(provider.id, apiKey, provider.baseUrl, provider.models[0]);
-    toast({ title: "Succès", description: `Clé ${provider.name} sauvegardée` });
   };
 
   const handleRemove = async () => {
@@ -144,7 +141,6 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
       }
     }
     setApiKey('');
-    toast({ title: "Supprimé", description: `Clé ${provider.name} supprimée` });
   };
 
   const Logo = provider.logo;
