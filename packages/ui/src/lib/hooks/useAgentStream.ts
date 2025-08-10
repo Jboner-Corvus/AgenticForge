@@ -70,9 +70,7 @@ export const useAgentStream = () => {
     setAgentProgress,
     setBrowserStatus,
     setActiveCliJobId,
-    setCanvasContent,
-    setCanvasType,
-    setIsCanvasVisible,
+    addCanvasToHistory,
   } = useStore();
 
   const startAgent = useCallback(async () => {
@@ -288,10 +286,9 @@ export const useAgentStream = () => {
               
               addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas reçu ! Type: ${canvas.contentType}, Taille: ${canvas.content.length}`);
               
-              // Update canvas in store
-              setCanvasContent(canvas.content);
-              setCanvasType(canvas.contentType);
-              setIsCanvasVisible(true);
+              // Add canvas to history instead of just setting content
+              const canvasTitle = `Canvas ${new Date().toLocaleTimeString()}`;
+              addCanvasToHistory(canvasTitle, canvas.content, canvas.contentType);
               
               console.log('🎨 [useAgentStream] Canvas content updated in store!');
               addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas mis à jour dans le store et rendu visible!`);
@@ -358,6 +355,13 @@ export const useAgentStream = () => {
             break;
           case 'agent_canvas_output':
             if (data.content && data.contentType) {
+              // Add canvas to history instead of just setting content
+              const canvasTitle = `Canvas ${new Date().toLocaleTimeString()}`;
+              addCanvasToHistory(canvasTitle, data.content, data.contentType);
+              
+              console.log('🎨 [useAgentStream] Canvas updated from agent_canvas_output!');
+              addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas mis à jour! Type: ${data.contentType}, Taille: ${data.content.length}`);
+              
               const canvasOutputMessage: NewChatMessage = {
                 type: 'agent_canvas_output',
                 content: data.content,
@@ -441,6 +445,13 @@ export const useAgentStream = () => {
             console.warn('⚠️ [useAgentStream] EventSource closed unexpectedly!');
             addDebugLog(`[${new Date().toLocaleTimeString()}] [WARNING] ⚠️ EventSource fermé de manière inattendue !`);
             clearInterval(monitorInterval);
+            
+            // Attempt to reconnect if we're still processing
+            if (useStore.getState().isProcessing) {
+              console.log('🔄 [useAgentStream] Attempting to reconnect...');
+              addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🔄 Tentative de reconnexion...`);
+              setTimeout(() => startAgent(), 3000);
+            }
           }
         } else {
           console.warn('⚠️ [useAgentStream] EventSource reference lost!');
@@ -460,6 +471,7 @@ export const useAgentStream = () => {
       handleError(error instanceof Error ? error : new Error(String(error)));
     }
   }, [
+    addCanvasToHistory,
     authToken,
     sessionId,
     addMessage,
@@ -472,9 +484,6 @@ export const useAgentStream = () => {
     setAgentProgress,
     setBrowserStatus,
     setActiveCliJobId,
-    setCanvasContent,
-    setCanvasType,
-    setIsCanvasVisible, // Rétabli car utilisé dans startAgent
   ]);
 
   const interruptAgent = useCallback(async () => {

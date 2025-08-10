@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Data Visualization</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.8;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 2rem 0;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        button {
+            background: linear-gradient(45deg, #00c6ff, #0072ff);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 198, 255, 0.4);
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin: 2rem 0;
+        }
+        .stat-card {
+            background: rgba(0, 200, 255, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 0.5rem;
+            min-width: 150px;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00ffff;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Data Visualization</h1>
+        <p class="subtitle">Dynamic chart with real-time updates</p>
+        
+        <div class="card">
+            <h2>Sales Data Dashboard</h2>
+            <div class="chart-container">
+                <canvas id="salesChart"></canvas>
+            </div>
+            
+            <div class="controls">
+                <button onclick="updateData()">Update Data</button>
+                <button onclick="addDataset()">Add Dataset</button>
+                <button onclick="removeDataset()">Remove Dataset</button>
+                <button onclick="toggleType()">Toggle Chart Type</button>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalSales">0</div>
+                <div class="stat-label">Total Sales</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgGrowth">0%</div>
+                <div class="stat-label">Avg Growth</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="activeUsers">0</div>
+                <div class="stat-label">Active Users</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initial data
+        const initialData = {
+            labels: ['January', 'February', 'March', 'April', 'May', 'June'],
+            datasets: [{
+                label: 'Sales 2023',
+                data: [65, 59, 80, 81, 56, 55],
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
+            }]
+        };
+
+        // Chart configuration
+        const config = {
+            type: 'line',
+            data: initialData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    }
+                }
+            }
+        };
+
+        // Create chart
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        const salesChart = new Chart(ctx, config);
+
+        // Update statistics
+        function updateStats() {
+            const totalSales = salesChart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+            const avgGrowth = Math.round(Math.random() * 20);
+            const activeUsers = Math.floor(Math.random() * 1000) + 500;
+            
+            document.getElementById('totalSales').textContent = totalSales;
+            document.getElementById('avgGrowth').textContent = avgGrowth + '%';
+            document.getElementById('activeUsers').textContent = activeUsers;
+        }
+
+        // Update data
+        function updateData() {
+            salesChart.data.datasets.forEach(dataset => {
+                dataset.data = dataset.data.map(() => Math.floor(Math.random() * 100));
+            });
+            salesChart.update();
+            updateStats();
+        }
+
+        // Add dataset
+        function addDataset() {
+            const newDataset = {
+                label: 'Sales 2024',
+                data: Array.from({length: 6}, () => Math.floor(Math.random() * 100)),
+                borderColor: `rgb(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)})`,
+                backgroundColor: `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.2)`,
+                tension: 0.1
+            };
+            salesChart.data.datasets.push(newDataset);
+            salesChart.update();
+        }
+
+        // Remove dataset
+        function removeDataset() {
+            if (salesChart.data.datasets.length > 1) {
+                salesChart.data.datasets.pop();
+                salesChart.update();
+            }
+        }
+
+        // Toggle chart type
+        function toggleType() {
+            const types = ['line', 'bar', 'radar'];
+            const currentIndex = types.indexOf(salesChart.config.type);
+            const nextIndex = (currentIndex + 1) % types.length;
+            salesChart.config.type = types[nextIndex];
+            salesChart.update();
+        }
+
+        // Initialize stats
+        updateStats();
+
+        // Auto-update every 10 seconds
+        setInterval(updateData, 10000);
+    </script>
+</body>
+</html>

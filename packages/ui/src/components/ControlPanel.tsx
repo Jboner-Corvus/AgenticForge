@@ -13,6 +13,7 @@ import { useDraggableSidebar } from '../lib/hooks/useDraggablePane';
 import { memo, useCallback, useState } from 'react';
 import { useStore } from '../lib/store';
 import { LoadingSpinner } from './LoadingSpinner';
+import TestCanvasDisplay from './TestCanvasDisplay';
 
 
 export const ControlPanel = memo(() => {
@@ -310,6 +311,16 @@ export const ControlPanel = memo(() => {
           <Button variant="destructive" onClick={handleConfirmDeleteSession}>{translations.delete}</Button>
         </div>
       </Modal>
+      
+      {/* Test Canvas Display Component */}
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>Canvas Test</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TestCanvasDisplay />
+        </CardContent>
+      </Card>
     </>
   );
 });

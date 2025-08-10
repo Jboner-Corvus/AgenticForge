@@ -20,6 +20,7 @@ import { readFileTool } from './readFile.tool.js';
 vi.mock('fs', () => ({
   promises: {
     readFile: vi.fn(),
+    stat: vi.fn().mockResolvedValue({ size: 100 }), // Mock stat to return a fake file size
   },
 }));
 

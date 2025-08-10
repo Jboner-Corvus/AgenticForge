@@ -70,6 +70,18 @@ export interface AppState {
   canvasType: 'html' | 'markdown' | 'url' | 'text';
   isCanvasVisible: boolean;
   isCanvasPinned: boolean;
+  isCanvasFullscreen: boolean;
+  canvasWidth: number;
+  
+  // Canvas history for navigation
+  canvasHistory: Array<{
+    id: string;
+    title: string;
+    content: string;
+    type: 'html' | 'markdown' | 'url' | 'text';
+    timestamp: number;
+  }>;
+  currentCanvasIndex: number;
   isControlPanelVisible: boolean;
   isSettingsModalOpen: boolean;
   isDarkMode: boolean;
@@ -147,11 +159,18 @@ export interface AppState {
   setCanvasType: (type: 'html' | 'markdown' | 'url' | 'text') => void;
   setIsCanvasVisible: (isVisible: boolean) => void;
   setCanvasPinned: (isPinned: boolean) => void;
+  setCanvasFullscreen: (isFullscreen: boolean) => void;
+  setCanvasWidth: (width: number) => void;
   setIsControlPanelVisible: (isVisible: boolean) => void;
   setIsSettingsModalOpen: (isOpen: boolean) => void;
   toggleDarkMode: () => void;
   toggleIsCanvasVisible: () => void;
   clearCanvas: () => void;
+  resetCanvas: () => void;
+  addCanvasToHistory: (title: string, content: string, type: 'html' | 'markdown' | 'url' | 'text') => void;
+  navigateToCanvas: (index: number) => void;
+  removeCanvasFromHistory: (index: number) => void;
+  clearCanvasHistory: () => void;
   currentPage: 'chat' | 'leaderboard' | 'llm-api-keys' | 'oauth';
   setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys' | 'oauth') => void;
 
@@ -250,6 +269,10 @@ export const useStore = create<AppState>((set, get) => ({
   canvasType: 'text',
   isCanvasVisible: false,
   isCanvasPinned: false,
+  isCanvasFullscreen: false,
+  canvasWidth: 500,
+  canvasHistory: [],
+  currentCanvasIndex: -1,
   isControlPanelVisible: false,
   isSettingsModalOpen: false,
   isDarkMode: false,
@@ -324,10 +347,21 @@ export const useStore = create<AppState>((set, get) => ({
   setActiveSessionId: (id) => set({ activeSessionId: id }),
 
   // Canvas setters
-  setCanvasContent: (content) => set({ canvasContent: content }),
-  setCanvasType: (type) => set({ canvasType: type }),
-  setIsCanvasVisible: (isVisible: boolean) => set({ isCanvasVisible: isVisible }),
+  setCanvasContent: (content) => {
+    console.log('🎨 [Store] setCanvasContent appelé avec:', content.length, 'caractères');
+    set({ canvasContent: content });
+  },
+  setCanvasType: (type) => {
+    console.log('🎨 [Store] setCanvasType appelé avec:', type);
+    set({ canvasType: type });
+  },
+  setIsCanvasVisible: (isVisible: boolean) => {
+    console.log('🎨 [Store] setIsCanvasVisible appelé avec:', isVisible);
+    set({ isCanvasVisible: isVisible });
+  },
   setCanvasPinned: (isPinned: boolean) => set({ isCanvasPinned: isPinned }),
+  setCanvasFullscreen: (isFullscreen: boolean) => set({ isCanvasFullscreen: isFullscreen }),
+  setCanvasWidth: (width: number) => set({ canvasWidth: width }),
   setIsControlPanelVisible: (isVisible: boolean) => set({ isControlPanelVisible: isVisible }),
   setIsSettingsModalOpen: (isOpen: boolean) => set({ isSettingsModalOpen: isOpen }),
   toggleDarkMode: () => set((state) => {
@@ -411,10 +445,119 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  clearCanvas: () => set((state) => ({ 
-  canvasContent: '', 
-  isCanvasVisible: state.isCanvasPinned ? true : false 
-})),
+  clearCanvas: () => {
+    console.log('🎨 [Store] clearCanvas appelé');
+    set((state) => ({ 
+      canvasContent: '', 
+      canvasType: 'text',
+      isCanvasVisible: state.isCanvasPinned ? true : false,
+      isCanvasFullscreen: false
+    }));
+  },
+  resetCanvas: () => {
+    console.log('🎨 [Store] resetCanvas appelé - réinitialisation complète');
+    set({ 
+      canvasContent: '', 
+      canvasType: 'text',
+      isCanvasVisible: false,
+      isCanvasPinned: false,
+      isCanvasFullscreen: false,
+      canvasWidth: 500,
+      canvasHistory: [],
+      currentCanvasIndex: -1
+    });
+  },
+  
+  addCanvasToHistory: (title: string, content: string, type: 'html' | 'markdown' | 'url' | 'text') => {
+    console.log('🎨 [Store] addCanvasToHistory appelé avec:', title);
+    set((state) => {
+      const newCanvas = {
+        id: generateUUID(),
+        title,
+        content,
+        type,
+        timestamp: Date.now()
+      };
+      
+      const newHistory = [...state.canvasHistory, newCanvas];
+      const newIndex = newHistory.length - 1;
+      
+      // Ajuster la largeur du canvas si nécessaire
+      const currentCanvasWidth = state.canvasWidth;
+      const maxCanvasWidth = Math.min(800, window.innerWidth * 0.6);
+      const adjustedCanvasWidth = Math.min(currentCanvasWidth, maxCanvasWidth);
+      
+      return {
+        canvasHistory: newHistory,
+        currentCanvasIndex: newIndex,
+        canvasContent: content,
+        canvasType: type,
+        isCanvasVisible: true,
+        canvasWidth: adjustedCanvasWidth
+      };
+    });
+  },
+  
+  navigateToCanvas: (index: number) => {
+    console.log('🎨 [Store] navigateToCanvas appelé avec index:', index);
+    set((state) => {
+      const canvas = state.canvasHistory[index];
+      if (canvas) {
+        return {
+          currentCanvasIndex: index,
+          canvasContent: canvas.content,
+          canvasType: canvas.type
+        };
+      }
+      return state;
+    });
+  },
+  
+  removeCanvasFromHistory: (index: number) => {
+    console.log('🎨 [Store] removeCanvasFromHistory appelé avec index:', index);
+    set((state) => {
+      const newHistory = state.canvasHistory.filter((_, i) => i !== index);
+      let newIndex = state.currentCanvasIndex;
+      
+      // Ajuster l'index si nécessaire
+      if (index === state.currentCanvasIndex) {
+        // Si on supprime l'élément actuel, aller au précédent ou suivant
+        newIndex = Math.max(0, Math.min(index - 1, newHistory.length - 1));
+      } else if (index < state.currentCanvasIndex) {
+        // Si on supprime un élément avant l'actuel, décrémenter l'index
+        newIndex = state.currentCanvasIndex - 1;
+      }
+      
+      // Si plus d'historique, vider le canvas
+      if (newHistory.length === 0) {
+        return {
+          canvasHistory: [],
+          currentCanvasIndex: -1,
+          canvasContent: '',
+          canvasType: 'text'
+        };
+      }
+      
+      const currentCanvas = newHistory[newIndex];
+      return {
+        canvasHistory: newHistory,
+        currentCanvasIndex: newIndex,
+        canvasContent: currentCanvas?.content || '',
+        canvasType: currentCanvas?.type || 'text'
+      };
+    });
+  },
+  
+  clearCanvasHistory: () => {
+    console.log('🎨 [Store] clearCanvasHistory appelé');
+    set({ 
+      canvasHistory: [],
+      currentCanvasIndex: -1,
+      canvasContent: '',
+      canvasType: 'text',
+      isCanvasFullscreen: false
+    });
+  },
 
   // Caching actions
   setCache: (key: string, data: unknown) => set((state) => ({

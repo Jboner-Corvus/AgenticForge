@@ -62,6 +62,8 @@ For each test in the list, follow these 6 steps:
 -   [x] 37. Convertisseur Markdown vers HTML (Complété le 2025-08-03)
 -   [x] 38. Créer un outil pour interagir avec une API publique (Complété le 2025-08-03)
 -   [x] 39. Générer et exécuter des tests unitaires pour un script (Complété le 2025-08-03)
+-   [ ] 40.1. Peu tu faire afficher un fichier md dans le canvas
+
 -   [ ] 40. Refactoriser un script pour la clarté et l'efficacité
 -   [ ] 41. Conteneuriser l'API Express/Node avec un Dockerfile
 -   [ ] 42. Créer une base de données SQLite et l'intégrer à un script
@@ -77,6 +79,9 @@ For each test in the list, follow these 6 steps:
 -   [ ] 52. Développer un leger antivirus pour le systeme
 -   [ ] 53. Développer un antyspyware pour trouver des malwares
 -   [ ] 54. Fait moi un site internet sur la cosmologie host la node et affiche le site dans le canvas
-
-
-
+-   [ ] 56. Fait moi le jeux duke nukem2 et affiche dans le canvas 
+-   [ ] 57.
+-   [ ] 58.
+-   [ ] 59.
+-   [ ] 60.
+-   [ ] 61.

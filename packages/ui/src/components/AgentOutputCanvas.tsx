@@ -1,16 +1,51 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, Variants } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { X, Bot, Pin, PinOff } from 'lucide-react';
+import { 
+  X, Bot, Pin, PinOff, RefreshCw, ChevronDown, Trash2, History, 
+  Maximize2, Minimize2, Copy, Download 
+} from 'lucide-react';
 import { Button } from './ui/button';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
+} from './ui/dropdown-menu';
 import { useStore } from '../lib/store';
 import { useLanguage } from '../lib/contexts/LanguageContext';
+import { useToast } from '../lib/hooks/useToast';
 
 const AgentOutputCanvas: React.FC = () => {
   const { translations } = useLanguage();
   const clearCanvas = useStore((state) => state.clearCanvas);
-  const { canvasContent, canvasType, isCanvasPinned } = useStore();
+  const navigateToCanvas = useStore((state) => state.navigateToCanvas);
+  const removeCanvasFromHistory = useStore((state) => state.removeCanvasFromHistory);
+  const clearCanvasHistory = useStore((state) => state.clearCanvasHistory);
+  const { 
+    canvasContent, 
+    canvasType, 
+    isCanvasPinned, 
+    canvasHistory, 
+    currentCanvasIndex,
+    isCanvasFullscreen
+  } = useStore();
+  const [iframeKey, setIframeKey] = useState(0);
+  const [hasIframeError, setHasIframeError] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  
+  const { toast } = useToast();
+  
+  console.log('🎨 [AgentOutputCanvas] Render avec:', { canvasContent: canvasContent?.length || 0, canvasType, isCanvasPinned });
+  
+  // Réinitialiser l'état de l'iframe quand le contenu change
+  useEffect(() => {
+    setHasIframeError(false);
+    setIframeKey(prev => prev + 1); // Force re-render iframe
+  }, [canvasContent, canvasType]);
 
   const canvasVariants: Variants = {
     hidden: { 
@@ -51,8 +86,50 @@ const AgentOutputCanvas: React.FC = () => {
     useStore.getState().setCanvasPinned(!isCanvasPinned);
   };
 
+  const toggleFullscreen = () => {
+    useStore.getState().setCanvasFullscreen(!isCanvasFullscreen);
+  };
+
+  const refreshIframe = () => {
+    console.log('🎨 [AgentOutputCanvas] Refresh iframe demandé');
+    setIframeKey(prev => prev + 1);
+    setHasIframeError(false);
+  };
+
+  const copyContent = () => {
+    if (canvasContent) {
+      navigator.clipboard.writeText(canvasContent);
+      toast({
+        title: "Contenu copié",
+        description: "Le contenu du canvas a été copié dans le presse-papiers"
+      });
+    }
+  };
+
+  const downloadContent = () => {
+    if (canvasContent) {
+      const blob = new Blob([canvasContent], { 
+        type: canvasType === 'html' ? 'text/html' : 
+              canvasType === 'markdown' ? 'text/markdown' : 
+              canvasType === 'url' ? 'text/plain' : 'text/plain' 
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `canvas-content.${canvasType === 'html' ? 'html' : 
+                                 canvasType === 'markdown' ? 'md' : 
+                                 canvasType === 'url' ? 'txt' : 'txt'}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
+
   const renderContent = () => {
+    console.log('🎨 [AgentOutputCanvas] renderContent appelé - canvasContent:', !!canvasContent, 'longueur:', canvasContent?.length || 0);
     if (!canvasContent) {
+      console.log('🎨 [AgentOutputCanvas] Pas de contenu - affichage du placeholder');
       return (
         <motion.div 
           className="flex flex-col items-center justify-center h-full text-muted-foreground"
@@ -65,21 +142,50 @@ const AgentOutputCanvas: React.FC = () => {
     }
     switch (canvasType) {
       case 'html':
+        console.log('🎨 [AgentOutputCanvas] Rendu HTML iframe avec contenu:', canvasContent?.substring(0, 100) + '...');
+        
+        if (hasIframeError) {
+          return (
+            <motion.div 
+              className="p-4 text-center"
+              variants={contentVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              <p className="text-red-500 mb-4">Erreur de chargement de l'iframe</p>
+              <Button onClick={refreshIframe} variant="outline" size="sm">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Recharger
+              </Button>
+            </motion.div>
+          );
+        }
+        
         return (
           <motion.iframe 
+            key={iframeKey} // Force re-render
+            ref={iframeRef}
             srcDoc={canvasContent} 
             title={translations.agentHtmlOutput} 
             className="w-full h-full border-0 rounded-lg"
-            sandbox="allow-scripts"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
             variants={contentVariants}
             initial="hidden"
             animate="visible"
+            onLoad={() => {
+              console.log('🎨 [AgentOutputCanvas] Iframe chargée!');
+              setHasIframeError(false);
+            }}
+            onError={(e) => {
+              console.error('🎨 [AgentOutputCanvas] Erreur iframe:', e);
+              setHasIframeError(true);
+            }}
           />
         );
       case 'markdown':
         return (
           <motion.div 
-            className="p-4 prose dark:prose-invert max-w-none"
+            className="p-4 prose dark:prose-invert max-w-none h-full overflow-y-auto"
             variants={contentVariants}
             initial="hidden"
             animate="visible"
@@ -120,42 +226,152 @@ const AgentOutputCanvas: React.FC = () => {
       initial="hidden"
       animate="visible"
       exit="exit"
-      className="h-full w-full flex flex-col bg-background/80 backdrop-blur-xl border-l border-cyan-500/30 shadow-2xl shadow-cyan-500/10 rounded-l-2xl overflow-hidden"
+      className={`h-full w-full flex flex-col bg-background/90 backdrop-blur-2xl border-l border-cyan-500/30 shadow-2xl shadow-cyan-500/10 overflow-hidden
+        ${isCanvasFullscreen ? 'fixed inset-0 z-50 rounded-none' : 'rounded-l-2xl'}`}
       style={{
-        boxShadow: '0 0 30px rgba(0, 255, 255, 0.1), inset 0 0 20px rgba(0, 255, 255, 0.05)'
+        boxShadow: '0 0 40px rgba(0, 255, 255, 0.15), inset 0 0 20px rgba(0, 255, 255, 0.05)'
       }}
     >
       <motion.header 
-        className="flex items-center justify-between p-4 flex-shrink-0 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-900/20 to-blue-900/20"
+        className="flex items-center justify-between p-3 flex-shrink-0 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-900/30 to-blue-900/30"
         variants={headerVariants}
       >
-        <motion.h2 
-          className="text-xl font-bold ml-2 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500"
-          variants={headerVariants}
-        >
-          {translations.agentOutputCanvas}
-        </motion.h2>
-        <div className="flex space-x-2">
+        <div className="flex items-center space-x-2">
+          <motion.h2 
+            className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 truncate max-w-xs md:max-w-md"
+            variants={headerVariants}
+          >
+            {translations.agentOutputCanvas}
+          </motion.h2>
+          
+          {canvasHistory.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-900/30 h-8 px-2"
+                >
+                  <History className="h-4 w-4 mr-1" />
+                  {canvasHistory.length > 0 && currentCanvasIndex >= 0 
+                    ? `${currentCanvasIndex + 1}/${canvasHistory.length}`
+                    : '0'
+                  }
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-72">
+                <DropdownMenuLabel className="flex items-center justify-between">
+                  Historique du Canvas
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearCanvasHistory}
+                    className="h-auto p-1 text-red-400 hover:text-red-300"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {canvasHistory.map((canvas, index) => (
+                  <DropdownMenuItem
+                    key={canvas.id}
+                    className={`flex items-center justify-between cursor-pointer ${
+                      index === currentCanvasIndex ? 'bg-cyan-900/20 text-cyan-300' : ''
+                    }`}
+                    onClick={() => navigateToCanvas(index)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">
+                        {canvas.title || `Canvas ${index + 1}`}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {canvas.type} • {new Date(canvas.timestamp).toLocaleTimeString()}
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeCanvasFromHistory(index);
+                      }}
+                      className="h-auto p-1 ml-2 text-red-400 hover:text-red-300"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+        <div className="flex space-x-1">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={copyContent}
+            className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-900/30 h-8 w-8"
+            title="Copier le contenu"
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={downloadContent}
+            className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-900/30 h-8 w-8"
+            title="Télécharger le contenu"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+          
+          {canvasType === 'html' && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={refreshIframe}
+              className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-900/30 h-8 w-8"
+              title="Recharger l'iframe"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          )}
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleFullscreen}
+            className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-900/30 h-8 w-8"
+            title={isCanvasFullscreen ? "Réduire" : "Plein écran"}
+          >
+            {isCanvasFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
+          
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={togglePin}
-            className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-900/30"
+            className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-900/30 h-8 w-8"
+            title={isCanvasPinned ? "Détacher" : "Épingler"}
           >
-            {isCanvasPinned ? <PinOff className="h-5 w-5" /> : <Pin className="h-5 w-5" />}
+            {isCanvasPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
           </Button>
+          
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={clearCanvas}
-            className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-900/30"
+            className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-900/30 h-8 w-8"
+            title="Fermer"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </Button>
         </div>
       </motion.header>
       <motion.div 
-        className="flex-1 overflow-auto p-4 relative"
+        className="flex-1 overflow-auto p-3 relative"
         variants={contentVariants}
       >
         <div className="w-full h-full bg-gradient-to-br from-cyan-900/5 to-blue-900/5 rounded-xl border border-cyan-500/10 shadow-inner">

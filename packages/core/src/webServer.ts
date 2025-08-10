@@ -822,6 +822,51 @@ export async function initializeWebServer(
       },
     );
 
+    // Endpoint pour envoyer du contenu HTML au canvas
+    app.post(
+      '/api/canvas/display',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { jobId, content, contentType = 'html' } = req.body;
+          
+          // Vérifier que les paramètres requis sont présents
+          if (!jobId || !content) {
+            throw new AppError('Les paramètres jobId et content sont requis.', { statusCode: 400 });
+          }
+          
+          // Vérifier que le type de contenu est valide
+          const validContentTypes = ['html', 'markdown', 'text', 'url'];
+          if (!validContentTypes.includes(contentType)) {
+            throw new AppError(`Type de contenu invalide. Types valides: ${validContentTypes.join(', ')}`, { statusCode: 400 });
+          }
+          
+          // Envoyer le contenu au canvas via Redis
+          const channel = `job:${jobId}:events`;
+          const message = JSON.stringify({
+            content,
+            contentType,
+            type: 'agent_canvas_output'
+          });
+          
+          // Publier le message sur le canal Redis
+          await redisClient.publish(channel, message);
+          
+          getLoggerInstance().info(`Contenu envoyé au canvas pour le job ${jobId}`);
+          
+          res.status(200).json({ 
+            success: true, 
+            message: 'Contenu envoyé au canvas avec succès' 
+          });
+        } catch (error) {
+          next(error);
+        }
+      },
+    );
+
     app.use(handleError);
 
     const server = new Server(app);

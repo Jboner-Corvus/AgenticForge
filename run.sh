@@ -171,7 +171,7 @@ start_services() {
     stop_worker
     stop_docker_log_collector
     echo -e "${COLOR_YELLOW}Construction du package 'core'...${NC}"
-    pnpm --filter @agenticforge/core build
+    pnpm --filter @gforge/core build
     echo -e "${COLOR_YELLOW}D\u00e9marrage des services Docker...${NC}"
     docker compose -f "${SCRIPT_DIR}/docker-compose.yml" up -d
     if ! check_redis_availability; then
@@ -292,10 +292,10 @@ rebuild_worker() {
     rm -f "${SCRIPT_DIR}/worker.log"
     stop_worker
     cd "${SCRIPT_DIR}"
-    pnpm --filter @agenticforge/core install
-    pnpm --filter @agenticforge/core build
+    pnpm --filter @gforge/core install
+    pnpm --filter @gforge/core build
     start_worker
-    echo -e "${COLOR_GREEN}✓ Worker local reconstruit et red\u00e9marr\u00e9.${NC}"
+    echo -e "${COLOR_GREEN}✓ Worker local reconstruit et redémarré.${NC}"
 }
 
 rebuild_all() {
@@ -338,9 +338,9 @@ rebuild_all() {
     # Build Core package avec cache forcé
     cd "${SCRIPT_DIR}"
     echo -e "${COLOR_YELLOW}📦 Réinstallation des dépendances Core...${NC}"
-    pnpm --filter @agenticforge/core install --force
+    pnpm --filter @gforge/core install --force
     echo -e "${COLOR_YELLOW}🔨 Reconstruction du package 'core'...${NC}"
-    pnpm --filter @agenticforge/core build
+    pnpm --filter @gforge/core build
     
     # 🐳 REBUILD DOCKER COMPLET
     echo -e "${COLOR_YELLOW}🐳 Reconstruction forcée des images Docker (--no-cache)...${NC}"
@@ -648,7 +648,7 @@ show_menu() {
     clear
     echo -e "${COLOR_ORANGE}"
     echo '    ╔══════════════════════════════════╗'
-    echo '    ║           G - F O R G E          ║'
+    echo '    ║        A G E N T I C F O R G E   ║'
     echo '    ╚══════════════════════════════════╝'
     echo -e "${NC}"
     echo -e "──────────────────────────────────────────"
