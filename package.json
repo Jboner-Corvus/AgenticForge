@@ -1,6 +1,6 @@
 {
   "name": "@jboner-corvus/agenticforge",
-  "version": "1.0.4",
+  "version": "1.0.12",
   "description": "Une plateforme avancée pour la création et la gestion d'agents intelligents.",
   "main": "dist/index.js",
   "files": [
@@ -8,7 +8,11 @@
   ],
   "scripts": {
     "build": "pnpm --recursive run build",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "lint": "pnpm --recursive run lint",
+    "typecheck": "pnpm --recursive run typecheck",
+    "test": "pnpm --recursive run test",
+    "test:unit": "pnpm --recursive run test:unit"
   },
   "repository": {
     "type": "git",
@@ -27,6 +31,15 @@
     "tsup": "^8.5.0"
   },
   "dependencies": {
-    "playwright-core": "^1.54.2"
+    "@eslint/js": "^9.33.0",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "eslint": "^9.33.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-perfectionist": "^4.15.0",
+    "globals": "^16.3.0",
+    "playwright-core": "^1.54.2",
+    "prettier": "^3.6.2",
+    "typescript-eslint": "^8.39.0"
   }
 }

@@ -38,7 +38,8 @@ const PRIORITY_CONFIG = {
 
 export function TodoListPanel() {
   const [todoData, setTodoData] = useState<TodoData | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
+  const isTodoListVisible = useStore((state) => state.isTodoListVisible);
+  const setIsTodoListVisible = useStore((state) => state.setIsTodoListVisible);
   const wsRef = useRef<WebSocket | null>(null);
   const jobId = useStore((state) => state.jobId);
   const isProcessing = useStore((state) => state.isProcessing);
@@ -74,17 +75,17 @@ export function TodoListPanel() {
   }, [jobId, isProcessing]);
 
   const closePanel = () => {
-    setIsVisible(false);
+    setIsTodoListVisible(false);
   };
 
   const toggleMinimize = () => {
-    setIsVisible(!isVisible);
+    setIsTodoListVisible(!isTodoListVisible);
   };
 
-  if (!todoData || !isVisible) {
+  if (!todoData || !isTodoListVisible) {
     return (
       <button
-        onClick={() => setIsVisible(true)}
+        onClick={() => setIsTodoListVisible(true)}
         className="fixed right-4 bottom-24 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full p-3 shadow-lg transition-all duration-300 z-10"
         aria-label="Ouvrir la liste des tâches"
       >

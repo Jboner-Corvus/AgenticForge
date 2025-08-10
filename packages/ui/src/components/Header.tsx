@@ -8,7 +8,7 @@ import { Logo } from './Logo';
 import { ConnectionStatus } from './ConnectionStatus';
 
 // import { Settings, PanelLeft, Sun, Moon, Bell, LayoutDashboard, BarChart, Key, MessageSquare, Bug, Square } from 'lucide-react'; // Supprimé: never used
-import { PanelLeft, Sun, Moon, LayoutDashboard, BarChart, Key, MessageSquare, Bug, Square } from 'lucide-react';
+import { PanelLeft, Sun, Moon, LayoutDashboard, BarChart, Key, MessageSquare, Bug, ListTodo } from 'lucide-react';
 
 interface HeaderProps {
   setIsControlPanelVisible: (visible: boolean) => void;
@@ -24,7 +24,6 @@ interface HeaderProps {
 
 export function Header({
   setIsControlPanelVisible,
-  // setIsSettingsModalOpen, // Supprimé
   isControlPanelVisible,
   isDarkMode,
   toggleDarkMode,
@@ -33,7 +32,12 @@ export function Header({
   isTodoListVisible,
   toggleTodoListVisibility,
 }: HeaderProps) {
-  // const { translations } = useLanguage(); // Supprimé: never used
+  const isCanvasVisible = useStore((state) => state.isCanvasVisible);
+  const setIsCanvasVisible = useStore((state) => state.setIsCanvasVisible);
+
+  const handleToggleCanvas = () => {
+    setIsCanvasVisible(!isCanvasVisible);
+  };
 
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between p-4 bg-gradient-to-r from-background to-secondary/50 border-b border-border shadow-md">
@@ -60,15 +64,14 @@ export function Header({
                 type="button"
                 variant="ghost"
               >
-                <Square size={20} />
+                <ListTodo size={20} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
               <p>{isTodoListVisible ? "Masquer la Liste des Tâches" : "Afficher la Liste des Tâches"}</p>
             </TooltipContent>
           </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -84,13 +87,12 @@ export function Header({
               <p>{isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}</p>
             </TooltipContent>
           </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 aria-label="Toggle Canvas"
-                onClick={() => useStore.getState().setIsCanvasVisible(!useStore.getState().isCanvasVisible)}
+                onClick={handleToggleCanvas}
                 type="button"
                 variant="ghost"
               >
@@ -101,8 +103,7 @@ export function Header({
               <p>Afficher/Masquer le Canevas</p>
             </TooltipContent>
           </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -118,8 +119,7 @@ export function Header({
               <p>Chat</p>
             </TooltipContent>
           </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -135,8 +135,7 @@ export function Header({
               <p>Leaderboard</p>
             </TooltipContent>
           </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -152,8 +151,7 @@ export function Header({
               <p>LLM API Keys</p>
             </TooltipContent>
           </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -171,8 +169,7 @@ export function Header({
               <p>OAuth Management</p>
             </TooltipContent>
           </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

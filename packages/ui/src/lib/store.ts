@@ -699,7 +699,10 @@ export const useStore = create<AppState>((set, get) => ({
   toggleIsCanvasVisible: () => set((state) => ({ isCanvasVisible: !state.isCanvasVisible })),
   currentPage: 'chat',
   setCurrentPage: (page) => set({ currentPage: page }),
-  toast: () => {},
+  toast: (options) => {
+    // This will be overridden by the actual toast implementation
+    console.log('Toast called with options:', options);
+  },
   initializeSessionAndMessages: async () => {
     const { setSessions, setActiveSessionId, setMessages, setSessionId, addDebugLog, updateLeaderboardStats, addLlmApiKey, setActiveLlmApiKey, setIsLoadingLeaderboardStats, setIsLoadingSessions } = get();
 
@@ -718,14 +721,11 @@ export const useStore = create<AppState>((set, get) => ({
     // No explicit loading state for this as it's usually quick and part of init
     try {
       const keys = await getLlmApiKeysApi();
-      for (const llmKey of keys) {
-        if (llmKey.provider && llmKey.key) {
-          await addLlmApiKey(llmKey.provider, llmKey.key, llmKey.baseUrl, llmKey.model);
-        }
-      }
       const validKeys = keys.filter(key => key.provider && key.key);
+      
       if (validKeys.length > 0) {
-        await setActiveLlmApiKey(0);
+        // Set all keys at once instead of one by one to avoid multiple re-renders
+        set({ llmApiKeys: validKeys, activeLlmApiKeyIndex: 0 });
       }
     } catch (error) {
       console.error("Failed to fetch LLM API keys:", error);

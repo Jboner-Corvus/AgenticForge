@@ -88,43 +88,32 @@ export const AppInitializer = () => {
   }, [addDebugLog, setAuthToken, setTokenStatus, fetchAndDisplayToolCount, translations]);
 
   useEffect(() => {
+    let mounted = true;
+    
     const initialize = async () => {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${translations.interfaceInitialized}.`);
-      initializeSession();
-      // Check for GitHub OAuth success redirect
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('github_auth_success') === 'true') {
-        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] GitHub OAuth success detected. Re-initializing auth token.`);
-        initializeAuthToken(); // Re-run to pick up new JWT from cookie
-        urlParams.delete('github_auth_success');
-        window.history.replaceState({}, document.title, `${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`);
-      }
+      if (!mounted) return;
       
-      // Check for Qwen OAuth success redirect
-      if (urlParams.get('qwen_auth_success') === 'true') {
-        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Qwen OAuth success detected. Re-initializing auth token.`);
-        initializeAuthToken(); // Re-run to pick up new JWT from cookie
-        urlParams.delete('qwen_auth_success');
-        window.history.replaceState({}, document.title, `${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`);
-      }
-
-      initializeAuthToken();
-      await checkServerHealth();
-      await useStore.getState().initializeSessionAndMessages();
-      addMessage({ type: 'agent_response', content: translations.agentReady });
-
-      // Apply dark mode based on initial store state
-      const isDarkMode = useStore.getState().isDarkMode;
-      const storedDarkMode = localStorage.getItem('agenticForgeDarkMode');
-      if (storedDarkMode === 'true' && !isDarkMode) {
-        toggleDarkMode();
-      } else if (storedDarkMode === 'false' && isDarkMode) {
-        toggleDarkMode();
+      try {
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${translations.interfaceInitialized}.`);
+        initializeSession();
+        initializeAuthToken();
+        await checkServerHealth();
+        
+        if (!mounted) return;
+        
+        await useStore.getState().initializeSessionAndMessages();
+        addMessage({ type: 'agent_response', content: translations.agentReady });
+      } catch (error) {
+        console.error('Initialization error:', error);
       }
     };
 
     initialize();
-  }, [checkServerHealth, initializeAuthToken, initializeSession, translations.interfaceInitialized, translations.agentReady]);
+    
+    return () => {
+      mounted = false;
+    };
+  }, []); // No dependencies to prevent loops
 
   return null; // This component doesn't render anything visible
 };

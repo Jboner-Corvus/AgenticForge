@@ -13,7 +13,9 @@ export function ChatMessagesContainer() {
   const messages = useStore((state) => state.messages as ChatMessage[]);
   const debugLog = useStore((state) => state.debugLog);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { authToken, llmApiKeys, setCurrentPage } = useStore();
+  const authToken = useStore((state) => state.authToken);
+  const llmApiKeys = useStore((state) => state.llmApiKeys);
+  const setCurrentPage = useStore((state) => state.setCurrentPage);
   const { translations } = useLanguage();
 
   const isConfigMissing = !authToken || llmApiKeys.length === 0;
@@ -30,14 +32,8 @@ export function ChatMessagesContainer() {
       ref={containerRef}
       className="flex-1 overflow-y-auto space-y-4 p-4 bg-gradient-to-b from-background to-secondary/10"
     >
-      <AnimatePresence>
         {isConfigMissing && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            layout
-          >
+          <div>
             <Alert className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 text-blue-900 dark:from-blue-900/20 dark:to-indigo-900/20 dark:border-blue-600 dark:text-blue-200 shadow-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Rocket className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -67,22 +63,13 @@ export function ChatMessagesContainer() {
                 </div>
               </AlertDescription>
             </Alert>
-          </motion.div>
+          </div>
         )}
         {messages.map((msg: ChatMessage) => (
-          <motion.div
-            key={msg.id}
-            layout
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            whileHover={{ y: -2 }}
-          >
+          <div key={msg.id}>
             <Message message={msg} />
-          </motion.div>
+          </div>
         ))}
-      </AnimatePresence>
     </div>
   );
 }

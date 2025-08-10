@@ -9,7 +9,8 @@ export function HeaderContainer() {
   const toggleDarkMode = useStore((state) => state.toggleDarkMode);
   const setCurrentPage = useStore((state) => state.setCurrentPage);
   const toggleDebugLogVisibility = useStore((state) => state.toggleDebugLogVisibility);
-  const [isTodoListVisible, setIsTodoListVisible] = useStore((state) => [state.isTodoListVisible, state.setIsTodoListVisible]);
+  const isTodoListVisible = useStore((state) => state.isTodoListVisible);
+  const setIsTodoListVisible = useStore((state) => state.setIsTodoListVisible);
   
   const toggleTodoListVisibility = () => {
     setIsTodoListVisible(!isTodoListVisible);

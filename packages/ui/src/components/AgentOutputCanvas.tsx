@@ -45,7 +45,7 @@ const AgentOutputCanvas: React.FC = () => {
   useEffect(() => {
     setHasIframeError(false);
     setIframeKey(prev => prev + 1); // Force re-render iframe
-  }, []);
+  }, [canvasContent]);
 
   const canvasVariants: Variants = {
     hidden: { 

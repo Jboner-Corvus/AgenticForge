@@ -42,15 +42,19 @@ export default function App() {
   // Hook pour ajuster la largeur du canvas lors du redimensionnement de la fenêtre
   useEffect(() => {
     const handleResize = () => {
-      const maxCanvasWidth = Math.min(800, window.innerWidth * 0.6);
-      const currentCanvasWidth = useStore.getState().canvasWidth;
-      if (currentCanvasWidth > maxCanvasWidth) {
-        useStore.getState().setCanvasWidth(maxCanvasWidth);
+      if (typeof window !== 'undefined') {
+        const maxCanvasWidth = Math.min(800, window.innerWidth * 0.6);
+        const currentCanvasWidth = useStore.getState().canvasWidth;
+        if (currentCanvasWidth > maxCanvasWidth) {
+          useStore.getState().setCanvasWidth(maxCanvasWidth);
+        }
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
   }, []); // Pas de dépendances pour éviter les boucles
 
   const renderMainContent = () => {
@@ -116,16 +120,13 @@ export default function App() {
               )}
 
               {/* Section du Canevas (apparaît et disparaît) */}
-              {(() => {
-                console.log('🎨 [App] Canvas visibility check:', { isCanvasVisible, isCanvasPinned, currentPage, isCanvasFullscreen });
-                return (isCanvasVisible || isCanvasPinned) && currentPage === 'chat' && !isCanvasFullscreen;
-              })() && (
+              {(isCanvasVisible || isCanvasPinned) && currentPage === 'chat' && !isCanvasFullscreen && (
                 <div
                   className="flex-shrink-0 h-full relative border-l-2 border-cyan-500/20"
                   style={{ 
                     width: canvasWidth, 
                     minWidth: '300px', 
-                    maxWidth: `${Math.min(800, window.innerWidth * 0.6)}px`
+                    maxWidth: `${Math.min(800, typeof window !== 'undefined' ? window.innerWidth * 0.6 : 600)}px`
                   }}
                 >
                   <AnimatePresence>
@@ -138,13 +139,14 @@ export default function App() {
                     role={translations.separator}
                     aria-valuenow={canvasWidth}
                     aria-valuemin={300}
-                    aria-valuemax={window.innerWidth * 0.6}
+                    aria-valuemax={typeof window !== 'undefined' ? window.innerWidth * 0.6 : 600}
                     aria-controls="agent-output-canvas"
                     tabIndex={0}
                     onMouseDown={handleMouseDownCanvas}
                     onKeyDown={(e) => {
                       if (e.key === 'ArrowLeft') {
-                        const newWidth = Math.min(window.innerWidth * 0.6, canvasWidth + 10);
+                        const maxCanvasWidth = typeof window !== 'undefined' ? window.innerWidth * 0.6 : 600;
+                        const newWidth = Math.min(maxCanvasWidth, canvasWidth + 10);
                         setCanvasWidth(newWidth);
                       } else if (e.key === 'ArrowRight') {
                         const newWidth = Math.max(300, canvasWidth - 10);
