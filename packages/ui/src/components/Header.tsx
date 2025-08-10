@@ -1,53 +1,35 @@
-
-import { useState, useCallback } from 'react';
 import { useStore } from '../lib/store';
 
-import { useLanguage } from '../lib/hooks/useLanguageHook';
+// import { useLanguage } from '../lib/contexts/LanguageContext'; // Supprimé: never used
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
-import { Logo } from './Logo';
+// import { Logo } from './Logo'; // Supprimé: never used
+import { ConnectionStatus } from './ConnectionStatus';
 
-import { Settings, PanelLeft, Sun, Moon, Bell, Maximize, Minimize, LayoutDashboard, Contrast, BarChart, Key, MessageSquare, User } from 'lucide-react';
+// import { Settings, PanelLeft, Sun, Moon, Bell, LayoutDashboard, BarChart, Key, MessageSquare, Bug } from 'lucide-react'; // Supprimé: never used
+import { PanelLeft, Sun, Moon, LayoutDashboard, BarChart, Key, MessageSquare, Bug } from 'lucide-react';
 
 interface HeaderProps {
   setIsControlPanelVisible: (visible: boolean) => void;
-  setIsSettingsModalOpen: (open: boolean) => void;
+  // setIsSettingsModalOpen: (open: boolean) => void; // Supprimé: never used
   isControlPanelVisible: boolean;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
-  isHighContrastMode: boolean;
-  toggleHighContrastMode: () => void;
-  setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys') => void;
-  isAuthenticated: boolean;
-  setIsLoginModalOpen: (open: boolean) => void;
+  setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys' | 'oauth') => void;
+  toggleDebugLogVisibility: () => void;
 }
 
 export function Header({
   setIsControlPanelVisible,
-  setIsSettingsModalOpen,
+  // setIsSettingsModalOpen, // Supprimé
   isControlPanelVisible,
   isDarkMode,
   toggleDarkMode,
-  toggleHighContrastMode,
   setCurrentPage,
-  isAuthenticated,
-  setIsLoginModalOpen,
+  toggleDebugLogVisibility,
 }: HeaderProps) {
-  const { translations } = useLanguage();
-  const [isFullScreen, setIsFullScreen] = useState(false);
-
-  const handleFullscreenToggle = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullScreen(true);
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullScreen(false);
-      }
-    }
-  }, []);
+  // const { translations } = useLanguage(); // Supprimé: never used
 
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between p-4 bg-gradient-to-r from-background to-secondary/50 border-b border-border shadow-md">
@@ -60,29 +42,10 @@ export function Header({
         >
           <PanelLeft />
         </Button>
-        <Logo />
+        <ConnectionStatus />
       </div>
 
       <div className="flex items-center space-x-2">
-        {!isAuthenticated && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  aria-label={translations.login}
-                  onClick={() => setIsLoginModalOpen(true)}
-                  type="button"
-                  variant="ghost"
-                >
-                  <User size={20} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{translations.login}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -114,40 +77,6 @@ export function Header({
             </TooltipTrigger>
             <TooltipContent>
               <p>Afficher/Masquer le Canevas</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="Toggle Fullscreen"
-                onClick={handleFullscreenToggle}
-                type="button"
-                variant="ghost"
-              >
-                {isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Toggle Fullscreen</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="Toggle High Contrast Mode"
-                onClick={toggleHighContrastMode}
-                type="button"
-                variant="ghost"
-              >
-                <Contrast size={20} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Toggle High Contrast Mode</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -206,16 +135,18 @@ export function Header({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-label="Notifications"
-                onClick={() => {}}
+                aria-label="OAuth Management"
+                onClick={() => setCurrentPage('oauth')}
                 type="button"
                 variant="ghost"
               >
-                <Bell size={20} />
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{translations.notifications}</p>
+              <p>OAuth Management</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -223,21 +154,20 @@ export function Header({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-label="Settings"
-                onClick={() => setIsSettingsModalOpen(true)}
+                aria-label="Debug Log"
+                onClick={toggleDebugLogVisibility}
                 type="button"
                 variant="ghost"
               >
-                <Settings size={20} />
+                <Bug size={20} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{translations.settings}</p>
+              <p>Debug Log</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        
       </div>
     </header>
   );
-};
+}

@@ -121,6 +121,12 @@ const zodToJsonSchema = (_schema: any): any => {
         zodToJsonSchema(option),
       );
       break;
+    case 'ZodEffects': {
+      // Un ZodEffects enveloppe un autre schéma (ex: z.string().refine(...)).
+      // On le déballe pour accéder au schéma sous-jacent.
+      // Note: Cela ignore les effets (refine, transform) mais permet la conversion.
+      return zodToJsonSchema(_schema._def.schema);
+    }
     default:
       throw new Error(
         `Unsupported Zod type for JSON schema conversion: ${_schema._def.typeName}`,

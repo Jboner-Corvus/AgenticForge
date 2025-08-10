@@ -95,6 +95,16 @@ module.exports = {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
+      boxShadow: {
+        subtle: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+        strong: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+      },
+      spacing: {
+        subtle: '0.25rem', // 4px
+        compact: '0.5rem', // 8px
+        normal: '1rem', // 16px
+        spacious: '1.5rem', // 24px
+      },
     },
   },
 }

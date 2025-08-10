@@ -48,6 +48,7 @@
     --border: 215 27.9% 16.9%;
     --input: 215 27.9% 16.9%;
     --ring: 216 12.2% 83.9%;
+    --radius-xl: 1.5rem;
   }
 
   .high-contrast {
@@ -74,7 +75,11 @@
 }
 
 body {
-  @apply bg-background text-foreground;
+  @apply bg-background text-foreground font-sans;
+}
+
+* {
+  transition: all 0.2s ease-in-out;
 }
 
 .typing-indicator span {

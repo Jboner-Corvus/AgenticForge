@@ -26,6 +26,15 @@ FROM node:20-alpine
 
 WORKDIR /usr/src/app
 
+# Install Chromium for Puppeteer
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
 # Copier uniquement les dépendances de production et les fichiers nécessaires
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/packages/core/dist ./packages/core/dist
@@ -35,15 +44,15 @@ COPY package.json ./
 COPY .env ./
 
 # Install curl for healthcheck
-RUN apk add --no-cache curl bash
-
-# Explicitly link /bin/sh to /bin/bash
-RUN ln -sf /bin/bash /bin/sh
+RUN apk add --no-cache curl
 
 # Supprimer pnpm si non nécessaire à l'exécution
 # RUN npm uninstall -g pnpm # Uncomment if pnpm is not needed at runtime
 
 RUN mkdir -p workspace
+
+# Set environment variables for Puppeteer
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 EXPOSE 8080 3000
 

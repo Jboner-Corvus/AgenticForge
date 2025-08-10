@@ -38,7 +38,7 @@ const configSchema = z.object({
   NODE_ENV: z.string().default('development'),
   PORT: z.coerce.number().default(3001),
 
-  POSTGRES_DB: z.string().default('agenticforge'),
+  POSTGRES_DB: z.string().default('gforge'),
   POSTGRES_HOST: z.string().default('postgres'),
   POSTGRES_PASSWORD: z.string().optional(),
   POSTGRES_PORT: z.coerce.number().default(5432),
@@ -56,6 +56,8 @@ const configSchema = z.object({
   TAVILY_API_KEY: z.string().optional(),
   WEBHOOK_SECRET: z.string().optional(),
   WORKER_CONCURRENCY: z.coerce.number().default(5),
+  WORKER_MAX_STALLED_COUNT: z.coerce.number().default(3),
+  WORKER_STALLED_INTERVAL_MS: z.coerce.number().default(30000), // 30 seconds
   WORKER_WORKSPACE_PATH: z.string().optional(),
   // Standardized workspace path
   WORKSPACE_PATH: z.string().default('/home/demon/agentforge/workspace'),

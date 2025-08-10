@@ -10,6 +10,7 @@ export interface LlmApiKey {
   apiKey: string;
   apiModel: string;
   apiProvider: string;
+  baseUrl?: string;
   errorCount: number;
   isDisabledUntil?: number;
   isPermanentlyDisabled?: boolean;
@@ -25,11 +26,15 @@ export class LlmKeyManager {
     apiProvider: string,
     apiKey: string,
     apiModel: string,
+    baseUrl?: string,
   ): Promise<void> {
     const keys = await this.getKeys();
-    keys.push({ apiKey, apiModel, apiProvider, errorCount: 0 });
+    keys.push({ apiKey, apiModel, apiProvider, baseUrl, errorCount: 0 });
     await this.saveKeys(keys);
-    getLogger().info({ apiKey, apiModel, apiProvider }, 'LLM API key added.');
+    getLogger().info(
+      { apiKey, apiModel, apiProvider, baseUrl },
+      'LLM API key added.',
+    );
   }
 
   public static async getKeysForApi(): Promise<LlmApiKey[]> {
@@ -65,7 +70,11 @@ export class LlmKeyManager {
     await this.saveKeys(keys); // Save all keys to persist lastUsed update
 
     getLogger().debug(
-      { provider: nextKey.apiProvider },
+      {
+        baseUrl: nextKey.baseUrl,
+        model: nextKey.apiModel,
+        provider: nextKey.apiProvider,
+      },
       'Returning next available LLM API key.',
     );
     return nextKey;

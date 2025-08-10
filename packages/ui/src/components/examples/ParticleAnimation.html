@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle Animation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #canvas-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        #animationCanvas {
+            display: block;
+        }
+        #title {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 2.5rem;
+            text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 1rem;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        .particle-count {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 1rem;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="animationCanvas"></canvas>
+        <div id="title">🌌 Particle Animation 🌌</div>
+        <div id="controls">Move your mouse to interact with particles</div>
+        <div class="particle-count">Particles: <span id="particleCount">0</span></div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('animationCanvas');
+        const ctx = canvas.getContext('2d');
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+
+        // Particle system
+        const particles = [];
+        const particleCount = 1000;
+        let mouseX = width / 2;
+        let mouseY = height / 2;
+        let mouseRadius = 100;
+
+        // Resize handler
+        window.addEventListener('resize', function() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        });
+
+        // Mouse move handler
+        window.addEventListener('mousemove', function(event) {
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+        });
+
+        // Particle class
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = Math.random() * 3 - 1.5;
+                this.speedY = Math.random() * 3 - 1.5;
+                this.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                this.originalSize = this.size;
+            }
+
+            update() {
+                // Move particle
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                // Bounce off edges
+                if (this.x <= 0 || this.x >= width) this.speedX *= -1;
+                if (this.y <= 0 || this.y >= height) this.speedY *= -1;
+
+                // Mouse interaction
+                const dx = mouseX - this.x;
+                const dy = mouseY - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < mouseRadius) {
+                    const force = (mouseRadius - distance) / mouseRadius;
+                    const angle = Math.atan2(dy, dx);
+                    const tx = this.x + Math.cos(angle + Math.PI) * force * 10;
+                    const ty = this.y + Math.sin(angle + Math.PI) * force * 10;
+                    
+                    this.speedX = (tx - this.x) / 10;
+                    this.speedY = (ty - this.y) / 10;
+                    
+                    // Increase size when near mouse
+                    this.size = this.originalSize + force * 5;
+                } else {
+                    // Return to original size
+                    if (this.size > this.originalSize) {
+                        this.size -= 0.1;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // Create particles
+        function init() {
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+            document.getElementById('particleCount').textContent = particleCount;
+        }
+
+        // Animation loop
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, width, height);
+
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Start animation
+        init();
+        animate();
+
+        // Add some periodic effects
+        setInterval(() => {
+            // Change mouse radius randomly
+            mouseRadius = 50 + Math.random() * 100;
+            
+            // Change particle colors occasionally
+            if (Math.random() > 0.95) {
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                }
+            }
+        }, 3000);
+    </script>
+</body>
+</html>

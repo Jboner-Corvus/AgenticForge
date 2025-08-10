@@ -1,31 +1,40 @@
-import Redis from 'ioredis';
+import IORedis, { RedisOptions } from 'ioredis';
+import { getLogger } from '../../logger';
 
-import { getConfig } from '../../config.js';
+const logger = getLogger();
+let redisClient: IORedis | null = null;
 
-let redisInstance: null | Redis = null;
+const redisOptions: RedisOptions = {
+  host: process.env.REDIS_HOST || 'localhost',
+  port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : 6379,
+  maxRetriesPerRequest: null,
+};
 
-export function getRedisClientInstance(): Redis {
-  return getRedisClient();
-}
+export const getRedisClientInstance = (): IORedis => {
+  if (!redisClient) {
+    try {
+      redisClient = new IORedis(redisOptions);
 
-function getRedisClient(): Redis {
-  if (!redisInstance) {
-    const config = getConfig();
-    const redisHost = config.REDIS_HOST;
-    const redisUrl = `redis://${redisHost}:${config.REDIS_PORT}`;
+      redisClient.on('connect', () => {
+        logger.info('Successfully connected to Redis.');
+      });
 
-    redisInstance = new Redis(redisUrl, {
-      db: config.REDIS_DB,
-      maxRetriesPerRequest: null,
-      retryStrategy: (times) => {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
-      },
-    });
+      redisClient.on('error', (err) => {
+        logger.error({ err }, 'Redis connection error:');
+      });
 
-    redisInstance.on('error', (err: Error) => {
-      console.error('Redis Client Error', err);
-    });
+    } catch (error) {
+      logger.error({ error }, 'Failed to create Redis client');
+      throw error;
+    }
   }
-  return redisInstance;
-}
+  return redisClient;
+};
+
+export const disconnectRedis = async (): Promise<void> => {
+  if (redisClient) {
+    await redisClient.quit();
+    redisClient = null;
+    logger.info('Redis client disconnected.');
+  }
+};

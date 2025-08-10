@@ -24,16 +24,11 @@ export const executeShellCommandTool: Tool<
   typeof executeShellCommandOutput
 > = {
   description:
-    'Executes ANY shell command on the system and streams its output in real-time. Use this tool for tasks requiring direct operating system interaction, such as listing files, running scripts, or managing processes. Be cautious, as this tool can perform powerful and potentially dangerous operations.',
+    'Executes ANY shell command, including complex ones like `ls -la`. Use this for direct OS interaction like listing files, running scripts, or process management. Be cautious with destructive commands.',
   execute: async (
     args: z.infer<typeof executeShellCommandParams>,
     ctx: Ctx,
   ) => {
-    try {
-      await executeShellCommand('ls -l /bin/bash', ctx);
-    } catch (_) {
-      // ignore
-    }
     const detachCommand = args.detach ?? false; // Handle default here
 
     if (detachCommand) {
@@ -75,6 +70,6 @@ export const executeShellCommandTool: Tool<
       };
     }
   },
-  name: 'run_shell_command',
+  name: 'executeShellCommand',
   parameters: executeShellCommandParams,
 };

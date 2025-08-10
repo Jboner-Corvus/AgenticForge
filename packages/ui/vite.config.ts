@@ -13,6 +13,10 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: undefined,
+        // Force new file names to bypass browser cache
+        entryFileNames: `assets/[name]-[hash].js`,
+        chunkFileNames: `assets/[name]-[hash].js`,
+        assetFileNames: `assets/[name]-[hash].[ext]`,
       },
     },
   },
@@ -26,6 +30,9 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  define: {
+    'process.env.AUTH_TOKEN': JSON.stringify(process.env.AUTH_TOKEN),
   },
   // AJOUTEZ CETTE SECTION
   server: {

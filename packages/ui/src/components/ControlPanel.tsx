@@ -1,40 +1,37 @@
-import { Key, Server, Hammer, Code, Settings, Trash2, ListChecks, Play, History, Save, Edit, XCircle } from 'lucide-react';
-
+import { Key, Server, Hammer, ListChecks, Play, History, Save, Edit, XCircle, AlertTriangle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Modal } from './ui/modal';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Label } from './ui/label';
-import { Switch } from './ui/switch';
-import { useLanguage } from '../lib/hooks/useLanguageHook';
-import { generateUUID } from '../lib/utils/uuid';
+// import { Switch } from './ui/switch'; // Supprimé: never used
+import { useLanguage } from '../lib/contexts/LanguageContext';
 import { useToast } from '../lib/hooks/useToast';
 import { useDraggableSidebar } from '../lib/hooks/useDraggablePane';
 import { memo, useCallback, useState } from 'react';
 import { useStore } from '../lib/store';
 import { LoadingSpinner } from './LoadingSpinner';
+import TestCanvasDisplay from './TestCanvasDisplay';
+
 
 export const ControlPanel = memo(() => {
   const { translations } = useLanguage();
-  const codeExecutionEnabled = useStore((state) => state.codeExecutionEnabled);
+  // const codeExecutionEnabled = useStore((state) => state.codeExecutionEnabled); // Supprimé: never used
   const serverHealthy = useStore((state) => state.serverHealthy);
   const sessionId = useStore((state) => state.sessionId);
   const toolCount = useStore((state) => state.toolCount);
-  const toolCreationEnabled = useStore((state) => state.toolCreationEnabled);
-  const setCodeExecutionEnabled = useStore((state) => state.setCodeExecutionEnabled);
-  const setToolCreationEnabled = useStore((state) => state.setToolCreationEnabled);
-  const clearMessages = useStore((state) => state.clearMessages);
-  const addDebugLog = useStore((state) => state.addDebugLog);
-  const fetchAndDisplayToolCount = useStore((state) => state.fetchAndDisplayToolCount);
-  const setSessionId = useStore((state) => state.setSessionId);
-  const addMessage = useStore((state) => state.addMessage);
+  // const toolCreationEnabled = useStore((state) => state.toolCreationEnabled); // Supprimé: never used
+  // const setCodeExecutionEnabled = useStore((state) => state.setCodeExecutionEnabled); // Supprimé: never used
+  // const setToolCreationEnabled = useStore((state) => state.setToolCreationEnabled); // Supprimé: never used
   const sessions = useStore((state) => state.sessions);
   const activeSessionId = useStore((state) => state.activeSessionId);
   const saveSession = useStore((state) => state.saveSession);
   const loadSession = useStore((state) => state.loadSession);
   const deleteSession = useStore((state) => state.deleteSession);
   const renameSession = useStore((state) => state.renameSession);
+  const tokenStatus = useStore((state) => state.tokenStatus);
 
   // Loading states
   const isLoadingSessions = useStore((state) => state.isLoadingSessions);
@@ -53,25 +50,7 @@ export const ControlPanel = memo(() => {
   const [saveSessionInput, setSaveSessionInput] = useState('');
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
   const [sessionToDeleteId, setSessionToDeleteId] = useState<string | null>(null);
-
-  const handleClearHistory = useCallback((showMessage: boolean) => {
-    clearMessages();
-    if (showMessage) {
-      toast({ description: translations.historyCleared, title: translations.historyCleared });
-      addDebugLog(`[${new Date().toLocaleTimeString()}] Local history cleared.`);
-    }
-  }, [clearMessages, addDebugLog, toast, translations]);
-
-  const handleNewSession = useCallback(() => {
-    const oldSessionId = sessionId;
-    const newSessionId = generateUUID();
-    localStorage.setItem('agenticForgeSessionId', newSessionId);
-    setSessionId(newSessionId);
-    addMessage({ type: 'agent_response', content: translations.newSessionCreated });
-    addDebugLog(`[${new Date().toLocaleTimeString()}] ${translations.newSession}: Old ID: ${oldSessionId}, New ID: ${newSessionId}`);
-    handleClearHistory(false);
-    fetchAndDisplayToolCount();
-  }, [sessionId, fetchAndDisplayToolCount, handleClearHistory, addDebugLog, addMessage, setSessionId, translations]);
+  const [showAllSessions, setShowAllSessions] = useState(false);
 
   const handleSaveCurrentSession = useCallback(() => {
     setIsSaveModalOpen(true);
@@ -122,154 +101,226 @@ export const ControlPanel = memo(() => {
     }
   }, [sessionToRename, newSessionName, renameSession, toast]);
 
-  const { handleDragStart, width } = useDraggableSidebar(320);
+  const { handleDragStart } = useDraggableSidebar(320);
+
+  const MAX_INITIAL_SESSIONS = 2;
+  const displayedSessions = showAllSessions ? sessions : sessions.slice(0, MAX_INITIAL_SESSIONS);
+  const hasMoreSessions = sessions.length > MAX_INITIAL_SESSIONS;
+
+  const renderToolCount = () => {
+    if (typeof toolCount === 'number') {
+      return toolCount;
+    }
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <XCircle className="h-5 w-5 text-red-500" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{toolCount}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
 
   return (
     <>
       <aside
-        className="p-4 bg-gradient-to-b from-background to-secondary/50 border-r border-border overflow-y-auto flex-shrink-0 relative pt-8"
-        style={{ width }}
+        className="p-4 bg-gradient-to-b from-background to-secondary/30 border-r border-border overflow-y-auto flex-shrink-0 relative pt-8 shadow-lg"
+        style={{ width: '100%' }}
       >
         <div className="absolute top-0 right-0 w-2 h-full cursor-col-resize" onMouseDown={handleDragStart} />
         <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center"><ListChecks className="mr-2 h-4 w-4" />{translations.agentStatus} & {translations.agentCapabilities}</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <Label className="text-sm flex items-center"><Key className="mr-2 h-4 w-4" />{translations.sessionId}</Label>
-                <span className="text-sm text-muted-foreground">{sessionId ? `${sessionId.substring(0, 12)}...` : '--'}</span>
+          {!tokenStatus && (
+            <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 border-2 border-yellow-500">
+              <CardHeader className="bg-yellow-500 text-white rounded-t-md">
+                <CardTitle className="flex items-center text-lg">
+                  <AlertTriangle className="mr-2 h-5 w-5" />
+                  Authentication Required
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-4">
+                <p className="text-sm text-yellow-800">
+                  Please set up your authentication token to use the agent. 
+                  Visit the OAuth Management page to configure your authentication.
+                </p>
+                <Button 
+                  className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
+                  onClick={() => useStore.getState().setCurrentPage('oauth')}
+                >
+                  Go to OAuth Management
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          
+          <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
+            <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-md">
+              <CardTitle className="flex items-center text-lg"><ListChecks className="mr-2 h-5 w-5" />{translations.agentStatus}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
+                <Label htmlFor="session-id" data-testid="session-id-label" className="text-sm flex items-center"><Key className="mr-2 h-4 w-4 text-blue-500" />{translations.sessionId}</Label>
+                <span id="session-id" className="text-sm text-muted-foreground font-mono">{sessionId ? `${sessionId.substring(0, 12)}...` : '--'}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4" />{translations.toolsDetected}</Label>
-                <span className="text-sm text-muted-foreground">
-                  {isLoadingTools ? <LoadingSpinner className="ml-2" /> : toolCount}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <Label className="text-sm flex items-center"><Server className="mr-2 h-4 w-4" />{translations.connectionStatus}</Label>
-                <Badge variant={serverHealthy ? 'success' : 'destructive'}>
+              <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
+                <Label htmlFor="connection-status" data-testid="connection-status-label" className="text-sm flex items-center"><Server className="mr-2 h-4 w-4 text-green-500" />{translations.connectionStatus}</Label>
+                <Badge id="connection-status" variant={serverHealthy ? 'success' : 'destructive'}>
                   {serverHealthy ? translations.online : translations.offline}
                 </Badge>
               </div>
-              <div className="flex justify-between items-center">
-                <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4" />Browser Status</Label>
-                <span className="text-sm text-muted-foreground">{browserStatus}</span>
+              <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
+                <Label htmlFor="browser-status" className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4 text-purple-500" />Browser Status</Label>
+                <span id="browser-status" className="text-sm text-muted-foreground">{browserStatus}</span>
               </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex justify-between items-center">
-                      <Label className="text-sm flex items-center" htmlFor="toolCreationToggle"><Hammer className="mr-2 h-4 w-4" />{translations.toolCreation}</Label>
-                      <Switch checked={toolCreationEnabled} id="toolCreationToggle" onCheckedChange={setToolCreationEnabled} />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Allow the agent to create new tools based on its needs.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex justify-between items-center">
-                      <Label className="text-sm flex items-center" htmlFor="codeExecutionToggle"><Code className="mr-2 h-4 w-4" />{translations.codeExecution}</Label>
-                      <Switch checked={codeExecutionEnabled} id="codeExecutionToggle" onCheckedChange={setCodeExecutionEnabled} />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Allow the agent to execute code directly in the environment.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </div>
+              <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
+                <Label htmlFor="tools-detected" className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4 text-orange-500" />{translations.toolsDetected}</Label>
+                <span id="tools-detected" className="text-sm text-muted-foreground">
+                  {isLoadingTools ? (
+                    <LoadingSpinner className="ml-2" />
+                  ) : (
+                    renderToolCount()
+                  )}
+                </span>
+              </div>
+              </CardContent>
+          </Card>
           
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center"><History className="mr-2 h-4 w-4" />{translations.sessionManagement}</h3>
-            <div className="space-y-2">
-              <Button className="w-full flex items-center justify-center" onClick={handleNewSession} variant="secondary" disabled={isLoadingTools || isSavingSession || isLoadingSessions}>
-                {isLoadingTools ? <LoadingSpinner className="mr-2" /> : <Settings className="mr-2 h-4 w-4" />}
-                {translations.newSession}
-              </Button>
-              <Button className="w-full flex items-center justify-center" onClick={() => handleClearHistory(true)} variant="destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
-                {translations.clearHistory}
-              </Button>
-              <Button className="w-full flex items-center justify-center" onClick={handleSaveCurrentSession} variant="secondary" disabled={isSavingSession}>
+          <Card className="shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-t-md">
+              <CardTitle className="flex items-center text-lg"><History className="mr-2 h-5 w-5" />{translations.historyAndActions}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-4">
+              <Button className="w-full flex items-center justify-center bg-green-500 hover:bg-green-600 text-white" onClick={handleSaveCurrentSession} variant="secondary" disabled={isSavingSession}>
                 {isSavingSession ? <LoadingSpinner className="mr-2" /> : <Save className="mr-2 h-4 w-4" />}
                 {translations.saveCurrentSession}
               </Button>
-            </div>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center"><History className="mr-2 h-4 w-4" />{translations.sessionManagement}</h3>
-            <div className="space-y-2">
-              {isLoadingSessions ? (
-                <div className="flex justify-center items-center h-20">
-                  <LoadingSpinner />
-                </div>
-              ) : sessions.length === 0 ? (
-                <p className="text-muted-foreground">{translations.noSessionsSaved}</p>
-              ) : (
-                sessions.map((session) => (
-                  <div key={session.id} className="flex items-center justify-between p-2 border border-border rounded-md">
-                    <span className="text-sm truncate" title={session.name}>
-                      {session.name}
-                      {session.id === activeSessionId && <Badge variant="secondary" className="ml-2">{translations.active}</Badge>}
-                    </span>
-                    <div className="flex space-x-1">
-                      <Button size="icon" variant="ghost" onClick={() => handleLoadSession(session.id)} aria-label="Load session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
-                        <Play className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleOpenRenameModal(session)} aria-label="Rename session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleDeleteSession(session.id)} aria-label="Delete session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
-                        <XCircle className="h-4 w-4" />
-                      </Button>
-                    </div>
+              
+              <div className="pt-2">
+                {isLoadingSessions ? (
+                  <div className="flex justify-center items-center h-20">
+                    <LoadingSpinner />
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-          
+                ) : sessions.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">{translations.noSessionsSaved}</p>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      {displayedSessions.map((session) => (
+                        <div key={session.id} className="flex items-center justify-between p-2 border border-border rounded-md hover:bg-accent transition-all duration-200 hover:scale-105 transform">
+                          <span className="text-sm truncate" title={session.name}>
+                            {session.name.length > 20 ? `${session.name.substring(0, 20)}...` : session.name}
+                            {session.id === activeSessionId && <Badge variant="secondary" className="ml-2">{translations.active}</Badge>}
+                          </span>
+                          <div className="flex space-x-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="transition-all duration-200 transform hover:scale-110">
+                                    <Button size="icon" variant="ghost" onClick={() => handleLoadSession(session.id)} aria-label="Load session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
+                                      <Play className="h-4 w-4 text-green-500" />
+                                    </Button>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent><p>{translations.loadSession}</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="transition-all duration-200 transform hover:scale-110">
+                                    <Button size="icon" variant="ghost" onClick={() => handleOpenRenameModal(session)} aria-label="Rename session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
+                                      <Edit className="h-4 w-4 text-blue-500" />
+                                    </Button>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent><p>{translations.renameSession}</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="transition-all duration-200 transform hover:scale-110">
+                                    <Button size="icon" variant="ghost" onClick={() => handleDeleteSession(session.id)} aria-label="Delete session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
+                                      <XCircle className="h-4 w-4 text-red-500" />
+                                    </Button>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent><p>{translations.deleteSession}</p></TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {hasMoreSessions && (
+                      <Button 
+                        variant="link" 
+                        className="w-full mt-2" 
+                        onClick={() => setShowAllSessions(!showAllSessions)}
+                      >
+                        {showAllSessions 
+                          ? translations.showLess 
+                          : `${translations.showMore} (${sessions.length - MAX_INITIAL_SESSIONS} ${translations.more})`
+                        }
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </aside>
 
-      <Modal isOpen={isRenameModalOpen} onClose={() => setIsRenameModalOpen(false)} title="Rename Session">
+      <Modal isOpen={isRenameModalOpen} onClose={() => setIsRenameModalOpen(false)} title={translations.renameSession}>
           <Input
             value={newSessionName}
             onChange={(e) => setNewSessionName(e.target.value)}
-            placeholder="New session name"
-            aria-label="New session name"
+            placeholder={translations.newSessionName}
+            aria-label={translations.newSessionName}
+            name="newSessionName"
+            id="newSessionName"
+            autoComplete="off"
           />
           <div className="flex justify-end space-x-2 mt-4">
-            <Button variant="outline" onClick={() => setIsRenameModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleConfirmRename}>Rename</Button>
+            <Button variant="outline" onClick={() => setIsRenameModalOpen(false)}>{translations.cancel}</Button>
+            <Button onClick={handleConfirmRename}>{translations.rename}</Button>
           </div>
       </Modal>
 
-      <Modal isOpen={isSaveModalOpen} onClose={() => setIsSaveModalOpen(false)} title="Save Current Session">
+      <Modal isOpen={isSaveModalOpen} onClose={() => setIsSaveModalOpen(false)} title={translations.saveCurrentSession}>
+        <Label htmlFor="saveSessionInput" className="sr-only">{translations.sessionNamePlaceholder}</Label>
         <Input
           value={saveSessionInput}
           onChange={(e) => setSaveSessionInput(e.target.value)}
-          placeholder="Session name"
-          aria-label="Session name"
+          placeholder={translations.sessionNamePlaceholder}
+          aria-label={translations.sessionNamePlaceholder}
+          name="saveSessionInput"
+          id="saveSessionInput"
+          autoComplete="off"
         />
         <div className="flex justify-end space-x-2 mt-4">
-          <Button variant="outline" onClick={() => setIsSaveModalOpen(false)}>Cancel</Button>
-          <Button onClick={handleConfirmSaveSession}>Save</Button>
+          <Button variant="outline" onClick={() => setIsSaveModalOpen(false)}>{translations.cancel}</Button>
+          <Button onClick={handleConfirmSaveSession}>{translations.save}</Button>
         </div>
       </Modal>
 
-      <Modal isOpen={isDeleteConfirmModalOpen} onClose={() => setIsDeleteConfirmModalOpen(false)} title="Confirm Deletion">
-        <p>Are you sure you want to delete this session? This action cannot be undone.</p>
+      <Modal isOpen={isDeleteConfirmModalOpen} onClose={() => setIsDeleteConfirmModalOpen(false)} title={translations.confirmDeletion}>
+        <p>{translations.confirmDeleteSession}</p>
         <div className="flex justify-end space-x-2 mt-4">
-          <Button variant="outline" onClick={() => setIsDeleteConfirmModalOpen(false)}>Cancel</Button>
-          <Button variant="destructive" onClick={handleConfirmDeleteSession}>Delete</Button>
+          <Button variant="outline" onClick={() => setIsDeleteConfirmModalOpen(false)}>{translations.cancel}</Button>
+          <Button variant="destructive" onClick={handleConfirmDeleteSession}>{translations.delete}</Button>
         </div>
       </Modal>
+      
+      {/* Test Canvas Display Component */}
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>Canvas Test</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TestCanvasDisplay />
+        </CardContent>
+      </Card>
     </>
   );
 });

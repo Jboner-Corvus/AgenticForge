@@ -17,6 +17,26 @@ vi.mock('../../../../logger', () => ({
   getLoggerInstance: vi.fn(() => mockLoggerInstance),
 }));
 
+// Mock puppeteer
+vi.mock('puppeteer', () => {
+  const mockPage = {
+    evaluate: vi.fn(),
+    goto: vi.fn(),
+    screenshot: vi.fn(),
+  };
+
+  const mockBrowser = {
+    close: vi.fn(),
+    newPage: vi.fn().mockResolvedValue(mockPage),
+  };
+
+  return {
+    default: {
+      launch: vi.fn().mockResolvedValue(mockBrowser),
+    },
+  };
+});
+
 import { webSearchTool } from './webSearch.tool.js';
 
 describe('webSearchTool', () => {
@@ -43,86 +63,100 @@ describe('webSearchTool', () => {
   });
 
   it('should perform a web search and return a summary', async () => {
-    const mockApiResponse = {
-      AbstractText: 'Test answer',
-      RelatedTopics: [
+    // Get the mocked puppeteer module
+    const puppeteer = await import('puppeteer');
+
+    // Mock the page methods
+    const mockPage = {
+      evaluate: vi.fn().mockResolvedValue([
         {
-          FirstURL: 'http://example.com/1',
-          Text: 'Result 1',
+          description: 'Result 1 description',
+          title: 'Result 1',
+          url: 'http://example.com/1',
         },
         {
-          FirstURL: 'http://example.com/2',
-          Text: 'Result 2',
+          description: 'Result 2 description',
+          title: 'Result 2',
+          url: 'http://example.com/2',
         },
-      ],
+      ]),
+      goto: vi.fn(),
+      screenshot: vi.fn().mockResolvedValue('mock-base64-screenshot'),
     };
 
-    const mockResponse = {
-      json: () => Promise.resolve(mockApiResponse),
-      ok: true,
-    } as Response;
+    // Mock the browser methods
+    const mockBrowser = {
+      close: vi.fn(),
+      newPage: vi.fn().mockResolvedValue(mockPage),
+    };
 
-    vi.spyOn(global, 'fetch').mockResolvedValue(mockResponse);
+    // Update the launch mock to return our new mockBrowser
+    vi.mocked(puppeteer.default.launch).mockResolvedValue(mockBrowser as any);
 
     const query = 'test search';
-    const result = await webSearchTool.execute({ query }, mockCtx);
+    const result = (await webSearchTool.execute({ query }, mockCtx)) as {
+      screenshot: string;
+      summary: string;
+    };
 
     expect(mockLoggerInstance.info).toHaveBeenCalledWith(
       `Performing web search for: "${query}"`,
     );
-    expect(result).toContain('Test answer');
-    expect(result).toContain('- [Result 1](http://example.com/1)');
-    expect(result).toContain('- [Result 2](http://example.com/2)');
+    expect(result.screenshot).toBe('mock-base64-screenshot');
+    expect(result.summary).toContain('[Result 1](http://example.com/1)');
+    expect(result.summary).toContain('[Result 2](http://example.com/2)');
   });
 
-  it('should return a message if no direct answer is found', async () => {
-    const mockApiResponse = {
-      AbstractText: '',
-      RelatedTopics: [],
+  it('should return an error message if the browser launch fails', async () => {
+    const errorMessage = 'Browser launch failed';
+    const puppeteer = await import('puppeteer');
+    vi.mocked(puppeteer.default.launch).mockRejectedValue(
+      new Error(errorMessage),
+    );
+
+    const query = 'test search';
+    const result = (await webSearchTool.execute({ query }, mockCtx)) as {
+      screenshot: string;
+      summary: string;
     };
 
-    const mockResponse = {
-      json: () => Promise.resolve(mockApiResponse),
-      ok: true,
-    } as Response;
-
-    vi.spyOn(global, 'fetch').mockResolvedValue(mockResponse);
-
-    const query = 'test search';
-    const result = await webSearchTool.execute({ query }, mockCtx);
-
-    expect(result).toEqual('No direct answer found for this query.');
-  });
-
-  it('should return an error message if fetch request fails', async () => {
-    const mockResponse = {
-      ok: false,
-      status: 500,
-      statusText: 'Internal Server Error',
-      text: () => Promise.resolve('API error'),
-    } as Response;
-
-    vi.spyOn(global, 'fetch').mockResolvedValue(mockResponse);
-
-    const query = 'test search';
-    const result = await webSearchTool.execute({ query }, mockCtx);
-
-    expect(result).toEqual({
-      erreur: 'DuckDuckGo API request failed: API error',
-    });
+    expect(result.screenshot).toBe('');
+    expect(result.summary).toContain(
+      `An unexpected error occurred: ${errorMessage}`,
+    );
     expect(mockLoggerInstance.error).toHaveBeenCalled();
   });
 
-  it('should return an error message if the fetch call throws an exception', async () => {
-    const errorMessage = 'Network failure';
-    vi.spyOn(global, 'fetch').mockRejectedValue(new Error(errorMessage));
+  it('should return an error message if the page navigation fails', async () => {
+    const errorMessage = 'Navigation failed';
+    const puppeteer = await import('puppeteer');
+
+    // Mock the page methods
+    const mockPage = {
+      evaluate: vi.fn(),
+      goto: vi.fn().mockRejectedValue(new Error(errorMessage)),
+      screenshot: vi.fn(),
+    };
+
+    // Mock the browser methods
+    const mockBrowser = {
+      close: vi.fn(),
+      newPage: vi.fn().mockResolvedValue(mockPage),
+    };
+
+    // Update the launch mock to return our new mockBrowser
+    vi.mocked(puppeteer.default.launch).mockResolvedValue(mockBrowser as any);
 
     const query = 'test search';
-    const result = await webSearchTool.execute({ query }, mockCtx);
+    const result = (await webSearchTool.execute({ query }, mockCtx)) as {
+      screenshot: string;
+      summary: string;
+    };
 
-    expect(result).toEqual({
-      erreur: `An unexpected error occurred: ${errorMessage}`,
-    });
+    expect(result.screenshot).toBe('');
+    expect(result.summary).toContain(
+      `An unexpected error occurred: ${errorMessage}`,
+    );
     expect(mockLoggerInstance.error).toHaveBeenCalled();
   });
 });

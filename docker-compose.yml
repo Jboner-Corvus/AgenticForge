@@ -1,7 +1,7 @@
 services:
   redis:
     image: redis:7.2-alpine
-    container_name: agentic_forge_redis
+    container_name: g_forge_redis
     command: redis-server --port 6379
     ports:
       - "6379:6379"
@@ -19,13 +19,13 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: agentic_forge_postgres
+    container_name: g_forge_postgres
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-agenticforge}
+      POSTGRES_DB: ${POSTGRES_DB:-gforge}
       POSTGRES_USER: ${POSTGRES_USER:-user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
     healthcheck:
@@ -42,7 +42,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: agentic_forge_server
+    container_name: g_forge_server
     ports:
       - "${PUBLIC_PORT:-8080}:3001"
     volumes:
@@ -66,14 +66,15 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_USER=${POSTGRES_USER:-user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
-      - POSTGRES_DB=${POSTGRES_DB:-agenticforge}
+      - POSTGRES_DB=${POSTGRES_DB:-gforge}
       - WEB_PORT=${WEB_PORT}
       - LLM_API_KEY=${LLM_API_KEY}
       - LLM_MODEL_NAME=${LLM_MODEL_NAME}
       - GEMINI_API_KEY=${LLM_API_KEY}
       - SESSION_PORT=${SESSION_PORT}
       - HOST_PROJECT_PATH=${HOST_PROJECT_PATH}
-      - TOOLS_PATH=/usr/src/app/packages/core/dist/tools
+      - HOST_SYSTEM_PATH=/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - TOOLS_PATH=/usr/src/app/packages/core/dist/modules/tools/definitions
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env
@@ -94,7 +95,7 @@ services:
     build:
       context: .
       dockerfile: packages/ui/Dockerfile.web.nginx
-    container_name: agentic_forge_web
+    container_name: g_forge_web
     ports:
       - "${WEB_PORT:-3002}:3000"
     depends_on:
@@ -141,4 +142,4 @@ volumes:
 networks:
   agentic_network:
     driver: bridge
-    name: agentic_forge_network
+    name: g_forge_network
