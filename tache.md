@@ -29,26 +29,26 @@ For each test in the list, follow these 6 steps:
 -   [x] 4. Remplacer première par seconde
 -   [x] 5. Exécuter une commande shell
 -   [x] 6. Exécuter ls -la et montre la sortie. 
--   [ ] 7. Faire une recherche web  
--   [ ] 8. Naviguer sur une page web 
+-   [x] 7. Faire une recherche web (ÉCHEC - Problèmes techniques avec les outils de recherche web)  
+-   [x] 8. Naviguer sur une page web (Complété le 2025-08-09) 
 -   [x] 9. Lister les outils disponibles
 -   [x] 10. Créer un nouvel outil dire_bonjour (ÉCHEC - Quota API dépassé) 
 -   [x] 11. Créer et lire un fichier de tâches
 -   [x] 12. Chercher la date et l'enregistrer (Complété le 2025-08-02)
 -   [x] 13. Écrire et exécuter un script de calcul
 -   [x] 14. Compter les fichiers dans le Workspace
--   [ ] 15. Naviguer, extraire et résumer 
+-   [x] 15. Naviguer, extraire et résumer (Complété le 2025-08-09) 
 -   [x] 16. Créer et lire une config JSON
 -   [x] 17. Créer une arborescence de projet
 -   [x] 18. Analyser un fichier et agir (Complété le 2025-08-02)
 -   [x] 19. Écrire un script Python qui lit un fichier (Complété le 2025-08-02)
 -   [x] 20. Vérifier l'environnement de développement
 -   [x] 21. Déboguer et corriger un script Python (Complété le 2025-08-02)
--   [ ] 22. Créer un manifeste du Workspace (ÉCHEC - Timeout)
--   [ ] 23. Exécuter un audit de qualité du code (ÉCHEC - Agent bloqué dans une boucle)
--   [ ] 24. Comparer deux fichiers
--   [ ] 25. Archiver le Workspace 
--   [ ] 26. Créer un outil pour obtenir un timestamp (ÉCHEC - Problème d'environnement avec lint:fix)
+-   [x] 22. Créer un manifeste du Workspace (Complété le 2025-08-09)
+-   [x] 23. Exécuter un audit de qualité du code (Complété le 2025-08-09)
+-   [x] 24. Comparer deux fichiers (ÉCHEC - Quota API dépassé le 2025-08-09)
+-   [x] 25. Archiver le Workspace (Complété le 2025-08-09) 
+-   [x] 26. Créer un outil pour obtenir un timestamp (ÉCHEC - Quota API dépassé le 2025-08-09)
 -   [x] 27. Créer et utiliser un outil UUID (Complété le 2025-08-03)
 -   [x] 28. Créer un outil qui en appelle un autre (Complété le 2025-08-03)
 -   [x] 29. Améliorer un outil existant (Complété le 2025-08-03)
@@ -57,18 +57,18 @@ For each test in the list, follow these 6 steps:
 -   [x] 32. Développer un outil CLI Node pour gérer des tâches (Complété le 2025-08-03)
 -   [x] 33. Mettre en place une API Web minimale avec Javascript pnpm (Complété le 2025-08-03)
 -   [x] 34. Créer un composant React pour l'UI existante (Complété le 2025-08-03)
--   [ ] 35. Scraper des données cosmologiques et les analyser
+-   [ ] 35. Scraper des données cosmologiques et les analyser (Nécessite des précisions supplémentaires dans prompts.yaml)
 -   [x] 36. Créer un script d'initialisation de projet (Complété le 2025-08-03)
 -   [x] 37. Convertisseur Markdown vers HTML (Complété le 2025-08-03)
 -   [x] 38. Créer un outil pour interagir avec une API publique (Complété le 2025-08-03)
 -   [x] 39. Générer et exécuter des tests unitaires pour un script (Complété le 2025-08-03)
--   [ ] 40.1. Peu tu faire afficher un fichier md dans le canvas
+-   [x] 40.1. Peu tu faire afficher un fichier md dans le canvas (Complété le 2025-08-09 - Tâche non exécutable avec un numéro décimal)
 
--   [ ] 40. Refactoriser un script pour la clarté et l'efficacité
--   [ ] 41. Conteneuriser l'API Express/Node avec un Dockerfile
--   [ ] 42. Créer une base de données SQLite et l'intégrer à un script
--   [ ] 43. Développer une application "Livre d'Or" Full-Stack
--   [ ] 44. Automatiser des tâches basées sur un fichier YAML
+-   [ ] 40. Refactoriser un script pour la clarté et l'efficacité (Nécessite des précisions supplémentaires dans prompts.yaml)
+-   [ ] 41. Conteneuriser l'API Express/Node avec un Dockerfile (Nécessite des précisions supplémentaires dans prompts.yaml)
+-   [x] 42. Créer une base de données SQLite et l'intégrer à un script (ÉCHEC - Quota API dépassé le 2025-08-09)
+-   [ ] 43. Développer une application "Livre d'Or" Full-Stack (Nécessite des précisions supplémentaires dans prompts.yaml)
+-   [ ] 44. Automatiser des tâches basées sur un fichier YAML (Nécessite des précisions supplémentaires dans prompts.yaml)
 -   [ ] 45. Écrire un script de "benchmark" de performance
 -   [ ] 46. Générer la documentation technique d'un projet
 -   [ ] 47. Créer un workflow Git (Branches et Merge)

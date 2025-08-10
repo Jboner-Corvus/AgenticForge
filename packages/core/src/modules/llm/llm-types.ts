@@ -13,3 +13,13 @@ export interface LLMContent {
   parts: { text: string }[];
   role: 'model' | 'tool' | 'user';
 }
+
+export interface ILlmProvider {
+  getErrorType(statusCode: number, errorBody: string): LlmKeyErrorType;
+  getLlmResponse(
+    messages: LLMContent[],
+    systemPrompt?: string,
+    apiKey?: string,
+    modelName?: string,
+  ): Promise<string>;
+}

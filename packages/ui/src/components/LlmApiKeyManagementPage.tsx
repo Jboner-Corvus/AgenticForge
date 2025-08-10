@@ -24,25 +24,25 @@ const PROVIDERS: LlmProviderConfig[] = [
     id: 'openai', 
     name: 'OpenAI', 
     logo: OpenAILogo, 
-    models: ['gpt-4o', 'gpt-4o-mini'], 
+    models: ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-4o', 'gpt-4o-mini'], 
     baseUrl: 'https://api.openai.com/v1',
-    description: 'ChatGPT et GPT-4. Excellent pour le raisonnement et la génération de code.'
+    description: 'GPT-5 est le modèle le plus avancé d\'OpenAI avec des capacités de raisonnement améliorées.'
   },
   { 
-    id: 'anthropic', 
-    name: 'Anthropic', 
-    logo: AnthropicLogo, 
-    models: ['claude-3-5-sonnet'], 
-    baseUrl: 'https://api.anthropic.com',
-    description: 'Claude 3.5. Très performant pour l\'analyse et les tâches complexes.'
+    id: 'openrouter', 
+    name: 'OpenRouter', 
+    logo: OpenAILogo, // Using OpenAI logo as placeholder
+    models: ['z-ai/glm-4.5-air:free'], 
+    baseUrl: 'https://openrouter.ai/api/v1',
+    description: 'OpenRouter avec modèle GLM-4.5-Air gratuit par défaut.'
   },
   { 
     id: 'gemini', 
     name: 'Google Gemini', 
     logo: GeminiLogo, 
-    models: ['gemini-1.5-pro', 'gemini-1.5-flash'], 
+    models: ['gemini-2.5-pro', 'gemini-2.5-flash'], 
     baseUrl: 'https://generativelanguage.googleapis.com',
-    description: 'Modèles Google. Gratuit avec des limites généreuses.'
+    description: 'Modèles Google Gemini 2.5. Haute performance avec des capacités avancées.'
   },
 ];
 
@@ -340,6 +340,49 @@ export const LlmApiKeyManagementPage = memo(() => {
           {PROVIDERS.map((provider) => (
             <SimpleProviderCard key={provider.id} provider={provider} />
           ))}
+        </div>
+
+        {/* Informations de tarification pour les modèles GPT-5 */}
+        <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <h3 className="text-sm font-medium text-blue-800 mb-3 flex items-center">
+            <Info className="h-4 w-4 mr-2" />
+            Informations de tarification GPT-5
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left text-gray-700">
+              <thead className="text-xs text-gray-700 uppercase bg-blue-100">
+                <tr>
+                  <th className="px-2 py-1">Modèle</th>
+                  <th className="px-2 py-1">Input</th>
+                  <th className="px-2 py-1">Output</th>
+                  <th className="px-2 py-1">Cached</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="bg-white border-b hover:bg-blue-50">
+                  <td className="px-2 py-1 font-medium text-gray-900">gpt-5</td>
+                  <td className="px-2 py-1">$1.25</td>
+                  <td className="px-2 py-1">$0.125</td>
+                  <td className="px-2 py-1">$10.00</td>
+                </tr>
+                <tr className="bg-white border-b hover:bg-blue-50">
+                  <td className="px-2 py-1 font-medium text-gray-900">gpt-5-mini</td>
+                  <td className="px-2 py-1">$0.25</td>
+                  <td className="px-2 py-1">$0.025</td>
+                  <td className="px-2 py-1">$2.00</td>
+                </tr>
+                <tr className="bg-white border-b hover:bg-blue-50">
+                  <td className="px-2 py-1 font-medium text-gray-900">gpt-5-nano</td>
+                  <td className="px-2 py-1">$0.05</td>
+                  <td className="px-2 py-1">$0.005</td>
+                  <td className="px-2 py-1">$0.40</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-blue-700 mt-2">
+            * Prix par million de tokens. Choisissez le modèle approprié selon vos besoins en termes de puissance et de budget.
+          </p>
         </div>
 
         <div className="mt-8 p-4 bg-gray-50 rounded-lg">

@@ -22,11 +22,12 @@ class AgenticForgeTester:
 
     def __init__(self):
         """Initialize the tester with configuration."""
-        self.api_url = "http://localhost:8080/api"
+        # Utilisation de l'adresse IP du serveur distant
+        self.api_url = "http://192.168.40.6:3001/api"
         self.api_token = "Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0"
         self.poll_interval = 2  # secondes
-        self.poll_timeout = 60  # secondes
-        self.run_sh_api_base_url = "http://localhost:3005"
+        self.poll_timeout = 120  # secondes (augmenté pour les tâches longues)
+        self.run_sh_api_base_url = "http://192.168.40.6:3005"
         self.prompts = self._load_prompts()
 
     def _load_prompts(self) -> List[str]:
@@ -192,9 +193,9 @@ class AgenticForgeTester:
 class RunShExecutor:
     """Class for executing run.sh commands via API."""
 
-    def __init__(self):
+    def __init__(self, api_base_url="http://localhost:3005"):
         """Initialize with API configuration."""
-        self.api_base_url = "http://localhost:3005"
+        self.api_base_url = api_base_url
         self.script_dir = os.path.dirname(os.path.abspath(__file__))
 
     def execute_command(self, command: str, stream: bool = False, *args) -> None:
@@ -366,7 +367,8 @@ def main():
                 if stream:
                     sys.argv.remove("--stream")
                 
-                executor = RunShExecutor()
+                tester = AgenticForgeTester()
+                executor = RunShExecutor(tester.run_sh_api_base_url)
                 executor.execute_command(sys.argv[2], stream, *sys.argv[3:])
         else:
             tester = AgenticForgeTester()

@@ -8,13 +8,12 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Rocket, Key, Settings } from 'lucide-react';
 import { Button } from './ui/button';
 import { useLanguage } from '../lib/contexts/LanguageContext';
-import { DebugInstructions } from './DebugInstructions';
 
 export function ChatMessagesContainer() {
   const messages = useStore((state) => state.messages as ChatMessage[]);
   const debugLog = useStore((state) => state.debugLog);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { authToken, llmApiKeys, setCurrentPage, toggleDebugLogVisibility } = useStore();
+  const { authToken, llmApiKeys, setCurrentPage } = useStore();
   const { translations } = useLanguage();
 
   const isConfigMissing = !authToken || llmApiKeys.length === 0;
@@ -32,18 +31,6 @@ export function ChatMessagesContainer() {
       className="flex-1 overflow-y-auto space-y-4 p-4 bg-gradient-to-b from-background to-secondary/10"
     >
       <AnimatePresence>
-        {/* Debug instructions - always visible in development */}
-        {(process.env.NODE_ENV === 'development' || debugLog.length > 0) && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            layout
-          >
-            <DebugInstructions onToggleDebugLog={toggleDebugLogVisibility} />
-          </motion.div>
-        )}
-        
         {isConfigMissing && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}

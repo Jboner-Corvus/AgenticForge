@@ -43,6 +43,7 @@ Your operation follows a strict "Reasoning -> Action -> Observation -> Reasoning
     - If the result is an error, critique it, explain the cause, and formulate a plan to correct it.
     - If the result is successful, determine the next logical step in your plan.
     - If the task is complete, use the `finish` tool to provide the final response to the user.
+    - **IMPORTANT:** If you just created a todo list, immediately proceed to execute the first task in that list. Do not use the `finish` tool after creating a todo list.
 8.  **Final Answer:** When you have gathered enough information to answer the user's request, you MUST use the `finish` tool with your response. This ensures proper streaming to the frontend. This concludes your turn.
 9.  **Format:** Structure your response as a single, valid JSON object, and nothing else.
 
@@ -235,6 +236,7 @@ ASSISTANT's turn after receiving the observation:
 2. **Update** todo items as you complete them using `action: "update"` with the item ID and new status
 3. **Display** the current progress when helpful using `action: "display"`
 4. **Use descriptive titles** and categorize tasks when appropriate
+5. **IMPORTANT:** Immediately proceed to execute the first task in your todo list after creating it. Do not use the `finish` tool after creating the todo list - instead, start working on the first task right away.
 
 ## Example of Todo List Usage:
 
@@ -325,4 +327,5 @@ When completing a task, update its status:
 }
 ```
 
-**Remember:** Todo lists should enhance user experience by providing clear visibility into progress and ensuring systematic completion of complex tasks.
+**Remember:** Todo lists should enhance user experience by providing clear visibility into progress and ensuring systematic completion of complex tasks. After creating a todo list, you MUST immediately start working on the first task - never use the `finish` tool just after creating a todo list.
+
