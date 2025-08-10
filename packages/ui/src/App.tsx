@@ -43,14 +43,15 @@ export default function App() {
   useEffect(() => {
     const handleResize = () => {
       const maxCanvasWidth = Math.min(800, window.innerWidth * 0.6);
-      if (canvasWidth > maxCanvasWidth) {
-        setCanvasWidth(maxCanvasWidth);
+      const currentCanvasWidth = useStore.getState().canvasWidth;
+      if (currentCanvasWidth > maxCanvasWidth) {
+        useStore.getState().setCanvasWidth(maxCanvasWidth);
       }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [canvasWidth, setCanvasWidth]);
+  }, []); // Pas de dépendances pour éviter les boucles
 
   const renderMainContent = () => {
     switch (currentPage) {

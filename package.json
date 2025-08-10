@@ -1,13 +1,13 @@
 {
   "name": "@jboner-corvus/agenticforge",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "Une plateforme avancée pour la création et la gestion d'agents intelligents.",
   "main": "dist/index.js",
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "pnpm --recursive run build", 
+    "build": "pnpm --recursive run build",
     "prepublishOnly": "npm run build"
   },
   "repository": {
@@ -20,7 +20,13 @@
   "homepage": "https://github.com/Jboner-Corvus/AgenticForge#readme",
   "author": "Jboner",
   "license": "ISC",
+  "devDependencies": {
+    "@types/pg": "^8.15.5",
+    "execa": "^9.6.0",
+    "semver": "^7.7.2",
+    "tsup": "^8.5.0"
+  },
   "dependencies": {
-    "@gforge/core": "^1.0.13"
+    "playwright-core": "^1.54.2"
   }
 }

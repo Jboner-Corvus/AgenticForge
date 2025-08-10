@@ -28,10 +28,10 @@ export const useResizablePanel = (initialControlPanelWidth: number) => {
       const newWidth = window.innerWidth - e.clientX;
       const maxWidth = Math.min(800, window.innerWidth * 0.6);
       if (newWidth >= 300 && newWidth <= maxWidth) {
-        setCanvasWidth(newWidth);
+        useStore.getState().setCanvasWidth(newWidth);
       }
     }
-  }, [setCanvasWidth]);
+  }, []);
 
   const handleMouseUp = useCallback(() => {
     isResizingControlPanel.current = false;
