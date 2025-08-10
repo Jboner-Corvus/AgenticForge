@@ -17,12 +17,12 @@ export function closeCanvas(jobId: string) {
 }
 
 /**
- * Envoie du contenu HTML au canvas via Redis
+ * Envoie du contenu au canvas via Redis
  * @param jobId L'ID du job en cours
- * @param content Le contenu HTML à afficher
+ * @param content Le contenu à afficher
  * @param contentType Le type de contenu (par défaut 'html')
  */
-export function sendToCanvas(jobId: string, content: string, contentType: 'html' | 'markdown' | 'text' | 'url' = 'html') {
+export function sendToCanvas(jobId: string, content: string, contentType: 'html' | 'json' | 'markdown' | 'text' | 'url' = 'html') {
   const channel = `job:${jobId}:events`;
   const message = JSON.stringify({
     content,

@@ -45,7 +45,7 @@ prompts:
   - '37. Convertisseur Markdown vers HTML'
   - '38. Créer un Outil pour Interagir avec une API Publique'
   - '39. Générer et Exécuter des Tests Unitaires pour un Script'
-  - '40. Refactoriser un Script pour la Clarté et l''Efficacité. Script à refactoriser : le script de calcul de la tâche 13. Objectif : Améliorer la clarté du code et son efficacité.'
+  - '40. Refactoriser un Script pour la Clarté et l''Efficacité. Script à refactoriser : le script de calcul de la tâche 13. Objectif : Améliorer la clarté du code et son efficacité. [PRÉCISION NÉCESSAIRE : Chemin du fichier source à refactoriser]'
 
   # 41-50 : Tâches avancées
   - '41. Conteneuriser l''API Express/Node avec un Dockerfile. Le projet se trouve dans le dossier minimal-api-project.'

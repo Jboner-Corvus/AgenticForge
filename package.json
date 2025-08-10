@@ -1,6 +1,6 @@
 {
   "name": "g-forge-monorepo",
-  "version": "1.0.0",
+  "version": "1.0.13",
   "description": "G-Forge Monorepo",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
     "packages/core"
   ],
   "scripts": {
-    "build": "pnpm --recursive run build",
+    "build": "node scripts/increment-version.cjs && pnpm --recursive run build",
     "dev": "pnpm --filter=./packages/core dev",
     "start": "pnpm --filter=./packages/core start",
     "start:worker": "pnpm --filter=./packages/core start:worker",
@@ -36,6 +36,7 @@
     "globals": "^15.8.0",
     "playwright-core": "^1.45.0",
     "prettier": "^3.6.2",
+    "semver": "^7.7.2",
     "tailwindcss": "^3.4.17",
     "tsup": "^8.5.0",
     "tsx": "^4.20.3",

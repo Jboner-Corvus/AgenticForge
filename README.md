@@ -3,10 +3,6 @@
 </p>
 
 <h1 align="center">AgenticForge</h1>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/🔨-AgenticForge-orange?style=for-the-badge" alt="AgenticForge Logo">
-</p>
 <p align="center">
   <strong>🌐 Langues disponibles</strong><br>
   <a href="README_EN.md">English</a> • 
@@ -82,6 +78,12 @@
   npm install -g pnpm
   ```
 - **Git** : Pour cloner le projet
+
+### 🖥️ Compatibilité Système
+
+> **AgenticForge** est conçu pour être déployé sur **Linux** ou **macOS**.  
+> **Windows n'est pas officiellement supporté** pour le serveur ou les workers, en raison de dépendances systèmes spécifiques (Docker, shell scripts, etc.).  
+> Une version **client léger** pour Windows pourrait être envisagée dans le futur, mais reste **expérimentale**.
 
 ---
 

@@ -99,6 +99,14 @@ export const AppInitializer = () => {
         urlParams.delete('github_auth_success');
         window.history.replaceState({}, document.title, `${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`);
       }
+      
+      // Check for Qwen OAuth success redirect
+      if (urlParams.get('qwen_auth_success') === 'true') {
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Qwen OAuth success detected. Re-initializing auth token.`);
+        initializeAuthToken(); // Re-run to pick up new JWT from cookie
+        urlParams.delete('qwen_auth_success');
+        window.history.replaceState({}, document.title, `${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`);
+      }
 
       initializeAuthToken();
       await checkServerHealth();
@@ -116,7 +124,7 @@ export const AppInitializer = () => {
     };
 
     initialize();
-  }, [checkServerHealth, initializeAuthToken, initializeSession, addDebugLog, addMessage, toggleDarkMode, translations.interfaceInitialized, translations.agentReady]);
+  }, [checkServerHealth, initializeAuthToken, initializeSession, translations.interfaceInitialized, translations.agentReady]);
 
   return null; // This component doesn't render anything visible
 };

@@ -77,7 +77,7 @@ export const OAuthManagementPage = () => {
 
   // Check OAuth status on component mount
   useEffect(() => {
-    const checkOAuthStatus = () => {
+    const checkOAuthStatus = async () => {
       try {
         // Check for OAuth tokens in cookies
         const cookies = document.cookie.split(';')
@@ -97,10 +97,17 @@ export const OAuthManagementPage = () => {
           cookie.trim().length > 'agenticforge_twitter_token='.length
         )
 
-        const hasQwenToken = cookies.some(cookie => 
-          cookie.trim().startsWith('agenticforge_qwen_token=') && 
-          cookie.trim().length > 'agenticforge_qwen_token='.length
-        )
+        // Check Qwen connection status via API
+        let hasQwenToken = false;
+        try {
+          const response = await fetch('/api/auth/qwen/status');
+          if (response.ok) {
+            const data = await response.json();
+            hasQwenToken = data.connected;
+          }
+        } catch (error) {
+          console.error('Error checking Qwen connection status:', error);
+        }
         
         // Log the OAuth status check
         addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Checking OAuth status - GitHub: ${hasGitHubToken}, Google: ${hasGoogleToken}, Twitter: ${isTwitterConnected}, Qwen: ${hasQwenToken}`);
@@ -225,30 +232,32 @@ export const OAuthManagementPage = () => {
   const handleQwenLogin = () => {
     try {
       // Log the attempt to initiate Qwen OAuth
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Opening Qwen.AI Chat in new tab`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Initiating Qwen OAuth flow`);
       
-      // Open Qwen.AI in a new tab
-      window.open('https://chat.qwen.ai/', '_blank');
-      
-      // Mark as connected for demo purposes
-      setIsQwenConnected(true);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Qwen.AI Chat opened successfully`);
+      // Redirect to Qwen OAuth endpoint
+      window.location.href = '/api/auth/qwen';
     } catch (error) {
-      console.error('Error opening Qwen.AI Chat:', error);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Error opening Qwen.AI Chat: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('Error initiating Qwen OAuth:', error);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Error initiating Qwen OAuth: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
-  const handleQwenLogout = () => {
+  const handleQwenLogout = async () => {
     try {
-      // Clear Qwen OAuth token from cookies (if implemented)
-      document.cookie = 'agenticforge_qwen_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      // Clear Qwen OAuth token from Redis via API
+      const response = await fetch('/api/auth/qwen/logout', {
+        method: 'POST',
+      });
       
-      // Update state
-      setIsQwenConnected(false)
-      
-      // Add debug log
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Qwen.AI OAuth token removed.`)
+      if (response.ok) {
+        // Update state
+        setIsQwenConnected(false);
+        
+        // Add debug log
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Qwen.AI OAuth token removed.`);
+      } else {
+        throw new Error('Failed to logout from Qwen');
+      }
     } catch (error) {
       console.error('Error removing Qwen.AI OAuth token:', error);
       addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Error removing Qwen.AI OAuth token: ${error instanceof Error ? error.message : String(error)}`);

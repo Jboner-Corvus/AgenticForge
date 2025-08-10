@@ -64,7 +64,7 @@ For each test in the list, follow these 6 steps:
 -   [x] 39. Générer et exécuter des tests unitaires pour un script (Complété le 2025-08-03)
 -   [x] 40.1. Peu tu faire afficher un fichier md dans le canvas (Complété le 2025-08-09 - Tâche non exécutable avec un numéro décimal)
 
--   [ ] 40. Refactoriser un script pour la clarté et l'efficacité (Nécessite des précisions supplémentaires dans prompts.yaml)
+-   [ ] 40. Refactoriser un script pour la clarté et l'efficacité (Nécessite des précisions supplémentaires dans prompts.yaml - Chemin du fichier source à refactoriser)
 -   [ ] 41. Conteneuriser l'API Express/Node avec un Dockerfile (Nécessite des précisions supplémentaires dans prompts.yaml)
 -   [x] 42. Créer une base de données SQLite et l'intégrer à un script (ÉCHEC - Quota API dépassé le 2025-08-09)
 -   [ ] 43. Développer une application "Livre d'Or" Full-Stack (Nécessite des précisions supplémentaires dans prompts.yaml)
@@ -79,7 +79,7 @@ For each test in the list, follow these 6 steps:
 -   [ ] 52. Développer un leger antivirus pour le systeme
 -   [ ] 53. Développer un antyspyware pour trouver des malwares
 -   [ ] 54. Fait moi un site internet sur la cosmologie host la node et affiche le site dans le canvas
--   [ ] 56. Fait moi le jeux duke nukem2 et affiche dans le canvas 
+-   [ ] 56. Fait moi le jeux duke nukem2 (c est un test) et affiche une demo dans le canvas 
 -   [ ] 57.
 -   [ ] 58.
 -   [ ] 59.

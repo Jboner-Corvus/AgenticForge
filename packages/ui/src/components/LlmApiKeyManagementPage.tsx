@@ -1,7 +1,7 @@
 import { Save, Info, CheckCircle, Settings, Key, Zap, Shield } from 'lucide-react';
 import { memo, useState, useEffect } from 'react';
 import { useStore } from '../lib/store';
-import { OpenAILogo, GeminiLogo } from './icons/LlmLogos';
+import { OpenAILogo, GeminiLogo, QwenLogo } from './icons/LlmLogos';
 import { OpenRouterLogo } from './icons/LlmLogos/OpenRouterLogo';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -43,6 +43,14 @@ const PROVIDERS: LlmProviderConfig[] = [
     models: ['gemini-2.5-pro', 'gemini-2.5-flash'], 
     baseUrl: 'https://generativelanguage.googleapis.com',
     description: 'Modèles Google Gemini 2.5. Haute performance avec des capacités avancées.'
+  },
+  {
+    id: 'qwen',
+    name: 'Qwen (Tongyi)',
+    logo: QwenLogo,
+    models: ['qwen-plus', 'qwen-turbo', 'qwen-max'],
+    baseUrl: 'https://dashscope.aliyuncs.com/api/v1',
+    description: 'Modèles Qwen de Alibaba Cloud avec des capacités avancées de traitement du langage.'
   },
 ];
 

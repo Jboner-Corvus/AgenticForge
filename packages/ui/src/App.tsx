@@ -22,6 +22,8 @@ import { useStore } from './lib/store';
 import { DebugLogContainer } from './components/DebugLogContainer';
 import SubAgentCLIView from './components/SubAgentCLIView';
 import { Eye } from 'lucide-react';
+import { TodoListPanel } from './components/TodoList/TodoListPanel';
+import { VersionDisplay } from './components/VersionDisplay';
 
 
 export default function App() {
@@ -172,8 +174,10 @@ export default function App() {
             )}
           </main>
         </div>
+        <TodoListPanel />
         <DebugLogContainer />
         <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
+        <VersionDisplay />
         
         
       </div>

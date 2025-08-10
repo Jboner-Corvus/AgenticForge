@@ -3,6 +3,7 @@ import { getLogger } from '../logger.js';
 import { ILlmProvider, LLMContent, LlmError } from '../modules/llm/llm-types.js';
 import { LlmApiKey, LlmKeyManager } from '../modules/llm/LlmKeyManager.js';
 import { LlmKeyErrorType } from '../modules/llm/LlmKeyManager.js';
+import { QwenProvider } from '../modules/llm/qwenProvider.js';
 import { getRedisClientInstance } from '../modules/redis/redisClient.js';
 import { Gpt5Provider } from './gpt5Provider.js';
 
@@ -1096,7 +1097,7 @@ class OpenRouterProvider implements ILlmProvider {
 
     const requestBody = {
       messages: openRouterMessages,
-      model: modelName || 'z-ai/glm-4.5-air:free', // Use modelName if provided, else fallback to default
+      model: modelName || getConfig().LLM_MODEL_NAME, // Use modelName if provided, else fallback to config
     };
 
     const body = JSON.stringify(requestBody);
@@ -1109,7 +1110,7 @@ class OpenRouterProvider implements ILlmProvider {
 
       // Log 2: Avant chaque appel LLM
       log.info(
-        `[LLM CALL] Envoi de la requête au modèle : ${modelName || 'z-ai/glm-4.5-air:free'} via ${activeKey.apiProvider}`,
+        `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
       );
       const response = await fetch(apiUrl, {
         body,
@@ -1228,6 +1229,9 @@ export function getLlmProvider(providerName: string, modelName?: string): ILlmPr
         break;
     case 'openrouter':
         currentLlmProvider = new OpenRouterProvider();
+        break;
+    case 'qwen':
+        currentLlmProvider = new QwenProvider();
         break;
     default:
       getLogger().warn(

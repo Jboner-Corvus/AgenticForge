@@ -7,17 +7,19 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 import { Logo } from './Logo';
 import { ConnectionStatus } from './ConnectionStatus';
 
-// import { Settings, PanelLeft, Sun, Moon, Bell, LayoutDashboard, BarChart, Key, MessageSquare, Bug } from 'lucide-react'; // Supprimé: never used
-import { PanelLeft, Sun, Moon, LayoutDashboard, BarChart, Key, MessageSquare, Bug } from 'lucide-react';
+// import { Settings, PanelLeft, Sun, Moon, Bell, LayoutDashboard, BarChart, Key, MessageSquare, Bug, Square } from 'lucide-react'; // Supprimé: never used
+import { PanelLeft, Sun, Moon, LayoutDashboard, BarChart, Key, MessageSquare, Bug, Square } from 'lucide-react';
 
 interface HeaderProps {
   setIsControlPanelVisible: (visible: boolean) => void;
-  // setIsSettingsModalOpen: (open: boolean) => void; // Supprimé: never used
+  // setIsSettingsModalOpen: (open: boolean) => void; // Supprimé
   isControlPanelVisible: boolean;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
   setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys' | 'oauth') => void;
   toggleDebugLogVisibility: () => void;
+  isTodoListVisible: boolean;
+  toggleTodoListVisibility: () => void;
 }
 
 export function Header({
@@ -28,6 +30,8 @@ export function Header({
   toggleDarkMode,
   setCurrentPage,
   toggleDebugLogVisibility,
+  isTodoListVisible,
+  toggleTodoListVisibility,
 }: HeaderProps) {
   // const { translations } = useLanguage(); // Supprimé: never used
 
@@ -47,6 +51,23 @@ export function Header({
       </div>
 
       <div className="flex items-center space-x-2">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                aria-label="Toggle Todo List"
+                onClick={toggleTodoListVisibility}
+                type="button"
+                variant="ghost"
+              >
+                <Square size={20} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{isTodoListVisible ? "Masquer la Liste des Tâches" : "Afficher la Liste des Tâches"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
