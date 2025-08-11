@@ -2,9 +2,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { UserInput } from './UserInput';
-import { LanguageProvider } from '../lib/contexts/LanguageProvider';
 import { useStore } from '../lib/store';
 import { resetMockStore } from '../lib/__mocks__/store';
+import { TestLanguageProvider } from '../lib/__mocks__/TestLanguageProvider';
 
 vi.mock('../lib/store', async () => {
   const actual = await vi.importActual('../lib/store');
@@ -15,10 +15,25 @@ vi.mock('../lib/store', async () => {
     resetMockStore: mod.resetMockStore,
   };
 });
-vi.mock('../lib/contexts/LanguageProvider', async () => {
-  const mod = await import('../lib/__mocks__/LanguageProvider');
-  return mod;
+
+// Mock the useLanguage hook directly
+vi.mock('../lib/contexts/LanguageContext', async () => {
+  const actualReact = await vi.importActual('react') as typeof import('react');
+  return {
+    ...actualReact,
+    LanguageContext: actualReact.createContext(undefined),
+    useLanguage: () => ({
+      language: 'en',
+      translations: {
+        typeYourMessage: 'Type your message...',
+        send: 'Send',
+        processing: 'Processing...',
+      },
+      setLanguage: vi.fn(),
+    }),
+  };
 });
+
 let mockStartAgent = vi.fn();
 
 vi.mock('../lib/hooks/useAgentStream', () => ({
@@ -42,13 +57,21 @@ describe('UserInput', () => {
   });
 
   it('should render the input field and send button', () => {
-    render(<LanguageProvider><UserInput /></LanguageProvider>);
+    render(
+      <TestLanguageProvider>
+        <UserInput />
+      </TestLanguageProvider>
+    );
     expect(screen.getByPlaceholderText('Type your message...')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /send message/i })).toBeInTheDocument();
   });
 
   it('should update the input value on change', () => {
-    render(<LanguageProvider><UserInput /></LanguageProvider>);
+    render(
+      <TestLanguageProvider>
+        <UserInput />
+      </TestLanguageProvider>
+    );
     const textarea = screen.getByPlaceholderText('Type your message...');
     fireEvent.change(textarea, { target: { value: 'New message' } });
     // Note: The component uses local state, not the store for input value
@@ -56,7 +79,11 @@ describe('UserInput', () => {
   });
 
   it('should call startAgent and clear input on send button click', () => {
-    render(<LanguageProvider><UserInput /></LanguageProvider>);
+    render(
+      <TestLanguageProvider>
+        <UserInput />
+      </TestLanguageProvider>
+    );
     const textarea = screen.getByPlaceholderText('Type your message...');
     const sendButton = screen.getByRole('button', { name: /send message/i });
     
@@ -71,21 +98,32 @@ describe('UserInput', () => {
   });
 
   it('should call startAgent and clear input on Enter key press (without Shift)', () => {
-    render(<LanguageProvider><UserInput /></LanguageProvider>);
+    render(
+      <TestLanguageProvider>
+        <UserInput />
+      </TestLanguageProvider>
+    );
     const textarea = screen.getByPlaceholderText('Type your message...');
     
     // Set input value
-    fireEvent.change(textarea, { target: { value: 'Test message via Enter' } });
+    fireEvent.change(textarea, { target: { value: 'Test message' } });
     
-    // Press Enter
+    // Press Enter (without Shift)
     fireEvent.keyDown(textarea, { key: 'Enter', code: 'Enter' });
-
-    expect(mockStartAgent).toHaveBeenCalledWith('Test message via Enter');
-    expect(textarea).toHaveValue(''); // Input should be cleared
+    
+    // Verify startAgent was called
+    expect(mockStartAgent).toHaveBeenCalledWith('Test message');
+    
+    // Verify input was cleared
+    expect(textarea).toHaveValue('');
   });
 
   it('should not call startAgent or clear input on Shift+Enter key press', () => {
-    render(<LanguageProvider><UserInput /></LanguageProvider>);
+    render(
+      <TestLanguageProvider>
+        <UserInput />
+      </TestLanguageProvider>
+    );
     const textarea = screen.getByPlaceholderText('Type your message...');
     
     // Set input value
@@ -99,7 +137,11 @@ describe('UserInput', () => {
   });
 
   it('should not send empty messages', () => {
-    render(<LanguageProvider><UserInput /></LanguageProvider>);
+    render(
+      <TestLanguageProvider>
+        <UserInput />
+      </TestLanguageProvider>
+    );
     const sendButton = screen.getByRole('button', { name: /send message/i });
     fireEvent.click(sendButton);
 
@@ -108,7 +150,11 @@ describe('UserInput', () => {
 
   it('should disable input and show loading spinner when processing', () => {
     useStore.setState({ isProcessing: true });
-    render(<LanguageProvider><UserInput /></LanguageProvider>);
+    render(
+      <TestLanguageProvider>
+        <UserInput />
+      </TestLanguageProvider>
+    );
     const textarea = screen.getByPlaceholderText('Type your message...');
     
     expect(textarea).toBeDisabled();
