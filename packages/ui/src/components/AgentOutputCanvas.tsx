@@ -273,7 +273,7 @@ const AgentOutputCanvas: React.FC = () => {
                   </Button>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {canvasHistory.map((canvas, index) => (
+                {canvasHistory.map((canvas: any, index: number) => (
                   <DropdownMenuItem
                     key={canvas.id}
                     className={`flex items-center justify-between cursor-pointer ${

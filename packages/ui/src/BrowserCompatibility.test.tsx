@@ -2,11 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Browser compatibility tests that don't require DOM rendering
 describe('Browser Compatibility Tests', () => {
-  let originalUserAgent: string;
   let originalNavigator: Navigator;
 
   beforeEach(() => {
-    originalUserAgent = navigator.userAgent;
     originalNavigator = navigator;
   });
 
@@ -143,7 +141,7 @@ describe('Browser Compatibility Tests', () => {
       const sym2 = Symbol('test');
       
       expect(typeof sym1).toBe('symbol');
-      expect(sym1 !== sym2).toBe(true);
+      expect(sym1).not.toBe(sym2);
     });
   });
 
@@ -296,7 +294,7 @@ describe('Browser Compatibility Tests', () => {
         throw new Error('Test error');
       } catch (error) {
         caught = true;
-        expect(error.message).toBe('Test error');
+        expect((error as Error).message).toBe('Test error');
       }
       
       expect(caught).toBe(true);
@@ -319,7 +317,7 @@ describe('Browser Compatibility Tests', () => {
         await asyncError();
         expect(true).toBe(false); // Should not reach here
       } catch (error) {
-        expect(error.message).toBe('Async error');
+        expect((error as Error).message).toBe('Async error');
       }
     });
   });

@@ -20,7 +20,7 @@ const mockSessionManager = {
   getAllSessions: vi.fn(),
   renameSession: vi.fn(),
   initDb: vi.fn(),
-};
+} as any;
 
 // Mock Redis pour persistance
 const mockRedisClient = {

@@ -5,11 +5,10 @@ import { useLanguage } from '../lib/contexts/LanguageContext';
 import { useCombinedStore as useStore } from '../store';
 import { LoadingSpinner } from './LoadingSpinner';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { AlertTriangle, Github, Chrome, Twitter, ChevronDown, ChevronRight, Key, Bot, Shield, Zap, Copy, ExternalLink, Clock, RefreshCw, Settings } from 'lucide-react';
+import { AlertTriangle, Github, Chrome, Twitter, ChevronDown, ChevronRight, Key, Bot, Shield, Zap, Clock, RefreshCw, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
 
 export const OAuthManagementPage = () => {
   const { translations } = useLanguage()
@@ -685,6 +684,13 @@ The full token has been copied to your clipboard.`);
                     {/* Qwen Token Monitoring */}
                     {isQwenConnected && (
                       <div className="mt-4 pt-4 border-t border-purple-800/50">
+                        <Alert variant="default" className="mb-4 border-2 border-amber-700/50 bg-amber-900/20 backdrop-blur-sm">
+                          <AlertTriangle className="h-5 w-5 text-amber-400" />
+                          <AlertTitle className="font-bold text-amber-300">Note importante</AlertTitle>
+                          <AlertDescription className="text-amber-400/80">
+                            Pour maintenir la validité de la clé, ne rouvrez jamais l'interface CLI de Qwen après l'avoir obtenue.
+                          </AlertDescription>
+                        </Alert>
                         <div className="flex items-center justify-between">
                           <h4 className="text-sm font-medium text-purple-300 flex items-center">
                             <Settings className="mr-2 h-4 w-4" />

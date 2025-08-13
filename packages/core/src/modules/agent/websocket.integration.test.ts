@@ -14,10 +14,10 @@ const mockWebSocket = {
   OPEN: 1,
   CLOSING: 2,
   CLOSED: 3,
-  onopen: null,
-  onclose: null,
-  onmessage: null,
-  onerror: null,
+  onopen: null as ((event: Event) => void) | null,
+  onclose: null as ((event: CloseEvent) => void) | null,
+  onmessage: null as ((event: MessageEvent) => void) | null,
+  onerror: null as ((event: Event) => void) | null,
   url: 'ws://localhost:3001/websocket',
   protocol: '',
   extensions: '',
@@ -762,7 +762,7 @@ describe('WebSocket Real-time Communication Integration Tests', () => {
       const sanitizeMessage = (message: string) => {
         // Simuler la sanitisation
         const dangerous = /<script|javascript:|data:|vbscript:/i.test(message);
-        const sqlInjection = /('|(\\\\|;)|(\\||`)|(\\*|;)|(drop|alter|create|insert|update|delete)\\s+(table|database)/i.test(message);
+        const sqlInjection = /('|\\\\|;|\\||`|\\*|;|drop|alter|create|insert|update|delete)\\s+(?:table|database)/i.test(message);
         
         return !dangerous && !sqlInjection;
       };

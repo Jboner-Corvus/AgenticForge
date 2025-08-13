@@ -7,7 +7,7 @@ import { useCanvasStore } from './canvasStore';
 import { useCacheStore } from './cacheStore';
 import { useLLMKeysStore } from './llmKeysStore';
 import { usePinningStore } from './pinningStore';
-import type { LlmApiKey, LeaderboardStats } from './types';
+import type { LlmApiKey, LeaderboardStats, PageType } from './types';
 import { 
   addLlmApiKeyApi, 
   removeLlmApiKeyApi, 
@@ -18,7 +18,7 @@ import {
   getTools
 } from '../lib/api';
 
-// Combined interface for backward compatibility
+// Combined interface for backward compatibility - includes all store properties
 export interface CombinedAppState {
   // LLM Management (keeping for backward compatibility)
   llmApiKeys: LlmApiKey[];
@@ -34,7 +34,111 @@ export interface CombinedAppState {
   // Tools
   isLoadingTools: boolean;
   
-  // Actions
+  // UI Store properties
+  currentPage: string;
+  isControlPanelVisible: boolean;
+  isDebugLogVisible: boolean;
+  isTodoListVisible: boolean;
+  isDarkMode: boolean;
+  isProcessing: boolean;
+  agentProgress: number;
+  messageInputValue: string;
+  agentStatus: string | null;
+  toolStatus: string;
+  browserStatus: string;
+  serverHealthy: boolean;
+  isAuthenticated: boolean;
+  tokenStatus: boolean;
+  toolCount: number | string;
+  toolCreationEnabled: boolean;
+  codeExecutionEnabled: boolean;
+  authToken: string | null;
+  jobId: string | null;
+  activeCliJobId: string | null;
+  streamCloseFunc: (() => void) | null;
+  debugLog: string[];
+  isSettingsModalOpen: boolean;
+  
+  // Canvas Store properties
+  canvasContent: string;
+  canvasType: unknown;
+  isCanvasVisible: boolean;
+  isCanvasPinned: boolean;
+  isCanvasFullscreen: boolean;
+  canvasWidth: number;
+  canvasHistory: unknown[];
+  currentCanvasIndex: number;
+  
+  // Session Store properties
+  sessionId: string | null;
+  activeSessionId: string | null;
+  sessionStatus: unknown;
+  messages: unknown[];
+  sessions: unknown[];
+  isLoadingSessions: boolean;
+  isSavingSession: boolean;
+  isDeletingSession: boolean;
+  isRenamingSession: boolean;
+  
+  // UI Store actions
+  setCurrentPage: (page: PageType) => void;
+  setIsSettingsModalOpen: (isOpen: boolean) => void;
+  setIsControlPanelVisible: (isVisible: boolean) => void;
+  setIsTodoListVisible: (isVisible: boolean) => void;
+  toggleDebugLogVisibility: () => void;
+  toggleDarkMode: () => void;
+  setIsProcessing: (isProcessing: boolean) => void;
+  setAgentProgress: (progress: number) => void;
+  setMessageInputValue: (value: string) => void;
+  setAgentStatus: (status: string | null) => void;
+  setToolStatus: (status: string) => void;
+  setBrowserStatus: (status: string) => void;
+  setServerHealthy: (healthy: boolean) => void;
+  setTokenStatus: (status: boolean) => void;
+  setToolCount: (count: number | string) => void;
+  setToolCreationEnabled: (enabled: boolean) => void;
+  setCodeExecutionEnabled: (enabled: boolean) => void;
+  setAuthToken: (token: string | null) => void;
+  setJobId: (jobId: string | null) => void;
+  setActiveCliJobId: (jobId: string | null) => void;
+  addDebugLog: (log: string) => void;
+  clearDebugLog: () => void;
+  
+  // Canvas Store actions
+  setCanvasContent: (content: string) => void;
+  setCanvasType: (type: unknown) => void;
+  setIsCanvasVisible: (isVisible: boolean) => void;
+  setCanvasPinned: (isPinned: boolean) => void;
+  setCanvasFullscreen: (isFullscreen: boolean) => void;
+  setCanvasWidth: (width: number) => void;
+  clearCanvas: () => void;
+  resetCanvas: () => void;
+  toggleIsCanvasVisible: () => void;
+  addCanvasToHistory: (title: string, content: string, type: unknown) => void;
+  navigateToCanvas: (index: number) => void;
+  removeCanvasFromHistory: (index: number) => void;
+  clearCanvasHistory: () => void;
+  
+  // Session Store actions
+  setSessionId: (sessionId: string | null) => void;
+  setSessionStatus: (status: unknown) => void;
+  setMessages: (messages: unknown[]) => void;
+  setSessions: (sessions: unknown[]) => void;
+  setActiveSessionId: (id: string | null) => void;
+  addMessage: (message: unknown) => void;
+  clearMessages: () => void;
+  saveSession: (name: string) => Promise<void>;
+  loadSession: (id: string) => Promise<void>;
+  deleteSession: (id: string) => Promise<void>;
+  deleteAllSessions: () => Promise<void>;
+  renameSession: (id: string, newName: string) => Promise<void>;
+  loadAllSessions: () => Promise<void>;
+  setIsLoadingSessions: (isLoading: boolean) => void;
+  setIsSavingSession: (isSaving: boolean) => void;
+  setIsDeletingSession: (isDeleting: boolean) => void;
+  setIsRenamingSession: (isRenaming: boolean) => void;
+  
+  // Main actions
   addLlmApiKey: (provider: string, key: string, baseUrl?: string, model?: string) => Promise<void>;
   removeLlmApiKey: (index: number) => Promise<void>;
   editLlmApiKey: (index: number, provider: string, key: string, baseUrl?: string, model?: string) => Promise<void>;
@@ -72,6 +176,110 @@ export const useCombinedStore = create<CombinedAppState>()(
       
       // Tools state
       isLoadingTools: false,
+      
+      // UI Store properties (proxied from individual stores)
+      get currentPage() { return useUIStore.getState().currentPage; },
+      get isControlPanelVisible() { return useUIStore.getState().isControlPanelVisible; },
+      get isDebugLogVisible() { return useUIStore.getState().isDebugLogVisible; },
+      get isTodoListVisible() { return useUIStore.getState().isTodoListVisible; },
+      get isDarkMode() { return useUIStore.getState().isDarkMode; },
+      get isProcessing() { return useUIStore.getState().isProcessing; },
+      get agentProgress() { return useUIStore.getState().agentProgress; },
+      get messageInputValue() { return useUIStore.getState().messageInputValue; },
+      get agentStatus() { return useUIStore.getState().agentStatus; },
+      get toolStatus() { return useUIStore.getState().toolStatus; },
+      get browserStatus() { return useUIStore.getState().browserStatus; },
+      get serverHealthy() { return useUIStore.getState().serverHealthy; },
+      get isAuthenticated() { return useUIStore.getState().isAuthenticated; },
+      get tokenStatus() { return useUIStore.getState().tokenStatus; },
+      get toolCount() { return useUIStore.getState().toolCount; },
+      get toolCreationEnabled() { return useUIStore.getState().toolCreationEnabled; },
+      get codeExecutionEnabled() { return useUIStore.getState().codeExecutionEnabled; },
+      get authToken() { return useUIStore.getState().authToken; },
+      get jobId() { return useUIStore.getState().jobId; },
+      get activeCliJobId() { return useUIStore.getState().activeCliJobId; },
+      get streamCloseFunc() { return useUIStore.getState().streamCloseFunc; },
+      get debugLog() { return useUIStore.getState().debugLog; },
+      get isSettingsModalOpen() { return useUIStore.getState().isSettingsModalOpen; },
+      
+      // Canvas Store properties
+      get canvasContent() { return useCanvasStore.getState().canvasContent; },
+      get canvasType() { return useCanvasStore.getState().canvasType; },
+      get isCanvasVisible() { return useCanvasStore.getState().isCanvasVisible; },
+      get isCanvasPinned() { return useCanvasStore.getState().isCanvasPinned; },
+      get isCanvasFullscreen() { return useCanvasStore.getState().isCanvasFullscreen; },
+      get canvasWidth() { return useCanvasStore.getState().canvasWidth; },
+      get canvasHistory() { return useCanvasStore.getState().canvasHistory; },
+      get currentCanvasIndex() { return useCanvasStore.getState().currentCanvasIndex; },
+      
+      // Session Store properties
+      get sessionId() { return useSessionStore.getState().sessionId; },
+      get activeSessionId() { return useSessionStore.getState().activeSessionId; },
+      get sessionStatus() { return useSessionStore.getState().sessionStatus; },
+      get messages() { return useSessionStore.getState().messages; },
+      get sessions() { return useSessionStore.getState().sessions; },
+      get isLoadingSessions() { return useSessionStore.getState().isLoadingSessions; },
+      get isSavingSession() { return useSessionStore.getState().isSavingSession; },
+      get isDeletingSession() { return useSessionStore.getState().isDeletingSession; },
+      get isRenamingSession() { return useSessionStore.getState().isRenamingSession; },
+      
+      // UI Store actions (proxied)
+      setCurrentPage: (page: PageType) => useUIStore.getState().setCurrentPage(page),
+      setIsSettingsModalOpen: (isOpen: boolean) => useUIStore.getState().setIsSettingsModalOpen(isOpen),
+      setIsControlPanelVisible: (isVisible: boolean) => useUIStore.getState().setIsControlPanelVisible(isVisible),
+      setIsTodoListVisible: (isVisible: boolean) => useUIStore.getState().setIsTodoListVisible(isVisible),
+      toggleDebugLogVisibility: () => useUIStore.getState().toggleDebugLogVisibility(),
+      toggleDarkMode: () => useUIStore.getState().toggleDarkMode(),
+      setIsProcessing: (isProcessing: boolean) => useUIStore.getState().setIsProcessing(isProcessing),
+      setAgentProgress: (progress: number) => useUIStore.getState().setAgentProgress(progress),
+      setMessageInputValue: (value: string) => useUIStore.getState().setMessageInputValue(value),
+      setAgentStatus: (status: string | null) => useUIStore.getState().setAgentStatus(status),
+      setToolStatus: (status: string) => useUIStore.getState().setToolStatus(status),
+      setBrowserStatus: (status: string) => useUIStore.getState().setBrowserStatus(status),
+      setServerHealthy: (healthy: boolean) => useUIStore.getState().setServerHealthy(healthy),
+      setTokenStatus: (status: boolean) => useUIStore.getState().setTokenStatus(status),
+      setToolCount: (count: number | string) => useUIStore.getState().setToolCount(count),
+      setToolCreationEnabled: (enabled: boolean) => useUIStore.getState().setToolCreationEnabled(enabled),
+      setCodeExecutionEnabled: (enabled: boolean) => useUIStore.getState().setCodeExecutionEnabled(enabled),
+      setAuthToken: (token: string | null) => useUIStore.getState().setAuthToken(token),
+      setJobId: (jobId: string | null) => useUIStore.getState().setJobId(jobId),
+      setActiveCliJobId: (jobId: string | null) => useUIStore.getState().setActiveCliJobId(jobId),
+      addDebugLog: (log: string) => useUIStore.getState().addDebugLog(log),
+      clearDebugLog: () => useUIStore.getState().clearDebugLog(),
+      
+      // Canvas Store actions (proxied)
+      setCanvasContent: (content: string) => useCanvasStore.getState().setCanvasContent(content),
+      setCanvasType: (type: any) => useCanvasStore.getState().setCanvasType(type),
+      setIsCanvasVisible: (isVisible: boolean) => useCanvasStore.getState().setIsCanvasVisible(isVisible),
+      setCanvasPinned: (isPinned: boolean) => useCanvasStore.getState().setCanvasPinned(isPinned),
+      setCanvasFullscreen: (isFullscreen: boolean) => useCanvasStore.getState().setCanvasFullscreen(isFullscreen),
+      setCanvasWidth: (width: number) => useCanvasStore.getState().setCanvasWidth(width),
+      clearCanvas: () => useCanvasStore.getState().clearCanvas(),
+      resetCanvas: () => useCanvasStore.getState().resetCanvas(),
+      toggleIsCanvasVisible: () => useCanvasStore.getState().toggleIsCanvasVisible(),
+      addCanvasToHistory: (title: string, content: string, type: any) => useCanvasStore.getState().addCanvasToHistory(title, content, type),
+      navigateToCanvas: (index: number) => useCanvasStore.getState().navigateToCanvas(index),
+      removeCanvasFromHistory: (index: number) => useCanvasStore.getState().removeCanvasFromHistory(index),
+      clearCanvasHistory: () => useCanvasStore.getState().clearCanvasHistory(),
+      
+      // Session Store actions (proxied)
+      setSessionId: (sessionId: string | null) => useSessionStore.getState().setSessionId(sessionId),
+      setSessionStatus: (status: any) => useSessionStore.getState().setSessionStatus(status),
+      setMessages: (messages: any[]) => useSessionStore.getState().setMessages(messages),
+      setSessions: (sessions: any[]) => useSessionStore.getState().setSessions(sessions),
+      setActiveSessionId: (id: string | null) => useSessionStore.getState().setActiveSessionId(id),
+      addMessage: (message: any) => useSessionStore.getState().addMessage(message),
+      clearMessages: () => useSessionStore.getState().clearMessages(),
+      saveSession: (name: string) => useSessionStore.getState().saveSession(name),
+      loadSession: (id: string) => useSessionStore.getState().loadSession(id),
+      deleteSession: (id: string) => useSessionStore.getState().deleteSession(id),
+      deleteAllSessions: () => useSessionStore.getState().deleteAllSessions(),
+      renameSession: (id: string, newName: string) => useSessionStore.getState().renameSession(id, newName),
+      loadAllSessions: () => useSessionStore.getState().loadAllSessions(),
+      setIsLoadingSessions: (isLoading: boolean) => useSessionStore.getState().setIsLoadingSessions(isLoading),
+      setIsSavingSession: (isSaving: boolean) => useSessionStore.getState().setIsSavingSession(isSaving),
+      setIsDeletingSession: (isDeleting: boolean) => useSessionStore.getState().setIsDeletingSession(isDeleting),
+      setIsRenamingSession: (isRenaming: boolean) => useSessionStore.getState().setIsRenamingSession(isRenaming),
 
       // LLM API Key Management
       addLlmApiKey: async (provider: string, key: string, baseUrl?: string, model?: string) => {

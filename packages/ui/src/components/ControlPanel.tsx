@@ -201,7 +201,7 @@ export const ControlPanel = memo(() => {
                 ) : (
                   <>
                     <div className="space-y-2">
-                      {displayedSessions.map((session) => (
+                      {displayedSessions.map((session: any) => (
                         <div key={session.id} className="flex items-center justify-between p-2 border border-border rounded-md hover:bg-accent transition-all duration-200 hover:scale-105 transform">
                           <span className="text-sm truncate" title={session.name}>
                             {session.name.length > 20 ? `${session.name.substring(0, 20)}...` : session.name}
