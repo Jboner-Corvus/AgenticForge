@@ -1,28 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { useStore } from '../../lib/store';
+import { useCombinedStore as useStore } from '../../store';
 import { Button } from '../ui/button';
-import { X, Minus, Square, CheckCircle, Clock, Play } from 'lucide-react';
-
-interface TodoItem {
-  id: string;
-  content: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  priority: 'low' | 'medium' | 'high';
-  category?: string;
-}
-
-interface TodoData {
-  type: 'todo_list';
-  title: string;
-  timestamp: number;
-  todos: TodoItem[];
-  stats: {
-    pending: number;
-    in_progress: number;
-    completed: number;
-    total: number;
-  };
-}
+import { X, CheckCircle, Clock, Play, Plus, Trash2, AlertTriangle, Download, Upload } from 'lucide-react';
+import { useTodoList } from './useTodoList';
 
 const STATUS_CONFIG = {
   pending: { icon: Clock, label: 'À FAIRE', color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-200' },
@@ -37,80 +16,127 @@ const PRIORITY_CONFIG = {
 };
 
 export function TodoListPanel() {
-  const [todoData, setTodoData] = useState<TodoData | null>(null);
+  const { 
+    todoData, 
+    newTodo, 
+    setNewTodo, 
+    newTodoPriority, 
+    setNewTodoPriority, 
+    addTodo, 
+    removeTodo, 
+    updateTodoStatus,
+    exportTodoList,
+    importTodoList,
+    isRecovered,
+    acknowledgeRecovery
+  } = useTodoList();
+  
   const isTodoListVisible = useStore((state) => state.isTodoListVisible);
   const setIsTodoListVisible = useStore((state) => state.setIsTodoListVisible);
-  const wsRef = useRef<WebSocket | null>(null);
-  const jobId = useStore((state) => state.jobId);
-  const isProcessing = useStore((state) => state.isProcessing);
 
-  useEffect(() => {
-    // Connect to WebSocket for real-time updates
-    if (jobId && isProcessing) {
-      const wsUrl = `ws://localhost:3005/api/ws?jobId=${jobId}`;
-      wsRef.current = new WebSocket(wsUrl);
-      
-      wsRef.current.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'todo_list') {
-            setTodoData(data);
-            setIsTodoListVisible(true);
-          }
-        } catch (error) {
-          console.error('Error parsing todo data:', error);
-        }
-      };
-      
-      wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-    }
-    
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, [jobId, isProcessing, setIsTodoListVisible]);
-
-  const closePanel = () => {
-    setIsTodoListVisible(false);
-  };
-
-  const toggleMinimize = () => {
-    setIsTodoListVisible(!isTodoListVisible);
-  };
-
-  if (!todoData || !isTodoListVisible) {
-    return (
-      <button
-        onClick={() => setIsTodoListVisible(true)}
-        className="fixed right-4 bottom-24 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full p-3 shadow-lg transition-all duration-300 z-10"
-        aria-label="Ouvrir la liste des tâches"
-      >
-        <Square className="h-5 w-5" />
-      </button>
-    );
+  // Only show the panel when it's visible
+  if (!isTodoListVisible) {
+    return null;
   }
 
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      importTodoList(file);
+      event.target.value = ''; // Reset input
+    }
+  };
+
   return (
-    <div className="fixed right-4 bottom-4 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-20 flex flex-col max-h-[80vh]">
+    <div className="fixed left-4 top-20 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-20 flex flex-col max-h-[calc(100vh-5rem)]">
+      {/* Recovery alert */}
+      {isRecovered && (
+        <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700">
+          <div className="flex items-center justify-between text-amber-800 dark:text-amber-200">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm font-medium">Récupération après crash</span>
+            </div>
+            <Button
+              onClick={acknowledgeRecovery}
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 text-amber-600 hover:text-amber-800"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+            Vos tâches ont été récupérées automatiquement.
+          </p>
+        </div>
+      )}
+
+      {/* Stats at the top */}
+      <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="bg-amber-50 dark:bg-amber-900/20 p-2 rounded-lg">
+            <div className="text-lg font-bold text-amber-600 dark:text-amber-400">
+              {todoData?.stats.pending || 0}
+            </div>
+            <div className="text-xs text-amber-500 dark:text-amber-400">⏳ À FAIRE</div>
+          </div>
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
+            <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+              {todoData?.stats.in_progress || 0}
+            </div>
+            <div className="text-xs text-blue-500 dark:text-blue-400">🚀 EN COURS</div>
+          </div>
+          <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded-lg">
+            <div className="text-lg font-bold text-green-600 dark:text-green-400">
+              {todoData?.stats.completed || 0}
+            </div>
+            <div className="text-xs text-green-500 dark:text-green-400">✅ TERMINÉ</div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Header with title and controls */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">
           {todoData?.title || 'Liste des Tâches'}
         </h2>
-        <div className="flex space-x-2">
+        <div className="flex items-center space-x-2">
+          {/* Export button */}
           <Button
-            onClick={toggleMinimize}
+            onClick={exportTodoList}
             variant="ghost"
             size="sm"
             className="p-1 h-8 w-8"
+            title="Exporter la todo list"
           >
-            <Minus className="h-4 w-4" />
+            <Download className="h-4 w-4" />
           </Button>
+          
+          {/* Import button */}
+          <label className="cursor-pointer">
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleFileImport}
+              className="hidden"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-1 h-8 w-8"
+              title="Importer une todo list"
+              asChild
+            >
+              <span>
+                <Upload className="h-4 w-4" />
+              </span>
+            </Button>
+          </label>
+          
+          {/* Close button */}
           <Button
-            onClick={closePanel}
+            onClick={() => setIsTodoListVisible(false)}
             variant="ghost"
             size="sm"
             className="p-1 h-8 w-8"
@@ -120,20 +146,56 @@ export function TodoListPanel() {
         </div>
       </div>
       
+      {/* Add new todo form */}
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex space-x-2">
+          <input
+            type="text"
+            value={newTodo}
+            onChange={(e) => setNewTodo(e.target.value)}
+            placeholder="Nouvelle tâche..."
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+          />
+          <select
+            value={newTodoPriority}
+            onChange={(e) => setNewTodoPriority(e.target.value as 'low' | 'medium' | 'high')}
+            className="px-2 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          >
+            <option value="low">🌱</option>
+            <option value="medium">⚡</option>
+            <option value="high">🔥</option>
+          </select>
+          <Button
+            onClick={addTodo}
+            variant="ghost"
+            size="sm"
+            className="p-2 h-8 w-8"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      
+      {/* Todo items list */}
       <div className="flex-1 overflow-y-auto p-4">
-        {todoData.todos.length === 0 ? (
+        {todoData?.todos.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-4xl mb-4">🎯</div>
             <p className="text-gray-500 dark:text-gray-400">
-              Aucune tâche active
+              Aucune tâche
             </p>
             <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
-              L'agent créera automatiquement des tâches lors de vos demandes
+              Ajoutez une nouvelle tâche pour commencer
             </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {todoData.todos.map((todo) => {
+            {[...(todoData?.todos || [])].sort((a, b) => {
+              // Tri par statut : en cours, à faire, terminé
+              const statusOrder = { in_progress: 0, pending: 1, completed: 2 };
+              return statusOrder[a.status] - statusOrder[b.status];
+            }).map((todo) => {
               const statusConfig = STATUS_CONFIG[todo.status];
               const priorityConfig = PRIORITY_CONFIG[todo.priority];
               const StatusIcon = statusConfig.icon;
@@ -145,9 +207,16 @@ export function TodoListPanel() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-3">
-                      <div className={`mt-1 p-1 rounded ${statusConfig.color}`}>
+                      <button 
+                        onClick={() => updateTodoStatus(
+                          todo.id, 
+                          todo.status === 'completed' ? 'pending' : 
+                          todo.status === 'in_progress' ? 'completed' : 'in_progress'
+                        )}
+                        className={`mt-1 p-1 rounded ${statusConfig.color} hover:bg-gray-200 dark:hover:bg-gray-600`}
+                      >
                         <StatusIcon className="h-4 w-4" />
-                      </div>
+                      </button>
                       <div>
                         <p className={`font-medium ${todo.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
                           {todo.content}
@@ -164,6 +233,14 @@ export function TodoListPanel() {
                         </div>
                       </div>
                     </div>
+                    <Button
+                      onClick={() => removeTodo(todo.id)}
+                      variant="ghost"
+                      size="sm"
+                      className="p-1 h-6 w-6 text-gray-500 hover:text-red-500"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
                   
                   <div className="mt-3">
@@ -191,14 +268,14 @@ export function TodoListPanel() {
                   {todo.status === 'in_progress' && (
                     <div className="mt-2 flex items-center text-xs text-blue-600">
                       <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
-                      <span>L'agent travaille actuellement sur cette tâche...</span>
+                      <span>En cours de traitement...</span>
                     </div>
                   )}
                   
                   {todo.status === 'completed' && (
                     <div className="mt-2 flex items-center text-xs text-green-600">
                       <CheckCircle className="h-3 w-3 mr-1" />
-                      <span>Tâche complétée avec succès !</span>
+                      <span>Tâche terminée !</span>
                     </div>
                   )}
                 </div>
@@ -206,29 +283,6 @@ export function TodoListPanel() {
             })}
           </div>
         )}
-      </div>
-      
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="bg-amber-50 dark:bg-amber-900/20 p-2 rounded-lg">
-            <div className="text-lg font-bold text-amber-600 dark:text-amber-400">
-              {todoData.stats.pending}
-            </div>
-            <div className="text-xs text-amber-500 dark:text-amber-400">⏳ À FAIRE</div>
-          </div>
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
-            <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
-              {todoData.stats.in_progress}
-            </div>
-            <div className="text-xs text-blue-500 dark:text-blue-400">🚀 EN COURS</div>
-          </div>
-          <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded-lg">
-            <div className="text-lg font-bold text-green-600 dark:text-green-400">
-              {todoData.stats.completed}
-            </div>
-            <div className="text-xs text-green-500 dark:text-green-400">✅ TERMINÉ</div>
-          </div>
-        </div>
       </div>
     </div>
   );

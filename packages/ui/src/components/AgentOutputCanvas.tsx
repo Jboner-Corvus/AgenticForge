@@ -16,7 +16,7 @@ import {
   DropdownMenuLabel
 } from './ui/dropdown-menu';
 import { Slider } from './ui/slider';
-import { useStore } from '../lib/store';
+import { useCombinedStore as useStore } from '../store';
 import { useLanguage } from '../lib/contexts/LanguageContext';
 import { useToast } from '../lib/hooks/useToast';
 

@@ -74,9 +74,9 @@ describe('SessionManager', () => {
   let mockJob: Job;
   let mockTaskQueue: Queue;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockPgClient = new PgClient();
-    sessionManager = new SessionManager(mockPgClient);
+    sessionManager = await SessionManager.create(mockPgClient);
     vi.clearAllMocks();
     SessionManager.clearActiveSessionsForTest();
 

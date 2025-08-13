@@ -1,0 +1,102 @@
+/* Styles personnalisés pour la conversation */
+
+.conversation-turn {
+  scroll-margin-top: 20px;
+}
+
+.agent-section {
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.tool-interaction {
+  transition: all 0.2s ease-in-out;
+}
+
+.tool-interaction:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Amélioration du scroll */
+.chat-container {
+  scroll-behavior: smooth;
+}
+
+.chat-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+
+.chat-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* Animation pour les nouveaux messages */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-animation {
+  animation: slideIn 0.4s ease-out;
+}
+
+/* Meilleure lisibilité pour les blocs de code */
+.prose code {
+  @apply bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-sm;
+}
+
+.prose pre {
+  @apply bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4;
+}
+
+.prose pre code {
+  @apply bg-transparent p-0;
+}
+
+/* Icônes de statut */
+.status-indicator {
+  @apply flex items-center gap-2 text-xs font-medium;
+}
+
+.status-indicator.thinking {
+  @apply text-blue-600 dark:text-blue-400;
+}
+
+.status-indicator.working {
+  @apply text-orange-600 dark:text-orange-400;
+}
+
+.status-indicator.completed {
+  @apply text-green-600 dark:text-green-400;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .conversation-turn {
+    margin-bottom: 1rem;
+  }
+  
+  .agent-section {
+    padding: 1rem;
+  }
+  
+  .tool-interaction {
+    padding: 0.75rem;
+  }
+}

@@ -1,6 +1,6 @@
 
 import { Header } from './Header';
-import { useStore } from '../lib/store';
+import { useCombinedStore as useStore } from '../store';
 
 export function HeaderContainer() {
   const isControlPanelVisible = useStore((state) => state.isControlPanelVisible);

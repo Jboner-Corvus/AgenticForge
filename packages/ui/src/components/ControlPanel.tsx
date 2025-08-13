@@ -10,7 +10,7 @@ import { Label } from './ui/label';
 import { useLanguage } from '../lib/contexts/LanguageContext';
 import { useDraggableSidebar } from '../lib/hooks/useDraggablePane';
 import { memo, useCallback, useState } from 'react';
-import { useStore } from '../lib/store';
+import { useCombinedStore as useStore } from '../store';
 import { LoadingSpinner } from './LoadingSpinner';
 
 

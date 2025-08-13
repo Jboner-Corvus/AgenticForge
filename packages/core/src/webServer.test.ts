@@ -2,7 +2,15 @@ import express from 'express';
 import { Server } from 'http';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { setRedisClientInstance } from './modules/redis/redisClient';
 import { initializeWebServer } from './webServer';
+
+// Mock toolLoader to prevent filesystem access during tests
+vi.mock('./utils/toolLoader', async () => {
+  return {
+    getTools: vi.fn().mockResolvedValue([]),
+  };
+});
 
 describe('API Routes', () => {
   let app: express.Application;
@@ -21,9 +29,13 @@ describe('API Routes', () => {
       })),
       get: vi.fn().mockResolvedValue(null),
       incr: vi.fn().mockResolvedValue(1),
+      lrange: vi.fn().mockResolvedValue([]),
       publish: vi.fn().mockResolvedValue(1),
       set: vi.fn().mockResolvedValue('OK'),
+      del: vi.fn().mockResolvedValue(1),
+      rpush: vi.fn().mockResolvedValue(1),
     };
+    setRedisClientInstance(mockRedisClient);
     const initialized = await initializeWebServer(
       mockPgClient,
       mockRedisClient,
@@ -34,6 +46,7 @@ describe('API Routes', () => {
 
   afterAll(() => {
     server.close();
+    setRedisClientInstance(null);
   });
 
   it('should return 200 for GET /api/tools', async () => {

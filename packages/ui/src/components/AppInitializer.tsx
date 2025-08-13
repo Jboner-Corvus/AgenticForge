@@ -3,7 +3,7 @@ import { useCallback, useEffect } from 'react';
 import { useLanguage } from '../lib/contexts/LanguageContext';
 import { clientConfig } from '../config';
 import { testServerHealth } from '../lib/api';
-import { useStore } from '../lib/store';
+import { useCombinedStore as useStore } from '../store';
 
 function generateUUID() {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;

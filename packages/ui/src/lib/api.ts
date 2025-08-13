@@ -202,6 +202,7 @@ export interface SessionData {
   messages: Message[];
   timestamp: number;
   activeLlmProvider?: string;
+  status?: string;
 }
 
 export const getTools = async (authToken: string, sessionId: string) => {

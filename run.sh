@@ -412,7 +412,7 @@ run_unit_tests() {
     echo -e "${COLOR_YELLOW}Lancement des tests unitaires...${NC}"
     local output_file
     output_file=$(mktemp)
-    pnpm run test:unit >"$output_file" 2>&1
+    pnpm run test:unit -- "$@" >"$output_file" 2>&1
     local exit_code=$?
     
     echo "=== R\u00e9sum\u00e9 des tests unitaires ==="
@@ -421,7 +421,7 @@ run_unit_tests() {
     if [ $exit_code -ne 0 ]; then
         echo ""
         echo -e "${COLOR_RED}Erreurs d\u00e9tect\u00e9es :${NC}"
-        grep -E "(FAILED|ERROR|failed|erreur)" "$output_file" | head -10
+        grep -E "(FAILED|ERROR|failed|erreur)" "$output_file"
     fi
     
     echo "$output_file" > /tmp/unit_test_output_file
@@ -732,7 +732,7 @@ main() {
             lint) run_lint ;; 
             format) run_format ;; 
             test) run_all_tests ;; 
-            test:unit) run_unit_tests ;; 
+            test:unit) run_unit_tests "${@:2}" ;; 
             test:integration) run_integration_tests ;; 
             typecheck) run_typecheck ;; 
             small-checks) run_small_checks ;; 

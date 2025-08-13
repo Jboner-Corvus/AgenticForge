@@ -20,6 +20,7 @@ import { SessionManager } from './modules/session/sessionManager.js';
 import { Message, SessionData } from './types.js';
 import { AppError, handleError } from './utils/errorUtils.js';
 import { getTools } from './utils/toolLoader.js';
+import { maskApiKey } from './utils/keyMaskingUtils.js';
 
 export let configWatcher: import('chokidar').FSWatcher | null = null;
 
@@ -32,7 +33,7 @@ export async function initializeWebServer(
     const jobQueue = getJobQueue();
 
     const app = express();
-    const sessionManager = new SessionManager(pgClient);
+    const sessionManager = await SessionManager.create(pgClient);
     app.use(express.json());
     app.use(express.static(path.join(process.cwd(), 'packages', 'ui', 'dist')));
     app.use(cookieParser());
@@ -261,7 +262,11 @@ export async function initializeWebServer(
 
     app.post(
       '/api/session',
-      async (req: express.Request, res: express.Response) => {
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
         const sessionId = req.sessionId;
         if (!sessionId) {
           return res.status(400).json({ error: 'Session ID is missing.' });
@@ -281,7 +286,7 @@ export async function initializeWebServer(
             { error },
             'Error managing session implicitly',
           );
-          res.status(500).json({ error: 'Failed to manage session.' });
+          next(error);
         }
       },
     );
@@ -357,14 +362,27 @@ export async function initializeWebServer(
         next: express.NextFunction,
       ) => {
         try {
-          // This is mock data. In a real application, you would fetch this from a database.
-          const leaderboardData = [
-            { id: 'key-1', provider: 'OpenAI', keyMask: 'sk-a...123', requests: { count: 4500, limit: 5000 }, tokens: { count: 1800000, limit: 2000000 }, rank: 1 },
-            { id: 'key-2', provider: 'Anthropic', keyMask: 'sk-b...456', requests: { count: 3200, limit: 10000 }, tokens: { count: 950000, limit: 1000000 }, rank: 2 },
-            { id: 'key-3', provider: 'OpenRouter', keyMask: 'sk-c...789', requests: { count: 8800, limit: 10000 }, tokens: { count: 750000, limit: 1000000 }, rank: 3 },
-            { id: 'key-4', provider: 'OpenAI', keyMask: 'sk-d...012', requests: { count: 1200, limit: 5000 }, tokens: { count: 300000, limit: 2000000 }, rank: 4 },
-            { id: 'key-5', provider: 'Google Gemini', keyMask: 'sk-e...345', requests: { count: 500, limit: 1000 }, tokens: { count: 400000, limit: 500000 }, rank: 5 },
-          ];
+          // Get the actual API keys from the key manager
+          const apiKeys = await _LlmKeyManager.getKeysForApi();
+          
+          // Generate mock usage data for each key
+          const leaderboardData = apiKeys.map((key, index) => {
+            // Generate mock usage stats
+            const requestsLimit = Math.floor(Math.random() * 10000) + 1000;
+            const requestsCount = Math.floor(Math.random() * requestsLimit);
+            const tokensLimit = Math.floor(Math.random() * 2000000) + 100000;
+            const tokensCount = Math.floor(Math.random() * tokensLimit);
+            
+            return {
+              id: `key-${index + 1}`,
+              provider: key.apiProvider,
+              keyMask: maskApiKey(key.apiKey),
+              requests: { count: requestsCount, limit: requestsLimit },
+              tokens: { count: tokensCount, limit: tokensLimit },
+              rank: index + 1
+            };
+          });
+          
           res.status(200).json(leaderboardData);
         } catch (_error) {
           next(_error);
@@ -1155,6 +1173,78 @@ export async function initializeWebServer(
           getLoggerInstance().error(
             { error },
             'Error logging out from Qwen',
+          );
+          next(error);
+        }
+      },
+    );
+
+    // Check Qwen token status
+    app.get(
+      '/api/llm-keys/qwen/status',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          if (!req.sessionId) {
+            return res.status(400).json({ error: 'Session ID is missing.' });
+          }
+
+          // Get Qwen access token from Redis for this session
+          const qwenAccessToken = await redisClient.get(
+            `qwen:accessToken:${req.sessionId}`,
+          );
+
+          if (!qwenAccessToken) {
+            return res.status(200).json({
+              isValid: false,
+              requestsRemaining: null,
+              errorMessage: 'No Qwen access token found'
+            });
+          }
+
+          // Validate the token by making a simple API call
+          try {
+            const response = await fetch('https://dashscope.aliyuncs.com/api/v1/token-status', {
+              method: 'GET',
+              headers: {
+                Authorization: `Bearer ${qwenAccessToken}`,
+                'Content-Type': 'application/json',
+              },
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              return res.status(200).json({
+                isValid: true,
+                requestsRemaining: data.remaining_requests || null,
+                lastChecked: new Date().toISOString(),
+              });
+            } else {
+              const errorData = await response.json();
+              return res.status(200).json({
+                isValid: false,
+                requestsRemaining: null,
+                errorMessage: errorData.message || 'Invalid Qwen token',
+              });
+            }
+          } catch (error) {
+            getLoggerInstance().error(
+              { error },
+              'Error validating Qwen access token',
+            );
+            return res.status(200).json({
+              isValid: false,
+              requestsRemaining: null,
+              errorMessage: 'Failed to validate Qwen token',
+            });
+          }
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error checking Qwen token status',
           );
           next(error);
         }

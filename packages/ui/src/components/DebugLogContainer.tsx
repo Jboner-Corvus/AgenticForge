@@ -1,5 +1,5 @@
 import React from 'react';
-import { useStore } from '../lib/store';
+import { useCombinedStore as useStore } from '../store';
 import { DebugLog } from './DebugLog';
 
 export const DebugLogContainer: React.FC = () => {

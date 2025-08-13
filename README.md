@@ -38,6 +38,10 @@
 
 🛠️ **Auto-Forge d'Outils MCP** - AgenticForge code directement des outils MCP personnalisés en TypeScript avec schémas Zod, les intègre au worker en temps réel et les affiche dans l'interface avec transparence totale.
 
+💰 **Fonctionnement Gratuit Prolongé** - Grâce à une astuce de gestion de clés, notamment avec Qwen, AgenticForge peut fonctionner en continu pendant plusieurs jours sans frais.
+
+🤖 **Contrôle de Sous-Agents** - Capable d'orchestrer et de contrôler d'autres agents en ligne de commande (CLI) pour déléguer et paralléliser des tâches complexes.
+
 💻 **Assistant de Codage Autonome** - Besoin de code ? Il peut écrire, déboguer et exécuter des programmes en Python, TypeScript, Bash et plus — sans supervision.
 
 🧠 **Sélection Intelligente d'Outils** - Vous demandez, il trouve automatiquement le meilleur outil pour le travail. Comme avoir une forge d'experts prêts à aider.
@@ -46,7 +50,7 @@
 
 🌐 **Navigation Web Intelligente** - AgenticForge peut naviguer sur internet de manière autonome — rechercher, lire, extraire des infos, automatiser des tâches — le tout sans intervention.
 
-🔄 **Routeur de Clés API Intelligent** - Système de hiérarchie configurable qui bascule automatiquement entre plusieurs clés API pour ne jamais être à court de requêtes.
+🔄 **LlmKeyManager Intelligent** - Système de gestion avancé des clés API avec basculement automatique, monitoring de performance et désactivation temporaire des clés défaillantes.
 
 🚀 **Forge MCP Native** - Utilise le protocole MCP avec FastMCP pour créer, modifier et déployer des outils personnalisés en temps réel. Chaque outil est codé, testé et intégré automatiquement au worker.
 
@@ -60,7 +64,9 @@
 
 ## 🛠️ ⚠️ Travail Actif en Cours
 
-🙏 Ce projet a commencé pour prouver que MCP etait mieux que API et a grandi au-delà des attentes. Les contributions, commentaires et patience sont profondément appréciés alors que nous forgeons de l'avant.
+🙏 Ce projet a commencé pour prouver que MCP était mieux que API et a grandi au-delà des attentes. Les contributions, commentaires et patience sont profondément appréciés alors que nous forgeons de l'avant.
+
+💡 **Rejoignez notre [Discord](https://discord.gg/VNtXQByKfg)** pour échanger avec la communauté, partager vos outils MCP forgés et accéder aux dernières innovations !
 
 ---
 
@@ -159,14 +165,15 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=""        # Laissez vide pour un usage local
 
-# Intelligence Artificielle
+# Intelligence Artificielle - Configuration simplifiée
+# Première clé (chargée automatiquement au démarrage)
 LLM_API_KEY="votre_cle_api_preferee"
-LLM_MODEL_NAME="gemini-2.5-pro"   # ou "gpt-5", "claude-3.5-sonnet"
-LLM_API_BASE_URL=""      # Auto-détecté selon le modèle
+LLM_PROVIDER="gemini"          # ou "openai", "anthropic", "grok", etc.
+LLM_MODEL_NAME="gemini-2.5-pro"   # Modèle correspondant au provider
+LLM_API_BASE_URL=""            # Auto-détecté selon le modèle (optionnel)
 
-# Routeur de clés API (pour éviter les limites)
-LLM_API_KEY_BACKUP="cle_api_secondaire"     # Optionnel
-LLM_API_KEY_TERTIARY="cle_api_tertiaire"   # Optionnel
+# Note: Les clés multiples sont gérées via l'interface web (LlmKeyManager)
+# Accédez à localhost:3002 pour ajouter/gérer vos clés API supplémentaires
 
 # Sécurité
 AUTH_TOKEN="$(openssl rand -hex 32)"     # Généré automatiquement
@@ -176,20 +183,29 @@ NODE_ENV=production
 LOG_LEVEL=info
 ```
 
-### 🔑 Configuration Multi-Clés API
+### 🔑 Gestion Multi-Clés API
 
-Pour une disponibilité maximale, configurez plusieurs clés API :
+AgenticForge utilise un **LlmKeyManager** intelligent pour gérer plusieurs clés API avec basculement automatique :
 
+#### Configuration Initiale (.env)
 ```env
-# Clé principale
-LLM_API_KEY="sk-xxxxxxxxxxxxxxxxx"
-
-# Clés de secours (AgenticForge basculera automatiquement)
-LLM_API_KEY_BACKUP="gsk-xxxxxxxxxxxxxxxxx"      # Google AI
-LLM_API_KEY_TERTIARY="claude-xxxxxxxxxxxxxxxxx"  # Anthropic
-
-# Le système utilisera automatiquement la hiérarchie : Principale → Backup → Tertiaire
+# Une seule clé dans le .env suffit pour démarrer
+LLM_API_KEY="votre_cle_principale"
+LLM_PROVIDER="gemini"  # ou "openai", "anthropic", "grok"
+LLM_MODEL_NAME="gemini-2.5-pro"
 ```
+
+#### Ajout de Clés Supplémentaires
+1. **Via l'Interface Web** : [localhost:3002](http://localhost:3002) → Onglet "Clés API"
+2. **Fonctionnalités** :
+   - ✅ Ajout/suppression de clés en temps réel
+   - ✅ Basculement automatique en cas d'erreur
+   - ✅ Monitoring des performances par clé
+   - ✅ Désactivation temporaire des clés défaillantes
+   - ✅ Support multi-providers simultané
+
+#### Hiérarchie Automatique
+Le système teste les clés dans l'ordre de fiabilité et bascule automatiquement si une clé échoue.
 
 ---
 
@@ -206,13 +222,26 @@ LLM_API_KEY_TERTIARY="claude-xxxxxxxxxxxxxxxxx"  # Anthropic
 
 ### Option 2 : IA Locale (Pour la confidentialité)
 
+#### Ollama
 1. **Installer Ollama** : [ollama.ai](https://ollama.ai/)
 2. **Télécharger un modèle** :
    ```bash
    ollama pull deepseek-r1:14b  # Recommandé pour la plupart des tâches
    ollama serve
    ```
-3. **Configuration** : Le système détectera automatiquement Ollama
+
+#### LM Studio
+1. **Installer LM Studio** : [lmstudio.ai](https://lmstudio.ai/)
+2. **Télécharger un modèle** et démarrer le serveur local
+3. **Configuration** : 
+   ```env
+   LLM_PROVIDER="openai"
+   LLM_API_BASE_URL="http://localhost:1234/v1"
+   LLM_API_KEY="lm-studio"  # Valeur quelconque
+   LLM_MODEL_NAME="votre-modele-local"
+   ```
+
+**Note** : Le système détecte automatiquement les serveurs locaux
 
 ---
 
@@ -494,9 +523,10 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour les détails.
 
 ## Support
 
-- **Issues** : [GitHub Issues](https://github.com/votre-username/g-forge/issues)
-- **Discussions** : [GitHub Discussions](https://github.com/votre-username/g-forge/discussions)
-- **Documentation** : [Wiki du Projet](https://github.com/votre-username/g-forge/wiki)
+- **🚨 Issues** : [GitHub Issues](https://github.com/votre-username/g-forge/issues)
+- **💬 Discussions** : [GitHub Discussions](https://github.com/votre-username/g-forge/discussions)
+- **📚 Documentation** : [Wiki du Projet](https://github.com/votre-username/g-forge/wiki)
+- **🎮 Discord** : [Rejoignez la communauté](https://discord.gg/VNtXQByKfg) - *Partagez vos créations, obtenez de l'aide en temps réel et découvrez les dernières nouveautés en avant-première*
 
 ---
 

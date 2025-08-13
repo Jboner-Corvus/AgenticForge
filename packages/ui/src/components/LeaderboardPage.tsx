@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from './ui/badge';
 import { OpenAILogo, AnthropicLogo, GeminiLogo, OpenRouterLogo } from './icons/LlmLogos';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useStore } from '../lib/store';
+import { useCombinedStore as useStore } from '../store';
 
 // --- Mock Data and Hook ---
 interface ApiKeyUsage {

@@ -22,6 +22,10 @@ LLM_PATTERNS = {
     "mistral": [
         r"ERROR.*Mistral API.*?(\d+).*?(rate limit)",
         r"ERROR.*Mistral API.*?(\d+).*?(quota)",
+    ],
+    "qwen": [
+        r"ERROR.*Qwen API request failed with status (\d+): ([^{]*(?:\{[^}]+\})?)",
+        r"ERROR.*Qwen API.*?(\d+).*?(timeout)",
     ]
 }
 
@@ -47,6 +51,8 @@ def identify_provider_from_error(error_message: str) -> str:
         return "anthropic"
     elif "mistral" in error_lower:
         return "mistral"
+    elif "qwen" in error_lower:
+        return "qwen"
     else:
         return "unknown"
 
@@ -239,6 +245,6 @@ if __name__ == "__main__":
         log_path = sys.argv[1]
         glossary_path = sys.argv[2]
     else:
-        log_path = "Z:/AgenticForge/worker.log"
-        glossary_path = "Z:/AgenticForge/llm_error_glossary.json"
+        log_path = "./worker.log"
+        glossary_path = "./llm_error_glossary.json"
     update_glossary(log_path, glossary_path)

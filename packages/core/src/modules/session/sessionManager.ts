@@ -21,9 +21,14 @@ export class SessionManager {
   private static activeSessions = new Map<string, SessionData>();
   private pgClient: PgClient;
 
-  constructor(pgClient: PgClient) {
+  private constructor(pgClient: PgClient) {
     this.pgClient = pgClient;
-    this.initDb();
+  }
+
+  public static async create(pgClient: PgClient): Promise<SessionManager> {
+    const manager = new SessionManager(pgClient);
+    await manager.initDb();
+    return manager;
   }
 
   public static clearActiveSessionsForTest(): void {

@@ -18,7 +18,7 @@ export interface LlmApiKey {
 }
 
 const LLM_API_KEYS_REDIS_KEY = 'llmApiKeys';
-const MAX_TEMPORARY_ERROR_COUNT = 3; // Max consecutive temporary errors before disabling key temporarily
+const MAX_TEMPORARY_ERROR_COUNT = 8; // Max consecutive temporary errors before disabling key temporarily
 const TEMPORARY_DISABLE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 export class LlmKeyManager {

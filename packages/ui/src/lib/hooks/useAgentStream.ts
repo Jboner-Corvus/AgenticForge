@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { produce } from 'immer';
 import { sendMessage, interrupt } from '../api';
 import { useStore } from '../store';
@@ -27,7 +27,8 @@ interface StreamMessage {
     | 'agent_canvas_output'
     | 'agent_canvas_close'
     | 'cli_task_start'
-    | 'cli_task_end';
+    | 'cli_task_end'
+    | 'todo_list';
   content?: string;
   contentType?: 'html' | 'markdown' | 'url' | 'text';
   toolName?: string; // Added toolName here
@@ -35,15 +36,47 @@ interface StreamMessage {
   result?: Record<string, unknown>;
   message?: string;
   jobId?: string; // For CLI tasks
-  data?: {
-    name?: string;
-    args?: Record<string, unknown>;
-    content?: string;
-    url?: string;
-    length?: number;
-    message?: string;
+  data?: StreamMessageData;
+}
+
+// Define specific data structures for different message types
+interface ToolStartData {
+  name?: string;
+  args?: Record<string, unknown>;
+  content?: string;
+  canvas?: {
+    content: string;
+    contentType: 'html' | 'markdown' | 'url' | 'text';
   };
 }
+
+interface BrowserData {
+  url?: string;
+  length?: number;
+  message?: string;
+}
+
+interface TodoListData {
+  type?: string;
+  title?: string;
+  timestamp?: number;
+  todos?: Array<{
+    id: string;
+    content: string;
+    status: 'pending' | 'in_progress' | 'completed';
+    priority: 'low' | 'medium' | 'high';
+    category?: string;
+  }>;
+  stats?: {
+    pending: number;
+    in_progress: number;
+    completed: number;
+    total: number;
+  };
+}
+
+// Union type for all possible data structures
+type StreamMessageData = ToolStartData | BrowserData | TodoListData;
 
 const isAgentToolResult = (message: ChatMessage | undefined): message is AgentToolResult => {
   return (
@@ -52,6 +85,17 @@ const isAgentToolResult = (message: ChatMessage | undefined): message is AgentTo
     (message as AgentToolResult).result !== null &&
     'output' in (message as AgentToolResult).result
   );
+};
+
+// Type guards for narrowing StreamMessageData union types
+const isToolStartData = (data: StreamMessageData | undefined): data is ToolStartData => {
+  if (!data) return false;
+  return 'name' in data || 'args' in data || 'content' in data || 'canvas' in data;
+};
+
+const isBrowserData = (data: StreamMessageData | undefined): data is BrowserData => {
+  if (!data) return false;
+  return 'url' in data || 'length' in data || 'message' in data;
 };
 
 export const useAgentStream = () => {
@@ -231,7 +275,7 @@ export const useAgentStream = () => {
 
         switch (data.type) {
           case 'tool_stream':
-            if (data.data?.content) {
+            if (data.data && isToolStartData(data.data) && data.data.content) {
               useStore.setState(produce((state: { messages: ChatMessage[] }) => {
                 const lastMessage = state.messages[state.messages.length - 1];
                 const getLastToolName = (messages: ChatMessage[]): string | undefined => {
@@ -246,18 +290,18 @@ export const useAgentStream = () => {
                 const inferredToolName = getLastToolName(state.messages);
 
                 // Prioritize toolName from the stream message itself
-                const streamToolName = data.toolName || data.data?.name;
+                const streamToolName = data.toolName || (data.data as ToolStartData).name;
                 const finalToolName = streamToolName || inferredToolName || 'unknown_tool';
 
                 if (isAgentToolResult(lastMessage) && lastMessage.toolName === finalToolName) {
-                  lastMessage.result.output += data.data?.content ?? '';
+                  lastMessage.result.output += (data.data as ToolStartData).content ?? '';
                 } else {
                   const newToolResult: ToolResultMessage = {
                     id: crypto.randomUUID(),
                     timestamp: Date.now(),
                     type: 'tool_result',
                     toolName: finalToolName,
-                    result: { output: data.data?.content ?? '' },
+                    result: { output: (data.data as ToolStartData).content ?? '' },
                   } as ToolResultMessage; // Explicitly cast to avoid type issues
                   state.messages.push(newToolResult);
                 }
@@ -273,36 +317,38 @@ export const useAgentStream = () => {
             break;
           }
           case 'tool.start': { // New case for backend's tool.start event
-            const toolName = data.data?.name;
-            const params = data.data?.args;
-            
-            // Handle canvas output if present in tool args
-            if (params && typeof params === 'object' && 'canvas' in params) {
-              const canvas = params.canvas as { content: string; contentType: 'html' | 'markdown' | 'url' | 'text' };
-              console.log('🎨 [useAgentStream] CANVAS OUTPUT received!');
-              console.log('🎨 [useAgentStream] Canvas content type:', canvas.contentType);
-              console.log('🎨 [useAgentStream] Canvas content length:', canvas.content.length);
+            if (data.data && isToolStartData(data.data)) {
+              const toolName = (data.data as ToolStartData).name;
+              const params = (data.data as ToolStartData).args;
               
-              addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas reçu ! Type: ${canvas.contentType}, Taille: ${canvas.content.length}`);
+              // Handle canvas output if present in tool args
+              if (params && typeof params === 'object' && 'canvas' in params) {
+                const canvas = params.canvas as { content: string; contentType: 'html' | 'markdown' | 'url' | 'text' };
+                console.log('🎨 [useAgentStream] CANVAS OUTPUT received!');
+                console.log('🎨 [useAgentStream] Canvas content type:', canvas.contentType);
+                console.log('🎨 [useAgentStream] Canvas content length:', canvas.content.length);
+                
+                addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas reçu ! Type: ${canvas.contentType}, Taille: ${canvas.content.length}`);
+                
+                // Add canvas to history instead of just setting content
+                const canvasTitle = `Canvas ${new Date().toLocaleTimeString()}`;
+                addCanvasToHistory(canvasTitle, canvas.content, canvas.contentType);
+                
+                console.log('🎨 [useAgentStream] Canvas content updated in store!');
+                addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas mis à jour dans le store et rendu visible!`);
+                
+                // Send canvas output message
+                const canvasMessage: NewChatMessage = {
+                  type: 'agent_canvas_output',
+                  content: canvas.content,
+                  contentType: canvas.contentType,
+                };
+                addMessage(canvasMessage);
+              }
               
-              // Add canvas to history instead of just setting content
-              const canvasTitle = `Canvas ${new Date().toLocaleTimeString()}`;
-              addCanvasToHistory(canvasTitle, canvas.content, canvas.contentType);
-              
-              console.log('🎨 [useAgentStream] Canvas content updated in store!');
-              addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas mis à jour dans le store et rendu visible!`);
-              
-              // Send canvas output message
-              const canvasMessage: NewChatMessage = {
-                type: 'agent_canvas_output',
-                content: canvas.content,
-                contentType: canvas.contentType,
-              };
-              addMessage(canvasMessage);
-            }
-            
-            if (toolName && params) {
-              handleToolCall(toolName, params as Record<string, unknown>); // Cast params to correct type
+              if (toolName && params) {
+                handleToolCall(toolName, params as Record<string, unknown>); // Cast params to correct type
+              }
             }
             break;
           }
@@ -335,19 +381,27 @@ export const useAgentStream = () => {
               if (data.message) handleError(new Error(data.message));
               break;
           case 'browser.navigating':
-            setBrowserStatus(`Navigating to ${data.data?.url}`);
+            if (data.data && isBrowserData(data.data)) {
+              setBrowserStatus(`Navigating to ${(data.data as BrowserData).url}`);
+            }
             break;
           case 'browser.page.created':
             setBrowserStatus('Page created');
             break;
           case 'browser.page.loaded':
-            setBrowserStatus(`Page loaded: ${data.data?.url}`);
+            if (data.data && isBrowserData(data.data)) {
+              setBrowserStatus(`Page loaded: ${(data.data as BrowserData).url}`);
+            }
             break;
           case 'browser.content.extracted':
-            setBrowserStatus(`Content extracted: ${data.data?.length} bytes`);
+            if (data.data && isBrowserData(data.data)) {
+              setBrowserStatus(`Content extracted: ${(data.data as BrowserData).length} bytes`);
+            }
             break;
           case 'browser.error':
-            setBrowserStatus(`Error: ${data.data?.message}`);
+            if (data.data && isBrowserData(data.data)) {
+              setBrowserStatus(`Error: ${(data.data as BrowserData).message}`);
+            }
             break;
           case 'browser.closed':
             setBrowserStatus('Browser closed');
@@ -380,6 +434,15 @@ export const useAgentStream = () => {
             break;
           case 'cli_task_end':
             setActiveCliJobId(null);
+            break;
+          case 'todo_list':
+            console.log('📝 [useAgentStream] TODO_LIST message received!');
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [TODO] 📝 Todo list reçue !`);
+            // Forward the todo list data to any listening components via postMessage
+            if (data.data) {
+              window.postMessage({ type: 'todo_list', data: data.data }, '*');
+              console.log('📤 [useAgentStream] Todo list forwarded to components');
+            }
             break;
           case 'close':
             addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Received 'close' message from server`);
@@ -493,6 +556,37 @@ export const useAgentStream = () => {
       useStore.getState().setIsProcessing(false);
       useStore.getState().setJobId(null);
     }
+  }, []);
+
+  // Cleanup effect pour éviter les fuites mémoire
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        console.log('🧹 [useAgentStream] Cleaning up EventSource on unmount');
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Effect pour nettoyer les connexions en cas de changement de session
+  useEffect(() => {
+    const cleanup = () => {
+      if (eventSourceRef.current && eventSourceRef.current.readyState !== 2) {
+        console.log('🧹 [useAgentStream] Cleaning up active EventSource for session change');
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+        useStore.getState().setIsProcessing(false);
+      }
+    };
+
+    // Cleanup si changement de session
+    const currentSessionId = useStore.getState().sessionId;
+    return () => {
+      if (currentSessionId !== useStore.getState().sessionId) {
+        cleanup();
+      }
+    };
   }, []);
 
   return {

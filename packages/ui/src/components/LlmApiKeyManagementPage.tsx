@@ -1,6 +1,6 @@
 import { Save, Info, CheckCircle, Settings, Key, Zap, Shield } from 'lucide-react';
 import { memo, useState, useEffect } from 'react';
-import { useStore } from '../lib/store';
+import { useCombinedStore as useStore } from '../store';
 import { OpenAILogo, GeminiLogo, QwenLogo } from './icons/LlmLogos';
 import { OpenRouterLogo } from './icons/LlmLogos/OpenRouterLogo';
 import { Input } from './ui/input';
@@ -71,8 +71,13 @@ const PROVIDERS: LlmProviderConfig[] = [
 // Status Banner avec thème gothique
 const StatusBanner = () => {
   const llmApiKeys = useStore((state) => state.llmApiKeys);
+  const activeLlmApiKeyIndex = useStore((state) => state.activeLlmApiKeyIndex);
   const hasKeys = llmApiKeys.length > 0;
   const totalKeys = llmApiKeys.length;
+
+  // Debug: Log current state
+  console.log('🔑 [STATUS] Current llmApiKeys:', llmApiKeys);
+  console.log('🔑 [STATUS] Active index:', activeLlmApiKeyIndex);
 
   return (
     <motion.div
@@ -398,10 +403,61 @@ const OnboardingInfo = () => {
   );
 };
 
+// Debug Component to show current keys
+const DebugKeysInfo = () => {
+  const llmApiKeys = useStore((state) => state.llmApiKeys);
+  const activeLlmApiKeyIndex = useStore((state) => state.activeLlmApiKeyIndex);
+  const initializeSessionAndMessages = useStore((state) => state.initializeSessionAndMessages);
+
+  const handleRefreshKeys = async () => {
+    console.log('🔄 [DEBUG] Manually refreshing keys...');
+    await initializeSessionAndMessages();
+  };
+
+  return (
+    <div className="mb-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-lg font-semibold text-gray-200">État des clés (Debug)</h3>
+        <Button
+          onClick={handleRefreshKeys}
+          variant="outline"
+          size="sm"
+          className="border-blue-500/50 text-blue-400 hover:bg-blue-900/30"
+        >
+          🔄 Recharger les clés
+        </Button>
+      </div>
+      <div className="space-y-2 text-sm">
+        <div className="text-gray-400">
+          <strong>Nombre de clés:</strong> {llmApiKeys.length}
+        </div>
+        <div className="text-gray-400">
+          <strong>Index actif:</strong> {activeLlmApiKeyIndex}
+        </div>
+        {llmApiKeys.map((key, index) => (
+          <div key={index} className={`p-2 rounded border ${
+            index === activeLlmApiKeyIndex 
+              ? 'border-green-500 bg-green-900/20' 
+              : 'border-gray-600 bg-gray-700/20'
+          }`}>
+            <div className="text-gray-300">
+              <strong>#{index + 1} {key.provider}</strong> - {key.model}
+            </div>
+            <div className="text-gray-500 text-xs">
+              Clé: {key.key.substring(0, 10)}...{key.key.substring(key.key.length - 10)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const LlmApiKeyManagementPage = memo(() => {
   return (
     <div className="p-6 max-w-6xl mx-auto bg-gray-900 min-h-screen">
       <StatusBanner />
+      <DebugKeysInfo />
       <OnboardingInfo />
       
       <div className="space-y-6">

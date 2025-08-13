@@ -1,4 +1,4 @@
-import { useStore } from '../lib/store';
+import { useCombinedStore as useStore } from '../store';
 // import { useLanguage } from '../lib/contexts/LanguageContext'; // Supprimé: never used
 import { Badge } from './ui/badge';
 import { Wifi, WifiOff, Activity, AlertTriangle } from 'lucide-react';

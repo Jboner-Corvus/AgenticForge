@@ -1,4 +1,4 @@
-import { useStore } from '../lib/store';
+import { useCombinedStore as useStore } from '../store';
 
 // import { useLanguage } from '../lib/contexts/LanguageContext'; // Supprimé: never used
 import { Button } from './ui/button';
@@ -6,9 +6,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 
 import { Logo } from './Logo';
 import { ConnectionStatus } from './ConnectionStatus';
+import { EpicPinningControls } from './EpicPinningControls';
 
 // import { Settings, PanelLeft, Sun, Moon, Bell, LayoutDashboard, BarChart, Key, MessageSquare, Bug, Square } from 'lucide-react'; // Supprimé: never used
-import { PanelLeft, Sun, Moon, LayoutDashboard, BarChart, Key, MessageSquare, Bug, ListTodo } from 'lucide-react';
+import { PanelLeft, Sun, Moon, LayoutDashboard, BarChart, Key, MessageSquare, Bug, Crown, Rocket } from 'lucide-react';
 
 interface HeaderProps {
   setIsControlPanelVisible: (visible: boolean) => void;
@@ -42,11 +43,12 @@ export function Header({
   // Configuration des boutons avec des styles améliorés
   const buttonConfig = [
     {
-      icon: ListTodo,
+      icon: isTodoListVisible ? Crown : Rocket,
       onClick: toggleTodoListVisibility,
-      label: isTodoListVisible ? "Masquer la Liste des Tâches" : "Afficher la Liste des Tâches",
-      ariaLabel: "Toggle Todo List",
-      active: isTodoListVisible
+      label: isTodoListVisible ? "🏆 Masquer Mission Control" : "🚀 Activer Mission Control",
+      ariaLabel: "Toggle Epic Todo List",
+      active: isTodoListVisible,
+      epic: true
     },
     {
       icon: isDarkMode ? Sun : Moon,
@@ -130,14 +132,28 @@ export function Header({
                     onClick={button.onClick}
                     type="button"
                     className={`
-                      relative bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 border border-gray-700 
-                      rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg
-                      ${button.active ? 'bg-purple-900/50 border-purple-700/50 text-purple-300 shadow-lg' : ''}
-                      h-10 w-10 p-0 mx-1
+                      relative transition-all duration-300 hover:scale-110 
+                      h-10 w-10 p-0 mx-1 rounded-xl
+                      ${(button as { epic?: boolean }).epic ? 
+                        (button.active ? 
+                          'bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-2 border-cyan-400/50 shadow-lg shadow-cyan-500/25 animate-pulse' :
+                          'bg-gradient-to-r from-gray-800 to-gray-700 text-cyan-400 border border-cyan-500/30 hover:from-cyan-500/20 hover:to-purple-600/20 hover:shadow-lg hover:shadow-cyan-500/20'
+                        ) :
+                        (button.active ? 
+                          'bg-purple-900/50 border-purple-700/50 text-purple-300 shadow-lg' : 
+                          'bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 border border-gray-700'
+                        )
+                      }
                     `}
                   >
                     <Icon size={20} />
-                    {button.active && (
+                    {button.active && (button as { epic?: boolean }).epic && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-4 w-4 bg-gradient-to-r from-cyan-400 to-purple-500"></span>
+                      </span>
+                    )}
+                    {button.active && !(button as { epic?: boolean }).epic && (
                       <span className="absolute top-0 right-0 flex h-3 w-3">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
@@ -154,6 +170,11 @@ export function Header({
               </Tooltip>
             );
           })}
+          
+          {/* CONTRÔLES DE PINNING ÉPIQUES */}
+          <div className="ml-2 pl-2 border-l border-gray-700">
+            <EpicPinningControls />
+          </div>
         </TooltipProvider>
       </div>
     </header>

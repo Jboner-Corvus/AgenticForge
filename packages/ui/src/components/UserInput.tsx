@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useStore, AppState } from '../lib/store';
+import { useCombinedStore as useStore, AppState } from '../store';
 import { useAgentStream } from '../lib/hooks/useAgentStream';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';

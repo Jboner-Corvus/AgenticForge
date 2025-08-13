@@ -54,12 +54,14 @@ vi.mock('./logger', () => {
     debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
+    warn: vi.fn(),
   };
   const mockLogger = {
     child: vi.fn(() => mockChildLogger),
     debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
+    warn: vi.fn(),
   };
   return {
     _mockChildLogger: mockChildLogger, // Export for direct access in tests

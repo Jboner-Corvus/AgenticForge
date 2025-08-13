@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 
 import { useLanguage } from '../lib/contexts/LanguageContext';
-import { useStore } from '../lib/store';
+import { useCombinedStore as useStore } from '../store';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';

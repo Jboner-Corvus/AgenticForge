@@ -31,7 +31,7 @@ export async function initializeWorker(
   getLoggerInstance().info(`${tools.length} tools detected at startup`);
   
   const _jobQueue = new Queue('tasks', { connection: redisConnection });
-  const sessionManager = new SessionManager(pgClient);
+  const sessionManager = await SessionManager.create(pgClient);
 
   const worker = new Worker(
     'tasks',

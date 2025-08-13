@@ -1,9 +1,10 @@
 import type { Context as FastMCPContext } from 'fastmcp';
 import type { Redis as _Redis } from 'ioredis';
 
-import { Queue } from 'bullmq';
-import { Job } from 'bullmq';
+import { Queue, Job } from 'bullmq';
 import { z, ZodTypeAny } from 'zod';
+
+export { Job } from 'bullmq';
 
 import { SessionManager } from './modules/session/sessionManager.js';
 

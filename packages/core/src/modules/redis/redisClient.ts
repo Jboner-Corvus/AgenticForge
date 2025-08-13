@@ -12,6 +12,11 @@ const redisOptions: RedisOptions = {
 
 export const getRedisClientInstance = (): IORedis => {
   if (!redisClient) {
+    if (process.env.NODE_ENV === 'test') {
+      throw new Error(
+        'Redis client not initialized for test environment. Use setRedisClientInstance.',
+      );
+    }
     try {
       redisClient = new IORedis(redisOptions);
 
@@ -22,13 +27,16 @@ export const getRedisClientInstance = (): IORedis => {
       redisClient.on('error', (err) => {
         logger.error({ err }, 'Redis connection error:');
       });
-
     } catch (error) {
       logger.error({ error }, 'Failed to create Redis client');
       throw error;
     }
   }
   return redisClient;
+};
+
+export const setRedisClientInstance = (client: IORedis | null): void => {
+  redisClient = client;
 };
 
 export const disconnectRedis = async (): Promise<void> => {

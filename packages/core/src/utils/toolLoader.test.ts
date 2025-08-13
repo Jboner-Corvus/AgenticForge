@@ -88,17 +88,36 @@ describe('toolLoader Integration Test', () => {
       // Arrange
       const validToolContent = `
         import { z } from 'zod';
-        export const myTestTool = {
+        import type { Ctx, Tool } from '../../../types.js';
+        
+        export const parameters = z.object({ param1: z.string() });
+        
+        type TestTool = {
+          execute: (args: z.infer<typeof parameters>, ctx: Ctx) => Promise<string>;
+        } & Tool<typeof parameters, z.ZodString>;
+        
+        export const myTestTool: TestTool = {
           name: 'myTool',
           description: 'A test tool',
-          parameters: z.object({ param1: z.string() }),
-          execute: () => 'result',
+          parameters,
+          execute: async (args, ctx) => 'result',
         };
       `;
       await createToolFile('valid.tool.ts', validToolContent);
+      
+      // Check that the file was created
+      const files = await fs.readdir(tempToolsDir);
+      console.log('Files in temp directory:', files);
 
       // Act
+      // Force a reload of tools by resetting the loadedToolFiles cache
+      toolLoader._resetTools();
       const tools = await toolLoader.getTools();
+      
+      // Check the tool registry directly
+      const { toolRegistry } = await import('../modules/tools/toolRegistry.js');
+      const registryTools = toolRegistry.getAll();
+      console.log('Tools in registry:', registryTools);
 
       // Assert
       expect(tools).toHaveLength(1);
@@ -117,6 +136,8 @@ describe('toolLoader Integration Test', () => {
       );
 
       // Act
+      // Force a reload of tools by resetting the loadedToolFiles cache
+      toolLoader._resetTools();
       const tools = await toolLoader.getTools();
 
       // Assert
@@ -133,6 +154,8 @@ describe('toolLoader Integration Test', () => {
       await createToolFile('not_a_tool.ts', 'export const a = 1;');
 
       // Act
+      // Force a reload of tools by resetting the loadedToolFiles cache
+      toolLoader._resetTools();
       const tools = await toolLoader.getTools();
 
       // Assert

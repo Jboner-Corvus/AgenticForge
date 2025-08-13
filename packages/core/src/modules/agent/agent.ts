@@ -60,6 +60,15 @@ export class Agent {
   private subscriber: any;
   private readonly taskQueue: Queue;
 
+  // Loop detection properties
+  private behaviorHistory: Array<{
+    thought?: string;
+    command?: Command;
+    timestamp: number;
+  }> = [];
+  private readonly maxBehaviorHistory = 10; // Keep track of last 10 behaviors
+  private loopDetectionThreshold = 3; // Detect loops after 3 repetitions
+
   private readonly tools: Tool<z.AnyZodObject, z.ZodTypeAny>[];
 
   constructor(
@@ -95,6 +104,10 @@ export class Agent {
     this.session.activeLlmProvider = activeLlmProvider; // Ensure session also has the active provider
     this.sessionManager = sessionManager;
     this.apiKey = apiKey;
+    
+    // Initialize loop detection properties
+    this.behaviorHistory = [];
+    this.loopDetectionThreshold = 3; // Detect loops after 3 repetitions
   }
 
   public async run(): Promise<string> {
@@ -129,6 +142,16 @@ export class Agent {
         iterations++;
         const iterationLog = this.log.child({ iteration: iterations });
         iterationLog.info(`Agent iteration starting`);
+        
+        // Add "The agent is thinking..." message to session history and publish to channel
+        const thinkingMessage = {
+          content: `The agent is thinking... (iteration ${iterations})`,
+          id: crypto.randomUUID(),
+          timestamp: Date.now(),
+          type: 'agent_thought' as const,
+        };
+        this.session.history.push(thinkingMessage);
+        this.publishToChannel(thinkingMessage);
 
         try {
           const orchestratorPrompt = getMasterPrompt(
@@ -204,6 +227,11 @@ export class Agent {
             currentProviderIndex = 0; // Default to first in hierarchy if current is not found
           }
 
+          // Track Qwen timeout retries
+          let qwenTimeoutRetries = 0;
+          const MAX_QWEN_TIMEOUT_RETRIES = 8; // Augmenté à 8 tentatives
+          const INITIAL_RETRIES_WITHOUT_DELAY = 4; // 4 premières tentatives sans délai
+
           for (let i = 0; i < config.LLM_PROVIDER_HIERARCHY.length; i++) {
             const providerToTry =
               config.LLM_PROVIDER_HIERARCHY[
@@ -220,6 +248,15 @@ export class Agent {
                 );
                 continue;
               }
+              
+              // Ajout d'un délai progressif après les 4 premières tentatives
+              if (providerToTry === 'qwen' && qwenTimeoutRetries >= INITIAL_RETRIES_WITHOUT_DELAY) {
+                // Calcul du délai : 2 secondes de base + 1 seconde supplémentaire par tentative au-delà de 4
+                const delayMs = 2000 + (qwenTimeoutRetries - INITIAL_RETRIES_WITHOUT_DELAY) * 1000;
+                this.log.info(`Adding delay of ${delayMs}ms before Qwen API call (retry ${qwenTimeoutRetries + 1})`);
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+              }
+              
               llmResponse = await getLlmProvider(providerToTry).getLlmResponse(
                 messagesForLlm,
                 orchestratorPrompt,
@@ -239,7 +276,39 @@ export class Agent {
               );
               break; // Success, break out of provider loop
             } catch (llmError) {
+              // Check if this is a Qwen timeout error that should be retried
               if (
+                llmError instanceof LlmError &&
+                providerToTry === 'qwen' &&
+                ((llmError.message.includes('Qwen API request failed with status 504') &&
+                llmError.message.includes('stream timeout')) ||
+                llmError.message.includes('Qwen API request failed with status 502'))
+              ) {
+                qwenTimeoutRetries++;
+                this.log.warn(
+                  `Qwen API error encountered (${qwenTimeoutRetries}/${MAX_QWEN_TIMEOUT_RETRIES}): ${llmError.message}`,
+                );
+                
+                // If we haven't reached the max retries, continue with the same provider
+                if (qwenTimeoutRetries < MAX_QWEN_TIMEOUT_RETRIES) {
+                  // Add delay after the initial retries without delay
+                  if (qwenTimeoutRetries >= INITIAL_RETRIES_WITHOUT_DELAY) {
+                    // Calcul du délai : 2 secondes de base + 1 seconde supplémentaire par tentative au-delà de 4
+                    const delayMs = 2000 + (qwenTimeoutRetries - INITIAL_RETRIES_WITHOUT_DELAY) * 1000;
+                    this.log.info(`Adding delay of ${delayMs}ms before retrying Qwen API call (retry ${qwenTimeoutRetries + 1})`);
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
+                  }
+                  i--; // Decrement i to retry the same provider
+                  continue;
+                } else {
+                  this.log.error(
+                    `Max Qwen retries (${MAX_QWEN_TIMEOUT_RETRIES}) reached. Moving to next provider.`,
+                  );
+                  // Reset retry counter and continue to next provider
+                  qwenTimeoutRetries = 0;
+                  continue;
+                }
+              } else if (
                 llmError instanceof LlmError &&
                 llmError.message.includes('No LLM API key available')
               ) {
@@ -247,6 +316,7 @@ export class Agent {
                   `No LLM API key available for ${providerToTry}. Trying next provider in hierarchy.`,
                 );
                 // Continue to next provider in hierarchy
+                continue;
               } else {
                 // Re-throw other types of LLM errors immediately
                 throw llmError;
@@ -296,7 +366,7 @@ export class Agent {
             'Parsed LLM response before answer check',
           );
           const { answer, canvas, command, thought } = parsedResponse;
-
+          
           if (answer) {
             this.session.history.push({
               content: answer,
@@ -304,14 +374,26 @@ export class Agent {
               timestamp: Date.now(),
               type: 'agent_response',
             });
-          } else if (thought) {
+            iterationLog.info({ answer }, 'Agent final answer');
+            this.publishToChannel({ content: answer, type: 'agent_response' });
+            return answer;
+          }
+
+          // Check for loops in agent behavior
+          if (this.detectLoop(thought, command)) {
+            this.log.error('Loop detected in agent behavior. Stopping execution.');
+            return 'Agent stopped due to detected loop in behavior.';
+          }
+
+          if (thought) {
             this.session.history.push({
               content: thought,
               id: crypto.randomUUID(),
               timestamp: Date.now(),
               type: 'agent_thought',
             });
-          } else if (command) {
+          }
+          if (command) {
             this.session.history.push({
               id: crypto.randomUUID(),
               params: (command.params as Record<string, unknown>) || {},
@@ -319,7 +401,8 @@ export class Agent {
               toolName: command.name,
               type: 'tool_call',
             });
-          } else if (canvas) {
+          }
+          if (canvas) {
             this.session.history.push({
               content: canvas.content,
               contentType: canvas.contentType,
@@ -664,8 +747,52 @@ export class Agent {
         { error, llmResponse: jsonText },
         'Failed to parse LLM response',
       );
+      
+      // Try to convert plain text to valid JSON format
+      try {
+        const convertedResponse = this.convertPlainTextToValidJson(jsonText);
+        const convertedParsed = JSON.parse(convertedResponse);
+        log.debug({ convertedParsed }, 'Successfully converted plain text to valid JSON');
+        return llmResponseSchema.parse(convertedParsed);
+      } catch (conversionError) {
+        log.error(
+          { conversionError, originalError: error },
+          'Failed to convert plain text to valid JSON',
+        );
+      }
+      
       throw new Error(`Failed to parse LLM response: ${jsonText}`);
     }
+  }
+
+  /**
+   * Converts plain text responses to valid JSON format when the LLM doesn't follow the required format
+   * This handles cases where the LLM responds with plain text instead of JSON
+   */
+  private convertPlainTextToValidJson(text: string): string {
+    // Clean the text
+    const cleanText = text.trim();
+    
+    // If it's already valid JSON, return as is
+    try {
+      JSON.parse(cleanText);
+      return cleanText;
+    } catch {
+      // Not valid JSON, proceed with conversion
+    }
+    
+    // Convert plain text to JSON format using the finish tool
+    const jsonObject = {
+      thought: "L'utilisateur a répondu avec du texte brut. Je vais convertir cela en format JSON valide.",
+      command: {
+        name: "finish",
+        params: {
+          response: cleanText
+        }
+      }
+    };
+    
+    return JSON.stringify(jsonObject);
   }
 
   private publishToChannel(data: ChannelData) {
@@ -683,7 +810,75 @@ export class Agent {
     this.job.updateProgress(progressData);
   }
 
-  private async setupInterruptListener() {
+  private detectLoop(thought?: string, command?: Command): boolean {
+    const now = Date.now();
+    
+    // Add current behavior to history
+    this.behaviorHistory.push({
+      thought,
+      command,
+      timestamp: now
+    });
+    
+    // Keep only the most recent behaviors
+    if (this.behaviorHistory.length > this.maxBehaviorHistory) {
+      this.behaviorHistory.shift();
+    }
+    
+    // Check for repetitive patterns
+    if (this.behaviorHistory.length >= this.loopDetectionThreshold) {
+      // Check for command repetition
+      if (command) {
+        const recentCommands = this.behaviorHistory.slice(-this.loopDetectionThreshold);
+        const allSameCommand = recentCommands.every(
+          (behavior: { command?: Command }, index: number, arr: { command?: Command }[]) => 
+            behavior.command && 
+            behavior.command.name === command.name &&
+            JSON.stringify(behavior.command.params) === JSON.stringify(command.params)
+        );
+        
+        if (allSameCommand) {
+          this.log.warn(
+            `Loop detected: Same command '${command.name}' repeated ${this.loopDetectionThreshold} times`
+          );
+          return true;
+        }
+      }
+      
+      // Check for thought repetition (if no command)
+      if (thought && !command) {
+        const recentThoughts = this.behaviorHistory.slice(-this.loopDetectionThreshold);
+        const allSimilarThoughts = recentThoughts.every(
+          (behavior: { thought?: string }, index: number, arr: { thought?: string }[]) => 
+            behavior.thought && 
+            this.calculateTextSimilarity(behavior.thought, thought) > 0.8
+        );
+        
+        if (allSimilarThoughts) {
+          this.log.warn(
+            `Loop detected: Similar thoughts repeated ${this.loopDetectionThreshold} times`
+          );
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  }
+  
+  private calculateTextSimilarity(text1: string, text2: string): number {
+    // Simple similarity calculation using character overlap
+    // In a real implementation, you might want to use more sophisticated algorithms
+    const set1 = new Set(text1.toLowerCase().split(/\s+/));
+    const set2 = new Set(text2.toLowerCase().split(/\s+/));
+    
+    const intersection = new Set([...set1].filter(x => set2.has(x)));
+    const union = new Set([...set1, ...set2]);
+    
+    return union.size === 0 ? 1 : intersection.size / union.size;
+  }
+  
+  private async setupInterruptListener(): Promise<void> {
     const channel = `job:${this.job.id}:interrupt`;
     this.subscriber = getRedisClientInstance().duplicate();
 

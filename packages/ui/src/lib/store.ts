@@ -310,8 +310,22 @@ export const useStore = create<AppState>((set, get) => ({
   isLoadingLeaderboardStats: false,
 
   // LLM API Key Management initialization
-  llmApiKeys: [],
-  activeLlmApiKeyIndex: -1, // -1 indicates no key is active
+  llmApiKeys: (() => {
+    try {
+      const saved = localStorage.getItem('agenticForgeLlmApiKeys');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  })(),
+  activeLlmApiKeyIndex: (() => {
+    try {
+      const saved = localStorage.getItem('agenticForgeActiveLlmKeyIndex');
+      return saved ? parseInt(saved, 10) : -1;
+    } catch {
+      return -1;
+    }
+  })(), // -1 indicates no key is active
 
   sessionStatus: 'unknown',
   setAgentStatus: (agentStatus) => set({ agentStatus }),
@@ -322,7 +336,9 @@ export const useStore = create<AppState>((set, get) => ({
   
   setIsProcessing: (isProcessing) => set((state) => {
     if (state.isProcessing && !isProcessing && state.agentStatus !== 'error') {
-      state.updateLeaderboardStats({ successfulRuns: 1 });
+      setTimeout(() => {
+        get().updateLeaderboardStats({ successfulRuns: 1 });
+      }, 0);
     }
     return { isProcessing };
   }),
@@ -389,7 +405,9 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       await addLlmApiKeyApi(provider, key, baseUrl, model);
       const llmApiKeys = get().llmApiKeys; // Get current keys
-      set({ llmApiKeys: [...llmApiKeys, { provider, key, baseUrl, model }] });
+      const newKeys = [...llmApiKeys, { provider, key, baseUrl, model }];
+      set({ llmApiKeys: newKeys });
+      localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(newKeys));
       updateLeaderboardStats({ apiKeysAdded: 1 });
     } catch (error) {
       console.error("Failed to add LLM API key to backend:", error);
@@ -404,6 +422,8 @@ export const useStore = create<AppState>((set, get) => ({
       await removeLlmApiKeyApi(index);
       const newKeys = get().llmApiKeys.filter((_, i) => i !== index);
       set({ llmApiKeys: newKeys, activeLlmApiKeyIndex: -1 });
+      localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(newKeys));
+      localStorage.setItem('agenticForgeActiveLlmKeyIndex', '-1');
     } catch (error) {
       console.error("Failed to remove LLM API key from backend:", error);
     } finally {
@@ -440,6 +460,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       await setActiveLlmProviderApi(selectedProvider, authToken, sessionId);
       set({ activeLlmApiKeyIndex: index });
+      localStorage.setItem('agenticForgeActiveLlmKeyIndex', index.toString());
       addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Active LLM provider set to: ${selectedProvider}`);
       toast({ title: "LLM Provider Changed", description: `Active LLM provider set to ${selectedProvider}.` });
     } catch (error) {
@@ -719,16 +740,27 @@ export const useStore = create<AppState>((set, get) => ({
 
     // Load LLM API keys from backend
     // No explicit loading state for this as it's usually quick and part of init
+    console.log('🔑 [INIT] Starting to load LLM API keys from backend...');
     try {
       const keys = await getLlmApiKeysApi();
+      console.log('🔑 [INIT] Fetched keys from backend:', keys);
       const validKeys = keys.filter(key => key.provider && key.key);
+      console.log('🔑 [INIT] Valid keys after filtering:', validKeys);
       
       if (validKeys.length > 0) {
         // Set all keys at once instead of one by one to avoid multiple re-renders
         set({ llmApiKeys: validKeys, activeLlmApiKeyIndex: 0 });
+        localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(validKeys));
+        localStorage.setItem('agenticForgeActiveLlmKeyIndex', '0');
+        console.log('🔑 [INIT] Keys loaded successfully, active index set to 0');
+      } else {
+        console.log('🔑 [INIT] No valid keys found');
+        // Clear localStorage if no keys found
+        localStorage.removeItem('agenticForgeLlmApiKeys');
+        localStorage.removeItem('agenticForgeActiveLlmKeyIndex');
       }
     } catch (error) {
-      console.error("Failed to fetch LLM API keys:", error);
+      console.error("🔑 [INIT] Failed to fetch LLM API keys:", error);
     }
 
     // Load sessions from backend first

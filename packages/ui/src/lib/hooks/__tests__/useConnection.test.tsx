@@ -19,7 +19,7 @@ beforeEach(() => {
 });
 import { act, renderHook } from "@testing-library/react";
 import { z } from "zod";
-import { vi, expect, describe, beforeEach, beforeAll, test, type Mock } from 'vitest';
+import { vi, expect, describe, beforeEach, beforeAll, test, type Mock, type MockedFunction } from 'vitest';
 
 import { DEFAULT_INSPECTOR_CONFIG } from "../../constants";
 import { useConnection } from "../useConnection";
@@ -52,9 +52,13 @@ interface MockStreamableHTTPClientTransport extends InstanceType<typeof Streamab
 let mockSSETransportInstance: MockSSEClientTransport;
 let mockStreamableHTTPTransportInstance: MockStreamableHTTPClientTransport;
 
-vi.mock("@modelcontextprotocol/sdk/client/index.js", () => ({
-  Client: vi.fn().mockImplementation(() => mockClient),
-}));
+vi.mock("@modelcontextprotocol/sdk/client/index.js", () => {
+  return {
+    Client: vi.fn().mockImplementation(() => {
+      return mockClient;
+    }),
+  };
+});
 
 vi.mock("@modelcontextprotocol/sdk/client/sse.js", () => {
   const actual = vi.importActual<typeof import("@modelcontextprotocol/sdk/client/sse.js")>("@modelcontextprotocol/sdk/client/sse.js");
@@ -428,7 +432,7 @@ describe("useConnection", () => {
     });
 
     test("sends X-MCP-Proxy-Auth in health check requests", async () => {
-      const fetchMock = global.fetch as Mock<Parameters<typeof fetch>, ReturnType<typeof fetch>>;
+      const fetchMock = global.fetch as MockedFunction<typeof fetch>;
       fetchMock.mockClear();
 
       const propsWithProxyAuth = {

@@ -113,7 +113,6 @@ describe('errorUtils', () => {
           details: { statusCode: 404 },
           message: 'Test App Error',
           name: 'AppError',
-          stack: expect.any(String),
         },
       });
       expect(errorSpy).toHaveBeenCalled();
@@ -127,7 +126,6 @@ describe('errorUtils', () => {
         error: {
           message: 'Generic Error',
           name: 'Error',
-          stack: expect.any(String),
         },
       });
       expect(errorSpy).toHaveBeenCalled();

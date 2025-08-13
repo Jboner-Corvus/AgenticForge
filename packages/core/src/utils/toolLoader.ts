@@ -108,6 +108,7 @@ export async function getTools(): Promise<Tool[]> {
 export function getToolsDir(): string {
   // Check if TOOLS_PATH environment variable is set (used in tests)
   if (process.env.TOOLS_PATH) {
+    console.log(`[getToolsDir] Using TOOLS_PATH: ${process.env.TOOLS_PATH}`);
     return process.env.TOOLS_PATH;
   }
 
@@ -125,14 +126,15 @@ export function getToolsDir(): string {
   if (runningInDist) {
     // When running in Docker, __dirname might be "." so we need to use process.cwd()
     if (__dirname === '.' || __dirname === process.cwd()) {
-      toolsPath = path.resolve(process.cwd(), 'packages', 'core', 'dist', 'modules', 'tools', 'definitions');
+      toolsPath = path.resolve(process.cwd(), 'dist', 'modules', 'tools', 'definitions');
     } else {
-      toolsPath = path.resolve(__dirname, 'modules', 'tools', 'definitions');
+      toolsPath = path.resolve(__dirname, '..', 'modules', 'tools', 'definitions');
     }
   } else {
     toolsPath = path.resolve(__dirname, '..', 'modules', 'tools', 'definitions');
   }
 
+  console.log(`[getToolsDir] Constructed tools path: ${toolsPath}`);
   getLogger().debug(`[getToolsDir] Constructed tools path: ${toolsPath}`);
   return toolsPath;
 }
@@ -147,15 +149,20 @@ async function findToolFiles(
   let files: string[] = [];
 
   getLogger().info(`[findToolFiles] Scanning directory: ${dir}`);
+  console.log(`[findToolFiles] Scanning directory: ${dir}`);
+  console.log(`[findToolFiles] Looking for files with extension: ${extension}`);
   try {
     const entries = await fs.readdir(dir, { withFileTypes: true });
+    console.log(`[findToolFiles] Found ${entries.length} entries in directory`);
 
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
+      console.log(`[findToolFiles] Processing entry: ${entry.name}, isDirectory: ${entry.isDirectory()}, isFile: ${entry.isFile()}`);
 
       if (entry.isDirectory()) {
         files = files.concat(await findToolFiles(fullPath, extension));
       } else if (entry.isFile() && entry.name.endsWith(extension)) {
+        console.log(`[findToolFiles] Found matching file: ${fullPath}`);
         files.push(fullPath);
       }
     }
@@ -166,25 +173,30 @@ async function findToolFiles(
       directory: dir,
       logContext: "Erreur lors du parcours du répertoire d'outils.",
     });
+    console.log(`[findToolFiles] Error scanning directory: ${dir}`, error);
 
     throw error; // Re-throw to ensure the error is propagated
   }
 
+  console.log(`[findToolFiles] Returning files: ${files.join(', ')}`);
   return files;
 }
 
 async function loadToolFile(file: string): Promise<void> {
   const logger = getLogger();
   logger.info({ file }, `[loadToolFile] Attempting to load tool file.`);
+  console.log(`[loadToolFile] Attempting to load tool file: ${file}`);
   try {
     const module = await import(`${path.resolve(file)}?v=${Date.now()}`); // Cache-busting
     logger.info(
       { file, moduleExports: Object.keys(module) },
       `[loadToolFile] Successfully imported module.`,
     );
+    console.log(`[loadToolFile] Successfully imported module. Exports:`, Object.keys(module));
 
     for (const exportName in module) {
       const exportedItem = module[exportName];
+      console.log(`[loadToolFile] Processing export: ${exportName}`, exportedItem);
 
       if (
         typeof exportedItem === 'object' &&
@@ -195,7 +207,9 @@ async function loadToolFile(file: string): Promise<void> {
           { exportName, file },
           `[loadToolFile] Found potential tool export.`,
         );
+        console.log(`[loadToolFile] Found potential tool export: ${exportName}`);
         const parsedTool = toolSchema.safeParse(exportedItem);
+        console.log(`[loadToolFile] Zod validation result for ${exportName}:`, parsedTool);
 
         if (parsedTool.success) {
           const tool = parsedTool.data as Tool;
@@ -206,17 +220,20 @@ async function loadToolFile(file: string): Promise<void> {
             { file, toolName: tool.name },
             `[loadToolFile] Successfully registered tool.`,
           );
+          console.log(`[loadToolFile] Successfully registered tool: ${tool.name}`);
         } else {
           logger.warn(
             { errors: parsedTool.error.issues, exportName, file },
             `[loadToolFile] Skipping invalid tool export due to Zod schema mismatch.`,
           );
+          console.log(`[loadToolFile] Skipping invalid tool export ${exportName} due to Zod schema mismatch:`, parsedTool.error.issues);
         }
       } else {
         logger.debug(
           { exportName, file },
           `[loadToolFile] Skipping non-tool export.`,
         );
+        console.log(`[loadToolFile] Skipping non-tool export: ${exportName}`);
       }
     }
   } catch (error) {
@@ -227,6 +244,7 @@ async function loadToolFile(file: string): Promise<void> {
         file,
         logContext: `[loadToolFile] Failed to load browser tool (likely due to Playwright issues). This tool will be skipped.`,
       });
+      console.log(`[loadToolFile] Failed to load browser tool (likely due to Playwright issues). This tool will be skipped.`);
       return; // Skip this tool but continue loading others
     }
     
@@ -235,6 +253,7 @@ async function loadToolFile(file: string): Promise<void> {
       file,
       logContext: `[loadToolFile] Failed to dynamically load or process tool file.`,
     });
+    console.log(`[loadToolFile] Failed to dynamically load or process tool file:`, error);
   }
 }
 

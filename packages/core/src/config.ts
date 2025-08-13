@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const configSchema = z.object({
-  AGENT_MAX_ITERATIONS: z.coerce.number().default(10),
+  AGENT_MAX_ITERATIONS: z.coerce.number().default(100),
   AUTH_API_KEY: z.string().optional(),
   CODE_EXECUTION_TIMEOUT_MS: z.coerce.number().default(60000),
   CONTAINER_MEMORY_LIMIT: z.string().default('2g'),
@@ -18,7 +18,7 @@ const configSchema = z.object({
   QWEN_CLIENT_ID: z.string().optional(),
   QWEN_CLIENT_SECRET: z.string().optional(),
 
-  HISTORY_LOAD_LENGTH: z.coerce.number().default(50), // New config for loading only N recent messages
+  HISTORY_LOAD_LENGTH: z.coerce.number().default(200), // Load more messages to preserve context
   HISTORY_MAX_LENGTH: z.coerce.number().default(1000),
   HOST_PROJECT_PATH: z.string().default(process.cwd()),
   HUGGINGFACE_API_KEY: z.string().optional(),
@@ -32,7 +32,7 @@ const configSchema = z.object({
     .string()
     .default('huggingface,grok,gemini,openai,mistral,openrouter,qwen')
     .transform((str) => str.split(',').map((s) => s.trim())),
-  LLM_REQUEST_DELAY_MS: z.coerce.number().default(4000), // Add a 4-second delay by default
+  LLM_REQUEST_DELAY_MS: z.coerce.number().default(2000), // 2-second delay for stability
   LOG_LEVEL: z.string().default('debug'),
   MAX_FILE_SIZE_BYTES: z.coerce.number().default(10 * 1024 * 1024), // 10 MB
   MCP_API_KEY: z.string().optional(),

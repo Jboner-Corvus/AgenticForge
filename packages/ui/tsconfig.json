@@ -30,7 +30,8 @@
     "forceConsistentCasingInFileNames": true,
     "inlineSources": true,
     "moduleDetection": "force",
-    "sourceMap": true
+    "sourceMap": true,
+    "dummy": true
   },
   "include": ["src", "tsconfig.vitest.json", "src/**/*.test.tsx", "src/**/__tests__/**/*.tsx"],
   "exclude": ["node_modules", "dist"]

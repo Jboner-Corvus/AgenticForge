@@ -11,31 +11,60 @@ import { ControlPanel } from './components/ControlPanel';
 import { UserInput } from './components/UserInput';
 import { Suspense, useState, useEffect } from 'react';
 import { useResizablePanel } from './lib/hooks/useResizablePanel';
-import AgentOutputCanvas from './components/AgentOutputCanvas';
 import { HeaderContainer } from './components/HeaderContainer';
 import { SettingsModalContainer } from './components/SettingsModalContainer';
 import { ChatMessagesContainer } from './components/ChatMessagesContainer';
-import { LeaderboardPage } from './components/LeaderboardPage';
-import { LlmApiKeyManagementPage } from './components/LlmApiKeyManagementPage';
-import { OAuthManagementPage } from './components/OAuthManagementPage';
-import { useStore } from './lib/store';
-import { DebugLogContainer } from './components/DebugLogContainer';
-import SubAgentCLIView from './components/SubAgentCLIView';
+import { useCallback } from 'react';
+import { usePinningStore } from './store/pinningStore';
 import { Eye } from 'lucide-react';
-import { TodoListPanel } from './components/TodoList/TodoListPanel';
 import { VersionDisplay } from './components/VersionDisplay';
+// Lazy imports pour optimiser le bundle
+import { 
+  LazyLeaderboardPage, 
+  LazyLlmKeyManager, 
+  LazyOAuthPage,
+  LazyLayoutManager,
+  LazyTodoPanel,
+  LazyCanvas,
+  LazyAgentCanvas,
+  LazyDebugLogContainer,
+  LazySubAgentCLIView
+} from './components/optimized/LazyComponents';
+// Import du store unifié
+import { useCombinedStore as useStore } from './store';
 
 
 export default function App() {
-  const isCanvasVisible = useStore((state) => state.isCanvasVisible);
-  const isControlPanelVisible = useStore((state) => state.isControlPanelVisible);
-  const currentPage = useStore((state) => state.currentPage);
-  const isCanvasPinned = useStore((state) => state.isCanvasPinned);
-  const isCanvasFullscreen = useStore((state) => state.isCanvasFullscreen);
-  const activeCliJobId = useStore((state) => state.activeCliJobId);
-  const canvasWidth = useStore((state) => state.canvasWidth);
+  // Utilisation optimisée des selectors avec memoization
+  const {
+    currentPage,
+    isControlPanelVisible,
+    isCanvasVisible,
+    isCanvasPinned,
+    isCanvasFullscreen,
+    canvasWidth,
+    canvasContent,
+    activeCliJobId
+  } = useStore(
+    useCallback((state) => ({
+      currentPage: state.currentPage,
+      isControlPanelVisible: state.isControlPanelVisible,
+      isCanvasVisible: state.isCanvasVisible,
+      isCanvasPinned: state.isCanvasPinned,
+      isCanvasFullscreen: state.isCanvasFullscreen,
+      canvasWidth: state.canvasWidth,
+      canvasContent: state.canvasContent,
+      activeCliJobId: state.activeCliJobId
+    }), [])
+  );
+  
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const { translations } = useLanguage();
+
+  // Pinning store states
+  const layoutMode = usePinningStore((state) => state.layoutMode);
+  const components = usePinningStore((state) => state.components);
+  const hasPinnedComponents = Object.values(components).some(c => c.isPinned && c.isVisible);
   
   const { controlPanelWidth, handleMouseDownCanvas, setCanvasWidth } = useResizablePanel(300);
 
@@ -71,11 +100,11 @@ export default function App() {
           </div>
         );
       case 'leaderboard':
-        return <LeaderboardPage />;
+        return <LazyLeaderboardPage />;
       case 'llm-api-keys':
-        return <LlmApiKeyManagementPage />;
+        return <LazyLlmKeyManager />;
       case 'oauth':
-        return <OAuthManagementPage />;
+        return <LazyOAuthPage />;
       default:
         return null;
     }
@@ -83,23 +112,29 @@ export default function App() {
 
   return (
     <LanguageProvider>
-      <div className="min-h-screen flex flex-col bg-background text-foreground overflow-x-hidden">
-          <AppInitializer />
-          <HeaderContainer />
-          <Suspense fallback={<div>Loading Settings...</div>}>
-            <SettingsModalContainer />
-          </Suspense>
+      <div className="min-h-screen flex flex-col bg-background text-foreground overflow-x-hidden relative">
+        <AppInitializer />
+        <HeaderContainer />
+        <Suspense fallback={<div>Loading Settings...</div>}>
+          <SettingsModalContainer />
+        </Suspense>
 
-        <div className="flex flex-1 overflow-hidden min-w-0">
+        {/* SYSTÈME ÉPIQUE DE PINNING - Affiché si des composants sont pinnés */}
+        {hasPinnedComponents && <LazyLayoutManager />}
+
+        {/* LAYOUT CLASSIQUE - Masqué si en mode battlefield */}
+        <div className={`flex flex-1 overflow-hidden min-w-0 ${layoutMode === 'battlefield' ? 'opacity-20 pointer-events-none' : ''}`}>
           {isControlPanelVisible && (
             <div
               className="flex-shrink-0 overflow-hidden relative"
               style={{ width: controlPanelWidth, minWidth: '250px', maxWidth: '400px' }}
             >
               <ControlPanel />
-              
             </div>
           )}
+
+          {/* Todo List Panel - Version classique (masquée si pinnée) */}
+          {!components.todolist?.isPinned && <LazyTodoPanel />}
 
           {/* Conteneur principal pour la discussion et le canevas */}
           <main className="flex-1 flex flex-col overflow-hidden">
@@ -109,7 +144,7 @@ export default function App() {
               </div>
 
               {/* Bouton flottant pour ouvrir le canevas */}
-              {currentPage === 'chat' && !isCanvasVisible && !isCanvasPinned && (
+              {currentPage === 'chat' && !isCanvasVisible && !isCanvasPinned && !components.canvas?.isPinned && (
                 <button
                   onClick={() => useStore.getState().setIsCanvasVisible(true)}
                   className="absolute right-4 bottom-24 bg-cyan-500 hover:bg-cyan-600 text-white rounded-full p-3 shadow-lg transition-all duration-300 z-10"
@@ -119,8 +154,8 @@ export default function App() {
                 </button>
               )}
 
-              {/* Section du Canevas (apparaît et disparaît) */}
-              {(isCanvasVisible || isCanvasPinned) && currentPage === 'chat' && !isCanvasFullscreen && (
+              {/* Section du Canvas CLASSIQUE - masquée si pinnée */}
+              {(isCanvasVisible || isCanvasPinned) && currentPage === 'chat' && !isCanvasFullscreen && !components.canvas?.isPinned && (
                 <div
                   className="flex-shrink-0 h-full relative border-l-2 border-cyan-500/20"
                   style={{ 
@@ -130,9 +165,7 @@ export default function App() {
                   }}
                 >
                   <AnimatePresence>
-                    <Suspense fallback={<div>Loading Canvas...</div>}>
-                      <AgentOutputCanvas />
-                    </Suspense>
+                    <LazyAgentCanvas />
                   </AnimatePresence>
                   <div
                     id="canvas-divider"
@@ -158,13 +191,11 @@ export default function App() {
                 </div>
               )}
               
-              {/* Canvas en mode plein écran */}
-              {isCanvasFullscreen && (
+              {/* Canvas ÉPIQUE en mode plein écran - remplace l'ancien canvas */}
+              {(isCanvasFullscreen || components.canvas?.isMaximized) && (canvasContent || isCanvasVisible) && (
                 <div className="fixed inset-0 z-50">
                   <AnimatePresence>
-                    <Suspense fallback={<div>Loading Canvas...</div>}>
-                      <AgentOutputCanvas />
-                    </Suspense>
+                    <LazyCanvas />
                   </AnimatePresence>
                 </div>
               )}
@@ -172,17 +203,15 @@ export default function App() {
 
             {activeCliJobId && (
               <div className="mt-4">
-                <SubAgentCLIView jobId={activeCliJobId} />
+                <LazySubAgentCLIView jobId={activeCliJobId} />
               </div>
             )}
           </main>
         </div>
-        <TodoListPanel />
-        <DebugLogContainer />
+        
+        <LazyDebugLogContainer />
         <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
         <VersionDisplay />
-        
-        
       </div>
     </LanguageProvider>
   );
