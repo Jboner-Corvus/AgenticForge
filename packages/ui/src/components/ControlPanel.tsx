@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Key, Server, Hammer, ListChecks, Play, History, Save, Edit, XCircle, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
@@ -10,35 +11,47 @@ import { Label } from './ui/label';
 import { useLanguage } from '../lib/contexts/LanguageContext';
 import { useDraggableSidebar } from '../lib/hooks/useDraggablePane';
 import { memo, useCallback, useState } from 'react';
-import { useCombinedStore as useStore } from '../store';
+import { 
+  useServerHealthy, 
+  useSessionId, 
+  useToolCount, 
+  useSessions, 
+  useActiveSessionId, 
+  useIsLoadingSessions, 
+  useIsSavingSession, 
+  useIsDeletingSession, 
+  useIsRenamingSession,
+  useBrowserStatus,
+  useTokenStatus,
+  useIsLoadingTools
+} from '../store/hooks';
+import { useSessionStore } from '../store/sessionStore';
+import { useUIStore } from '../store/uiStore';
 import { LoadingSpinner } from './LoadingSpinner';
 
 
 export const ControlPanel = memo(() => {
   const { translations } = useLanguage();
   // const codeExecutionEnabled = useStore((state) => state.codeExecutionEnabled); // Supprimé: never used
-  const serverHealthy = useStore((state) => state.serverHealthy);
-  const sessionId = useStore((state) => state.sessionId);
-  const toolCount = useStore((state) => state.toolCount);
+  const serverHealthy = useServerHealthy();
+  const sessionId = useSessionId();
+  const toolCount = useToolCount();
   // const toolCreationEnabled = useStore((state) => state.toolCreationEnabled); // Supprimé: never used
   // const setCodeExecutionEnabled = useStore((state) => state.setCodeExecutionEnabled); // Supprimé: never used
   // const setToolCreationEnabled = useStore((state) => state.setToolCreationEnabled); // Supprimé: never used
-  const sessions = useStore((state) => state.sessions);
-  const activeSessionId = useStore((state) => state.activeSessionId);
-  const saveSession = useStore((state) => state.saveSession);
-  const loadSession = useStore((state) => state.loadSession);
-  const deleteSession = useStore((state) => state.deleteSession);
-  const renameSession = useStore((state) => state.renameSession);
-  const tokenStatus = useStore((state) => state.tokenStatus);
+  const sessions = useSessions();
+  const activeSessionId = useActiveSessionId();
+  const { saveSession, loadSession, deleteSession, renameSession } = useSessionStore();
+  const tokenStatus = useTokenStatus();
 
   // Loading states
-  const isLoadingSessions = useStore((state) => state.isLoadingSessions);
-  const isLoadingTools = useStore((state) => state.isLoadingTools);
-  const isSavingSession = useStore((state) => state.isSavingSession);
-  const isDeletingSession = useStore((state) => state.isDeletingSession);
-  const isRenamingSession = useStore((state) => state.isRenamingSession);
+  const isLoadingSessions = useIsLoadingSessions();
+  const isLoadingTools = useIsLoadingTools();
+  const isSavingSession = useIsSavingSession();
+  const isDeletingSession = useIsDeletingSession();
+  const isRenamingSession = useIsRenamingSession();
 
-  const browserStatus = useStore((state) => state.browserStatus);
+  const browserStatus = useBrowserStatus();
 
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [sessionToRename, setSessionToRename] = useState<{ id: string; name: string } | null>(null);
@@ -141,7 +154,7 @@ export const ControlPanel = memo(() => {
                 </p>
                 <Button 
                   className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
-                  onClick={() => useStore.getState().setCurrentPage('oauth')}
+                  onClick={() => useUIStore.getState().setCurrentPage('oauth')}
                 >
                   Go to OAuth Management
                 </Button>
@@ -201,18 +214,18 @@ export const ControlPanel = memo(() => {
                 ) : (
                   <>
                     <div className="space-y-2">
-                      {displayedSessions.map((session: any) => (
-                        <div key={session.id} className="flex items-center justify-between p-2 border border-border rounded-md hover:bg-accent transition-all duration-200 hover:scale-105 transform">
-                          <span className="text-sm truncate" title={session.name}>
-                            {session.name.length > 20 ? `${session.name.substring(0, 20)}...` : session.name}
-                            {session.id === activeSessionId && <Badge variant="secondary" className="ml-2">{translations.active}</Badge>}
+                      {displayedSessions.map((session: unknown) => (
+                        <div key={(session as any).id} className="flex items-center justify-between p-2 border border-border rounded-md hover:bg-accent transition-all duration-200 hover:scale-105 transform">
+                          <span className="text-sm truncate" title={(session as any).name}>
+                            {(session as any).name.length > 20 ? `${(session as any).name.substring(0, 20)}...` : (session as any).name}
+                            {(session as any).id === activeSessionId && <Badge variant="secondary" className="ml-2">{translations.active}</Badge>}
                           </span>
                           <div className="flex space-x-1">
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <div className="transition-all duration-200 transform hover:scale-110">
-                                    <Button size="icon" variant="ghost" onClick={() => handleLoadSession(session.id)} aria-label="Load session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
+                                    <Button size="icon" variant="ghost" onClick={() => handleLoadSession((session as any).id)} aria-label="Load session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
                                       <Play className="h-4 w-4 text-green-500" />
                                     </Button>
                                   </div>
@@ -222,7 +235,7 @@ export const ControlPanel = memo(() => {
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <div className="transition-all duration-200 transform hover:scale-110">
-                                    <Button size="icon" variant="ghost" onClick={() => handleOpenRenameModal(session)} aria-label="Rename session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
+                                    <Button size="icon" variant="ghost" onClick={() => handleOpenRenameModal(session as any)} aria-label="Rename session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
                                       <Edit className="h-4 w-4 text-blue-500" />
                                     </Button>
                                   </div>
@@ -232,7 +245,7 @@ export const ControlPanel = memo(() => {
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <div className="transition-all duration-200 transform hover:scale-110">
-                                    <Button size="icon" variant="ghost" onClick={() => handleDeleteSession(session.id)} aria-label="Delete session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
+                                    <Button size="icon" variant="ghost" onClick={() => handleDeleteSession((session as any).id)} aria-label="Delete session" disabled={isLoadingSessions || isDeletingSession || isRenamingSession}>
                                       <XCircle className="h-4 w-4 text-red-500" />
                                     </Button>
                                   </div>

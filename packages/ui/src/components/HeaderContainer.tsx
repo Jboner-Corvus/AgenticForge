@@ -1,16 +1,16 @@
 
 import { Header } from './Header';
-import { useCombinedStore as useStore } from '../store';
+import { useUIStore } from '../store/uiStore';
 
 export function HeaderContainer() {
-  const isControlPanelVisible = useStore((state) => state.isControlPanelVisible);
-  const setIsControlPanelVisible = useStore((state) => state.setIsControlPanelVisible);
-  const isDarkMode = useStore((state) => state.isDarkMode);
-  const toggleDarkMode = useStore((state) => state.toggleDarkMode);
-  const setCurrentPage = useStore((state) => state.setCurrentPage);
-  const toggleDebugLogVisibility = useStore((state) => state.toggleDebugLogVisibility);
-  const isTodoListVisible = useStore((state) => state.isTodoListVisible);
-  const setIsTodoListVisible = useStore((state) => state.setIsTodoListVisible);
+  const isControlPanelVisible = useUIStore((state) => state.isControlPanelVisible);
+  const setIsControlPanelVisible = useUIStore((state) => state.setIsControlPanelVisible);
+  const isDarkMode = useUIStore((state) => state.isDarkMode);
+  const toggleDarkMode = useUIStore((state) => state.toggleDarkMode);
+  const setCurrentPage = useUIStore((state) => state.setCurrentPage);
+  const toggleDebugLogVisibility = useUIStore((state) => state.toggleDebugLogVisibility);
+  const isTodoListVisible = useUIStore((state) => state.isTodoListVisible);
+  const setIsTodoListVisible = useUIStore((state) => state.setIsTodoListVisible);
   
   const toggleTodoListVisibility = () => {
     setIsTodoListVisible(!isTodoListVisible);

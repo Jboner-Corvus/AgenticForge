@@ -1,4 +1,4 @@
-import { useCombinedStore as useStore } from '../../store';
+import { useUIStore } from '../../store/uiStore';
 import { Button } from '../ui/button';
 import { X, CheckCircle, Clock, Play, Plus, Trash2, AlertTriangle, Download, Upload } from 'lucide-react';
 import { useTodoList } from './useTodoList';
@@ -31,8 +31,8 @@ export function TodoListPanel() {
     acknowledgeRecovery
   } = useTodoList();
   
-  const isTodoListVisible = useStore((state) => state.isTodoListVisible);
-  const setIsTodoListVisible = useStore((state) => state.setIsTodoListVisible);
+  const isTodoListVisible = useUIStore((state) => state.isTodoListVisible);
+  const setIsTodoListVisible = useUIStore((state) => state.setIsTodoListVisible);
 
   // Only show the panel when it's visible
   if (!isTodoListVisible) {

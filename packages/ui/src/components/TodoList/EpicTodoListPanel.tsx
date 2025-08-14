@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import './EpicAnimations.css';
-import { useCombinedStore as useStore } from '../../store';
+import { useUIStore } from '../../store/uiStore';
 import { Button } from '../ui/button';
 import { 
   X, Clock, Plus, Trash2, AlertTriangle, Download, Upload,
@@ -105,8 +105,8 @@ export function EpicTodoListPanel() {
     acknowledgeRecovery
   } = useTodoList();
   
-  const isTodoListVisible = useStore((state) => state.isTodoListVisible);
-  const setIsTodoListVisible = useStore((state) => state.setIsTodoListVisible);
+  const isTodoListVisible = useUIStore((state) => state.isTodoListVisible);
+  const setIsTodoListVisible = useUIStore((state) => state.setIsTodoListVisible);
 
   // EFFETS SONORES ÉPIQUES
   const playSound = (type: 'complete' | 'add' | 'delete' | 'levelup') => {

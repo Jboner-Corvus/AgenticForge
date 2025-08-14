@@ -105,7 +105,7 @@ describe('User Interaction Tests', () => {
       const mockUseAgentStream = vi.mocked((await import('../lib/hooks/useAgentStream')).useAgentStream);
       mockUseAgentStream.mockReturnValue({
         startAgent: mockStartAgent,
-        stopAgent: vi.fn(),
+        interruptAgent: vi.fn(),
       });
 
       // Set up store with a message
@@ -128,7 +128,7 @@ describe('User Interaction Tests', () => {
       const mockUseAgentStream = vi.mocked((await import('../lib/hooks/useAgentStream')).useAgentStream);
       mockUseAgentStream.mockReturnValue({
         startAgent: mockStartAgent,
-        stopAgent: vi.fn(),
+        interruptAgent: vi.fn(),
       });
 
       render(<UserInput />);
@@ -255,7 +255,7 @@ describe('User Interaction Tests', () => {
       const mockUseAgentStream = vi.mocked((await import('../lib/hooks/useAgentStream')).useAgentStream);
       mockUseAgentStream.mockReturnValue({
         startAgent: mockStartAgent,
-        stopAgent: vi.fn(),
+        interruptAgent: vi.fn(),
       });
 
       render(<UserInput />);

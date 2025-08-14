@@ -17,7 +17,7 @@ import {
   DropdownMenuLabel
 } from './ui/dropdown-menu';
 import { Slider } from './ui/slider';
-import { useCombinedStore as useStore } from '../store';
+import { useCanvasStore } from '../store/canvasStore';
 // import { useToast } from '../lib/hooks/useToast';
 
 // MODES D'AFFICHAGE ÉPIQUES
@@ -75,19 +75,15 @@ const EpicCanvas: React.FC = () => {
   // const { toast } = useToast(); // Unused
   
   // STORE STATE
-  const clearCanvas = useStore((state) => state.clearCanvas);
-  // const navigateToCanvas = useStore((state) => state.navigateToCanvas);
-  // const removeCanvasFromHistory = useStore((state) => state.removeCanvasFromHistory);
-  // const clearCanvasHistory = useStore((state) => state.clearCanvasHistory);
-  const canvasWidth = useStore((state) => state.canvasWidth);
-  const canvasContent = useStore((state) => state.canvasContent);
-  const canvasType = useStore((state) => state.canvasType);
-  const isCanvasPinned = useStore((state) => state.isCanvasPinned);
-  const setCanvasPinned = useStore((state) => state.setCanvasPinned);
-  // const isCanvasFullscreen = useStore((state) => state.isCanvasFullscreen);
-  const setCanvasFullscreen = useStore((state) => state.setCanvasFullscreen);
-  // const canvasHistory = useStore((state) => state.canvasHistory);
-  // const currentCanvasIndex = useStore((state) => state.currentCanvasIndex);
+  const clearCanvas = useCanvasStore((state) => state.clearCanvas);
+  const canvasWidth = useCanvasStore((state) => state.canvasWidth);
+  const canvasContent = useCanvasStore((state) => state.canvasContent);
+  const canvasType = useCanvasStore((state) => state.canvasType);
+  const isCanvasPinned = useCanvasStore((state) => state.isCanvasPinned);
+  const setCanvasPinned = useCanvasStore((state) => state.setCanvasPinned);
+  const setCanvasFullscreen = useCanvasStore((state) => state.setCanvasFullscreen);
+  
+  const setIsCanvasVisible = useCanvasStore((state) => state.setIsCanvasVisible);
 
   console.log('🎨 [EpicCanvas] Mode:', displayMode, 'Content:', canvasContent?.length || 0);
   
@@ -470,7 +466,10 @@ const EpicCanvas: React.FC = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={clearCanvas}
+                  onClick={() => {
+                    clearCanvas();
+                    setIsCanvasVisible(false);
+                  }}
                   className="text-red-400 hover:bg-red-500/10"
                 >
                   <X className="h-4 w-4" />
@@ -525,7 +524,7 @@ const EpicCanvas: React.FC = () => {
               MODE: {currentModeConfig.label}
             </div>
             <div className="text-gray-400">
-              {canvasType?.toUpperCase() || 'EMPTY'} • {canvasWidthCalc}×{canvasHeightCalc}
+              {(canvasType as string)?.toUpperCase() || 'EMPTY'} • {canvasWidthCalc}×{canvasHeightCalc}
             </div>
           </div>
           

@@ -1,11 +1,11 @@
 import React from 'react';
-import { useCombinedStore as useStore } from '../store';
+import { useUIStore } from '../store/uiStore';
 import { DebugLog } from './DebugLog';
 
 export const DebugLogContainer: React.FC = () => {
-  const isDebugLogVisible = useStore((state) => state.isDebugLogVisible);
-  const logs = useStore((state) => state.debugLog);
-  const toggleDebugLogVisibility = useStore((state) => state.toggleDebugLogVisibility);
+  const isDebugLogVisible = useUIStore((state) => state.isDebugLogVisible);
+  const logs = useUIStore((state) => state.debugLog);
+  const toggleDebugLogVisibility = useUIStore((state) => state.toggleDebugLogVisibility);
 
   if (!isDebugLogVisible) {
     return null;

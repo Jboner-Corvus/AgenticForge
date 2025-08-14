@@ -1,9 +1,9 @@
 import React from 'react';
-import { useCombinedStore as useStore } from '../../store';
+import { useUIStore } from '../../store/uiStore';
 import { Button } from '../ui/button';
 
 const TodoListDemo: React.FC = () => {
-  const setIsTodoListVisible = useStore((state) => state.setIsTodoListVisible);
+  const setIsTodoListVisible = useUIStore((state) => state.setIsTodoListVisible);
 
   const showTodoList = () => {
     setIsTodoListVisible(true);

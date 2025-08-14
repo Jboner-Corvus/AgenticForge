@@ -1,6 +1,6 @@
 {
   "name": "@gforge/core",
-  "version": "1.0.62",
+  "version": "1.0.70",
   "description": "G-Forge Core Backend",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

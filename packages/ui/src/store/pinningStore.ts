@@ -443,15 +443,13 @@ export const usePinningStore = create<PinningState>()(
 export const useInitializePinning = () => {
   const registerComponent = usePinningStore((state) => state.registerComponent);
   const components = usePinningStore((state) => state.components);
-  const initializedRef = React.useRef(false);
   
-  if (!initializedRef.current) {
+  React.useEffect(() => {
     // Register default components if not already registered
     Object.entries(DEFAULT_COMPONENTS).forEach(([id, component]) => {
       if (!components[id]) {
         registerComponent(component);
       }
     });
-    initializedRef.current = true;
-  }
+  }, [registerComponent, components]);
 };

@@ -114,6 +114,9 @@ export const useAgentStream = () => {
     setBrowserStatus,
     setActiveCliJobId,
     addCanvasToHistory,
+    agentProgress,
+    isProcessing,
+    jobId: jobIdStore,
   } = useStore();
 
   const startAgent = useCallback(async (message: string) => {
@@ -211,7 +214,7 @@ export const useAgentStream = () => {
         content,
       };
       addMessage(agentMessage);
-      setAgentProgress(Math.min(99, useStore.getState().agentProgress + 5));
+      setAgentProgress(Math.min(99, agentProgress + 5));
     };
 
     const handleThought = (thought: string) => {
@@ -509,7 +512,7 @@ export const useAgentStream = () => {
             clearInterval(monitorInterval);
             
             // Attempt to reconnect if we're still processing
-            if (useStore.getState().isProcessing) {
+            if (isProcessing) {
               console.log('🔄 [useAgentStream] Attempting to reconnect...');
               addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🔄 Tentative de reconnexion...`);
               setTimeout(() => startAgent('Reconnection attempt'), 3000);
@@ -545,18 +548,20 @@ export const useAgentStream = () => {
     setAgentProgress,
     setBrowserStatus,
     setActiveCliJobId,
+    agentProgress,
+    isProcessing
   ]);
 
   const interruptAgent = useCallback(async () => {
-    const { jobId, authToken, sessionId } = useStore.getState();
+    const jobId = jobIdStore;
     if (jobId && eventSourceRef.current) {
       await interrupt(jobId, authToken, sessionId);
       eventSourceRef.current.close(); // Close EventSource directly
       eventSourceRef.current = null;
-      useStore.getState().setIsProcessing(false);
-      useStore.getState().setJobId(null);
+      setIsProcessing(false);
+      setJobId(null);
     }
-  }, []);
+  }, [setIsProcessing, setJobId, jobIdStore, authToken, sessionId]);
 
   // Cleanup effect pour éviter les fuites mémoire
   useEffect(() => {
@@ -576,18 +581,18 @@ export const useAgentStream = () => {
         console.log('🧹 [useAgentStream] Cleaning up active EventSource for session change');
         eventSourceRef.current.close();
         eventSourceRef.current = null;
-        useStore.getState().setIsProcessing(false);
+        setIsProcessing(false);
       }
     };
 
     // Cleanup si changement de session
-    const currentSessionId = useStore.getState().sessionId;
+    const currentSessionId = sessionId;
     return () => {
-      if (currentSessionId !== useStore.getState().sessionId) {
+      if (currentSessionId !== sessionId) {
         cleanup();
       }
     };
-  }, []);
+  }, [sessionId, setIsProcessing]);
 
   return {
     startAgent,

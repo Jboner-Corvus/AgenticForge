@@ -1,12 +1,12 @@
 
 import React from 'react'; 
 import { ConversationFlow } from './ConversationFlow';
-import { useCombinedStore as useStore } from '../store';
+import { useSessionStore } from '../store/sessionStore';
 import type { ChatMessage } from '../types/chat';
 import { useEffect, useRef, useCallback } from 'react';
 
 export const ChatMessagesContainer = React.memo(() => {
-  const messages = useStore((state) => state.messages as ChatMessage[]);
+  const messages = useSessionStore((state) => state.messages as ChatMessage[]);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 

@@ -1,13 +1,13 @@
 import React from 'react';
-import { useCombinedStore as useStore } from '../../store';
+import { useCanvasStore } from '../../store/canvasStore';
 import { Button } from '../ui/button';
 import { demoMarkdownContent, demoHtmlContent } from './demoContent';
 
 const CanvasDemo: React.FC = () => {
-  const setCanvasContent = useStore((state) => state.setCanvasContent);
-  const setCanvasType = useStore((state) => state.setCanvasType);
-  const setIsCanvasVisible = useStore((state) => state.setIsCanvasVisible);
-  const addCanvasToHistory = useStore((state) => state.addCanvasToHistory);
+  const setCanvasContent = useCanvasStore((state) => state.setCanvasContent);
+  const setCanvasType = useCanvasStore((state) => state.setCanvasType);
+  const setIsCanvasVisible = useCanvasStore((state) => state.setIsCanvasVisible);
+  const addCanvasToHistory = useCanvasStore((state) => state.addCanvasToHistory);
 
   const loadMarkdownDemo = () => {
     setCanvasContent(demoMarkdownContent);

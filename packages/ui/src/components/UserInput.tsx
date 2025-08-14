@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCombinedStore as useStore } from '../store';
+import { useIsProcessing, useTokenStatus } from '../store/hooks';
 import { useAgentStream } from '../lib/hooks/useAgentStream';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -11,8 +11,8 @@ export const UserInput = () => {
   const { translations } = useLanguage();
   const [inputValue, setInputValue] = useState('');
   const { startAgent } = useAgentStream();
-  const isProcessing = useStore((state) => state.isProcessing);
-  const tokenStatus = useStore((state) => state.tokenStatus);
+  const isProcessing = useIsProcessing();
+  const tokenStatus = useTokenStatus();
 
   const handleSendMessage = () => {
     if (inputValue.trim() && !isProcessing) {

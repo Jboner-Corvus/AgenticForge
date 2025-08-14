@@ -1,5 +1,3 @@
-import { useCombinedStore as useStore } from '../store';
-
 // import { useLanguage } from '../lib/contexts/LanguageContext'; // Supprimé: never used
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
@@ -10,6 +8,7 @@ import { EpicPinningControls } from './EpicPinningControls';
 
 // import { Settings, PanelLeft, Sun, Moon, Bell, LayoutDashboard, BarChart, Key, MessageSquare, Bug, Square } from 'lucide-react'; // Supprimé: never used
 import { PanelLeft, Sun, Moon, LayoutDashboard, BarChart, Key, MessageSquare, Bug, Crown, Rocket } from 'lucide-react';
+import { useCanvasStore } from '../store/canvasStore';
 
 interface HeaderProps {
   setIsControlPanelVisible: (visible: boolean) => void;
@@ -33,8 +32,8 @@ export function Header({
   isTodoListVisible,
   toggleTodoListVisibility,
 }: HeaderProps) {
-  const isCanvasVisible = useStore((state) => state.isCanvasVisible);
-  const setIsCanvasVisible = useStore((state) => state.setIsCanvasVisible);
+  const isCanvasVisible = useCanvasStore((state) => state.isCanvasVisible);
+  const setIsCanvasVisible = useCanvasStore((state) => state.setIsCanvasVisible);
 
   const handleToggleCanvas = () => {
     setIsCanvasVisible(!isCanvasVisible);

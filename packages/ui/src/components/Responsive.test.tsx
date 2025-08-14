@@ -260,8 +260,10 @@ describe('Responsive Behavior Tests', () => {
       
       mockUseResizablePanel.mockReturnValue({
         controlPanelWidth: 300,
+        handleMouseDownControlPanel: vi.fn(),
         handleMouseDownCanvas: vi.fn(),
         setCanvasWidth: mockSetCanvasWidthFromHook,
+        canvasWidth: 500,
       });
 
       render(<App />);
@@ -306,7 +308,7 @@ describe('Responsive Behavior Tests', () => {
     it('should handle battlefield mode layout', async () => {
       const { usePinningStore } = await import('../store/pinningStore');
       
-      usePinningStore.mockReturnValue({
+      (usePinningStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
         layoutMode: 'battlefield',
         components: {
           todolist: { isPinned: true, isVisible: true },

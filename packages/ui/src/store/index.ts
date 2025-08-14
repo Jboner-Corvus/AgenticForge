@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Unified store that combines all specialized stores
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
@@ -155,6 +156,7 @@ export interface CombinedAppState {
   setIsLoadingTools: (isLoading: boolean) => void;
 }
 
+// Simple wrapper that just provides actions, components should use individual stores directly
 export const useCombinedStore = create<CombinedAppState>()(
   devtools(
     (set, get) => ({
@@ -177,51 +179,51 @@ export const useCombinedStore = create<CombinedAppState>()(
       // Tools state
       isLoadingTools: false,
       
-      // UI Store properties (proxied from individual stores)
-      get currentPage() { return useUIStore.getState().currentPage; },
-      get isControlPanelVisible() { return useUIStore.getState().isControlPanelVisible; },
-      get isDebugLogVisible() { return useUIStore.getState().isDebugLogVisible; },
-      get isTodoListVisible() { return useUIStore.getState().isTodoListVisible; },
-      get isDarkMode() { return useUIStore.getState().isDarkMode; },
-      get isProcessing() { return useUIStore.getState().isProcessing; },
-      get agentProgress() { return useUIStore.getState().agentProgress; },
-      get messageInputValue() { return useUIStore.getState().messageInputValue; },
-      get agentStatus() { return useUIStore.getState().agentStatus; },
-      get toolStatus() { return useUIStore.getState().toolStatus; },
-      get browserStatus() { return useUIStore.getState().browserStatus; },
-      get serverHealthy() { return useUIStore.getState().serverHealthy; },
-      get isAuthenticated() { return useUIStore.getState().isAuthenticated; },
-      get tokenStatus() { return useUIStore.getState().tokenStatus; },
-      get toolCount() { return useUIStore.getState().toolCount; },
-      get toolCreationEnabled() { return useUIStore.getState().toolCreationEnabled; },
-      get codeExecutionEnabled() { return useUIStore.getState().codeExecutionEnabled; },
-      get authToken() { return useUIStore.getState().authToken; },
-      get jobId() { return useUIStore.getState().jobId; },
-      get activeCliJobId() { return useUIStore.getState().activeCliJobId; },
-      get streamCloseFunc() { return useUIStore.getState().streamCloseFunc; },
-      get debugLog() { return useUIStore.getState().debugLog; },
-      get isSettingsModalOpen() { return useUIStore.getState().isSettingsModalOpen; },
+      // UI Store properties - using default values, components should use individual stores
+      currentPage: 'chat',
+      isControlPanelVisible: false,
+      isDebugLogVisible: false,
+      isTodoListVisible: false,
+      isDarkMode: false,
+      isProcessing: false,
+      agentProgress: 0,
+      messageInputValue: '',
+      agentStatus: null,
+      toolStatus: '',
+      browserStatus: 'idle',
+      serverHealthy: false,
+      isAuthenticated: false,
+      tokenStatus: false,
+      toolCount: 0,
+      toolCreationEnabled: false,
+      codeExecutionEnabled: true,
+      authToken: null,
+      jobId: null,
+      activeCliJobId: null,
+      streamCloseFunc: null,
+      debugLog: [],
+      isSettingsModalOpen: false,
       
-      // Canvas Store properties
-      get canvasContent() { return useCanvasStore.getState().canvasContent; },
-      get canvasType() { return useCanvasStore.getState().canvasType; },
-      get isCanvasVisible() { return useCanvasStore.getState().isCanvasVisible; },
-      get isCanvasPinned() { return useCanvasStore.getState().isCanvasPinned; },
-      get isCanvasFullscreen() { return useCanvasStore.getState().isCanvasFullscreen; },
-      get canvasWidth() { return useCanvasStore.getState().canvasWidth; },
-      get canvasHistory() { return useCanvasStore.getState().canvasHistory; },
-      get currentCanvasIndex() { return useCanvasStore.getState().currentCanvasIndex; },
+      // Canvas Store properties - using default values
+      canvasContent: '',
+      canvasType: 'text',
+      isCanvasVisible: false,
+      isCanvasPinned: false,
+      isCanvasFullscreen: false,
+      canvasWidth: 500,
+      canvasHistory: [],
+      currentCanvasIndex: -1,
       
-      // Session Store properties
-      get sessionId() { return useSessionStore.getState().sessionId; },
-      get activeSessionId() { return useSessionStore.getState().activeSessionId; },
-      get sessionStatus() { return useSessionStore.getState().sessionStatus; },
-      get messages() { return useSessionStore.getState().messages; },
-      get sessions() { return useSessionStore.getState().sessions; },
-      get isLoadingSessions() { return useSessionStore.getState().isLoadingSessions; },
-      get isSavingSession() { return useSessionStore.getState().isSavingSession; },
-      get isDeletingSession() { return useSessionStore.getState().isDeletingSession; },
-      get isRenamingSession() { return useSessionStore.getState().isRenamingSession; },
+      // Session Store properties - using default values
+      sessionId: null,
+      activeSessionId: null,
+      sessionStatus: 'unknown',
+      messages: [],
+      sessions: [],
+      isLoadingSessions: false,
+      isSavingSession: false,
+      isDeletingSession: false,
+      isRenamingSession: false,
       
       // UI Store actions (proxied)
       setCurrentPage: (page: PageType) => useUIStore.getState().setCurrentPage(page),
@@ -249,7 +251,7 @@ export const useCombinedStore = create<CombinedAppState>()(
       
       // Canvas Store actions (proxied)
       setCanvasContent: (content: string) => useCanvasStore.getState().setCanvasContent(content),
-      setCanvasType: (type: any) => useCanvasStore.getState().setCanvasType(type),
+      setCanvasType: (type: unknown) => useCanvasStore.getState().setCanvasType(type as any),
       setIsCanvasVisible: (isVisible: boolean) => useCanvasStore.getState().setIsCanvasVisible(isVisible),
       setCanvasPinned: (isPinned: boolean) => useCanvasStore.getState().setCanvasPinned(isPinned),
       setCanvasFullscreen: (isFullscreen: boolean) => useCanvasStore.getState().setCanvasFullscreen(isFullscreen),
@@ -257,18 +259,18 @@ export const useCombinedStore = create<CombinedAppState>()(
       clearCanvas: () => useCanvasStore.getState().clearCanvas(),
       resetCanvas: () => useCanvasStore.getState().resetCanvas(),
       toggleIsCanvasVisible: () => useCanvasStore.getState().toggleIsCanvasVisible(),
-      addCanvasToHistory: (title: string, content: string, type: any) => useCanvasStore.getState().addCanvasToHistory(title, content, type),
+      addCanvasToHistory: (title: string, content: string, type: unknown) => useCanvasStore.getState().addCanvasToHistory(title, content, type as any),
       navigateToCanvas: (index: number) => useCanvasStore.getState().navigateToCanvas(index),
       removeCanvasFromHistory: (index: number) => useCanvasStore.getState().removeCanvasFromHistory(index),
       clearCanvasHistory: () => useCanvasStore.getState().clearCanvasHistory(),
       
       // Session Store actions (proxied)
       setSessionId: (sessionId: string | null) => useSessionStore.getState().setSessionId(sessionId),
-      setSessionStatus: (status: any) => useSessionStore.getState().setSessionStatus(status),
-      setMessages: (messages: any[]) => useSessionStore.getState().setMessages(messages),
-      setSessions: (sessions: any[]) => useSessionStore.getState().setSessions(sessions),
+      setSessionStatus: (status: unknown) => useSessionStore.getState().setSessionStatus(status as any),
+      setMessages: (messages: unknown[]) => useSessionStore.getState().setMessages(messages as any),
+      setSessions: (sessions: unknown[]) => useSessionStore.getState().setSessions(sessions as any),
       setActiveSessionId: (id: string | null) => useSessionStore.getState().setActiveSessionId(id),
-      addMessage: (message: any) => useSessionStore.getState().addMessage(message),
+      addMessage: (message: unknown) => useSessionStore.getState().addMessage(message as any),
       clearMessages: () => useSessionStore.getState().clearMessages(),
       saveSession: (name: string) => useSessionStore.getState().saveSession(name),
       loadSession: (id: string) => useSessionStore.getState().loadSession(id),

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { useLanguage } from '../lib/contexts/LanguageContext';
-import { useCombinedStore as useStore } from '../store';
+import { useCombinedStore } from '../store';
 import { LoadingSpinner } from './LoadingSpinner';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { AlertTriangle, Github, Chrome, Twitter, ChevronDown, ChevronRight, Key, Bot, Shield, Zap, Clock, RefreshCw, Settings } from 'lucide-react';
@@ -30,11 +30,11 @@ export const OAuthManagementPage = () => {
   });
   const [isCheckingStatus, setIsCheckingStatus] = useState(true)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
-  const addDebugLog = useStore((state) => state.addDebugLog)
-  const debugLogs = useStore((state) => state.debugLog)
-  const setAuthToken = useStore((state) => state.setAuthToken);
-  const setTokenStatus = useStore((state) => state.setTokenStatus);
-  const setCurrentPage = useStore((state) => state.setCurrentPage);
+  const addDebugLog = useCombinedStore((state) => state.addDebugLog)
+  const debugLogs = useCombinedStore((state) => state.debugLog)
+  const setAuthToken = useCombinedStore((state) => state.setAuthToken);
+  const setTokenStatus = useCombinedStore((state) => state.setTokenStatus);
+  const setCurrentPage = useCombinedStore((state) => state.setCurrentPage);
   const [bearerToken, setBearerToken] = useState('');
 
   const handleSaveToken = () => {

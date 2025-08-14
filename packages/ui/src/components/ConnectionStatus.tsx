@@ -1,15 +1,15 @@
-import { useCombinedStore as useStore } from '../store';
+import { useCombinedStore } from '../store';
 // import { useLanguage } from '../lib/contexts/LanguageContext'; // Supprimé: never used
 import { Badge } from './ui/badge';
 import { Wifi, WifiOff, Activity, AlertTriangle } from 'lucide-react';
 
 export const ConnectionStatus = () => {
   // const { translations } = useLanguage(); // Supprimé: never used
-  const isProcessing = useStore((state) => state.isProcessing);
-  const serverHealthy = useStore((state) => state.serverHealthy);
-  const authToken = useStore((state) => state.authToken);
-  const sessionId = useStore((state) => state.sessionId);
-  const jobId = useStore((state) => state.jobId);
+  const isProcessing = useCombinedStore((state) => state.isProcessing);
+  const serverHealthy = useCombinedStore((state) => state.serverHealthy);
+  const authToken = useCombinedStore((state) => state.authToken);
+  const sessionId = useCombinedStore((state) => state.sessionId);
+  const jobId = useCombinedStore((state) => state.jobId);
 
   // Determine connection status
   // let connectionStatus: 'connected' | 'processing' | 'disconnected' | 'error'; // Supprimé: never used

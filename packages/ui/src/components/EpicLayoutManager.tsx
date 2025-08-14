@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePinningStore, useInitializePinning } from '../store/pinningStore';
-import { useCombinedStore as useStore } from '../store';
+import { useCombinedStore } from '../store';
 import EpicCanvas from './EpicCanvas';
 import { EpicTodoListPanel } from './TodoList/EpicTodoListPanel';
 import { UserInput } from './UserInput';
@@ -79,10 +79,10 @@ export const EpicLayoutManager: React.FC = () => {
   const globalOpacity = usePinningStore((state) => state.globalOpacity);
   
   // Store states
-  const isCanvasVisible = useStore((state) => state.isCanvasVisible);
-  const canvasContent = useStore((state) => state.canvasContent);
-  const isTodoListVisible = useStore((state) => state.isTodoListVisible);
-  const currentPage = useStore((state) => state.currentPage);
+  const isCanvasVisible = useCombinedStore((state) => state.isCanvasVisible);
+  const canvasContent = useCombinedStore((state) => state.canvasContent);
+  const isTodoListVisible = useCombinedStore((state) => state.isTodoListVisible);
+  const currentPage = useCombinedStore((state) => state.currentPage);
   const updatingRef = useRef(false);
 
   // Auto-update component visibility based on store states

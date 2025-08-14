@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, Variants } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
@@ -16,23 +17,29 @@ import {
   DropdownMenuLabel
 } from './ui/dropdown-menu';
 import { Slider } from './ui/slider';
-import { useCombinedStore as useStore } from '../store';
+import { 
+  useCanvasWidth, 
+  useCanvasContent, 
+  useCanvasType, 
+  useIsCanvasPinned, 
+  useIsCanvasFullscreen, 
+  useCanvasHistory, 
+  useCurrentCanvasIndex 
+} from '../store/hooks';
+import { useCanvasStore } from '../store/canvasStore';
 import { useLanguage } from '../lib/contexts/LanguageContext';
 import { useToast } from '../lib/hooks/useToast';
 
 const AgentOutputCanvas: React.FC = () => {
   const { translations } = useLanguage();
-  const clearCanvas = useStore((state) => state.clearCanvas);
-  const navigateToCanvas = useStore((state) => state.navigateToCanvas);
-  const removeCanvasFromHistory = useStore((state) => state.removeCanvasFromHistory);
-  const clearCanvasHistory = useStore((state) => state.clearCanvasHistory);
-  const canvasWidth = useStore((state) => state.canvasWidth);
-  const canvasContent = useStore((state) => state.canvasContent);
-  const canvasType = useStore((state) => state.canvasType);
-  const isCanvasPinned = useStore((state) => state.isCanvasPinned);
-  const isCanvasFullscreen = useStore((state) => state.isCanvasFullscreen);
-  const canvasHistory = useStore((state) => state.canvasHistory);
-  const currentCanvasIndex = useStore((state) => state.currentCanvasIndex);
+  const { clearCanvas, navigateToCanvas, removeCanvasFromHistory, clearCanvasHistory, setCanvasFullscreen, setCanvasPinned } = useCanvasStore();
+  const canvasWidth = useCanvasWidth();
+  const canvasContent = useCanvasContent();
+  const canvasType = useCanvasType();
+  const isCanvasPinned = useIsCanvasPinned();
+  const isCanvasFullscreen = useIsCanvasFullscreen();
+  const canvasHistory = useCanvasHistory();
+  const currentCanvasIndex = useCurrentCanvasIndex();
   const [iframeKey, setIframeKey] = useState(0);
   const [hasIframeError, setHasIframeError] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -83,11 +90,11 @@ const AgentOutputCanvas: React.FC = () => {
   };
 
   const togglePin = () => {
-    useStore.getState().setCanvasPinned(!isCanvasPinned);
+    setCanvasPinned(!isCanvasPinned);
   };
 
   const toggleFullscreen = () => {
-    useStore.getState().setCanvasFullscreen(!isCanvasFullscreen);
+    setCanvasFullscreen(!isCanvasFullscreen);
   };
 
   const refreshIframe = () => {
@@ -273,9 +280,9 @@ const AgentOutputCanvas: React.FC = () => {
                   </Button>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {canvasHistory.map((canvas: any, index: number) => (
+                {canvasHistory.map((canvas: unknown, index: number) => (
                   <DropdownMenuItem
-                    key={canvas.id}
+                    key={(canvas as any).id}
                     className={`flex items-center justify-between cursor-pointer ${
                       index === currentCanvasIndex ? 'bg-cyan-900/20 text-cyan-300' : ''
                     }`}
@@ -283,10 +290,10 @@ const AgentOutputCanvas: React.FC = () => {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">
-                        {canvas.title || `Canvas ${index + 1}`}
+                        {(canvas as any).title || `Canvas ${index + 1}`}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {canvas.type} • {new Date(canvas.timestamp).toLocaleTimeString()}
+                        {(canvas as any).type} • {new Date((canvas as any).timestamp).toLocaleTimeString()}
                       </div>
                     </div>
                     <Button
@@ -362,7 +369,8 @@ const AgentOutputCanvas: React.FC = () => {
                   value={[canvasWidth]}
                   onValueChange={(value) => {
                     const newWidth = Math.max(300, Math.min(800, value[0]));
-                    useStore.getState().setCanvasWidth(newWidth);
+                    const setCanvasWidth = useCanvasStore.getState().setCanvasWidth;
+                    setCanvasWidth(newWidth);
                   }}
                   min={300}
                   max={800}

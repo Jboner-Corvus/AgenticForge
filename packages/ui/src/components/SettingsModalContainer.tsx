@@ -1,10 +1,10 @@
 
 import { SettingsModal } from './SettingsModal';
-import { useCombinedStore as useStore } from '../store';
+import { useUIStore } from '../store/uiStore';
 
 export function SettingsModalContainer() {
-  const isSettingsModalOpen = useStore((state) => state.isSettingsModalOpen);
-  const setIsSettingsModalOpen = useStore((state) => state.setIsSettingsModalOpen);
+  const isSettingsModalOpen = useUIStore((state) => state.isSettingsModalOpen);
+  const setIsSettingsModalOpen = useUIStore((state) => state.setIsSettingsModalOpen);
 
   return (
     <SettingsModal

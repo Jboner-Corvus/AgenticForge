@@ -14,7 +14,6 @@ import { useResizablePanel } from './lib/hooks/useResizablePanel';
 import { HeaderContainer } from './components/HeaderContainer';
 import { SettingsModalContainer } from './components/SettingsModalContainer';
 import { ChatMessagesContainer } from './components/ChatMessagesContainer';
-import { useCallback } from 'react';
 import { usePinningStore } from './store/pinningStore';
 import { Eye } from 'lucide-react';
 import { VersionDisplay } from './components/VersionDisplay';
@@ -32,31 +31,28 @@ import {
 } from './components/optimized/LazyComponents';
 // Import du store unifié
 import { useCombinedStore as useStore } from './store';
+import {
+  useCurrentPage,
+  useIsControlPanelVisible,
+  useIsCanvasVisible,
+  useIsCanvasPinned,
+  useIsCanvasFullscreen,
+  useCanvasWidth,
+  useCanvasContent,
+  useActiveCliJobId
+} from './store/hooks';
 
 
 export default function App() {
-  // Utilisation optimisée des selectors avec memoization
-  const {
-    currentPage,
-    isControlPanelVisible,
-    isCanvasVisible,
-    isCanvasPinned,
-    isCanvasFullscreen,
-    canvasWidth,
-    canvasContent,
-    activeCliJobId
-  } = useStore(
-    useCallback((state) => ({
-      currentPage: state.currentPage,
-      isControlPanelVisible: state.isControlPanelVisible,
-      isCanvasVisible: state.isCanvasVisible,
-      isCanvasPinned: state.isCanvasPinned,
-      isCanvasFullscreen: state.isCanvasFullscreen,
-      canvasWidth: state.canvasWidth,
-      canvasContent: state.canvasContent,
-      activeCliJobId: state.activeCliJobId
-    }), [])
-  );
+  // Use individual store hooks to avoid infinite loops
+  const currentPage = useCurrentPage();
+  const isControlPanelVisible = useIsControlPanelVisible();
+  const isCanvasVisible = useIsCanvasVisible();
+  const isCanvasPinned = useIsCanvasPinned();
+  const isCanvasFullscreen = useIsCanvasFullscreen();
+  const canvasWidth = useCanvasWidth();
+  const canvasContent = useCanvasContent();
+  const activeCliJobId = useActiveCliJobId();
   
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const { translations } = useLanguage();
@@ -69,13 +65,15 @@ export default function App() {
   const { controlPanelWidth, handleMouseDownCanvas, setCanvasWidth } = useResizablePanel(300);
 
   // Hook pour ajuster la largeur du canvas lors du redimensionnement de la fenêtre
+  const setCanvasWidthStore = useStore((state) => state.setCanvasWidth);
+  
   useEffect(() => {
     const handleResize = () => {
       if (typeof window !== 'undefined') {
         const maxCanvasWidth = Math.min(800, window.innerWidth * 0.6);
-        const currentCanvasWidth = useStore.getState().canvasWidth;
+        const currentCanvasWidth = canvasWidth;
         if (currentCanvasWidth > maxCanvasWidth) {
-          useStore.getState().setCanvasWidth(maxCanvasWidth);
+          setCanvasWidthStore(maxCanvasWidth);
         }
       }
     };
@@ -84,7 +82,7 @@ export default function App() {
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
     }
-  }, []); // Pas de dépendances pour éviter les boucles
+  }, [canvasWidth, setCanvasWidthStore]);
 
   const renderMainContent = () => {
     switch (currentPage) {

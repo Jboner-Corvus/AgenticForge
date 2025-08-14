@@ -1,6 +1,6 @@
 import { Save, Info, CheckCircle, Settings, Key, Zap, Shield } from 'lucide-react';
 import { memo, useState, useEffect } from 'react';
-import { useCombinedStore as useStore } from '../store';
+import { useCombinedStore } from '../store';
 import { OpenAILogo, GeminiLogo, QwenLogo } from './icons/LlmLogos';
 import { OpenRouterLogo } from './icons/LlmLogos/OpenRouterLogo';
 import { Input } from './ui/input';
@@ -9,6 +9,7 @@ import { Badge } from './ui/badge';
 import { LoadingSpinner } from './LoadingSpinner';
 import { Card, CardContent } from './ui/card';
 import { motion } from 'framer-motion';
+import { CombinedAppState, LlmApiKey } from '../store';
 
 interface LlmProviderConfig {
   id: string;
@@ -22,7 +23,7 @@ interface LlmProviderConfig {
 const PROVIDERS: LlmProviderConfig[] = [
   // Hiérarchie des fournisseurs:
   // 1. OpenAI (gpt-5)
-  { 
+  {
     id: 'openai', 
     name: 'OpenAI', 
     logo: OpenAILogo, 
@@ -31,7 +32,7 @@ const PROVIDERS: LlmProviderConfig[] = [
     description: 'GPT-5 est le modèle le plus avancé d\'OpenAI avec des capacités de raisonnement améliorées.'
   },
   // 2. Google Gemini (gemini-2.5-pro)
-  { 
+  {
     id: 'gemini-pro', 
     name: 'Google Gemini Pro', 
     logo: GeminiLogo, 
@@ -49,7 +50,7 @@ const PROVIDERS: LlmProviderConfig[] = [
     description: 'Qwen 3 Coder Plus d\'Alibaba Cloud. Modèle spécialisé pour le développement logiciel.'
   },
   // 4. OpenRouter (qwen/qwen3-235b-a22b:free)
-  { 
+  {
     id: 'openrouter', 
     name: 'OpenRouter (Qwen 3 235B)', 
     logo: OpenRouterLogo,
@@ -58,7 +59,7 @@ const PROVIDERS: LlmProviderConfig[] = [
     description: 'OpenRouter avec modèle Qwen 3 235B gratuit - Fonctionne parfaitement ✅'
   },
   // 5. Google Gemini (gemini-2.5-flash)
-  { 
+  {
     id: 'gemini-flash', 
     name: 'Google Gemini Flash', 
     logo: GeminiLogo, 
@@ -70,8 +71,8 @@ const PROVIDERS: LlmProviderConfig[] = [
 
 // Status Banner avec thème gothique
 const StatusBanner = () => {
-  const llmApiKeys = useStore((state) => state.llmApiKeys);
-  const activeLlmApiKeyIndex = useStore((state) => state.activeLlmApiKeyIndex);
+  const llmApiKeys = useCombinedStore((state: CombinedAppState) => state.llmApiKeys);
+  const activeLlmApiKeyIndex = useCombinedStore((state: CombinedAppState) => state.activeLlmApiKeyIndex);
   const hasKeys = llmApiKeys.length > 0;
   const totalKeys = llmApiKeys.length;
 
@@ -81,7 +82,7 @@ const StatusBanner = () => {
 
   return (
     <motion.div
-      className={`mb-8 p-6 rounded-xl border-2 backdrop-blur-sm ${
+      className={`mb-8 p-6 rounded-xl border-2 backdrop-blur-sm ${ 
         hasKeys 
           ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50' 
           : 'bg-gradient-to-r from-purple-900/30 to-indigo-900/30 border-purple-700/50'
@@ -101,12 +102,12 @@ const StatusBanner = () => {
             </div>
           )}
           <div>
-            <h1 className={`text-2xl font-bold ${
+            <h1 className={`text-2xl font-bold ${ 
               hasKeys ? 'text-green-300' : 'text-purple-300'
             }`}>
               {hasKeys ? `${totalKeys} clé(s) configurée(s)` : 'Configuration des clés LLM'}
             </h1>
-            <p className={`text-sm ${
+            <p className={`text-sm ${ 
               hasKeys ? 'text-green-400/80' : 'text-purple-400/80'
             }`}>
               {hasKeys 
@@ -134,15 +135,15 @@ const StatusBanner = () => {
 
 // Composant Provider avec thème gothique professionnel
 const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
-  const llmApiKeys = useStore((state) => state.llmApiKeys);
-  const addLlmApiKey = useStore((state) => state.addLlmApiKey);
-  const removeLlmApiKey = useStore((state) => state.removeLlmApiKey);
-  const isAddingLlmApiKey = useStore((state) => state.isAddingLlmApiKey);
+  const llmApiKeys = useCombinedStore((state: CombinedAppState) => state.llmApiKeys);
+  const addLlmApiKey = useCombinedStore((state: CombinedAppState) => state.addLlmApiKey);
+  const removeLlmApiKey = useCombinedStore((state: CombinedAppState) => state.removeLlmApiKey);
+  const isAddingLlmApiKey = useCombinedStore((state: CombinedAppState) => state.isAddingLlmApiKey);
 
   const [apiKey, setApiKey] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const providerKeys = llmApiKeys.filter(k => k.provider === provider.id);
+  const providerKeys = llmApiKeys.filter((k: LlmApiKey) => k.provider === provider.id);
   const hasKey = providerKeys.length > 0;
   const keyCount = providerKeys.length;
   const activeModel = hasKey ? providerKeys[0].model : provider.models[0];
@@ -160,7 +161,7 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
 
     // Supprimer les anciennes clés pour ce provider
     for (const key of providerKeys) {
-      const globalIndex = llmApiKeys.findIndex(k => k.key === key.key && k.provider === provider.id);
+      const globalIndex = llmApiKeys.findIndex((k: LlmApiKey) => k.key === key.key && k.provider === provider.id);
       if (globalIndex !== -1) {
         await removeLlmApiKey(globalIndex);
       }
@@ -172,7 +173,7 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
 
   const handleRemove = async () => {
     for (const key of providerKeys) {
-      const globalIndex = llmApiKeys.findIndex(k => k.key === key.key && k.provider === provider.id);
+      const globalIndex = llmApiKeys.findIndex((k: LlmApiKey) => k.key === key.key && k.provider === provider.id);
       if (globalIndex !== -1) {
         await removeLlmApiKey(globalIndex);
       }
@@ -336,7 +337,7 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
 
 // Info section pour les nouveaux utilisateurs avec thème gothique
 const OnboardingInfo = () => {
-  const llmApiKeys = useStore((state) => state.llmApiKeys);
+  const llmApiKeys = useCombinedStore((state: CombinedAppState) => state.llmApiKeys);
   const hasKeys = llmApiKeys.length > 0;
   const [isVisible, setIsVisible] = useState(!hasKeys);
 
@@ -405,9 +406,9 @@ const OnboardingInfo = () => {
 
 // Debug Component to show current keys
 const DebugKeysInfo = () => {
-  const llmApiKeys = useStore((state) => state.llmApiKeys);
-  const activeLlmApiKeyIndex = useStore((state) => state.activeLlmApiKeyIndex);
-  const initializeSessionAndMessages = useStore((state) => state.initializeSessionAndMessages);
+  const llmApiKeys = useCombinedStore((state: CombinedAppState) => state.llmApiKeys);
+  const activeLlmApiKeyIndex = useCombinedStore((state: CombinedAppState) => state.activeLlmApiKeyIndex);
+  const initializeSessionAndMessages = useCombinedStore((state: CombinedAppState) => state.initializeSessionAndMessages);
 
   const handleRefreshKeys = async () => {
     console.log('🔄 [DEBUG] Manually refreshing keys...');
@@ -434,8 +435,8 @@ const DebugKeysInfo = () => {
         <div className="text-gray-400">
           <strong>Index actif:</strong> {activeLlmApiKeyIndex}
         </div>
-        {llmApiKeys.map((key, index) => (
-          <div key={index} className={`p-2 rounded border ${
+        {llmApiKeys.map((key: LlmApiKey, index: number) => (
+          <div key={index} className={`p-2 rounded border ${ 
             index === activeLlmApiKeyIndex 
               ? 'border-green-500 bg-green-900/20' 
               : 'border-gray-600 bg-gray-700/20'
@@ -484,7 +485,7 @@ export const LlmApiKeyManagementPage = memo(() => {
             </li>
             <li className="flex items-start">
               <div className="h-2 w-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
-              <span>En cas d'erreur sur une clé, le système bascule automatiquement vers la suivante selon la hiérarchie</span>
+              <span>En cas d\'erreur sur une clé, le système bascule automatiquement vers la suivante selon la hiérarchie</span>
             </li>
             <li className="flex items-start">
               <div className="h-2 w-2 bg-purple-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>

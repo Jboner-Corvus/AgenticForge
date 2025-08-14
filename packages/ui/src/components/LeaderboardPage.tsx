@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from './ui/badge';
 import { OpenAILogo, AnthropicLogo, GeminiLogo, OpenRouterLogo } from './icons/LlmLogos';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useCombinedStore as useStore } from '../store';
+import { useCombinedStore } from '../store';
 
 // --- Mock Data and Hook ---
 interface ApiKeyUsage {
@@ -43,10 +43,10 @@ const UsageBar = ({ value, limit, color }: { value: number; limit: number; color
 // --- Main Component ---
 export const LeaderboardPage = memo(() => {
   const [leaderboardData, setLeaderboardData] = useState<ApiKeyUsage[]>([]);
-  const llmApiKeys = useStore((state) => state.llmApiKeys);
-  const isLoadingLeaderboardStats = useStore((state) => state.isLoadingLeaderboardStats);
-  const authToken = useStore((state) => state.authToken);
-  const sessionId = useStore((state) => state.sessionId);
+  const llmApiKeys = useCombinedStore((state) => state.llmApiKeys);
+  const isLoadingLeaderboardStats = useCombinedStore((state) => state.isLoadingLeaderboardStats);
+  const authToken = useCombinedStore((state) => state.authToken);
+  const sessionId = useCombinedStore((state) => state.sessionId);
 
   useEffect(() => {
     const fetchData = async () => {

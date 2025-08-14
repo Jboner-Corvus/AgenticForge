@@ -6,10 +6,13 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
-import { usePinningStore } from '../store/pinningStore';
+import { usePinningStore, useInitializePinning } from '../store/pinningStore';
 
 export const EpicPinningControls: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Initialize pinning store
+  useInitializePinning();
   
   const {
     components,

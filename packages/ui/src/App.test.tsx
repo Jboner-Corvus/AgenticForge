@@ -146,7 +146,7 @@ describe('App Component Tests', () => {
     const { useCombinedStore } = await import('./store');
     
     // Test leaderboard page
-    useCombinedStore.mockReturnValue({
+    (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       currentPage: 'leaderboard',
       isControlPanelVisible: true,
       isCanvasVisible: false,
@@ -161,7 +161,7 @@ describe('App Component Tests', () => {
     expect(screen.getByTestId('leaderboard-page')).toBeInTheDocument();
     
     // Test LLM keys page
-    useCombinedStore.mockReturnValue({
+    (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       currentPage: 'llm-api-keys',
       isControlPanelVisible: true,
       isCanvasVisible: false,
@@ -176,7 +176,7 @@ describe('App Component Tests', () => {
     expect(screen.getByTestId('llm-key-manager')).toBeInTheDocument();
     
     // Test OAuth page
-    useCombinedStore.mockReturnValue({
+    (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       currentPage: 'oauth',
       isControlPanelVisible: true,
       isCanvasVisible: false,
@@ -195,7 +195,7 @@ describe('App Component Tests', () => {
     const { useCombinedStore } = await import('./store');
     
     // Test canvas visible
-    useCombinedStore.mockReturnValue({
+    (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       currentPage: 'chat',
       isControlPanelVisible: true,
       isCanvasVisible: true,
@@ -213,7 +213,7 @@ describe('App Component Tests', () => {
   it('should handle fullscreen canvas', async () => {
     const { useCombinedStore } = await import('./store');
     
-    useCombinedStore.mockReturnValue({
+    (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       currentPage: 'chat',
       isControlPanelVisible: true,
       isCanvasVisible: true,
@@ -231,7 +231,7 @@ describe('App Component Tests', () => {
   it('should handle CLI job display', async () => {
     const { useCombinedStore } = await import('./store');
     
-    useCombinedStore.mockReturnValue({
+    (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       currentPage: 'chat',
       isControlPanelVisible: true,
       isCanvasVisible: false,
@@ -249,7 +249,7 @@ describe('App Component Tests', () => {
   it('should handle pinned components layout', async () => {
     const { usePinningStore } = await import('./store/pinningStore');
     
-    usePinningStore.mockReturnValue({
+    (usePinningStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       layoutMode: 'battlefield',
       components: {
         todolist: { isPinned: true, isVisible: true },
@@ -269,6 +269,121 @@ describe('App Component Tests', () => {
     useCombinedStore.getState = vi.fn(() => ({
       canvasWidth: 800,
       setCanvasWidth: mockSetCanvasWidth,
+      // Add other required properties with default values
+      llmApiKeys: [],
+      activeLlmApiKeyIndex: -1,
+      isAddingLlmApiKey: false,
+      isRemovingLlmApiKey: false,
+      isSettingActiveLlmApiKey: false,
+      leaderboardStats: {
+        tokensSaved: 0,
+        successfulRuns: 0,
+        sessionsCreated: 0,
+        apiKeysAdded: 0,
+      },
+      isLoadingLeaderboardStats: false,
+      isLoadingTools: false,
+      currentPage: 'chat',
+      isControlPanelVisible: true,
+      isDebugLogVisible: false,
+      isTodoListVisible: false,
+      isDarkMode: false,
+      isProcessing: false,
+      agentProgress: 0,
+      messageInputValue: '',
+      agentStatus: null,
+      toolStatus: '',
+      browserStatus: 'idle',
+      serverHealthy: false,
+      isAuthenticated: false,
+      tokenStatus: false,
+      toolCount: 0,
+      toolCreationEnabled: false,
+      codeExecutionEnabled: true,
+      authToken: null,
+      jobId: null,
+      activeCliJobId: null,
+      streamCloseFunc: null,
+      debugLog: [],
+      isSettingsModalOpen: false,
+      canvasContent: '',
+      canvasType: 'text',
+      isCanvasVisible: false,
+      isCanvasPinned: false,
+      isCanvasFullscreen: false,
+      canvasHistory: [],
+      currentCanvasIndex: -1,
+      sessionId: null,
+      activeSessionId: null,
+      sessionStatus: 'unknown',
+      messages: [],
+      sessions: [],
+      isLoadingSessions: false,
+      isSavingSession: false,
+      isDeletingSession: false,
+      isRenamingSession: false,
+      setIsSettingsModalOpen: vi.fn(),
+      setIsControlPanelVisible: vi.fn(),
+      setIsTodoListVisible: vi.fn(),
+      toggleDebugLogVisibility: vi.fn(),
+      toggleDarkMode: vi.fn(),
+      setIsProcessing: vi.fn(),
+      setAgentProgress: vi.fn(),
+      setMessageInputValue: vi.fn(),
+      setAgentStatus: vi.fn(),
+      setToolStatus: vi.fn(),
+      setBrowserStatus: vi.fn(),
+      setServerHealthy: vi.fn(),
+      setTokenStatus: vi.fn(),
+      setToolCount: vi.fn(),
+      setToolCreationEnabled: vi.fn(),
+      setCodeExecutionEnabled: vi.fn(),
+      setAuthToken: vi.fn(),
+      setJobId: vi.fn(),
+      setActiveCliJobId: vi.fn(),
+      addDebugLog: vi.fn(),
+      clearDebugLog: vi.fn(),
+      setCanvasContent: vi.fn(),
+      setCanvasType: vi.fn(),
+      setIsCanvasVisible: vi.fn(),
+      setCanvasPinned: vi.fn(),
+      setCanvasFullscreen: vi.fn(),
+      clearCanvas: vi.fn(),
+      resetCanvas: vi.fn(),
+      toggleIsCanvasVisible: vi.fn(),
+      addCanvasToHistory: vi.fn(),
+      navigateToCanvas: vi.fn(),
+      removeCanvasFromHistory: vi.fn(),
+      clearCanvasHistory: vi.fn(),
+      setSessionId: vi.fn(),
+      setSessionStatus: vi.fn(),
+      setMessages: vi.fn(),
+      setSessions: vi.fn(),
+      setActiveSessionId: vi.fn(),
+      addMessage: vi.fn(),
+      clearMessages: vi.fn(),
+      saveSession: vi.fn(),
+      loadSession: vi.fn(),
+      deleteSession: vi.fn(),
+      deleteAllSessions: vi.fn(),
+      renameSession: vi.fn(),
+      loadAllSessions: vi.fn(),
+      setIsLoadingSessions: vi.fn(),
+      setIsSavingSession: vi.fn(),
+      setIsDeletingSession: vi.fn(),
+      setIsRenamingSession: vi.fn(),
+      addLlmApiKey: vi.fn(),
+      removeLlmApiKey: vi.fn(),
+      editLlmApiKey: vi.fn(),
+      setActiveLlmApiKey: vi.fn(),
+      updateLeaderboardStats: vi.fn(),
+      fetchAndDisplayToolCount: vi.fn(),
+      initializeSessionAndMessages: vi.fn(),
+      setIsAddingLlmApiKey: vi.fn(),
+      setIsRemovingLlmApiKey: vi.fn(),
+      setIsSettingActiveLlmApiKey: vi.fn(),
+      setIsLoadingLeaderboardStats: vi.fn(),
+      setIsLoadingTools: vi.fn(),
     }));
     
     // Mock window dimensions
@@ -299,7 +414,7 @@ describe('App Component Tests', () => {
   it('should not crash with undefined props', async () => {
     const { useCombinedStore } = await import('./store');
     
-    useCombinedStore.mockReturnValue({
+    (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       currentPage: undefined,
       isControlPanelVisible: undefined,
       isCanvasVisible: undefined,
