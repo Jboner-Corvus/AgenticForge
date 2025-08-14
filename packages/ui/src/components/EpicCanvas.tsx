@@ -25,36 +25,36 @@ export type DisplayMode = 'minimal' | 'windowed' | 'theater' | 'immersive' | 'ba
 
 const DISPLAY_MODES = {
   minimal: {
-    label: '📱 MINIMAL',
-    description: 'Interface compacte',
+    label: 'MINIMAL',
+    description: 'Compact interface',
     canvasSize: 'small',
     showPanels: false,
     headerHeight: '3rem'
   },
   windowed: {
-    label: '🪟 WINDOWED', 
-    description: 'Mode fenêtré classique',
+    label: 'WINDOWED', 
+    description: 'Standard windowed mode',
     canvasSize: 'medium',
     showPanels: true,
     headerHeight: '4rem'
   },
   theater: {
-    label: '🎬 THEATER',
-    description: 'Grand écran cinéma', 
+    label: 'THEATER',
+    description: 'Large screen view', 
     canvasSize: 'large',
     showPanels: true,
     headerHeight: '3rem'
   },
   immersive: {
-    label: '🌌 IMMERSIVE',
-    description: 'Plein écran total',
+    label: 'IMMERSIVE',
+    description: 'Full screen mode',
     canvasSize: 'fullscreen',
     showPanels: false,
     headerHeight: '2rem'
   },
   battlefield: {
-    label: '⚔️ BATTLEFIELD',
-    description: 'Tous pinned + plein écran',
+    label: 'EXPANDED',
+    description: 'All panels + full screen',
     canvasSize: 'fullscreen',
     showPanels: true,
     headerHeight: '3rem'
@@ -184,45 +184,35 @@ const EpicCanvas: React.FC = () => {
     setIframeKey(prev => prev + 1);
   }, [canvasContent]);
 
-  // VARIANTS D'ANIMATION ÉPIQUES
+  // VARIANTS D'ANIMATION PROFESSIONNELLES
   const canvasVariants: Variants = {
     hidden: { 
       opacity: 0, 
-      scale: 0.8, 
-      rotateY: -90,
-      filter: "blur(10px)"
+      scale: 0.95
     },
     visible: { 
       opacity: 1, 
-      scale: 1, 
-      rotateY: 0,
-      filter: "blur(0px)",
+      scale: 1,
       transition: { 
-        type: "spring", 
-        damping: 20, 
-        stiffness: 300,
-        duration: 0.6
+        duration: 0.3,
+        ease: "easeOut"
       }
     },
     exit: { 
       opacity: 0, 
-      scale: 0.8, 
-      rotateY: 90,
-      filter: "blur(10px)",
-      transition: { duration: 0.3 }
+      scale: 0.95,
+      transition: { duration: 0.2 }
     }
   };
 
   const controlsVariants: Variants = {
-    hidden: { opacity: 0, y: -20, scale: 0.9 },
+    hidden: { opacity: 0, y: -10 },
     visible: { 
       opacity: 1, 
-      y: 0, 
-      scale: 1,
+      y: 0,
       transition: { 
-        type: "spring", 
-        damping: 25, 
-        stiffness: 400 
+        duration: 0.2,
+        ease: "easeOut"
       }
     }
   };
@@ -231,47 +221,36 @@ const EpicCanvas: React.FC = () => {
   const renderContent = () => {
     if (!canvasContent) {
       return (
-        <div className="flex items-center justify-center h-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-          <motion.div 
-            className="text-center text-white"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1, rotate: 360 }}
-            transition={{ duration: 1, type: "spring" }}
-          >
-            <div className="text-8xl mb-6 opacity-20">
-              <motion.div
-                animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-                transition={{ duration: 4, repeat: Infinity }}
-              >
-                🎮
-              </motion.div>
+        <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-900 to-gray-800">
+          <div className="text-center text-white">
+            <div className="text-6xl mb-6 opacity-30">
+              <MonitorPlay className="mx-auto h-16 w-16" />
             </div>
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent mb-4">
-              CANVAS READY
+            <h3 className="text-2xl font-bold text-gray-300 mb-4">
+              Canvas Ready
             </h3>
             <p className="text-lg opacity-70">
-              Waiting for epic content...
+              Waiting for content...
             </p>
             <div className="mt-6 flex justify-center gap-4">
-              {['⚡', '🚀', '💎', '🔥'].map((emoji, i) => (
+              {['•', '•', '•', '•'].map((dot, i) => (
                 <motion.div
                   key={i}
                   animate={{ 
-                    y: [0, -10, 0],
-                    rotate: [0, 180, 360]
+                    opacity: [0.3, 1, 0.3]
                   }}
                   transition={{ 
                     duration: 2,
-                    delay: i * 0.2,
+                    delay: i * 0.3,
                     repeat: Infinity 
                   }}
-                  className="text-3xl"
+                  className="text-2xl text-gray-500"
                 >
-                  {emoji}
+                  {dot}
                 </motion.div>
               ))}
             </div>
-          </motion.div>
+          </div>
         </div>
       );
     }
@@ -337,8 +316,8 @@ const EpicCanvas: React.FC = () => {
         animate={canvasControls}
         exit="exit"
         className={`
-          fixed top-0 left-0 z-30 bg-gradient-to-br from-slate-900/95 via-purple-900/95 to-slate-900/95 
-          backdrop-blur-sm rounded-2xl border border-cyan-500/30 shadow-2xl
+          fixed top-0 left-0 z-30 bg-gradient-to-br from-gray-900/95 to-gray-800/95 
+          backdrop-blur-sm rounded-2xl border border-gray-600/30 shadow-2xl
           ${displayMode === 'immersive' || displayMode === 'battlefield' ? 
             'inset-4' : 
             'top-20 left-1/2 transform -translate-x-1/2'
@@ -357,20 +336,16 @@ const EpicCanvas: React.FC = () => {
               initial="hidden"
               animate="visible"
               exit="hidden"
-              className="flex items-center justify-between p-4 border-b border-cyan-500/20 bg-black/30"
+              className="flex items-center justify-between p-4 border-b border-gray-600/20 bg-black/30"
             >
               {/* LEFT CONTROLS */}
               <div className="flex items-center gap-2">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                  className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full flex items-center justify-center"
-                >
-                  <MonitorPlay className="h-4 w-4 text-white" />
-                </motion.div>
+                <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                  <MonitorPlay className="h-4 w-4 text-gray-300" />
+                </div>
                 
                 <div>
-                  <h3 className="font-bold text-cyan-400 text-sm">EPIC CANVAS</h3>
+                  <h3 className="font-bold text-gray-200 text-sm">Canvas</h3>
                   <p className="text-xs text-gray-400">{currentModeConfig.description}</p>
                 </div>
               </div>
@@ -382,20 +357,20 @@ const EpicCanvas: React.FC = () => {
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      className="text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/10"
+                      className="text-gray-300 border border-gray-600/30 hover:bg-gray-700/50"
                     >
                       {currentModeConfig.label}
                       <ChevronDown className="h-3 w-3 ml-1" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-slate-800 border-cyan-500/30">
-                    <DropdownMenuLabel className="text-cyan-400">Display Modes</DropdownMenuLabel>
+                  <DropdownMenuContent className="bg-gray-800 border-gray-600/30">
+                    <DropdownMenuLabel className="text-gray-300">Display Modes</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {Object.entries(DISPLAY_MODES).map(([mode, config]) => (
                       <DropdownMenuItem
                         key={mode}
                         onClick={() => switchDisplayMode(mode as DisplayMode)}
-                        className="text-white hover:bg-cyan-500/20"
+                        className="text-white hover:bg-gray-700/50"
                       >
                         {config.label}
                       </DropdownMenuItem>
@@ -405,7 +380,7 @@ const EpicCanvas: React.FC = () => {
 
                 {/* SCALE CONTROL */}
                 <div className="flex items-center gap-2 min-w-20">
-                  <span className="text-xs text-cyan-400">{canvasScale}%</span>
+                  <span className="text-xs text-gray-400">{canvasScale}%</span>
                   <Slider
                     value={[canvasScale]}
                     onValueChange={([value]) => setCanvasScale(value)}

@@ -5,7 +5,7 @@ import { useUIStore } from '../../store/uiStore';
 import { Button } from '../ui/button';
 import { 
   X, Clock, Plus, Trash2, AlertTriangle, Download, Upload,
-  Star, Sparkles, Target, Rocket, Crown, Shield, Trophy,
+  Star, Sparkles, Target, Crown, Shield, Trophy,
   Search, Maximize2, Minimize2,
   Volume2, VolumeX
 } from 'lucide-react';
@@ -15,73 +15,73 @@ import { useTodoList } from './useTodoList';
 const STATUS_CONFIG = {
   pending: { 
     icon: Clock, 
-    label: '⏳ QUEUED', 
-    color: 'from-amber-400 to-orange-500',
-    glow: 'shadow-amber-500/50',
-    particle: '✨'
+    label: 'PENDING', 
+    color: 'from-gray-500 to-gray-400',
+    glow: 'shadow-gray-500/30',
+    particle: '•'
   },
   in_progress: { 
-    icon: Rocket, 
-    label: '🚀 ACTIVE', 
-    color: 'from-blue-400 to-cyan-500',
-    glow: 'shadow-blue-500/50',
-    particle: '⚡'
+    icon: Target, 
+    label: 'IN PROGRESS', 
+    color: 'from-blue-500 to-blue-400',
+    glow: 'shadow-blue-500/30',
+    particle: '•'
   },
   completed: { 
     icon: Trophy, 
-    label: '🏆 CRUSHED', 
-    color: 'from-green-400 to-emerald-500',
-    glow: 'shadow-green-500/50',
-    particle: '🎉'
+    label: 'COMPLETED', 
+    color: 'from-green-500 to-green-400',
+    glow: 'shadow-green-500/30',
+    particle: '✓'
   }
 };
 
 const PRIORITY_CONFIG = {
   high: { 
-    label: '🔥 LEGENDARY', 
-    color: 'from-red-500 to-pink-600',
-    glow: 'shadow-red-500/50',
-    border: 'border-red-500/30'
+    label: 'HIGH', 
+    color: 'from-red-600 to-red-500',
+    glow: 'shadow-red-500/30',
+    border: 'border-red-500/50'
   },
   medium: { 
-    label: '⚡ EPIC', 
-    color: 'from-purple-500 to-indigo-600',
-    glow: 'shadow-purple-500/50',
-    border: 'border-purple-500/30'
+    label: 'MEDIUM', 
+    color: 'from-yellow-600 to-yellow-500',
+    glow: 'shadow-yellow-500/30',
+    border: 'border-yellow-500/50'
   },
   low: { 
-    label: '🌟 RARE', 
-    color: 'from-green-400 to-teal-500',
-    glow: 'shadow-green-500/50',
-    border: 'border-green-500/30'
+    label: 'LOW', 
+    color: 'from-green-600 to-green-500',
+    glow: 'shadow-green-500/30',
+    border: 'border-green-500/50'
   }
 };
 
 const THEMES = {
-  cyberpunk: {
-    bg: 'from-slate-900 via-purple-900 to-slate-900',
-    panel: 'bg-black/80 border-cyan-500/50',
-    accent: 'text-cyan-400'
-  },
-  neon: {
-    bg: 'from-pink-900 via-purple-900 to-indigo-900',
-    panel: 'bg-black/80 border-pink-500/50',
-    accent: 'text-pink-400'
-  },
   matrix: {
-    bg: 'from-green-900 via-black to-green-900',
-    panel: 'bg-black/90 border-green-500/50',
-    accent: 'text-green-400'
+    bg: 'from-green-900 to-emerald-900',
+    panel: 'bg-green-800/90 border-green-600/50',
+    accent: 'text-green-200'
   },
-  galaxy: {
-    bg: 'from-indigo-900 via-purple-900 to-pink-900',
-    panel: 'bg-black/80 border-indigo-500/50',
-    accent: 'text-indigo-400'
+  cyberpunk: {
+    bg: 'from-cyan-900 to-purple-900',
+    panel: 'bg-gray-800/90 border-cyan-600/50',
+    accent: 'text-cyan-200'
+  },
+  professional: {
+    bg: 'from-slate-900 to-gray-900',
+    panel: 'bg-gray-800/90 border-gray-600/50',
+    accent: 'text-slate-200'
+  },
+  corporate: {
+    bg: 'from-slate-800 to-gray-800',
+    panel: 'bg-slate-800/90 border-slate-600/50',
+    accent: 'text-slate-100'
   }
 };
 
 export function EpicTodoListPanel() {
-  const [currentTheme, setCurrentTheme] = useState<keyof typeof THEMES>('cyberpunk');
+  const [currentTheme, setCurrentTheme] = useState<keyof typeof THEMES>('matrix');
   const [isMaximized, setIsMaximized] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -264,9 +264,7 @@ export function EpicTodoListPanel() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className={`text-xl font-bold ${theme.accent} flex items-center gap-2`}>
-                <motion.div animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity }}>
-                  <Crown className="h-6 w-6" />
-                </motion.div>
+                <Crown className="h-6 w-6" />
                 MISSION CONTROL
               </h2>
               <motion.div
@@ -336,8 +334,10 @@ export function EpicTodoListPanel() {
                 <Download className="h-4 w-4" />
               </Button>
               
-              <label className="cursor-pointer">
+              <label htmlFor="todo-import-file" className="cursor-pointer">
                 <input
+                  id="todo-import-file"
+                  name="todo-import-file"
                   type="file"
                   accept=".json"
                   onChange={(e) => {
@@ -400,6 +400,8 @@ export function EpicTodoListPanel() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
+                id="mission-search"
+                name="mission-search"
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -408,6 +410,8 @@ export function EpicTodoListPanel() {
               />
             </div>
             <select
+              id="filter-status"
+              name="filter-status"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
@@ -426,6 +430,8 @@ export function EpicTodoListPanel() {
             <div className="relative flex-1">
               <Target className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
+                id="new-mission-input"
+                name="new-mission-input"
                 type="text"
                 value={newTodo}
                 onChange={(e) => setNewTodo(e.target.value)}
@@ -435,6 +441,8 @@ export function EpicTodoListPanel() {
               />
             </div>
             <select
+              id="new-todo-priority"
+              name="new-todo-priority"
               value={newTodoPriority}
               onChange={(e) => setNewTodoPriority(e.target.value as 'low' | 'medium' | 'high')}
               className="px-3 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
@@ -601,9 +609,7 @@ export function EpicTodoListPanel() {
               AGENT SYSTEM ONLINE • {filteredTodos.length} MISSIONS
             </div>
             <div className="flex items-center gap-2 text-gray-400">
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity }}>
-                <Shield className="h-3 w-3" />
-              </motion.div>
+              <Shield className="h-3 w-3" />
               <span>SECURE CONNECTION</span>
             </div>
           </div>

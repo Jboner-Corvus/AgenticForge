@@ -20,12 +20,7 @@ const mockRedisClient = {
 };
 
 const mockLogger = {
-  child: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  }),
+  child: vi.fn().mockReturnThis(),
   info: vi.fn(),
   warn: vi.fn(),
   error: vi.fn(),

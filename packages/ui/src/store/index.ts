@@ -493,3 +493,4 @@ export const useStores = () => ({
 
 // Backward compatibility - re-export the original store interface
 export const useStore = useCombinedStore;
+export type { LlmApiKey } from './types';

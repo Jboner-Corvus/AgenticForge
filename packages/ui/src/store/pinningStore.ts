@@ -13,7 +13,7 @@ export interface PinPosition {
 export interface PinnedComponent {
   id: string;
   name: string;
-  type: 'todolist' | 'canvas' | 'chat' | 'header' | 'input' | 'debug';
+  type: 'todolist' | 'canvas' | 'chat' | 'header' | 'input' | 'debug' | 'controlpanel';
   isPinned: boolean;
   isVisible: boolean;
   position: PinPosition;
@@ -91,6 +91,20 @@ const DEFAULT_COMPONENTS: Record<string, Omit<PinnedComponent, 'lastActive'>> = 
     position: DEFAULT_POSITIONS.header,
     zIndex: 1000,
     opacity: 0.95,
+    scale: 1,
+    isMinimized: false,
+    isMaximized: false,
+    theme: 'cyberpunk'
+  },
+  controlpanel: {
+    id: 'controlpanel',
+    name: '👑 Mission Control',
+    type: 'controlpanel',
+    isPinned: false,
+    isVisible: false,
+    position: { x: 2, y: 8, width: 25, height: 85 },
+    zIndex: 150,
+    opacity: 0.9,
     scale: 1,
     isMinimized: false,
     isMaximized: false,

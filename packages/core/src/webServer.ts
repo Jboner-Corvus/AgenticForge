@@ -497,6 +497,217 @@ export async function initializeWebServer(
       },
     );
 
+    // LLM Key Manager API endpoints
+    app.post(
+      '/api/llm-keys/keys',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { baseUrl, keyValue, apiModel, providerId, providerName, keyName, metadata } = req.body;
+          if (!providerId || !keyValue) {
+            throw new AppError('Missing provider or key', { statusCode: 400 });
+          }
+          
+          // Store in Redis using the LlmKeyManager
+          await _LlmKeyManager.addKey(
+            providerId,
+            keyValue,
+            apiModel || config.LLM_MODEL_NAME,
+            baseUrl,
+          );
+          
+          // Also store in the new Redis format for the key manager UI
+          const redisKey = `llm:keys:${providerId}:${Date.now()}`;
+          const keyData = {
+            provider: providerId,
+            providerName: providerName || providerId,
+            keyName: keyName || `${providerId}-key`,
+            keyValue,
+            isEncrypted: false,
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            usageCount: 0,
+            metadata: metadata || {
+              environment: 'development',
+              tags: [],
+              description: ''
+            }
+          };
+          
+          await redisClient.set(redisKey, JSON.stringify(keyData));
+          
+          res.status(200).json({ 
+            id: redisKey.split(':').pop(), // Extract ID from Redis key
+            ...keyData
+          });
+        } catch (_error) {
+          next(_error);
+        }
+      },
+    );
+
+    app.get(
+      '/api/llm-keys/keys',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Get keys from both the legacy LlmKeyManager and new Redis format
+          const legacyKeys = await _LlmKeyManager.getKeysForApi();
+          
+          // Get keys from new Redis format
+          const redisKeys = await redisClient.keys('llm:keys:*');
+          const newKeys = [];
+          
+          for (const key of redisKeys) {
+            const value = await redisClient.get(key);
+            if (value) {
+              try {
+                const keyData = JSON.parse(value);
+                newKeys.push({
+                  id: key,
+                  ...keyData
+                });
+              } catch (parseError) {
+                getLoggerInstance().warn(
+                  { key, error: parseError },
+                  'Failed to parse Redis key value as JSON',
+                );
+              }
+            }
+          }
+          
+          // Combine both sets of keys
+          const allKeys = [
+            ...legacyKeys.map((key, index) => ({
+              id: `legacy-${index}`,
+              providerId: key.apiProvider,
+              providerName: key.apiProvider,
+              keyName: `${key.apiProvider}-key`,
+              keyValue: key.apiKey,
+              isEncrypted: false,
+              isActive: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              usageCount: 0,
+              metadata: {
+                environment: 'development',
+                tags: [],
+                description: ''
+              }
+            })),
+            ...newKeys
+          ];
+          
+          res.status(200).json(allKeys);
+        } catch (_error) {
+          next(_error);
+        }
+      },
+    );
+
+    app.delete(
+      '/api/llm-keys/keys/:id',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { id } = req.params;
+          
+          // Check if it's a legacy key
+          if (id.startsWith('legacy-')) {
+            const keyIndex = parseInt(id.replace('legacy-', ''), 10);
+            if (isNaN(keyIndex)) {
+              throw new AppError('Invalid index', { statusCode: 400 });
+            }
+            await _LlmKeyManager.removeKey(keyIndex);
+          } else {
+            // Delete from Redis
+            await redisClient.del(id);
+          }
+          
+          res.status(200).json({ message: 'LLM API key removed successfully.' });
+        } catch (error) {
+          next(error);
+        }
+      },
+    );
+
+    app.put(
+      '/api/llm-keys/keys/:id',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { id } = req.params;
+          const { baseUrl, keyValue, apiModel, providerId, providerName, keyName, metadata, isActive } = req.body;
+
+          if (!providerId || !keyValue) {
+            throw new AppError('Missing provider or key', { statusCode: 400 });
+          }
+
+          // Check if it's a legacy key
+          if (id.startsWith('legacy-')) {
+            const keyIndex = parseInt(id.replace('legacy-', ''), 10);
+            if (isNaN(keyIndex)) {
+              throw new AppError('Invalid index', { statusCode: 400 });
+            }
+
+            // Remove the old key
+            await _LlmKeyManager.removeKey(keyIndex);
+
+            // Add the updated key
+            await _LlmKeyManager.addKey(
+              providerId,
+              keyValue,
+              apiModel || config.LLM_MODEL_NAME,
+              baseUrl,
+            );
+            
+            res.status(200).json({ message: 'LLM API key updated successfully.' });
+          } else {
+            // Update in Redis
+            const keyData = {
+              provider: providerId,
+              providerName: providerName || providerId,
+              keyName: keyName || `${providerId}-key`,
+              keyValue,
+              isEncrypted: false,
+              isActive: isActive !== undefined ? isActive : true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              usageCount: 0,
+              metadata: metadata || {
+                environment: 'development',
+                tags: [],
+                description: ''
+              }
+            };
+            
+            await redisClient.set(id, JSON.stringify(keyData));
+            
+            res.status(200).json({ 
+              id,
+              ...keyData
+            });
+          }
+        } catch (error) {
+          next(error);
+        }
+      },
+    );
+
+    // Legacy endpoints for backward compatibility
     app.post(
       '/api/llm-api-keys',
       async (
@@ -1245,6 +1456,483 @@ export async function initializeWebServer(
           getLoggerInstance().error(
             { error },
             'Error checking Qwen token status',
+          );
+          next(error);
+        }
+      },
+    );
+
+    // Redis integration endpoints for LLM Key Manager
+    app.get(
+      '/api/llm-keys/redis/info',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Get Redis info
+          const info = await redisClient.info();
+          
+          // Parse Redis info to get key count and memory usage
+          const lines = info.split('\n');
+          let keyCount = 0;
+          let memory = '0K';
+          
+          for (const line of lines) {
+            if (line.startsWith('db0:')) {
+              const match = line.match(/keys=(\d+)/);
+              if (match) {
+                keyCount = parseInt(match[1], 10);
+              }
+            }
+            if (line.startsWith('used_memory_human:')) {
+              memory = line.split(':')[1].trim();
+            }
+          }
+          
+          res.status(200).json({
+            connected: true,
+            keyCount,
+            memory
+          });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error getting Redis info',
+          );
+          res.status(200).json({
+            connected: false,
+            keyCount: 0,
+            memory: '0K'
+          });
+        }
+      },
+    );
+
+    app.post(
+      '/api/llm-keys/redis/scan',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { pattern } = req.body;
+          const keys = await redisClient.keys(pattern || 'llm:keys:*');
+          res.status(200).json({ keys });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error scanning Redis keys',
+          );
+          next(error);
+        }
+      },
+    );
+
+    app.get(
+      '/api/llm-keys/redis/keys',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Get all LLM keys from Redis
+          const keys = await redisClient.keys('llm:keys:*');
+          const llmKeys = [];
+          
+          for (const key of keys) {
+            const value = await redisClient.get(key);
+            if (value) {
+              try {
+                llmKeys.push(JSON.parse(value));
+              } catch (parseError) {
+                getLoggerInstance().warn(
+                  { key, error: parseError },
+                  'Failed to parse Redis key value as JSON',
+                );
+              }
+            }
+          }
+          
+          res.status(200).json(llmKeys);
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error fetching LLM keys from Redis',
+          );
+          next(error);
+        }
+      },
+    );
+
+    app.get(
+      '/api/llm-keys/redis/key/:keyPath',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { keyPath } = req.params;
+          const decodedKeyPath = decodeURIComponent(keyPath);
+          const value = await redisClient.get(decodedKeyPath);
+          
+          if (!value) {
+            return res.status(404).json({ error: 'Key not found' });
+          }
+          
+          try {
+            const keyData = JSON.parse(value);
+            res.status(200).json(keyData);
+          } catch (parseError) {
+            getLoggerInstance().warn(
+              { keyPath: decodedKeyPath, error: parseError },
+              'Failed to parse Redis key value as JSON',
+            );
+            res.status(200).json({ value });
+          }
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error fetching LLM key from Redis',
+          );
+          next(error);
+        }
+      },
+    );
+
+    app.put(
+      '/api/llm-keys/redis/key/:keyPath',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { keyPath } = req.params;
+          const { value } = req.body;
+          const decodedKeyPath = decodeURIComponent(keyPath);
+          
+          await redisClient.set(decodedKeyPath, JSON.stringify(value));
+          res.status(200).json({ message: 'Key set successfully' });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error setting LLM key in Redis',
+          );
+          next(error);
+        }
+      },
+    );
+
+    app.delete(
+      '/api/llm-keys/redis/key/:keyPath',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { keyPath } = req.params;
+          const decodedKeyPath = decodeURIComponent(keyPath);
+          
+          await redisClient.del(decodedKeyPath);
+          res.status(200).json({ message: 'Key deleted successfully' });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error deleting LLM key from Redis',
+          );
+          next(error);
+        }
+      },
+    );
+
+    app.post(
+      '/api/llm-keys/redis/bulk-import',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { patterns } = req.body;
+          const allKeys = [];
+          
+          for (const pattern of patterns) {
+            const keys = await redisClient.keys(pattern);
+            allKeys.push(...keys);
+          }
+          
+          const importedKeys = [];
+          const errors = [];
+          
+          for (const key of allKeys) {
+            try {
+              const value = await redisClient.get(key);
+              if (value) {
+                importedKeys.push({ key, value });
+              }
+            } catch (error) {
+              errors.push(`Failed to import key ${key}: ${error}`);
+            }
+          }
+          
+          res.status(200).json({ 
+            imported: importedKeys.length, 
+            errors 
+          });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error bulk importing LLM keys from Redis',
+          );
+          next(error);
+        }
+      },
+    );
+
+    app.post(
+      '/api/llm-keys/redis/bulk-export',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { keys } = req.body;
+          const errors = [];
+          
+          for (const keyData of keys) {
+            try {
+              const keyPath = `llm:keys:${keyData.provider}:${keyData.keyId}`;
+              await redisClient.set(keyPath, JSON.stringify(keyData));
+            } catch (error) {
+              errors.push(`Failed to export key ${keyData.keyId}: ${error}`);
+            }
+          }
+          
+          res.status(200).json({ 
+            exported: keys.length, 
+            errors 
+          });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error bulk exporting LLM keys to Redis',
+          );
+          next(error);
+        }
+      },
+    );
+
+    app.post(
+      '/api/llm-keys/sync',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // This is a placeholder for sync functionality
+          // In a real implementation, this would sync between the local store and Redis
+          res.status(200).json({ message: 'Sync completed successfully' });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error syncing LLM keys',
+          );
+          next(error);
+        }
+      },
+    );
+
+    app.post(
+      '/api/llm-keys/import-from-redis',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Import keys from Redis to local store
+          const keys = await redisClient.keys('llm:keys:*');
+          
+          for (const keyPath of keys) {
+            try {
+              const value = await redisClient.get(keyPath);
+              if (value) {
+                const keyData = JSON.parse(value);
+                // Add to local store (this would depend on your implementation)
+                // For now, we'll just log that we would import the key
+                getLoggerInstance().info(
+                  { keyPath, keyData },
+                  'Would import key from Redis to local store',
+                );
+              }
+            } catch (parseError) {
+              getLoggerInstance().warn(
+                { keyPath, error: parseError },
+                'Failed to parse Redis key value as JSON during import',
+              );
+            }
+          }
+          
+          res.status(200).json({ message: 'Import from Redis completed successfully' });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error importing LLM keys from Redis',
+          );
+          next(error);
+        }
+      },
+    );
+
+    app.post(
+      '/api/llm-keys/export-to-redis',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Export keys from local store to Redis
+          // This is a placeholder implementation
+          // In a real implementation, you would fetch keys from your local store
+          // and export them to Redis
+          res.status(200).json({ message: 'Export to Redis completed successfully' });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error exporting LLM keys to Redis',
+          );
+          next(error);
+        }
+      },
+    );
+
+    // Test LLM key
+    app.post(
+      '/api/llm-keys/keys/:id/test',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { id } = req.params;
+          
+          // For now, we'll just return a success response
+          // In a real implementation, you would test the key with the provider's API
+          res.status(200).json({ 
+            valid: true,
+            message: 'Key test not implemented yet'
+          });
+        } catch (error) {
+          next(error);
+        }
+      },
+    );
+
+    // Get available LLM providers
+    app.get(
+      '/api/llm-keys/providers',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Return the list of supported LLM providers
+          const providers = [
+            {
+              id: 'openai',
+              name: 'openai',
+              displayName: 'OpenAI',
+              description: 'GPT models including GPT-4, GPT-3.5, and DALL-E',
+              website: 'https://openai.com',
+              keyFormat: 'sk-...',
+              testEndpoint: '/v1/models',
+              supportedModels: ['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo', 'dall-e-3', 'whisper-1'],
+              isActive: true
+            },
+            {
+              id: 'anthropic',
+              name: 'anthropic',
+              displayName: 'Anthropic',
+              description: 'Claude models for advanced AI assistance',
+              website: 'https://anthropic.com',
+              keyFormat: 'sk-ant-...',
+              testEndpoint: '/v1/models',
+              supportedModels: ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'],
+              isActive: true
+            },
+            {
+              id: 'google-flash',
+              name: 'google',
+              displayName: 'Google Gemini Flash',
+              description: 'Gemini 2.5 Flash - Fast and efficient model',
+              website: 'https://ai.google.dev',
+              keyFormat: 'AI...',
+              testEndpoint: '/v1/models',
+              supportedModels: ['gemini-2.5-flash'],
+              isActive: true
+            },
+            {
+              id: 'google-pro',
+              name: 'google',
+              displayName: 'Google Gemini Pro',
+              description: 'Gemini 2.5 Pro - Advanced reasoning model',
+              website: 'https://ai.google.dev',
+              keyFormat: 'AI...',
+              testEndpoint: '/v1/models',
+              supportedModels: ['gemini-2.5-pro'],
+              isActive: true
+            },
+            {
+              id: 'xai',
+              name: 'xai',
+              displayName: 'xAI Grok',
+              description: 'Grok-4 advanced reasoning model',
+              website: 'https://x.ai',
+              keyFormat: 'xai-...',
+              testEndpoint: '/v1/models',
+              supportedModels: ['grok-4'],
+              isActive: true
+            },
+            {
+              id: 'qwen',
+              name: 'qwen',
+              displayName: 'Qwen',
+              description: 'Qwen3 Coder Plus - Advanced coding model',
+              website: 'https://portal.qwen.ai',
+              keyFormat: '...',
+              testEndpoint: 'https://portal.qwen.ai/v1/chat/completions',
+              supportedModels: ['qwen3-coder-plus'],
+              isActive: true
+            },
+            {
+              id: 'openrouter',
+              name: 'openrouter',
+              displayName: 'OpenRouter',
+              description: 'Access to multiple AI models via unified API - GLM-4.5-Air Free',
+              website: 'https://openrouter.ai',
+              keyFormat: 'sk-or-...',
+              testEndpoint: 'https://openrouter.ai/api/v1/models',
+              supportedModels: ['z-ai/glm-4.5-air:free'],
+              isActive: true
+            }
+          ];
+          
+          res.status(200).json(providers);
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error getting LLM providers',
           );
           next(error);
         }

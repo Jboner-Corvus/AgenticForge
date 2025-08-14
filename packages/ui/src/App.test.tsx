@@ -384,6 +384,7 @@ describe('App Component Tests', () => {
       setIsSettingActiveLlmApiKey: vi.fn(),
       setIsLoadingLeaderboardStats: vi.fn(),
       setIsLoadingTools: vi.fn(),
+      setCurrentPage: vi.fn(),
     }));
     
     // Mock window dimensions

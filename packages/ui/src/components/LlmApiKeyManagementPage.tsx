@@ -272,11 +272,13 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
           {/* Section de configuration de la clé API */}
           <div className="flex-grow flex flex-col justify-end space-y-4">
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">
+              <label htmlFor="api-key-field" className="block text-sm font-medium text-gray-300">
                 Clé API
               </label>
               <div className="relative">
                 <Input
+                  id="api-key-field"
+                  name="api-key-field"
                   type="password"
                   placeholder="Entrez votre clé API..."
                   value={apiKey}

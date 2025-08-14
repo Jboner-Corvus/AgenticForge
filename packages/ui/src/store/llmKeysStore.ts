@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { clientConfig } from '../config';
 
 // TYPES POUR LES CLÉS LLM
 export interface LLMProvider {
@@ -111,39 +112,105 @@ const DEFAULT_PROVIDERS: LLMProvider[] = [
     isActive: true
   },
   {
-    id: 'google',
+    id: 'google-flash',
     name: 'google',
-    displayName: 'Google AI',
-    description: 'Gemini and PaLM models',
+    displayName: 'Google Gemini Flash',
+    description: 'Gemini 2.5 Flash - Fast and efficient model',
     website: 'https://ai.google.dev',
     keyFormat: 'AI...',
-    supportedModels: ['gemini-pro', 'gemini-pro-vision', 'palm-2'],
+    testEndpoint: '/v1/models',
+    supportedModels: ['gemini-2.5-flash'],
     isActive: true
   },
   {
-    id: 'cohere',
-    name: 'cohere',
-    displayName: 'Cohere',
-    description: 'Natural language AI platform',
-    website: 'https://cohere.com',
-    keyFormat: '...',
-    supportedModels: ['command', 'command-light', 'embed-english-v2.0'],
+    id: 'google-pro',
+    name: 'google',
+    displayName: 'Google Gemini Pro',
+    description: 'Gemini 2.5 Pro - Advanced reasoning model',
+    website: 'https://ai.google.dev',
+    keyFormat: 'AI...',
+    testEndpoint: '/v1/models',
+    supportedModels: ['gemini-2.5-pro'],
     isActive: true
   },
   {
-    id: 'mistral',
-    name: 'mistral',
-    displayName: 'Mistral AI',
-    description: 'Open and portable generative AI',
-    website: 'https://mistral.ai',
+    id: 'xai',
+    name: 'xai',
+    displayName: 'xAI Grok',
+    description: 'Grok-4 advanced reasoning model',
+    website: 'https://x.ai',
+    keyFormat: 'xai-...',
+    testEndpoint: '/v1/models',
+    supportedModels: ['grok-4'],
+    isActive: true
+  },
+  {
+    id: 'qwen',
+    name: 'qwen',
+    displayName: 'Qwen',
+    description: 'Qwen3 Coder Plus - Advanced coding model',
+    website: 'https://portal.qwen.ai',
     keyFormat: '...',
-    supportedModels: ['mistral-tiny', 'mistral-small', 'mistral-medium'],
+    testEndpoint: 'https://portal.qwen.ai/v1/chat/completions',
+    supportedModels: ['qwen3-coder-plus'],
+    isActive: true
+  },
+  {
+    id: 'openrouter',
+    name: 'openrouter',
+    displayName: 'OpenRouter',
+    description: 'Access to multiple AI models via unified API - GLM-4.5-Air Free',
+    website: 'https://openrouter.ai',
+    keyFormat: 'sk-or-...',
+    testEndpoint: 'https://openrouter.ai/api/v1/models',
+    supportedModels: ['z-ai/glm-4.5-air:free'],
     isActive: true
   }
 ];
 
 // API ENDPOINTS
 const API_BASE = '/api/llm-keys';
+
+// HELPER FUNCTION FOR AUTH HEADERS
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  // Try to get JWT from cookie
+  const cookieName = 'agenticforge_jwt=';
+  const decodedCookie = decodeURIComponent(document.cookie);
+  const ca = decodedCookie.split(';');
+  for(let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') {
+      c = c.substring(1);
+    }
+    if (c.indexOf(cookieName) === 0) {
+      const jwtToken = c.substring(cookieName.length, c.length);
+      if (jwtToken) {
+        headers['Authorization'] = 'Bearer ' + jwtToken;
+      }
+      break;
+    }
+  }
+
+  // Try to get token from localStorage as fallback
+  if (!headers['Authorization']) {
+    const localStorageToken = localStorage.getItem('authToken');
+    if (localStorageToken) {
+      headers['Authorization'] = 'Bearer ' + localStorageToken;
+    }
+  }
+
+  // Fallback to env AUTH_TOKEN
+  if (!headers['Authorization']) {
+    const envToken = clientConfig.VITE_AUTH_TOKEN || clientConfig.AUTH_TOKEN || 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0';
+    headers['Authorization'] = 'Bearer ' + envToken;
+  }
+
+  return headers;
+}
 
 export const useLLMKeysStore = create<LLMKeysState>()(
   persist(
@@ -171,7 +238,9 @@ export const useLLMKeysStore = create<LLMKeysState>()(
       fetchKeys: async () => {
         set({ isLoading: true, error: null });
         try {
-          const response = await fetch(`${API_BASE}/keys`);
+          const response = await fetch(`${API_BASE}/keys`, {
+            headers: getAuthHeaders()
+          });
           if (!response.ok) throw new Error('Failed to fetch keys');
           
           const keys: LLMKey[] = await response.json();
@@ -210,7 +279,7 @@ export const useLLMKeysStore = create<LLMKeysState>()(
         try {
           const response = await fetch(`${API_BASE}/keys`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
               ...keyData,
               createdAt: new Date().toISOString(),
@@ -242,7 +311,7 @@ export const useLLMKeysStore = create<LLMKeysState>()(
         try {
           const response = await fetch(`${API_BASE}/keys/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
               ...updates,
               updatedAt: new Date().toISOString()
@@ -271,7 +340,8 @@ export const useLLMKeysStore = create<LLMKeysState>()(
         set({ isLoading: true, error: null });
         try {
           const response = await fetch(`${API_BASE}/keys/${id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: getAuthHeaders()
           });
           
           if (!response.ok) throw new Error('Failed to delete key');
@@ -345,6 +415,7 @@ export const useLLMKeysStore = create<LLMKeysState>()(
           
           if (!response.ok) throw new Error('Failed to import from Redis');
           
+          // Refresh keys after import
           await get().fetchKeys();
           set({ isSyncing: false });
         } catch (error) {
@@ -359,8 +430,14 @@ export const useLLMKeysStore = create<LLMKeysState>()(
       exportKeysToRedis: async () => {
         set({ isSyncing: true, error: null });
         try {
+          // First get all current keys
+          const keysToExport = get().keys;
+          
+          // Send keys to backend for export to Redis
           const response = await fetch(`${API_BASE}/export-to-redis`, {
-            method: 'POST'
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ keys: keysToExport })
           });
           
           if (!response.ok) throw new Error('Failed to export to Redis');

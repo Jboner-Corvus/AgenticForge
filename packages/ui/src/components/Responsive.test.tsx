@@ -260,6 +260,7 @@ describe('Responsive Behavior Tests', () => {
       
       mockUseResizablePanel.mockReturnValue({
         controlPanelWidth: 300,
+        setControlPanelWidth: vi.fn(),
         handleMouseDownControlPanel: vi.fn(),
         handleMouseDownCanvas: vi.fn(),
         setCanvasWidth: mockSetCanvasWidthFromHook,

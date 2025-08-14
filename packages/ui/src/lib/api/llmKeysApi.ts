@@ -1,4 +1,5 @@
 // API utilitaires pour la gestion des clés LLM avec Redis
+import { clientConfig } from '../../config';
 export interface RedisKeyPattern {
   pattern: string;
   description: string;
@@ -34,20 +35,35 @@ export const REDIS_KEY_PATTERNS: Record<string, RedisKeyPattern> = {
     description: 'Anthropic Claude API keys',
     example: 'llm:keys:anthropic:key_456'
   },
+  'google-flash': {
+    pattern: 'llm:keys:google-flash:*',
+    description: 'Google Gemini Flash API keys',
+    example: 'llm:keys:google-flash:key_789'
+  },
+  'google-pro': {
+    pattern: 'llm:keys:google-pro:*',
+    description: 'Google Gemini Pro API keys',
+    example: 'llm:keys:google-pro:key_789'
+  },
   google: {
     pattern: 'llm:keys:google:*',
-    description: 'Google AI API keys',
+    description: 'Google Gemini API keys (legacy)',
     example: 'llm:keys:google:key_789'
   },
-  cohere: {
-    pattern: 'llm:keys:cohere:*',
-    description: 'Cohere API keys',
-    example: 'llm:keys:cohere:key_abc'
+  xai: {
+    pattern: 'llm:keys:xai:*',
+    description: 'xAI Grok API keys',
+    example: 'llm:keys:xai:key_abc'
   },
-  mistral: {
-    pattern: 'llm:keys:mistral:*',
-    description: 'Mistral AI API keys', 
-    example: 'llm:keys:mistral:key_def'
+  qwen: {
+    pattern: 'llm:keys:qwen:*',
+    description: 'Qwen3 Coder API keys',
+    example: 'llm:keys:qwen:key_def'
+  },
+  openrouter: {
+    pattern: 'llm:keys:openrouter:*',
+    description: 'OpenRouter API keys',
+    example: 'llm:keys:openrouter:key_ghi'
   },
   global: {
     pattern: 'llm:keys:*',
@@ -63,13 +79,52 @@ export class LLMKeysApi {
     this.baseUrl = baseUrl;
   }
 
+  // Get authentication headers
+  private getAuthHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // Try to get JWT from cookie
+    const cookieName = 'agenticforge_jwt=';
+    const decodedCookie = decodeURIComponent(document.cookie);
+    const ca = decodedCookie.split(';');
+    for(let i = 0; i < ca.length; i++) {
+      let c = ca[i];
+      while (c.charAt(0) === ' ') {
+        c = c.substring(1);
+      }
+      if (c.indexOf(cookieName) === 0) {
+        const jwtToken = c.substring(cookieName.length, c.length);
+        if (jwtToken) {
+          headers['Authorization'] = 'Bearer ' + jwtToken;
+        }
+        break;
+      }
+    }
+
+    // Try to get token from localStorage as fallback
+    if (!headers['Authorization']) {
+      const localStorageToken = localStorage.getItem('authToken');
+      if (localStorageToken) {
+        headers['Authorization'] = 'Bearer ' + localStorageToken;
+      }
+    }
+
+    // Fallback to env AUTH_TOKEN
+    if (!headers['Authorization']) {
+      const envToken = clientConfig.VITE_AUTH_TOKEN || clientConfig.AUTH_TOKEN || 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0';
+      headers['Authorization'] = 'Bearer ' + envToken;
+    }
+
+    return headers;
+  }
+
   // Fetch all keys from Redis
   async fetchKeysFromRedis(): Promise<RedisLLMKey[]> {
     const response = await fetch(`${this.baseUrl}/redis/keys`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: this.getAuthHeaders()
     });
 
     if (!response.ok) {
@@ -83,9 +138,7 @@ export class LLMKeysApi {
   async scanRedisKeys(pattern: string = 'llm:keys:*'): Promise<string[]> {
     const response = await fetch(`${this.baseUrl}/redis/scan`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: this.getAuthHeaders(),
       body: JSON.stringify({ pattern })
     });
 
@@ -156,15 +209,25 @@ export class LLMKeysApi {
 
   // Get Redis info
   async getRedisInfo(): Promise<{ connected: boolean; keyCount: number; memory: string }> {
-    const response = await fetch(`${this.baseUrl}/redis/info`, {
-      method: 'GET'
-    });
+    try {
+      const response = await fetch(`${this.baseUrl}/redis/info`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
 
-    if (!response.ok) {
-      throw new Error(`Failed to get Redis info: ${response.statusText}`);
+      if (!response.ok) {
+        throw new Error(`Failed to get Redis info: ${response.statusText}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      // Return default disconnected state if the endpoint is not available
+      return {
+        connected: false,
+        keyCount: 0,
+        memory: '0K'
+      };
     }
-
-    return response.json();
   }
 
   // Bulk operations
@@ -219,9 +282,12 @@ export class LLMKeysApi {
     const patterns: Record<string, RegExp> = {
       openai: /^sk-[a-zA-Z0-9]{48}$/,
       anthropic: /^sk-ant-[a-zA-Z0-9\-_]{10,}$/,
+      'google-flash': /^AI[a-zA-Z0-9\-_]{35,}$/,
+      'google-pro': /^AI[a-zA-Z0-9\-_]{35,}$/,
       google: /^AI[a-zA-Z0-9\-_]{35,}$/,
-      cohere: /^[a-zA-Z0-9\-_]{40,}$/,
-      mistral: /^[a-zA-Z0-9\-_]{32,}$/
+      xai: /^xai-[a-zA-Z0-9\-_]{20,}$/,
+      qwen: /^[a-zA-Z0-9\-_]{20,}$/,
+      openrouter: /^sk-or-[a-zA-Z0-9\-_]{10,}$/
     };
 
     const pattern = patterns[provider];

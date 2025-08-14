@@ -3,14 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Key, Plus, Trash2, Eye, EyeOff, TestTube, RefreshCw, Database, 
   Upload, Download, AlertTriangle, CheckCircle, 
-  Search, Rocket, Globe, Lock, Unlock
+  Search, Globe, Lock, Unlock, Target
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { useLLMKeysStore, LLMKey } from '../store/llmKeysStore';
 import { llmKeysApi } from '../lib/api/llmKeysApi';
@@ -22,10 +21,24 @@ import { OpenRouterLogo } from './icons/LlmLogos/OpenRouterLogo';
 const PROVIDER_LOGOS: Record<string, React.ComponentType<{ className?: string }>> = {
   openai: OpenAILogo,
   anthropic: () => <div className="text-orange-400 font-bold">A</div>, // Fallback
-  google: GeminiLogo,
-  cohere: () => <div className="text-blue-400 font-bold">C</div>, // Fallback
-  mistral: () => <div className="text-red-400 font-bold">M</div>, // Fallback
+  'google-flash': GeminiLogo,
+  'google-pro': GeminiLogo,
+  google: GeminiLogo, // Fallback for legacy
+  xai: () => <div className="text-green-400 font-bold text-lg">𝕏</div>, // xAI/X logo
+  qwen: () => <div className="text-blue-400 font-bold">Q</div>, // Qwen logo
   openrouter: OpenRouterLogo
+};
+
+// PROVIDER DISPLAY NAMES
+const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
+  openai: 'OpenAI',
+  anthropic: 'Anthropic Claude',
+  'google-flash': 'Google Gemini Flash',
+  'google-pro': 'Google Gemini Pro',
+  google: 'Google Gemini', // Fallback for legacy
+  xai: 'xAI Grok',
+  qwen: 'Qwen3 Coder',
+  openrouter: 'OpenRouter'
 };
 
 // EPIC KEY STATS COMPONENT
@@ -37,7 +50,7 @@ const EpicKeyStats: React.FC = () => {
     { label: 'TOTAL KEYS', value: stats.totalKeys, icon: Key, color: 'text-cyan-400' },
     { label: 'ACTIVE', value: stats.activeKeys, icon: CheckCircle, color: 'text-green-400' },
     { label: 'PROVIDERS', value: stats.providersCount, icon: Globe, color: 'text-purple-400' },
-    { label: 'USAGE', value: stats.totalUsage, icon: Rocket, color: 'text-yellow-400' }
+    { label: 'USAGE', value: stats.totalUsage, icon: Target, color: 'text-yellow-400' }
   ];
 
   return (
@@ -86,6 +99,12 @@ const RedisControlPanel: React.FC = () => {
       setRedisInfo(info);
     } catch (error) {
       console.error('Failed to fetch Redis info:', error);
+      // Set default disconnected state
+      setRedisInfo({
+        connected: false,
+        keyCount: 0,
+        memory: '0K'
+      });
     }
   };
 
@@ -110,7 +129,7 @@ const RedisControlPanel: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-cyan-400">
           <Database className="h-5 w-5" />
-          Redis Integration
+          Gestion des Clés
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -194,36 +213,34 @@ const RedisControlPanel: React.FC = () => {
   );
 };
 
-// ADD KEY MODAL
+// ADD KEY MODAL - BEAUTIFIED VERSION
 const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { providers, addKey, isLoading } = useLLMKeysStore();
   const [formData, setFormData] = useState({
     providerId: '',
     keyName: '',
     keyValue: '',
-    environment: 'development' as const,
-    description: '',
-    tags: [] as string[],
     isActive: true
   });
 
+  const selectedProvider = providers.find(p => p.id === formData.providerId);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const provider = providers.find(p => p.id === formData.providerId);
-    if (!provider) return;
+    if (!selectedProvider) return;
 
     try {
       await addKey({
         providerId: formData.providerId,
-        providerName: provider.name,
+        providerName: PROVIDER_DISPLAY_NAMES[formData.providerId] || selectedProvider.name,
         keyName: formData.keyName,
         keyValue: formData.keyValue,
         isEncrypted: false,
         isActive: formData.isActive,
         metadata: {
-          environment: formData.environment,
-          tags: formData.tags,
-          description: formData.description
+          environment: 'production', // Always production as requested
+          tags: [],
+          description: '' // Removed description field as requested
         }
       });
       onClose();
@@ -231,9 +248,6 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
         providerId: '',
         keyName: '',
         keyValue: '',
-        environment: 'development',
-        description: '',
-        tags: [],
         isActive: true
       });
     } catch (error) {
@@ -244,108 +258,148 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-lg z-50 flex items-center justify-center p-4">
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700 p-6 w-full max-w-md"
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl rounded-3xl border border-cyan-500/20 shadow-2xl shadow-cyan-500/10 p-8 w-full max-w-lg"
       >
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-cyan-400 flex items-center gap-2">
-            <Key className="h-5 w-5" />
-            Add New Key
-          </h3>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 rounded-xl">
+              <Plus className="h-6 w-6 text-cyan-400" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                Add New API Key
+              </h3>
+              <p className="text-gray-400 text-sm">Connect your AI provider</p>
+            </div>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onClose}
+            className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-full"
+          >
             ×
           </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Provider</label>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Provider Selection */}
+          <div className="space-y-3">
+            <label htmlFor="provider-select" className="block text-sm font-semibold text-gray-300">
+              AI Provider
+            </label>
             <Select value={formData.providerId} onValueChange={(value) => setFormData({...formData, providerId: value})}>
-              <SelectTrigger className="bg-gray-800 border-gray-600">
-                <SelectValue placeholder="Select provider" />
+              <SelectTrigger className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 transition-colors h-12 text-base">
+                <SelectValue placeholder="Choose your AI provider">
+                  {selectedProvider && (
+                    <div className="flex items-center gap-3">
+                      {PROVIDER_LOGOS[selectedProvider.id] && (
+                        <div className="h-5 w-5">
+                          {React.createElement(PROVIDER_LOGOS[selectedProvider.id], { className: "h-5 w-5" })}
+                        </div>
+                      )}
+                      <span>{PROVIDER_DISPLAY_NAMES[selectedProvider.id] || selectedProvider.displayName}</span>
+                    </div>
+                  )}
+                </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-gray-800 border-gray-600">
                 {providers.map(provider => (
-                  <SelectItem key={provider.id} value={provider.id}>
-                    {provider.displayName}
+                  <SelectItem key={provider.id} value={provider.id} className="hover:bg-gray-700">
+                    <div className="flex items-center gap-3">
+                      {PROVIDER_LOGOS[provider.id] && (
+                        <div className="h-4 w-4">
+                          {React.createElement(PROVIDER_LOGOS[provider.id], { className: "h-4 w-4" })}
+                        </div>
+                      )}
+                      <span>{PROVIDER_DISPLAY_NAMES[provider.id] || provider.displayName}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Key Name</label>
+          {/* Key Name */}
+          <div className="space-y-3">
+            <label htmlFor="key-name-input" className="block text-sm font-semibold text-gray-300">
+              Key Name
+            </label>
             <Input
+              id="key-name-input"
               value={formData.keyName}
               onChange={(e) => setFormData({...formData, keyName: e.target.value})}
-              placeholder="e.g., Production OpenAI"
-              className="bg-gray-800 border-gray-600"
+              placeholder={selectedProvider ? `My ${PROVIDER_DISPLAY_NAMES[selectedProvider.id] || selectedProvider.displayName} Key` : "Give your key a name"}
+              className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 focus:border-cyan-500 transition-colors h-12 text-base"
               required
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">API Key</label>
-            <Input
-              type="password"
-              value={formData.keyValue}
-              onChange={(e) => setFormData({...formData, keyValue: e.target.value})}
-              placeholder="Enter your API key"
-              className="bg-gray-800 border-gray-600"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Environment</label>
-            <Select value={formData.environment} onValueChange={(value) => setFormData({...formData, environment: value as 'development'})}>
-              <SelectTrigger className="bg-gray-800 border-gray-600">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="development">Development</SelectItem>
-                <SelectItem value="staging">Staging</SelectItem>
-                <SelectItem value="production">Production</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
-            <Textarea
-              value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
-              placeholder="Optional description"
-              className="bg-gray-800 border-gray-600"
-              rows={2}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <Switch
-                checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData({...formData, isActive: checked})}
-              />
-              Active
+          {/* API Key */}
+          <div className="space-y-3">
+            <label htmlFor="api-key-input" className="block text-sm font-semibold text-gray-300">
+              API Key
             </label>
+            <div className="relative">
+              <Input
+                id="api-key-input"
+                type="password"
+                value={formData.keyValue}
+                onChange={(e) => setFormData({...formData, keyValue: e.target.value})}
+                placeholder="sk-..."
+                className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 focus:border-cyan-500 transition-colors h-12 text-base pr-12"
+                required
+              />
+              <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+          {/* Active Toggle */}
+          <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
+            <div>
+              <label htmlFor="activate-key-switch" className="text-sm font-semibold text-gray-300">Activate Key</label>
+              <p className="text-xs text-gray-400">Enable this key immediately after adding</p>
+            </div>
+            <Switch
+              id="activate-key-switch"
+              checked={formData.isActive}
+              onCheckedChange={(checked) => setFormData({...formData, isActive: checked})}
+              className="data-[state=checked]:bg-cyan-500"
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-6">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose} 
+              className="flex-1 h-12 border-gray-600 hover:border-gray-500 hover:bg-gray-800/50"
+            >
               Cancel
             </Button>
             <Button 
               type="submit" 
-              disabled={isLoading}
-              className="flex-1 bg-cyan-600 hover:bg-cyan-500"
+              disabled={isLoading || !formData.providerId || !formData.keyName || !formData.keyValue}
+              className="flex-1 h-12 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-semibold"
             >
-              {isLoading ? <LoadingSpinner className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
-              Add Key
+              {isLoading ? (
+                <>
+                  <LoadingSpinner className="h-4 w-4 mr-2" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Key
+                </>
+              )}
             </Button>
           </div>
         </form>
@@ -396,7 +450,7 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
             </div>
             <div>
               <h3 className="font-semibold text-white">{keyData.keyName}</h3>
-              <p className="text-sm text-gray-400">{keyData.providerName}</p>
+              <p className="text-sm text-gray-400">{PROVIDER_DISPLAY_NAMES[keyData.providerId] || keyData.providerName}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -530,7 +584,7 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
 export const EpicLlmKeyManager: React.FC = () => {
   const { 
     providers, fetchKeys, fetchProviders, getFilteredKeys, 
-    searchTerm, setSearchTerm, selectedProvider, setSelectedProvider,
+    selectedProvider, setSelectedProvider,
     selectedEnvironment, setSelectedEnvironment, showInactiveKeys, 
     toggleShowInactiveKeys, isLoading 
   } = useLLMKeysStore();
@@ -579,14 +633,6 @@ export const EpicLlmKeyManager: React.FC = () => {
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border-gray-700 mb-6">
           <CardContent className="p-6">
             <div className="flex flex-wrap gap-4 items-center">
-              <div className="flex-1 min-w-64">
-                <Input
-                  placeholder="Search keys..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="bg-gray-800 border-gray-600"
-                />
-              </div>
               <Select value={selectedProvider || 'all'} onValueChange={(value) => setSelectedProvider(value === 'all' ? null : value)}>
                 <SelectTrigger className="w-48 bg-gray-800 border-gray-600">
                   <SelectValue placeholder="All Providers" />
@@ -594,7 +640,9 @@ export const EpicLlmKeyManager: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="all">All Providers</SelectItem>
                   {providers.map(provider => (
-                    <SelectItem key={provider.id} value={provider.id}>{provider.displayName}</SelectItem>
+                    <SelectItem key={provider.id} value={provider.id}>
+                      {PROVIDER_DISPLAY_NAMES[provider.id] || provider.displayName}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -610,8 +658,8 @@ export const EpicLlmKeyManager: React.FC = () => {
                 </SelectContent>
               </Select>
               <div className="flex items-center gap-2">
-                <Switch checked={showInactiveKeys} onCheckedChange={toggleShowInactiveKeys} />
-                <label className="text-sm text-gray-300">Show inactive</label>
+                <Switch id="show-inactive-switch" checked={showInactiveKeys} onCheckedChange={toggleShowInactiveKeys} />
+                <label htmlFor="show-inactive-switch" className="text-sm text-gray-300">Show inactive</label>
               </div>
             </div>
           </CardContent>

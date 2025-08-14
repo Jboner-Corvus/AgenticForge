@@ -7,6 +7,7 @@ import { EpicTodoListPanel } from './TodoList/EpicTodoListPanel';
 import { UserInput } from './UserInput';
 import { HeaderContainer } from './HeaderContainer';
 import { ChatMessagesContainer } from './ChatMessagesContainer';
+import { DraggableControlPanel } from './DraggableControlPanel';
 
 // COMPOSANT WRAPPER ÉPIQUE POUR GÉRER LE PINNING
 interface PinnableComponentProps {
@@ -99,7 +100,8 @@ export const EpicLayoutManager: React.FC = () => {
       { id: 'canvas', isVisible: isCanvasVisible || !!canvasContent },
       { id: 'todolist', isVisible: isTodoListVisible },
       { id: 'chat', isVisible: currentPage === 'chat' },
-      { id: 'input', isVisible: currentPage === 'chat' }
+      { id: 'input', isVisible: currentPage === 'chat' },
+      { id: 'controlpanel', isVisible: true } // Always visible in battlefield mode
     ];
     
     updates.forEach(({ id, isVisible }) => {
@@ -190,6 +192,14 @@ export const EpicLayoutManager: React.FC = () => {
           className="backdrop-blur-sm bg-black/80 border-b border-cyan-500/30 rounded-lg"
         >
           <HeaderContainer />
+        </PinnableComponent>
+
+        {/* CONTROL PANEL DRAGGABLE */}
+        <PinnableComponent 
+          id="controlpanel"
+          className="backdrop-blur-sm rounded-2xl"
+        >
+          <DraggableControlPanel />
         </PinnableComponent>
 
         {/* TODOLIST PINNÉE */}

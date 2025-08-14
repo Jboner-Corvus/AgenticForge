@@ -124,14 +124,12 @@ export function getToolsDir(): string {
   let toolsPath: string;
   
   if (runningInDist) {
-    // When running in Docker, __dirname might be "." so we need to use process.cwd()
-    if (__dirname === '.' || __dirname === process.cwd()) {
-      toolsPath = path.resolve(process.cwd(), 'dist', 'modules', 'tools', 'definitions');
-    } else {
-      toolsPath = path.resolve(__dirname, '..', 'modules', 'tools', 'definitions');
-    }
+    // When running in Docker or as a worker, we need to construct the path correctly
+    // The worker runs from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core
+    // The tools are in /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions
+    toolsPath = path.resolve(process.cwd(), 'dist', 'modules', 'tools', 'definitions');
   } else {
-    toolsPath = path.resolve(__dirname, '..', 'modules', 'tools', 'definitions');
+    toolsPath = path.resolve(process.cwd(), 'src', 'modules', 'tools', 'definitions');
   }
 
   console.log(`[getToolsDir] Constructed tools path: ${toolsPath}`);

@@ -114,8 +114,10 @@ export function TodoListPanel() {
           </Button>
           
           {/* Import button */}
-          <label className="cursor-pointer">
+          <label htmlFor="simple-todo-import" className="cursor-pointer">
             <input
+              id="simple-todo-import"
+              name="simple-todo-import"
               type="file"
               accept=".json"
               onChange={handleFileImport}
