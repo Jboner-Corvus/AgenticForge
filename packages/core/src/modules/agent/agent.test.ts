@@ -65,6 +65,13 @@ vi.mock('../session/sessionManager', () => ({
 
 import { LlmKeyManager } from '../llm/LlmKeyManager.js';
 
+vi.mock('../../logger.js', async () => {
+  const { mockLogger } = await import('../../test/mocks/logger.js');
+  return {
+    getLoggerInstance: vi.fn(() => mockLogger),
+  };
+});
+
 const mockedGetLlmResponse = getLlmProvider('gemini').getLlmResponse as Mock;
 const mockedGetTools = getTools as Mock;
 const mockedToolRegistryExecute = toolRegistry.execute as Mock;
