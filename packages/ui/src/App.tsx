@@ -23,7 +23,7 @@ import {
   LazyLlmKeyManager, 
   LazyOAuthPage,
   LazyLayoutManager,
-  LazyTodoPanel,
+  LazyEnhancedTodoPanel,
   LazyCanvas,
   LazyAgentCanvas,
   LazyDebugLogContainer,
@@ -66,6 +66,11 @@ export default function App() {
 
   // Hook pour ajuster la largeur du canvas lors du redimensionnement de la fenêtre
   const setCanvasWidthStore = useStore((state) => state.setCanvasWidth);
+  const initializeSessionAndMessages = useStore((state) => state.initializeSessionAndMessages);
+
+  useEffect(() => {
+    initializeSessionAndMessages();
+  }, [initializeSessionAndMessages]);
   
   useEffect(() => {
     const handleResize = () => {
@@ -132,7 +137,7 @@ export default function App() {
           )}
 
           {/* Todo List Panel - Version classique (masquée si pinnée) */}
-          {!components.todolist?.isPinned && <LazyTodoPanel />}
+          {!components.todolist?.isPinned && <LazyEnhancedTodoPanel />}
 
           {/* Conteneur principal pour la discussion et le canevas */}
           <main className="flex-1 flex flex-col overflow-hidden">

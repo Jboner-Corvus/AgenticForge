@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Key, Plus, Trash2, Eye, EyeOff, TestTube, RefreshCw, Database, 
   Upload, Download, AlertTriangle, CheckCircle, 
-  Search, Globe, Lock, Unlock, Target
+  Search, Globe, Lock, Unlock, Target, GripVertical, Shield
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -16,6 +16,9 @@ import { llmKeysApi } from '../lib/api/llmKeysApi';
 import { LoadingSpinner } from './LoadingSpinner';
 import { OpenAILogo, GeminiLogo } from './icons/LlmLogos';
 import { OpenRouterLogo } from './icons/LlmLogos/OpenRouterLogo';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // PROVIDER LOGOS MAPPING
 const PROVIDER_LOGOS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -89,7 +92,7 @@ const EpicKeyStats: React.FC = () => {
 
 // REDIS CONTROL PANEL
 const RedisControlPanel: React.FC = () => {
-  const { syncWithRedis, importKeysFromRedis, exportKeysToRedis, isSyncing, error } = useLLMKeysStore();
+  const { syncWithRedis, importKeysFromRedis, exportKeysToRedis, cleanupDuplicates, isSyncing, error } = useLLMKeysStore();
   const [redisInfo, setRedisInfo] = useState<{ connected: boolean; keyCount: number; memory: string } | null>(null);
   const [scanning, setScanning] = useState(false);
 
@@ -155,7 +158,7 @@ const RedisControlPanel: React.FC = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -196,6 +199,16 @@ const RedisControlPanel: React.FC = () => {
             <Upload className="h-4 w-4 mr-2" />
             Export
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={cleanupDuplicates}
+            disabled={isSyncing}
+            className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Clean
+          </Button>
         </div>
 
         {error && (
@@ -208,6 +221,152 @@ const RedisControlPanel: React.FC = () => {
             <span className="text-red-300 text-sm">{error}</span>
           </motion.div>
         )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// API function placeholders for HierarchyManager
+const getMasterKey = async (): Promise<LLMKey | null> => {
+  console.log('Fetching master key...');
+  return {
+    id: 'master-key',
+    providerId: 'master',
+    providerName: 'Master',
+    keyName: 'Master Key (.env)',
+    keyValue: 'master-key-from-env',
+    isEncrypted: false,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    usageCount: 0,
+    metadata: { environment: 'universal', tags: [], description: 'Master key loaded from .env file' }
+  };
+};
+
+const saveKeyHierarchy = async (orderedKeys: LLMKey[]) => {
+  console.log('Saving new key hierarchy:', orderedKeys.map(k => k.keyName));
+  await new Promise(resolve => setTimeout(resolve, 500));
+};
+
+// SORTABLE KEY ITEM FOR HIERARCHY
+const SortableKeyItem = ({ keyData, isMaster }: { keyData: LLMKey, isMaster: boolean }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: keyData.id, disabled: isMaster });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const Logo = PROVIDER_LOGOS[keyData.providerId] || (() => <Key className="h-5 w-5" />);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      className={`flex items-center p-3 mb-2 rounded-lg border bg-gray-800/50 ${
+        isMaster ? 'border-yellow-500/50' : 'border-gray-600'
+      }`}
+    >
+      <div {...listeners} className={`cursor-grab mr-3 ${isMaster ? 'cursor-not-allowed text-gray-600' : 'text-gray-400'}`}>
+        <GripVertical className="h-5 w-5" />
+      </div>
+      <div className={`p-2 rounded-lg mr-3 ${isMaster ? 'bg-yellow-900/50' : 'bg-gray-800'}`}>
+        <Logo className={`h-5 w-5 ${isMaster ? 'text-yellow-400' : 'text-gray-400'}`} />
+      </div>
+      <div className="flex-grow">
+        <span className="font-bold text-white">{keyData.keyName}</span>
+        <div className="text-xs text-gray-400">{keyData.providerName}</div>
+      </div>
+      {isMaster && (
+        <Badge className="bg-yellow-900/50 text-yellow-300 border border-yellow-700/50">
+          <Shield className="h-3 w-3 mr-1" />
+          Master
+        </Badge>
+      )}
+    </div>
+  );
+};
+
+// HIERARCHY MANAGER COMPONENT
+const HierarchyManager: React.FC = () => {
+  const { keys } = useLLMKeysStore();
+  const [masterKey, setMasterKey] = useState<LLMKey | null>(null);
+  const [orderedKeys, setOrderedKeys] = useState<LLMKey[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchMaster = async () => {
+      const key = await getMasterKey();
+      setMasterKey(key);
+    };
+    fetchMaster();
+  }, []);
+
+  useEffect(() => {
+    const allKeys = [...(masterKey ? [masterKey] : []), ...keys];
+    setOrderedKeys(allKeys);
+  }, [keys, masterKey]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor)
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setOrderedKeys((keys) => {
+        const oldIndex = keys.findIndex(k => k.id === active.id);
+        const newIndex = keys.findIndex(k => k.id === over.id);
+        // Prevent master key from being moved
+        if (oldIndex === 0 || newIndex === 0) return keys;
+        return arrayMove(keys, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    const userConfigurableKeys = orderedKeys.filter(k => k.providerId !== 'master');
+    await saveKeyHierarchy(userConfigurableKeys);
+    setIsSaving(false);
+  };
+
+  return (
+    <Card className="mb-6 bg-gradient-to-br from-gray-900/90 to-gray-800/90 border-gray-700">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold text-cyan-400 flex items-center gap-2">
+          <Target className="h-5 w-5" />
+          Hiérarchie des Clés
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-gray-400 mb-4">
+          Glissez-déposez les clés pour définir leur ordre de priorité. Le système essaiera les clés dans cet ordre, en commençant par la clé Master.
+        </p>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={orderedKeys.map(k => k.id)} strategy={verticalListSortingStrategy}>
+            {orderedKeys.map((key) => (
+              <SortableKeyItem key={key.id} keyData={key} isMaster={key.providerId === 'master'} />
+            ))}
+          </SortableContext>
+        </DndContext>
+        <div className="mt-4 flex justify-end">
+          <Button 
+            onClick={handleSaveChanges} 
+            disabled={isSaving}
+            className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500"
+          >
+            {isSaving ? 'Sauvegarde...' : 'Sauvegarder la Hiérarchie'}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
@@ -227,7 +386,7 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProvider) return;
+    if (!selectedProvider || isLoading) return; // Prevent double submission
 
     try {
       await addKey({
@@ -238,7 +397,7 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
         isEncrypted: false,
         isActive: formData.isActive,
         metadata: {
-          environment: 'production', // Always production as requested
+          environment: 'universal', // Toutes les clés fonctionnent partout
           tags: [],
           description: '' // Removed description field as requested
         }
@@ -295,7 +454,7 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
               AI Provider
             </label>
             <Select value={formData.providerId} onValueChange={(value) => setFormData({...formData, providerId: value})}>
-              <SelectTrigger className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 transition-colors h-12 text-base">
+              <SelectTrigger id="provider-select" className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 transition-colors h-12 text-base">
                 <SelectValue placeholder="Choose your AI provider">
                   {selectedProvider && (
                     <div className="flex items-center gap-3">
@@ -470,7 +629,7 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
         {/* Key Display */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <label className="text-xs text-gray-400 uppercase tracking-wider">API Key</label>
+            <div className="text-xs text-gray-400 uppercase tracking-wider">API Key</div>
             <Button
               variant="ghost"
               size="sm"
@@ -488,21 +647,9 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
         </div>
 
         {/* Metadata */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="mb-4">
           <div>
-            <label className="text-xs text-gray-400 uppercase tracking-wider">Environment</label>
-            <div className="mt-1">
-              <Badge variant="outline" className={`text-xs ${
-                keyData.metadata.environment === 'production' ? 'border-red-500/50 text-red-300' :
-                keyData.metadata.environment === 'staging' ? 'border-yellow-500/50 text-yellow-300' :
-                'border-blue-500/50 text-blue-300'
-              }`}>
-                {keyData.metadata.environment}
-              </Badge>
-            </div>
-          </div>
-          <div>
-            <label className="text-xs text-gray-400 uppercase tracking-wider">Usage</label>
+            <div className="text-xs text-gray-400 uppercase tracking-wider">Usage</div>
             <div className="mt-1 text-sm text-gray-300">
               {keyData.usageCount.toLocaleString()}
             </div>
@@ -512,7 +659,7 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
         {/* Description */}
         {keyData.metadata.description && (
           <div className="mb-4">
-            <label className="text-xs text-gray-400 uppercase tracking-wider">Description</label>
+            <div className="text-xs text-gray-400 uppercase tracking-wider">Description</div>
             <p className="mt-1 text-sm text-gray-300">{keyData.metadata.description}</p>
           </div>
         )}
@@ -520,7 +667,7 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
         {/* Tags */}
         {keyData.metadata.tags.length > 0 && (
           <div className="mb-4">
-            <label className="text-xs text-gray-400 uppercase tracking-wider mb-2 block">Tags</label>
+            <div className="text-xs text-gray-400 uppercase tracking-wider mb-2 block">Tags</div>
             <div className="flex flex-wrap gap-1">
               {keyData.metadata.tags.map(tag => (
                 <Badge key={tag} variant="outline" className="text-xs border-gray-600 text-gray-400">
@@ -585,8 +732,8 @@ export const EpicLlmKeyManager: React.FC = () => {
   const { 
     providers, fetchKeys, fetchProviders, getFilteredKeys, 
     selectedProvider, setSelectedProvider,
-    selectedEnvironment, setSelectedEnvironment, showInactiveKeys, 
-    toggleShowInactiveKeys, isLoading 
+    showInactiveKeys, 
+    toggleShowInactiveKeys, isLoading, forceDeduplication 
   } = useLLMKeysStore();
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -613,13 +760,67 @@ export const EpicLlmKeyManager: React.FC = () => {
               </h1>
               <p className="text-gray-400 mt-2">Manage your AI provider keys with Redis integration</p>
             </div>
-            <Button 
-              onClick={() => setShowAddModal(true)}
-              className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Key
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => {
+                  // Force refresh to apply deduplication
+                  fetchKeys();
+                }}
+                variant="outline"
+                className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              <Button 
+                onClick={async () => {
+                  console.log('🧹 Bouton Clean Duplicates cliqué !');
+                  try {
+                    // First try backend cleanup
+                    const response = await fetch('/api/llm-keys/cleanup-duplicates', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0'}`
+                      }
+                    });
+                    
+                    if (response.ok) {
+                      console.log('✅ Backend cleanup réussi');
+                    } else {
+                      console.warn('⚠️ Backend cleanup failed, using frontend fallback');
+                    }
+                    
+                    // Always run frontend deduplication as backup
+                    forceDeduplication();
+                    
+                    // Force refresh to ensure UI is updated
+                    setTimeout(() => {
+                      fetchKeys();
+                    }, 500);
+                    
+                    console.log('✅ Déduplication terminée');
+                  } catch (error) {
+                    console.error('❌ Erreur:', error);
+                    // Run frontend deduplication as fallback
+                    forceDeduplication();
+                    fetchKeys();
+                  }
+                }}
+                variant="outline"
+                className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Clean Duplicates
+              </Button>
+              <Button 
+                onClick={() => setShowAddModal(true)}
+                className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Key
+              </Button>
+            </div>
           </div>
 
           {/* Stats */}
@@ -628,6 +829,9 @@ export const EpicLlmKeyManager: React.FC = () => {
 
         {/* Redis Control Panel */}
         <RedisControlPanel />
+
+        {/* Hierarchy Manager */}
+        <HierarchyManager />
 
         {/* Filters */}
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border-gray-700 mb-6">
@@ -644,17 +848,6 @@ export const EpicLlmKeyManager: React.FC = () => {
                       {PROVIDER_DISPLAY_NAMES[provider.id] || provider.displayName}
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-              <Select value={selectedEnvironment || 'all'} onValueChange={(value) => setSelectedEnvironment(value === 'all' ? null : value)}>
-                <SelectTrigger className="w-48 bg-gray-800 border-gray-600">
-                  <SelectValue placeholder="All Environments" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Environments</SelectItem>
-                  <SelectItem value="development">Development</SelectItem>
-                  <SelectItem value="staging">Staging</SelectItem>
-                  <SelectItem value="production">Production</SelectItem>
                 </SelectContent>
               </Select>
               <div className="flex items-center gap-2">

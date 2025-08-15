@@ -14,14 +14,14 @@ import {
   MemoizedVersionDisplay
 } from './components/optimized/MemoizedComponents';
 
-import {
-  LazyLeaderboardPage,
-  LazyLlmKeyManager,
+import { 
+  LazyLeaderboardPage, 
+  LazyLlmKeyManager, 
   LazyOAuthPage,
-  LazyTodoPanel,
+  LazyLayoutManager,
+  LazyEnhancedTodoPanel,
   LazyCanvas,
   LazyAgentCanvas,
-  LazyLayoutManager,
   LazyWrapper
 } from './components/optimized/LazyComponents';
 
@@ -220,7 +220,7 @@ export default function AppOptimized() {
                 {/* Todo List - Classic version when not pinned */}
                 {!components.todolist?.isPinned && uiState.isTodoListVisible && (
                   <ErrorBoundary componentName="TodoList">
-                    <LazyTodoPanel />
+                    <LazyEnhancedTodoPanel />
                   </ErrorBoundary>
                 )}
 
