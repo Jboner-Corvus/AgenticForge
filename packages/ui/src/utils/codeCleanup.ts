@@ -1,4 +1,6 @@
 // Code cleanup utilities and type fixes
+import React from 'react';
+
 export const DEBUG_MODE = process.env.NODE_ENV === 'development';
 
 // Safe logging function
@@ -211,10 +213,23 @@ export class ErrorBoundaryHelper {
     }
   }
   
-  static createErrorFallback = (_componentName: string) => {
-    return ({ error: _error, resetError: _resetError }: { error: Error; resetError: () => void }) => {
-      // Return null for now to avoid JSX issues
-      return null;
+  static createErrorFallback = (componentName: string) => {
+    return ({ error, resetError }: { error: Error; resetError: () => void }) => {
+      return React.createElement('div', { className: 'error-boundary-fallback p-4 bg-destructive/10 border border-destructive/30 rounded-lg' },
+        React.createElement('h2', { className: 'text-lg font-bold text-destructive' }, 'Something went wrong'),
+        React.createElement('p', { className: 'mt-2 text-sm' },
+          'An error occurred in the ',
+          React.createElement('strong', null, componentName),
+          ' component.'
+        ),
+        React.createElement('p', { className: 'mt-2 text-xs text-muted-foreground' },
+          'Error: ', error.message
+        ),
+        React.createElement('button', {
+          onClick: resetError,
+          className: 'mt-4 px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity'
+        }, 'Try again')
+      );
     };
   };
 }

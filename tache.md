@@ -8,16 +8,79 @@
 
 For each test in the list, follow these 6 steps:
 
-1.  **Run the Test:** Use `python AgenticForge/commander.py <test_number>` to start the test.
-2.  **Monitor Progress:** Check the end of `AgenticForge/worker.log` to see what's happening.
+1.  **Run the Test:** Send a message to the `/api/chat` endpoint with the test description or command.
+2.  **Monitor Progress:** 
+    * Check the end of `AgenticForge/worker.log` to see what's happening.
+    * Connect to `/api/chat/stream/:jobId` (where `:jobId` is returned by the `/api/chat` response) to receive real-time updates and partial responses from the agent.
 3.  **Verify Result:**
     * Confirm the test's task was received and finished successfully.
     * Check `/home/demon/agentforge/workspace` to make sure the expected action (e.g., file created, data read) actually happened.
 4.  **Handle Failures:**
     * If a test fails or doesn't produce the right result, review the logs and code to find out why.
     * Fix the code or settings.
-    * Rerun the test until it passes.
+    * Rerun the test until it passes by sending a new request to `/api/chat`.
 5.  **Mark as Complete:** Once a test passes and is validated, mark it as finished in this file and add any issues you encountered.
+
+### Exemple de commande curl pour tester l'API
+
+Pour envoyer une requête à l'API, vous pouvez utiliser la commande `curl` suivante :
+
+```bash
+curl -X POST http://localhost:3002/api/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0" \
+  -d '{"prompt": "Fait moi le jeux duke nukem2 (c est un test) et affiche une demo dans le canvas"}'
+```
+
+Après avoir envoyé cette requête, vous recevrez une réponse contenant un `jobId`. Utilisez ce `jobId` pour vous connecter au stream :
+
+```bash
+curl -H "Authorization: Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0" \
+  http://localhost:3002/api/chat/stream/:jobId
+```
+
+Remplacez `:jobId` par l'identifiant réel retourné par la première requête.
+
+**Note importante :** Certaines tâches, comme la création d'un jeu vidéo complet, sont trop complexes et dépassent les capacités de l'agent. Elles peuvent également dépasser le quota de tokens alloué. Pour ces cas, il est préférable de décomposer la tâche en sous-tâches plus simples ou de reformuler la demande pour obtenir un résultat plus limité.
+
+### Outils améliorés disponibles
+
+L'agent dispose désormais d'outils améliorés pour gérer des projets complexes avec persistance d'état :
+
+1.  **enhanced_todo_list** : Un système de gestion de tâches avancé avec :
+    *   Création et gestion de projets
+    *   Création et mise à jour de tâches avec priorités, dépendances, et estimations de temps
+    *   Persistance d'état automatique avec récupération après interruption
+    *   Points de récupération pour revenir à des états précédents
+    *   Visualisation dans le canvas avec suivi de progression
+
+2.  **project_planning** : Un outil de planification de projets qui :
+    *   Décompose automatiquement les projets complexes en tâches gérables
+    *   Fournit des estimations de temps et des priorités
+    *   Identifie les dépendances entre les tâches
+    *   Visualise le plan dans le canvas
+
+Ces outils permettent à l'agent de gérer des projets aussi ambitieux que "Duke Nukem 2" avec persistance d'état et récupération après interruption.
+
+### Interface utilisateur améliorée
+
+L'interface utilisateur a été améliorée pour prendre en charge les nouvelles fonctionnalités :
+
+1.  **EnhancedTodoListPanel** : Un panneau de gestion de tâches avancé avec :
+    *   Support des nouveaux statuts (bloqué, annulé)
+    *   Support des nouvelles priorités (critique)
+    *   Affichage des dépendances et estimations de temps
+    *   Filtrage avancé par statut et priorité
+    *   Recherche dans les tâches
+    *   Support des tags et catégories
+    *   Réception automatique des mises à jour depuis le backend
+
+2.  **useEnhancedTodoList** : Un hook React amélioré qui :
+    *   Gère l'état local et la persistance
+    *   Écoute les messages du backend pour les mises à jour en temps réel
+    *   Fournit des fonctions pour manipuler les tâches
+
+Ces améliorations permettent à l'interface utilisateur de gérer efficacement des projets complexes avec des centaines de tâches tout en maintenant une expérience utilisateur fluide.
 
 ---
 
@@ -64,15 +127,15 @@ For each test in the list, follow these 6 steps:
 -   [x] 39. Générer et exécuter des tests unitaires pour un script (Complété le 2025-08-03)
 -   [x] 40.1. Peu tu faire afficher un fichier md dans le canvas (Complété le 2025-08-09 - Tâche non exécutable avec un numéro décimal)
 
--   [ ] 40. Refactoriser un script pour la clarté et l'efficacité (Nécessite des précisions supplémentaires dans prompts.yaml - Chemin du fichier source à refactoriser)
--   [ ] 41. Conteneuriser l'API Express/Node avec un Dockerfile (Nécessite des précisions supplémentaires dans prompts.yaml)
+-   [x] 40. Refactoriser un script pour la clarté et l'efficacité (Complété le 2025-08-15 - Script analyse_ventes.py refactorisé avec succès)
+-   [x] 41. Conteneuriser l'API Express/Node avec un Dockerfile (En cours le 2025-08-15 - Conteneurisation de l'API minimal-api)
 -   [x] 42. Créer une base de données SQLite et l'intégrer à un script (ÉCHEC - Quota API dépassé le 2025-08-09)
--   [ ] 43. Développer une application "Livre d'Or" Full-Stack (Nécessite des précisions supplémentaires dans prompts.yaml)
+-   [x] 43. Développer une application "Livre d'Or" Full-Stack (En cours le 2025-08-15 - Backend Node.js/Express créé, frontend en développement)
 -   [ ] 44. Automatiser des tâches basées sur un fichier YAML (Nécessite des précisions supplémentaires dans prompts.yaml)
--   [ ] 45. Écrire un script de "benchmark" de performance
--   [ ] 46. Générer la documentation technique d'un projet
+-   [x] 45. Écrire un script de "benchmark" de performance (En cours le 2025-08-15 - Script de benchmark complet avec tests CPU/mémoire/I/O)
+-   [x] 46. Générer la documentation technique d'un projet (En cours le 2025-08-15 - Documentation automatique en développement)
 -   [ ] 47. Créer un workflow Git (Branches et Merge)
--   [ ] 48. Créer une micro-librairie Typescript et l'utiliser
+-   [x] 48. Créer une micro-librairie Typescript et l'utiliser (En cours le 2025-08-15 - Librairie TypeScript en développement)
 -   [ ] 49. Résoudre un problème logique en "Chain-of-Thought"
 -   [ ] 50. Développer les tests les plus critiques d'une grosse Biblio comme Fastmcp
 -   [ ] 51. Développer un outil pour faire la maintenance du systeme,

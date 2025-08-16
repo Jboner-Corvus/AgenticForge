@@ -26,7 +26,7 @@ vi.mock('../../logger.js', () => ({
   }),
 }));
 
-vi.mock('../../utils/llmProvider.js', () => ({
+vi.mock('../../utils/llmProvider', () => ({
   getLlmProvider: vi.fn().mockReturnValue({
     getLlmResponse: vi.fn(),
   }),
@@ -120,9 +120,9 @@ describe('Agent Conversation Integration Tests', () => {
       },
     ];
 
-    mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-    mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-    mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+    mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+    mockResponseSchema = require('./responseSchema').llmResponseSchema;
+    mockToolRegistry = require('../tools/toolRegistry').toolRegistry;
   });
 
   describe('Complete Conversation Flows', () => {

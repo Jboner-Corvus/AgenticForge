@@ -423,7 +423,7 @@ describe('Orchestrator Prompt Tests', () => {
   describe('Error Handling', () => {
     it('should handle missing system prompt file gracefully', () => {
       const mockReadFileSync = vi.mocked(require('fs').readFileSync);
-      mockReadFileSync.mockImplementationOnce(() => {
+      vi.spyOn(mockReadFileSync, 'mockImplementationOnce').mockImplementationOnce(() => {
         throw new Error('File not found');
       });
 

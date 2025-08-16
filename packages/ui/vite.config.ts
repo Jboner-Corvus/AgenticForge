@@ -8,6 +8,8 @@ import tailwindcss from "tailwindcss";
 import autoprefixer from "autoprefixer";
 
 export default defineConfig({
+  // Use '/' as the base path for the app
+  base: '/',
   build: {
     minify: true,
     sourcemap: false,
@@ -57,21 +59,36 @@ export default defineConfig({
     },
   },
   define: {
-    'process.env.AUTH_TOKEN': JSON.stringify(process.env.AUTH_TOKEN),
+    'import.meta.env.VITE_AUTH_TOKEN': JSON.stringify(process.env.AUTH_TOKEN),
+    'import.meta.env.AUTH_TOKEN': JSON.stringify(process.env.AUTH_TOKEN),
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV)
   },
   esbuild: {
     // Supprime les console.log en production
     drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
   },
-  // AJOUTEZ CETTE SECTION
+  // Configuration serveur pour dev et preview
   server: {
     host: '0.0.0.0',
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080', // Cible le port public du backend
+        target: 'http://localhost:8080', // Docker container port
         changeOrigin: true,
+        secure: false,
+        ws: true, // Support WebSockets pour SSE
+      },
+    },
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: 3003,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080', // Docker container port
+        changeOrigin: true,
+        secure: false,
+        ws: true, // Support WebSockets pour SSE
       },
     },
   },

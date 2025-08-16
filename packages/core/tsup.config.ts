@@ -7,6 +7,7 @@ export default defineConfig({
     'src/worker.ts', 
     'src/server-start.ts',
     'src/utils/toolLoader.ts',
+    'src/utils/llmProvider.ts',
     'src/modules/tools/toolRegistry.ts',
     'src/modules/tools/definitions/**/*.ts'
   ],

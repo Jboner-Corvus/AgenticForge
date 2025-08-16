@@ -208,7 +208,9 @@ export const useUIStore = create<UIState>()(
         isControlPanelVisible: state.isControlPanelVisible,
         isDarkMode: state.isDarkMode,
         toolCreationEnabled: state.toolCreationEnabled,
-        codeExecutionEnabled: state.codeExecutionEnabled
+        codeExecutionEnabled: state.codeExecutionEnabled,
+        authToken: state.authToken,
+        tokenStatus: state.tokenStatus
       })
     }
   )

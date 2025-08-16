@@ -37,7 +37,7 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic Claude',
   'google-flash': 'Google Gemini Flash',
-  'google-pro': 'Google Gemini Pro',
+  'gemini': 'Gemini',
   google: 'Google Gemini', // Fallback for legacy
   xai: 'xAI Grok',
   qwen: 'Qwen3 Coder',

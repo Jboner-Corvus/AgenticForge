@@ -14,6 +14,7 @@ export interface Session {
 export interface LlmApiKey {
   provider: string;
   key: string;
+  keyName?: string;
   baseUrl?: string;
   model?: string;
 }

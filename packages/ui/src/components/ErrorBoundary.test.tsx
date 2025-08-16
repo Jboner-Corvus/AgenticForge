@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
+import { TestLanguageProvider } from '../lib/__mocks__/TestLanguageProvider';
 
 // Component that throws an error on demand
 const ThrowError = ({ shouldThrow }: { shouldThrow: boolean }) => {
@@ -39,9 +40,11 @@ describe('ErrorBoundary Tests', () => {
 
   it('should render children when no error occurs', () => {
     render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={false} />
-      </ErrorBoundary>
+      <TestLanguageProvider>
+        <ErrorBoundary>
+          <ThrowError shouldThrow={false} />
+        </ErrorBoundary>
+      </TestLanguageProvider>
     );
 
     expect(screen.getByTestId('normal-component')).toBeInTheDocument();
@@ -49,60 +52,72 @@ describe('ErrorBoundary Tests', () => {
 
   it('should catch errors and render fallback UI', () => {
     render(
-      <ErrorBoundary>
-        <AlwaysThrows />
-      </ErrorBoundary>
+      <TestLanguageProvider>
+        <ErrorBoundary>
+          <AlwaysThrows />
+        </ErrorBoundary>
+      </TestLanguageProvider>
     );
 
-    expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+    expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
     expect(screen.queryByTestId('normal-component')).not.toBeInTheDocument();
   });
 
   it('should display error message in fallback UI', () => {
     render(
-      <ErrorBoundary>
-        <AlwaysThrows />
-      </ErrorBoundary>
+      <TestLanguageProvider>
+        <ErrorBoundary>
+          <AlwaysThrows />
+        </ErrorBoundary>
+      </TestLanguageProvider>
     );
 
-    expect(screen.getByText(/component always throws/i)).toBeInTheDocument();
+    expect(screen.getByText(/Component always throws/i)).toBeInTheDocument();
   });
 
   it('should handle different error types', () => {
     const { rerender } = render(
-      <ErrorBoundary>
-        <ThrowTypeError />
-      </ErrorBoundary>
+      <TestLanguageProvider>
+        <ErrorBoundary>
+          <ThrowTypeError />
+        </ErrorBoundary>
+      </TestLanguageProvider>
     );
 
-    expect(screen.getByText(/type error occurred/i)).toBeInTheDocument();
+    expect(screen.getByText(/Type error occurred/i)).toBeInTheDocument();
 
     rerender(
-      <ErrorBoundary>
-        <ThrowReferenceError />
-      </ErrorBoundary>
+      <TestLanguageProvider>
+        <ErrorBoundary>
+          <ThrowReferenceError />
+        </ErrorBoundary>
+      </TestLanguageProvider>
     );
 
-    expect(screen.getByText(/reference error occurred/i)).toBeInTheDocument();
+    expect(screen.getByText(/Reference error occurred/i)).toBeInTheDocument();
   });
 
   it('should provide retry functionality', () => {
     const { rerender } = render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
+      <TestLanguageProvider>
+        <ErrorBoundary>
+          <ThrowError shouldThrow={true} />
+        </ErrorBoundary>
+      </TestLanguageProvider>
     );
 
-    expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+    expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
 
-    const retryButton = screen.getByRole('button', { name: /try again/i });
+    const retryButton = screen.getByRole('button', { name: /Try again/i });
     expect(retryButton).toBeInTheDocument();
 
     // Simulate retry by changing props to not throw
     rerender(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={false} />
-      </ErrorBoundary>
+      <TestLanguageProvider>
+        <ErrorBoundary>
+          <ThrowError shouldThrow={false} />
+        </ErrorBoundary>
+      </TestLanguageProvider>
     );
 
     expect(screen.getByTestId('normal-component')).toBeInTheDocument();
@@ -110,18 +125,20 @@ describe('ErrorBoundary Tests', () => {
 
   it('should handle nested error boundaries', () => {
     render(
-      <ErrorBoundary>
-        <div data-testid="outer-boundary">
-          <ErrorBoundary>
-            <AlwaysThrows />
-          </ErrorBoundary>
-          <div data-testid="sibling-component">Sibling component</div>
-        </div>
-      </ErrorBoundary>
+      <TestLanguageProvider>
+        <ErrorBoundary>
+          <div data-testid="outer-boundary">
+            <ErrorBoundary>
+              <AlwaysThrows />
+            </ErrorBoundary>
+            <div data-testid="sibling-component">Sibling component</div>
+          </div>
+        </ErrorBoundary>
+      </TestLanguageProvider>
     );
 
     // Inner boundary should catch the error
-    expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+    expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
     // Sibling component should still render
     expect(screen.getByTestId('sibling-component')).toBeInTheDocument();
   });
@@ -138,9 +155,11 @@ describe('ErrorBoundary Tests', () => {
     };
 
     render(
-      <ErrorBoundary>
-        <ComponentWithHandler />
-      </ErrorBoundary>
+      <TestLanguageProvider>
+        <ErrorBoundary>
+          <ComponentWithHandler />
+        </ErrorBoundary>
+      </TestLanguageProvider>
     );
 
     const button = screen.getByTestId('clickable-button');
@@ -185,38 +204,46 @@ describe('ErrorBoundary with Store Integration', () => {
 
   it('should handle store-related errors', () => {
     render(
-      <ErrorBoundary>
-        <StoreComponent shouldThrow={true} />
-      </ErrorBoundary>
+      <TestLanguageProvider>
+        <ErrorBoundary>
+          <StoreComponent shouldThrow={true} />
+        </ErrorBoundary>
+      </TestLanguageProvider>
     );
 
-    expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
-    expect(screen.getByText(/store component error/i)).toBeInTheDocument();
+    expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
+    expect(screen.getByText(/Store component error/i)).toBeInTheDocument();
   });
 
   it('should not affect store state when error occurs', () => {
     const { rerender } = render(
-      <ErrorBoundary>
-        <StoreComponent shouldThrow={false} />
-      </ErrorBoundary>
+      <TestLanguageProvider>
+        <ErrorBoundary>
+          <StoreComponent shouldThrow={false} />
+        </ErrorBoundary>
+      </TestLanguageProvider>
     );
 
     expect(screen.getByTestId('store-component')).toBeInTheDocument();
 
     // Simulate error
     rerender(
-      <ErrorBoundary>
-        <StoreComponent shouldThrow={true} />
-      </ErrorBoundary>
+      <TestLanguageProvider>
+        <ErrorBoundary>
+          <StoreComponent shouldThrow={true} />
+        </ErrorBoundary>
+      </TestLanguageProvider>
     );
 
-    expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+    expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
 
     // Simulate recovery
     rerender(
-      <ErrorBoundary>
-        <StoreComponent shouldThrow={false} />
-      </ErrorBoundary>
+      <TestLanguageProvider>
+        <ErrorBoundary>
+          <StoreComponent shouldThrow={false} />
+        </ErrorBoundary>
+      </TestLanguageProvider>
     );
 
     expect(screen.getByTestId('store-component')).toBeInTheDocument();
@@ -229,10 +256,12 @@ describe('ErrorBoundary Async Error Handling', () => {
 
   beforeEach(() => {
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
+    vi.useRealTimers();
   });
 
   const AsyncErrorComponent = () => {
@@ -255,17 +284,22 @@ describe('ErrorBoundary Async Error Handling', () => {
 
   it('should handle errors that occur after initial render', async () => {
     render(
-      <ErrorBoundary>
-        <AsyncErrorComponent />
-      </ErrorBoundary>
+      <TestLanguageProvider>
+        <ErrorBoundary>
+          <AsyncErrorComponent />
+        </ErrorBoundary>
+      </TestLanguageProvider>
     );
 
     // Initially should render normally
     expect(screen.getByTestId('async-component')).toBeInTheDocument();
 
+    // Advance timers to trigger the error
+    vi.advanceTimersByTime(100);
+
     // Wait for async error to occur
     await vi.waitFor(() => {
-      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+      expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
     }, { timeout: 200 });
   });
 });

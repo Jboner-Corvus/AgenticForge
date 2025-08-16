@@ -123,7 +123,7 @@ export const EpicPinningControls: React.FC = () => {
 
             {/* LAYOUT MODE SELECTOR */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-cyan-400 mb-3">LAYOUT MODE</label>
+              <div className="block text-sm font-medium text-cyan-400 mb-3">LAYOUT MODE</div>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(layoutModes).map(([mode, config]) => (
                   <motion.button
@@ -148,7 +148,7 @@ export const EpicPinningControls: React.FC = () => {
 
             {/* PRESET MODES ÉPIQUES */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-cyan-400 mb-3">EPIC PRESETS</label>
+              <div className="block text-sm font-medium text-cyan-400 mb-3">EPIC PRESETS</div>
               <div className="space-y-2">
                 {Object.entries(presetModes).map(([key, preset]) => (
                   <motion.button
@@ -172,7 +172,7 @@ export const EpicPinningControls: React.FC = () => {
 
             {/* COMPONENT TOGGLES */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-cyan-400 mb-3">COMPONENTS</label>
+              <div className="block text-sm font-medium text-cyan-400 mb-3">COMPONENTS</div>
               <div className="space-y-2">
                 {Object.entries(components).map(([id, component]) => (
                   <div key={id} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
@@ -220,7 +220,7 @@ export const EpicPinningControls: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-cyan-400">OPACITY</label>
+                  <div className="text-sm font-medium text-cyan-400">OPACITY</div>
                   <span className="text-sm text-white font-mono">{Math.round(globalOpacity * 100)}%</span>
                 </div>
                 <Slider
@@ -234,7 +234,7 @@ export const EpicPinningControls: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-cyan-400">GRID</label>
+                <div className="text-sm font-medium text-cyan-400">GRID</div>
                 <div className="flex gap-2">
                   <Button
                     variant="ghost"

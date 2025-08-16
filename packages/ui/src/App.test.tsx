@@ -5,17 +5,24 @@ import App from './App';
 
 // Mock all store dependencies
 vi.mock('./store', () => ({
-  useCombinedStore: vi.fn(() => ({
-    currentPage: 'chat',
-    isControlPanelVisible: true,
-    isCanvasVisible: false,
-    isCanvasPinned: false,
-    isCanvasFullscreen: false,
-    canvasWidth: 500,
-    canvasContent: '',
-    activeCliJobId: null,
-    initializeSessionAndMessages: vi.fn(),
-  })),
+  useCombinedStore: vi.fn((selector) => {
+    const state = {
+      currentPage: 'chat',
+      isControlPanelVisible: true,
+      isCanvasVisible: false,
+      isCanvasPinned: false,
+      isCanvasFullscreen: false,
+      canvasWidth: 500,
+      canvasContent: '',
+      activeCliJobId: null,
+      initializeSessionAndMessages: vi.fn().mockResolvedValue(undefined),
+      setCanvasWidth: vi.fn(),
+    };
+    if (selector) {
+      return selector(state);
+    }
+    return state;
+  }),
 }));
 
 vi.mock('./store/pinningStore', () => ({
@@ -71,6 +78,7 @@ vi.mock('./components/optimized/LazyComponents', () => ({
   LazyAgentCanvas: () => <div data-testid="agent-canvas">Agent Canvas</div>,
   LazyDebugLogContainer: () => <div data-testid="debug-log-container">Debug Log Container</div>,
   LazySubAgentCLIView: ({ jobId }: { jobId: string }) => <div data-testid="sub-agent-cli">Sub Agent CLI - {jobId}</div>,
+  LazyEnhancedTodoPanel: () => <div data-testid="enhanced-todo-panel">Enhanced Todo Panel</div>,
 }));
 
 // Mock main components
@@ -407,8 +415,11 @@ describe('App Component Tests', () => {
     Object.defineProperty(window, 'innerWidth', {
       writable: true,
       configurable: true,
-      value: 1200,
+      value: 1200, // Large initial size
     });
+    
+    // Mock canvas width hook to return a large value that will trigger resize
+    (useCanvasWidth as unknown as ReturnType<typeof vi.fn>).mockReturnValue(900);
     
     render(<App />);
     
@@ -417,12 +428,13 @@ describe('App Component Tests', () => {
       Object.defineProperty(window, 'innerWidth', {
         writable: true,
         configurable: true,
-        value: 800,
+        value: 800, // Smaller size that will make maxCanvasWidth = 480 (800 * 0.6)
       });
       window.dispatchEvent(new Event('resize'));
     });
     
     // Wait for resize handler to execute
+    // The handler should be called because 900 (current width) > 480 (max width)
     await waitFor(() => {
       expect(mockSetCanvasWidth).toHaveBeenCalled();
     }, { timeout: 100 });

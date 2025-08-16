@@ -23,6 +23,10 @@ export const EpicTodoListPanel = lazy(() =>
   import('../TodoList/EpicTodoListPanel').then(module => ({ default: module.EpicTodoListPanel }))
 );
 
+export const EnhancedTodoListPanel = lazy(() => 
+  import('../TodoList/EnhancedTodoListPanel').then(module => ({ default: module.EnhancedTodoListPanel }))
+);
+
 export const EpicCanvas = lazy(() => 
   import('../EpicCanvas').then(module => ({ default: module.EpicCanvas }))
 );
@@ -100,6 +104,17 @@ export const LazyTodoPanel: React.FC = () => (
     </div>
   }>
     <EpicTodoListPanel />
+  </LazyWrapper>
+);
+
+export const LazyEnhancedTodoPanel: React.FC = () => (
+  <LazyWrapper fallback={
+    <div className="fixed left-4 top-4 w-96 h-64 bg-gray-900/80 rounded-2xl border border-gray-700 flex items-center justify-center">
+      <LoadingSpinner className="h-6 w-6" />
+      <span className="ml-2 text-gray-400 text-sm">Loading enhanced mission control...</span>
+    </div>
+  }>
+    <EnhancedTodoListPanel />
   </LazyWrapper>
 );
 

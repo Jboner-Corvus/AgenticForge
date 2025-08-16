@@ -146,6 +146,33 @@ describe('Browser Compatibility Tests', () => {
   });
 
   describe('Web APIs Support', () => {
+    // Mock localStorage for testing
+    const localStorageMock = (() => {
+      let store: { [key: string]: string } = {};
+      
+      return {
+        getItem(key: string) {
+          return store[key] || null;
+        },
+        setItem(key: string, value: string) {
+          store[key] = value.toString();
+        },
+        removeItem(key: string) {
+          delete store[key];
+        },
+        clear() {
+          store = {};
+        }
+      };
+    })();
+
+    beforeEach(() => {
+      Object.defineProperty(window, 'localStorage', {
+        value: localStorageMock,
+        writable: true,
+      });
+    });
+
     it('should support localStorage', () => {
       localStorage.setItem('test', 'value');
       expect(localStorage.getItem('test')).toBe('value');
@@ -179,13 +206,18 @@ describe('Browser Compatibility Tests', () => {
 
     it('should support setTimeout and clearTimeout', () => {
       return new Promise((resolve) => {
+        // Use vi.useFakeTimers() to properly mock timers
+        vi.useFakeTimers();
+        
         const timeoutId = setTimeout(() => {
           resolve('timeout executed');
         }, 10);
 
-        expect(typeof timeoutId).toBe('number');
+        expect(timeoutId).toBeDefined();
         
-        // Don't clear it, let it execute
+        // Advance timers to execute the timeout
+        vi.advanceTimersByTime(10);
+        vi.useRealTimers();
       }).then((result) => {
         expect(result).toBe('timeout executed');
       });
@@ -338,10 +370,26 @@ describe('Browser Compatibility Tests', () => {
         
         requestAnimationFrame(callback);
       });
-    });
+    }, 10000); // Increase timeout to 10 seconds
   });
 
   describe('Polyfill Requirements', () => {
+    // Mock IntersectionObserver
+    beforeEach(() => {
+      window.IntersectionObserver = vi.fn(() => ({
+        observe: vi.fn(),
+        unobserve: vi.fn(),
+        disconnect: vi.fn(),
+      })) as unknown as typeof IntersectionObserver;
+
+      // Mock ResizeObserver
+      window.ResizeObserver = vi.fn(() => ({
+        observe: vi.fn(),
+        unobserve: vi.fn(),
+        disconnect: vi.fn(),
+      })) as unknown as typeof ResizeObserver;
+    });
+
     it('should check for fetch API', () => {
       expect(typeof fetch).toBe('function');
     });

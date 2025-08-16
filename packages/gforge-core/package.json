@@ -9,5 +9,14 @@
   "scripts": {
     "build": "echo 'Build completed'"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@types/compression": "^1.8.1",
+    "@types/cors": "^2.8.19",
+    "@types/express-rate-limit": "^6.0.2",
+    "@types/helmet": "^4.0.0",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^8.0.1",
+    "helmet": "^8.1.0"
+  }
 }

@@ -12,6 +12,22 @@ vi.mock('./utils/toolLoader', async () => {
   };
 });
 
+// Mock config to set AUTH_API_KEY for tests
+vi.mock('./config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./config')>();
+  return {
+    ...actual,
+    config: {
+      ...actual.config,
+      AUTH_API_KEY: 'test-auth-key',
+    },
+    getConfig: vi.fn(() => ({
+      ...actual.config,
+      AUTH_API_KEY: 'test-auth-key',
+    })),
+  };
+});
+
 describe('API Routes', () => {
   let app: express.Application;
   let server: Server;
@@ -50,29 +66,38 @@ describe('API Routes', () => {
   });
 
   it('should return 200 for GET /api/tools', async () => {
-    const response = await request(app).get('/api/tools');
+    const response = await request(app)
+      .get('/api/tools')
+      .set('Authorization', 'Bearer test-auth-key');
     expect(response.status).toBe(200);
   });
 
   it('should return 200 for POST /api/session', async () => {
-    const response = await request(app).post('/api/session');
+    const response = await request(app)
+      .post('/api/session')
+      .set('Authorization', 'Bearer test-auth-key');
     expect(response.status).toBe(200);
   });
 
   it('should return 200 for GET /api/sessions/:id', async () => {
-    const response = await request(app).get('/api/sessions/test-session-id');
+    const response = await request(app)
+      .get('/api/sessions/test-session-id')
+      .set('Authorization', 'Bearer test-auth-key');
     expect(response.status).toBe(200);
   });
 
   it('should return 200 for PUT /api/sessions/:id/rename', async () => {
     const response = await request(app)
       .put('/api/sessions/test-session-id/rename')
+      .set('Authorization', 'Bearer test-auth-key')
       .send({ newName: 'new-name' });
     expect(response.status).toBe(200);
   });
 
   it('should return 200 for GET /api/leaderboard', async () => {
-    const response = await request(app).get('/api/leaderboard');
+    const response = await request(app)
+      .get('/api/leaderboard')
+      .set('Authorization', 'Bearer test-auth-key');
     expect(response.status).toBe(200);
     expect(response.body).toBeInstanceOf(Array);
   });

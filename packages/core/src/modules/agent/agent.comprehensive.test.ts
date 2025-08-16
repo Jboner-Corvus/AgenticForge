@@ -157,7 +157,7 @@ describe('Agent Comprehensive Tests', () => {
   describe('Agent Main Loop', () => {
     it('should run successfully with valid LLM response', async () => {
       const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue('{"answer": "Test response"}');
       mockResponseSchema.parse.mockReturnValue({
@@ -173,8 +173,8 @@ describe('Agent Comprehensive Tests', () => {
     });
 
     it('should handle thought-only responses', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse
         .mockResolvedValueOnce('{"thought": "Thinking..."}')
@@ -191,9 +191,9 @@ describe('Agent Comprehensive Tests', () => {
     });
 
     it('should handle tool execution', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
+      const mockToolRegistry = require('../tools/toolRegistry').toolRegistry;
 
       mockLlmProvider.getLlmResponse
         .mockResolvedValueOnce('{"command": {"name": "testTool", "params": {"input": "test"}}}')
@@ -218,8 +218,8 @@ describe('Agent Comprehensive Tests', () => {
     });
 
     it('should handle canvas output', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"canvas": {"content": "<h1>Test</h1>", "contentType": "html"}}'
@@ -236,9 +236,9 @@ describe('Agent Comprehensive Tests', () => {
     });
 
     it('should handle finish tool signal', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
+      const mockToolRegistry = require('../tools/toolRegistry').toolRegistry;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"command": {"name": "finish", "params": {"response": "Finished"}}}'
@@ -256,9 +256,9 @@ describe('Agent Comprehensive Tests', () => {
     });
 
     it('should handle finish tool with invalid response', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
+      const mockToolRegistry = require('../tools/toolRegistry').toolRegistry;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"command": {"name": "finish", "params": {"response": "Finished"}}}'
@@ -278,8 +278,8 @@ describe('Agent Comprehensive Tests', () => {
 
   describe('Error Handling', () => {
     it('should handle LLM errors and retry with different providers', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
 
       // First provider fails, second succeeds
       mockLlmProvider.getLlmResponse
@@ -297,8 +297,8 @@ describe('Agent Comprehensive Tests', () => {
     });
 
     it('should handle Qwen timeout errors with retries', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
 
       // Mock Qwen timeout error
       const qwenTimeoutError = new LlmError('Qwen API request failed with status 504 stream timeout');
@@ -319,8 +319,8 @@ describe('Agent Comprehensive Tests', () => {
     });
 
     it('should handle malformed LLM responses', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse
         .mockResolvedValueOnce('invalid json')
@@ -338,9 +338,9 @@ describe('Agent Comprehensive Tests', () => {
     });
 
     it('should handle tool execution errors', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
+      const mockToolRegistry = require('../tools/toolRegistry').toolRegistry;
 
       mockLlmProvider.getLlmResponse
         .mockResolvedValueOnce('{"command": {"name": "testTool", "params": {}}}')
@@ -363,9 +363,9 @@ describe('Agent Comprehensive Tests', () => {
     });
 
     it('should handle FinishToolSignal exception', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
+      const mockToolRegistry = require('../tools/toolRegistry').toolRegistry;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"command": {"name": "testTool", "params": {}}}'
@@ -385,8 +385,8 @@ describe('Agent Comprehensive Tests', () => {
     });
 
     it('should reach maximum iterations', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
 
       // Always return thought without answer to trigger iterations
       mockLlmProvider.getLlmResponse.mockResolvedValue('{"thought": "Still thinking..."}');
@@ -400,9 +400,9 @@ describe('Agent Comprehensive Tests', () => {
 
   describe('Loop Detection', () => {
     it('should detect command loops', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
+      const mockToolRegistry = require('../tools/toolRegistry').toolRegistry;
 
       // Return the same command multiple times
       mockLlmProvider.getLlmResponse.mockResolvedValue(
@@ -421,8 +421,8 @@ describe('Agent Comprehensive Tests', () => {
     });
 
     it('should detect thought loops', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
 
       // Return similar thoughts multiple times
       mockLlmProvider.getLlmResponse.mockResolvedValue('{"thought": "I am thinking about the same thing"}');
@@ -436,7 +436,7 @@ describe('Agent Comprehensive Tests', () => {
 
   describe('Interruption Handling', () => {
     it('should handle job interruption', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
 
       // Simulate interruption by making job fail
       mockJob.isFailed = vi.fn().mockResolvedValue(true);
@@ -447,7 +447,7 @@ describe('Agent Comprehensive Tests', () => {
     });
 
     it('should set up interrupt listener properly', async () => {
-      const mockRedisClient = require('../redis/redisClient.js').getRedisClientInstance();
+      const mockRedisClient = require('../redis/redisClient').getRedisClientInstance();
       const mockDuplicate = mockRedisClient.duplicate();
 
       await agent.run();
@@ -459,8 +459,8 @@ describe('Agent Comprehensive Tests', () => {
 
   describe('Response Parsing', () => {
     it('should extract JSON from markdown code blocks', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
 
       const markdownResponse = '```json\n{"answer": "Extracted from markdown"}\n```';
       mockLlmProvider.getLlmResponse.mockResolvedValue(markdownResponse);
@@ -472,8 +472,8 @@ describe('Agent Comprehensive Tests', () => {
     });
 
     it('should convert plain text to valid JSON', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue('Just plain text response');
 
@@ -504,8 +504,8 @@ describe('Agent Comprehensive Tests', () => {
         { type: 'error', content: 'Test error', id: '5', timestamp: Date.now() },
       ] as Message[];
 
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue('{"answer": "History processed"}');
       mockResponseSchema.parse.mockReturnValue({ answer: 'History processed' });
@@ -531,9 +531,9 @@ describe('Agent Comprehensive Tests', () => {
         { type: 'user', content: longContent, id: '1', timestamp: Date.now() },
       ] as Message[];
 
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-      const mockGetMasterPrompt = require('./orchestrator.prompt.js').getMasterPrompt;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
+      const mockGetMasterPrompt = require('./orchestrator.prompt').getMasterPrompt;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue('{"answer": "Handled long content"}');
       mockResponseSchema.parse.mockReturnValue({ answer: 'Handled long content' });
@@ -556,8 +556,8 @@ describe('Agent Comprehensive Tests', () => {
         mockSessionManager as SessionManager
       );
 
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue('{"answer": "No tools needed"}');
       mockResponseSchema.parse.mockReturnValue({ answer: 'No tools needed' });
@@ -568,7 +568,7 @@ describe('Agent Comprehensive Tests', () => {
     });
 
     it('should handle null/undefined responses gracefully', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(null);
 
@@ -578,8 +578,8 @@ describe('Agent Comprehensive Tests', () => {
     });
 
     it('should handle very rapid iterations', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema').llmResponseSchema;
 
       // Mock rapid responses that don't lead to completion
       let callCount = 0;

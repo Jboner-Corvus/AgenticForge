@@ -86,24 +86,16 @@ describe('toolLoader Integration Test', () => {
 
     it('should correctly load a valid tool file', async () => {
       // Arrange
-      const validToolContent = `
-        import { z } from 'zod';
-        import type { Ctx, Tool } from '../../../types.js';
-        
-        export const parameters = z.object({ param1: z.string() });
-        
-        type TestTool = {
-          execute: (args: z.infer<typeof parameters>, ctx: Ctx) => Promise<string>;
-        } & Tool<typeof parameters, z.ZodString>;
-        
-        export const myTestTool: TestTool = {
-          name: 'myTool',
-          description: 'A test tool',
-          parameters,
-          execute: async (args, ctx) => 'result',
-        };
-      `;
-      await createToolFile('valid.tool.ts', validToolContent);
+      await createToolFile(
+        'myTool.tool.ts',
+        `import { z } from 'zod';
+        export const myTool = { 
+          name: 'myTool', 
+          description: 'A test tool', 
+          parameters: z.object({}), 
+          execute: () => 'result' 
+        };`,
+      );
       
       // Check that the file was created
       const files = await fs.readdir(tempToolsDir);

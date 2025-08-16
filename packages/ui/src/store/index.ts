@@ -197,7 +197,9 @@ export const useCombinedStore = create<CombinedAppState>()(
       toolCount: 0,
       toolCreationEnabled: false,
       codeExecutionEnabled: true,
-      authToken: null,
+      get authToken() {
+        return useUIStore.getState().authToken;
+      },
       jobId: null,
       activeCliJobId: null,
       streamCloseFunc: null,
@@ -284,13 +286,13 @@ export const useCombinedStore = create<CombinedAppState>()(
       setIsRenamingSession: (isRenaming: boolean) => useSessionStore.getState().setIsRenamingSession(isRenaming),
 
       // LLM API Key Management
-      addLlmApiKey: async (provider: string, key: string, baseUrl?: string, model?: string) => {
+      addLlmApiKey: async (provider: string, key: string, baseUrl?: string, model?: string, keyName?: string) => {
         set({ isAddingLlmApiKey: true });
         try {
           await addLlmApiKeyApi(provider, key, baseUrl, model);
           
           // Update local state
-          const newKey: LlmApiKey = { provider, key, baseUrl, model };
+          const newKey: LlmApiKey = { provider, key, baseUrl, model, keyName };
           set((state) => ({
             llmApiKeys: [...state.llmApiKeys, newKey],
             leaderboardStats: {
@@ -342,7 +344,7 @@ export const useCombinedStore = create<CombinedAppState>()(
         }
       },
 
-      editLlmApiKey: async (index: number, provider: string, key: string, baseUrl?: string, model?: string) => {
+      editLlmApiKey: async (index: number, provider: string, key: string, baseUrl?: string, model?: string, keyName?: string) => {
         const state = get();
         if (index < 0 || index >= state.llmApiKeys.length) return;
 
@@ -352,7 +354,7 @@ export const useCombinedStore = create<CombinedAppState>()(
           
           // Update local state
           const newKeys = [...state.llmApiKeys];
-          newKeys[index] = { provider, key, baseUrl, model };
+          newKeys[index] = { provider, key, baseUrl, model, keyName };
           
           set({ llmApiKeys: newKeys });
           

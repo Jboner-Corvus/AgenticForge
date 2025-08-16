@@ -363,6 +363,7 @@ describe('Response Schema Tests', () => {
 
     it('should call zodToJsonSchema with correct options', () => {
       const mockZodToJsonSchema = vi.mocked(require('zod-to-json-schema').zodToJsonSchema);
+      vi.spyOn(mockZodToJsonSchema, 'mockImplementation').mockImplementation(() => ({}));
       
       getResponseJsonSchema();
 

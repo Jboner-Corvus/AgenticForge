@@ -30,6 +30,7 @@ usage() {
     echo "   logs [docker]  : Affiche les 100 derni\u00e8res lignes des logs du worker ou des conteneurs Docker."
     echo "   rebuild-docker : Force la reconstruction des images Docker et red\u00e9marre."
     echo "   rebuild-web    : Reconstruit rapidement le frontend et red\\u00e9marre le serveur web."
+    echo "   dev-web        : Lance/rebuild le serveur web en mode preview (port 3003)."
     echo "   rebuild-worker : Reconstruit et red\u00e9marre le worker local."
     echo "   rebuild-all    : Reconstruit l\'int\u00e9gralit\u00e9 du projet (Docker et worker local)."
     echo "   clean-docker   : Nettoie le syst\u00e8me Docker (supprime conteneurs, volumes, etc.)."
@@ -310,6 +311,34 @@ rebuild_web() {
     start_services
     
     echo -e "${COLOR_GREEN}✓ Frontend reconstruit et services redémarrés.${NC}"
+}
+
+dev_web() {
+    echo -e "${COLOR_YELLOW}Lancement du serveur web en mode preview (port 3003)...${NC}"
+    
+    cd "${SCRIPT_DIR}"
+    
+    # Arrêter les serveurs existants
+    echo -e "${COLOR_YELLOW}Arrêt des serveurs existants...${NC}"
+    pkill -f "vite.*preview" 2>/dev/null || true
+    pkill -f "vite.*dev" 2>/dev/null || true
+    lsof -ti:3003 | xargs kill -9 2>/dev/null || true
+    
+    # Installer les dépendances si nécessaire
+    echo -e "${COLOR_YELLOW}Vérification des dépendances...${NC}"
+    if [ ! -d "node_modules" ] || [ ! -d "packages/ui/node_modules" ]; then
+        echo -e "${COLOR_YELLOW}Installation des dépendances...${NC}"
+        pnpm install
+    fi
+    
+    # Construire le projet complet
+    echo -e "${COLOR_YELLOW}Construction du projet...${NC}"
+    pnpm build
+    
+    # Lancer le serveur preview sur le port 3003
+    echo -e "${COLOR_GREEN}Lancement du serveur preview sur http://localhost:3003${NC}"
+    echo -e "${COLOR_CYAN}Utilisez Ctrl+C pour arrêter le serveur${NC}"
+    WEB_PORT=3003 pnpm --filter @gforge/ui run start:web
 }
 
 rebuild_worker() {
@@ -682,7 +711,7 @@ show_menu() {
     printf "    2) ${COLOR_YELLOW}🔄 Redémarrer tout${NC}     6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\\n"
     printf "    3) ${COLOR_RED}🔴 Arrêter${NC}              7) ${COLOR_BLUE}🔨 Rebuild Docker${NC}\\n"
     printf "    4) ${COLOR_CYAN}⚡ Statut${NC}              8) ${COLOR_BLUE}🔨 Rebuild Web${NC}\\n"
-    printf "    9) ${COLOR_RED}🧹 Nettoyer Docker${NC}\\n"
+    printf "    9) ${COLOR_RED}🧹 Nettoyer Docker${NC}       24) ${COLOR_GREEN}🚀 Dev Web (port 3003)${NC}\\n"
     printf "   10) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}    16) ${COLOR_BLUE}🐳 Logs Docker${NC}\\n"
     printf "   21) ${COLOR_BLUE}🔨 Rebuild Worker${NC}\\n"
     printf "   22) ${COLOR_BLUE}🔨 Rebuild All${NC}\\n"
@@ -723,6 +752,7 @@ main() {
                 esac 
                 ;; 
             rebuild-web) rebuild_web ;; 
+            dev-web) dev_web ;; 
             rebuild-all) rebuild_all ;; 
             rebuild-docker|rebuild) rebuild_docker ;; 
             rebuild-worker) rebuild_worker ;; 
@@ -774,6 +804,7 @@ main() {
             21) rebuild_worker ;; 
             22) rebuild_all ;;
             23) clean_all_caches ;; 
+            24) dev_web ;; 
             *) echo -e "${COLOR_RED}Option invalide, veuillez r\u00e9essayer.${NC}" ;; 
         esac
         echo -e "\nAppuyez sur Entree pour continuer..."

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePinningStore, useInitializePinning } from '../store/pinningStore';
 import { useCombinedStore } from '../store';
 import EpicCanvas from './EpicCanvas';
-import { EpicTodoListPanel } from './TodoList/EpicTodoListPanel';
+import { EnhancedTodoListPanel } from './TodoList/EnhancedTodoListPanel';
 import { UserInput } from './UserInput';
 import { HeaderContainer } from './HeaderContainer';
 import { ChatMessagesContainer } from './ChatMessagesContainer';
@@ -21,7 +21,7 @@ const PinnableComponent: React.FC<PinnableComponentProps> = ({ id, children, cla
   const updateComponent = usePinningStore((state) => state.updateComponent);
   const bringToFront = usePinningStore((state) => state.bringToFront);
 
-  if (!component || !component.isPinned || !component.isVisible) {
+  if (!component || !component.isPinned || !component.isVisible || !component.position) {
     return null;
   }
 
@@ -29,34 +29,42 @@ const PinnableComponent: React.FC<PinnableComponentProps> = ({ id, children, cla
     bringToFront(id);
   };
 
+  const position = component.position;
+  const safeX = position?.x ?? 0;
+  const safeY = position?.y ?? 0;
+  const safeWidth = position?.width ?? 50;
+  const safeHeight = position?.height ?? 50;
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ 
-        opacity: component.opacity,
-        scale: component.scale,
-        x: `${component.position.x}vw`,
-        y: `${component.position.y}vh`,
+        opacity: component.opacity ?? 1,
+        scale: component.scale ?? 1,
+        x: `${safeX}vw`,
+        y: `${safeY}vh`,
       }}
       exit={{ opacity: 0, scale: 0.8 }}
       transition={{ type: "spring", damping: 20, stiffness: 300 }}
       className={`fixed ${className}`}
       style={{
-        width: `${component.position.width}vw`,
-        height: `${component.position.height}vh`,
-        zIndex: component.zIndex,
+        width: `${safeWidth}vw`,
+        height: `${safeHeight}vh`,
+        zIndex: component.zIndex ?? 1,
         pointerEvents: 'auto'
       }}
       onMouseDown={handleMouseDown}
       drag={component.isPinned}
       dragMomentum={false}
       onDragEnd={(_event, info) => {
-        const newX = Math.max(0, Math.min(95, component.position.x + (info.offset.x / window.innerWidth) * 100));
-        const newY = Math.max(0, Math.min(95, component.position.y + (info.offset.y / window.innerHeight) * 100));
+        if (!position) return;
+        
+        const newX = Math.max(0, Math.min(95, safeX + (info.offset.x / window.innerWidth) * 100));
+        const newY = Math.max(0, Math.min(95, safeY + (info.offset.y / window.innerHeight) * 100));
         
         updateComponent(id, {
           position: {
-            ...component.position,
+            ...position,
             x: newX,
             y: newY
           }
@@ -207,7 +215,7 @@ export const EpicLayoutManager: React.FC = () => {
           id="todolist"
           className="backdrop-blur-sm rounded-2xl"
         >
-          <EpicTodoListPanel />
+          <EnhancedTodoListPanel />
         </PinnableComponent>
 
         {/* CANVAS PINNÉ */}

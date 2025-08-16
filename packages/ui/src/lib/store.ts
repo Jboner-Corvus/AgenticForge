@@ -313,7 +313,20 @@ export const useStore = create<AppState>((set, get) => ({
   llmApiKeys: (() => {
     try {
       const saved = localStorage.getItem('agenticForgeLlmApiKeys');
-      return saved ? JSON.parse(saved) : [];
+      if (saved) {
+        const keys = JSON.parse(saved);
+        // Remove duplicates based on provider and key combination
+        const uniqueKeys = keys.filter((key: LlmApiKey, index: number, arr: LlmApiKey[]) => 
+          arr.findIndex(k => k.provider === key.provider && k.key === key.key) === index
+        );
+        // If duplicates were found, save the cleaned version
+        if (uniqueKeys.length !== keys.length) {
+          console.log('🔑 [CLEANUP] Removed duplicate LLM API keys');
+          localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(uniqueKeys));
+        }
+        return uniqueKeys;
+      }
+      return [];
     } catch {
       return [];
     }
@@ -738,26 +751,27 @@ export const useStore = create<AppState>((set, get) => ({
       setIsLoadingLeaderboardStats(false);
     }
 
-    // Load LLM API keys from backend
-    // No explicit loading state for this as it's usually quick and part of init
+    // Load LLM API keys from backend only if localStorage is empty
     console.log('🔑 [INIT] Starting to load LLM API keys from backend...');
     try {
-      const keys = await getLlmApiKeysApi();
-      console.log('🔑 [INIT] Fetched keys from backend:', keys);
-      const validKeys = keys.filter(key => key.provider && key.key);
-      console.log('🔑 [INIT] Valid keys after filtering:', validKeys);
+      const currentKeys = get().llmApiKeys;
       
-      if (validKeys.length > 0) {
-        // Set all keys at once instead of one by one to avoid multiple re-renders
-        set({ llmApiKeys: validKeys, activeLlmApiKeyIndex: 0 });
-        localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(validKeys));
-        localStorage.setItem('agenticForgeActiveLlmKeyIndex', '0');
-        console.log('🔑 [INIT] Keys loaded successfully, active index set to 0');
+      // Only load from backend if no keys in localStorage
+      if (currentKeys.length === 0) {
+        const keys = await getLlmApiKeysApi();
+        console.log('🔑 [INIT] Fetched keys from backend:', keys);
+        const validKeys = keys.filter(key => key.provider && key.key);
+        console.log('🔑 [INIT] Valid keys after filtering:', validKeys);
+        
+        if (validKeys.length > 0) {
+          // Set all keys at once instead of one by one to avoid multiple re-renders
+          set({ llmApiKeys: validKeys, activeLlmApiKeyIndex: 0 });
+          localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(validKeys));
+          localStorage.setItem('agenticForgeActiveLlmKeyIndex', '0');
+          console.log('🔑 [INIT] Keys loaded successfully, active index set to 0');
+        }
       } else {
-        console.log('🔑 [INIT] No valid keys found');
-        // Clear localStorage if no keys found
-        localStorage.removeItem('agenticForgeLlmApiKeys');
-        localStorage.removeItem('agenticForgeActiveLlmKeyIndex');
+        console.log('🔑 [INIT] Keys already loaded from localStorage, skipping backend fetch');
       }
     } catch (error) {
       console.error("🔑 [INIT] Failed to fetch LLM API keys:", error);

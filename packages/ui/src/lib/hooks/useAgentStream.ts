@@ -2,6 +2,7 @@ import { useCallback, useRef, useEffect } from 'react';
 import { produce } from 'immer';
 import { sendMessage, interrupt } from '../api';
 import { useStore } from '../store';
+import { useUIStore } from '../../store/uiStore'; // Import useUIStore
 import { type NewChatMessage, type AgentToolResult, type ChatMessage, type ToolResultMessage } from '@/types/chat';
 
 // Define the structure of messages coming from the stream
@@ -16,6 +17,8 @@ interface StreamMessage {
     | 'agent_response'
     | 'raw_llm_response'
     | 'error'
+    | 'llm_error'
+    | 'api_key_error'
     | 'close'
     | 'quota_exceeded'
     | 'browser.navigating'
@@ -100,10 +103,12 @@ const isBrowserData = (data: StreamMessageData | undefined): data is BrowserData
 
 export const useAgentStream = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
+  // Fix: Get authToken from UIStore or fallback to hardcoded token
+  const authTokenFromStore = useUIStore((state) => state.authToken);
+  const authToken = authTokenFromStore || 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0';
 
   const {
     addMessage,
-    authToken,
     sessionId,
     setIsProcessing,
     setJobId,
@@ -122,8 +127,21 @@ export const useAgentStream = () => {
   const startAgent = useCallback(async (message: string) => {
     console.log('🚀 [useAgentStream] startAgent called');
     console.log('📝 [useAgentStream] message:', message);
-    console.log('🔐 [useAgentStream] authToken available:', !!authToken);
+    console.log('🔐 [useAgentStream] authTokenFromStore:', authTokenFromStore);
+    console.log('🔐 [useAgentStream] authToken (final):', authToken);
+    console.log('🔐 [useAgentStream] authToken type:', typeof authToken);
+    console.log('🔐 [useAgentStream] authToken length:', authToken?.length);
+    console.log('🔐 [useAgentStream] authToken first 30 chars:', authToken?.substring(0, 30));
     console.log('🆔 [useAgentStream] sessionId available:', !!sessionId);
+    console.log('🆔 [useAgentStream] sessionId value:', sessionId);
+    
+    // ULTRA VERBOSE BEARER TOKEN LOGGING
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BEARER] 🔐 === ANALYSE TOKEN BEARER ===`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BEARER] Store Token: ${authTokenFromStore ? `PRÉSENT (${authTokenFromStore.substring(0, 30)}...)` : 'ABSENT'}`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BEARER] Final Token: ${authToken ? `PRÉSENT (${authToken.substring(0, 30)}...)` : 'ABSENT'}`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BEARER] Token Length: ${authToken?.length || 0}`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BEARER] Session ID: ${sessionId}`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BEARER] === FIN ANALYSE TOKEN ===`);
     
     if (!message.trim()) {
       console.warn('⚠️ [useAgentStream] Empty message, aborting');
@@ -189,12 +207,38 @@ export const useAgentStream = () => {
 
     const handleError = (error: Error) => {
       console.error('❌ [useAgentStream] ERROR:', error);
-      const errorMessage: NewChatMessage = {
-        type: 'error',
-        content: `🚨 ERREUR AGENT: ${error.message}`,
-      };
-      addMessage(errorMessage);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] 🚨 ERREUR CRITIQUE: ${error.message}`);
+      
+      // Détecter les types d'erreurs spécifiques
+      const errorMessage = error.message.toLowerCase();
+      let chatMessage: NewChatMessage;
+      
+      if (errorMessage.includes('invalid_api_key') || errorMessage.includes('token expired') || errorMessage.includes('unauthorized')) {
+        chatMessage = {
+          type: 'error',
+          content: `🔑 ERREUR CLÉ API: ${error.message}\n\n💡 Solution: Votre clé API est expirée ou invalide. Veuillez la renouveler dans le gestionnaire de clés LLM.`,
+        };
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [API_KEY_ERROR] 🔑 ${error.message}`);
+      } else if (errorMessage.includes('quota') || errorMessage.includes('rate limit') || errorMessage.includes('limit exceeded')) {
+        chatMessage = {
+          type: 'error',
+          content: `📊 QUOTA DÉPASSÉ: ${error.message}\n\n💡 Solution: Attendez un moment ou changez de clé API.`,
+        };
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [QUOTA_ERROR] 📊 ${error.message}`);
+      } else if (errorMessage.includes('network') || errorMessage.includes('connection') || errorMessage.includes('timeout')) {
+        chatMessage = {
+          type: 'error',
+          content: `🌐 ERREUR RÉSEAU: ${error.message}\n\n💡 Solution: Vérifiez votre connexion internet et réessayez.`,
+        };
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [NETWORK_ERROR] 🌐 ${error.message}`);
+      } else {
+        chatMessage = {
+          type: 'error',
+          content: `🚨 ERREUR AGENT: ${error.message}`,
+        };
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] 🚨 ERREUR CRITIQUE: ${error.message}`);
+      }
+      
+      addMessage(chatMessage);
       console.error('🔥 Agent stream error details:', {
         error,
         message: error.message,
@@ -275,6 +319,27 @@ export const useAgentStream = () => {
         
         // Log all incoming messages for debugging
         addDebugLog(`[${new Date().toLocaleTimeString()}] [STREAM] 🏷️ Type de message reçu: ${data.type}`);
+        
+        // Détecter les erreurs d'API dans n'importe quel message
+        const messageContent = data.content || data.message || JSON.stringify(data.result || {});
+        if (messageContent && typeof messageContent === 'string') {
+          const contentLower = messageContent.toLowerCase();
+          if (contentLower.includes('invalid_api_key') || 
+              contentLower.includes('invalid access token') || 
+              contentLower.includes('token expired') ||
+              contentLower.includes('unauthorized') ||
+              contentLower.includes('authentication failed')) {
+            console.warn('🔑 [useAgentStream] API key error detected in message content!');
+            const apiErrorMessage: NewChatMessage = {
+              type: 'error',
+              content: `🔑 ERREUR CLÉ API DÉTECTÉE: ${messageContent}\n\n💡 Solution: Votre clé API semble expirée ou invalide. Veuillez la vérifier dans le gestionnaire de clés LLM.`,
+            };
+            addMessage(apiErrorMessage);
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [API_KEY_ERROR] 🔑 Erreur détectée: ${messageContent}`);
+            setIsProcessing(false);
+            return; // Ne pas traiter le message normalement
+          }
+        }
 
         switch (data.type) {
           case 'tool_stream':
@@ -380,6 +445,30 @@ export const useAgentStream = () => {
           case 'error':
             if (data.message) handleError(new Error(data.message));
             break;
+          case 'llm_error':
+            if (data.message) {
+              console.error('🚨 [useAgentStream] LLM ERROR:', data.message);
+              const llmErrorMessage: NewChatMessage = {
+                type: 'error',
+                content: `🚨 ERREUR LLM: ${data.message}`,
+              };
+              addMessage(llmErrorMessage);
+              addDebugLog(`[${new Date().toLocaleTimeString()}] [LLM_ERROR] 🚨 ${data.message}`);
+              setIsProcessing(false);
+            }
+            break;
+          case 'api_key_error':
+            if (data.message) {
+              console.error('🔑 [useAgentStream] API KEY ERROR:', data.message);
+              const apiKeyErrorMessage: NewChatMessage = {
+                type: 'error',
+                content: `🔑 ERREUR CLÉ API: ${data.message}\n\n💡 Solution: Vérifiez vos clés API dans le gestionnaire de clés LLM.`,
+              };
+              addMessage(apiKeyErrorMessage);
+              addDebugLog(`[${new Date().toLocaleTimeString()}] [API_KEY_ERROR] 🔑 ${data.message}`);
+              setIsProcessing(false);
+            }
+            break;
           case 'quota_exceeded':
               if (data.message) handleError(new Error(data.message));
               break;
@@ -470,6 +559,13 @@ export const useAgentStream = () => {
       console.log('🔄 [useAgentStream] Calling sendMessage...');
       addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🔄 Appel de sendMessage pour: ${goal}`);
       
+      // ULTRA VERBOSE: Log exactly what we're sending
+      console.log('🚨 [BEARER] About to call sendMessage with:');
+      console.log('🚨 [BEARER] goal:', goal);
+      console.log('🚨 [BEARER] authToken:', authToken);
+      console.log('🚨 [BEARER] sessionId:', sessionId);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [BEARER] 🚨 ENVOI IMMINENT - Token: ${authToken?.substring(0, 30)}... Session: ${sessionId}`);
+      
       const { jobId, eventSource } = await sendMessage(
         goal,
         authToken,
@@ -538,6 +634,7 @@ export const useAgentStream = () => {
   }, [
     addCanvasToHistory,
     authToken,
+    authTokenFromStore,
     sessionId,
     addMessage,
     setIsProcessing,

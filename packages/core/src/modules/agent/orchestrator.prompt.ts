@@ -69,6 +69,11 @@ const zodToJsonSchema = (_schema: any): any => {
   }
 
   switch (_schema._def.typeName) {
+    case 'ZodAny':
+      // ZodAny accepts any type of value
+      jsonSchema.type = ['string', 'number', 'boolean', 'object', 'array', 'null'];
+      jsonSchema.description = 'Accepts any type of value';
+      break;
     case 'ZodArray':
       jsonSchema.type = 'array';
       jsonSchema.items = zodToJsonSchema(_schema._def.type); // _schema._def.type holds the element _schema
@@ -115,6 +120,18 @@ const zodToJsonSchema = (_schema: any): any => {
     }
     case 'ZodString':
       jsonSchema.type = 'string';
+      break;
+    case 'ZodUnknown':
+      // ZodUnknown is similar to ZodAny but more explicit about accepting unknown values
+      jsonSchema.type = ['string', 'number', 'boolean', 'object', 'array', 'null'];
+      jsonSchema.description = 'Accepts unknown type of value';
+      break;
+    case 'ZodRecord':
+      // ZodRecord represents an object with string keys and typed values
+      jsonSchema.type = 'object';
+      jsonSchema.additionalProperties = _schema._def.valueType ? 
+        zodToJsonSchema(_schema._def.valueType) : 
+        { type: ['string', 'number', 'boolean', 'object', 'array', 'null'] };
       break;
     case 'ZodUnion':
       jsonSchema.anyOf = _schema._def.options.map((option: any) =>

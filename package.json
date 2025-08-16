@@ -1,6 +1,6 @@
 {
   "name": "@jboner-corvus/agenticforge",
-  "version": "1.0.85",
+  "version": "1.0.158",
   "description": "Une plateforme avancée pour la création et la gestion d'agents intelligents.",
   "main": "dist/index.js",
   "files": [
@@ -31,6 +31,7 @@
     "tsup": "^8.5.0"
   },
   "dependencies": {
+    "@dnd-kit/utilities": "^3.2.2",
     "@eslint/js": "^9.33.0",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",

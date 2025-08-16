@@ -306,7 +306,34 @@ if (process.env.NODE_ENV !== 'test') {
   const pgClient = new PgClient({
     connectionString: connectionString,
   });
-  pgClient.connect();
+
+  // Gestion d'erreur PostgreSQL avec reconnexion
+  pgClient.on('error', (err) => {
+    getLoggerInstance().error({ err }, 'PostgreSQL connection error, attempting to reconnect...');
+    setTimeout(() => {
+      pgClient.connect().catch((connectErr) => {
+        getLoggerInstance().error({ err: connectErr }, 'Failed to reconnect to PostgreSQL');
+      });
+    }, 5000);
+  });
+
+  pgClient.on('end', () => {
+    getLoggerInstance().info('PostgreSQL connection ended, attempting to reconnect...');
+    setTimeout(() => {
+      pgClient.connect().catch((connectErr) => {
+        getLoggerInstance().error({ err: connectErr }, 'Failed to reconnect to PostgreSQL');
+      });
+    }, 2000);
+  });
+
+  try {
+    await pgClient.connect();
+    getLoggerInstance().info('PostgreSQL connected successfully');
+  } catch (err) {
+    getLoggerInstance().error({ err }, 'Failed to connect to PostgreSQL initially');
+    process.exit(1);
+  }
+
   initializeWorker(redisConnection, pgClient).catch((err) => {
     getLoggerInstance().error({ err }, "Échec de l'initialisation du worker");
     process.exit(1);

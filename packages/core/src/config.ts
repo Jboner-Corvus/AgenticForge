@@ -23,6 +23,7 @@ const configSchema = z.object({
   HOST_PROJECT_PATH: z.string().default(process.cwd()),
   HUGGINGFACE_API_KEY: z.string().optional(),
   JWT_SECRET: z.string().optional(),
+  JWT_REFRESH_SECRET: z.string().optional(),
   LLM_API_KEY: z.string().optional(), // Added LLM_API_KEY
   LLM_MODEL_NAME: z.string().default('gemini-2.5-pro'),
   LLM_PROVIDER: z

@@ -103,7 +103,8 @@ services:
     depends_on:
       server:
         condition: service_healthy
-    environment: *common_env
+    environment:
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-/}
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     env_file: ./.env

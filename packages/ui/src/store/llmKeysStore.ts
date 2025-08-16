@@ -33,7 +33,7 @@ export interface LLMKey {
     tokensPerMinute: number;
   };
   metadata: {
-    environment: 'development' | 'staging' | 'production';
+    environment: 'universal';
     tags: string[];
     description?: string;
   };
@@ -59,7 +59,6 @@ export interface LLMKeysState {
   error: string | null;
   searchTerm: string;
   selectedProvider: string | null;
-  selectedEnvironment: string | null;
   showInactiveKeys: boolean;
   
   // Actions
@@ -73,11 +72,12 @@ export interface LLMKeysState {
   syncWithRedis: () => Promise<void>;
   importKeysFromRedis: () => Promise<void>;
   exportKeysToRedis: () => Promise<void>;
+  cleanupDuplicates: () => Promise<void>;
+  forceDeduplication: () => void;
   
   // UI Actions
   setSearchTerm: (term: string) => void;
   setSelectedProvider: (providerId: string | null) => void;
-  setSelectedEnvironment: (env: string | null) => void;
   toggleShowInactiveKeys: () => void;
   clearError: () => void;
   
@@ -123,9 +123,9 @@ const DEFAULT_PROVIDERS: LLMProvider[] = [
     isActive: true
   },
   {
-    id: 'google-pro',
+    id: 'gemini',
     name: 'google',
-    displayName: 'Google Gemini Pro',
+    displayName: 'Gemini',
     description: 'Gemini 2.5 Pro - Advanced reasoning model',
     website: 'https://ai.google.dev',
     keyFormat: 'AI...',
@@ -169,7 +169,7 @@ const DEFAULT_PROVIDERS: LLMProvider[] = [
 ];
 
 // API ENDPOINTS
-const API_BASE = '/api/llm-keys';
+const API_BASE = '/api/llm-api-keys';
 
 // HELPER FUNCTION FOR AUTH HEADERS
 function getAuthHeaders(): Record<string, string> {
@@ -231,19 +231,67 @@ export const useLLMKeysStore = create<LLMKeysState>()(
       error: null,
       searchTerm: '',
       selectedProvider: null,
-      selectedEnvironment: null,
       showInactiveKeys: false,
 
       // Fetch keys from backend/Redis
       fetchKeys: async () => {
         set({ isLoading: true, error: null });
         try {
-          const response = await fetch(`${API_BASE}/keys`, {
+          const response = await fetch(`${API_BASE}`, {
             headers: getAuthHeaders()
           });
           if (!response.ok) throw new Error('Failed to fetch keys');
           
-          const keys: LLMKey[] = await response.json();
+          const rawBackendKeys = await response.json();
+          
+          // Define the backend key format interface
+          interface BackendKey {
+            apiProvider: string;
+            apiKey: string;
+            isPermanentlyDisabled: boolean;
+            lastUsed?: string;
+            errorCount?: number;
+            apiModel?: string;
+          }
+          
+          // Transform backend format to frontend format
+          const rawKeys: LLMKey[] = rawBackendKeys.map((backendKey: BackendKey, index: number) => ({
+            id: `${backendKey.apiProvider}-${index}-${Date.now()}`,
+            providerId: backendKey.apiProvider,
+            providerName: backendKey.apiProvider,
+            keyName: `Key ${index + 1}`,
+            keyValue: backendKey.apiKey,
+            isEncrypted: false,
+            isActive: !backendKey.isPermanentlyDisabled,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            lastUsed: backendKey.lastUsed ? new Date(backendKey.lastUsed).toISOString() : undefined,
+            usageCount: backendKey.errorCount || 0,
+            metadata: {
+              environment: 'universal' as const,
+              tags: [backendKey.apiModel || 'unknown'],
+              description: `${backendKey.apiProvider} - ${backendKey.apiModel || 'unknown'}`
+            }
+          }));
+          
+          // Remove duplicates - more aggressive deduplication
+          const keysMap = new Map<string, LLMKey>();
+          rawKeys.forEach(key => {
+            // Always use combination as primary key to catch duplicates
+            const primaryKey = `${key.providerId}-${key.keyName}-${key.keyValue}`;
+            
+            if (!keysMap.has(primaryKey)) {
+              keysMap.set(primaryKey, key);
+            } else {
+              // If duplicate found, keep the one with the most recent createdAt
+              const existing = keysMap.get(primaryKey)!;
+              if ((key.createdAt || '') > (existing.createdAt || '')) {
+                keysMap.set(primaryKey, key);
+              }
+            }
+          });
+          const keys = Array.from(keysMap.values());
+          
           const stats = {
             totalKeys: keys.length,
             activeKeys: keys.filter(k => k.isActive).length,
@@ -252,7 +300,10 @@ export const useLLMKeysStore = create<LLMKeysState>()(
             lastSync: new Date().toISOString()
           };
           
+          // Force deduplication every time we set keys
+          console.log('Before deduplication:', keys.length, 'keys');
           set({ keys, stats, isLoading: false });
+          console.log('After setting keys:', keys.length, 'keys');
         } catch (error) {
           set({ 
             error: error instanceof Error ? error.message : 'Unknown error',
@@ -277,6 +328,19 @@ export const useLLMKeysStore = create<LLMKeysState>()(
       addKey: async (keyData) => {
         set({ isLoading: true, error: null });
         try {
+          // Check for existing duplicate before adding
+          const currentKeys = get().keys;
+          const duplicateCheck = `${keyData.providerId}-${keyData.keyName}-${keyData.keyValue}`;
+          const existingKey = currentKeys.find(key => 
+            `${key.providerId}-${key.keyName}-${key.keyValue}` === duplicateCheck
+          );
+          
+          if (existingKey) {
+            console.warn('Key already exists, skipping duplicate creation');
+            set({ isLoading: false });
+            return;
+          }
+
           const response = await fetch(`${API_BASE}/keys`, {
             method: 'POST',
             headers: getAuthHeaders(),
@@ -290,13 +354,8 @@ export const useLLMKeysStore = create<LLMKeysState>()(
           
           if (!response.ok) throw new Error('Failed to add key');
           
-          const newKey: LLMKey = await response.json();
-          set(state => ({ 
-            keys: [...state.keys, newKey],
-            isLoading: false 
-          }));
-          
-          get().fetchKeys(); // Refresh stats
+          // Refresh the entire keys list from backend to avoid duplicates
+          await get().fetchKeys();
         } catch (error) {
           set({ 
             error: error instanceof Error ? error.message : 'Failed to add key',
@@ -320,13 +379,8 @@ export const useLLMKeysStore = create<LLMKeysState>()(
           
           if (!response.ok) throw new Error('Failed to update key');
           
-          const updatedKey: LLMKey = await response.json();
-          set(state => ({
-            keys: state.keys.map(key => 
-              key.id === id ? updatedKey : key
-            ),
-            isLoading: false
-          }));
+          // Refresh the entire keys list from backend to ensure consistency
+          await get().fetchKeys();
         } catch (error) {
           set({ 
             error: error instanceof Error ? error.message : 'Failed to update key',
@@ -346,12 +400,8 @@ export const useLLMKeysStore = create<LLMKeysState>()(
           
           if (!response.ok) throw new Error('Failed to delete key');
           
-          set(state => ({
-            keys: state.keys.filter(key => key.id !== id),
-            isLoading: false
-          }));
-          
-          get().fetchKeys(); // Refresh stats
+          // Refresh the entire keys list from backend to ensure consistency
+          await get().fetchKeys();
         } catch (error) {
           set({ 
             error: error instanceof Error ? error.message : 'Failed to delete key',
@@ -451,10 +501,64 @@ export const useLLMKeysStore = create<LLMKeysState>()(
         }
       },
 
+      // Cleanup duplicates
+      cleanupDuplicates: async () => {
+        set({ isSyncing: true, error: null });
+        try {
+          const response = await fetch(`${API_BASE}/cleanup-duplicates`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+          });
+          
+          if (!response.ok) throw new Error('Failed to cleanup duplicates');
+          
+          // Refresh keys after cleanup
+          await get().fetchKeys();
+          set({ isSyncing: false });
+        } catch (error) {
+          set({ 
+            error: error instanceof Error ? error.message : 'Cleanup failed',
+            isSyncing: false 
+          });
+        }
+      },
+
+      // Force deduplication côté client
+      forceDeduplication: () => {
+        const state = get();
+        console.log('🧹 Force deduplication - Avant:', state.keys.length);
+        
+        const uniqueKeysMap = new Map();
+        state.keys.forEach(key => {
+          const uniqueId = `${key.providerId}-${key.keyName}-${key.keyValue}`;
+          if (!uniqueKeysMap.has(uniqueId)) {
+            uniqueKeysMap.set(uniqueId, key);
+          } else {
+            // Garder la clé la plus récente
+            const existing = uniqueKeysMap.get(uniqueId);
+            if ((key.createdAt || '') > (existing.createdAt || '')) {
+              uniqueKeysMap.set(uniqueId, key);
+            }
+          }
+        });
+        
+        const uniqueKeys = Array.from(uniqueKeysMap.values());
+        console.log('🧹 Force deduplication - Après:', uniqueKeys.length);
+        
+        const newStats = {
+          totalKeys: uniqueKeys.length,
+          activeKeys: uniqueKeys.filter(k => k.isActive).length,
+          providersCount: new Set(uniqueKeys.map(k => k.providerId)).size,
+          totalUsage: uniqueKeys.reduce((sum, k) => sum + (k.usageCount || 0), 0),
+          lastSync: new Date().toISOString()
+        };
+        
+        set({ keys: uniqueKeys, stats: newStats });
+      },
+
       // UI Actions
       setSearchTerm: (term) => set({ searchTerm: term }),
       setSelectedProvider: (providerId) => set({ selectedProvider: providerId }),
-      setSelectedEnvironment: (env) => set({ selectedEnvironment: env }),
       toggleShowInactiveKeys: () => set(state => ({ 
         showInactiveKeys: !state.showInactiveKeys 
       })),
@@ -467,10 +571,10 @@ export const useLLMKeysStore = create<LLMKeysState>()(
           const matchesSearch = key.keyName.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
                                key.providerName.toLowerCase().includes(state.searchTerm.toLowerCase());
           const matchesProvider = !state.selectedProvider || key.providerId === state.selectedProvider;
-          const matchesEnv = !state.selectedEnvironment || key.metadata.environment === state.selectedEnvironment;
+          // Toutes les clés fonctionnent dans tous les environnements maintenant
           const matchesActive = state.showInactiveKeys || key.isActive;
           
-          return matchesSearch && matchesProvider && matchesEnv && matchesActive;
+          return matchesSearch && matchesProvider && matchesActive;
         });
       },
 
@@ -488,7 +592,6 @@ export const useLLMKeysStore = create<LLMKeysState>()(
         // Only persist UI preferences, not sensitive key data
         searchTerm: state.searchTerm,
         selectedProvider: state.selectedProvider,
-        selectedEnvironment: state.selectedEnvironment,
         showInactiveKeys: state.showInactiveKeys,
         providers: state.providers
       })

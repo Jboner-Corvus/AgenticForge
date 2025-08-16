@@ -30,6 +30,7 @@ vi.mock('pg', () => ({
   Client: vi.fn(() => ({
     connect: vi.fn().mockResolvedValue(undefined),
     end: vi.fn().mockResolvedValue(undefined),
+    on: vi.fn(), // Add the missing 'on' method
     query: vi.fn().mockResolvedValue({ rows: [] }),
   })),
 }));

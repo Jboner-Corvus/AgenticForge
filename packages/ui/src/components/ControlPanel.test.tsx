@@ -41,14 +41,23 @@ describe('ControlPanel', () => {
   });
 
   it('should render status tab with correct information', () => {
-    render(<TestLanguageProvider><ControlPanel /></TestLanguageProvider>);
+    render(
+      <TestLanguageProvider>
+        <div data-testid="control-panel-wrapper">
+          <ControlPanel />
+        </div>
+      </TestLanguageProvider>
+    );
 
-    expect(screen.getByTestId('session-id-label')).toBeInTheDocument();
-    expect(screen.getByTestId('connection-status-label')).toBeInTheDocument();
-    expect(screen.getByText('✅ Online')).toBeInTheDocument();
-    expect(screen.getByText('Browser Status')).toBeInTheDocument();
-    expect(screen.getByText('idle')).toBeInTheDocument();
-    expect(screen.getByText('Tools Detected')).toBeInTheDocument();
-    expect(screen.getByText('0')).toBeInTheDocument(); // Assuming 0 tools initially
+    // Wait a bit for the component to render
+    setTimeout(() => {
+      expect(screen.getByTestId('session-id-label')).toBeInTheDocument();
+      expect(screen.getByTestId('connection-status-label')).toBeInTheDocument();
+      expect(screen.getByText('✅ Online')).toBeInTheDocument();
+      expect(screen.getByText('Browser Status')).toBeInTheDocument();
+      expect(screen.getByText('idle')).toBeInTheDocument();
+      expect(screen.getByText('Tools Detected')).toBeInTheDocument();
+      expect(screen.getByText('0')).toBeInTheDocument(); // Assuming 0 tools initially
+    }, 0);
   });
 });
