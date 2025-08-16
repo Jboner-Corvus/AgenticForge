@@ -54,10 +54,11 @@ vi.mock('../../src/config.js', () => ({
   loadConfig: vi.fn(), // Mock loadConfig as well
 }));
 
-// Mock the logger module to prevent "this.log.child is not a function" errors
+// Mock the logger module
 vi.mock('../logger.js', async () => {
-  const { mockLogger } = await import('./mocks/logger.js');
+  const { getLogger, getLoggerInstance } = await import('./mocks/logger.js');
   return {
-    getLoggerInstance: vi.fn(() => mockLogger),
+    getLogger,
+    getLoggerInstance,
   };
 });

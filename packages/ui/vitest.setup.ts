@@ -5,6 +5,9 @@ import * as matchers from '@testing-library/jest-dom/matchers';
 
 expect.extend(matchers);
 
+// Enable fake timers globally to prevent hanging tests
+vi.useFakeTimers();
+
 // Mock React.act for React 19 compatibility
 if (!('act' in React)) {
   // @ts-expect-error - React 19 compatibility
@@ -37,6 +40,9 @@ Object.defineProperty(window, 'localStorage', {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  // Reset timers after each test
+  vi.useRealTimers();
+  vi.useFakeTimers();
 });
 
 process.env.VITE_MCP_PROXY_ADDRESS = "http://localhost:6277";
