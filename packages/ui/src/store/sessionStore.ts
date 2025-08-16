@@ -56,7 +56,21 @@ export interface SessionState {
 
 export const useSessionStore = create<SessionState>()(
   persist(
-    (set, get) => ({
+    (set, get) => {
+      // Initialize session ID if it doesn't exist
+      const initializeSession = () => {
+        const state = get();
+        if (!state.sessionId) {
+          const newSessionId = generateUUID();
+          set({ sessionId: newSessionId, activeSessionId: newSessionId });
+          console.log('🔐 [sessionStore] Created new session ID:', newSessionId);
+        }
+      };
+      
+      // Run initialization
+      initializeSession();
+      
+      return {
       // Initial state
       sessionId: null,
       activeSessionId: null,
@@ -225,7 +239,14 @@ export const useSessionStore = create<SessionState>()(
       loadAllSessions: async () => {
         set({ isLoadingSessions: true });
         try {
-          const sessions = await loadAllSessionsApi();
+          const authToken = localStorage.getItem('authToken');
+          if (!authToken) {
+            console.log('🔐 [sessionStore] No auth token found, cannot load sessions');
+            set({ sessions: [] });
+            return;
+          }
+          
+          const sessions = await loadAllSessionsApi(authToken, null);
           set({ sessions: sessions || [] });
           console.log(`✅ Loaded ${sessions?.length || 0} sessions`);
         } catch (error) {
@@ -254,7 +275,8 @@ export const useSessionStore = create<SessionState>()(
         const state = get();
         return state.sessions.find(s => s.id === id) || null;
       }
-    }),
+    };
+  },
     {
       name: 'agenticforge-session-store',
       partialize: (state) => ({

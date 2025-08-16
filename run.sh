@@ -75,22 +75,18 @@ EOF
 
 check_redis_availability() {
     echo -e "${COLOR_YELLOW}Attente de la disponibilit\u00e9 de Redis sur le port ${REDIS_PORT_STD}...${NC}"
-    if command -v redis-cli &> /dev/null; then
-        for i in {1..30}; do
-            if redis-cli -p ${REDIS_PORT_STD} ping > /dev/null 2>&1; then
-                echo -e "\n${COLOR_GREEN}✓ Redis est op\u00e9rationnel. Ajout d\'une pause de 2s...${NC}"
-                sleep 2
-                return 0
-            fi
-            printf "."
-            sleep 1
-        done
-        echo -e "\n${COLOR_RED}✗ Timeout: Impossible de pinger Redis apr\u00e8s 30 secondes.${NC}"
-        return 1
-    fi
-    echo -e "${COLOR_RED}AVERTISSEMENT: 'redis-cli' non trouv\u00e9. Impossible de v\u00e9rifier la disponibilit\u00e9 de Redis.${NC}"
-    sleep 15
-    return 0
+    # Utiliser Docker pour vérifier Redis au lieu de redis-cli
+    for i in {1..30}; do
+        if docker exec g_forge_redis redis-cli ping > /dev/null 2>&1; then
+            echo -e "\n${COLOR_GREEN}✓ Redis est op\u00e9rationnel. Ajout d\'une pause de 2s...${NC}"
+            sleep 2
+            return 0
+        fi
+        printf "."
+        sleep 1
+    done
+    echo -e "\n${COLOR_RED}✗ Timeout: Impossible de pinger Redis apr\u00e8s 30 secondes.${NC}"
+    return 1
 }
 
 # ==============================================================================

@@ -120,7 +120,7 @@ describe('Agent Conversation Integration Tests', () => {
       },
     ];
 
-    mockLlmProvider = require('../../utils/llmProvider/index.js').getLlmProvider();
+    mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
     mockResponseSchema = require('./responseSchema').llmResponseSchema;
     mockToolRegistry = require('../tools/toolRegistry').toolRegistry;
   });

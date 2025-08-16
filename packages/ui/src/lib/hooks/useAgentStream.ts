@@ -103,9 +103,9 @@ const isBrowserData = (data: StreamMessageData | undefined): data is BrowserData
 
 export const useAgentStream = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
-  // Fix: Get authToken from UIStore or fallback to hardcoded token
+  // Get authToken from UIStore - no fallback, user must authenticate first
   const authTokenFromStore = useUIStore((state) => state.authToken);
-  const authToken = authTokenFromStore || 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0';
+  const authToken = authTokenFromStore;
 
   const {
     addMessage,

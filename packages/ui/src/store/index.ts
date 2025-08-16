@@ -447,17 +447,27 @@ export const useCombinedStore = create<CombinedAppState>()(
       // Initialization
       initializeSessionAndMessages: async () => {
         try {
+          // Check if user is authenticated FIRST before any API calls
+          const authToken = localStorage.getItem('authToken');
+          if (!authToken) {
+            console.log('🔐 [Combined Store] No auth token found, skipping all backend loading. User needs to authenticate first.');
+            set({ isLoadingLeaderboardStats: false });
+            return;
+          }
+
+          console.log('🔐 [Combined Store] Auth token found, proceeding with backend data loading...');
+          
           // Load sessions
           await useSessionStore.getState().loadAllSessions();
           
           // Load LLM keys
-          const llmKeys = await getLlmApiKeysApi();
+          const llmKeys = await getLlmApiKeysApi(authToken, null);
           set({ llmApiKeys: llmKeys || [] });
           
           // Load leaderboard stats
           set({ isLoadingLeaderboardStats: true });
           try {
-            const stats = await getLeaderboardStats();
+            const stats = await getLeaderboardStats(authToken, null);
             set({ leaderboardStats: stats });
           } catch (error) {
             console.error('Failed to load leaderboard stats:', error);

@@ -55,6 +55,9 @@ describe('toolLoader Integration Test', () => {
     // 2. Set up environment variables
     delete process.env.TOOLS_PATH;
     process.env.TOOLS_PATH = tempToolsDir;
+    
+    // Explicitly set NODE_ENV to development for tests
+    process.env.NODE_ENV = 'development';
 
     // 3. Re-import the module to be tested AFTER resetting modules
     toolLoader = await import('./toolLoader');

@@ -35,14 +35,24 @@ export const OAuthManagementPage = () => {
   const setAuthToken = useCombinedStore((state) => state.setAuthToken);
   const setTokenStatus = useCombinedStore((state) => state.setTokenStatus);
   const setCurrentPage = useCombinedStore((state) => state.setCurrentPage);
+  const initializeSessionAndMessages = useCombinedStore((state) => state.initializeSessionAndMessages);
   const [bearerToken, setBearerToken] = useState('');
 
-  const handleSaveToken = () => {
+  const handleSaveToken = async () => {
     if (bearerToken.trim()) {
       localStorage.setItem('authToken', bearerToken.trim());
       setAuthToken(bearerToken.trim());
       setTokenStatus(true);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Bearer token saved successfully - Redirecting to chat`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Bearer token saved successfully - Loading sessions`);
+      
+      // Recharger les sessions maintenant que l'utilisateur est authentifié
+      try {
+        await initializeSessionAndMessages();
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Sessions loaded successfully - Redirecting to chat`);
+      } catch (error) {
+        console.error('Failed to load sessions after authentication:', error);
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Failed to load sessions: ${error}`);
+      }
       
       // Redirection vers la page de chat après une courte pause
       setTimeout(() => {

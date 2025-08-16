@@ -113,7 +113,7 @@ export class LLMKeysApi {
 
     // Fallback to env AUTH_TOKEN
     if (!headers['Authorization']) {
-      const envToken = clientConfig.VITE_AUTH_TOKEN || clientConfig.AUTH_TOKEN || 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0';
+      const envToken = clientConfig.VITE_AUTH_TOKEN || clientConfig.AUTH_TOKEN;
       headers['Authorization'] = 'Bearer ' + envToken;
     }
 

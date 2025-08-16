@@ -19,6 +19,7 @@ const getMasterKey = async (): Promise<LLMKey | null> => {
     keyValue: 'loaded-from-env',
     isEncrypted: false,
     isActive: true,
+    priority: 1, // Priorité élevée pour la clé master
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     usageCount: 0,

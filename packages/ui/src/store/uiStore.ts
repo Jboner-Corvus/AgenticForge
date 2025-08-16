@@ -46,6 +46,11 @@ export interface UIState {
   // Debug
   debugLog: string[];
   
+  // Enhanced Auth Actions
+  setAuthTokenAndValidate: (token: string | null) => Promise<void>;
+  refreshAuthToken: () => Promise<void>;
+  getValidAuthToken: () => string | null;
+  
   // Actions
   setCurrentPage: (page: PageType) => void;
   setIsSettingsModalOpen: (isOpen: boolean) => void;
@@ -119,6 +124,80 @@ export const useUIStore = create<UIState>()(
       activeCliJobId: null,
       streamCloseFunc: null,
       debugLog: [],
+
+      // Enhanced Auth Actions
+      setAuthTokenAndValidate: async (token: string | null) => {
+        if (!token) {
+          set({ 
+            authToken: null,
+            isAuthenticated: false 
+          });
+          return;
+        }
+
+        // Simple validation - just check if token exists
+        try {
+          // In a real implementation, we would validate the token with the backend
+          // For now, we'll just assume it's valid if it's not empty
+          if (token.trim() !== '') {
+            set({ 
+              authToken: token,
+              isAuthenticated: true 
+            });
+          } else {
+            set({ 
+              authToken: null,
+              isAuthenticated: false 
+            });
+          }
+        } catch (error) {
+          console.error('Token validation failed:', error);
+          set({ 
+            authToken: null,
+            isAuthenticated: false 
+          });
+        }
+      },
+
+      refreshAuthToken: async () => {
+        // For now, we'll just get the token from localStorage
+        try {
+          const token = localStorage.getItem('authToken');
+          if (token) {
+            set({ 
+              authToken: token,
+              isAuthenticated: true 
+            });
+          }
+        } catch (error) {
+          console.error('Token refresh failed:', error);
+        }
+      },
+
+      getValidAuthToken: () => {
+        // First check the store
+        const storeToken = get().authToken;
+        if (storeToken) {
+          return storeToken;
+        }
+        
+        // Then check localStorage
+        try {
+          const localStorageToken = localStorage.getItem('authToken');
+          if (localStorageToken) {
+            // Update the store with the token from localStorage
+            set({ 
+              authToken: localStorageToken,
+              isAuthenticated: true 
+            });
+            return localStorageToken;
+          }
+        } catch (error) {
+          console.error('Error getting token from localStorage:', error);
+        }
+        
+        return null;
+      },
 
       // Actions
       setCurrentPage: (currentPage) => set({ currentPage }),

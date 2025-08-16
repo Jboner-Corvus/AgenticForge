@@ -115,7 +115,7 @@ describe('enhancedTodoListTool', () => {
       expect(result.tasks).toHaveLength(2);
       expect(result.tasks[0].content).toBe('Design game levels');
     }
-    expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', expect.stringContaining('"type":"enhanced_todo_list"'), 'json');
+    expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', expect.stringContaining('"type":"enhanced_todo_list"'), 'text');
     expect(mockCtx.log.info).toHaveBeenCalledWith('Created 2 tasks');
   });
 
@@ -148,7 +148,7 @@ describe('enhancedTodoListTool', () => {
     if ('tasks' in result && result.tasks) {
       expect(result.tasks[0].status).toBe('completed');
     }
-    expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', expect.stringContaining('"type":"enhanced_todo_list"'), 'json');
+    expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', expect.stringContaining('"type":"enhanced_todo_list"'), 'text');
     expect(mockCtx.log.info).toHaveBeenCalledWith('Updated task 1 to status completed');
   });
 
@@ -178,8 +178,8 @@ describe('enhancedTodoListTool', () => {
     }, mockCtx);
     
     expect(result).toHaveProperty('success', true);
-    expect(result).toHaveProperty('message', 'Created 2 tasks');
-    expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', expect.stringContaining('"type":"enhanced_todo_list"'), 'json');
+    expect(result).toHaveProperty('message', 'Created 2 tasks successfully');
+    expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', expect.stringContaining('"type":"enhanced_todo_list"'), 'text');
   });
 
   it('should clear tasks and project successfully', async () => {

@@ -18,11 +18,14 @@ function getAuthHeaders(
     'Content-Type': 'application/json',
   };
 
-  // SIMPLIFIÉ: Utiliser TOUJOURS le token passé ou fallback hardcodé
-  const finalToken = authToken || 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0';
-  headers['Authorization'] = 'Bearer ' + finalToken;
-  console.log('✅ [getAuthHeaders] SIMPLIFIED - Token utilisé:', finalToken.substring(0, 30) + '...');
-  console.log('🔐 [getAuthHeaders] Authorization header final:', headers['Authorization'].substring(0, 50) + '...');
+  // Utiliser SEULEMENT le token fourni par l'utilisateur (pas de fallback hardcodé)
+  if (authToken) {
+    headers['Authorization'] = 'Bearer ' + authToken;
+    console.log('✅ [getAuthHeaders] Token utilisé:', authToken.substring(0, 30) + '...');
+    console.log('🔐 [getAuthHeaders] Authorization header final:', headers['Authorization'].substring(0, 50) + '...');
+  } else {
+    console.log('❌ [getAuthHeaders] Aucun token fourni - requête non authentifiée');
+  }
 
   if (sessionId) {
     headers['X-Session-ID'] = String(sessionId);
@@ -256,10 +259,10 @@ export async function interrupt(jobId: string, authToken: null | string, session
 /**
  * Sauvegarde une session.
  */
-export async function saveSessionApi(session: SessionData): Promise<void> {
+export async function saveSessionApi(session: SessionData, authToken: string | null = null, sessionId: string | null = null): Promise<void> {
   const response = await fetch(buildApiUrl('/api/sessions/save'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(authToken, sessionId),
     body: JSON.stringify(session),
   });
   if (!response.ok) {
@@ -271,8 +274,10 @@ export async function saveSessionApi(session: SessionData): Promise<void> {
 /**
  * Charge une session.
  */
-export async function loadSessionApi(id: string): Promise<SessionData> {
-  const response = await fetch(buildApiUrl(`/api/sessions/${id}`));
+export async function loadSessionApi(id: string, authToken: string | null = null, sessionId: string | null = null): Promise<SessionData> {
+  const response = await fetch(buildApiUrl(`/api/sessions/${id}`), {
+    headers: getAuthHeaders(authToken, sessionId),
+  });
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || `Erreur lors du chargement de la session`);
@@ -283,9 +288,10 @@ export async function loadSessionApi(id: string): Promise<SessionData> {
 /**
  * Supprime une session.
  */
-export async function deleteSessionApi(id: string): Promise<void> {
+export async function deleteSessionApi(id: string, authToken: string | null = null, sessionId: string | null = null): Promise<void> {
   const response = await fetch(buildApiUrl(`/api/sessions/${id}`), {
     method: 'DELETE',
+    headers: getAuthHeaders(authToken, sessionId),
   });
   if (!response.ok) {
     const errorData = await response.json();
@@ -296,10 +302,10 @@ export async function deleteSessionApi(id: string): Promise<void> {
 /**
  * Renomme une session.
  */
-export async function renameSessionApi(id: string, newName: string): Promise<void> {
+export async function renameSessionApi(id: string, newName: string, authToken: string | null = null, sessionId: string | null = null): Promise<void> {
   const response = await fetch(buildApiUrl(`/api/sessions/${id}/rename`), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(authToken, sessionId),
     body: JSON.stringify({ newName }),
   });
   if (!response.ok) {
@@ -311,8 +317,13 @@ export async function renameSessionApi(id: string, newName: string): Promise<voi
 /**
  * Charge toutes les sessions.
  */
-export async function loadAllSessionsApi(): Promise<SessionData[]> {
-  const response = await fetch(buildApiUrl('/api/sessions'));
+export async function loadAllSessionsApi(authToken: string | null = null, sessionId: string | null = null): Promise<SessionData[]> {
+  const headers = getAuthHeaders(authToken, sessionId);
+  
+  const response = await fetch(buildApiUrl('/api/sessions'), {
+    method: 'GET',
+    headers
+  });
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || `Erreur lors du chargement de toutes les sessions`);
@@ -323,13 +334,18 @@ export async function loadAllSessionsApi(): Promise<SessionData[]> {
 /**
  * Récupère les statistiques du leaderboard.
  */
-export async function getLeaderboardStats(): Promise<{
+export async function getLeaderboardStats(authToken: string | null = null, sessionId: string | null = null): Promise<{
   tokensSaved: number;
   successfulRuns: number;
   sessionsCreated: number;
   apiKeysAdded: number;
 }> {
-  const response = await fetch(buildApiUrl('/api/leaderboard-stats'));
+  const headers = getAuthHeaders(authToken, sessionId);
+  
+  const response = await fetch(buildApiUrl('/api/leaderboard-stats'), {
+    method: 'GET',
+    headers
+  });
   if (!response.ok) {
     throw new Error(`Erreur lors de la récupération des statistiques du leaderboard`);
   }
@@ -346,7 +362,7 @@ interface LlmApiKey {
 /**
  * Ajoute une clé API LLM.
  */
-export async function addLlmApiKeyApi(provider: string, key: string, baseUrl?: string, model?: string): Promise<void> {
+export async function addLlmApiKeyApi(provider: string, key: string, baseUrl?: string, model?: string, authToken: string | null = null, sessionId: string | null = null): Promise<void> {
   // --- DEBOGAGE: Log uniquement si les données obligatoires sont manquantes ---
   if (!provider || !key) {
     console.warn("WARNING addLlmApiKeyApi: Missing provider or key!", { provider, key, baseUrl, model });
@@ -354,7 +370,7 @@ export async function addLlmApiKeyApi(provider: string, key: string, baseUrl?: s
   // --- FIN DEBOGAGE ---
   const response = await fetch(buildApiUrl('/api/llm-api-keys'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(authToken, sessionId),
     body: JSON.stringify({ provider, key, baseUrl, model }),
   });
   if (!response.ok) {
@@ -366,8 +382,13 @@ export async function addLlmApiKeyApi(provider: string, key: string, baseUrl?: s
 /**
  * Récupère toutes les clés API LLM.
  */
-export async function getLlmApiKeysApi(): Promise<LlmApiKey[]> {
-  const response = await fetch(buildApiUrl('/api/llm-api-keys'));
+export async function getLlmApiKeysApi(authToken: string | null = null, sessionId: string | null = null): Promise<LlmApiKey[]> {
+  const headers = getAuthHeaders(authToken, sessionId);
+  
+  const response = await fetch(buildApiUrl('/api/llm-api-keys'), {
+    method: 'GET',
+    headers
+  });
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || `Erreur lors de la récupération des clés API LLM`);
@@ -378,9 +399,10 @@ export async function getLlmApiKeysApi(): Promise<LlmApiKey[]> {
 /**
  * Supprime une clé API LLM par index.
  */
-export async function removeLlmApiKeyApi(index: number): Promise<void> {
+export async function removeLlmApiKeyApi(index: number, authToken: string | null = null, sessionId: string | null = null): Promise<void> {
   const response = await fetch(buildApiUrl(`/api/llm-api-keys/${index}`), {
     method: 'DELETE',
+    headers: getAuthHeaders(authToken, sessionId),
   });
   if (!response.ok) {
     const errorData = await response.json();
@@ -391,10 +413,10 @@ export async function removeLlmApiKeyApi(index: number): Promise<void> {
 /**
  * Met à jour une clé API LLM par index.
  */
-export async function editLlmApiKeyApi(index: number, provider: string, key: string, baseUrl?: string, model?: string): Promise<void> {
+export async function editLlmApiKeyApi(index: number, provider: string, key: string, baseUrl?: string, model?: string, authToken: string | null = null, sessionId: string | null = null): Promise<void> {
   const response = await fetch(buildApiUrl(`/api/llm-api-keys/${index}`), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(authToken, sessionId),
     body: JSON.stringify({ provider, key, baseUrl, model }),
   });
   if (!response.ok) {

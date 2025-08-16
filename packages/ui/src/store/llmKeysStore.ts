@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { clientConfig } from '../config';
+import { useUIStore } from './uiStore';
 
 // TYPES POUR LES CLÉS LLM
 export interface LLMProvider {
@@ -16,6 +16,15 @@ export interface LLMProvider {
   isActive: boolean;
 }
 
+export interface LLMKeyUsageStats {
+  totalRequests: number;
+  successfulRequests: number;
+  failedRequests: number;
+  lastUsed?: string;
+  averageResponseTime: number;
+  errorRate: number;
+}
+
 export interface LLMKey {
   id: string;
   providerId: string;
@@ -24,6 +33,7 @@ export interface LLMKey {
   keyValue: string;
   isEncrypted: boolean;
   isActive: boolean;
+  priority: number; // 1 = haute priorité, 10 = basse priorité
   createdAt: string;
   updatedAt: string;
   lastUsed?: string;
@@ -32,6 +42,7 @@ export interface LLMKey {
     requestsPerMinute: number;
     tokensPerMinute: number;
   };
+  usageStats?: LLMKeyUsageStats;
   metadata: {
     environment: 'universal';
     tags: string[];
@@ -85,6 +96,8 @@ export interface LLMKeysState {
   getFilteredKeys: () => LLMKey[];
   getKeysByProvider: (providerId: string) => LLMKey[];
   getActiveKeyCount: () => number;
+  getBestAvailableKey: (providerId: string) => LLMKey | null;
+  updateKeyUsage: (keyId: string, success: boolean, responseTime: number) => void;
 }
 
 // PROVIDERS PAR DÉFAUT
@@ -177,36 +190,12 @@ function getAuthHeaders(): Record<string, string> {
     'Content-Type': 'application/json',
   };
 
-  // Try to get JWT from cookie
-  const cookieName = 'agenticforge_jwt=';
-  const decodedCookie = decodeURIComponent(document.cookie);
-  const ca = decodedCookie.split(';');
-  for(let i = 0; i < ca.length; i++) {
-    let c = ca[i];
-    while (c.charAt(0) === ' ') {
-      c = c.substring(1);
-    }
-    if (c.indexOf(cookieName) === 0) {
-      const jwtToken = c.substring(cookieName.length, c.length);
-      if (jwtToken) {
-        headers['Authorization'] = 'Bearer ' + jwtToken;
-      }
-      break;
-    }
-  }
-
-  // Try to get token from localStorage as fallback
-  if (!headers['Authorization']) {
-    const localStorageToken = localStorage.getItem('authToken');
-    if (localStorageToken) {
-      headers['Authorization'] = 'Bearer ' + localStorageToken;
-    }
-  }
-
-  // Fallback to env AUTH_TOKEN
-  if (!headers['Authorization']) {
-    const envToken = clientConfig.VITE_AUTH_TOKEN || clientConfig.AUTH_TOKEN || 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0';
-    headers['Authorization'] = 'Bearer ' + envToken;
+  // Get token from UI store
+  const uiStore = useUIStore.getState();
+  const token = uiStore.authToken;
+  
+  if (token) {
+    headers['Authorization'] = 'Bearer ' + token;
   }
 
   return headers;
@@ -240,7 +229,7 @@ export const useLLMKeysStore = create<LLMKeysState>()(
           const response = await fetch(`${API_BASE}`, {
             headers: getAuthHeaders()
           });
-          if (!response.ok) throw new Error('Failed to fetch keys');
+          if (!response.ok) throw new Error(`Failed to fetch keys: ${response.status} ${response.statusText}`);
           
           const rawBackendKeys = await response.json();
           
@@ -254,43 +243,64 @@ export const useLLMKeysStore = create<LLMKeysState>()(
             apiModel?: string;
           }
           
-          // Transform backend format to frontend format
-          const rawKeys: LLMKey[] = rawBackendKeys.map((backendKey: BackendKey, index: number) => ({
-            id: `${backendKey.apiProvider}-${index}-${Date.now()}`,
-            providerId: backendKey.apiProvider,
-            providerName: backendKey.apiProvider,
-            keyName: `Key ${index + 1}`,
-            keyValue: backendKey.apiKey,
-            isEncrypted: false,
-            isActive: !backendKey.isPermanentlyDisabled,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            lastUsed: backendKey.lastUsed ? new Date(backendKey.lastUsed).toISOString() : undefined,
-            usageCount: backendKey.errorCount || 0,
-            metadata: {
-              environment: 'universal' as const,
-              tags: [backendKey.apiModel || 'unknown'],
-              description: `${backendKey.apiProvider} - ${backendKey.apiModel || 'unknown'}`
+          // Transform backend format to frontend format with better validation
+          const rawKeys: LLMKey[] = rawBackendKeys.map((backendKey: BackendKey, index: number) => {
+            // Validate required fields
+            if (!backendKey.apiProvider || !backendKey.apiKey) {
+              console.warn('Skipping invalid key entry:', backendKey);
+              return null;
             }
-          }));
+            
+            return {
+              id: `${backendKey.apiProvider}-${index}-${Date.now()}`,
+              providerId: backendKey.apiProvider,
+              providerName: backendKey.apiProvider,
+              keyName: backendKey.apiModel ? `${backendKey.apiProvider} - ${backendKey.apiModel}` : `Key ${index + 1}`,
+              keyValue: backendKey.apiKey,
+              isEncrypted: false,
+              isActive: !backendKey.isPermanentlyDisabled,
+              priority: 5, // Default priority
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              lastUsed: backendKey.lastUsed ? new Date(backendKey.lastUsed).toISOString() : undefined,
+              usageCount: backendKey.errorCount || 0,
+              usageStats: {
+                totalRequests: backendKey.errorCount || 0,
+                successfulRequests: 0,
+                failedRequests: backendKey.errorCount || 0,
+                averageResponseTime: 0,
+                errorRate: backendKey.errorCount ? 1 : 0
+              },
+              metadata: {
+                environment: 'universal' as const,
+                tags: [backendKey.apiModel || 'unknown'],
+                description: `${backendKey.apiProvider} - ${backendKey.apiModel || 'unknown'}`
+              }
+            };
+          }).filter((key): key is LLMKey => key !== null); // Filter out null values
           
-          // Remove duplicates - more aggressive deduplication
+          // Remove duplicates with better algorithm
           const keysMap = new Map<string, LLMKey>();
-          rawKeys.forEach(key => {
-            // Always use combination as primary key to catch duplicates
-            const primaryKey = `${key.providerId}-${key.keyName}-${key.keyValue}`;
+          rawKeys.forEach((key: LLMKey) => {
+            // Use a more robust key for deduplication
+            const primaryKey = `${key.providerId}-${key.keyValue}`;
             
             if (!keysMap.has(primaryKey)) {
               keysMap.set(primaryKey, key);
             } else {
-              // If duplicate found, keep the one with the most recent createdAt
+              // If duplicate found, keep the active one or the one with more usage
               const existing = keysMap.get(primaryKey)!;
-              if ((key.createdAt || '') > (existing.createdAt || '')) {
+              if (key.isActive && !existing.isActive) {
+                keysMap.set(primaryKey, key);
+              } else if (key.usageCount > existing.usageCount) {
                 keysMap.set(primaryKey, key);
               }
             }
           });
           const keys = Array.from(keysMap.values());
+          
+          // Sort keys by priority (lower number = higher priority)
+          keys.sort((a, b) => a.priority - b.priority);
           
           const stats = {
             totalKeys: keys.length,
@@ -300,13 +310,12 @@ export const useLLMKeysStore = create<LLMKeysState>()(
             lastSync: new Date().toISOString()
           };
           
-          // Force deduplication every time we set keys
-          console.log('Before deduplication:', keys.length, 'keys');
           set({ keys, stats, isLoading: false });
-          console.log('After setting keys:', keys.length, 'keys');
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error('Error fetching keys:', error);
           set({ 
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: `Failed to load LLM keys: ${errorMessage}`,
             isLoading: false 
           });
         }
@@ -328,17 +337,20 @@ export const useLLMKeysStore = create<LLMKeysState>()(
       addKey: async (keyData) => {
         set({ isLoading: true, error: null });
         try {
+          // Validate required fields
+          if (!keyData.providerId || !keyData.keyValue) {
+            throw new Error('Provider and API key are required');
+          }
+          
           // Check for existing duplicate before adding
           const currentKeys = get().keys;
-          const duplicateCheck = `${keyData.providerId}-${keyData.keyName}-${keyData.keyValue}`;
+          const duplicateCheck = `${keyData.providerId}-${keyData.keyValue}`;
           const existingKey = currentKeys.find(key => 
-            `${key.providerId}-${key.keyName}-${key.keyValue}` === duplicateCheck
+            `${key.providerId}-${key.keyValue}` === duplicateCheck
           );
           
           if (existingKey) {
-            console.warn('Key already exists, skipping duplicate creation');
-            set({ isLoading: false });
-            return;
+            throw new Error('This API key already exists for this provider');
           }
 
           const response = await fetch(`${API_BASE}/keys`, {
@@ -348,17 +360,30 @@ export const useLLMKeysStore = create<LLMKeysState>()(
               ...keyData,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
-              usageCount: 0
+              usageCount: 0,
+              priority: keyData.priority || 5, // Default priority if not provided
+              usageStats: {
+                totalRequests: 0,
+                successfulRequests: 0,
+                failedRequests: 0,
+                averageResponseTime: 0,
+                errorRate: 0
+              }
             })
           });
           
-          if (!response.ok) throw new Error('Failed to add key');
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Failed to add key: ${response.status} ${response.statusText}`);
+          }
           
           // Refresh the entire keys list from backend to avoid duplicates
           await get().fetchKeys();
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to add key';
+          console.error('Error adding key:', error);
           set({ 
-            error: error instanceof Error ? error.message : 'Failed to add key',
+            error: errorMessage,
             isLoading: false 
           });
         }
@@ -421,16 +446,80 @@ export const useLLMKeysStore = create<LLMKeysState>()(
       // Test key validity
       testKey: async (id) => {
         const key = get().keys.find(k => k.id === id);
-        if (!key) return false;
+        if (!key) {
+          console.warn('Key not found for testing:', id);
+          return false;
+        }
         
         try {
           const response = await fetch(`${API_BASE}/keys/${id}/test`, {
-            method: 'POST'
+            method: 'POST',
+            headers: getAuthHeaders()
           });
           
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Test failed: ${response.status} ${response.statusText}`);
+          }
+          
           const result = await response.json();
+          
+          // Update key stats based on test result
+          if (result.valid === true) {
+            set(state => ({
+              keys: state.keys.map(k => 
+                k.id === id 
+                  ? { 
+                      ...k, 
+                      usageStats: k.usageStats 
+                        ? { 
+                            ...k.usageStats, 
+                            successfulRequests: k.usageStats.successfulRequests + 1,
+                            totalRequests: k.usageStats.totalRequests + 1,
+                            errorRate: (k.usageStats.failedRequests) / (k.usageStats.totalRequests + 1)
+                          } 
+                        : {
+                            totalRequests: 1,
+                            successfulRequests: 1,
+                            failedRequests: 0,
+                            averageResponseTime: 0,
+                            errorRate: 0
+                          }
+                    } 
+                  : k
+              )
+            }));
+          }
+          
           return result.valid === true;
         } catch (error) {
+          console.error('Error testing key:', error);
+          
+          // Update key stats for failed test
+          set(state => ({
+            keys: state.keys.map(k => 
+              k.id === id 
+                ? { 
+                    ...k, 
+                    usageStats: k.usageStats 
+                      ? { 
+                          ...k.usageStats, 
+                          failedRequests: k.usageStats.failedRequests + 1,
+                          totalRequests: k.usageStats.totalRequests + 1,
+                          errorRate: (k.usageStats.failedRequests + 1) / (k.usageStats.totalRequests + 1)
+                        } 
+                      : {
+                          totalRequests: 1,
+                          successfulRequests: 0,
+                          failedRequests: 1,
+                          averageResponseTime: 0,
+                          errorRate: 1
+                        }
+                  } 
+                : k
+            )
+          }));
+          
           return false;
         }
       },
@@ -529,7 +618,7 @@ export const useLLMKeysStore = create<LLMKeysState>()(
         console.log('🧹 Force deduplication - Avant:', state.keys.length);
         
         const uniqueKeysMap = new Map();
-        state.keys.forEach(key => {
+        state.keys.forEach((key: LLMKey) => {
           const uniqueId = `${key.providerId}-${key.keyName}-${key.keyValue}`;
           if (!uniqueKeysMap.has(uniqueId)) {
             uniqueKeysMap.set(uniqueId, key);
@@ -584,6 +673,51 @@ export const useLLMKeysStore = create<LLMKeysState>()(
 
       getActiveKeyCount: () => {
         return get().keys.filter(key => key.isActive).length;
+      },
+
+      // Get the best available key for a provider based on priority and status
+      getBestAvailableKey: (providerId: string) => {
+        const state = get();
+        const availableKeys = state.keys
+          .filter(key => 
+            key.providerId === providerId && 
+            key.isActive
+          )
+          .sort((a, b) => a.priority - b.priority);
+          
+        return availableKeys.length > 0 ? availableKeys[0] : null;
+      },
+
+      // Update key usage statistics
+      updateKeyUsage: (keyId: string, success: boolean, responseTime: number) => {
+        set(state => ({
+          keys: state.keys.map(key => {
+            if (key.id === keyId) {
+              const usageStats = key.usageStats || {
+                totalRequests: 0,
+                successfulRequests: 0,
+                failedRequests: 0,
+                averageResponseTime: 0,
+                errorRate: 0
+              };
+              
+              const newStats = {
+                ...usageStats,
+                totalRequests: usageStats.totalRequests + 1,
+                successfulRequests: success ? usageStats.successfulRequests + 1 : usageStats.successfulRequests,
+                failedRequests: success ? usageStats.failedRequests : usageStats.failedRequests + 1,
+                lastUsed: new Date().toISOString(),
+                averageResponseTime: success 
+                  ? ((usageStats.averageResponseTime * usageStats.successfulRequests) + responseTime) / (usageStats.successfulRequests + 1)
+                  : usageStats.averageResponseTime,
+                errorRate: ((usageStats.failedRequests + (success ? 0 : 1)) / (usageStats.totalRequests + 1))
+              };
+              
+              return { ...key, usageStats: newStats, lastUsed: new Date().toISOString() };
+            }
+            return key;
+          })
+        }));
       }
     }),
     {

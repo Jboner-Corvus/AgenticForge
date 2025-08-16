@@ -740,10 +740,21 @@ export const useStore = create<AppState>((set, get) => ({
   initializeSessionAndMessages: async () => {
     const { setSessions, setActiveSessionId, setMessages, setSessionId, addDebugLog, updateLeaderboardStats, setIsLoadingLeaderboardStats, setIsLoadingSessions } = get();
 
+    // Check if user is authenticated FIRST before any API calls
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      console.log('🔐 [INIT] No auth token found, skipping all backend loading. User needs to authenticate first.');
+      setIsLoadingLeaderboardStats(false);
+      setIsLoadingSessions(false);
+      return;
+    }
+
+    console.log('🔐 [INIT] Auth token found, proceeding with backend data loading...');
+
     // Load leaderboard stats from backend
     setIsLoadingLeaderboardStats(true);
     try {
-      const stats = await getLeaderboardStats();
+      const stats = await getLeaderboardStats(authToken, null);
       updateLeaderboardStats(stats);
     } catch (error) {
       console.error("Failed to fetch leaderboard stats:", error);
@@ -758,7 +769,7 @@ export const useStore = create<AppState>((set, get) => ({
       
       // Only load from backend if no keys in localStorage
       if (currentKeys.length === 0) {
-        const keys = await getLlmApiKeysApi();
+        const keys = await getLlmApiKeysApi(authToken, null);
         console.log('🔑 [INIT] Fetched keys from backend:', keys);
         const validKeys = keys.filter(key => key.provider && key.key);
         console.log('🔑 [INIT] Valid keys after filtering:', validKeys);
@@ -780,7 +791,7 @@ export const useStore = create<AppState>((set, get) => ({
     // Load sessions from backend first
     setIsLoadingSessions(true);
     try {
-      const backendSessions = await loadAllSessionsApi();
+      const backendSessions = await loadAllSessionsApi(authToken, null);
       if (backendSessions && backendSessions.length > 0) {
         setSessions(backendSessions);
         const currentSessionId = localStorage.getItem('agenticForgeSessionId');

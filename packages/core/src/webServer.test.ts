@@ -28,6 +28,9 @@ vi.mock('./config', async (importOriginal) => {
   };
 });
 
+// Set environment variable for tests
+process.env.AUTH_TOKEN = 'test-auth-key';
+
 describe('API Routes', () => {
   let app: express.Application;
   let server: Server;

@@ -44,6 +44,49 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   openrouter: 'OpenRouter'
 };
 
+// KEY PERFORMANCE STATS COMPONENT
+const KeyPerformanceStats: React.FC = () => {
+  const { keys } = useLLMKeysStore();
+  
+  // Calculate overall stats
+  const totalRequests = keys.reduce((sum, key) => sum + (key.usageStats?.totalRequests || 0), 0);
+  const successfulRequests = keys.reduce((sum, key) => sum + (key.usageStats?.successfulRequests || 0), 0);
+  const failedRequests = keys.reduce((sum, key) => sum + (key.usageStats?.failedRequests || 0), 0);
+  const successRate = totalRequests > 0 ? Math.round((successfulRequests / totalRequests) * 100) : 0;
+  const activeKeys = keys.filter(key => key.isActive).length;
+  
+  const perfStatItems = [
+    { label: 'SUCCESS RATE', value: `${successRate}%`, icon: CheckCircle, color: 'text-green-400' },
+    { label: 'ACTIVE KEYS', value: activeKeys, icon: Key, color: 'text-cyan-400' },
+    { label: 'TOTAL REQUESTS', value: totalRequests.toLocaleString(), icon: Target, color: 'text-purple-400' },
+    { label: 'FAILED REQUESTS', value: failedRequests.toLocaleString(), icon: AlertTriangle, color: 'text-red-400' }
+  ];
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {perfStatItems.map((stat, index) => (
+        <motion.div
+          key={stat.label}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.1 }}
+          className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-sm rounded-xl p-4 border border-gray-700 hover:border-cyan-500/50 transition-all duration-300"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-wider">{stat.label}</p>
+              <p className={`text-2xl font-bold ${stat.color}`}>
+                {stat.value}
+              </p>
+            </div>
+            <stat.icon className={`h-8 w-8 ${stat.color} opacity-70`} />
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+};
+
 // EPIC KEY STATS COMPONENT
 const EpicKeyStats: React.FC = () => {
   const { stats, isLoading, isSyncing } = useLLMKeysStore();
@@ -237,6 +280,7 @@ const getMasterKey = async (): Promise<LLMKey | null> => {
     keyValue: 'master-key-from-env',
     isEncrypted: false,
     isActive: true,
+    priority: 1, // Priorité élevée pour la clé master
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     usageCount: 0,
@@ -379,7 +423,8 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
     providerId: '',
     keyName: '',
     keyValue: '',
-    isActive: true
+    isActive: true,
+    priority: 5
   });
 
   const selectedProvider = providers.find(p => p.id === formData.providerId);
@@ -396,6 +441,7 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
         keyValue: formData.keyValue,
         isEncrypted: false,
         isActive: formData.isActive,
+        priority: formData.priority,
         metadata: {
           environment: 'universal', // Toutes les clés fonctionnent partout
           tags: [],
@@ -407,7 +453,8 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
         providerId: '',
         keyName: '',
         keyValue: '',
-        isActive: true
+        isActive: true,
+        priority: 5
       });
     } catch (error) {
       console.error('Failed to add key:', error);
@@ -533,6 +580,26 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
             />
           </div>
 
+          {/* Priority Slider */}
+          <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
+            <div>
+              <label htmlFor="priority-slider" className="text-sm font-semibold text-gray-300">Priority Level</label>
+              <p className="text-xs text-gray-400">Lower numbers = higher priority (1-10)</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-400 w-6">{formData.priority}</span>
+              <input
+                id="priority-slider"
+                type="range"
+                min="1"
+                max="10"
+                value={formData.priority}
+                onChange={(e) => setFormData({...formData, priority: parseInt(e.target.value)})}
+                className="w-24 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+              />
+            </div>
+          </div>
+
           {/* Action Buttons */}
           <div className="flex gap-3 pt-6">
             <Button 
@@ -601,30 +668,32 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
       }`}
     >
       <div className="p-6">
-        {/* Header */}
         <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${keyData.isActive ? 'bg-cyan-900/50' : 'bg-gray-800'}`}>
-              <Logo className={`h-6 w-6 ${keyData.isActive ? 'text-cyan-400' : 'text-gray-400'}`} />
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${keyData.isActive ? 'bg-cyan-900/50' : 'bg-gray-800'}`}>
+                <Logo className={`h-6 w-6 ${keyData.isActive ? 'text-cyan-400' : 'text-gray-400'}`} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white">{keyData.keyName}</h3>
+                <p className="text-sm text-gray-400">{PROVIDER_DISPLAY_NAMES[keyData.providerId] || keyData.providerName}</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-white">{keyData.keyName}</h3>
-              <p className="text-sm text-gray-400">{PROVIDER_DISPLAY_NAMES[keyData.providerId] || keyData.providerName}</p>
+            <div className="flex items-center gap-2">
+              {keyData.isActive ? (
+                <Badge className="bg-green-900/50 text-green-300 border-green-700/50">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Active
+                </Badge>
+              ) : (
+                <Badge className="bg-gray-700/50 text-gray-300 border-gray-600">
+                  Inactive
+                </Badge>
+              )}
+              <Badge className={`border ${keyData.priority <= 3 ? 'border-red-500/50 text-red-400 bg-red-900/20' : keyData.priority <= 6 ? 'border-yellow-500/50 text-yellow-400 bg-yellow-900/20' : 'border-green-500/50 text-green-400 bg-green-900/20'}`}>
+                P{keyData.priority}
+              </Badge>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {keyData.isActive ? (
-              <Badge className="bg-green-900/50 text-green-300 border-green-700/50">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Active
-              </Badge>
-            ) : (
-              <Badge className="bg-gray-700/50 text-gray-300 border-gray-600">
-                Inactive
-              </Badge>
-            )}
-          </div>
-        </div>
 
         {/* Key Display */}
         <div className="mb-4">
@@ -648,11 +717,33 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
 
         {/* Metadata */}
         <div className="mb-4">
-          <div>
-            <div className="text-xs text-gray-400 uppercase tracking-wider">Usage</div>
-            <div className="mt-1 text-sm text-gray-300">
-              {keyData.usageCount.toLocaleString()}
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <div className="text-gray-400 uppercase tracking-wider">Usage</div>
+              <div className="text-gray-300">{keyData.usageCount.toLocaleString()}</div>
             </div>
+            <div>
+              <div className="text-gray-400 uppercase tracking-wider">Priority</div>
+              <div className="text-gray-300">{keyData.priority}</div>
+            </div>
+            {keyData.usageStats && (
+              <>
+                <div>
+                  <div className="text-gray-400 uppercase tracking-wider">Success Rate</div>
+                  <div className="text-gray-300">
+                    {keyData.usageStats.totalRequests > 0 
+                      ? `${Math.round(((keyData.usageStats.successfulRequests / keyData.usageStats.totalRequests) * 100))}%`
+                      : '0%'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-gray-400 uppercase tracking-wider">Error Rate</div>
+                  <div className="text-gray-300">
+                    {Math.round(keyData.usageStats.errorRate * 100)}%
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -661,6 +752,16 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
           <div className="mb-4">
             <div className="text-xs text-gray-400 uppercase tracking-wider">Description</div>
             <p className="mt-1 text-sm text-gray-300">{keyData.metadata.description}</p>
+          </div>
+        )}
+
+        {/* Last Used */}
+        {keyData.lastUsed && (
+          <div className="mb-4">
+            <div className="text-xs text-gray-400 uppercase tracking-wider">Last Used</div>
+            <p className="mt-1 text-sm text-gray-300">
+              {new Date(keyData.lastUsed).toLocaleString()}
+            </p>
           </div>
         )}
 
@@ -781,7 +882,7 @@ export const EpicLlmKeyManager: React.FC = () => {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken') || 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0'}`
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
                       }
                     });
                     
@@ -825,6 +926,7 @@ export const EpicLlmKeyManager: React.FC = () => {
 
           {/* Stats */}
           <EpicKeyStats />
+          <KeyPerformanceStats />
         </motion.div>
 
         {/* Redis Control Panel */}

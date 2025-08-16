@@ -169,14 +169,10 @@ export const AppInitializer = () => {
           fetchAndDisplayToolCount();
           setInitStage('auth_token_success');
         } else {
-          // Fallback to hardcoded token for development
-          const fallbackToken = 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0';
-          addDebugLog(`[${new Date().toLocaleTimeString()}] [WARNING] ⚠️ Aucun token trouvé, utilisation du token de fallback...`);
-          setAuthToken(fallbackToken);
-          addDebugLog(`[${new Date().toLocaleTimeString()}] [SUCCESS] ✅ Token de fallback configuré avec succès.`);
-          setTokenStatus(true);
-          fetchAndDisplayToolCount();
-          setInitStage('auth_token_success');
+          // No token found - user needs to authenticate via OAuth page
+          addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ℹ️ Aucun token trouvé. L'utilisateur doit s'authentifier via la page OAuth.`);
+          setTokenStatus(false);
+          setInitStage('auth_token_needed');
         }
       }
       
