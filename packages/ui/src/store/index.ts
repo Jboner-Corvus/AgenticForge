@@ -448,7 +448,7 @@ export const useCombinedStore = create<CombinedAppState>()(
       initializeSessionAndMessages: async () => {
         try {
           // Check if user is authenticated FIRST before any API calls
-          const authToken = localStorage.getItem('authToken');
+          const authToken = localStorage.getItem('backendAuthToken');
           if (!authToken) {
             console.log('🔐 [Combined Store] No auth token found, skipping all backend loading. User needs to authenticate first.');
             set({ isLoadingLeaderboardStats: false });

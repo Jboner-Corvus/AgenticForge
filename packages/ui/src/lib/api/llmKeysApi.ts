@@ -105,7 +105,7 @@ export class LLMKeysApi {
 
     // Try to get token from localStorage as fallback
     if (!headers['Authorization']) {
-      const localStorageToken = localStorage.getItem('authToken');
+      const localStorageToken = localStorage.getItem('backendAuthToken');
       if (localStorageToken) {
         headers['Authorization'] = 'Bearer ' + localStorageToken;
       }

@@ -22,7 +22,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { z } from "zod";
 import { vi, expect, describe, beforeEach, beforeAll, test, type Mock, type MockedFunction } from 'vitest';
 
@@ -143,14 +143,11 @@ describe("useConnection", () => {
       const { result } = renderHook(() => useConnection(defaultProps));
 
       // Connect the client
-      await act(async () => {
-        await result.current.connect();
+      act(() => {
+        result.current.connect();
       });
 
-      // Wait for state update
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      });
+      await waitFor(() => expect(result.current.mcpClient).not.toBeNull(), { timeout: 2000 });
 
       const mockRequest: ClientRequest = {
         method: "ping",
@@ -183,14 +180,11 @@ describe("useConnection", () => {
       const { result } = renderHook(() => useConnection(defaultProps));
 
       // Connect the client
-      await act(async () => {
-        await result.current.connect();
+      act(() => {
+        result.current.connect();
       });
 
-      // Wait for state update
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      });
+      await waitFor(() => expect(result.current.mcpClient).not.toBeNull(), { timeout: 2000 });
 
       const mockRequest: ClientRequest = {
         method: "ping",

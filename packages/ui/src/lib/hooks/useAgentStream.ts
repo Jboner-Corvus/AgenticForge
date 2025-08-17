@@ -104,9 +104,13 @@ const isBrowserData = (data: StreamMessageData | undefined): data is BrowserData
 export const useAgentStream = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
   const responseCountRef = useRef<number>(0); // Compteur des réponses pour limiter à 5 étapes
-  // Get authToken from UIStore - no fallback, user must authenticate first
-  const authTokenFromStore = useUIStore((state) => state.authToken);
-  const authToken = authTokenFromStore;
+  
+  // 🚨 IMPORTANT: Obtenir le token d'authentification BACKEND (PAS un token LLM !)
+  // Ce token sert à authentifier les requêtes vers l'API AgenticForge
+  const backendAuthToken = useUIStore((state) => state.authToken);
+  
+  // Renommer pour plus de clarté - ce n'est PAS un token LLM
+  const authToken = backendAuthToken;
 
   const {
     addMessage,
@@ -127,7 +131,7 @@ export const useAgentStream = () => {
   const startAgent = useCallback(async (message: string) => {
     console.log('🚀 [useAgentStream] startAgent called');
     console.log('📝 [useAgentStream] message:', message);
-    console.log('🔐 [useAgentStream] authTokenFromStore:', authTokenFromStore);
+    console.log('🔐 [useAgentStream] authTokenFromStore:', backendAuthToken);
     console.log('🔐 [useAgentStream] authToken (final):', authToken);
     console.log('🔐 [useAgentStream] authToken type:', typeof authToken);
     console.log('🔐 [useAgentStream] authToken length:', authToken?.length);
@@ -135,13 +139,14 @@ export const useAgentStream = () => {
     console.log('🆔 [useAgentStream] sessionId available:', !!sessionId);
     console.log('🆔 [useAgentStream] sessionId value:', sessionId);
     
-    // ULTRA VERBOSE BEARER TOKEN LOGGING
-    addDebugLog(`[${new Date().toLocaleTimeString()}] [BEARER] 🔐 === ANALYSE TOKEN BEARER ===`);
-    addDebugLog(`[${new Date().toLocaleTimeString()}] [BEARER] Store Token: ${authTokenFromStore ? `PRÉSENT (${authTokenFromStore.substring(0, 30)}...)` : 'ABSENT'}`);
-    addDebugLog(`[${new Date().toLocaleTimeString()}] [BEARER] Final Token: ${authToken ? `PRÉSENT (${authToken.substring(0, 30)}...)` : 'ABSENT'}`);
-    addDebugLog(`[${new Date().toLocaleTimeString()}] [BEARER] Token Length: ${authToken?.length || 0}`);
-    addDebugLog(`[${new Date().toLocaleTimeString()}] [BEARER] Session ID: ${sessionId}`);
-    addDebugLog(`[${new Date().toLocaleTimeString()}] [BEARER] === FIN ANALYSE TOKEN ===`);
+    // 🚨 TOKEN BACKEND AUTHENTICATION LOGGING
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] 🔐 === ANALYSE TOKEN BACKEND ===`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] Backend Token: ${backendAuthToken ? `PRÉSENT (${backendAuthToken.substring(0, 30)}...)` : 'ABSENT'}`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] Final Auth Token: ${authToken ? `PRÉSENT (${authToken.substring(0, 30)}...)` : 'ABSENT'}`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] Token Length: ${authToken?.length || 0}`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] Session ID: ${sessionId}`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] IMPORTANT: Ceci est le token BACKEND, pas un token LLM !`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] === FIN ANALYSE TOKEN BACKEND ===`);
     
     if (!message.trim()) {
       console.warn('⚠️ [useAgentStream] Empty message, aborting');
@@ -150,11 +155,13 @@ export const useAgentStream = () => {
     }
 
     if (!authToken) {
-      console.error('❌ [useAgentStream] No authToken available');
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Token d'authentification manquant`);
+      console.error('❌ [useAgentStream] No backend authToken available');
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Token d'authentification BACKEND manquant`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] IMPORTANT: Il faut un token AUTH_TOKEN pour accéder au backend AgenticForge`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Ce n'est PAS lié aux clés LLM - c'est pour l'authentification backend`);
       const errorMessage: NewChatMessage = {
         type: 'error',
-        content: 'Token d\'authentification manquant. Veuillez vous reconnecter.',
+        content: '🔐 ERREUR AUTHENTIFICATION BACKEND\n\nToken d\'authentification backend manquant (AUTH_TOKEN).\n\nℹ️ Ceci est différent des clés LLM - il s\'agit du token pour accéder au backend AgenticForge.\n\nVérifiez votre configuration AUTH_TOKEN.',
       };
       addMessage(errorMessage);
       return;
@@ -579,12 +586,13 @@ export const useAgentStream = () => {
       console.log('🔄 [useAgentStream] Calling sendMessage...');
       addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🔄 Appel de sendMessage pour: ${goal}`);
       
-      // ULTRA VERBOSE: Log exactly what we're sending
-      console.log('🚨 [BEARER] About to call sendMessage with:');
-      console.log('🚨 [BEARER] goal:', goal);
-      console.log('🚨 [BEARER] authToken:', authToken);
-      console.log('🚨 [BEARER] sessionId:', sessionId);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [BEARER] 🚨 ENVOI IMMINENT - Token: ${authToken?.substring(0, 30)}... Session: ${sessionId}`);
+      // 🚨 BACKEND AUTH: Log exactly what we're sending to backend
+      console.log('🚨 [BACKEND-AUTH] About to call sendMessage with:');
+      console.log('🚨 [BACKEND-AUTH] goal:', goal);
+      console.log('🚨 [BACKEND-AUTH] backend authToken:', authToken);
+      console.log('🚨 [BACKEND-AUTH] sessionId:', sessionId);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] 🚨 ENVOI VERS BACKEND - Token: ${authToken?.substring(0, 30)}... Session: ${sessionId}`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] NOTE: Les clés LLM sont gérées séparément par le backend`);
       
       const { jobId, eventSource } = await sendMessage(
         goal,
@@ -653,8 +661,8 @@ export const useAgentStream = () => {
     }
   }, [
     addCanvasToHistory,
-    authToken,
-    authTokenFromStore,
+    authToken, // Backend auth token (not LLM key!)
+    backendAuthToken, // Same as authToken, for clarity
     sessionId,
     addMessage,
     setIsProcessing,

@@ -4,48 +4,67 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 /**
- * Construit les en-têtes d'authentification pour les requêtes API.
+ * Récupère le token d'authentification backend valide.
+ * Priorité: paramètre fourni > localStorage > variable d'environnement
+ */
+function getBackendAuthToken(providedToken?: string | null): string | null {
+  // 1. Utiliser le token fourni en paramètre
+  if (providedToken) {
+    return providedToken;
+  }
+  
+  // 2. Essayer localStorage (token utilisateur sauvegardé)
+  try {
+    const storedToken = localStorage.getItem('backendAuthToken');
+    if (storedToken) {
+      return storedToken;
+    }
+  } catch (error) {
+    console.warn('🔐 [getBackendAuthToken] Failed to get token from localStorage:', error);
+  }
+  
+  // 3. Fallback sur la variable d'environnement (pour le développement)
+  const envToken = import.meta.env.VITE_AUTH_TOKEN || import.meta.env.AUTH_TOKEN;
+  if (envToken) {
+    return envToken;
+  }
+  
+  return null;
+}
+
+/**
+ * Construit les en-têtes d'authentification pour les requêtes API backend.
+ * IMPORTANT: Ceci est pour l'authentification backend, PAS pour les clés LLM!
  */
 function getAuthHeaders(
   authToken: string | null,
   sessionId: string | null,
 ): Record<string, string> {
-  console.log('🔐 [getAuthHeaders] === DÉBUT CONSTRUCTION HEADERS ===');
-  console.log('🔐 [getAuthHeaders] authToken input:', authToken?.substring(0, 30) + '...');
-  console.log('🔐 [getAuthHeaders] sessionId input:', sessionId);
+  console.log('🔐 [getAuthHeaders] === CONSTRUCTION HEADERS BACKEND ===');
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
 
-  // Utiliser le token fourni par l'utilisateur ou récupérer depuis le store
-  let tokenToUse = authToken;
-  if (!tokenToUse) {
-    // Try to get token from localStorage as fallback
-    try {
-      tokenToUse = localStorage.getItem('authToken');
-      console.log('🔐 [getAuthHeaders] Token from localStorage:', tokenToUse?.substring(0, 30) + '...');
-    } catch (error) {
-      console.warn('🔐 [getAuthHeaders] Failed to get token from localStorage:', error);
-    }
-  }
+  // Récupérer le token backend (PAS un token LLM !)
+  const backendToken = getBackendAuthToken(authToken);
   
-  if (tokenToUse) {
-    headers['Authorization'] = 'Bearer ' + tokenToUse;
-    console.log('✅ [getAuthHeaders] Token utilisé:', tokenToUse.substring(0, 30) + '...');
-    console.log('🔐 [getAuthHeaders] Authorization header final:', headers['Authorization'].substring(0, 50) + '...');
+  if (backendToken) {
+    headers['Authorization'] = 'Bearer ' + backendToken;
+    console.log('✅ [getAuthHeaders] Backend token utilisé:', backendToken.substring(0, 30) + '...');
   } else {
-    console.log('❌ [getAuthHeaders] Aucun token fourni - requête non authentifiée');
+    console.log('❌ [getAuthHeaders] Aucun token backend trouvé - requête non authentifiée');
+    console.warn('🚨 [getAuthHeaders] ATTENTION: Backend authentication manquante! Vérifiez votre token AUTH_TOKEN.');
   }
 
   if (sessionId) {
     headers['X-Session-ID'] = String(sessionId);
   }
   
-  console.log('🔐 [getAuthHeaders] HEADERS FINAUX:');
-  console.log('🔐 [getAuthHeaders] - Authorization:', headers['Authorization'] ? 'PRÉSENT (' + headers['Authorization'].substring(0, 50) + '...)' : 'ABSENT');
+  console.log('🔐 [getAuthHeaders] HEADERS BACKEND FINAUX:');
+  console.log('🔐 [getAuthHeaders] - Authorization:', headers['Authorization'] ? 'PRÉSENT' : 'ABSENT');
   console.log('🔐 [getAuthHeaders] - X-Session-ID:', headers['X-Session-ID'] || 'ABSENT');
-  console.log('🔐 [getAuthHeaders] === FIN CONSTRUCTION HEADERS ===');
+  console.log('🔐 [getAuthHeaders] === FIN CONSTRUCTION HEADERS BACKEND ===');
   
   return headers;
 }

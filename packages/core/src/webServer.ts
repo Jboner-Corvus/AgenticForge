@@ -32,6 +32,42 @@ export async function initializeWebServer(
   try {
     const jobQueue = getJobQueue();
 
+    // 🧹 Dédoublonnage automatique des clés LLM au démarrage
+    console.log('🔍 Performing automatic LLM keys deduplication...');
+    try {
+      const deduplicationResult = await _LlmKeyManager.deduplicateKeys();
+      if (deduplicationResult.duplicatesRemoved > 0) {
+        console.log(`✅ Removed ${deduplicationResult.duplicatesRemoved} duplicate LLM keys (${deduplicationResult.originalCount} → ${deduplicationResult.uniqueCount})`);
+      } else {
+        console.log('✅ No duplicate LLM keys found');
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to deduplicate LLM keys:', error);
+    }
+
+    // 🔑 Synchronisation de la clé API maîtresse depuis les variables d'environnement
+    console.log('🔑 Synchronizing master LLM API key from environment variables...');
+    try {
+        const syncResult = await _LlmKeyManager.syncEnvMasterKey();
+        console.log(`🔑 Master LLM API key sync result: ${syncResult.action} - ${syncResult.message}`);
+    } catch (error) {
+        console.warn('⚠️ Failed to sync master LLM API key:', error);
+    }
+
+    // 🕐 (Optionnel) Planifier un test périodique de toutes les clés (mode simulation)
+    // Cela pose les bases pour une rotation proactive.
+    // setTimeout(() => {
+    //     console.log('🕒 Démarrage de la tâche planifiée de test des clés (dry-run)...');
+    //     setInterval(async () => {
+    //         try {
+    //             console.log('🕒 Exécution du test périodique des clés (dry-run)...');
+    //             await _LlmKeyManager.testAllKeys(true); // true = dryRun
+    //         } catch (intervalError) {
+    //             console.error('🕒 Erreur dans la tâche planifiée de test des clés:', intervalError);
+    //         }
+    //     }, 30 * 60 * 1000); // Toutes les 30 minutes
+    // }, 5 * 60 * 1000); // Démarrer 5 minutes après le lancement du serveur
+
     const app = express();
     const sessionManager = await SessionManager.create(pgClient);
     app.use(express.json());
@@ -1111,29 +1147,23 @@ export async function initializeWebServer(
         next: express.NextFunction,
       ) => {
         try {
-          const keys = await _LlmKeyManager.getKeysForApi();
+          // Utiliser la nouvelle méthode de dédoublonnage intégrée
+          const result = await _LlmKeyManager.deduplicateKeys();
           
-          // Remove duplicates based on provider + key combination
-          const uniqueKeys = [];
-          const seen = new Set();
-          
-          for (const key of keys) {
-            const keyIdentifier = `${key.apiProvider}-${key.apiKey}`;
-            if (!seen.has(keyIdentifier)) {
-              seen.add(keyIdentifier);
-              uniqueKeys.push(key);
-            }
-          }
-          
-          if (uniqueKeys.length < keys.length) {
-            await _LlmKeyManager.saveKeys(uniqueKeys);
+          if (result.duplicatesRemoved > 0) {
             res.status(200).json({ 
-              message: `Cleanup completed. Removed ${keys.length - uniqueKeys.length} duplicates.`,
-              before: keys.length,
-              after: uniqueKeys.length
+              message: `🧹 Cleanup completed. Removed ${result.duplicatesRemoved} duplicates.`,
+              before: result.originalCount,
+              after: result.uniqueCount,
+              duplicatesRemoved: result.duplicatesRemoved
             });
           } else {
-            res.status(200).json({ message: 'No duplicates found' });
+            res.status(200).json({ 
+              message: '✅ No duplicates found - all keys are unique!',
+              before: result.originalCount,
+              after: result.uniqueCount,
+              duplicatesRemoved: 0
+            });
           }
         } catch (error) {
           next(error);

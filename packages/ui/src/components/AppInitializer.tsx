@@ -157,7 +157,7 @@ export const AppInitializer = () => {
         
         // Try to get token from localStorage as another fallback
         if (!jwtToken) {
-          jwtToken = localStorage.getItem('authToken');
+          jwtToken = localStorage.getItem('backendAuthToken');
           addDebugLog(`[${new Date().toLocaleTimeString()}] [VERBOSE] 💾 Token trouvé dans localStorage: ${jwtToken ? 'OUI (' + jwtToken.substring(0, 20) + '...)' : 'NON'}`);
         }
         

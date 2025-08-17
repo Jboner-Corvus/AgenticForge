@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-# =============================================================================
+# ==============================================================================
 # Configuration & Constantes
-# =============================================================================
+# ==============================================================================
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 APP_SERVICE_NAME="server"
 REDIS_PORT_STD=6379
@@ -15,49 +15,49 @@ COLOR_YELLOW='\e[1;33m'
 COLOR_CYAN='\e[0;36m'
 NC='\e[0m'
 
-# =============================================================================
-# Fonctions d'aide
-# =============================================================================
+# ==============================================================================
+# Fonctions d\'aide
+# ==============================================================================
 
 usage() {
     echo "Utilisation: $0 [commande]"
     echo ""
     echo "Commandes disponibles:"
-    echo "   start          : Démarre tous les services (Docker et worker local)."
-    echo "   stop           : Arrête tous les services (Docker et worker local)."
-    echo "   restart [worker]: Redémarre tous les services ou seulement le worker."
+    echo "   start          : D\u00e9marre tous les services (Docker et worker local)."
+    echo "   stop           : Arr\u00eate tous les services (Docker et worker local)."
+    echo "   restart [worker]: Red\u00e9marre tous les services ou seulement le worker."
     echo "   status         : Affiche le statut des conteneurs Docker."
-    echo "   logs [docker]  : Affiche les 100 dernières lignes des logs du worker ou des conteneurs Docker."
-    echo "   rebuild-docker : Force la reconstruction des images Docker et redémarre."
+    echo "   logs [docker]  : Affiche les 100 derni\u00e8res lignes des logs du worker ou des conteneurs Docker."
+    echo "   rebuild-docker : Force la reconstruction des images Docker et red\u00e9marre."
     echo "   rebuild-web    : Reconstruit rapidement le frontend SEULEMENT et redémarre (~2-3min)."
     echo "   rebuild-rapid  : Rebuild rapide avec cache (Docker + worker externe) (~2-5min)."
     echo "   dev-web        : Lance/rebuild le serveur web en mode preview (port 3003)."
-    echo "   rebuild-worker : Reconstruit et redémarre le worker local."
-    echo "   rebuild-all    : Reconstruit l'intégralité du projet (Docker et worker local)."
-    echo "   clean-docker   : Nettoie le système Docker (supprime conteneurs, volumes, etc.)."
+    echo "   rebuild-worker : Reconstruit et red\u00e9marre le worker local."
+    echo "   rebuild-all    : Reconstruit l\'int\u00e9gralit\u00e9 du projet (Docker et worker local)."
+    echo "   clean-docker   : Nettoie le syst\u00e8me Docker (supprime conteneurs, volumes, etc.)."
     echo "   clean-caches   : Nettoie TOUS les caches (pnpm, Vite, TypeScript, Docker)."
     echo "   shell          : Ouvre un shell dans le conteneur du serveur."
     echo "   lint           : Lance le linter sur le code."
     echo "   format         : Formate le code."
-    echo "   test           : Lance tous les tests (unitaires et intégration)."
+    echo "   test           : Lance tous les tests (unitaires et int\u00e9gration)."
     echo "   test:unit      : Lance uniquement les tests unitaires (rapide)."
-    echo "   test:integration: Lance uniquement les tests d'intégration (nécessite Docker)."
-    echo "   typecheck      : Vérifie les types TypeScript."
-    echo "   small-checks   : Lance les vérifications rapides (Lint, TypeCheck)."
-    echo "   all-checks     : Lance toutes les vérifications (Lint, TypeCheck, Tests Unitaires)."
-    echo "   menu           : Affiche le menu interactif (défaut)."
+    echo "   test:integration: Lance uniquement les tests d\'int\u00e9gration (n\u00e9cessite Docker)."
+    echo "   typecheck      : V\u00e9rifie les types TypeScript."
+    echo "   small-checks   : Lance les v\u00e9rifications rapides (Lint, TypeCheck)."
+    echo "   all-checks     : Lance toutes les v\u00e9rifications (Lint, TypeCheck, Tests Unitaires)."
+    echo "   menu           : Affiche le menu interactif (d\u00e9faut)."
     exit 1
 }
 
-# =============================================================================
-# Fonctions de vérification du système
-# =============================================================================
+# ==============================================================================
+# Fonctions de v\u00e9rification du syst\u00e8me
+# ==============================================================================
 
 check_and_create_env() {
     if [ ! -f .env ]; then
-        echo -e "${COLOR_YELLOW}Le fichier .env n'a pas été trouvé. Création d'un nouveau fichier .env...${NC}"
+        echo -e "${COLOR_YELLOW}Le fichier .env n\'a pas \u00e9t\u00e9 trouv\u00e9. Cr\u00e9ation d\'un nouveau fichier .env...${NC}"
         cat > .env << EOF
-# Fichier .env généré automatiquement. Remplissez les valeurs.
+# Fichier .env g\u00e9n\u00e9r\u00e9 automatiquement. Remplissez les valeurs.
 PUBLIC_PORT=8080
 WEB_PORT=3002
 REDIS_HOST=localhost
@@ -70,29 +70,29 @@ AUTH_TOKEN="un_token_secret_et_long_de_votre_choix"
 NODE_ENV=development
 LOG_LEVEL=info
 EOF
-        echo -e "${COLOR_GREEN}✓ Le fichier .env a été créé. Veuillez le remplir avec vos informations.${NC}"
+        echo -e "${COLOR_GREEN}✓ Le fichier .env a \u00e9t\u00e9 cr\u00e9\u00e9. Veuillez le remplir avec vos informations.${NC}"
     fi
 }
 
 check_redis_availability() {
-    echo -e "${COLOR_YELLOW}Attente de la disponibilité de Redis sur le port ${REDIS_PORT_STD}...${NC}"
+    echo -e "${COLOR_YELLOW}Attente de la disponibilit\u00e9 de Redis sur le port ${REDIS_PORT_STD}...${NC}"
     # Utiliser Docker pour vérifier Redis au lieu de redis-cli
     for i in {1..30}; do
         if docker exec g_forge_redis redis-cli ping > /dev/null 2>&1; then
-            echo -e "\n${COLOR_GREEN}✓ Redis est opérationnel. Ajout d'une pause de 2s...${NC}"
+            echo -e "\n${COLOR_GREEN}✓ Redis est op\u00e9rationnel. Ajout d\'une pause de 2s...${NC}"
             sleep 2
             return 0
         fi
         printf "."
         sleep 1
     done
-    echo -e "\n${COLOR_RED}✗ Timeout: Impossible de pinger Redis après 30 secondes.${NC}"
+    echo -e "\n${COLOR_RED}✗ Timeout: Impossible de pinger Redis apr\u00e8s 30 secondes.${NC}"
     return 1
 }
 
-# =============================================================================
+# ==============================================================================
 # Fonctions de gestion des services
-# =============================================================================
+# ==============================================================================
 
 load_env_vars() {
     if [ -f .env ]; then
@@ -116,10 +116,10 @@ stop_process_by_pid_file() {
         local pid
         pid=$(cat "$pid_file")
         if kill -0 "$pid" > /dev/null 2>&1; then
-            echo -e "${COLOR_YELLOW}Arrêt de ${process_name} (PID ${pid})...${NC}"
+            echo -e "${COLOR_YELLOW}Arr\u00eat de ${process_name} (PID ${pid})...${NC}"
             kill "$pid"
             rm -f "$pid_file"
-            echo -e "${COLOR_GREEN}✓ ${process_name} arrêté.${NC}"
+            echo -e "${COLOR_GREEN}✓ ${process_name} arr\u00eat\u00e9.${NC}"
         else
             rm -f "$pid_file"
         fi
@@ -137,30 +137,30 @@ stop_docker_log_collector() {
 start_worker() {
     local PID_FILE="${SCRIPT_DIR}/worker.pid"
     if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" > /dev/null 2>&1; then
-        echo -e "${COLOR_YELLOW}✓ Le worker est déjà en cours d'exécution (PID: $(cat "$PID_FILE")).${NC}"
+        echo -e "${COLOR_YELLOW}✓ Le worker est d\u00e9j\u00e0 en cours d\'ex\u00e9cution (PID: $(cat "$PID_FILE")).${NC}"
         return 0
     fi
-    echo -e "${COLOR_YELLOW}Démarrage du worker local en arrière-plan...${NC}"
+    echo -e "${COLOR_YELLOW}D\u00e9marrage du worker local en arri\u00e8re-plan...${NC}"
     cd "${SCRIPT_DIR}/packages/core"
     load_env_vars
     pnpm exec node dist/worker.js >> "${SCRIPT_DIR}/worker.log" 2>&1 &
     local WORKER_PID=$!
     echo $WORKER_PID > "$PID_FILE"
-    echo -e "${COLOR_GREEN}✓ Worker démarré avec le PID ${WORKER_PID}. Logs dans worker.log.${NC}"
+    echo -e "${COLOR_GREEN}✓ Worker d\u00e9marr\u00e9 avec le PID ${WORKER_PID}. Logs dans worker.log.${NC}"
     cd "${SCRIPT_DIR}"
 }
 
 start_docker_log_collector() {
     local PID_FILE="${SCRIPT_DIR}/docker-logs.pid"
     if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" > /dev/null 2>&1; then
-        echo -e "${COLOR_YELLOW}✓ Le collecteur de logs Docker est déjà en cours d'exécution (PID: $(cat "$PID_FILE")).${NC}"
+        echo -e "${COLOR_YELLOW}✓ Le collecteur de logs Docker est d\u00e9j\u00e0 en cours d\'ex\u00e9cution (PID: $(cat "$PID_FILE")).${NC}"
         return 0
     fi
-    echo -e "${COLOR_YELLOW}Démarrage du collecteur de logs Docker...${NC}"
+    echo -e "${COLOR_YELLOW}D\u00e9marrage du collecteur de logs Docker...${NC}"
     docker compose -f "${SCRIPT_DIR}/docker-compose.yml" logs --follow > "${SCRIPT_DIR}/docker.log" 2>&1 &
     local DOCKER_LOG_PID=$!
     echo $DOCKER_LOG_PID > "$PID_FILE"
-    echo -e "${COLOR_GREEN}✓ Collecteur de logs démarré avec le PID ${DOCKER_LOG_PID}. Logs dans docker.log.${NC}"
+    echo -e "${COLOR_GREEN}✓ Collecteur de logs d\u00e9marr\u00e9 avec le PID ${DOCKER_LOG_PID}. Logs dans docker.log.${NC}"
 }
 
 start_services() {
@@ -188,7 +188,6 @@ stop_services() {
     stop_worker
     stop_docker_log_collector
     echo -e "${COLOR_GREEN}✓ Services arrêtés.${NC}"
-}
 
 is_first_startup() {
     # Vérifie si c'est le premier démarrage en regardant si les builds existent
@@ -221,7 +220,7 @@ restart_all_services() {
 }
 
 restart_worker() {
-    echo -e "${COLOR_YELLOW}Redémarrage du worker...${NC}"
+    echo -e "${COLOR_YELLOW}Red\u00e9marrage du worker...${NC}"
     rm -f "${SCRIPT_DIR}/worker.log"
     load_env_vars
     stop_worker
@@ -237,17 +236,17 @@ show_status() {
 show_logs() {
     local log_file=$1
     local log_name=$2
-    echo -e "${COLOR_CYAN}--- Logs de ${log_name} (100 dernières lignes) ---${NC}"
+    echo -e "${COLOR_CYAN}--- Logs de ${log_name} (100 derni\u00e8res lignes) ---${NC}"
     if [ -f "$log_file" ]; then
         tail -100 "$log_file"
     else
-        echo -e "${COLOR_RED}✗ Le fichier ${log_file} n'existe pas.${NC}"
+        echo -e "${COLOR_RED}✗ Le fichier ${log_file} n\'existe pas.${NC}"
     fi
 }
 
 shell_access() {
     cd "${SCRIPT_DIR}"
-    echo -e "${COLOR_YELLOW}Ouverture d'un shell dans le conteneur '${APP_SERVICE_NAME}'...${NC}"
+    echo -e "${COLOR_YELLOW}Ouverture d\'un shell dans le conteneur '${APP_SERVICE_NAME}'...${NC}"
     docker compose -f "${SCRIPT_DIR}/docker-compose.yml" exec "${APP_SERVICE_NAME}" /bin/bash
 }
 
@@ -274,7 +273,12 @@ rebuild_docker() {
     
     # Build avec BuildKit activé pour de meilleures performances
     echo -e "${COLOR_GREEN}🚀 BuildKit activé pour des builds plus rapides !${NC}"
-    docker compose --progress=plain -f "${SCRIPT_DIR}/docker-compose.yml" build --no-cache
+    if docker compose --progress=plain -f "${SCRIPT_DIR}/docker-compose.yml" build --no-cache; then
+        echo -e "${COLOR_GREEN}✅ Build Docker terminé avec succès !${NC}"
+    else
+        echo -e "${COLOR_RED}❌ Erreur pendant le build Docker${NC}"
+        return 1
+    fi
     
     # Redémarrage des services (sans rebuild du Core)
     check_and_create_env
@@ -291,10 +295,10 @@ rebuild_docker() {
 
 clean_docker() {
     cd "${SCRIPT_DIR}"
-    echo -e "${COLOR_RED}ATTENTION : Suppression des conteneurs, volumes ET réseaux non utilisés.${NC}"
+    echo -e "${COLOR_RED}ATTENTION : Suppression des conteneurs, volumes ET r\u00e9seaux non utilis\u00e9s.${NC}"
     docker compose -f "${SCRIPT_DIR}/docker-compose.yml" down -v --remove-orphans
     docker network prune -f
-    echo -e "${COLOR_GREEN}✓ Nettoyage terminé.${NC}"
+    echo -e "${COLOR_GREEN}✓ Nettoyage termin\u00e9.${NC}"
 }
 
 clean_all_caches() {
@@ -416,18 +420,19 @@ rebuild_rapid() {
     
     # Build Docker avec cache (plus rapide)
     echo -e "${COLOR_YELLOW}🐳 Reconstruction Docker AVEC cache...${NC}"
-    echo -e "${COLOR_CYAN}📦 Build en cours avec cache - BEAUCOUP plus rapide !${NC}"
-    echo -e "${COLOR_CYAN}   Note: Le build utilise le cache Docker, donc le output détaillé est limité${NC}"
-    echo -e "${COLOR_CYAN}   Si vous voulez voir le output détaillé, utilisez: ./run.sh rebuild-docker${NC}"
+    echo -e "${COLOR_CYAN}📦 Build en cours avec cache - BEAUCOUP plus rapide ! AFFICHAGE LIVE :${NC}"
     
     # 🚀 ACTIVATION DE BUILDKIT pour des builds plus rapides
     export DOCKER_BUILDKIT=1  # Active BuildKit pour de meilleures performances
     export COMPOSE_DOCKER_CLI_BUILD=1
     
     echo -e "${COLOR_GREEN}🚀 BuildKit activé pour des builds plus rapides !${NC}"
-    echo -e "${COLOR_YELLOW}🔧 Exécution de la commande: docker compose --progress=plain -f \"${SCRIPT_DIR}/docker-compose.yml\" build${NC}"
-    docker compose --progress=plain -f "${SCRIPT_DIR}/docker-compose.yml" build
-    echo -e "${COLOR_GREEN}✅ Build Docker terminé${NC}"
+    if docker compose --progress=plain -f "${SCRIPT_DIR}/docker-compose.yml" build; then
+        echo -e "${COLOR_GREEN}✅ Build Docker rapide terminé avec succès !${NC}"
+    else
+        echo -e "${COLOR_RED}❌ Erreur pendant le build Docker rapide${NC}"
+        return 1
+    fi
     
     # Redémarrage des services (sans rebuild du Core)
     echo -e "${COLOR_YELLOW}🚀 Redémarrage des services...${NC}"
@@ -510,9 +515,9 @@ rebuild_all() {
     echo -e "${COLOR_GREEN}✅ Reconstruction complète terminée avec prise en compte des nouvelles configs (Core buildé 1 seule fois) !${NC}"
 }
 
-# =============================================================================
-# Fonctions de développement
-# =============================================================================
+# ==============================================================================
+# Fonctions de d\u00e9veloppement
+# ==============================================================================
 
 run_lint() {
     cd "${SCRIPT_DIR}"
@@ -528,7 +533,7 @@ run_format() {
 
 run_typecheck() {
     cd "${SCRIPT_DIR}"
-    echo -e "${COLOR_YELLOW}Vérification des types TypeScript...${NC}"
+    echo -e "${COLOR_YELLOW}V\u00e9rification des types TypeScript...${NC}"
     local output_file
     output_file=$(mktemp)
     pnpm run typecheck >"$output_file" 2>&1
@@ -548,12 +553,12 @@ run_unit_tests() {
     pnpm run test:unit -- "$@" >"$output_file" 2>&1
     local exit_code=$?
     
-    echo "=== Résumé des tests unitaires ==="
+    echo "=== R\u00e9sum\u00e9 des tests unitaires ==="
     grep -E "(Test Files|Tests|Duration)" "$output_file" | tail -3
     
     if [ $exit_code -ne 0 ]; then
         echo ""
-        echo -e "${COLOR_RED}Erreurs détectées :${NC}"
+        echo -e "${COLOR_RED}Erreurs d\u00e9tect\u00e9es :${NC}"
         grep -E "(FAILED|ERROR|failed|erreur)" "$output_file"
     fi
     
@@ -563,10 +568,10 @@ run_unit_tests() {
 
 run_integration_tests() {
     cd "${SCRIPT_DIR}"
-    echo -e "${COLOR_YELLOW}Lancement des tests d'intégration...${NC}"
-    echo -e "${COLOR_YELLOW}Démarrage des services Docker pour l'environnement de test...${NC}"
+    echo -e "${COLOR_YELLOW}Lancement des tests d\'int\u00e9gration...${NC}"
+    echo -e "${COLOR_YELLOW}D\u00e9marrage des services Docker pour l\'environnement de test...${NC}"
     start_services
-    echo -e "${COLOR_GREEN}Services Docker démarrés. Lancement des tests...${NC}"
+    echo -e "${COLOR_GREEN}Services Docker d\u00e9marr\u00e9s. Lancement des tests...${NC}"
     
     local output
     output=$(pnpm run test:integration 2>&1)
@@ -574,7 +579,7 @@ run_integration_tests() {
     
     echo "$output" | tail -10
     
-    echo -e "${COLOR_YELLOW}Tests terminés. Arrêt des services Docker...${NC}"
+    echo -e "${COLOR_YELLOW}Tests termin\u00e9s. Arr\u00eat des services Docker...${NC}"
     stop_services
     return $test_exit_code
 }
@@ -584,16 +589,16 @@ run_all_tests() {
 }
 
 _run_core_checks() {
-    echo -e "${COLOR_YELLOW}Exécution du linter...${NC}"
+    echo -e "${COLOR_YELLOW}Ex\u00e9cution du linter...${NC}"
     if ! run_lint; then
-        echo -e "${COLOR_RED}✗ Le linter a échoué.${NC}"
+        echo -e "${COLOR_RED}✗ Le linter a \u00e9chou\u00e9.${NC}"
         write_all_checks_report "failed" "all_checks" "lint"
         return 1
     fi
     
-    echo -e "${COLOR_YELLOW}Vérification des types...${NC}"
+    echo -e "${COLOR_YELLOW}V\u00e9rification des types...${NC}"
     if ! run_typecheck; then
-        echo -e "${COLOR_RED}✗ La vérification des types a échoué.${NC}"
+        echo -e "${COLOR_RED}✗ La v\u00e9rification des types a \u00e9chou\u00e9.${NC}"
         write_all_checks_report "failed" "all_checks" "typecheck"
         return 1
     fi
@@ -605,16 +610,16 @@ run_small_checks() {
     cd "${SCRIPT_DIR}"
     local start_time
     start_time=$(date +%s)
-    echo -e "${COLOR_YELLOW}Lancement des vérifications rapides (Lint, TypeCheck)...${NC}"
+    echo -e "${COLOR_YELLOW}Lancement des v\u00e9rifications rapides (Lint, TypeCheck)...${NC}"
     
-    # Assurer le nettoyage à la sortie
+    # Assurer le nettoyage \u00e0 la sortie
     trap 'rm -f /tmp/typecheck_output_file /tmp/unit_test_output_file' EXIT
 
     if ! _run_core_checks; then
         local end_time
         end_time=$(date +%s)
         local duration=$((end_time - start_time))
-        echo -e "${COLOR_RED}✗ Les vérifications rapides ont échoué après ${duration} secondes.${NC}"
+        echo -e "${COLOR_RED}✗ Les v\u00e9rifications rapides ont \u00e9chou\u00e9 apr\u00e8s ${duration} secondes.${NC}"
         echo -e "${COLOR_CYAN}Consultez le fichier all-checks.md pour le rapport.${NC}"
         return 1
     fi
@@ -623,7 +628,7 @@ run_small_checks() {
     local end_time
     end_time=$(date +%s)
     local duration=$((end_time - start_time))
-    echo -e "${COLOR_GREEN}✓ Toutes les vérifications rapides ont été exécutées avec succès en ${duration} secondes.${NC}"
+    echo -e "${COLOR_GREEN}✓ Toutes les v\u00e9rifications rapides ont \u00e9t\u00e9 ex\u00e9cut\u00e9es avec succ\u00e8s en ${duration} secondes.${NC}"
     echo -e "${COLOR_CYAN}Consultez le fichier all-checks.md pour le rapport.${NC}"
     return 0
 }
@@ -634,16 +639,16 @@ write_all_checks_report() {
     local failed_step=$3
     local report_file="all-checks.md"
     
-    echo -e "${COLOR_YELLOW}Génération du rapport des vérifications...${NC}"
+    echo -e "${COLOR_YELLOW}G\u00e9n\u00e9ration du rapport des v\u00e9rifications...${NC}"
     
     cat > "$report_file" << 'EOF'
-# Rapport des vérifications
+# Rapport des v\u00e9rifications
 
-Ce document résume les résultats des dernières vérifications exécutées.
+Ce document r\u00e9sume les r\u00e9sultats des derni\u00e8res v\u00e9rifications ex\u00e9cut\u00e9es.
 
 ---
 
-## Statut des vérifications
+## Statut des v\u00e9rifications
 
 EOF
 
@@ -672,9 +677,9 @@ EOF
     echo "" >> "$report_file"
 
     if [ "$status" = "success" ]; then
-        echo "Toutes les vérifications ont été exécutées avec succès." >> "$report_file"
+        echo "Toutes les v\u00e9rifications ont \u00e9t\u00e9 ex\u00e9cut\u00e9es avec succ\u00e8s." >> "$report_file"
     else
-        echo "## Détails des erreurs" >> "$report_file"
+        echo "## D\u00e9tails des erreurs" >> "$report_file"
         echo "" >> "$report_file"
         
         if [ "$failed_step" = "unit_tests" ] && [ -f /tmp/unit_test_output_file ]; then
@@ -683,7 +688,7 @@ EOF
             
             local failed_tests
             failed_tests=$(grep -cE "FAIL|ERROR" "$output_file" | grep -v "failed" || echo 0)
-            echo "### Tests Unitaires: $failed_tests erreur(s) détectée(s)" >> "$report_file"
+            echo "### Tests Unitaires: $failed_tests erreur(s) d\u00e9tect\u00e9e(s)" >> "$report_file"
             echo "" >> "$report_file"
             
             awk '
@@ -705,7 +710,7 @@ EOF
             }
             /^(Test Files:|Tests:|Duration:)/ {
                 end_block()
-                print "\n---\n**Résumé des tests:**\n"
+                print "\n---\n**R\u00e9sum\u00e9 des tests:**\n"
                 print $0
                 next
             }
@@ -718,21 +723,21 @@ EOF
             ' "$output_file" >> "$report_file"
 
         elif [ "$failed_step" = "lint" ]; then
-            echo "### Le linter a échoué" >> "$report_file"
-            echo "Veuillez vérifier les logs de la console pour les détails." >> "$report_file"
+            echo "### Le linter a \u00e9chou\u00e9" >> "$report_file"
+            echo "Veuillez v\u00e9rifier les logs de la console pour les d\u00e9tails." >> "$report_file"
         
         elif [ "$failed_step" = "typecheck" ] && [ -f /tmp/typecheck_output_file ]; then
             local output_file
             output_file=$(cat /tmp/typecheck_output_file)
-            echo "### La vérification des types a échoué" >> "$report_file"
+            echo "### La v\u00e9rification des types a \u00e9chou\u00e9" >> "$report_file"
             echo "" >> "$report_file"
             
             local error_count
             error_count=$(grep -cE "error TS[0-9]{4,}" "$output_file" || echo 0)
-            echo "Nombre total d'erreurs : $error_count" >> "$report_file"
+            echo "Nombre total d\'erreurs : $error_count" >> "$report_file"
             echo "" >> "$report_file"
 
-            echo "**Détails des erreurs :**" >> "$report_file"
+            echo "**D\u00e9tails des erreurs :**" >> "$report_file"
             echo '```' >> "$report_file"
             grep -E "error TS[0-9]{4,}|found [0-9]+ error" "$output_file" >> "$report_file"
             echo '```' >> "$report_file"
@@ -741,37 +746,37 @@ EOF
             echo "### Une erreur inattendue est survenue" >> "$report_file"
         fi
         echo "" >> "$report_file"
-        echo "Certaines vérifications ont échoué." >> "$report_file"
+        echo "Certaines v\u00e9rifications ont \u00e9chou\u00e9." >> "$report_file"
     fi
     
     echo "" >> "$report_file"
     echo "---" >> "$report_file"
-    echo "Généré le: $(date)" >> "$report_file"
+    echo "G\u00e9n\u00e9r\u00e9 le: $(date)" >> "$report_file"
     
-    echo -e "${COLOR_GREEN}✓ Rapport des vérifications enregistré dans $report_file${NC}"
+    echo -e "${COLOR_GREEN}✓ Rapport des v\u00e9rifications enregistr\u00e9 dans $report_file${NC}"
 }
 
 run_all_checks() {
     cd "${SCRIPT_DIR}"
     local start_time
     start_time=$(date +%s)
-    echo -e "${COLOR_YELLOW}Lancement de TOUTES les vérifications (Lint, TypeCheck, Tests Unitaires)...${NC}"
+    echo -e "${COLOR_YELLOW}Lancement de TOUTES les v\u00e9rifications (Lint, TypeCheck, Tests Unitaires)...${NC}"
 
-    # Assurer le nettoyage à la sortie
+    # Assurer le nettoyage \u00e0 la sortie
     trap 'rm -f /tmp/typecheck_output_file /tmp/unit_test_output_file' EXIT
 
     if ! _run_core_checks; then
         local end_time
         end_time=$(date +%s)
         local duration=$((end_time - start_time))
-        echo -e "${COLOR_RED}✗ Les vérifications de base ont échoué après ${duration} secondes.${NC}"
+        echo -e "${COLOR_RED}✗ Les v\u00e9rifications de base ont \u00e9chou\u00e9 apr\u00e8s ${duration} secondes.${NC}"
         echo -e "${COLOR_CYAN}Consultez le fichier all-checks.md pour le rapport.${NC}"
         return 1
     fi
     
-    echo -e "${COLOR_YELLOW}Exécution des tests unitaires...${NC}"
+    echo -e "${COLOR_YELLOW}Ex\u00e9cution des tests unitaires...${NC}"
     if ! run_unit_tests; then
-        echo -e "${COLOR_RED}✗ Les tests unitaires ont échoué.${NC}"
+        echo -e "${COLOR_RED}✗ Les tests unitaires ont \u00e9chou\u00e9.${NC}"
         write_all_checks_report "failed" "all_checks" "unit_tests"
         local end_time
         end_time=$(date +%s)
@@ -782,11 +787,11 @@ run_all_checks() {
             output_file=$(cat /tmp/unit_test_output_file)
             local failed_tests
             failed_tests=$(grep -cE "(failed|FAILED)" "$output_file")
-            echo -e "${COLOR_RED}✗ $failed_tests erreurs de tests unitaires détectées.${NC}"
+            echo -e "${COLOR_RED}✗ $failed_tests erreurs de tests unitaires d\u00e9tect\u00e9es.${NC}"
         fi
         
-        echo -e "${COLOR_RED}✗ Certaines vérifications ont échoué après ${duration} secondes.${NC}"
-        echo -e "${COLOR_CYAN}Consultez le fichier all-checks.md pour une liste complète des vérifications.${NC}"
+        echo -e "${COLOR_RED}✗ Certaines v\u00e9rifications ont \u00e9chou\u00e9 apr\u00e8s ${duration} secondes.${NC}"
+        echo -e "${COLOR_CYAN}Consultez le fichier all-checks.md pour une liste compl\u00e8te des v\u00e9rifications.${NC}"
         return 1
     fi
     
@@ -794,49 +799,48 @@ run_all_checks() {
     local end_time
     end_time=$(date +%s)
     local duration=$((end_time - start_time))
-    echo -e "${COLOR_GREEN}✓ Toutes les vérifications ont été exécutées avec succès en ${duration} secondes.${NC}"
-    echo -e "${COLOR_CYAN}Consultez le fichier all-checks.md pour une liste complète des vérifications.${NC}"
+    echo -e "${COLOR_GREEN}✓ Toutes les v\u00e9rifications ont \u00e9t\u00e9 ex\u00e9cut\u00e9es avec succ\u00e8s en ${duration} secondes.${NC}"
+    echo -e "${COLOR_CYAN}Consultez le fichier all-checks.md pour une liste compl\u00e8te des v\u00e9rifications.${NC}"
     return 0
 }
 
-# =============================================================================
+# ==============================================================================
 # UI du Menu
-# =============================================================================
-
+# ==============================================================================
 show_menu() {
     clear
-    echo -e "${COLOR_ORANGE}"
+    echo -e \"${COLOR_ORANGE}\"
     echo '    ╔══════════════════════════════════╗'
     echo '    ║        A G E N T I C F O R G E   ║'
     echo '    ╚══════════════════════════════════╝'
-    echo -e "${NC}"
-    echo -e "──────────────────────────────────────────"
-    echo -e "    ${COLOR_CYAN}Docker & Services${NC}"
-    printf "    1) ${COLOR_GREEN}🟢 Démarrer${NC}            5) ${COLOR_BLUE}📊 Logs Worker${NC}\n"
-    printf "    2) ${COLOR_YELLOW}🔄 Redémarrer tout${NC}     6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\n"
-    printf "    3) ${COLOR_RED}🔴 Arrêter${NC}              7) ${COLOR_BLUE}🔨 Rebuild Docker (🚀)${NC}\n"
-    printf "    4) ${COLOR_CYAN}⚡ Statut${NC}              8) ${COLOR_BLUE}🔨 Rebuild Web${NC}\n"
-    printf "    9) ${COLOR_RED}🧹 Nettoyer Docker${NC}       24) ${COLOR_GREEN}🚀 Dev Web (port 3003)${NC}\n"
-    printf "   10) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}    16) ${COLOR_BLUE}🐳 Logs Docker${NC}\n"
-    printf "   21) ${COLOR_BLUE}🔨 Rebuild Worker${NC}\n"
-    printf "   22) ${COLOR_BLUE}🔨 Rebuild All (🚀)${NC}\n"
-    printf "   25) ${COLOR_GREEN}⚡ Rebuild Rapid (🚀 + cache)${NC}\n"
-    printf "   23) ${COLOR_RED}🧹 Clean All Caches${NC}\n"
+    echo -e \"${NC}\"
+    echo -e \"──────────────────────────────────────────\"
+    echo -e \"    ${COLOR_CYAN}Docker & Services${NC}\"
+    printf "    1) ${COLOR_GREEN}🟢 Démarrer${NC}            5) ${COLOR_BLUE}📊 Logs Worker${NC}\\n"
+    printf "    2) ${COLOR_YELLOW}🔄 Redémarrer tout${NC}     6) ${COLOR_BLUE}🐚 Shell (Container)${NC}\\n"
+    printf "    3) ${COLOR_RED}🔴 Arrêter${NC}              7) ${COLOR_BLUE}🔨 Rebuild Docker (🚀)${NC}\\n"
+    printf "    4) ${COLOR_CYAN}⚡ Statut${NC}              8) ${COLOR_BLUE}🔨 Rebuild Web${NC}\\n"
+    printf "    9) ${COLOR_RED}🧹 Nettoyer Docker${NC}       24) ${COLOR_GREEN}🚀 Dev Web (port 3003)${NC}\\n"
+    printf "   10) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}    16) ${COLOR_BLUE}🐳 Logs Docker${NC}\\n"
+    printf "   21) ${COLOR_BLUE}🔨 Rebuild Worker${NC}\\n"
+    printf "   22) ${COLOR_BLUE}🔨 Rebuild All (🚀)${NC}\\n"
+    printf "   25) ${COLOR_GREEN}⚡ Rebuild Rapid (🚀 + cache)${NC}\\n"
+    printf "   23) ${COLOR_RED}🧹 Clean All Caches${NC}\\n"
     echo ""
     echo -e "    ${COLOR_CYAN}Développement & Vérifications${NC}"
-    printf "   11) ${COLOR_BLUE}🔍 Lint${NC}                 14) ${COLOR_BLUE}📘 TypeCheck${NC}\n"
-    printf "   12) ${COLOR_BLUE}✨ Format${NC}               15) ${COLOR_BLUE}✅ Checks Rapides (Lint, Types)${NC}\n"
-    printf "   13) ${COLOR_BLUE}🧪 Tests (Unitaires)${NC}     18) ${COLOR_BLUE}🚀 TOUS les Checks (Lint, Types, Tests Unitaires)${NC}\n"
-    printf "   19) ${COLOR_BLUE}🧪 Tests (Intégration)${NC}\n"
-    printf "   20) ${COLOR_BLUE}🧪 Lancer TOUS les tests${NC}\n"
+    printf "   11) ${COLOR_BLUE}🔍 Lint${NC}                 14) ${COLOR_BLUE}📘 TypeCheck${NC}\\n"
+    printf "   12) ${COLOR_BLUE}✨ Format${NC}               15) ${COLOR_BLUE}✅ Checks Rapides (Lint, Types)${NC}\\n"
+    printf "   13) ${COLOR_BLUE}🧪 Tests (Unitaires)${NC}     18) ${COLOR_BLUE}🚀 TOUS les Checks (Lint, Types, Tests Unitaires)${NC}\\n"
+    printf "   19) ${COLOR_BLUE}🧪 Tests (Intégration)${NC}\\n"
+    printf "   20) ${COLOR_BLUE}🧪 Lancer TOUS les tests${NC}\\n"
     echo ""
-    printf "   17) ${COLOR_RED}🚪 Quitter${NC}\n"
+    printf "   17) ${COLOR_RED}🚪 Quitter${NC}\\n"
     echo ""
 }
 
-# =============================================================================
+# ==============================================================================
 # Boucle Principale
-# =============================================================================
+# ==============================================================================
 
 main() {
     cd "${SCRIPT_DIR}"
@@ -913,7 +917,7 @@ main() {
             23) clean_all_caches ;; 
             24) dev_web ;;
             25) rebuild_rapid ;; 
-            *) echo -e "${COLOR_RED}Option invalide, veuillez réessayer.${NC}" ;; 
+            *) echo -e "${COLOR_RED}Option invalide, veuillez r\u00e9essayer.${NC}" ;; 
         esac
         echo -e "\nAppuyez sur Entree pour continuer..."
         read -r

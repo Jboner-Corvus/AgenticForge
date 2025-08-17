@@ -36,8 +36,9 @@ export interface UIState {
   toolCreationEnabled: boolean;
   codeExecutionEnabled: boolean;
   
-  // Auth
-  authToken: string | null;
+  // Backend Authentication (pour l'accès à l'API AgenticForge)
+  // IMPORTANT: Ceci n'est PAS un token LLM !
+  authToken: string | null; // Token d'authentification backend
   jobId: string | null;
   activeCliJobId: string | null;
   
@@ -120,7 +121,7 @@ export const useUIStore = create<UIState>()(
       toolCount: 0,
       toolCreationEnabled: false,
       codeExecutionEnabled: true,
-      authToken: clientConfig.AUTH_TOKEN || null,
+      authToken: clientConfig.AUTH_TOKEN || null, // Token backend depuis config
       jobId: null,
       activeCliJobId: null,
       streamCloseFunc: null,
@@ -128,11 +129,19 @@ export const useUIStore = create<UIState>()(
 
       // Enhanced Auth Actions
       setAuthTokenAndValidate: async (token: string | null) => {
+        console.log('🔐 [UIStore] Setting BACKEND auth token (not LLM key):', token?.substring(0, 30) + '...');
+        
         if (!token) {
           set({ 
             authToken: null,
             isAuthenticated: false 
           });
+          // Remove from localStorage
+          try {
+            localStorage.removeItem('backendAuthToken');
+          } catch (error) {
+            console.warn('Failed to remove backend token from localStorage:', error);
+          }
           return;
         }
 
@@ -145,11 +154,12 @@ export const useUIStore = create<UIState>()(
               authToken: token,
               isAuthenticated: true 
             });
-            // Also save to localStorage
+            // Save backend token to localStorage with clear name
             try {
-              localStorage.setItem('authToken', token);
+              localStorage.setItem('backendAuthToken', token);
+              console.log('✅ [UIStore] Backend auth token saved to localStorage');
             } catch (error) {
-              console.warn('Failed to save token to localStorage:', error);
+              console.warn('Failed to save backend token to localStorage:', error);
             }
           } else {
             set({ 
@@ -158,7 +168,7 @@ export const useUIStore = create<UIState>()(
             });
           }
         } catch (error) {
-          console.error('Token validation failed:', error);
+          console.error('Backend token validation failed:', error);
           set({ 
             authToken: null,
             isAuthenticated: false 
@@ -167,37 +177,52 @@ export const useUIStore = create<UIState>()(
       },
 
       refreshAuthToken: async () => {
-        // For now, we'll just get the token from localStorage
+        console.log('🔄 [UIStore] Refreshing BACKEND auth token...');
         try {
-          const token = localStorage.getItem('authToken');
-          if (token) {
+          // Priorité: localStorage > config
+          const storedToken = localStorage.getItem('backendAuthToken');
+          if (storedToken) {
+            console.log('✅ [UIStore] Found backend token in localStorage');
             set({ 
-              authToken: token,
+              authToken: storedToken,
               isAuthenticated: true 
             });
           } else if (clientConfig.AUTH_TOKEN) {
             // Fallback to the default token from config
+            console.log('✅ [UIStore] Using backend token from config');
             set({ 
               authToken: clientConfig.AUTH_TOKEN,
               isAuthenticated: true 
             });
+            // Save it to localStorage for next time
+            try {
+              localStorage.setItem('backendAuthToken', clientConfig.AUTH_TOKEN);
+            } catch (e) {
+              console.warn('Could not save config token to localStorage:', e);
+            }
+          } else {
+            console.warn('⚠️ [UIStore] No backend auth token found');
           }
         } catch (error) {
-          console.error('Token refresh failed:', error);
+          console.error('Backend token refresh failed:', error);
         }
       },
 
       getValidAuthToken: () => {
+        console.log('🔍 [UIStore] Getting valid BACKEND auth token...');
+        
         // First check the store
         const storeToken = get().authToken;
         if (storeToken) {
+          console.log('✅ [UIStore] Using backend token from store');
           return storeToken;
         }
         
-        // Then check localStorage
+        // Then check localStorage with correct key
         try {
-          const localStorageToken = localStorage.getItem('authToken');
+          const localStorageToken = localStorage.getItem('backendAuthToken');
           if (localStorageToken) {
+            console.log('✅ [UIStore] Found backend token in localStorage, updating store');
             // Update the store with the token from localStorage
             set({ 
               authToken: localStorageToken,
@@ -206,18 +231,26 @@ export const useUIStore = create<UIState>()(
             return localStorageToken;
           }
         } catch (error) {
-          console.error('Error getting token from localStorage:', error);
+          console.error('Error getting backend token from localStorage:', error);
         }
         
         // Finally, fallback to the default token from config
         if (clientConfig.AUTH_TOKEN) {
+          console.log('✅ [UIStore] Using backend token from config as fallback');
           set({ 
             authToken: clientConfig.AUTH_TOKEN,
             isAuthenticated: true 
           });
+          // Try to save it for next time
+          try {
+            localStorage.setItem('backendAuthToken', clientConfig.AUTH_TOKEN);
+          } catch (e) {
+            console.warn('Could not save config token to localStorage:', e);
+          }
           return clientConfig.AUTH_TOKEN;
         }
         
+        console.warn('⚠️ [UIStore] No valid backend auth token found anywhere!');
         return null;
       },
 
@@ -252,12 +285,27 @@ export const useUIStore = create<UIState>()(
       setToolCreationEnabled: (toolCreationEnabled) => set({ toolCreationEnabled }),
       setCodeExecutionEnabled: (codeExecutionEnabled) => set({ codeExecutionEnabled }),
 
-      // Auth
+      // Backend Auth (for AgenticForge API access)
       setAuthToken: (authToken) => {
+        console.log('🔐 [UIStore] Setting backend auth token:', authToken?.substring(0, 30) + '...');
         set({ 
           authToken,
           isAuthenticated: !!authToken 
         });
+        // Save to localStorage with clear naming
+        if (authToken) {
+          try {
+            localStorage.setItem('backendAuthToken', authToken);
+          } catch (error) {
+            console.warn('Failed to save backend token to localStorage:', error);
+          }
+        } else {
+          try {
+            localStorage.removeItem('backendAuthToken');
+          } catch (error) {
+            console.warn('Failed to remove backend token from localStorage:', error);
+          }
+        }
       },
       
       setJobId: (jobId) => set({ jobId }),

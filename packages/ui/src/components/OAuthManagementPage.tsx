@@ -150,7 +150,7 @@ export const OAuthManagementPage = memo(() => {
         addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Checking OAuth status - GitHub: ${hasGitHubToken}, Google: ${hasGoogleToken}, Twitter: ${isTwitterConnected}, Qwen: ${hasQwenToken}`);
         
         // Extract and log the bearer token if present
-        const authHeader = localStorage.getItem('authToken');
+        const authHeader = localStorage.getItem('backendAuthToken');
         if (authHeader) {
           addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Backend Bearer Token found in localStorage: ${authHeader.substring(0, 20)}...`);
         } else {

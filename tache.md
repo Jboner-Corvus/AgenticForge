@@ -26,7 +26,7 @@ For each test in the list, follow these 6 steps:
 Pour envoyer une requête à l'API, vous pouvez utiliser la commande `curl` suivante :
 
 ```bash
-curl -X POST http://localhost:3002/api/chat \
+curl -X POST http://localhost:8081/api/chat \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0" \
   -d '{"prompt": "Fait moi le jeux duke nukem2 (c est un test) et affiche une demo dans le canvas"}'

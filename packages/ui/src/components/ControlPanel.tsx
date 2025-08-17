@@ -168,22 +168,22 @@ export const ControlPanel = memo(() => {
             </CardHeader>
             <CardContent className="space-y-4 pt-4">
               <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
-                <Label className="text-sm flex items-center"><Key className="mr-2 h-4 w-4 text-blue-500" />{translations.sessionId}</Label>
-                <span className="text-sm text-muted-foreground font-mono">{sessionId ? `${sessionId.substring(0, 12)}...` : '--'}</span>
+                <Label htmlFor="session-id" className="text-sm flex items-center"><Key className="mr-2 h-4 w-4 text-blue-500" />{translations.sessionId}</Label>
+                <span id="session-id" className="text-sm text-muted-foreground font-mono">{sessionId ? `${sessionId.substring(0, 12)}...` : '--'}</span>
               </div>
               <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
-                <Label className="text-sm flex items-center"><Server className="mr-2 h-4 w-4 text-green-500" />{translations.connectionStatus}</Label>
-                <Badge variant={serverHealthy ? 'success' : 'destructive'}>
+                <Label htmlFor="connection-status" className="text-sm flex items-center"><Server className="mr-2 h-4 w-4 text-green-500" />{translations.connectionStatus}</Label>
+                <Badge id="connection-status" variant={serverHealthy ? 'success' : 'destructive'}>
                   {serverHealthy ? translations.online : translations.offline}
                 </Badge>
               </div>
               <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
-                <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4 text-purple-500" />Browser Status</Label>
-                <span className="text-sm text-muted-foreground">{browserStatus}</span>
+                <Label htmlFor="browser-status" className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4 text-purple-500" />Browser Status</Label>
+                <span id="browser-status" className="text-sm text-muted-foreground">{browserStatus}</span>
               </div>
               <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
-                <Label className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4 text-orange-500" />{translations.toolsDetected}</Label>
-                <span className="text-sm text-muted-foreground">
+                <Label htmlFor="tools-detected" className="text-sm flex items-center"><Hammer className="mr-2 h-4 w-4 text-orange-500" />{translations.toolsDetected}</Label>
+                <span id="tools-detected" className="text-sm text-muted-foreground">
                   {isLoadingTools ? (
                     <LoadingSpinner className="ml-2" />
                   ) : (

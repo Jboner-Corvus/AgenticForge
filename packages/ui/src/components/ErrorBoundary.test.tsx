@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -31,12 +31,10 @@ describe('ErrorBoundary Tests', () => {
   beforeEach(() => {
     // Suppress console.error during tests to avoid noise
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.useFakeTimers();
   });
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
-    vi.useRealTimers();
   });
 
   it('should render children when no error occurs', () => {
@@ -88,33 +86,38 @@ describe('ErrorBoundary Tests', () => {
     expect(screen.getByText(/Reference error occurred/i)).toBeInTheDocument();
   });
 
-  it('should provide retry functionality', () => {
-    const { rerender } = render(
+  it('should provide retry functionality', async () => {
+    let shouldThrow = true;
+    const ThrowErrorComponent = () => {
+      if (shouldThrow) {
+        throw new Error('Failure');
+      }
+      return <div data-testid="normal-component">Normal component</div>;
+    };
+
+    const App = () => (
       <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
+        <ThrowErrorComponent />
       </ErrorBoundary>
     );
 
-    expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
+    const { getByText, queryByText } = render(<App />);
 
-    const retryButton = screen.getByRole('button', { name: /Try again/i });
-    expect(retryButton).toBeInTheDocument();
+    expect(getByText(/Something went wrong/i)).toBeInTheDocument();
 
-    // Simulate retry by changing props to not throw
-    rerender(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={false} />
-      </ErrorBoundary>
-    );
+    shouldThrow = false;
+    fireEvent.click(getByText(/Try again/i));
 
-    expect(screen.getByTestId('normal-component')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(queryByText(/Normal component/i)).toBeInTheDocument();
+    });
   });
 
   it('should handle nested error boundaries', () => {
     render(
-      <ErrorBoundary>
+      <ErrorBoundary componentName="Outer">
         <div data-testid="outer-boundary">
-          <ErrorBoundary>
+          <ErrorBoundary componentName="Inner">
             <AlwaysThrows />
           </ErrorBoundary>
           <div data-testid="sibling-component">Sibling component</div>
@@ -123,7 +126,7 @@ describe('ErrorBoundary Tests', () => {
     );
 
     // Inner boundary should catch the error
-    expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
+    expect(screen.getByText(/An error occurred in the Inner component./i)).toBeInTheDocument();
     // Sibling component should still render
     expect(screen.getByTestId('sibling-component')).toBeInTheDocument();
   });
@@ -268,11 +271,13 @@ describe('ErrorBoundary Async Error Handling', () => {
     expect(screen.getByTestId('async-component')).toBeInTheDocument();
 
     // Advance timers to trigger the error
-    vi.advanceTimersByTime(100);
+    act(() => {
+        vi.advanceTimersByTime(100);
+    });
 
     // Wait for async error to occur
     await waitFor(() => {
       expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
-    }, { timeout: 200 });
+    });
   });
 });

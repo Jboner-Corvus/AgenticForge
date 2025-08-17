@@ -363,7 +363,7 @@ export const useLLMKeysStore = create<LLMKeysState>()(
             throw new Error('This API key already exists for this provider');
           }
 
-          const response = await fetch(`${API_BASE}/keys`, {
+          const response = await fetch(`${API_BASE}`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({
@@ -539,7 +539,8 @@ export const useLLMKeysStore = create<LLMKeysState>()(
         set({ isSyncing: true, error: null });
         try {
           const response = await fetch(`${API_BASE}/sync`, {
-            method: 'POST'
+            method: 'POST',
+            headers: getAuthHeaders()
           });
           
           if (!response.ok) throw new Error('Failed to sync with Redis');
@@ -559,7 +560,8 @@ export const useLLMKeysStore = create<LLMKeysState>()(
         set({ isSyncing: true, error: null });
         try {
           const response = await fetch(`${API_BASE}/import-from-redis`, {
-            method: 'POST'
+            method: 'POST',
+            headers: getAuthHeaders()
           });
           
           if (!response.ok) throw new Error('Failed to import from Redis');
@@ -585,7 +587,7 @@ export const useLLMKeysStore = create<LLMKeysState>()(
           // Send keys to backend for export to Redis
           const response = await fetch(`${API_BASE}/export-to-redis`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ keys: keysToExport })
           });
           

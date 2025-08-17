@@ -1,3 +1,9 @@
+// packages/ui/src/lib/store.ts
+// 🚨 IMPORTANT: AUTH TOKEN CLARIFICATION
+// authToken = Token d'authentification BACKEND pour l'accès à l'API AgenticForge
+// LLM API Keys = Gérées séparément dans llmApiKeys (ce sont les clés pour OpenAI, Anthropic, etc.)
+// 📝 NE PAS confondre ces deux types de tokens!
+
 import { create } from 'zustand';
 
 import { getTools, saveSessionApi, loadSessionApi, deleteSessionApi, renameSessionApi, addLlmApiKeyApi, removeLlmApiKeyApi, editLlmApiKeyApi, getLeaderboardStats, getLlmApiKeysApi, loadAllSessionsApi, setActiveLlmProviderApi } from './api';
@@ -36,7 +42,7 @@ export interface AppState {
   addMessage: (item: NewChatMessage) => void;
   agentStatus: string | null;
   toolStatus: string;
-  authToken: null | string;
+  authToken: null | string; // Token d'authentification BACKEND (pas LLM!)
   browserStatus: string;
   clearDebugLog: () => void;
   clearMessages: () => void;
@@ -126,7 +132,7 @@ export interface AppState {
   sessionStatus: 'error' | 'unknown' | 'valid';
   setAgentStatus: (agentStatus: string | null) => void;
   setToolStatus: (toolStatus: string) => void;
-  setAuthToken: (authToken: null | string) => void;
+  setAuthToken: (authToken: null | string) => void; // Pour l'auth backend seulement
   setBrowserStatus: (status: string) => void;
   setCodeExecutionEnabled: (codeExecutionEnabled: boolean) => void;
   
@@ -343,7 +349,10 @@ export const useStore = create<AppState>((set, get) => ({
   sessionStatus: 'unknown',
   setAgentStatus: (agentStatus) => set({ agentStatus }),
   setToolStatus: (toolStatus) => set({ toolStatus }),
-  setAuthToken: (authToken) => set({ authToken }),
+  setAuthToken: (authToken) => {
+    console.log('🔐 [Store] Setting backend auth token (not LLM key):', authToken?.substring(0, 30) + '...');
+    set({ authToken });
+  },
   setBrowserStatus: (status) => set({ browserStatus: status }),
   setCodeExecutionEnabled: (codeExecutionEnabled) => set({ codeExecutionEnabled }),
   
@@ -741,7 +750,7 @@ export const useStore = create<AppState>((set, get) => ({
     const { setSessions, setActiveSessionId, setMessages, setSessionId, addDebugLog, updateLeaderboardStats, setIsLoadingLeaderboardStats, setIsLoadingSessions } = get();
 
     // Check if user is authenticated FIRST before any API calls
-    const authToken = localStorage.getItem('authToken');
+    const authToken = localStorage.getItem('backendAuthToken');
     if (!authToken) {
       console.log('🔐 [INIT] No auth token found, skipping all backend loading. User needs to authenticate first.');
       setIsLoadingLeaderboardStats(false);

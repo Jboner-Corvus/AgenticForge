@@ -226,7 +226,7 @@ export const useSessionStore = create<SessionState>()(
       loadAllSessions: async () => {
         set({ isLoadingSessions: true });
         try {
-          const authToken = localStorage.getItem('authToken');
+          const authToken = localStorage.getItem('backendAuthToken');
           if (!authToken) {
             console.log('🔐 [sessionStore] No auth token found, cannot load sessions');
             set({ sessions: [] });
