@@ -18,9 +18,9 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     test: {
+      globals: true,
       environment: 'jsdom',
       setupFiles: ['./vitest.setup.ts'],
-      globals: true,
       include: isIntegration ? integrationTestPaths : unitTestPaths,
       exclude: [
         'node_modules', 
@@ -35,6 +35,7 @@ export default defineConfig(({ mode }) => {
       silent: true,
       hideSkippedTests: true,
       logHeapUsage: false,
+      testTimeout: 20000,
     },
     resolve: {
       alias: {

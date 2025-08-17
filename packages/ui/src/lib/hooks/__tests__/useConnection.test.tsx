@@ -15,6 +15,11 @@ beforeAll(() => {
 
 beforeEach(() => {
   mockFetch.mockClear();
+  vi.useFakeTimers();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 import { act, renderHook } from "@testing-library/react";

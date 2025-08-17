@@ -1,9 +1,9 @@
 import { Logger, pino } from 'pino';
 export type { Logger };
 
-import { getConfig } from './config.js';
+import { getConfig } from './config.ts';
 
-let loggerInstance: Logger;
+let loggerInstance: Logger | undefined;
 
 export function getLogger(): Logger {
   if (!loggerInstance) {
@@ -28,3 +28,7 @@ export function getLogger(): Logger {
 }
 
 export const getLoggerInstance = getLogger;
+
+export function resetLoggerForTesting(): void {
+  loggerInstance = undefined;
+}

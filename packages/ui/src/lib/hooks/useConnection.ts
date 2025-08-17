@@ -65,6 +65,7 @@ interface UseConnectionOptions {
   onNotification?: (notification: Notification) => void;
   onPendingRequest?: (request: Request, resolve: (value: unknown) => void, reject: (reason?: unknown) => void) => void;
   onStdErrNotification?: (notification: Notification) => void;
+  sessionId?: string;
   sseUrl: string;
   transportType: "sse" | "stdio" | "streamable-http";
 }
@@ -80,6 +81,7 @@ export function useConnection({
   onNotification,
   onPendingRequest,
   onStdErrNotification,
+  sessionId,
   sseUrl,
   transportType,
 }: UseConnectionOptions) {
@@ -463,7 +465,7 @@ export function useConnection({
         const transport =
           transportType === "streamable-http"
             ? new StreamableHTTPClientTransport(mcpProxyServerUrl as URL, {
-                sessionId: undefined,
+                sessionId: sessionId || undefined,
                 ...transportOptions,
               })
             : new SSEClientTransport(

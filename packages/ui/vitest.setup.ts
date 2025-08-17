@@ -5,8 +5,7 @@ import * as matchers from '@testing-library/jest-dom/matchers';
 
 expect.extend(matchers);
 
-// Enable fake timers globally to prevent hanging tests
-vi.useFakeTimers();
+
 
 // Mock React.act for React 19 compatibility
 if (!('act' in React)) {

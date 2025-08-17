@@ -192,7 +192,7 @@ function getAuthHeaders(): Record<string, string> {
 
   // Get token from UI store
   const uiStore = useUIStore.getState();
-  const token = uiStore.getValidAuthToken();
+  const token = uiStore.authToken;
   
   if (token) {
     headers['Authorization'] = 'Bearer ' + token;
@@ -226,20 +226,10 @@ export const useLLMKeysStore = create<LLMKeysState>()(
       fetchKeys: async () => {
         set({ isLoading: true, error: null });
         try {
-          const headers = getAuthHeaders();
-          
           const response = await fetch(`${API_BASE}`, {
-            headers
+            headers: getAuthHeaders()
           });
-          
-          if (!response.ok) {
-            if (response.status === 401) {
-              // Handle unauthorized access
-              useUIStore.getState().setAuthToken(null);
-              throw new Error('Unauthorized access - please check your authentication token');
-            }
-            throw new Error(`Failed to fetch keys: ${response.status} ${response.statusText}`);
-          }
+          if (!response.ok) throw new Error(`Failed to fetch keys: ${response.status} ${response.statusText}`);
           
           const rawBackendKeys = await response.json();
           
@@ -287,7 +277,7 @@ export const useLLMKeysStore = create<LLMKeysState>()(
                 description: `${backendKey.apiProvider} - ${backendKey.apiModel || 'unknown'}`
               }
             };
-          }).filter((key: LLMKey | null): key is LLMKey => key !== null); // Filter out null values
+          }).filter((key): key is LLMKey => key !== null); // Filter out null values
           
           // Remove duplicates with better algorithm
           const keysMap = new Map<string, LLMKey>();

@@ -1,10 +1,12 @@
 // Convenience hooks for accessing individual stores
 // Use these instead of useCombinedStore for properties to avoid infinite loops
 
+import React from 'react';
 import { useUIStore } from './uiStore';
 import { useCanvasStore } from './canvasStore';
 import { useSessionStore } from './sessionStore';
 import { useCombinedStore } from './index';
+import { generateUUID } from '../lib/utils/uuid';
 
 // UI Store hooks
 export const useCurrentPage = () => useUIStore(state => state.currentPage);
@@ -42,7 +44,21 @@ export const useCanvasHistory = () => useCanvasStore(state => state.canvasHistor
 export const useCurrentCanvasIndex = () => useCanvasStore(state => state.currentCanvasIndex);
 
 // Session Store hooks
-export const useSessionId = () => useSessionStore(state => state.sessionId);
+export const useSessionId = () => {
+  const sessionId = useSessionStore(state => state.sessionId);
+  const setSessionId = useSessionStore(state => state.setSessionId);
+  
+  // Ensure sessionId is always available
+  React.useEffect(() => {
+    if (!sessionId) {
+      const newSessionId = generateUUID();
+      console.log('🔐 [useSessionId] Generating fallback sessionId:', newSessionId);
+      setSessionId(newSessionId);
+    }
+  }, [sessionId, setSessionId]);
+  
+  return sessionId;
+};
 export const useActiveSessionId = () => useSessionStore(state => state.activeSessionId);
 export const useSessionStatus = () => useSessionStore(state => state.sessionStatus);
 export const useMessages = () => useSessionStore(state => state.messages);

@@ -242,7 +242,7 @@ describe('enhancedTodoListTool', () => {
       action: 'update_task'
     }, mockCtx);
     
-    expect(result).toHaveProperty('error', 'Task ID and status are required for update_task action');
+    expect(result).toHaveProperty('error', 'No taskId provided for update_task action');
   });
 
   it('should work without job ID (no canvas display)', async () => {
@@ -271,7 +271,7 @@ describe('enhancedTodoListTool', () => {
     }, mockCtx);
     
     expect(result).toHaveProperty('success', true);
-    expect(result).toHaveProperty('message', 'State recovery initiated');
+    expect(result).toHaveProperty('message', 'State loaded successfully');
     if ('recoveryStatus' in result) {
       expect(result.recoveryStatus).toBeDefined();
     }

@@ -1,6 +1,6 @@
 {
   "name": "@jboner-corvus/agenticforge",
-  "version": "1.0.176",
+  "version": "1.0.245",
   "description": "Une plateforme avancée pour la création et la gestion d'agents intelligents.",
   "main": "dist/index.js",
   "files": [

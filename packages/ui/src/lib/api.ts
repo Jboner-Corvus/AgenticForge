@@ -18,10 +18,21 @@ function getAuthHeaders(
     'Content-Type': 'application/json',
   };
 
-  // Utiliser SEULEMENT le token fourni par l'utilisateur (pas de fallback hardcodé)
-  if (authToken) {
-    headers['Authorization'] = 'Bearer ' + authToken;
-    console.log('✅ [getAuthHeaders] Token utilisé:', authToken.substring(0, 30) + '...');
+  // Utiliser le token fourni par l'utilisateur ou récupérer depuis le store
+  let tokenToUse = authToken;
+  if (!tokenToUse) {
+    // Try to get token from localStorage as fallback
+    try {
+      tokenToUse = localStorage.getItem('authToken');
+      console.log('🔐 [getAuthHeaders] Token from localStorage:', tokenToUse?.substring(0, 30) + '...');
+    } catch (error) {
+      console.warn('🔐 [getAuthHeaders] Failed to get token from localStorage:', error);
+    }
+  }
+  
+  if (tokenToUse) {
+    headers['Authorization'] = 'Bearer ' + tokenToUse;
+    console.log('✅ [getAuthHeaders] Token utilisé:', tokenToUse.substring(0, 30) + '...');
     console.log('🔐 [getAuthHeaders] Authorization header final:', headers['Authorization'].substring(0, 50) + '...');
   } else {
     console.log('❌ [getAuthHeaders] Aucun token fourni - requête non authentifiée');

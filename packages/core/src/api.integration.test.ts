@@ -69,7 +69,7 @@ describe('API Integration Tests', () => {
     it('should return available tools', async () => {
       const response = await request(app)
         .get('/api/tools')
-        .set('Authorization', config.AUTH_API_KEY ? `Bearer ${config.AUTH_API_KEY}` : '')
+        .set('Authorization', config.AUTH_TOKEN ? `Bearer ${config.AUTH_TOKEN}` : '')
         .expect(200);
       
       expect(Array.isArray(response.body)).toBe(true);
@@ -78,8 +78,8 @@ describe('API Integration Tests', () => {
       }
     });
 
-    it('should require authorization when AUTH_API_KEY is set', async () => {
-      if (!config.AUTH_API_KEY) {
+    it('should require authorization when AUTH_TOKEN is set', async () => {
+      if (!config.AUTH_TOKEN) {
         return; // Skip test if no auth is required
       }
 
@@ -93,7 +93,7 @@ describe('API Integration Tests', () => {
     it('should accept chat messages with required fields', async () => {
       const response = await request(app)
         .post('/api/chat')
-        .set('Authorization', config.AUTH_API_KEY ? `Bearer ${config.AUTH_API_KEY}` : '')
+        .set('Authorization', config.AUTH_TOKEN ? `Bearer ${config.AUTH_TOKEN}` : '')
         .send({
           prompt: 'Hello, this is a test message',
           llmProvider: 'openai',
@@ -109,7 +109,7 @@ describe('API Integration Tests', () => {
     it('should reject chat messages without prompt', async () => {
       await request(app)
         .post('/api/chat')
-        .set('Authorization', config.AUTH_API_KEY ? `Bearer ${config.AUTH_API_KEY}` : '')
+        .set('Authorization', config.AUTH_TOKEN ? `Bearer ${config.AUTH_TOKEN}` : '')
         .send({
           llmProvider: 'openai',
           llmModelName: 'gpt-3.5-turbo'
@@ -120,7 +120,7 @@ describe('API Integration Tests', () => {
     it('should handle malformed JSON', async () => {
       await request(app)
         .post('/api/chat')
-        .set('Authorization', config.AUTH_API_KEY ? `Bearer ${config.AUTH_API_KEY}` : '')
+        .set('Authorization', config.AUTH_TOKEN ? `Bearer ${config.AUTH_TOKEN}` : '')
         .set('Content-Type', 'application/json')
         .send('{"invalid": json}')
         .expect(400);
@@ -133,7 +133,7 @@ describe('API Integration Tests', () => {
       
       const response = await request(app)
         .post('/api/test-chat')
-        .set('Authorization', config.AUTH_API_KEY ? `Bearer ${config.AUTH_API_KEY}` : '')
+        .set('Authorization', config.AUTH_TOKEN ? `Bearer ${config.AUTH_TOKEN}` : '')
         .send({
           prompt: 'This is a test message for integration testing',
           sessionName: testSessionName,
@@ -198,12 +198,12 @@ describe('API Integration Tests', () => {
     it('should handle 404 for non-existent endpoints', async () => {
       await request(app)
         .get('/api/non-existent-endpoint')
-        .set('Authorization', config.AUTH_API_KEY ? `Bearer ${config.AUTH_API_KEY}` : '')
+        .set('Authorization', config.AUTH_TOKEN ? `Bearer ${config.AUTH_TOKEN}` : '')
         .expect(404);
     });
 
     it('should handle unauthorized access gracefully', async () => {
-      if (!config.AUTH_API_KEY) {
+      if (!config.AUTH_TOKEN) {
         return; // Skip test if no auth is required
       }
 
@@ -221,7 +221,7 @@ describe('API Integration Tests', () => {
     it('should handle application/json content type', async () => {
       const response = await request(app)
         .post('/api/chat')
-        .set('Authorization', config.AUTH_API_KEY ? `Bearer ${config.AUTH_API_KEY}` : '')
+        .set('Authorization', config.AUTH_TOKEN ? `Bearer ${config.AUTH_TOKEN}` : '')
         .set('Content-Type', 'application/json')
         .send(JSON.stringify({
           prompt: 'JSON content type test',
@@ -240,7 +240,7 @@ describe('API Integration Tests', () => {
       
       const response = await request(app)
         .post('/api/chat')
-        .set('Authorization', config.AUTH_API_KEY ? `Bearer ${config.AUTH_API_KEY}` : '')
+        .set('Authorization', config.AUTH_TOKEN ? `Bearer ${config.AUTH_TOKEN}` : '')
         .send({
           prompt: largePrompt,
           llmProvider: 'openai',

@@ -72,13 +72,11 @@ const PROVIDERS: LlmProviderConfig[] = [
 // Status Banner avec thème gothique
 const StatusBanner = () => {
   const llmApiKeys = useCombinedStore((state: CombinedAppState) => state.llmApiKeys);
-  const activeLlmApiKeyIndex = useCombinedStore((state: CombinedAppState) => state.activeLlmApiKeyIndex);
   const hasKeys = llmApiKeys.length > 0;
   const totalKeys = llmApiKeys.length;
 
   // Debug: Log current state
-  console.log('🔑 [STATUS] Current llmApiKeys:', llmApiKeys);
-  console.log('🔑 [STATUS] Active index:', activeLlmApiKeyIndex);
+  // Debug logging removed to reduce console noise
 
   return (
     <motion.div

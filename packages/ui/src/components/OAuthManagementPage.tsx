@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { useLanguage } from '../lib/contexts/LanguageContext';
@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 
-export const OAuthManagementPage = () => {
+export const OAuthManagementPage = memo(() => {
   const { translations } = useLanguage()
   const [isGitHubConnected, setIsGitHubConnected] = useState(false)
   const [isGoogleConnected, setIsGoogleConnected] = useState(false)
@@ -119,16 +119,31 @@ export const OAuthManagementPage = () => {
           cookie.trim().length > 'agenticforge_twitter_token='.length
         )
 
-        // Check Qwen connection status via API
+        // Check Qwen connection status via API avec timeout
         let hasQwenToken = false;
         try {
-          const response = await fetch('/api/auth/qwen/status');
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+          
+          const response = await fetch('/api/auth/qwen/status', {
+            signal: controller.signal,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          clearTimeout(timeoutId);
+          
           if (response.ok) {
             const data = await response.json();
             hasQwenToken = data.connected;
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Qwen connection status: ${hasQwenToken ? 'connected' : 'disconnected'}`);
+          } else {
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [WARNING] Qwen status API returned: ${response.status}`);
           }
         } catch (error) {
           console.error('Error checking Qwen connection status:', error);
+          addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Qwen connection check failed: ${error instanceof Error ? error.message : String(error)}`);
         }
         
         // Log the OAuth status check
@@ -162,6 +177,14 @@ export const OAuthManagementPage = () => {
     };
 
     checkOAuthStatus()
+    
+    // Timeout de sécurité - force le déverrouillage après 10 secondes
+    const timeoutId = setTimeout(() => {
+      setIsCheckingStatus(false);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [WARNING] OAuth status check timeout - forced unlock`);
+    }, 10000);
+    
+    return () => clearTimeout(timeoutId);
   }, [addDebugLog, isTwitterConnected])
 
   // Check Qwen token status periodically
@@ -838,4 +861,6 @@ The full token has been copied to your clipboard.`);
       </motion.div>
     </motion.div>
   );
-}
+});
+
+OAuthManagementPage.displayName = 'OAuthManagementPage';

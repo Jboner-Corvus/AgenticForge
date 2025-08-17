@@ -119,11 +119,22 @@ export async function initializeWebServer(
           return next();
         }
         
-        if (
-          req.path === '/api/health' ||
-          req.path.startsWith('/api/auth/github') ||
-          req.path.startsWith('/api/auth/qwen')
-        ) {
+        // Routes exemptées d'authentification (accès libre pour navigation)
+        const publicRoutes = [
+          '/api/health',
+          '/api/auth/github',
+          '/api/auth/qwen', 
+          '/api/llm-api-keys/providers', // Pour afficher les providers LLM
+          '/api/llm-keys/providers', // Pour afficher les providers LLM
+          '/api/sessions', // Pour naviguer dans les sessions
+          '/api/leaderboard' // Pour la page leaderboard
+        ];
+        
+        const isPublicRoute = publicRoutes.some(route => 
+          req.path === route || req.path.startsWith(route)
+        );
+        
+        if (isPublicRoute) {
           return next();
         }
 
@@ -136,7 +147,7 @@ export async function initializeWebServer(
         console.log('🔐 Raw apiKey from headers:', apiKey);
         console.log('🔐 apiKey type:', typeof apiKey);
         console.log('🔐 apiKey length:', apiKey?.length);
-        console.log('🔐 config.AUTH_API_KEY:', config.AUTH_API_KEY ? `PRÉSENT (${config.AUTH_API_KEY.substring(0, 30)}...)` : 'ABSENT');
+        console.log('🔐 config.AUTH_TOKEN:', config.AUTH_TOKEN ? `PRÉSENT (${config.AUTH_TOKEN.substring(0, 30)}...)` : 'ABSENT');
         console.log('🔐 process.env.AUTH_TOKEN:', process.env.AUTH_TOKEN ? `PRÉSENT (${process.env.AUTH_TOKEN.substring(0, 30)}...)` : 'ABSENT');
         console.log('🔐 process.env.VITE_AUTH_TOKEN:', process.env.VITE_AUTH_TOKEN ? `PRÉSENT (${process.env.VITE_AUTH_TOKEN.substring(0, 30)}...)` : 'ABSENT');
         
@@ -146,20 +157,22 @@ export async function initializeWebServer(
         );
         
         // SIMPLIFIÉ: Utiliser uniquement AUTH_TOKEN (qui est dans .env)
-        const expectedToken = process.env.AUTH_TOKEN || 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0';
+        // Utiliser la configuration chargée au lieu de process.env directement
+        const expectedToken = config.AUTH_TOKEN || process.env.AUTH_TOKEN || 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0';
         const expectedBearer = `Bearer ${expectedToken}`;
         
         console.log('🔐 SIMPLIFIED AUTH - Expected Bearer:', expectedBearer.substring(0, 50) + '...');
         console.log('🔐 SIMPLIFIED AUTH - Received Bearer:', apiKey || 'UNDEFINED');
         console.log('🔐 SIMPLIFIED AUTH - Match result:', apiKey === expectedBearer);
         
+        // Authentification Bearer pour les routes sensibles
         if (apiKey !== expectedBearer) {
           console.log('❌ AUTH FAILED - Bearer token mismatch');
           getLoggerInstance().warn(
             { providedKey: apiKey, requiredKey: `Bearer ${expectedToken.substring(0, 10)}...` },
             'Unauthorized access attempt',
           );
-          return res.status(401).json({ error: 'Unauthorized' });
+          return res.status(401).json({ error: 'Unauthorized - Authentication required for this endpoint' });
         }
         console.log('✅ AUTH SUCCESS - Bearer token matched!');
         console.log('🔐🔐🔐 === END BEARER TOKEN ANALYSIS ===');
@@ -305,26 +318,14 @@ export async function initializeWebServer(
           'Checking authorization header for SSE stream',
         );
         
-        // Check if AUTH_API_KEY is set and validate against it
-        if (config.AUTH_API_KEY) {
-          if (apiKey !== `Bearer ${config.AUTH_API_KEY}`) {
-            getLoggerInstance().warn(
-              { providedKey: apiKey, requiredKey: `Bearer ${config.AUTH_API_KEY.substring(0, 10)}...` },
-              'Unauthorized SSE access attempt',
-            );
-            return res.status(401).json({ error: 'Unauthorized' });
-          }
-        } 
-        // Fallback to checking against AUTH_TOKEN or VITE_AUTH_TOKEN
-        else if (process.env.AUTH_TOKEN || process.env.VITE_AUTH_TOKEN) {
-          const expectedToken = process.env.AUTH_TOKEN || process.env.VITE_AUTH_TOKEN;
-          if (apiKey !== `Bearer ${expectedToken}`) {
-            getLoggerInstance().warn(
-              { providedKey: apiKey, requiredKey: `Bearer ${expectedToken?.substring(0, 10)}...` },
-              'Unauthorized SSE access attempt',
-            );
-            return res.status(401).json({ error: 'Unauthorized' });
-          }
+        // UNIFIÉ: Utiliser uniquement AUTH_TOKEN partout
+        const expectedToken = config.AUTH_TOKEN || process.env.AUTH_TOKEN || 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0';
+        if (apiKey !== `Bearer ${expectedToken}`) {
+          getLoggerInstance().warn(
+            { providedKey: apiKey, requiredKey: `Bearer ${expectedToken.substring(0, 10)}...` },
+            'Unauthorized SSE access attempt',
+          );
+          return res.status(401).json({ error: 'Unauthorized' });
         }
 
         const { jobId } = req.params;
@@ -917,6 +918,223 @@ export async function initializeWebServer(
           );
 
           res.status(200).json({ message: 'LLM API key updated successfully.' });
+        } catch (error) {
+          next(error);
+        }
+      },
+    );
+
+    // New endpoints for frontend LLM key manager compatibility
+    
+    // PUT /api/llm-api-keys/keys/:id - Update key by frontend ID
+    app.put(
+      '/api/llm-api-keys/keys/:id',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { id } = req.params;
+          const { isActive } = req.body;
+          
+          // Get all keys to find the one with matching frontend ID
+          const keys = await _LlmKeyManager.getKeysForApi();
+          const keyIndex = keys.findIndex((key, index) => 
+            `${key.apiProvider}-${index}-${Math.floor(Date.now() / 1000) * 1000}` === id ||
+            id.startsWith(`${key.apiProvider}-${index}-`)
+          );
+          
+          if (keyIndex === -1) {
+            throw new AppError('Key not found', { statusCode: 404 });
+          }
+          
+          // Update the key's disabled status
+          const key = keys[keyIndex];
+          key.isPermanentlyDisabled = !isActive;
+          
+          // Save back to Redis
+          await _LlmKeyManager.saveKeys(keys);
+          
+          res.status(200).json({ message: 'Key updated successfully' });
+        } catch (error) {
+          next(error);
+        }
+      },
+    );
+
+    // DELETE /api/llm-api-keys/keys/:id - Delete key by frontend ID
+    app.delete(
+      '/api/llm-api-keys/keys/:id',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { id } = req.params;
+          
+          // Get all keys to find the one with matching frontend ID
+          const keys = await _LlmKeyManager.getKeysForApi();
+          const keyIndex = keys.findIndex((key, index) => 
+            `${key.apiProvider}-${index}-${Math.floor(Date.now() / 1000) * 1000}` === id ||
+            id.startsWith(`${key.apiProvider}-${index}-`)
+          );
+          
+          if (keyIndex === -1) {
+            throw new AppError('Key not found', { statusCode: 404 });
+          }
+          
+          await _LlmKeyManager.removeKey(keyIndex);
+          res.status(200).json({ message: 'Key deleted successfully' });
+        } catch (error) {
+          next(error);
+        }
+      },
+    );
+
+    // POST /api/llm-api-keys/keys/:id/test - Test key
+    app.post(
+      '/api/llm-api-keys/keys/:id/test',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { id } = req.params;
+          
+          // Get all keys to find the one with matching frontend ID
+          const keys = await _LlmKeyManager.getKeysForApi();
+          const keyIndex = keys.findIndex((key, index) => 
+            `${key.apiProvider}-${index}-${Math.floor(Date.now() / 1000) * 1000}` === id ||
+            id.startsWith(`${key.apiProvider}-${index}-`)
+          );
+          
+          if (keyIndex === -1) {
+            throw new AppError('Key not found', { statusCode: 404 });
+          }
+          
+          const key = keys[keyIndex];
+          
+          // Simple test - just check if the key exists and is not permanently disabled
+          const isValid = !key.isPermanentlyDisabled && key.apiKey && key.apiKey.length > 0;
+          
+          res.status(200).json({ 
+            valid: isValid,
+            message: isValid ? 'Key is valid' : 'Key is invalid or disabled'
+          });
+        } catch (error) {
+          next(error);
+        }
+      },
+    );
+
+    // Middleware to verify auth token for sync operations
+    const verifyAuthToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+      const authHeader = req.headers.authorization;
+      let token = authHeader;
+      
+      // Handle both Bearer token format and plain token format
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.substring(7); // Remove 'Bearer ' prefix
+      }
+      
+      if (!token || token !== config.AUTH_TOKEN) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      
+      next();
+    };
+
+    // POST /api/llm-api-keys/sync - Sync with Redis
+    app.post(
+      '/api/llm-api-keys/sync',
+      verifyAuthToken,
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Just return success - keys are already synced with Redis
+          res.status(200).json({ message: 'Sync completed successfully' });
+        } catch (error) {
+          next(error);
+        }
+      },
+    );
+
+    // POST /api/llm-api-keys/import-from-redis
+    app.post(
+      '/api/llm-api-keys/import-from-redis',
+      verifyAuthToken,
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Keys are already imported from Redis in getKeys()
+          res.status(200).json({ message: 'Import completed successfully' });
+        } catch (error) {
+          next(error);
+        }
+      },
+    );
+
+    // POST /api/llm-api-keys/export-to-redis
+    app.post(
+      '/api/llm-api-keys/export-to-redis',
+      verifyAuthToken,
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Keys are automatically saved to Redis, so just return success
+          res.status(200).json({ message: 'Export completed successfully' });
+        } catch (error) {
+          next(error);
+        }
+      },
+    );
+
+    // POST /api/llm-api-keys/cleanup-duplicates
+    app.post(
+      '/api/llm-api-keys/cleanup-duplicates',
+      verifyAuthToken,
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const keys = await _LlmKeyManager.getKeysForApi();
+          
+          // Remove duplicates based on provider + key combination
+          const uniqueKeys = [];
+          const seen = new Set();
+          
+          for (const key of keys) {
+            const keyIdentifier = `${key.apiProvider}-${key.apiKey}`;
+            if (!seen.has(keyIdentifier)) {
+              seen.add(keyIdentifier);
+              uniqueKeys.push(key);
+            }
+          }
+          
+          if (uniqueKeys.length < keys.length) {
+            await _LlmKeyManager.saveKeys(uniqueKeys);
+            res.status(200).json({ 
+              message: `Cleanup completed. Removed ${keys.length - uniqueKeys.length} duplicates.`,
+              before: keys.length,
+              after: uniqueKeys.length
+            });
+          } else {
+            res.status(200).json({ message: 'No duplicates found' });
+          }
         } catch (error) {
           next(error);
         }
@@ -1865,6 +2083,129 @@ export async function initializeWebServer(
       },
     );
 
+    // Legacy sync endpoint for backward compatibility
+    app.post(
+      '/api/llm-api-keys/sync',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // This is a placeholder for sync functionality
+          // In a real implementation, this would sync between the local store and Redis
+          res.status(200).json({ message: 'Sync completed successfully' });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error syncing LLM keys',
+          );
+          next(error);
+        }
+      },
+    );
+
+    // Get available LLM providers (legacy endpoint for backward compatibility)
+    app.get(
+      '/api/llm-api-keys/providers',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Return the list of supported LLM providers
+          const providers = [
+            {
+              id: 'openai',
+              name: 'openai',
+              displayName: 'OpenAI',
+              description: 'GPT models including GPT-4, GPT-3.5, and DALL-E',
+              website: 'https://openai.com',
+              keyFormat: 'sk-...',
+              testEndpoint: '/v1/models',
+              supportedModels: ['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo', 'dall-e-3', 'whisper-1'],
+              isActive: true
+            },
+            {
+              id: 'anthropic',
+              name: 'anthropic',
+              displayName: 'Anthropic',
+              description: 'Claude models for advanced AI assistance',
+              website: 'https://anthropic.com',
+              keyFormat: 'sk-ant-...',
+              testEndpoint: '/v1/models',
+              supportedModels: ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'],
+              isActive: true
+            },
+            {
+              id: 'google-flash',
+              name: 'google',
+              displayName: 'Google Gemini Flash',
+              description: 'Gemini 2.5 Flash - Fast and efficient model',
+              website: 'https://ai.google.dev',
+              keyFormat: 'AI...',
+              testEndpoint: '/v1/models',
+              supportedModels: ['gemini-2.5-flash'],
+              isActive: true
+            },
+            {
+              id: 'gemini',
+              name: 'google',
+              displayName: 'Gemini',
+              description: 'Gemini 2.5 Pro - Advanced reasoning model',
+              website: 'https://ai.google.dev',
+              keyFormat: 'AI...',
+              testEndpoint: '/v1/models',
+              supportedModels: ['gemini-2.5-pro'],
+              isActive: true
+            },
+            {
+              id: 'xai',
+              name: 'xai',
+              displayName: 'xAI Grok',
+              description: 'Grok-4 advanced reasoning model',
+              website: 'https://x.ai',
+              keyFormat: 'xai-...',
+              testEndpoint: '/v1/models',
+              supportedModels: ['grok-4'],
+              isActive: true
+            },
+            {
+              id: 'qwen',
+              name: 'qwen',
+              displayName: 'Qwen',
+              description: 'Qwen3 Coder Plus - Advanced coding model',
+              website: 'https://portal.qwen.ai',
+              keyFormat: '...',
+              testEndpoint: 'https://portal.qwen.ai/v1/chat/completions',
+              supportedModels: ['qwen3-coder-plus'],
+              isActive: true
+            },
+            {
+              id: 'openrouter',
+              name: 'openrouter',
+              displayName: 'OpenRouter',
+              description: 'Access to multiple AI models via unified API - GLM-4.5-Air Free',
+              website: 'https://openrouter.ai',
+              keyFormat: 'sk-or-...',
+              testEndpoint: 'https://openrouter.ai/api/v1/models',
+              supportedModels: ['z-ai/glm-4.5-air:free'],
+              isActive: true
+            }
+          ];
+          
+          res.status(200).json(providers);
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error getting LLM providers',
+          );
+          next(error);
+        }
+      },
+    );
+
     app.post(
       '/api/llm-keys/import-from-redis',
       async (
@@ -1901,6 +2242,91 @@ export async function initializeWebServer(
           getLoggerInstance().error(
             { error },
             'Error importing LLM keys from Redis',
+          );
+          next(error);
+        }
+      },
+    );
+
+    // Cleanup duplicate keys endpoint
+    app.post(
+      '/api/llm-api-keys/cleanup-duplicates',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Get all keys from the legacy LlmKeyManager
+          const legacyKeys = await _LlmKeyManager.getKeysForApi();
+          
+          // Get all keys from the new Redis format
+          const redisKeys = await redisClient.keys('llm:keys:*');
+          const newKeys = [];
+          
+          for (const key of redisKeys) {
+            const value = await redisClient.get(key);
+            if (value) {
+              try {
+                const keyData = JSON.parse(value);
+                newKeys.push({
+                  id: key,
+                  ...keyData
+                });
+              } catch (parseError) {
+                getLoggerInstance().warn(
+                  { key, error: parseError },
+                  'Failed to parse Redis key value as JSON',
+                );
+              }
+            }
+          }
+          
+          // Remove duplicates from legacy keys
+          const uniqueLegacyKeys = legacyKeys.filter((key, index, self) => 
+            index === self.findIndex(k => k.apiKey === key.apiKey && k.apiProvider === key.apiProvider)
+          );
+          
+          // Remove duplicates from new keys
+          const uniqueNewKeys = newKeys.filter((key, index, self) => 
+            index === self.findIndex(k => k.keyValue === key.keyValue && k.provider === key.provider)
+          );
+          
+          // Save the cleaned up keys back to their respective stores
+          // For legacy keys, we need to rebuild the entire list
+          // Clear existing keys
+          await redisClient.del('llmApiKeys');
+          
+          // Add unique legacy keys
+          if (uniqueLegacyKeys.length > 0) {
+            await redisClient.rpush(
+              'llmApiKeys',
+              ...uniqueLegacyKeys.map((key) => JSON.stringify(key)),
+            );
+          }
+          
+          // For new keys, we'll just log that we would clean them up
+          getLoggerInstance().info(
+            { 
+              legacyKeysCount: legacyKeys.length,
+              uniqueLegacyKeysCount: uniqueLegacyKeys.length,
+              newKeysCount: newKeys.length,
+              uniqueNewKeysCount: uniqueNewKeys.length
+            },
+            'LLM API keys cleanup completed',
+          );
+          
+          res.status(200).json({ 
+            message: 'Duplicate keys cleanup completed successfully',
+            stats: {
+              legacyKeysRemoved: legacyKeys.length - uniqueLegacyKeys.length,
+              newKeysRemoved: newKeys.length - uniqueNewKeys.length
+            }
+          });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error cleaning up duplicate LLM keys',
           );
           next(error);
         }

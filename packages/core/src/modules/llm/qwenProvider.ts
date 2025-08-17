@@ -1,10 +1,10 @@
-import { config } from '../../config.js';
-import { getLogger } from '../../logger.js';
-import { ILlmProvider } from '../../types.js';
-import { LlmError } from '../../utils/LlmError.js';
-import { getRedisClientInstance } from '../redis/redisClient.js';
-import { LLMContent } from './llm-types.js';
-import { LlmApiKey, LlmKeyErrorType, LlmKeyManager } from './LlmKeyManager.js';
+import { config } from '../../config.ts';
+import { getLogger } from '../../logger.ts';
+import { ILlmProvider } from '../../types.ts';
+import { LlmError } from '../../utils/LlmError.ts';
+import { getRedisClientInstance } from '../redis/redisClient.ts';
+import { LLMContent } from './llm-types.ts';
+import { LlmApiKey, LlmKeyErrorType, LlmKeyManager } from './LlmKeyManager.ts';
 
 export class QwenProvider implements ILlmProvider {
   public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {

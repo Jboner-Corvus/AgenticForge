@@ -57,19 +57,6 @@ export interface SessionState {
 export const useSessionStore = create<SessionState>()(
   persist(
     (set, get) => {
-      // Initialize session ID if it doesn't exist
-      const initializeSession = () => {
-        const state = get();
-        if (!state.sessionId) {
-          const newSessionId = generateUUID();
-          set({ sessionId: newSessionId, activeSessionId: newSessionId });
-          console.log('🔐 [sessionStore] Created new session ID:', newSessionId);
-        }
-      };
-      
-      // Run initialization
-      initializeSession();
-      
       return {
       // Initial state
       sessionId: null,
@@ -284,7 +271,18 @@ export const useSessionStore = create<SessionState>()(
         sessions: state.sessions,
         activeSessionId: state.activeSessionId,
         sessionId: state.sessionId
-      })
+      }),
+      onRehydrateStorage: () => (state) => {
+        // Ensure sessionId exists after rehydration
+        if (state && !state.sessionId) {
+          const newSessionId = generateUUID();
+          console.log('🔐 [sessionStore] Generated sessionId after rehydration:', newSessionId);
+          state.sessionId = newSessionId;
+          state.activeSessionId = newSessionId;
+        } else if (state && state.sessionId) {
+          console.log('🔐 [sessionStore] Restored sessionId from storage:', state.sessionId);
+        }
+      }
     }
   )
 );

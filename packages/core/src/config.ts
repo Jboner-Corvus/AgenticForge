@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 const configSchema = z.object({
   AGENT_MAX_ITERATIONS: z.coerce.number().default(100),
-  AUTH_API_KEY: z.string().optional(),
+  AUTH_TOKEN: z.string().optional(),
   CODE_EXECUTION_TIMEOUT_MS: z.coerce.number().default(60000),
   CONTAINER_MEMORY_LIMIT: z.string().default('2g'),
   GITHUB_CLIENT_ID: z.string().optional(),

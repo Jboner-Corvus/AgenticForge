@@ -17,6 +17,7 @@ export const DebugLog: React.FC<DebugLogProps> = ({ logs, onClose }) => {
   const serverHealthy = useUIStore((state) => state.serverHealthy);
   const keys = useLLMKeysStore((state) => state.keys);
   const { fetchKeys, clearError } = useLLMKeysStore();
+  const clearDebugLog = useUIStore((state) => state.clearDebugLog);
 
   const clearAllStores = () => {
     localStorage.clear();
@@ -124,6 +125,15 @@ export const DebugLog: React.FC<DebugLogProps> = ({ logs, onClose }) => {
             Refresh Keys
           </Button>
           
+          <Button 
+            size="sm" 
+            onClick={clearDebugLog}
+            className="text-xs bg-orange-600 hover:bg-orange-500"
+          >
+            <Trash2 className="h-3 w-3 mr-1" />
+            Clear Logs
+          </Button>
+          
           {realDuplicateCount > 0 && (
             <Button 
               size="sm" 
@@ -148,6 +158,15 @@ export const DebugLog: React.FC<DebugLogProps> = ({ logs, onClose }) => {
       
       {/* Section Logs */}
       <div className="overflow-y-auto flex-grow p-2 text-xs font-mono bg-gray-50 space-y-1">
+        <div className="flex justify-between items-center mb-2 p-2 bg-white rounded border">
+          <span className="text-xs text-gray-600">
+            📋 {logs.length} logs affichés (limité à 50 max)
+          </span>
+          <span className="text-xs text-gray-500">
+            Auto-filtrés: logs répétitifs masqués
+          </span>
+        </div>
+        
         {logs.length === 0 ? (
           <div className="text-gray-500 italic text-center py-4">
             Aucun log pour le moment...

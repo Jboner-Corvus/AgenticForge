@@ -1,11 +1,11 @@
-import { getConfig } from '../config.js';
-import { getLogger } from '../logger.js';
-import { ILlmProvider, LLMContent, LlmError } from '../modules/llm/llm-types.js';
-import { LlmApiKey, LlmKeyManager } from '../modules/llm/LlmKeyManager.js';
-import { LlmKeyErrorType } from '../modules/llm/LlmKeyManager.js';
-import { QwenProvider } from '../modules/llm/qwenProvider.js';
-import { getRedisClientInstance } from '../modules/redis/redisClient.js';
-import { Gpt5Provider } from './gpt5Provider.js';
+import { getConfig } from '../config.ts';
+import { getLogger } from '../logger.ts';
+import { ILlmProvider, LLMContent, LlmError } from '../modules/llm/llm-types.ts';
+import { LlmApiKey, LlmKeyManager } from '../modules/llm/LlmKeyManager.ts';
+import { LlmKeyErrorType } from '../modules/llm/LlmKeyManager.ts';
+import { QwenProvider } from '../modules/llm/qwenProvider.ts';
+import { getRedisClientInstance } from '../modules/redis/redisClient.ts';
+import { Gpt5Provider } from './gpt5Provider.ts';
 
 class AnthropicProvider implements ILlmProvider {
   public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {

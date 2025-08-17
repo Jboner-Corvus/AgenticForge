@@ -43,7 +43,7 @@ vi.mock('../../logger.js', () => ({
   getLoggerInstance: () => mockLogger,
 }));
 
-vi.mock('../../utils/llmProvider.js', () => ({
+vi.mock('../../utils/llmProvider', () => ({
   getLlmProvider: () => mockLlmProvider,
 }));
 

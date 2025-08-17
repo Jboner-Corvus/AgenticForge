@@ -119,17 +119,27 @@ export function getToolsDir(): string {
     `[getToolsDir] process.env.NODE_ENV: ${process.env.NODE_ENV}`,
   );
 
-  // In production (dist), tools are in dist/modules/tools/definitions
-  // In development, they're in src/modules/tools/definitions
+  // In production (dist), tools are in packages/core/dist/modules/tools/definitions
+  // In development, they're in packages/core/src/modules/tools/definitions
   let toolsPath: string;
   
   if (runningInDist) {
     // When running in Docker or as a worker, we need to construct the path correctly
-    // The worker runs from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core
+    // The worker runs from /home/demon/agentforge/AgenticForge2/AgenticForge
     // The tools are in /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions
-    toolsPath = path.resolve(process.cwd(), 'dist', 'modules', 'tools', 'definitions');
+    // Check if we're already in the packages/core directory
+    if (process.cwd().endsWith('packages/core')) {
+      toolsPath = path.resolve(process.cwd(), 'dist/modules/tools/definitions');
+    } else {
+      toolsPath = path.resolve(process.cwd(), 'packages/core/dist/modules/tools/definitions');
+    }
   } else {
-    toolsPath = path.resolve(process.cwd(), 'src', 'modules', 'tools', 'definitions');
+    // Check if we're already in the packages/core directory
+    if (process.cwd().endsWith('packages/core')) {
+      toolsPath = path.resolve(process.cwd(), 'src/modules/tools/definitions');
+    } else {
+      toolsPath = path.resolve(process.cwd(), 'packages/core/src/modules/tools/definitions');
+    }
   }
 
   console.log(`[getToolsDir] Constructed tools path: ${toolsPath}`);

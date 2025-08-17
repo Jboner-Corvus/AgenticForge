@@ -29,7 +29,8 @@ usage() {
     echo "   status         : Affiche le statut des conteneurs Docker."
     echo "   logs [docker]  : Affiche les 100 derni\u00e8res lignes des logs du worker ou des conteneurs Docker."
     echo "   rebuild-docker : Force la reconstruction des images Docker et red\u00e9marre."
-    echo "   rebuild-web    : Reconstruit rapidement le frontend et red\\u00e9marre le serveur web."
+    echo "   rebuild-web    : Reconstruit rapidement le frontend SEULEMENT et redémarre (~2-3min)."
+    echo "   rebuild-rapid  : Rebuild rapide avec cache (Docker + worker externe) (~2-5min)."
     echo "   dev-web        : Lance/rebuild le serveur web en mode preview (port 3003)."
     echo "   rebuild-worker : Reconstruit et red\u00e9marre le worker local."
     echo "   rebuild-all    : Reconstruit l\'int\u00e9gralit\u00e9 du projet (Docker et worker local)."
@@ -171,7 +172,7 @@ start_services() {
     echo -e "${COLOR_YELLOW}Construction du package 'core'...${NC}"
     pnpm --filter @gforge/core build
     echo -e "${COLOR_YELLOW}D\u00e9marrage des services Docker...${NC}"
-    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" up -d
+    script -qec "docker compose -f \"${SCRIPT_DIR}/docker-compose.yml\" up -d" /dev/null
     if ! check_redis_availability; then
         echo -e "${COLOR_RED}D\u00e9marrage interrompu car Redis n\'est pas accessible.${NC}"
         return 1
@@ -183,7 +184,7 @@ start_services() {
 stop_services() {
     cd "${SCRIPT_DIR}"
     echo -e "${COLOR_YELLOW}Arr\u00eat des services Docker...${NC}"
-    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" down
+    script -qec "docker compose -f \"${SCRIPT_DIR}/docker-compose.yml\" down" /dev/null
     stop_worker
     stop_docker_log_collector
     echo -e "${COLOR_GREEN}✓ Services arr\u00eat\u00e9s.${NC}"
@@ -234,21 +235,45 @@ rebuild_docker() {
     stop_services
     
     # Build the UI on the host first
-    echo -e "${COLOR_YELLOW}Construction de l'interface utilisateur...${NC}"
+    echo -e "${COLOR_YELLOW}Construction de l'interface utilisateur - AFFICHAGE LIVE :${NC}"
     cd "${SCRIPT_DIR}/packages/ui"
-    pnpm install --prod=false
-    pnpm build
+    script -qec "pnpm install --prod=false" /dev/null
+    script -qec "pnpm build" /dev/null
     
     # Then build the Docker images
     cd "${SCRIPT_DIR}"
-    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" build --no-cache
-    start_services
+    echo -e "${COLOR_YELLOW}Construction des images Docker...${NC}"
+    echo -e "${COLOR_CYAN}📦 Build en cours - AFFICHAGE LIVE :${NC}"
+    
+    # Force l'affichage en temps réel avec plusieurs techniques
+    export DOCKER_BUILDKIT=0  # Désactive BuildKit pour plus de verbosité
+    export COMPOSE_DOCKER_CLI_BUILD=0
+    
+    # Build avec output direct non bufferisé - FORCE L'AFFICHAGE LIVE
+    if script -qec "docker compose --progress=plain -f \"${SCRIPT_DIR}/docker-compose.yml\" build --no-cache" /dev/null; then
+        echo -e "${COLOR_GREEN}✅ Build Docker terminé avec succès !${NC}"
+    else
+        echo -e "${COLOR_RED}❌ Erreur pendant le build Docker${NC}"
+        return 1
+    fi
+    
+    # Redémarrage des services (sans rebuild du Core)
+    check_and_create_env
+    load_env_vars
+    echo -e "${COLOR_YELLOW}Démarrage des services Docker...${NC}"
+    script -qec "docker compose -f \"${SCRIPT_DIR}/docker-compose.yml\" up -d" /dev/null
+    if ! check_redis_availability; then
+        echo -e "${COLOR_RED}Démarrage interrompu car Redis n'est pas accessible.${NC}"
+        return 1
+    fi
+    start_worker
+    start_docker_log_collector
 }
 
 clean_docker() {
     cd "${SCRIPT_DIR}"
     echo -e "${COLOR_RED}ATTENTION : Suppression des conteneurs, volumes ET r\u00e9seaux non utilis\u00e9s.${NC}"
-    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" down -v --remove-orphans
+    script -qec "docker compose -f \"${SCRIPT_DIR}/docker-compose.yml\" down" /dev/null -v --remove-orphans
     docker network prune -f
     echo -e "${COLOR_GREEN}✓ Nettoyage termin\u00e9.${NC}"
 }
@@ -298,15 +323,25 @@ rebuild_web() {
     rm -rf node_modules/.vite/
     
     # Reconstruire le frontend
-    echo -e "${COLOR_YELLOW}Reconstruction du frontend...${NC}"
-    pnpm install --prod=false
-    pnpm build
+    echo -e "${COLOR_YELLOW}Reconstruction du frontend - AFFICHAGE LIVE :${NC}"
+    script -qec "pnpm install --prod=false" /dev/null
+    script -qec "pnpm build" /dev/null
     
-    # Redémarrer les services
-    echo -e "${COLOR_YELLOW}Redémarrage des services...${NC}"
-    start_services
+    # Redémarrer les services (sans rebuild du worker)
+    echo -e "${COLOR_YELLOW}Redémarrage des services Docker...${NC}"
+    script -qec "docker compose -f \"${SCRIPT_DIR}/docker-compose.yml\" up -d" /dev/null
+    if ! check_redis_availability; then
+        echo -e "${COLOR_RED}Démarrage interrompu car Redis n'est pas accessible.${NC}"
+        return 1
+    fi
     
-    echo -e "${COLOR_GREEN}✓ Frontend reconstruit et services redémarrés.${NC}"
+    # Redémarrer le worker existant (sans rebuild)
+    echo -e "${COLOR_YELLOW}Redémarrage du worker (sans rebuild)...${NC}"
+    stop_worker
+    start_worker
+    start_docker_log_collector
+    
+    echo -e "${COLOR_GREEN}✓ Frontend reconstruit et services redémarrés (worker non rebuilé).${NC}"
 }
 
 dev_web() {
@@ -338,14 +373,56 @@ dev_web() {
 }
 
 rebuild_worker() {
-    echo -e "${COLOR_YELLOW}Reconstruction du worker local...${NC}"
+    echo -e "${COLOR_YELLOW}Reconstruction du worker local - AFFICHAGE LIVE :${NC}"
     rm -f "${SCRIPT_DIR}/worker.log"
     stop_worker
     cd "${SCRIPT_DIR}"
-    pnpm --filter @gforge/core install
-    pnpm --filter @gforge/core build
+    script -qec "pnpm --filter @gforge/core install" /dev/null
+    script -qec "pnpm --filter @gforge/core build" /dev/null
     start_worker
     echo -e "${COLOR_GREEN}✓ Worker local reconstruit et redémarré.${NC}"
+}
+
+rebuild_rapid() {
+    cd "${SCRIPT_DIR}"
+    echo -e "${COLOR_YELLOW}🚀 Rebuild rapide avec cache (Docker + worker externe)...${NC}"
+    rm -f "${SCRIPT_DIR}/worker.log" "${SCRIPT_DIR}/docker.log"
+    
+    # Arrêt des services
+    stop_services
+    
+    # Build Core package (nécessaire pour le worker)
+    echo -e "${COLOR_YELLOW}🔨 Reconstruction du package 'core' (avec cache) - AFFICHAGE LIVE :${NC}"
+    script -qec "pnpm --filter @gforge/core build" /dev/null
+    
+    # Build Docker avec cache (plus rapide)
+    echo -e "${COLOR_YELLOW}🐳 Reconstruction Docker AVEC cache...${NC}"
+    echo -e "${COLOR_CYAN}📦 Build en cours avec cache - BEAUCOUP plus rapide ! AFFICHAGE LIVE :${NC}"
+    
+    # Force l'affichage en temps réel comme pour rebuild-docker
+    export DOCKER_BUILDKIT=0  # Désactive BuildKit pour plus de verbosité
+    export COMPOSE_DOCKER_CLI_BUILD=0
+    
+    if script -qec "docker compose --progress=plain -f \"${SCRIPT_DIR}/docker-compose.yml\" build" /dev/null; then
+        echo -e "${COLOR_GREEN}✅ Build Docker rapide terminé avec succès !${NC}"
+    else
+        echo -e "${COLOR_RED}❌ Erreur pendant le build Docker rapide${NC}"
+        return 1
+    fi
+    
+    # Redémarrage des services (sans rebuild du Core)
+    echo -e "${COLOR_YELLOW}🚀 Redémarrage des services...${NC}"
+    check_and_create_env
+    load_env_vars
+    echo -e "${COLOR_YELLOW}Démarrage des services Docker...${NC}"
+    script -qec "docker compose -f \"${SCRIPT_DIR}/docker-compose.yml\" up -d" /dev/null
+    if ! check_redis_availability; then
+        echo -e "${COLOR_RED}Démarrage interrompu car Redis n'est pas accessible.${NC}"
+        return 1
+    fi
+    start_worker
+    start_docker_log_collector
+    echo -e "${COLOR_GREEN}✅ Rebuild rapide terminé ! Docker + worker externe reconstruits avec cache (Core buildé 1 seule fois).${NC}"
 }
 
 rebuild_all() {
@@ -372,10 +449,10 @@ rebuild_all() {
     rm -rf node_modules/.cache/
     
     # Réinstallation et rebuild UI avec cache forcé
-    echo -e "${COLOR_YELLOW}📦 Réinstallation des dépendances UI...${NC}"
-    pnpm install --prod=false --force
-    echo -e "${COLOR_YELLOW}🔨 Reconstruction UI (avec nouvelles configs)...${NC}"
-    pnpm build
+    echo -e "${COLOR_YELLOW}📦 Réinstallation des dépendances UI - AFFICHAGE LIVE :${NC}"
+    script -qec "pnpm install --prod=false --force" /dev/null
+    echo -e "${COLOR_YELLOW}🔨 Reconstruction UI (avec nouvelles configs) - AFFICHAGE LIVE :${NC}"
+    script -qec "pnpm build" /dev/null
     
     # Core: Nettoyage complet  
     cd "${SCRIPT_DIR}/packages/core"
@@ -387,19 +464,30 @@ rebuild_all() {
     
     # Build Core package avec cache forcé
     cd "${SCRIPT_DIR}"
-    echo -e "${COLOR_YELLOW}📦 Réinstallation des dépendances Core...${NC}"
-    pnpm --filter @gforge/core install --force
-    echo -e "${COLOR_YELLOW}🔨 Reconstruction du package 'core'...${NC}"
-    pnpm --filter @gforge/core build
+    echo -e "${COLOR_YELLOW}📦 Réinstallation des dépendances Core - AFFICHAGE LIVE :${NC}"
+    script -qec "pnpm --filter @gforge/core install --force" /dev/null
+    echo -e "${COLOR_YELLOW}🔨 Reconstruction du package 'core' - AFFICHAGE LIVE :${NC}"
+    script -qec "pnpm --filter @gforge/core build" /dev/null
     
     # 🐳 REBUILD DOCKER COMPLET
     echo -e "${COLOR_YELLOW}🐳 Reconstruction forcée des images Docker (--no-cache)...${NC}"
-    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" build --no-cache --pull
+    export DOCKER_BUILDKIT=0
+    export COMPOSE_DOCKER_CLI_BUILD=0
+    script -qec "docker compose --progress=plain -f \"${SCRIPT_DIR}/docker-compose.yml\" build --no-cache --pull" /dev/null
     
-    # Redémarrage complet
+    # Redémarrage complet (sans rebuild du Core)
     echo -e "${COLOR_YELLOW}🚀 Redémarrage des services...${NC}"
-    start_services
-    echo -e "${COLOR_GREEN}✅ Reconstruction complète terminée avec prise en compte des nouvelles configs !${NC}"
+    check_and_create_env
+    load_env_vars
+    echo -e "${COLOR_YELLOW}Démarrage des services Docker...${NC}"
+    script -qec "docker compose -f \"${SCRIPT_DIR}/docker-compose.yml\" up -d" /dev/null
+    if ! check_redis_availability; then
+        echo -e "${COLOR_RED}Démarrage interrompu car Redis n'est pas accessible.${NC}"
+        return 1
+    fi
+    start_worker
+    start_docker_log_collector
+    echo -e "${COLOR_GREEN}✅ Reconstruction complète terminée avec prise en compte des nouvelles configs (Core buildé 1 seule fois) !${NC}"
 }
 
 # ==============================================================================
@@ -711,6 +799,7 @@ show_menu() {
     printf "   10) ${COLOR_YELLOW}🔄 Redémarrer worker${NC}    16) ${COLOR_BLUE}🐳 Logs Docker${NC}\\n"
     printf "   21) ${COLOR_BLUE}🔨 Rebuild Worker${NC}\\n"
     printf "   22) ${COLOR_BLUE}🔨 Rebuild All${NC}\\n"
+    printf "   25) ${COLOR_GREEN}⚡ Rebuild Rapid (avec cache)${NC}\\n"
     printf "   23) ${COLOR_RED}🧹 Clean All Caches${NC}\\n"
     echo ""
     echo -e "    ${COLOR_CYAN}Développement & Vérifications${NC}"
@@ -747,7 +836,8 @@ main() {
                     *) show_logs "${SCRIPT_DIR}/worker.log" "Worker" ;; 
                 esac 
                 ;; 
-            rebuild-web) rebuild_web ;; 
+            rebuild-web) rebuild_web ;;
+            rebuild-rapid) rebuild_rapid ;; 
             dev-web) dev_web ;; 
             rebuild-all) rebuild_all ;; 
             rebuild-docker|rebuild) rebuild_docker ;; 
@@ -800,7 +890,8 @@ main() {
             21) rebuild_worker ;; 
             22) rebuild_all ;;
             23) clean_all_caches ;; 
-            24) dev_web ;; 
+            24) dev_web ;;
+            25) rebuild_rapid ;; 
             *) echo -e "${COLOR_RED}Option invalide, veuillez r\u00e9essayer.${NC}" ;; 
         esac
         echo -e "\nAppuyez sur Entree pour continuer..."

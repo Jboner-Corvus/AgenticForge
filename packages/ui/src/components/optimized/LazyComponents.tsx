@@ -1,5 +1,5 @@
 // Lazy loaded components for better performance
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, memo } from 'react';
 import { LoadingSpinner } from '../LoadingSpinner';
 
 // Lazy load heavy components
@@ -74,7 +74,7 @@ export const LazyLeaderboardPage: React.FC = () => (
   </LazyWrapper>
 );
 
-export const LazyLlmKeyManager: React.FC = () => (
+export const LazyLlmKeyManager: React.FC = memo(() => (
   <LazyWrapper fallback={
     <div className="flex items-center justify-center min-h-96">
       <LoadingSpinner className="h-8 w-8" />
@@ -83,9 +83,11 @@ export const LazyLlmKeyManager: React.FC = () => (
   }>
     <EpicLlmKeyManager />
   </LazyWrapper>
-);
+));
 
-export const LazyOAuthPage: React.FC = () => (
+LazyLlmKeyManager.displayName = 'LazyLlmKeyManager';
+
+export const LazyOAuthPage: React.FC = memo(() => (
   <LazyWrapper fallback={
     <div className="flex items-center justify-center min-h-96">
       <LoadingSpinner className="h-8 w-8" />
@@ -94,7 +96,9 @@ export const LazyOAuthPage: React.FC = () => (
   }>
     <OAuthManagementPage />
   </LazyWrapper>
-);
+));
+
+LazyOAuthPage.displayName = 'LazyOAuthPage';
 
 export const LazyTodoPanel: React.FC = () => (
   <LazyWrapper fallback={

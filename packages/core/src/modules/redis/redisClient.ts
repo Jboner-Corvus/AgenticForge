@@ -1,5 +1,5 @@
 import IORedis, { RedisOptions } from 'ioredis';
-import { getLogger } from '../../logger';
+import { getLogger } from '../../logger.ts';
 
 const logger = getLogger();
 let redisClient: IORedis | null = null;

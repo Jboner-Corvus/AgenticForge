@@ -1,10 +1,12 @@
-import { getLogger } from '../../logger.js';
-import { getRedisClientInstance } from '../redis/redisClient.js';
+import { getLogger } from '../../logger.ts';
+import { getRedisClientInstance } from '../redis/redisClient.ts';
 
-export enum LlmKeyErrorType {
-  PERMANENT = 'permanent',
-  TEMPORARY = 'temporary',
-}
+export type LlmKeyErrorType = 'permanent' | 'temporary';
+
+export const LlmKeyErrorType = {
+  PERMANENT: 'permanent' as const,
+  TEMPORARY: 'temporary' as const,
+};
 
 export interface LlmApiKey {
   apiKey: string;
@@ -183,7 +185,7 @@ export class LlmKeyManager {
     return keysJson.map((key: string) => JSON.parse(key));
   }
 
-  private static async saveKeys(keys: LlmApiKey[]): Promise<void> {
+  public static async saveKeys(keys: LlmApiKey[]): Promise<void> {
     await getRedisClientInstance().del(LLM_API_KEYS_REDIS_KEY);
     if (keys.length > 0) {
       await getRedisClientInstance().rpush(

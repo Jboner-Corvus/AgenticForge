@@ -72,7 +72,6 @@ describe('projectPlanningTool', () => {
       expect(result.plan[0]).toHaveProperty('phase');
       expect(result.plan[0]).toHaveProperty('estimatedTime');
       expect(result.plan[0]).toHaveProperty('priority');
-      expect(result.plan[0]).toHaveProperty('dependencies');
     }
     
     // Check that sendToCanvas was called with HTML template

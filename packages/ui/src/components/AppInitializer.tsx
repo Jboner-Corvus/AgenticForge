@@ -27,6 +27,7 @@ export const AppInitializer = () => {
   const [initError, setInitError] = useState<string | null>(null);
   const [initStage, setInitStage] = useState<string>('starting');
   const [debugInfo, setDebugInfo] = useState<Record<string, unknown>>({});
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const initializeSession = useCallback(() => {
     let currentSessionId = localStorage.getItem('agenticForgeSessionId');
@@ -42,7 +43,7 @@ export const AppInitializer = () => {
 
   const checkServerHealth = useCallback(async () => {
     setInitStage('server_health_check');
-    addDebugLog(`[${new Date().toLocaleTimeString()}] [VERBOSE] 🏥 === DÉBUT VÉRIFICATION SERVEUR ===`);
+    // Server health check starting
     addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] ${translations.checkingServerHealth}`);
     
     try {
@@ -53,7 +54,7 @@ export const AppInitializer = () => {
       setServerHealthy(healthy);
       setDebugInfo(prev => ({ ...prev, serverHealth: { healthy, duration, timestamp: Date.now() } }));
       
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [VERBOSE] 🏥 Réponse serveur reçue en ${duration}ms`);
+      // Server responded successfully
       addDebugLog(`[${new Date().toLocaleTimeString()}] [${healthy ? 'SUCCESS' : 'ERROR'}] ${translations.serverStatus}: ${healthy ? translations.serverOnline : translations.serverOffline}`);
       
       if (healthy) {
@@ -104,8 +105,7 @@ export const AppInitializer = () => {
 
       // Detailed environment variable logging
       const envDebugInfo = {
-        'import.meta.env.VITE_AUTH_TOKEN': import.meta.env.VITE_AUTH_TOKEN,
-        'clientConfig.VITE_AUTH_TOKEN': clientConfig.VITE_AUTH_TOKEN,
+        'import.meta.env.AUTH_TOKEN': import.meta.env.AUTH_TOKEN,
         'clientConfig.AUTH_TOKEN': clientConfig.AUTH_TOKEN,
         'import.meta.env (keys)': Object.keys(import.meta.env),
         'document.location.href': document.location.href,
@@ -115,19 +115,18 @@ export const AppInitializer = () => {
       setDebugInfo(prev => ({ ...prev, envInfo: envDebugInfo }));
       
       addDebugLog(`[${new Date().toLocaleTimeString()}] [VERBOSE] 🌍 Variables d'environnement:`);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [VERBOSE] 📋 VITE_AUTH_TOKEN (import.meta): ${import.meta.env.VITE_AUTH_TOKEN ? 'PRÉSENT (' + String(import.meta.env.VITE_AUTH_TOKEN).substring(0, 20) + '...)' : 'ABSENT'}`);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [VERBOSE] 📋 VITE_AUTH_TOKEN (config): ${clientConfig.VITE_AUTH_TOKEN ? 'PRÉSENT (' + clientConfig.VITE_AUTH_TOKEN.substring(0, 20) + '...)' : 'ABSENT'}`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [VERBOSE] 📋 AUTH_TOKEN (import.meta): ${import.meta.env.AUTH_TOKEN ? 'PRÉSENT (' + String(import.meta.env.AUTH_TOKEN).substring(0, 20) + '...)' : 'ABSENT'}`);
       addDebugLog(`[${new Date().toLocaleTimeString()}] [VERBOSE] 📋 AUTH_TOKEN (config): ${clientConfig.AUTH_TOKEN ? 'PRÉSENT (' + clientConfig.AUTH_TOKEN.substring(0, 20) + '...)' : 'ABSENT'}`);
       addDebugLog(`[${new Date().toLocaleTimeString()}] [VERBOSE] 📋 Clés import.meta.env: ${Object.keys(import.meta.env).join(', ')}`);
       addDebugLog(`[${new Date().toLocaleTimeString()}] [VERBOSE] 🌐 URL actuelle: ${document.location.href}`);
       
       console.log('🔍 [VERBOSE DEBUG] Environment variables:', envDebugInfo);
 
-      const viteAuthToken = clientConfig.VITE_AUTH_TOKEN || clientConfig.AUTH_TOKEN;
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [VERBOSE] 🎯 Token final sélectionné: ${viteAuthToken ? 'PRÉSENT (' + viteAuthToken.substring(0, 20) + '...)' : 'ABSENT'}`);
+      const authToken = clientConfig.AUTH_TOKEN;
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [VERBOSE] 🎯 Token final sélectionné: ${authToken ? 'PRÉSENT (' + authToken.substring(0, 20) + '...)' : 'ABSENT'}`);
 
-      if (viteAuthToken) {
-        setAuthToken(viteAuthToken);
+      if (authToken) {
+        setAuthToken(authToken);
         addDebugLog(`[${new Date().toLocaleTimeString()}] [SUCCESS] ✅ ${translations.tokenLoadedFromEnv}.`);
         setTokenStatus(true);
         fetchAndDisplayToolCount();
@@ -195,7 +194,9 @@ export const AppInitializer = () => {
     let mounted = true;
     
     const initialize = async () => {
-      if (!mounted) return;
+      if (!mounted || hasInitialized) return;
+      
+      setHasInitialized(true);
       
       try {
         setInitStage('starting');
@@ -285,12 +286,16 @@ export const AppInitializer = () => {
       }
     };
 
-    initialize();
+    // Add a small delay to ensure UI is ready
+    const initTimeout = setTimeout(() => {
+      initialize();
+    }, 100);
     
     return () => {
       mounted = false;
+      clearTimeout(initTimeout);
     };
-  }, [addDebugLog, addMessage, checkServerHealth, initializeAuthToken, initializeSession, fetchKeys, translations.agentReady, translations.interfaceInitialized, initError, initStage]);
+  }, [addDebugLog, addMessage, checkServerHealth, initializeAuthToken, initializeSession, fetchKeys, translations.agentReady, translations.interfaceInitialized, hasInitialized, initError, initStage]);
 
   // Debug display component (only shows if there are critical errors)
   if (initError && initStage === 'failed') {

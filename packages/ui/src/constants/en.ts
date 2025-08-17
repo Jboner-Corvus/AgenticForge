@@ -8,7 +8,7 @@ export const en = {
   serverOnline: "Online",
   serverOffline: "Offline",
   serverHealthCheckFailed: "Server health check failed",
-  tokenLoadedFromEnv: "Token loaded from environment (VITE_AUTH_TOKEN)",
+  tokenLoadedFromEnv: "Token loaded from environment (AUTH_TOKEN)",
   tokenLoadedFromCookie: "Token loaded from cookie",
   tokenLoadedFromLocalStorage: "Token loaded from localStorage",
   noTokenFound: "No token found",

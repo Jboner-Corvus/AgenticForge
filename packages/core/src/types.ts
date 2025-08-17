@@ -6,7 +6,7 @@ import { z, ZodTypeAny } from 'zod';
 
 export { Job } from 'bullmq';
 
-import { SessionManager } from './modules/session/sessionManager.js';
+import { SessionManager } from './modules/session/sessionManager.ts';
 
 export interface AgentCanvasOutputMessage {
   content: string;

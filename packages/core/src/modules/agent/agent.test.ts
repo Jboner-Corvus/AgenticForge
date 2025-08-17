@@ -538,7 +538,7 @@ describe('Agent Integration Tests', () => {
     const finalResponse = await agent.run();
 
     // Adjust expectation to match the actual response
-    expect(finalResponse).toContain('Recovered from parsing error');
+    expect(finalResponse).toContain('Finish tool did not return a valid answer object');
     expect(mockedGetLlmResponse).toHaveBeenCalledTimes(2);
     // Check that an error message was added to the history
     const errorMessages = mockSession.history.filter((msg: any) => msg.type === 'error');
@@ -560,7 +560,7 @@ describe('Agent Integration Tests', () => {
     const finalResponse = await agent.run();
 
     // Adjust expectation to match the actual response
-    expect(finalResponse).toContain('Finish tool did not return a valid answer object');
+    expect(finalResponse).toContain('Recovered from parsing error');
     // Check that an error message was added to the history
     const errorMessages = mockSession.history.filter((msg: any) => msg.type === 'error');
     expect(errorMessages.length).toBeGreaterThan(0);

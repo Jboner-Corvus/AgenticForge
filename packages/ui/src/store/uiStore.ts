@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { PageType, ToastOptions } from './types';
+import { clientConfig } from '../config';
 
 export interface UIState {
   // Page navigation
@@ -119,7 +120,7 @@ export const useUIStore = create<UIState>()(
       toolCount: 0,
       toolCreationEnabled: false,
       codeExecutionEnabled: true,
-      authToken: null,
+      authToken: clientConfig.AUTH_TOKEN || null,
       jobId: null,
       activeCliJobId: null,
       streamCloseFunc: null,
@@ -144,6 +145,12 @@ export const useUIStore = create<UIState>()(
               authToken: token,
               isAuthenticated: true 
             });
+            // Also save to localStorage
+            try {
+              localStorage.setItem('authToken', token);
+            } catch (error) {
+              console.warn('Failed to save token to localStorage:', error);
+            }
           } else {
             set({ 
               authToken: null,
@@ -166,6 +173,12 @@ export const useUIStore = create<UIState>()(
           if (token) {
             set({ 
               authToken: token,
+              isAuthenticated: true 
+            });
+          } else if (clientConfig.AUTH_TOKEN) {
+            // Fallback to the default token from config
+            set({ 
+              authToken: clientConfig.AUTH_TOKEN,
               isAuthenticated: true 
             });
           }
@@ -194,6 +207,15 @@ export const useUIStore = create<UIState>()(
           }
         } catch (error) {
           console.error('Error getting token from localStorage:', error);
+        }
+        
+        // Finally, fallback to the default token from config
+        if (clientConfig.AUTH_TOKEN) {
+          set({ 
+            authToken: clientConfig.AUTH_TOKEN,
+            isAuthenticated: true 
+          });
+          return clientConfig.AUTH_TOKEN;
         }
         
         return null;
@@ -249,9 +271,27 @@ export const useUIStore = create<UIState>()(
           return;
         }
         
-        set((state) => ({
-          debugLog: [...state.debugLog, log]
-        }));
+        // Filter out repetitive logs to reduce spam
+        const shouldSkipLog = (
+          log.includes('Token loaded from cookie') ||
+          log.includes('Interface initialized') ||
+          log.includes('Session retrieved') ||
+          log.includes('Checking server health') ||
+          log.includes('Server status: Online') ||
+          log.includes('VERBOSE')
+        );
+        
+        if (shouldSkipLog) {
+          return; // Skip repetitive logs
+        }
+        
+        set((state) => {
+          const newLogs = [...state.debugLog, log];
+          // Keep only the last 50 logs to prevent memory issues and lag
+          return {
+            debugLog: newLogs.slice(-50)
+          };
+        });
       },
       
       clearDebugLog: () => set({ debugLog: [] }),

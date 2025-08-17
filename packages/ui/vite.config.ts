@@ -3,11 +3,37 @@
 import react from "@vitejs/plugin-react";
 import reactRefresh from "@vitejs/plugin-react-refresh";
 import path from "path";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import tailwindcss from "tailwindcss";
 import autoprefixer from "autoprefixer";
+import fs from "fs";
 
-export default defineConfig({
+// Fonction pour charger le .env depuis le répertoire racine
+function loadRootEnv() {
+  const rootEnvPath = path.resolve(__dirname, '../../.env');
+  if (fs.existsSync(rootEnvPath)) {
+    const envContent = fs.readFileSync(rootEnvPath, 'utf8');
+    const envVars: Record<string, string> = {};
+    
+    envContent.split('\n').forEach(line => {
+      const match = line.match(/^([^#\s][^=]*)=(.*)$/);
+      if (match) {
+        const [, key, value] = match;
+        envVars[key] = value.replace(/^["']|["']$/g, ''); // Remove quotes
+      }
+    });
+    
+    return envVars;
+  }
+  return {};
+}
+
+export default defineConfig(({ mode }) => {
+  // Charger les variables d'environnement du répertoire racine
+  const rootEnv = loadRootEnv();
+  console.log('🔐 [Vite Config] AUTH_TOKEN from root .env:', rootEnv.AUTH_TOKEN ? 'PRÉSENT (' + rootEnv.AUTH_TOKEN.substring(0, 20) + '...)' : 'ABSENT');
+
+  return {
   // Use '/' as the base path for the app
   base: '/',
   build: {
@@ -59,9 +85,10 @@ export default defineConfig({
     },
   },
   define: {
-    'import.meta.env.VITE_AUTH_TOKEN': JSON.stringify(process.env.AUTH_TOKEN),
-    'import.meta.env.AUTH_TOKEN': JSON.stringify(process.env.AUTH_TOKEN),
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV)
+    // Injecte AUTH_TOKEN du serveur vers le frontend depuis le .env racine
+    'import.meta.env.AUTH_TOKEN': JSON.stringify(rootEnv.AUTH_TOKEN || process.env.AUTH_TOKEN || ''),
+    'import.meta.env.VITE_AUTH_TOKEN': JSON.stringify(rootEnv.AUTH_TOKEN || process.env.AUTH_TOKEN || ''),
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
   },
   esbuild: {
     // Supprime les console.log en production
@@ -97,4 +124,5 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './vitest.setup.ts',
   },
+  };
 });

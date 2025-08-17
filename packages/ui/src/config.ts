@@ -1,8 +1,10 @@
 import { z } from 'zod';
 
 const clientConfigSchema = z.object({
-  VITE_AUTH_TOKEN: z.string().optional(),
   AUTH_TOKEN: z.string().optional(),
 });
 
-export const clientConfig = clientConfigSchema.parse(import.meta.env);
+// Parse the configuration with a fallback for development
+export const clientConfig = clientConfigSchema.parse({
+  AUTH_TOKEN: import.meta.env.AUTH_TOKEN || import.meta.env.VITE_AUTH_TOKEN || process.env.AUTH_TOKEN || '',
+});

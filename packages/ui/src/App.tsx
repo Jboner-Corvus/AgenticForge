@@ -3,6 +3,7 @@
 import { LoginModal } from './components/LoginModal';
 import { LanguageProvider } from './lib/contexts/LanguageProvider';
 import { useLanguage } from './lib/contexts/LanguageContext';
+import { SessionIdProvider } from './components/SessionIdProvider';
 
 import { AppInitializer } from './components/AppInitializer';
 import { AnimatePresence } from 'framer-motion';
@@ -115,8 +116,9 @@ export default function App() {
 
   return (
     <LanguageProvider>
-      <div className="min-h-screen flex flex-col bg-background text-foreground overflow-x-hidden relative">
-        <AppInitializer />
+      <SessionIdProvider>
+        <div className="min-h-screen flex flex-col bg-background text-foreground overflow-x-hidden relative">
+          <AppInitializer />
         <HeaderContainer />
         <Suspense fallback={<div>Loading Settings...</div>}>
           <SettingsModalContainer />
@@ -215,7 +217,8 @@ export default function App() {
         <LazyDebugLogContainer />
         <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
         <VersionDisplay />
-      </div>
+        </div>
+      </SessionIdProvider>
     </LanguageProvider>
   );
 }

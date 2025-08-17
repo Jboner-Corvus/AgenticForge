@@ -103,6 +103,7 @@ const isBrowserData = (data: StreamMessageData | undefined): data is BrowserData
 
 export const useAgentStream = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
+  const responseCountRef = useRef<number>(0); // Compteur des réponses pour limiter à 5 étapes
   // Get authToken from UIStore - no fallback, user must authenticate first
   const authTokenFromStore = useUIStore((state) => state.authToken);
   const authToken = authTokenFromStore;
@@ -119,7 +120,6 @@ export const useAgentStream = () => {
     setBrowserStatus,
     setActiveCliJobId,
     addCanvasToHistory,
-    agentProgress,
     isProcessing,
     jobId: jobIdStore,
   } = useStore();
@@ -180,6 +180,9 @@ export const useAgentStream = () => {
     addMessage(userMessage);
     const goal = message;
     setMessageInputValue('');
+    
+    // Réinitialiser le compteur de réponses au début d'une nouvelle conversation
+    responseCountRef.current = 0;
     
     addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🚀 Démarrage de l'agent avec le message: "${goal}"`);
 
@@ -252,13 +255,30 @@ export const useAgentStream = () => {
     };
 
     const handleMessage = (content: string) => {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Agent response: ${content}`);
+      responseCountRef.current += 1;
+      
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Agent response (${responseCountRef.current}/5): ${content}`);
+      
       const agentMessage: NewChatMessage = {
         type: 'agent_response',
         content,
       };
       addMessage(agentMessage);
-      setAgentProgress(Math.min(99, agentProgress + 5));
+      
+      // Calculer le progrès basé sur le nombre d'étapes (20% par étape)
+      const progressIncrement = Math.min(99, responseCountRef.current * 20);
+      setAgentProgress(progressIncrement);
+      
+      // Arrêter après 5 étapes automatiquement
+      if (responseCountRef.current >= 5) {
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🛑 Limite de 5 étapes atteinte - Arrêt automatique`);
+        setTimeout(() => {
+          handleClose();
+          setAgentProgress(100);
+          setIsProcessing(false);
+          setAgentStatus(null);
+        }, 1000);
+      }
     };
 
     const handleThought = (thought: string) => {
@@ -645,7 +665,6 @@ export const useAgentStream = () => {
     setAgentProgress,
     setBrowserStatus,
     setActiveCliJobId,
-    agentProgress,
     isProcessing
   ]);
 
