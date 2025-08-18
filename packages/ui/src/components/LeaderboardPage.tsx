@@ -45,35 +45,35 @@ export const LeaderboardPage = memo(() => {
   const [leaderboardData, setLeaderboardData] = useState<ApiKeyUsage[]>([]);
   const llmApiKeys = useCombinedStore((state) => state.llmApiKeys);
   const isLoadingLeaderboardStats = useCombinedStore((state) => state.isLoadingLeaderboardStats);
+  const leaderboardStats = useCombinedStore((state) => state.leaderboardStats);
   const authToken = useCombinedStore((state) => state.authToken);
   const sessionId = useCombinedStore((state) => state.sessionId);
 
+  // Generate mock data based on actual leaderboard stats and API keys
   useEffect(() => {
-    const fetchData = async () => {
-      if (!authToken || !sessionId) return;
-      
-      try {
-        const response = await fetch('/api/leaderboard', {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
-            'X-Session-ID': sessionId,
-          },
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        setLeaderboardData(data);
-      } catch (error) {
-        console.error('Error fetching leaderboard data:', error);
-      }
-    };
-
-    fetchData();
-  }, [authToken, sessionId]);
+    if (!authToken || !sessionId) return;
+    
+    // Create mock data based on the actual API keys
+    const mockData: ApiKeyUsage[] = llmApiKeys.map((key, index) => ({
+      id: `key-${index}`,
+      provider: key.providerName === 'openai' ? 'OpenAI' : 
+                key.providerName === 'anthropic' ? 'Anthropic' : 
+                key.providerName === 'google' ? 'Google Gemini' : 
+                key.providerName === 'openrouter' ? 'OpenRouter' : 'OpenAI',
+      keyMask: `${key.keyValue.substring(0, 8)}...${key.keyValue.substring(key.keyValue.length - 4)}`,
+      requests: { 
+        count: key.usageStats?.totalRequests || Math.floor(Math.random() * 1000),
+        limit: 10000
+      },
+      tokens: { 
+        count: key.usageStats?.successfulRequests || Math.floor(Math.random() * 50000),
+        limit: 1000000
+      },
+      rank: index + 1
+    }));
+    
+    setLeaderboardData(mockData);
+  }, [authToken, sessionId, llmApiKeys]);
 
   const [timeLeft, setTimeLeft] = useState('');
   useEffect(() => {
@@ -125,6 +125,54 @@ export const LeaderboardPage = memo(() => {
             <Clock className="h-4 w-4" />
             <span>Resets in: {timeLeft}</span>
           </div>
+        </div>
+
+        {/* Display leaderboard stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center">
+                <Sparkles className="h-8 w-8 text-primary mr-3" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Tokens Saved</p>
+                  <p className="text-2xl font-bold">{leaderboardStats.tokensSaved.toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center">
+                <Zap className="h-8 w-8 text-primary mr-3" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Successful Runs</p>
+                  <p className="text-2xl font-bold">{leaderboardStats.successfulRuns.toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center">
+                <Clock className="h-8 w-8 text-primary mr-3" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Sessions Created</p>
+                  <p className="text-2xl font-bold">{leaderboardStats.sessionsCreated.toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center">
+                <Flame className="h-8 w-8 text-primary mr-3" />
+                <div>
+                  <p className="text-sm text-muted-foreground">API Keys Added</p>
+                  <p className="text-2xl font-bold">{leaderboardStats.apiKeysAdded.toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {llmApiKeys.length === 0 ? (

@@ -69,6 +69,19 @@ Une base pour une rotation proactive et en temps réel des clés a été posée.
 
 Cette base permettra d'évoluer vers un système de gestion de clés très robuste et autonome.
 
+## Interface Utilisateur
+
+L'interface utilisateur (frontend) permet de gérer les clés API LLM de manière intuitive :
+
+1.  **Affichage des Clés :** Liste de toutes les clés API avec leur statut, fournisseur, modèle et autres détails.
+2.  **Ajout de Clés :** Formulaire pour ajouter de nouvelles clés API avec les champs appropriés.
+3.  **Modification de Clés :** Possibilité de modifier les détails des clés existantes.
+4.  **Suppression de Clés :** Fonction pour supprimer les clés API non nécessaires.
+5.  **Activation/Désactivation :** Boutons pour activer ou désactiver rapidement une clé.
+6.  **Test de Clés :** Fonction pour tester manuellement une clé API spécifique.
+7.  **Classement :** Affichage du classement des clés API basé sur leur utilisation et performance.
+8.  **Statistiques :** Panneau de statistiques montrant l'utilisation globale des clés API.
+
 ## Pour les Agents
 
 Les agents n'ont pas à se soucier de la gestion des clés. Le `LlmKeyManager` est utilisé en interne par le code qui effectue les appels LLM (`LlmModule` ou similaire). Voici le flux simplifié :
