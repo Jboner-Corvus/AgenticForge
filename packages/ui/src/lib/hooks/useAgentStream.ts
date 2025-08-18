@@ -1,7 +1,7 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { produce } from 'immer';
 import { sendMessage, interrupt } from '../api';
-import { useStore } from '../store';
+import { useSessionStore } from '../../store/sessionStore';
 import { useUIStore } from '../../store/uiStore'; // Import useUIStore
 import { type NewChatMessage, type AgentToolResult, type ChatMessage, type ToolResultMessage } from '@/types/chat';
 
@@ -112,25 +112,34 @@ export const useAgentStream = () => {
   // Renommer pour plus de clarté - ce n'est PAS un token LLM
   const authToken = backendAuthToken;
 
-  const {
-    addMessage,
-    sessionId,
-    setIsProcessing,
-    setJobId,
-    setMessageInputValue,
-    setAgentStatus,
-    addDebugLog,
-    setAgentProgress,
-    setBrowserStatus,
-    setActiveCliJobId,
-    addCanvasToHistory,
-    isProcessing,
-    jobId: jobIdStore,
-  } = useStore();
+  // Session store for messages
+  const addMessage = useSessionStore((state) => state.addMessage);
+  const sessionId = useSessionStore((state) => state.sessionId);
+  const setSessionId = useSessionStore((state) => state.setSessionId);
+  
+  // UI store for other state
+  const setIsProcessing = useUIStore((state) => state.setIsProcessing);
+  const setJobId = useUIStore((state) => state.setJobId);
+  const setMessageInputValue = useUIStore((state) => state.setMessageInputValue);
+  const setAgentStatus = useUIStore((state) => state.setAgentStatus);
+  const addDebugLog = useUIStore((state) => state.addDebugLog);
+  const setAgentProgress = useUIStore((state) => state.setAgentProgress);
+  const setBrowserStatus = useUIStore((state) => state.setBrowserStatus);
+  const setActiveCliJobId = useUIStore((state) => state.setActiveCliJobId);
+  const isProcessing = useUIStore((state) => state.isProcessing);
+  const jobIdStore = useUIStore((state) => state.jobId);
+  
+  // TODO: Trouver où est addCanvasToHistory
+  const addCanvasToHistory = useCallback((title: string, content: string, type: string) => {
+    console.log('Canvas:', title, content, type);
+    // Temporairement désactivé pour éviter les erreurs
+  }, []);
 
   const startAgent = useCallback(async (message: string) => {
-    console.log('🚀 [useAgentStream] startAgent called');
-    console.log('📝 [useAgentStream] message:', message);
+    console.log('🔥🔥🔥 [DEBUG] startAgent called with message:', message);
+    console.log('🔥🔥🔥 [DEBUG] authToken available:', !!authToken);
+    console.log('🔥🔥🔥 [DEBUG] sessionId:', sessionId);
+    console.log('🔥🔥🔥 [DEBUG] addMessage function:', typeof addMessage);
     console.log('🔐 [useAgentStream] authTokenFromStore:', backendAuthToken);
     console.log('🔐 [useAgentStream] authToken (final):', authToken);
     console.log('🔐 [useAgentStream] authToken type:', typeof authToken);
@@ -167,24 +176,24 @@ export const useAgentStream = () => {
       return;
     }
 
-    if (!sessionId) {
-      console.error('❌ [useAgentStream] No sessionId available');
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] ID de session manquant`);
-      const errorMessage: NewChatMessage = {
-        type: 'error',
-        content: 'ID de session manquant. Veuillez recharger la page.',
-      };
-      addMessage(errorMessage);
-      return;
+    // Créer un sessionId si nécessaire
+    let currentSessionId = sessionId;
+    if (!currentSessionId) {
+      console.log('📝 [useAgentStream] Creating new sessionId');
+      currentSessionId = crypto.randomUUID();
+      setSessionId(currentSessionId);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Nouvelle session créée: ${currentSessionId}`);
     }
 
-    console.log('✅ [useAgentStream] Starting agent process...');
+    console.log('🔥🔥🔥 [DEBUG] Starting agent process...');
     setIsProcessing(true);
     const userMessage: NewChatMessage = {
       type: 'user',
       content: message,
     };
+    console.log('🔥🔥🔥 [DEBUG] About to call addMessage with:', userMessage);
     addMessage(userMessage);
+    console.log('🔥🔥🔥 [DEBUG] addMessage called successfully');
     const goal = message;
     setMessageInputValue('');
     
@@ -371,7 +380,7 @@ export const useAgentStream = () => {
         switch (data.type) {
           case 'tool_stream':
             if (data.data && isToolStartData(data.data) && data.data.content) {
-              useStore.setState(produce((state: { messages: ChatMessage[] }) => {
+              useSessionStore.setState(produce((state: { messages: ChatMessage[] }) => {
                 const lastMessage = state.messages[state.messages.length - 1];
                 const getLastToolName = (messages: ChatMessage[]): string | undefined => {
                   for (let i = messages.length - 1; i >= 0; i--) {
@@ -597,7 +606,7 @@ export const useAgentStream = () => {
       const { jobId, eventSource } = await sendMessage(
         goal,
         authToken,
-        sessionId,
+        currentSessionId,
         onMessage,
         (error) => {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -673,13 +682,14 @@ export const useAgentStream = () => {
     setAgentProgress,
     setBrowserStatus,
     setActiveCliJobId,
-    isProcessing
+    isProcessing,
+    setSessionId
   ]);
 
   const interruptAgent = useCallback(async () => {
     const jobId = jobIdStore;
     if (jobId && eventSourceRef.current) {
-      await interrupt(jobId, authToken, sessionId);
+      await interrupt(jobId, authToken, sessionId || 'unknown');
       eventSourceRef.current.close(); // Close EventSource directly
       eventSourceRef.current = null;
       setIsProcessing(false);

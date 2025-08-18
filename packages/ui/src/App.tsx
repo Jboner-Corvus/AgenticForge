@@ -45,6 +45,8 @@ import {
 
 
 export default function App() {
+  console.log('🔥🔥🔥 [DEBUG] App component loading!');
+  
   // Use individual store hooks to avoid infinite loops
   const currentPage = useCurrentPage();
   const isControlPanelVisible = useIsControlPanelVisible();

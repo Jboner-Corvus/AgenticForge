@@ -77,15 +77,21 @@ export const useSessionStore = create<SessionState>()(
       setActiveSessionId: (activeSessionId) => set({ activeSessionId }),
       
       addMessage: (messageData) => {
+        console.log('🔥 [SessionStore] addMessage called with:', messageData);
         const baseProps = { 
           id: generateUUID(), 
           timestamp: Date.now() 
         };
         const newMessage = { ...baseProps, ...messageData } as StoreChatMessage;
+        console.log('🔥 [SessionStore] Creating message:', newMessage);
         
-        set((state) => ({
-          messages: [...state.messages, newMessage]
-        }));
+        set((state) => {
+          const newState = {
+            messages: [...state.messages, newMessage]
+          };
+          console.log('🔥 [SessionStore] New messages array length:', newState.messages.length);
+          return newState;
+        });
       },
       
       clearMessages: () => set({ messages: [] }),

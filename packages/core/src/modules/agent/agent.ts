@@ -87,10 +87,11 @@ export class Agent {
     apiKey?: string,
     private readonly llmModelName?: string, // New property
     private readonly llmApiKey?: string, // New property
+    logger?: Logger,
   ) {
     this.job = job;
     this.session = session;
-    this.log = getLoggerInstance().child({
+    this.log = (logger || getLoggerInstance()).child({
       jobId: job.id,
       sessionId: session.id,
     });

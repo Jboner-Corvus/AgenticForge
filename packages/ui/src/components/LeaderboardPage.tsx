@@ -6,23 +6,22 @@ import { Badge } from './ui/badge';
 import { OpenAILogo, AnthropicLogo, GeminiLogo, OpenRouterLogo } from './icons/LlmLogos';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCombinedStore } from '../store';
+import { LlmApiKey } from '../store/types';
 
-// --- Mock Data and Hook ---
-interface ApiKeyUsage {
-  id: string;
-  provider: 'OpenAI' | 'Anthropic' | 'Google Gemini' | 'OpenRouter';
-  keyMask: string;
-  requests: { count: number; limit: number };
-  tokens: { count: number; limit: number };
+type ApiKeyUsage = LlmApiKey & {
   rank: number;
-}
+  keyMask: string;
+};
 
-const getProviderVisuals = (provider: ApiKeyUsage['provider']) => {
+const getProviderVisuals = (provider: LlmApiKey['providerName']) => {
+    if (!provider) {
+        return { Logo: Sparkles, color: 'bg-gray-500', name: 'Unknown' };
+    }
     const visuals = {
-      OpenAI: { Logo: OpenAILogo, color: 'bg-green-500', name: 'OpenAI' },
-      Anthropic: { Logo: AnthropicLogo, color: 'bg-purple-500', name: 'Anthropic' },
-      'Google Gemini': { Logo: GeminiLogo, color: 'bg-blue-500', name: 'Google Gemini' },
-      OpenRouter: { Logo: OpenRouterLogo, color: 'bg-pink-500', name: 'OpenRouter' },
+      openai: { Logo: OpenAILogo, color: 'bg-green-500', name: 'OpenAI' },
+      anthropic: { Logo: AnthropicLogo, color: 'bg-purple-500', name: 'Anthropic' },
+      google: { Logo: GeminiLogo, color: 'bg-blue-500', name: 'Google Gemini' },
+      openrouter: { Logo: OpenRouterLogo, color: 'bg-pink-500', name: 'OpenRouter' },
     };
     return visuals[provider] || { Logo: Sparkles, color: 'bg-gray-500', name: 'Unknown' };
 };
@@ -55,20 +54,8 @@ export const LeaderboardPage = memo(() => {
     
     // Create mock data based on the actual API keys
     const mockData: ApiKeyUsage[] = llmApiKeys.map((key, index) => ({
-      id: `key-${index}`,
-      provider: key.providerName === 'openai' ? 'OpenAI' : 
-                key.providerName === 'anthropic' ? 'Anthropic' : 
-                key.providerName === 'google' ? 'Google Gemini' : 
-                key.providerName === 'openrouter' ? 'OpenRouter' : 'OpenAI',
-      keyMask: `${key.keyValue.substring(0, 8)}...${key.keyValue.substring(key.keyValue.length - 4)}`,
-      requests: { 
-        count: key.usageStats?.totalRequests || Math.floor(Math.random() * 1000),
-        limit: 10000
-      },
-      tokens: { 
-        count: key.usageStats?.successfulRequests || Math.floor(Math.random() * 50000),
-        limit: 1000000
-      },
+      ...key,
+      keyMask: `${key.keyValue?.substring(0, 8)}...${key.keyValue?.substring(key.keyValue.length - 4)}`,
       rank: index + 1
     }));
     
@@ -92,7 +79,8 @@ export const LeaderboardPage = memo(() => {
   }, []);
 
   const groupedByProvider = leaderboardData.reduce((acc, key) => {
-    (acc[key.provider] = acc[key.provider] || []).push(key);
+    const providerName = key.providerName || 'unknown';
+    (acc[providerName] = acc[providerName] || []).push(key);
     return acc;
   }, {} as Record<string, ApiKeyUsage[]>);
 
@@ -186,7 +174,7 @@ export const LeaderboardPage = memo(() => {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {Object.entries(groupedByProvider).map(([providerName, keys]) => {
-              const { Logo, color, name } = getProviderVisuals(providerName as ApiKeyUsage['provider']);
+              const { Logo, color, name } = getProviderVisuals(providerName as LlmApiKey['providerName']);
               return (
                 <Card key={providerName} className="overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
                   <CardHeader className={`flex flex-row items-center justify-between p-4 ${color}`}>
@@ -198,7 +186,7 @@ export const LeaderboardPage = memo(() => {
                   <CardContent className="p-4 space-y-4">
                     {keys.map((key) => (
                       <motion.div
-                        key={key.id}
+                        key={key.key}
                         className="p-4 border rounded-lg bg-background/50"
                         whileHover={{ scale: 1.02, boxShadow: '0px 5px 15px rgba(0,0,0,0.1)' }}
                         transition={{ type: 'spring', stiffness: 300 }}
@@ -215,14 +203,14 @@ export const LeaderboardPage = memo(() => {
                               <Zap className="h-4 w-4 mr-2 text-primary" />
                               Requests
                             </div>
-                            <UsageBar value={key.requests.count} limit={key.requests.limit} color={color} />
+                            <UsageBar value={key.usageStats?.totalRequests || 0} limit={10000} color={color} />
                           </div>
                           <div>
                             <div className="flex items-center text-sm font-medium mb-2">
                               <Flame className="h-4 w-4 mr-2 text-orange-500" />
                               Tokens
                             </div>
-                            <UsageBar value={key.tokens.count} limit={key.tokens.limit} color={color} />
+                            <UsageBar value={key.usageStats?.successfulRequests || 0} limit={1000000} color={color} />
                           </div>
                         </div>
                       </motion.div>

@@ -1,7 +1,6 @@
 // packages/ui/vite.config.ts
 
 import react from "@vitejs/plugin-react";
-import reactRefresh from "@vitejs/plugin-react-refresh";
 import path from "path";
 import { defineConfig, loadEnv } from "vite";
 import tailwindcss from "tailwindcss";
@@ -78,7 +77,11 @@ export default defineConfig(({ mode }) => {
       plugins: [tailwindcss, autoprefixer],
     },
   },
-  plugins: [react(), reactRefresh()],
+  plugins: [
+    react({
+      jsxRuntime: 'automatic'
+    })
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -97,10 +100,10 @@ export default defineConfig(({ mode }) => {
   // Configuration serveur pour dev et preview
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 3003,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080', // Docker container port
+        target: 'http://localhost:8080', // Backend accessible sur port 8080
         changeOrigin: true,
         secure: false,
         ws: true, // Support WebSockets pour SSE
@@ -112,10 +115,16 @@ export default defineConfig(({ mode }) => {
     port: 3003,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080', // Docker container port
+        target: 'http://localhost:8080', // Backend accessible depuis l'extérieur
         changeOrigin: true,
         secure: false,
         ws: true, // Support WebSockets pour SSE
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            // Forcer l'auth header sur toutes les requêtes proxy
+            proxyReq.setHeader('Authorization', 'Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0');
+          });
+        },
       },
     },
   },

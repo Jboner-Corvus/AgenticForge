@@ -1,16 +1,16 @@
 # Version Actuelle
 
-## AgenticForge v1.0.261
+## AgenticForge v1.0.271
 
 ### Packages
-- **@gforge/core**: v1.0.261
-- **g-forge-monorepo**: v1.0.261
+- **@gforge/core**: v1.0.271
+- **g-forge-monorepo**: v1.0.271
 
 ### Dernière mise à jour
-dimanche 17 août 2025 à 22:02
+lundi 18 août 2025 à 02:03
 
 ### Informations de build
-- **Date du build**: dimanche 17 août 2025 à 22:02
+- **Date du build**: lundi 18 août 2025 à 02:03
 - **Statut**: Succès
 
 ### Services Docker

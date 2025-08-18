@@ -18,6 +18,7 @@ import type { Ctx as _Ctx, Tool } from '../../../types.js';
 
 import { getTools } from '../../../utils/toolLoader.js';
 import { finishTool, FinishToolSignal } from './system/finish.tool.js';
+import { clientConsoleTool } from './clientConsole.tool.js';
 
 export const getAllTools = async (): Promise<
   Tool<z.AnyZodObject, z.ZodTypeAny>[]
@@ -25,6 +26,7 @@ export const getAllTools = async (): Promise<
   console.log('[getAllTools] function called');
   const tools = await getTools();
   tools.push(finishTool as unknown as Tool<z.AnyZodObject, z.ZodTypeAny>);
+  tools.push(clientConsoleTool as unknown as Tool<z.AnyZodObject, z.ZodTypeAny>);
   return tools;
 };
 

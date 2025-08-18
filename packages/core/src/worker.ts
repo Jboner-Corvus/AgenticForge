@@ -169,7 +169,7 @@ export async function processJob(
   try {
     const tools = await getTools();
     const session = await _sessionManager.getSession(_job.data.sessionId);
-    const activeLlmProvider = session.activeLlmProvider || 'gemini'; // Default to 'gemini' if not set
+    const activeLlmProvider = session.activeLlmProvider || config.LLM_PROVIDER; // Use configured provider as default
     const { llmApiKey, llmModelName, llmProvider } = _job.data;
     const agent = new Agent(
       _job,

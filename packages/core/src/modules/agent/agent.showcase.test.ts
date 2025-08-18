@@ -20,7 +20,7 @@ const mockRedisClient = {
 };
 
 const mockLogger = {
-  child: vi.fn().mockReturnThis(),
+  child: vi.fn().mockImplementation(() => mockLogger),
   info: vi.fn(),
   warn: vi.fn(),
   error: vi.fn(),
@@ -44,7 +44,7 @@ vi.mock('../../logger.js', () => ({
 }));
 
 vi.mock('../../utils/llmProvider', () => ({
-  getLlmProvider: () => mockLlmProvider,
+  getLlmProvider: vi.fn(() => mockLlmProvider),
 }));
 
 vi.mock('../redis/redisClient.js', () => ({
@@ -78,12 +78,7 @@ vi.mock('../../utils/LlmError.js', () => ({
   },
 }));
 
-vi.mock('../../logger.js', async () => {
-  const { mockLogger } = await import('../../test/mocks/logger.js');
-  return {
-    getLoggerInstance: vi.fn(() => mockLogger),
-  };
-});
+
 
 vi.mock('../tools/definitions/index.js', () => ({
   FinishToolSignal: class extends Error {
@@ -168,7 +163,11 @@ describe('Agent Behavior Showcase', () => {
         {},
         mockTools,
         'openai',
-        mockSessionManager
+        mockSessionManager,
+        undefined,
+        undefined,
+        undefined,
+        mockLogger
       );
 
       const result = await agent.run();
@@ -208,7 +207,11 @@ describe('Agent Behavior Showcase', () => {
         {},
         mockTools,
         'openai',
-        mockSessionManager
+        mockSessionManager,
+        undefined,
+        undefined,
+        undefined,
+        mockLogger
       );
 
       const result = await agent.run();
@@ -318,7 +321,11 @@ describe('Agent Behavior Showcase', () => {
         {},
         mockTools,
         'openai',
-        mockSessionManager
+        mockSessionManager,
+        undefined,
+        undefined,
+        undefined,
+        mockLogger
       );
 
       const result = await agent.run();
@@ -350,7 +357,11 @@ describe('Agent Behavior Showcase', () => {
         {},
         mockTools,
         'openai',
-        mockSessionManager
+        mockSessionManager,
+        undefined,
+        undefined,
+        undefined,
+        mockLogger
       );
 
       const result = await agent.run();
@@ -378,7 +389,11 @@ describe('Agent Behavior Showcase', () => {
         {},
         mockTools,
         'openai',
-        mockSessionManager
+        mockSessionManager,
+        undefined,
+        undefined,
+        undefined,
+        mockLogger
       );
 
       const result = await agent.run();
@@ -413,7 +428,11 @@ describe('Agent Behavior Showcase', () => {
         {},
         mockTools,
         'openai',
-        mockSessionManager
+        mockSessionManager,
+        undefined,
+        undefined,
+        undefined,
+        mockLogger
       );
 
       const result = await agent.run();
@@ -492,7 +511,11 @@ describe('Agent Behavior Showcase', () => {
         {},
         mockTools,
         'openai',
-        mockSessionManager
+        mockSessionManager,
+        undefined,
+        undefined,
+        undefined,
+        mockLogger
       );
 
       const result = await agent.run();
@@ -528,7 +551,11 @@ describe('Agent Behavior Showcase', () => {
         {},
         mockTools,
         'openai',
-        mockSessionManager
+        mockSessionManager,
+        undefined,
+        undefined,
+        undefined,
+        mockLogger
       );
 
       const result = await agent.run();

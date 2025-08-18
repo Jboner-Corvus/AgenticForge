@@ -75,6 +75,18 @@ export class LlmKeyManager {
     // Si pas de doublon, ajouter la nouvelle clé
     keys.push({ apiKey, apiModel, apiProvider, baseUrl, errorCount: 0 });
     await this.saveKeys(keys);
+    
+    // Increment the apiKeysAdded stat in Redis
+    try {
+      const redisClient = getRedisClientInstance();
+      await redisClient.incr('leaderboard:apiKeysAdded');
+    } catch (error) {
+      getLogger().error(
+        { error, apiKey: apiKey.substring(0, 10) + '...', apiModel, apiProvider, baseUrl },
+        'Failed to increment apiKeysAdded in Redis',
+      );
+    }
+    
     getLogger().info(
       { apiKey: apiKey.substring(0, 10) + '...', apiModel, apiProvider, baseUrl },
       'LLM API key added.',

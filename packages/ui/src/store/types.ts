@@ -17,6 +17,13 @@ export interface LlmApiKey {
   keyName?: string;
   baseUrl?: string;
   model?: string;
+  // Ajout des propriétés pour le classement
+  providerName?: 'openai' | 'anthropic' | 'google' | 'openrouter';
+  keyValue?: string;
+  usageStats?: {
+    totalRequests: number;
+    successfulRequests: number;
+  };
 }
 
 export interface ToastOptions {

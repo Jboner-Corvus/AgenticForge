@@ -21,6 +21,7 @@ import { Message, SessionData } from './types.js';
 import { AppError, handleError } from './utils/errorUtils.js';
 import { getTools } from './utils/toolLoader.js';
 import { maskApiKey } from './utils/keyMaskingUtils.js';
+import clientConsoleRouter from './modules/api/clientConsole.api.js';
 
 export let configWatcher: import('chokidar').FSWatcher | null = null;
 
@@ -71,34 +72,45 @@ export async function initializeWebServer(
     const app = express();
     const sessionManager = await SessionManager.create(pgClient);
     app.use(express.json());
-    app.use(express.static(path.join(process.cwd(), 'packages', 'ui', 'dist')));
+    // Serve static files from UI dist directory
+    const uiDistPath = path.join(path.dirname(new URL(import.meta.url).pathname), '..', '..', 'ui', 'dist');
+    console.log(`[STATIC] Serving static files from: ${uiDistPath}`);
+    app.use(express.static(uiDistPath));
     app.use(cookieParser());
     
     // Add CORS middleware for all routes
-    app.use((req, res, next) => {
-      res.header('Access-Control-Allow-Origin', '*');
-      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  app.use((req, res, next) => {
+    // For local development, allow all origins
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Session-ID');
+    
+    // Only set credentials to true if we have a specific origin (not '*')
+    if (req.headers.origin) {
       res.header('Access-Control-Allow-Credentials', 'true');
-      
-      // Handle preflight requests
-      if (req.method === 'OPTIONS') {
-        res.sendStatus(200);
-      } else {
-        next();
-      }
-    });
+    }
+    
+    // Handle preflight OPTIONS requests
+    if (req.method === 'OPTIONS') {
+      return res.status(204).send();
+    }
+    
+    next();
+  });
 
     app.use(
       (
         req: express.Request,
-        _res: express.Response,
-        _next: express.NextFunction,
+        res: express.Response,
+        next: express.NextFunction,
       ) => {
         (req as any).sessionManager = sessionManager;
-        _next();
+        next();
       },
     );
+
+    // Add client console API routes
+    app.use(clientConsoleRouter);
 
     if (process.env.NODE_ENV !== 'production') {
       watchConfig();
@@ -152,6 +164,11 @@ export async function initializeWebServer(
       ) => {
         // Skip authentication in test environment
         if (process.env.NODE_ENV === 'test') {
+          return next();
+        }
+        
+        // Skip authentication for OPTIONS requests (handled by CORS middleware)
+        if (req.method === 'OPTIONS') {
           return next();
         }
         
@@ -493,9 +510,11 @@ export async function initializeWebServer(
             (await redisClient.get('leaderboard:tokensSaved')) || '0';
           const successfulRuns =
             (await redisClient.get('leaderboard:successfulRuns')) || '0';
+          const apiKeysAdded =
+            (await redisClient.get('leaderboard:apiKeysAdded')) || '0';
 
           res.status(200).json({
-            apiKeysAdded: 0,
+            apiKeysAdded: parseInt(apiKeysAdded, 10),
             sessionsCreated: parseInt(sessionsCreated, 10),
             successfulRuns: parseInt(successfulRuns, 10),
             tokensSaved: parseInt(tokensSaved, 10),

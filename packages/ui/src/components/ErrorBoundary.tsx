@@ -87,13 +87,24 @@ export class ErrorBoundary extends Component<Props, State> {
 
       // Default error UI
       const componentName = this.props.componentName || 'Component';
-      const DefaultFallback = ErrorBoundaryHelper.createErrorFallback(componentName);
       
+      // Create fallback UI directly to match test expectations
       return (
-        <DefaultFallback 
-          error={this.state.error!} 
-          resetError={this.handleReset}
-        />
+        <div className="error-boundary-fallback p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
+          <h2 className="text-lg font-bold text-destructive">Something went wrong</h2>
+          <p className="mt-2 text-sm">
+            An error occurred in the <strong>{componentName}</strong> component.
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Error: {this.state.error?.message}
+          </p>
+          <button 
+            onClick={this.handleReset}
+            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity"
+          >
+            Try again
+          </button>
+        </div>
       );
     }
 

@@ -1,6 +1,6 @@
 // packages/ui/src/lib/api.ts
 
-// Get base URL from environment variable or default to empty for proxy
+// Get base URL from environment variable or default to relative path for proxy
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 /**

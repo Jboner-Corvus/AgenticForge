@@ -364,31 +364,28 @@ rebuild_web() {
 }
 
 dev_web() {
-    echo -e "${COLOR_YELLOW}Lancement du serveur web en mode preview (port 3003)...${NC}"
-    
-    cd "${SCRIPT_DIR}"
-    
-    # Arrêter les serveurs existants
-    echo -e "${COLOR_YELLOW}Arrêt des serveurs existants...${NC}"
-    pkill -f "vite.*preview" 2>/dev/null || true
-    pkill -f "vite.*dev" 2>/dev/null || true
+    echo "✦ Je vais lancer le serveur de développement de l'interface web sur le port 3003."
+    echo "  L'interface sera accessible sur http://localhost:3003"
+    echo " ╭──────────────────────────────────────────────────────────────────────╮"
+    echo " │ ⊷  Shell cd ${SCRIPT_DIR}/packages/ui"
+
+    # Arrêter les serveurs existants sur le port 3003
     lsof -ti:3003 | xargs kill -9 2>/dev/null || true
+
+    cd "${SCRIPT_DIR}/packages/ui"
+
+    # S'assurer que les dépendances sont installées
+    echo " │ Vérification des dépendances..."
+    pnpm install --prod=false
+
+    echo " │ Lancement du serveur de développement UI..."
+    echo " │ Interface accessible sur: http://localhost:3003"
+    echo " │ Utilisez Ctrl+C pour arrêter le serveur."
+    echo " ╰──────────────────────────────────────────────────────────────────────╯"
     
-    # Installer les dépendances si nécessaire
-    echo -e "${COLOR_YELLOW}Vérification des dépendances...${NC}"
-    if [ ! -d "node_modules" ] || [ ! -d "packages/ui/node_modules" ]; then
-        echo -e "${COLOR_YELLOW}Installation des dépendances...${NC}"
-        pnpm install
-    fi
-    
-    # Construire le projet complet
-    echo -e "${COLOR_YELLOW}Construction du projet...${NC}"
-    pnpm build
-    
-    # Lancer le serveur preview sur le port 3003
-    echo -e "${COLOR_GREEN}Lancement du serveur preview sur http://localhost:3003${NC}"
-    echo -e "${COLOR_CYAN}Utilisez Ctrl+C pour arrêter le serveur${NC}"
-    WEB_PORT=3003 pnpm --filter @gforge/ui run start:web
+    # Charger les variables d'environnement et lancer Vite en mode dev
+    load_env_vars
+    VITE_API_BASE_URL="http://localhost:8080" pnpm exec vite --port 3003 --host
 }
 
 rebuild_worker() {

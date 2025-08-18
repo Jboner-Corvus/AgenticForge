@@ -14,9 +14,18 @@ export const UserInput = () => {
   const isProcessing = useIsProcessing();
 
   const handleSendMessage = () => {
+    console.log('🔥🔥🔥 [DEBUG] UserInput handleSendMessage called');
+    console.log('🔥🔥🔥 [DEBUG] inputValue:', inputValue);
+    console.log('🔥🔥🔥 [DEBUG] isProcessing:', isProcessing);
+    console.log('🔥🔥🔥 [DEBUG] startAgent function:', typeof startAgent);
+    
     if (inputValue.trim() && !isProcessing) {
+      console.log('🔥🔥🔥 [DEBUG] Calling startAgent with:', inputValue.trim());
       startAgent(inputValue);
       setInputValue('');
+      console.log('🔥🔥🔥 [DEBUG] startAgent called, input cleared');
+    } else {
+      console.log('🔥🔥🔥 [DEBUG] NOT calling startAgent - conditions not met');
     }
   };
 

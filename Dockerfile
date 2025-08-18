@@ -49,8 +49,8 @@ RUN apk add --no-cache curl
 RUN mkdir -p workspace
 
 # Skip Playwright install for faster builds
-# ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-# ENV PLAYWRIGHT_BROWSERS_PATH=0
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PLAYWRIGHT_BROWSERS_PATH=0
 
 # Set default API base URL (can be overridden at runtime)
 ENV VITE_API_BASE_URL=/

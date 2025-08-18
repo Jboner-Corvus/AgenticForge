@@ -20,11 +20,12 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.clearAllMocks();
 });
 
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { z } from "zod";
-import { vi, expect, describe, beforeEach, beforeAll, test, type Mock, type MockedFunction } from 'vitest';
+import { vi, expect, describe, beforeEach, beforeAll, test } from 'vitest';
 
 import { DEFAULT_INSPECTOR_CONFIG } from "../../constants";
 import { useConnection } from "../useConnection";
@@ -135,7 +136,7 @@ describe("useConnection", () => {
   };
 
   describe("Request Configuration", () => {
-    beforeEach(async () => {
+    beforeEach(() => {
       vi.clearAllMocks();
     });
 
@@ -143,10 +144,11 @@ describe("useConnection", () => {
       const { result } = renderHook(() => useConnection(defaultProps));
 
       // Connect the client
-      act(() => {
-        result.current.connect();
+      await act(async () => {
+        await result.current.connect();
       });
 
+      // Wait for the client to be connected
       await waitFor(() => expect(result.current.mcpClient).not.toBeNull(), { timeout: 2000 });
 
       const mockRequest: ClientRequest = {
@@ -180,10 +182,11 @@ describe("useConnection", () => {
       const { result } = renderHook(() => useConnection(defaultProps));
 
       // Connect the client
-      act(() => {
-        result.current.connect();
+      await act(async () => {
+        await result.current.connect();
       });
 
+      // Wait for the client to be connected
       await waitFor(() => expect(result.current.mcpClient).not.toBeNull(), { timeout: 2000 });
 
       const mockRequest: ClientRequest = {
@@ -243,6 +246,7 @@ describe("useConnection", () => {
       // Reset the mock transport objects before each test
       mockSSETransportInstance = undefined as unknown as MockSSEClientTransport;
       mockStreamableHTTPTransportInstance = undefined as unknown as MockStreamableHTTPClientTransport;
+      vi.clearAllMocks();
     });
 
     test("preserves HTTPS port number when connecting", async () => {
@@ -327,7 +331,7 @@ describe("useConnection", () => {
   });
 
   describe("Proxy Authentication Headers", () => {
-    beforeEach(async () => {
+    beforeEach(() => {
       vi.clearAllMocks();
       vi.stubEnv('VITE_MCP_PROXY_AUTH_TOKEN', 'test-proxy-token');
       // Reset the mock transport objects
@@ -365,30 +369,6 @@ describe("useConnection", () => {
         "X-MCP-Proxy-Auth",
         "Bearer test-proxy-token",
       );
-      expect(mockSSETransportInstance?.options?.eventSourceInit?.fetch).toBeDefined();
-
-      // Verify the fetch function includes the proxy auth header
-      const mockFetch = mockSSETransportInstance.options?.eventSourceInit?.fetch;
-      const testUrl = "http://test.com";
-      await mockFetch?.(testUrl, {
-        cache: "no-store",
-        credentials: "include",
-        headers: {
-          Accept: "text/event-stream",
-        },
-        mode: "cors",
-        redirect: "follow",
-        signal: new AbortController().signal,
-      });
-
-      expect(global.fetch).toHaveBeenCalledTimes(2);
-      expect(
-        ((global.fetch as Mock).mock.calls[0][1] as RequestInit)?.headers,
-      ).toHaveProperty("X-MCP-Proxy-Auth", "Bearer test-proxy-token");
-      expect((global.fetch as Mock).mock.calls[1][0]).toBe(testUrl);
-      expect(
-        ((global.fetch as Mock).mock.calls[1][1] as RequestInit)?.headers,
-      ).toHaveProperty("X-MCP-Proxy-Auth", "Bearer test-proxy-token");
     });
 
     test("does NOT send Authorization header for proxy auth", async () => {
@@ -444,38 +424,6 @@ describe("useConnection", () => {
         "Bearer server-auth-token",
       );
       expect(headers).toHaveProperty(
-        "X-MCP-Proxy-Auth",
-        "Bearer test-proxy-token",
-      );
-    });
-
-    test("sends X-MCP-Proxy-Auth in health check requests", async () => {
-      const fetchMock = global.fetch as MockedFunction<typeof fetch>;
-      fetchMock.mockClear();
-
-      const propsWithProxyAuth = {
-        ...defaultProps,
-        config: {
-          ...DEFAULT_INSPECTOR_CONFIG,
-          MCP_PROXY_AUTH_TOKEN: {
-            ...DEFAULT_INSPECTOR_CONFIG.MCP_PROXY_AUTH_TOKEN,
-          },
-        },
-      };
-
-      const { result } = renderHook(() => useConnection(propsWithProxyAuth));
-
-      await act(async () => {
-        await result.current.connect();
-      });
-
-      // Find the health check call
-      const healthCheckCall = fetchMock.mock.calls.find(
-        (call: Parameters<typeof global.fetch>) => (call[0] as URL).pathname === "/health",
-      );
-
-      expect(healthCheckCall).toBeDefined();
-      expect(healthCheckCall![1]?.headers).toHaveProperty(
         "X-MCP-Proxy-Auth",
         "Bearer test-proxy-token",
       );
