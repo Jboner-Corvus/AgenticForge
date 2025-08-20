@@ -15,7 +15,7 @@ const getProviderVisuals = (provider: LlmApiKey['providerName']) => {
     if (!provider) {
         return { Logo: Sparkles, color: 'bg-gray-500', name: 'Unknown' };
     }
-    const visuals = {
+    const visuals: Record<string, { Logo: React.FC<{ className?: string }>; color: string; name: string }> = {
       openai: { Logo: OpenAILogo, color: 'bg-green-500', name: 'OpenAI' },
       anthropic: { Logo: AnthropicLogo, color: 'bg-purple-500', name: 'Anthropic' },
       google: { Logo: GeminiLogo, color: 'bg-blue-500', name: 'Google Gemini' },

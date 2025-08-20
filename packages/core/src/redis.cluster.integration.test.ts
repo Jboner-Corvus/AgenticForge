@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import IORedis from 'ioredis';
-import { getConfig } from './config.js';
+import { getConfig } from './config.ts';
 
 describe('Redis Cluster Integration Tests', () => {
   let redis: IORedis;

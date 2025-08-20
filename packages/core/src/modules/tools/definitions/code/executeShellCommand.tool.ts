@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-import { Ctx, Tool } from '../../../../types.js';
-import { executeShellCommand } from '../../../../utils/shellUtils.js';
+import { Ctx, Tool } from '../../../../types.ts';
+import { executeShellCommand } from '../../../../utils/shellUtils.ts';
 
 export const executeShellCommandParams = z.object({
   command: z.string().describe('The shell command to execute.'),

@@ -2,7 +2,7 @@ import { Client as PgClient } from 'pg';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock logger first to prevent it from calling getConfig during module load
-vi.mock('../../logger.js', () => ({
+vi.mock('../../logger.ts', () => ({
   getLogger: vi.fn(() => ({
     child: vi.fn(() => ({
       debug: vi.fn(),
@@ -40,7 +40,7 @@ vi.mock('../../modules/tools/definitions/ai/summarize.tool', () => ({
   },
 }));
 
-vi.mock('../../modules/redis/redisClient.js', () => ({
+vi.mock('../../modules/redis/redisClient.ts', () => ({
   getRedisClient: vi.fn(() => ({
     del: vi.fn(),
     get: vi.fn(),

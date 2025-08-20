@@ -2,7 +2,7 @@ import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach, vi } 
 import express from 'express';
 import { Server } from 'http';
 import request from 'supertest';
-import { getConfig } from './config.js';
+import { getConfig } from './config.ts';
 
 describe('API Streaming Integration Tests', () => {
   let app: express.Application;

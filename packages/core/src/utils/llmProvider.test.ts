@@ -29,7 +29,7 @@ vi.mock('../modules/llm/LlmKeyManager', async (importOriginal) => {
   };
 });
 
-vi.mock('../modules/redis/redisClient.js', () => ({
+vi.mock('../modules/redis/redisClient.ts', () => ({
   redisClient: {
     incrby: vi.fn().mockResolvedValue(undefined),
   },

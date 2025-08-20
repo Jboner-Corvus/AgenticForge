@@ -2,8 +2,8 @@
 
 import { describe, vi } from 'vitest';
 
-vi.mock('../../../../config.js', async () => {
-  const actual = await vi.importActual('../../../../config.js');
+vi.mock('../../../../config.ts', async () => {
+  const actual = await vi.importActual('../../../../config.ts');
   return {
     ...actual,
     config: {
@@ -39,7 +39,7 @@ vi.mock('../../../../config.js', async () => {
   };
 });
 
-vi.mock('../../redis/redisClient.js', () => ({
+vi.mock('../../redis/redisClient.ts', () => ({
   redisClient: {
     incrby: vi.fn(),
   },
@@ -87,11 +87,11 @@ const mockLoggerInstance = {
   warn: vi.fn(),
 };
 
-vi.mock('../../../../logger.js', () => ({
+vi.mock('../../../../logger.ts', () => ({
   getLoggerInstance: vi.fn(() => mockLoggerInstance),
 }));
 
-vi.mock('../../../tools/definitions/index.js', () => ({
+vi.mock('../../../tools/definitions/index.ts', () => ({
   getAllTools: vi.fn(),
 }));
 

@@ -1,1 +1,1 @@
-export { getRedisClientInstance } from './redisClient.js';
+export { getRedisClientInstance } from './redisClient.ts';

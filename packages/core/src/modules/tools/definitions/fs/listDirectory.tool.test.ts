@@ -3,9 +3,9 @@ import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
 import { describe, expect, it, type Mock, vi } from 'vitest';
 
-import { getLoggerInstance } from '../../../../logger.js';
-import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
-import { listFilesTool } from './listDirectory.tool.js';
+import { getLoggerInstance } from '../../../../logger.ts';
+import { Ctx, ILlmProvider, SessionData } from '../../../../types.ts';
+import { listFilesTool } from './listDirectory.tool.ts';
 
 vi.mock('fs', () => ({
   promises: {
@@ -13,7 +13,7 @@ vi.mock('fs', () => ({
   },
 }));
 
-vi.mock('../../../../logger.js', () => ({
+vi.mock('../../../../logger.ts', () => ({
   getLoggerInstance: vi.fn(() => ({
     child: vi.fn().mockReturnThis(),
     debug: vi.fn(),

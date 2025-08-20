@@ -2,8 +2,8 @@ import { execa } from 'execa';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import { getLogger } from '../logger.js';
-import { Ctx } from '../types.js';
+import { getLogger } from '../logger.ts';
+import { Ctx } from '../types.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

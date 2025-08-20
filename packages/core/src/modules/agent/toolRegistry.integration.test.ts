@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Agent } from './agent.js';
-import { getMockQueue } from '../../test/mockQueue.js';
-import type { SessionData, Tool } from '../../types.js';
+import { Agent } from './agent.ts';
+import { getMockQueue } from '../../test/mockQueue.ts';
+import type { SessionData, Tool } from '../../types.ts';
 
 // Mock Tool Registry avec outils complexes
 const mockToolRegistry = {
@@ -81,7 +81,7 @@ const mockTools: Tool[] = [
 ];
 
 // Mocks globaux
-vi.mock('../../config.js', () => ({
+vi.mock('../../config.ts', () => ({
   config: {
     AGENT_MAX_ITERATIONS: 5,
     LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
@@ -92,7 +92,7 @@ vi.mock('../../config.js', () => ({
   },
 }));
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../../logger.ts', () => ({
   getLoggerInstance: () => ({
     child: () => ({
       info: vi.fn(),
@@ -107,7 +107,7 @@ vi.mock('../../logger.js', () => ({
   }),
 }));
 
-vi.mock('../redis/redisClient.js', () => ({
+vi.mock('../redis/redisClient.ts', () => ({
   getRedisClientInstance: () => ({
     publish: vi.fn(),
     duplicate: () => ({
@@ -123,27 +123,27 @@ vi.mock('../redis/redisClient.js', () => ({
   }),
 }));
 
-vi.mock('../../utils/llmProvider.js', () => ({
+vi.mock('../../utils/llmProvider.ts', () => ({
   getLlmProvider: () => ({
     getLlmResponse: vi.fn(),
   }),
 }));
 
-vi.mock('../llm/LlmKeyManager.js', () => ({
+vi.mock('../llm/LlmKeyManager.ts', () => ({
   LlmKeyManager: {
     hasAvailableKeys: vi.fn().mockResolvedValue(true),
   },
 }));
 
-vi.mock('../tools/toolRegistry.js', () => ({
+vi.mock('../tools/toolRegistry.ts', () => ({
   toolRegistry: mockToolRegistry,
 }));
 
-vi.mock('./orchestrator.prompt.js', () => ({
+vi.mock('./orchestrator.prompt.ts', () => ({
   getMasterPrompt: vi.fn().mockReturnValue('Mock prompt'),
 }));
 
-vi.mock('./responseSchema.js', () => ({
+vi.mock('./responseSchema.ts', () => ({
   llmResponseSchema: {
     parse: vi.fn(),
   },
@@ -194,8 +194,8 @@ describe('Tool Registry Integration Tests', () => {
 
   describe('Basic Tool Execution', () => {
     it('should execute simple file read operation', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"command": {"name": "readFile", "params": {"path": "/test/file.txt"}}}'
@@ -215,8 +215,8 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should execute web search with complex parameters', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       const searchParams = {
         query: 'AI agent frameworks',
@@ -247,8 +247,8 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should handle tool execution with nested parameters', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       const complexParams = {
         data: [
@@ -286,8 +286,8 @@ describe('Tool Registry Integration Tests', () => {
 
   describe('Tool Chaining and Orchestration', () => {
     it('should execute multiple tools in sequence', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse
         .mockResolvedValueOnce('{"command": {"name": "readFile", "params": {"path": "/data/input.txt"}}}')
@@ -316,8 +316,8 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should handle parallel tool execution', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // Simuler l'exécution d'outils en parallèle
       mockLlmProvider.getLlmResponse.mockResolvedValue(
@@ -351,8 +351,8 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should handle tool dependencies and prerequisites', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // Outil qui dépend du résultat d'un autre outil
       mockLlmProvider.getLlmResponse
@@ -377,8 +377,8 @@ describe('Tool Registry Integration Tests', () => {
 
   describe('Tool Security and Sandboxing', () => {
     it('should execute tools in secure sandbox environment', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       const codeParams = {
         code: 'console.log("Hello from sandbox");',
@@ -415,8 +415,8 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should enforce tool resource limits', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       const heavyProcessingParams = {
         data: Array.from({ length: 100000 }, (_, i) => ({ id: i, value: Math.random() })),
@@ -447,8 +447,8 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should validate tool parameters before execution', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // Paramètres invalides
       const invalidParams = {
@@ -478,8 +478,8 @@ describe('Tool Registry Integration Tests', () => {
 
   describe('Tool Performance and Monitoring', () => {
     it('should monitor tool execution performance', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"command": {"name": "webSearch", "params": {"query": "performance test"}}}'
@@ -513,8 +513,8 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should track tool usage metrics', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"command": {"name": "readFile", "params": {"path": "/metrics/test.txt"}}}'
@@ -540,8 +540,8 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should handle tool timeout gracefully', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"command": {"name": "codeExecutor", "params": {"code": "while(true) {}", "language": "javascript"}}}'
@@ -571,9 +571,9 @@ describe('Tool Registry Integration Tests', () => {
 
   describe('Tool Rate Limiting and Concurrency', () => {
     it('should enforce rate limits on tool usage', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-      const mockRedisClient = require('../redis/redisClient.js').getRedisClientInstance();
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockRedisClient = require('../redis/redisClient.ts').getRedisClientInstance();
 
       // Simuler plusieurs appels rapides au même outil
       mockLlmProvider.getLlmResponse.mockResolvedValue(
@@ -603,8 +603,8 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should manage concurrent tool executions', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // Simuler plusieurs agents essayant d'exécuter des outils simultanément
       const agents = Array.from({ length: 8 }, (_, i) => 
@@ -646,8 +646,8 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should queue tool executions when at capacity', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"command": {"name": "codeExecutor", "params": {"code": "console.log(\\"test\\")", "language": "javascript"}}}'
@@ -674,8 +674,8 @@ describe('Tool Registry Integration Tests', () => {
 
   describe('Tool Error Handling and Recovery', () => {
     it('should handle tool execution failures gracefully', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse
         .mockResolvedValueOnce('{"command": {"name": "readFile", "params": {"path": "/nonexistent/file.txt"}}}')
@@ -698,8 +698,8 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should retry failed tool executions with exponential backoff', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"command": {"name": "webSearch", "params": {"query": "retry test"}}}'
@@ -720,8 +720,8 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should provide detailed error diagnostics', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"command": {"name": "codeExecutor", "params": {"code": "invalid syntax", "language": "python"}}}'

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { AnyZodObject, z, ZodString } from 'zod';
 
-import { Ctx, Tool } from '../../types.js';
-import { toolRegistry } from './toolRegistry.js';
+import { Ctx, Tool } from '../../types.ts';
+import { toolRegistry } from './toolRegistry.ts';
 
 // Mock a simple tool for testing
 const mockToolSchema = z.object({

@@ -1,1 +1,1 @@
-export * from '../llmProvider.js';
+export * from '../llmProvider.ts';

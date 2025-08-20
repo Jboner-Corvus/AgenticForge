@@ -3,10 +3,10 @@ import { promises as fs } from 'fs';
 /// <reference types="vitest/globals" />
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getLoggerInstance } from '../../../../logger.js';
-import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
+import { getLoggerInstance } from '../../../../logger.ts';
+import { Ctx, ILlmProvider, SessionData } from '../../../../types.ts';
 
-vi.mock('../../../../logger.js', () => ({
+vi.mock('../../../../logger.ts', () => ({
   getLoggerInstance: vi.fn(() => ({
     child: vi.fn().mockReturnThis(),
     debug: vi.fn(),
@@ -15,7 +15,7 @@ vi.mock('../../../../logger.js', () => ({
     warn: vi.fn(),
   })),
 }));
-import { readFileTool } from './readFile.tool.js';
+import { readFileTool } from './readFile.tool.ts';
 
 vi.mock('fs', () => ({
   promises: {

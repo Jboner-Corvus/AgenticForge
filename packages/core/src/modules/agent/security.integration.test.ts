@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Agent } from './agent.js';
-import { getMockQueue } from '../../test/mockQueue.js';
-import type { SessionData } from '../../types.js';
+import { Agent } from './agent.ts';
+import { getMockQueue } from '../../test/mockQueue.ts';
+import type { SessionData } from '../../types.ts';
 
 // Mocks globaux simplifiés
-vi.mock('../../config.js', () => ({ config: { AGENT_MAX_ITERATIONS: 5, LLM_PROVIDER_HIERARCHY: ['openai'] } }));
-vi.mock('../../logger.js', () => ({ getLoggerInstance: () => ({ child: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }), info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }) }));
-vi.mock('../redis/redisClient.js', () => ({ getRedisClientInstance: () => ({ publish: vi.fn(), duplicate: () => ({ on: vi.fn(), subscribe: vi.fn(), unsubscribe: vi.fn(), quit: vi.fn() }) }) }));
-vi.mock('../../utils/llmProvider.js', () => ({ getLlmProvider: () => ({ getLlmResponse: vi.fn().mockResolvedValue('{"answer": "Security test"}') }) }));
-vi.mock('../llm/LlmKeyManager.js', () => ({ LlmKeyManager: { hasAvailableKeys: vi.fn().mockResolvedValue(true) } }));
-vi.mock('../tools/toolRegistry.js', () => ({ toolRegistry: { execute: vi.fn() } }));
-vi.mock('./orchestrator.prompt.js', () => ({ getMasterPrompt: vi.fn().mockReturnValue('Mock prompt') }));
-vi.mock('./responseSchema.js', () => ({ llmResponseSchema: { parse: vi.fn().mockReturnValue({ answer: 'Security test' }) } }));
+vi.mock('../../config.ts', () => ({ config: { AGENT_MAX_ITERATIONS: 5, LLM_PROVIDER_HIERARCHY: ['openai'] } }));
+vi.mock('../../logger.ts', () => ({ getLoggerInstance: () => ({ child: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }), info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }) }));
+vi.mock('../redis/redisClient.ts', () => ({ getRedisClientInstance: () => ({ publish: vi.fn(), duplicate: () => ({ on: vi.fn(), subscribe: vi.fn(), unsubscribe: vi.fn(), quit: vi.fn() }) }) }));
+vi.mock('../../utils/llmProvider.ts', () => ({ getLlmProvider: () => ({ getLlmResponse: vi.fn().mockResolvedValue('{"answer": "Security test"}') }) }));
+vi.mock('../llm/LlmKeyManager.ts', () => ({ LlmKeyManager: { hasAvailableKeys: vi.fn().mockResolvedValue(true) } }));
+vi.mock('../tools/toolRegistry.ts', () => ({ toolRegistry: { execute: vi.fn() } }));
+vi.mock('./orchestrator.prompt.ts', () => ({ getMasterPrompt: vi.fn().mockReturnValue('Mock prompt') }));
+vi.mock('./responseSchema.ts', () => ({ llmResponseSchema: { parse: vi.fn().mockReturnValue({ answer: 'Security test' }) } }));
 
 describe('Security and Validation Integration Tests', () => {
   let mockJob: any;
@@ -48,9 +48,9 @@ describe('Security and Validation Integration Tests', () => {
     });
 
     it('should validate tool parameters for security', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
 
       // Dangerous parameters
       mockLlmProvider.getLlmResponse.mockResolvedValue(
@@ -86,7 +86,7 @@ describe('Security and Validation Integration Tests', () => {
     });
 
     it('should validate API key permissions', async () => {
-      const mockLlmKeyManager = require('../llm/LlmKeyManager.js').LlmKeyManager;
+      const mockLlmKeyManager = require('../llm/LlmKeyManager.ts').LlmKeyManager;
       mockLlmKeyManager.hasAvailableKeys.mockResolvedValue(false);
 
       try {
@@ -159,7 +159,7 @@ describe('Security and Validation Integration Tests', () => {
 
   describe('Error Handling and Information Disclosure', () => {
     it('should not leak sensitive information in error messages', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
       mockLlmProvider.getLlmResponse.mockRejectedValue(
         new Error('Database connection failed: host=secret-db.internal user=admin password=secret123')
       );
@@ -171,7 +171,7 @@ describe('Security and Validation Integration Tests', () => {
     });
 
     it('should implement secure error logging', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
       mockLlmProvider.getLlmResponse.mockRejectedValue(new Error('Test error'));
 
       await agent.run();

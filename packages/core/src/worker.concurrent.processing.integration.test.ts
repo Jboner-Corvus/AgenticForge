@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import { Worker } from 'worker_threads';
 import { EventEmitter } from 'events';
-import { getConfig } from './config.js';
+import { getConfig } from './config.ts';
 
 interface TestWorker {
   id: number;

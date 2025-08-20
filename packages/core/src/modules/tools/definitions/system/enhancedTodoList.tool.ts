@@ -1,14 +1,14 @@
 import { z } from 'zod';
-import type { Ctx, Tool } from '../../../../types.js';
-import { sendToCanvas } from '../../../../utils/canvasUtils.js';
-import { getRedisClientInstance } from '../../../../modules/redis/redisClient.js';
+import type { Ctx, Tool } from '../../../../types.ts';
+import { sendToCanvas } from '../../../../utils/canvasUtils.ts';
+import { getRedisClientInstance } from '../../../../modules/redis/redisClient.ts';
 import { 
   saveProjectState, 
   loadProjectState, 
   createRecoveryPoint, 
   isRecoveryNeeded,
   clearSessionState
-} from '../../../../modules/persistence/projectPersistence.js';
+} from '../../../../modules/persistence/projectPersistence.ts';
 
 // Enhanced schema for project items
 const projectItemSchema = z.object({

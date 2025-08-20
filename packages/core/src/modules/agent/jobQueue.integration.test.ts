@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Agent } from './agent.js';
-import { getMockQueue } from '../../test/mockQueue.js';
-import type { SessionData, Tool, Job as BullMQJob } from '../../types.js';
+import { Agent } from './agent.ts';
+import { getMockQueue } from '../../test/mockQueue.ts';
+import type { SessionData, Tool, Job as BullMQJob } from '../../types.ts';
 
 // Mock BullMQ avec fonctionnalités complètes
 const mockQueue = getMockQueue();
@@ -53,7 +53,7 @@ const mockQueueEvents = {
 };
 
 // Mocks globaux
-vi.mock('../../config.js', () => ({
+vi.mock('../../config.ts', () => ({
   config: {
     AGENT_MAX_ITERATIONS: 5,
     LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
@@ -65,7 +65,7 @@ vi.mock('../../config.js', () => ({
   },
 }));
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../../logger.ts', () => ({
   getLoggerInstance: () => ({
     child: () => ({
       info: vi.fn(),
@@ -80,7 +80,7 @@ vi.mock('../../logger.js', () => ({
   }),
 }));
 
-vi.mock('../redis/redisClient.js', () => ({
+vi.mock('../redis/redisClient.ts', () => ({
   getRedisClientInstance: () => ({
     publish: vi.fn(),
     duplicate: () => ({
@@ -99,29 +99,29 @@ vi.mock('../redis/redisClient.js', () => ({
   }),
 }));
 
-vi.mock('../../utils/llmProvider.js', () => ({
+vi.mock('../../utils/llmProvider.ts', () => ({
   getLlmProvider: () => ({
     getLlmResponse: vi.fn().mockResolvedValue('{"answer": "Job queue test response"}'),
   }),
 }));
 
-vi.mock('../llm/LlmKeyManager.js', () => ({
+vi.mock('../llm/LlmKeyManager.ts', () => ({
   LlmKeyManager: {
     hasAvailableKeys: vi.fn().mockResolvedValue(true),
   },
 }));
 
-vi.mock('../tools/toolRegistry.js', () => ({
+vi.mock('../tools/toolRegistry.ts', () => ({
   toolRegistry: {
     execute: vi.fn(),
   },
 }));
 
-vi.mock('./orchestrator.prompt.js', () => ({
+vi.mock('./orchestrator.prompt.ts', () => ({
   getMasterPrompt: vi.fn().mockReturnValue('Mock prompt'),
 }));
 
-vi.mock('./responseSchema.js', () => ({
+vi.mock('./responseSchema.ts', () => ({
   llmResponseSchema: {
     parse: vi.fn().mockReturnValue({ answer: 'Job queue test response' }),
   },
@@ -264,13 +264,13 @@ describe('Job Queue BullMQ Integration Tests', () => {
         failedReason: 'LLM provider timeout',
       };
 
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
       mockLlmProvider.getLlmResponse = vi.fn();
       (mockLlmProvider.getLlmResponse as any)
         .mockRejectedValueOnce(new Error('LLM provider timeout'))
         .mockResolvedValueOnce('{"answer": "Retry successful"}');
 
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
       mockResponseSchema.parse.mockReturnValue({ answer: 'Retry successful' });
 
       const failingAgent = new Agent(
@@ -295,7 +295,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
         opts: { ...mockJob.opts, attempts: 3 },
       };
 
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
       mockLlmProvider.getLlmResponse = vi.fn();
       (mockLlmProvider.getLlmResponse as any).mockRejectedValue(new Error('Persistent failure'));
 
@@ -326,7 +326,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
         opts: { ...mockJob.opts, timeout: 1000 }, // 1 second timeout
       };
 
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
       mockLlmProvider.getLlmResponse = vi.fn();
       (mockLlmProvider.getLlmResponse as any).mockImplementation(() => 
         new Promise(resolve => setTimeout(() => resolve('{"answer": "Too late"}'), 2000))
@@ -356,12 +356,12 @@ describe('Job Queue BullMQ Integration Tests', () => {
       complexError.stack = 'Error: Tool execution failed\n    at Agent.run (agent.js:123:45)';
       (complexError as any).code = 'TOOL_EXECUTION_ERROR';
 
-      const mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
       mockToolRegistry.execute = vi.fn();
       (mockToolRegistry.execute as any).mockRejectedValue(complexError);
 
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse = vi.fn();
       (mockLlmProvider.getLlmResponse as any).mockResolvedValue(
@@ -415,7 +415,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
       await agent.run();
 
       // Vérifier que les métriques sont collectées
-      const redisClient = require('../redis/redisClient.js').getRedisClientInstance();
+      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         'queue_metrics',
         expect.objectContaining({
@@ -749,7 +749,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
 
       await agent.run();
 
-      const redisClient = require('../redis/redisClient.js').getRedisClientInstance();
+      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         'queue_performance',
         expect.objectContaining({
@@ -781,7 +781,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
 
       await agent.run();
 
-      const redisClient = require('../redis/redisClient.js').getRedisClientInstance();
+      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'alerts:queue_anomaly',
         expect.stringContaining('high_failure_rate')

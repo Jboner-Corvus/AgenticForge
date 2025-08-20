@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Agent } from './agent.js';
-import { LlmError } from '../../utils/LlmError.js';
-import { getMockQueue } from '../../test/mockQueue.js';
-import type { SessionData, Tool } from '../../types.js';
+import { Agent } from './agent.ts';
+import { LlmError } from '../../utils/LlmError.ts';
+import { getMockQueue } from '../../test/mockQueue.ts';
+import type { SessionData, Tool } from '../../types.ts';
 
 // Mock LLM Providers avec simulation de différents scénarios
 const mockOpenAIProvider = {
@@ -30,7 +30,7 @@ const mockGpt5Provider = {
 };
 
 // Mocks globaux
-vi.mock('../../config.js', () => ({
+vi.mock('../../config.ts', () => ({
   config: {
     AGENT_MAX_ITERATIONS: 5,
     LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic', 'qwen', 'gpt5'],
@@ -41,7 +41,7 @@ vi.mock('../../config.js', () => ({
   },
 }));
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../../logger.ts', () => ({
   getLoggerInstance: () => ({
     child: () => ({
       info: vi.fn(),
@@ -56,7 +56,7 @@ vi.mock('../../logger.js', () => ({
   }),
 }));
 
-vi.mock('../redis/redisClient.js', () => ({
+vi.mock('../redis/redisClient.ts', () => ({
   getRedisClientInstance: () => ({
     publish: vi.fn(),
     duplicate: () => ({
@@ -68,7 +68,7 @@ vi.mock('../redis/redisClient.js', () => ({
   }),
 }));
 
-vi.mock('../llm/LlmKeyManager.js', () => ({
+vi.mock('../llm/LlmKeyManager.ts', () => ({
   LlmKeyManager: {
     hasAvailableKeys: vi.fn().mockResolvedValue(true),
     getKey: vi.fn().mockResolvedValue('test-key'),
@@ -77,17 +77,17 @@ vi.mock('../llm/LlmKeyManager.js', () => ({
   },
 }));
 
-vi.mock('../tools/toolRegistry.js', () => ({
+vi.mock('../tools/toolRegistry.ts', () => ({
   toolRegistry: {
     execute: vi.fn(),
   },
 }));
 
-vi.mock('./orchestrator.prompt.js', () => ({
+vi.mock('./orchestrator.prompt.ts', () => ({
   getMasterPrompt: vi.fn().mockReturnValue('Mock prompt'),
 }));
 
-vi.mock('./responseSchema.js', () => ({
+vi.mock('./responseSchema.ts', () => ({
   llmResponseSchema: {
     parse: vi.fn(),
   },
@@ -95,7 +95,7 @@ vi.mock('./responseSchema.js', () => ({
 
 // Mock du provider manager
 let currentProvider = mockOpenAIProvider;
-vi.mock('../../utils/llmProvider.js', () => ({
+vi.mock('../../utils/llmProvider.ts', () => ({
   getLlmProvider: vi.fn(() => currentProvider),
   switchToProvider: vi.fn((providerName: string) => {
     switch (providerName) {
@@ -166,7 +166,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
 
   describe('Provider Failover Scenarios', () => {
     it('should fallback from OpenAI to Anthropic on error', async () => {
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // OpenAI fails, Anthropic succeeds
       mockOpenAIProvider.getLlmResponse.mockRejectedValue(new LlmError('OpenAI rate limit'));
@@ -182,7 +182,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should cascade through all providers on sequential failures', async () => {
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // All providers fail except the last one
       mockOpenAIProvider.getLlmResponse.mockRejectedValue(new LlmError('OpenAI down'));
@@ -202,7 +202,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should handle Qwen timeout errors with specific retry logic', async () => {
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // Qwen timeout should trigger retries before fallback
       const qwenTimeoutError = new LlmError('Qwen API request failed with status 504 stream timeout');
@@ -240,7 +240,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
 
   describe('Provider Health Monitoring', () => {
     it('should monitor provider response times', async () => {
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // Simuler des temps de réponse différents
       mockOpenAIProvider.getLlmResponse.mockImplementation(() => 
@@ -257,7 +257,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should track provider error rates', async () => {
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // Simuler des erreurs intermittentes
       let callCount = 0;
@@ -276,7 +276,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should implement circuit breaker pattern for unhealthy providers', async () => {
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // Simuler un provider constamment en échec
       mockOpenAIProvider.getLlmResponse.mockRejectedValue(new LlmError('Consistent failure'));
@@ -301,7 +301,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
 
   describe('Provider Load Balancing', () => {
     it('should distribute load across healthy providers', async () => {
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // Tous les providers sont en bonne santé
       mockOpenAIProvider.getLlmResponse.mockResolvedValue('{"answer": "OpenAI response"}');
@@ -325,7 +325,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should respect provider priority in hierarchy', async () => {
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockOpenAIProvider.getLlmResponse.mockResolvedValue('{"answer": "OpenAI priority"}');
       mockResponseSchema.parse.mockReturnValue({ answer: 'OpenAI priority' });
@@ -338,7 +338,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should handle provider capacity limits', async () => {
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // Simuler une limite de capacité
       mockOpenAIProvider.getLlmResponse.mockRejectedValue(new LlmError('Rate limit exceeded'));
@@ -354,7 +354,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
 
   describe('Provider Recovery and Auto-healing', () => {
     it('should automatically recover failed providers', async () => {
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // Premier échec, puis récupération
       mockOpenAIProvider.getLlmResponse
@@ -368,7 +368,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should perform health checks on recovered providers', async () => {
-      const mockGetProviderHealth = require('../../utils/llmProvider.js').getProviderHealth;
+      const mockGetProviderHealth = require('../../utils/llmProvider.ts').getProviderHealth;
       
       mockGetProviderHealth.mockResolvedValue({ status: 'healthy', latency: 120 });
 
@@ -378,7 +378,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should gradually increase traffic to recovered providers', async () => {
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // Simuler une récupération progressive
       let healthScore = 0.1; // Commence à 10% de santé
@@ -405,7 +405,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
 
   describe('Provider-Specific Error Handling', () => {
     it('should handle OpenAI-specific errors correctly', async () => {
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockOpenAIProvider.getLlmResponse.mockRejectedValue(
         new LlmError('OpenAI API key invalid')
@@ -420,7 +420,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should handle Anthropic-specific errors correctly', async () => {
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockOpenAIProvider.getLlmResponse.mockRejectedValue(new LlmError('OpenAI down'));
       mockAnthropicProvider.getLlmResponse.mockRejectedValue(
@@ -436,8 +436,8 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should handle provider authentication failures', async () => {
-      const mockLlmKeyManager = require('../llm/LlmKeyManager.js').LlmKeyManager;
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmKeyManager = require('../llm/LlmKeyManager.ts').LlmKeyManager;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockOpenAIProvider.getLlmResponse.mockRejectedValue(
                  new LlmError('Authentication failed')
@@ -455,7 +455,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
 
   describe('Cost Optimization', () => {
     it('should prefer cost-effective providers when possible', async () => {
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // Configuration avec préférence de coût
       const costConfig = {
@@ -487,7 +487,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should track token usage and costs per provider', async () => {
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockOpenAIProvider.getLlmResponse.mockResolvedValue('{"answer": "Token usage tracking"}');
       mockResponseSchema.parse.mockReturnValue({ answer: 'Token usage tracking' });
@@ -495,7 +495,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
       await agent.run();
 
       // Vérifier que les métriques de coût sont suivies
-      const redisClient = require('../redis/redisClient.js').getRedisClientInstance();
+      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'metrics:token_usage',
         expect.stringContaining('openai')

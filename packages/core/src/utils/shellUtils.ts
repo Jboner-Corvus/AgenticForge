@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import { access, constants } from 'fs/promises';
 
 import { config } from '../config';
-import { Ctx } from '../types.js';
+import { Ctx } from '../types.ts';
 
 export interface ShellCommandResult {
   exitCode: null | number;

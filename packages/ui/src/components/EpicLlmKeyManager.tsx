@@ -161,7 +161,7 @@ const RedisControlPanel: React.FC = () => {
     setScanning(true);
     try {
       const keys = await llmKeysApi.scanRedisKeys('llm:keys:*');
-      console.log('Found Redis keys:', keys);
+      console.log('Found Redis keys count:', keys?.length || 0);
     } catch (error) {
       console.error('Failed to scan Redis:', error);
     } finally {
@@ -985,7 +985,7 @@ export const EpicLlmKeyManager: React.FC = () => {
               </Button>
               <Button 
                 onClick={async () => {
-                  console.log('🧹 Bouton Clean Duplicates cliqué !');
+                  // Clean Duplicates initiated
                   try {
                     // First try backend cleanup
                     const response = await fetch('/api/llm-keys/cleanup-duplicates', {

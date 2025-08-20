@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import { Pool, PoolClient } from 'pg';
-import { getConfig } from './config.js';
+import { getConfig } from './config.ts';
 
 describe('PostgreSQL Advanced Integration Tests', () => {
   let pool: Pool;

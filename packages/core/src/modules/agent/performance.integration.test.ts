@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Agent } from './agent.js';
-import { getMockQueue } from '../../test/mockQueue.js';
-import type { SessionData, Tool } from '../../types.js';
+import { Agent } from './agent.ts';
+import { getMockQueue } from '../../test/mockQueue.ts';
+import type { SessionData, Tool } from '../../types.ts';
 
 // Mock performance monitoring
 const mockPerformanceMonitor = {
@@ -15,7 +15,7 @@ const mockPerformanceMonitor = {
 };
 
 // Mocks globaux simplifiés
-vi.mock('../../config.js', () => ({
+vi.mock('../../config.ts', () => ({
   config: {
     AGENT_MAX_ITERATIONS: 5,
     LLM_PROVIDER_HIERARCHY: ['openai'],
@@ -25,13 +25,13 @@ vi.mock('../../config.js', () => ({
   },
 }));
 
-vi.mock('../../logger.js', () => ({ getLoggerInstance: () => ({ child: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }), info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }) }));
-vi.mock('../redis/redisClient.js', () => ({ getRedisClientInstance: () => ({ publish: vi.fn(), duplicate: () => ({ on: vi.fn(), subscribe: vi.fn(), unsubscribe: vi.fn(), quit: vi.fn() }) }) }));
-vi.mock('../../utils/llmProvider.js', () => ({ getLlmProvider: () => ({ getLlmResponse: vi.fn().mockResolvedValue('{"answer": "Performance test"}') }) }));
-vi.mock('../llm/LlmKeyManager.js', () => ({ LlmKeyManager: { hasAvailableKeys: vi.fn().mockResolvedValue(true) } }));
-vi.mock('../tools/toolRegistry.js', () => ({ toolRegistry: { execute: vi.fn() } }));
-vi.mock('./orchestrator.prompt.js', () => ({ getMasterPrompt: vi.fn().mockReturnValue('Mock prompt') }));
-vi.mock('./responseSchema.js', () => ({ llmResponseSchema: { parse: vi.fn().mockReturnValue({ answer: 'Performance test' }) } }));
+vi.mock('../../logger.ts', () => ({ getLoggerInstance: () => ({ child: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }), info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }) }));
+vi.mock('../redis/redisClient.ts', () => ({ getRedisClientInstance: () => ({ publish: vi.fn(), duplicate: () => ({ on: vi.fn(), subscribe: vi.fn(), unsubscribe: vi.fn(), quit: vi.fn() }) }) }));
+vi.mock('../../utils/llmProvider.ts', () => ({ getLlmProvider: () => ({ getLlmResponse: vi.fn().mockResolvedValue('{"answer": "Performance test"}') }) }));
+vi.mock('../llm/LlmKeyManager.ts', () => ({ LlmKeyManager: { hasAvailableKeys: vi.fn().mockResolvedValue(true) } }));
+vi.mock('../tools/toolRegistry.ts', () => ({ toolRegistry: { execute: vi.fn() } }));
+vi.mock('./orchestrator.prompt.ts', () => ({ getMasterPrompt: vi.fn().mockReturnValue('Mock prompt') }));
+vi.mock('./responseSchema.ts', () => ({ llmResponseSchema: { parse: vi.fn().mockReturnValue({ answer: 'Performance test' }) } }));
 
 describe('Memory and Performance Integration Tests', () => {
   let mockJob: any;

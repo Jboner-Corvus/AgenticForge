@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-import { Ctx, Tool } from '../../../../types.js';
-import { getLlmProvider } from '../../../../utils/llmProvider.js';
-import { getSummarizerPrompt } from './summarizer.prompt.js';
+import { Ctx, Tool } from '../../../../types.ts';
+import { getLlmProvider } from '../../../../utils/llmProvider.ts';
+import { getSummarizerPrompt } from './summarizer.prompt.ts';
 
 export const summarizeParams = z.object({
   text: z.string().describe('The text to summarize'),

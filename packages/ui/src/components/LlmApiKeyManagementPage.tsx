@@ -163,8 +163,8 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
 
   useEffect(() => {
     if (keyData) {
-      setApiKey(keyData.key);
-      setNickname(keyData.nickname);
+      setApiKey(keyData.key || '');
+      setNickname(keyData.nickname || '');
     }
   }, [keyData]);
 
@@ -202,10 +202,24 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
 
     // Ajouter la nouvelle clé avec le modèle principal du provider
     const newKey: LlmApiKey = {
+      id: Math.random().toString(36).substring(2, 15),
+      providerId: provider.id,
+      providerName: provider.name,
+      keyName: nickname,
+      keyValue: apiKey,
+      isEncrypted: false,
+      isActive: true,
+      priority: 5,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      usageCount: 0,
+      metadata: {
+        environment: 'universal',
+        tags: []
+      },
       provider: provider.id,
       key: apiKey,
       nickname: nickname,
-      createdAt: Date.now(),
       baseUrl: provider.baseUrl,
       model: provider.models[0]
     };
@@ -519,9 +533,9 @@ export const LlmApiKeyManagementPage = memo(() => {
         const keys = await getLlmApiKeysApi(authToken, null);
         // Convertir LlmApiKey[] en BackendLlmApiKey[]
         const backendKeysConverted: BackendLlmApiKey[] = keys.map(key => ({
-          apiKey: key.key,
+          apiKey: key.key || '',
           apiModel: key.model || '',
-          apiProvider: key.provider,
+          apiProvider: key.provider || '',
           baseUrl: key.baseUrl,
           errorCount: 0, // Valeur par défaut
           isPermanentlyDisabled: false, // Valeur par défaut
@@ -542,36 +556,44 @@ export const LlmApiKeyManagementPage = memo(() => {
     
     setTestingKey(keyIndex);
     try {
-      // Envoyer une requête de test simple via l'API
-      const response = await fetch('http://localhost:3001/api/chat', {
+      const keyToTest = backendKeys[keyIndex];
+      if (!keyToTest) throw new Error('Key not found');
+      
+      // Use dedicated test endpoint instead of consuming tokens
+      const response = await fetch('/api/llm-keys/test', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ 
-          prompt: 'Test simple: réponds juste avec "OK"',
-          preferredProvider: backendKeys[keyIndex]?.apiProvider 
+          providerId: keyToTest.apiProvider,
+          keyValue: keyToTest.apiKey,
+          model: keyToTest.apiModel || undefined
         })
       });
       
-      if (response.ok) {
-        // Recharger les clés pour voir les mises à jour
+      const result = await response.json();
+      
+      if (response.ok && result.valid) {
+        // Reload keys to see updates
         const keys = await getLlmApiKeysApi(authToken, null);
-        // Convertir LlmApiKey[] en BackendLlmApiKey[]
         const backendKeysConverted: BackendLlmApiKey[] = keys.map(key => ({
-          apiKey: key.key,
+          apiKey: key.key || '',
           apiModel: key.model || '',
-          apiProvider: key.provider,
+          apiProvider: key.provider || '',
           baseUrl: key.baseUrl,
-          errorCount: 0, // Valeur par défaut
-          isPermanentlyDisabled: false, // Valeur par défaut
+          errorCount: 0,
+          isPermanentlyDisabled: false,
         }));
         setBackendKeys(backendKeysConverted || []);
-        console.log(`✅ Clé ${keyIndex} testée avec succès`);
+        console.log(`✅ Key ${keyIndex} tested successfully`);
+      } else {
+        throw new Error(result.error || 'Key validation failed');
       }
     } catch (error) {
-      console.error(`❌ Erreur lors du test de la clé ${keyIndex}:`, error);
+      console.error(`❌ Key test failed for ${keyIndex}:`, error);
+      throw error; // Re-throw so UI can show error state
     } finally {
       setTestingKey(null);
     }

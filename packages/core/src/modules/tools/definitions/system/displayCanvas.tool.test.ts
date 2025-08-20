@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { displayCanvasTool } from './displayCanvas.tool';
-import { sendToCanvas } from '../../../../utils/canvasUtils.js';
+import { sendToCanvas } from '../../../../utils/canvasUtils.ts';
 
 // Mock the canvasUtils
-vi.mock('../../../../utils/canvasUtils.js', () => ({
+vi.mock('../../../../utils/canvasUtils.ts', () => ({
   sendToCanvas: vi.fn(),
   closeCanvas: vi.fn()
 }));

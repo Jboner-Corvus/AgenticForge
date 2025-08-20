@@ -14,9 +14,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // FICHIER : src/prompts/orchestrator.prompt.ts
-import type { AgentSession, Message, Tool } from '../../types.js';
+import type { AgentSession, Message, Tool } from '../../types.ts';
 
-import { getResponseJsonSchema } from './responseSchema.js';
+import { getResponseJsonSchema } from './responseSchema.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

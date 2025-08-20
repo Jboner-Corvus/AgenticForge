@@ -23,7 +23,7 @@ export interface AgentResponseMessage {
   type: 'agent_response';
 }
 
-import type { LLMContent } from './modules/llm/llm-types.js';
+import type { LLMContent } from './modules/llm/llm-types.ts';
 
 export interface AgentSession {
   data: SessionData;
@@ -63,7 +63,7 @@ export interface ILlmProvider {
   ): Promise<string>;
 }
 
-import { LlmKeyErrorType } from './modules/llm/LlmKeyManager.js';
+import { LlmKeyErrorType } from './modules/llm/LlmKeyManager.ts';
 
 export type Message =
   | AgentCanvasOutputMessage

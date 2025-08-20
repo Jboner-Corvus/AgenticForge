@@ -5,15 +5,15 @@ import _os from 'os';
 import path from 'path';
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
-import { config } from '../../../../config.js';
-import { getLogger } from '../../../../logger.js';
+import { config } from '../../../../config.ts';
+import { getLogger } from '../../../../logger.ts';
 import {
   Tool as _Tool,
   Ctx,
   ILlmProvider,
   SessionData,
-} from '../../../../types.js';
-import { editFileTool } from './editFile.tool.js';
+} from '../../../../types.ts';
+import { editFileTool } from './editFile.tool.ts';
 
 vi.mock('fs', () => ({
   promises: {
@@ -22,9 +22,9 @@ vi.mock('fs', () => ({
   },
 }));
 
-vi.mock('../../../../logger.js', async () => {
-  const actual = await vi.importActual<typeof import('../../../../logger.js')>(
-    '../../../../logger.js',
+vi.mock('../../../../logger.ts', async () => {
+  const actual = await vi.importActual<typeof import('../../../../logger.ts')>(
+    '../../../../logger.ts',
   );
   return {
     ...actual,

@@ -1,5 +1,4 @@
 // API utilitaires pour la gestion des clés LLM avec Redis
-import { clientConfig } from '../../config';
 
 export interface RedisKeyPattern {
   pattern: string;
@@ -21,6 +20,13 @@ export interface RedisLLMKey {
       requests_per_minute: number;
       tokens_per_minute: number;
     };
+  };
+}
+
+// Interface for the UI store
+interface UIStore {
+  getState: () => {
+    getValidAuthToken: () => string | null;
   };
 }
 
@@ -86,36 +92,24 @@ export class LLMKeysApi {
       'Content-Type': 'application/json',
     };
 
-    // Try to get JWT from cookie
-    const cookieName = 'agenticforge_jwt=';
-    const decodedCookie = decodeURIComponent(document.cookie);
-    const ca = decodedCookie.split(';');
-    for(let i = 0; i < ca.length; i++) {
-      let c = ca[i];
-      while (c.charAt(0) === ' ') {
-        c = c.substring(1);
-      }
-      if (c.indexOf(cookieName) === 0) {
-        const jwtToken = c.substring(cookieName.length, c.length);
-        if (jwtToken) {
-          headers['Authorization'] = 'Bearer ' + jwtToken;
+    // Use unified auth from UI store (same as llmKeysStore)
+    try {
+      const uiStore = (window as unknown as { __UI_STORE__: UIStore }).__UI_STORE__;
+      if (uiStore) {
+        const token = uiStore.getState().getValidAuthToken();
+        if (token) {
+          headers['Authorization'] = 'Bearer ' + token;
+          return headers;
         }
-        break;
       }
+    } catch (error) {
+      console.warn('Failed to get auth from UI store:', error);
     }
 
-    // Try to get token from localStorage as fallback
-    if (!headers['Authorization']) {
-      const localStorageToken = localStorage.getItem('backendAuthToken');
-      if (localStorageToken) {
-        headers['Authorization'] = 'Bearer ' + localStorageToken;
-      }
-    }
-
-    // Fallback to env AUTH_TOKEN
-    if (!headers['Authorization']) {
-      const envToken = clientConfig.AUTH_TOKEN;
-      headers['Authorization'] = 'Bearer ' + envToken;
+    // Fallback to localStorage
+    const localStorageToken = localStorage.getItem('backendAuthToken');
+    if (localStorageToken) {
+      headers['Authorization'] = 'Bearer ' + localStorageToken;
     }
 
     return headers;

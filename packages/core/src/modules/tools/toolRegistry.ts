@@ -1,8 +1,8 @@
 import { z, ZodTypeAny } from 'zod';
 
-import { getLoggerInstance } from '../../logger.js';
-import { Ctx, Tool } from '../../types.js';
-import { AppError, UserError } from '../../utils/errorUtils.js';
+import { getLoggerInstance } from '../../logger.ts';
+import { Ctx, Tool } from '../../types.ts';
+import { AppError, UserError } from '../../utils/errorUtils.ts';
 
 class ToolRegistry {
   private static instance: ToolRegistry;

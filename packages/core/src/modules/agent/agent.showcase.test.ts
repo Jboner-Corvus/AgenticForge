@@ -32,14 +32,14 @@ const mockResponseSchema = {
 };
 
 // Global mocks
-vi.mock('../../config.js', () => ({
+vi.mock('../../config.ts', () => ({
   config: {
     AGENT_MAX_ITERATIONS: 5,
     LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
   },
 }));
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../../logger.ts', () => ({
   getLoggerInstance: () => mockLogger,
 }));
 
@@ -47,29 +47,29 @@ vi.mock('../../utils/llmProvider', () => ({
   getLlmProvider: vi.fn(() => mockLlmProvider),
 }));
 
-vi.mock('../redis/redisClient.js', () => ({
+vi.mock('../redis/redisClient.ts', () => ({
   getRedisClientInstance: () => mockRedisClient,
 }));
 
-vi.mock('../llm/LlmKeyManager.js', () => ({
+vi.mock('../llm/LlmKeyManager.ts', () => ({
   LlmKeyManager: {
     hasAvailableKeys: vi.fn().mockResolvedValue(true),
   },
 }));
 
-vi.mock('../tools/toolRegistry.js', () => ({
+vi.mock('../tools/toolRegistry.ts', () => ({
   toolRegistry: mockToolRegistry,
 }));
 
-vi.mock('./orchestrator.prompt.js', () => ({
+vi.mock('./orchestrator.prompt.ts', () => ({
   getMasterPrompt: vi.fn().mockReturnValue('Test master prompt'),
 }));
 
-vi.mock('./responseSchema.js', () => ({
+vi.mock('./responseSchema.ts', () => ({
   llmResponseSchema: mockResponseSchema,
 }));
 
-vi.mock('../../utils/LlmError.js', () => ({
+vi.mock('../../utils/LlmError.ts', () => ({
   LlmError: class extends Error {
     constructor(message: string) {
       super(message);
@@ -80,7 +80,7 @@ vi.mock('../../utils/LlmError.js', () => ({
 
 
 
-vi.mock('../tools/definitions/index.js', () => ({
+vi.mock('../tools/definitions/index.ts', () => ({
   FinishToolSignal: class extends Error {
     constructor(message: string) {
       super(message);

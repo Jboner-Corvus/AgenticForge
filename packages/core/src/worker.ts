@@ -3,14 +3,14 @@ import { spawn as _spawn } from 'child_process';
 import { Redis } from 'ioredis';
 import { Client as PgClient } from 'pg';
 
-import { config, loadConfig } from './config.js';
-import { getLoggerInstance } from './logger.js';
-import { Agent } from './modules/agent/agent.js';
-import { getRedisClientInstance } from './modules/redis/redisClient.js';
-import { SessionManager } from './modules/session/sessionManager.js';
-import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.js';
-import { AppError, getErrDetails, UserError } from './utils/errorUtils.js';
-import { getTools } from './utils/toolLoader.js';
+import { config, loadConfig } from './config.ts';
+import { getLoggerInstance } from './logger.ts';
+import { Agent } from './modules/agent/agent.ts';
+import { getRedisClientInstance } from './modules/redis/redisClient.ts';
+import { SessionManager } from './modules/session/sessionManager.ts';
+import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.ts';
+import { AppError, getErrDetails, UserError } from './utils/errorUtils.ts';
+import { getTools } from './utils/toolLoader.ts';
 
 getLoggerInstance().debug('[WORKER-STARTUP] process.cwd():', process.cwd());
 getLoggerInstance().debug('[WORKER-STARTUP] process.env.PATH:', process.env.PATH);
@@ -275,7 +275,7 @@ export async function processJob(
   }
 }
 
-import { LlmKeyManager } from './modules/llm/LlmKeyManager.js';
+import { LlmKeyManager } from './modules/llm/LlmKeyManager.ts';
 
 if (process.env.NODE_ENV !== 'test') {
   // Load configuration for the worker process

@@ -11,17 +11,17 @@ import { Client as PgClient } from 'pg';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 
-import { getConfig, loadConfig } from './config.js';
-import { getLoggerInstance } from './logger.js';
-import { getJobQueue } from './modules/queue/queue.js';
+import { getConfig, loadConfig } from './config.ts';
+import { getLoggerInstance } from './logger.ts';
+import { getJobQueue } from './modules/queue/queue.ts';
 const config = getConfig();
-import { LlmKeyManager as _LlmKeyManager } from './modules/llm/LlmKeyManager.js';
-import { SessionManager } from './modules/session/sessionManager.js';
-import { Message, SessionData } from './types.js';
-import { AppError, handleError } from './utils/errorUtils.js';
-import { getTools } from './utils/toolLoader.js';
-import { maskApiKey } from './utils/keyMaskingUtils.js';
-import clientConsoleRouter from './modules/api/clientConsole.api.js';
+import { LlmKeyManager as _LlmKeyManager } from './modules/llm/LlmKeyManager.ts';
+import { SessionManager } from './modules/session/sessionManager.ts';
+import { Message, SessionData } from './types.ts';
+import { AppError, handleError } from './utils/errorUtils.ts';
+import { getTools } from './utils/toolLoader.ts';
+import { maskApiKey } from './utils/keyMaskingUtils.ts';
+import clientConsoleRouter from './modules/api/clientConsole.api.ts';
 
 export let configWatcher: import('chokidar').FSWatcher | null = null;
 
@@ -227,15 +227,10 @@ export async function initializeWebServer(
         const apiKey = req.headers.authorization;
         
         // ULTRA VERBOSE LOGGING POUR DEBUGGING
-        console.log('🔐🔐🔐 === BEARER TOKEN ANALYSIS ULTRA VERBOSE ===');
-        console.log('🔐 Request path:', req.path);
-        console.log('🔐 Request method:', req.method);
-        console.log('🔐 Raw apiKey from headers:', apiKey);
-        console.log('🔐 apiKey type:', typeof apiKey);
-        console.log('🔐 apiKey length:', apiKey?.length);
-        console.log('🔐 config.AUTH_TOKEN:', config.AUTH_TOKEN ? `PRÉSENT (${config.AUTH_TOKEN.substring(0, 30)}...)` : 'ABSENT');
-        console.log('🔐 process.env.AUTH_TOKEN:', process.env.AUTH_TOKEN ? `PRÉSENT (${process.env.AUTH_TOKEN.substring(0, 30)}...)` : 'ABSENT');
-        console.log('🔐 process.env.VITE_AUTH_TOKEN:', process.env.VITE_AUTH_TOKEN ? `PRÉSENT (${process.env.VITE_AUTH_TOKEN.substring(0, 30)}...)` : 'ABSENT');
+        // Security: masked auth logging
+        console.log('🔐 Auth check for:', req.path);
+        console.log('🔐 Auth token present:', !!apiKey);
+        console.log('🔐 Config token present:', !!config.AUTH_TOKEN);
         
         getLoggerInstance().debug(
           { apiKey: apiKey ? `${apiKey.substring(0, 20)}...` : 'undefined' },
@@ -247,9 +242,8 @@ export async function initializeWebServer(
         const expectedToken = config.AUTH_TOKEN || process.env.AUTH_TOKEN || '';
         const expectedBearer = `Bearer ${expectedToken}`;
         
-        console.log('🔐 SIMPLIFIED AUTH - Expected Bearer:', expectedBearer.substring(0, 50) + '...');
-        console.log('🔐 SIMPLIFIED AUTH - Received Bearer:', apiKey || 'UNDEFINED');
-        console.log('🔐 SIMPLIFIED AUTH - Match result:', apiKey === expectedBearer);
+        // Security: no token values in logs
+        console.log('🔐 Auth validation in progress...');
         
         // Authentification Bearer pour les routes sensibles
         if (apiKey !== expectedBearer) {

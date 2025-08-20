@@ -780,7 +780,28 @@ export const useStore = create<AppState>((set, get) => ({
       if (currentKeys.length === 0) {
         const keys = await getLlmApiKeysApi(authToken, null);
         console.log('🔑 [INIT] Fetched keys from backend:', keys);
-        const validKeys = keys.filter(key => key.provider && key.key);
+        const validKeys = keys
+          .filter(key => key.provider && key.key)
+          .map(key => ({
+            ...key,
+            id: key.id || Math.random().toString(36).substring(2, 15),
+            providerId: key.provider!,
+            providerName: key.provider!,
+            keyName: key.nickname || key.key!,
+            keyValue: key.key!,
+            isEncrypted: key.isEncrypted || false,
+            isActive: key.isActive || true,
+            priority: key.priority || 5,
+            createdAt: key.createdAt || new Date().toISOString(),
+            updatedAt: key.updatedAt || new Date().toISOString(),
+            usageCount: key.usageCount || 0,
+            metadata: key.metadata || {
+              environment: 'universal',
+              tags: [],
+            },
+            provider: key.provider!,
+            key: key.key!
+          }));
         console.log('🔑 [INIT] Valid keys after filtering:', validKeys);
         
         if (validKeys.length > 0) {

@@ -12,20 +12,20 @@ import type {
   ToolCallMessage,
   ToolResultMessage,
   UserMessage,
-} from '../../types.js';
+} from '../../types.ts';
 
-import { config } from '../../config.js';
-import { getLoggerInstance } from '../../logger.js';
-import { LlmError } from '../../utils/LlmError.js';
-import { getLlmProvider } from '../../utils/llmProvider.js';
-import { LLMContent } from '../llm/llm-types.js';
-import { LlmKeyManager } from '../llm/LlmKeyManager.js';
-import { getRedisClientInstance } from '../redis/redisClient.js';
-import { SessionManager } from '../session/sessionManager.js';
-import { FinishToolSignal } from '../tools/definitions/index.js';
-import { toolRegistry } from '../tools/toolRegistry.js';
-import { getMasterPrompt } from './orchestrator.prompt.js';
-import { llmResponseSchema } from './responseSchema.js';
+import { config } from '../../config.ts';
+import { getLoggerInstance } from '../../logger.ts';
+import { LlmError } from '../../utils/LlmError.ts';
+import { getLlmProvider } from '../../utils/llmProvider.ts';
+import { LLMContent } from '../llm/llm-types.ts';
+import { LlmKeyManager } from '../llm/LlmKeyManager.ts';
+import { getRedisClientInstance } from '../redis/redisClient.ts';
+import { SessionManager } from '../session/sessionManager.ts';
+import { FinishToolSignal } from '../tools/definitions/index.ts';
+import { toolRegistry } from '../tools/toolRegistry.ts';
+import { getMasterPrompt } from './orchestrator.prompt.ts';
+import { llmResponseSchema } from './responseSchema.ts';
 
 type ChannelData =
   | {
@@ -441,41 +441,66 @@ export class Agent {
           }
 
           if (command && command.name === 'finish') {
-            const finishResult = await this.executeTool(command, iterationLog);
-            if (
-              typeof finishResult === 'object' &&
-              finishResult !== null &&
-              'answer' in finishResult &&
-              typeof (finishResult as { answer: unknown }).answer === 'string'
-            ) {
-              const finalAnswer = (finishResult as { answer: string }).answer;
-              iterationLog.info(
-                { finalAnswer },
-                'Agent finished via finish tool',
-              );
-              this.publishToChannel({
-                content: finalAnswer,
-                type: 'agent_response',
-              });
-              this.session.history.push({
-                id: crypto.randomUUID(),
-                result: finishResult,
-                timestamp: Date.now(),
-                toolName: 'finish',
-                type: 'tool_result',
-              });
-              return finalAnswer;
-            } else {
-              // If finish tool doesn't return an object with 'answer', treat it as an error
-              const errorMessage = `Finish tool did not return a valid answer object: ${JSON.stringify(finishResult)}`;
-              iterationLog.error(errorMessage);
-              this.session.history.push({
-                content: `Error: ${errorMessage}`,
-                id: crypto.randomUUID(),
-                timestamp: Date.now(),
-                type: 'error',
-              });
-              return errorMessage;
+            try {
+              const finishResult = await this.executeTool(command, iterationLog);
+              if (
+                typeof finishResult === 'object' &&
+                finishResult !== null &&
+                'answer' in finishResult &&
+                typeof (finishResult as { answer: unknown }).answer === 'string'
+              ) {
+                const finalAnswer = (finishResult as { answer: string }).answer;
+                iterationLog.info(
+                  { finalAnswer },
+                  'Agent finished via finish tool',
+                );
+                this.publishToChannel({
+                  content: finalAnswer,
+                  type: 'agent_response',
+                });
+                this.session.history.push({
+                  id: crypto.randomUUID(),
+                  result: finishResult,
+                  timestamp: Date.now(),
+                  toolName: 'finish',
+                  type: 'tool_result',
+                });
+                return finalAnswer;
+              } else {
+                // If finish tool doesn't return an object with 'answer', treat it as an error
+                const errorMessage = `Finish tool did not return a valid answer object: ${JSON.stringify(finishResult)}`;
+                iterationLog.error(errorMessage);
+                this.session.history.push({
+                  content: `Error: ${errorMessage}`,
+                  id: crypto.randomUUID(),
+                  timestamp: Date.now(),
+                  type: 'error',
+                });
+                return errorMessage;
+              }
+            } catch (_error) {
+              if (_error instanceof FinishToolSignal) {
+                // This is the expected case - finish tool throws FinishToolSignal
+                const finalAnswer = _error.message;
+                iterationLog.info(
+                  { finalAnswer },
+                  'Agent finished via finish tool signal',
+                );
+                this.publishToChannel({
+                  content: finalAnswer,
+                  type: 'agent_response',
+                });
+                this.session.history.push({
+                  content: finalAnswer,
+                  id: crypto.randomUUID(),
+                  timestamp: Date.now(),
+                  type: 'agent_response',
+                });
+                return finalAnswer;
+              } else {
+                // Unexpected error
+                throw _error;
+              }
             }
           } else if (command) {
             this.commandHistory.push(command);

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Agent } from './agent.js';
-import { getMockQueue } from '../../test/mockQueue.js';
-import type { SessionData, Tool, Message } from '../../types.js';
+import { Agent } from './agent.ts';
+import { getMockQueue } from '../../test/mockQueue.ts';
+import type { SessionData, Tool, Message } from '../../types.ts';
 
 // Mock Session Manager avec fonctionnalités complètes
 const mockSessionManager = {
@@ -43,7 +43,7 @@ const mockRedisClient = {
 };
 
 // Mocks globaux
-vi.mock('../../config.js', () => ({
+vi.mock('../../config.ts', () => ({
   config: {
     AGENT_MAX_ITERATIONS: 5,
     LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
@@ -53,7 +53,7 @@ vi.mock('../../config.js', () => ({
   },
 }));
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../../logger.ts', () => ({
   getLoggerInstance: () => ({
     child: () => ({
       info: vi.fn(),
@@ -68,33 +68,33 @@ vi.mock('../../logger.js', () => ({
   }),
 }));
 
-vi.mock('../redis/redisClient.js', () => ({
+vi.mock('../redis/redisClient.ts', () => ({
   getRedisClientInstance: () => mockRedisClient,
 }));
 
-vi.mock('../../utils/llmProvider.js', () => ({
+vi.mock('../../utils/llmProvider.ts', () => ({
   getLlmProvider: () => ({
     getLlmResponse: vi.fn().mockResolvedValue('{"answer": "Session test response"}'),
   }),
 }));
 
-vi.mock('../llm/LlmKeyManager.js', () => ({
+vi.mock('../llm/LlmKeyManager.ts', () => ({
   LlmKeyManager: {
     hasAvailableKeys: vi.fn().mockResolvedValue(true),
   },
 }));
 
-vi.mock('../tools/toolRegistry.js', () => ({
+vi.mock('../tools/toolRegistry.ts', () => ({
   toolRegistry: {
     execute: vi.fn(),
   },
 }));
 
-vi.mock('./orchestrator.prompt.js', () => ({
+vi.mock('./orchestrator.prompt.ts', () => ({
   getMasterPrompt: vi.fn().mockReturnValue('Mock prompt'),
 }));
 
-vi.mock('./responseSchema.js', () => ({
+vi.mock('./responseSchema.ts', () => ({
   llmResponseSchema: {
     parse: vi.fn().mockReturnValue({ answer: 'Session test response' }),
   },

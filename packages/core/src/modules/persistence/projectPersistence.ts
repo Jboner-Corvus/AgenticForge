@@ -1,5 +1,5 @@
-import { getRedisClientInstance } from '../../modules/redis/redisClient.js';
-import type { SessionData } from '../../types.js';
+import { getRedisClientInstance } from '../../modules/redis/redisClient.ts';
+import type { SessionData } from '../../types.ts';
 
 // Types for our persistence system
 interface ProjectState {

@@ -1,5 +1,5 @@
 // packages/core/src/modules/tools/definitions/web/browserManager.ts
-import { getLogger } from '../../../../logger.js';
+import { getLogger } from '../../../../logger.ts';
 
 let browser: any | null = null;
 let chromium: any | null = null;

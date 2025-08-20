@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../../../types.js';
+import type { Ctx, Tool } from '../../../../types.ts';
 
-import { getTools } from '../../../../utils/toolLoader.js';
+import { getTools } from '../../../../utils/toolLoader.ts';
 
 export const parameters = z.object({});
 

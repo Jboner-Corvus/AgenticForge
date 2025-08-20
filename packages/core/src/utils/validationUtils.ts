@@ -1,4 +1,4 @@
-import { getLoggerInstance } from '../logger.js';
+import { getLoggerInstance } from '../logger.ts';
 
 /**
  * Valide si une chaîne de caractères est une URL HTTP/HTTPS valide.

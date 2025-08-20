@@ -1,7 +1,7 @@
 // packages/core/src/modules/tools/definitions/clientConsole.tool.ts
 import { z } from 'zod';
-import { Tool } from '../../../types.js';
-import { getRedisClientInstance } from '../../redis/redisClient.js';
+import { Tool } from '../../../types.ts';
+import { getRedisClientInstance } from '../../redis/redisClient.ts';
 
 // Commandes d'aide prédéfinies
 const HELP_COMMANDS = {

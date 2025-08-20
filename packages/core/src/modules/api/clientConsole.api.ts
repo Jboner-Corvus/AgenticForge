@@ -1,7 +1,7 @@
 // packages/core/src/modules/api/clientConsole.api.ts
 import express, { Router } from 'express';
-import { getRedisClientInstance } from '../redis/redisClient.js';
-import { getLoggerInstance } from '../../logger.js';
+import { getRedisClientInstance } from '../redis/redisClient.ts';
+import { getLoggerInstance } from '../../logger.ts';
 
 const router: Router = express.Router();
 

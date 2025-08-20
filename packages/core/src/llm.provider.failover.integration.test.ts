@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
-import { getConfig } from './config.js';
+import { getConfig } from './config.ts';
 
 describe('LLM Provider Failover Integration Tests', () => {
   let config: ReturnType<typeof getConfig>;

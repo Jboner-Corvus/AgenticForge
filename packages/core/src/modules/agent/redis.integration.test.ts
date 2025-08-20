@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Agent } from './agent.js';
-import { getMockQueue } from '../../test/mockQueue.js';
-import type { SessionData, Tool } from '../../types.js';
+import { Agent } from './agent.ts';
+import { getMockQueue } from '../../test/mockQueue.ts';
+import type { SessionData, Tool } from '../../types.ts';
 
 // Mock Redis avec simulation complète des fonctionnalités
 const mockRedisClientInstance = {
@@ -29,7 +29,7 @@ const mockRedisClientInstance = {
 };
 
 // Mocks globaux
-vi.mock('../../config.js', () => ({
+vi.mock('../../config.ts', () => ({
   config: {
     AGENT_MAX_ITERATIONS: 5,
     LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
@@ -37,7 +37,7 @@ vi.mock('../../config.js', () => ({
   },
 }));
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../../logger.ts', () => ({
   getLoggerInstance: () => ({
     child: () => ({
       info: vi.fn(),
@@ -52,33 +52,33 @@ vi.mock('../../logger.js', () => ({
   }),
 }));
 
-vi.mock('../redis/redisClient.js', () => ({
+vi.mock('../redis/redisClient.ts', () => ({
   getRedisClientInstance: () => mockRedisClientInstance,
 }));
 
-vi.mock('../../utils/llmProvider.js', () => ({
+vi.mock('../../utils/llmProvider.ts', () => ({
   getLlmProvider: () => ({
     getLlmResponse: vi.fn().mockResolvedValue('{"answer": "Redis test response"}'),
   }),
 }));
 
-vi.mock('../llm/LlmKeyManager.js', () => ({
+vi.mock('../llm/LlmKeyManager.ts', () => ({
   LlmKeyManager: {
     hasAvailableKeys: vi.fn().mockResolvedValue(true),
   },
 }));
 
-vi.mock('../tools/toolRegistry.js', () => ({
+vi.mock('../tools/toolRegistry.ts', () => ({
   toolRegistry: {
     execute: vi.fn(),
   },
 }));
 
-vi.mock('./orchestrator.prompt.js', () => ({
+vi.mock('./orchestrator.prompt.ts', () => ({
   getMasterPrompt: vi.fn().mockReturnValue('Mock prompt'),
 }));
 
-vi.mock('./responseSchema.js', () => ({
+vi.mock('./responseSchema.ts', () => ({
   llmResponseSchema: {
     parse: vi.fn().mockReturnValue({ answer: 'Redis test response' }),
   },
@@ -330,7 +330,7 @@ describe('Redis Communication Integration Tests', () => {
 
   describe('Error Recovery via Redis', () => {
     it('should publish error notifications to monitoring channel', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
       mockLlmProvider.getLlmResponse.mockRejectedValue(new Error('LLM Provider failed'));
 
       await agent.run();
@@ -342,7 +342,7 @@ describe('Redis Communication Integration Tests', () => {
     });
 
     it('should maintain error state in Redis for debugging', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
       mockLlmProvider.getLlmResponse.mockRejectedValue(new Error('Test error'));
 
       await agent.run();
@@ -357,7 +357,7 @@ describe('Redis Communication Integration Tests', () => {
     });
 
     it('should coordinate with other agents during recovery', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
       mockLlmProvider.getLlmResponse.mockRejectedValue(new Error('Provider overload'));
 
       await agent.run();

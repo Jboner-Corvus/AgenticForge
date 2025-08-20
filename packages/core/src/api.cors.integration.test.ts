@@ -3,7 +3,7 @@ import express from 'express';
 import { Server } from 'http';
 import request from 'supertest';
 import cors from 'cors';
-import { getConfig } from './config.js';
+import { getConfig } from './config.ts';
 
 describe('API CORS Integration Tests', () => {
   let app: express.Application;

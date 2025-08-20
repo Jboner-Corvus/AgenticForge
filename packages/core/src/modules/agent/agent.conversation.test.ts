@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { z } from 'zod';
-import { Agent } from './agent.js';
-import type { SessionData, Tool, Message } from '../../types.js';
+import { Agent } from './agent.ts';
+import type { SessionData, Tool, Message } from '../../types.ts';
 
 // Mock all dependencies for integration testing
-vi.mock('../../config.js', () => ({
+vi.mock('../../config.ts', () => ({
   config: {
     AGENT_MAX_ITERATIONS: 10,
     LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
   },
 }));
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../../logger.ts', () => ({
   getLoggerInstance: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -27,7 +27,7 @@ vi.mock('../../utils/llmProvider', () => ({
   }),
 }));
 
-vi.mock('../redis/redisClient.js', () => ({
+vi.mock('../redis/redisClient.ts', () => ({
   getRedisClientInstance: () => ({
     publish: vi.fn(),
     duplicate: () => ({
@@ -39,23 +39,23 @@ vi.mock('../redis/redisClient.js', () => ({
   }),
 }));
 
-vi.mock('../llm/LlmKeyManager.js', () => ({
+vi.mock('../llm/LlmKeyManager.ts', () => ({
   LlmKeyManager: {
     hasAvailableKeys: vi.fn().mockResolvedValue(true),
   },
 }));
 
-vi.mock('../tools/toolRegistry.js', () => ({
+vi.mock('../tools/toolRegistry.ts', () => ({
   toolRegistry: {
     execute: vi.fn(),
   },
 }));
 
-vi.mock('./orchestrator.prompt.js', () => ({
+vi.mock('./orchestrator.prompt.ts', () => ({
   getMasterPrompt: vi.fn().mockReturnValue('Mock master prompt'),
 }));
 
-vi.mock('./responseSchema.js', () => ({
+vi.mock('./responseSchema.ts', () => ({
   llmResponseSchema: {
     parse: vi.fn(),
   },
@@ -115,17 +115,17 @@ describe('Agent Conversation Integration Tests', () => {
       },
     ];
 
-    const llmProviderModule = await import('../../utils/llmProvider.js');
+    const llmProviderModule = await import('../../utils/llmProvider.ts');
     (llmProviderModule.getLlmProvider as Mock).mockReturnValue({
       getLlmResponse: vi.fn(),
     });
     mockLlmProvider = llmProviderModule.getLlmProvider('openai');
 
-    const responseSchemaModule = await import('./responseSchema.js');
+    const responseSchemaModule = await import('./responseSchema.ts');
     (responseSchemaModule.llmResponseSchema.parse as Mock) = vi.fn();
     mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
-    const toolRegistryModule = await import('../tools/toolRegistry.js');
+    const toolRegistryModule = await import('../tools/toolRegistry.ts');
     (toolRegistryModule.toolRegistry.execute as Mock) = vi.fn();
     mockToolRegistry = toolRegistryModule.toolRegistry;
   });

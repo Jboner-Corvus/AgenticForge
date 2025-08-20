@@ -4,10 +4,10 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
 
-import { getLogger } from '../logger.js';
-import { toolRegistry } from '../modules/tools/toolRegistry.js';
-import { Tool } from '../types.js';
-import { getErrDetails } from './errorUtils.js';
+import { getLogger } from '../logger.ts';
+import { toolRegistry } from '../modules/tools/toolRegistry.ts';
+import { Tool } from '../types.ts';
+import { getErrDetails } from './errorUtils.ts';
 
 // Schéma Zod pour valider la structure d'un outil
 const toolSchema = z.object({

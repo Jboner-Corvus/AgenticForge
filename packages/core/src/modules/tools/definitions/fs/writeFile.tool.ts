@@ -2,9 +2,9 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../../../types.js';
+import type { Ctx, Tool } from '../../../../types.ts';
 
-import { config } from '../../../../config.js';
+import { config } from '../../../../config.ts';
 
 export const writeFileParams = z.object({
   content: z

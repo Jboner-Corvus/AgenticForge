@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Agent } from './agent.js';
-import { getMockQueue } from '../../test/mockQueue.js';
-import type { SessionData, Tool } from '../../types.js';
+import { Agent } from './agent.ts';
+import { getMockQueue } from '../../test/mockQueue.ts';
+import type { SessionData, Tool } from '../../types.ts';
 
 // Mock WebSocket avec fonctionnalités real-time
 const mockWebSocket = {
@@ -59,7 +59,7 @@ const mockSocketIO = {
 };
 
 // Mocks globaux
-vi.mock('../../config.js', () => ({
+vi.mock('../../config.ts', () => ({
   config: {
     AGENT_MAX_ITERATIONS: 5,
     LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
@@ -71,7 +71,7 @@ vi.mock('../../config.js', () => ({
   },
 }));
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../../logger.ts', () => ({
   getLoggerInstance: () => ({
     child: () => ({
       info: vi.fn(),
@@ -86,7 +86,7 @@ vi.mock('../../logger.js', () => ({
   }),
 }));
 
-vi.mock('../redis/redisClient.js', () => ({
+vi.mock('../redis/redisClient.ts', () => ({
   getRedisClientInstance: () => ({
     publish: vi.fn(),
     subscribe: vi.fn(),
@@ -104,29 +104,29 @@ vi.mock('../redis/redisClient.js', () => ({
   }),
 }));
 
-vi.mock('../../utils/llmProvider.js', () => ({
+vi.mock('../../utils/llmProvider.ts', () => ({
   getLlmProvider: () => ({
     getLlmResponse: vi.fn().mockResolvedValue('{"answer": "WebSocket test response"}'),
   }),
 }));
 
-vi.mock('../llm/LlmKeyManager.js', () => ({
+vi.mock('../llm/LlmKeyManager.ts', () => ({
   LlmKeyManager: {
     hasAvailableKeys: vi.fn().mockResolvedValue(true),
   },
 }));
 
-vi.mock('../tools/toolRegistry.js', () => ({
+vi.mock('../tools/toolRegistry.ts', () => ({
   toolRegistry: {
     execute: vi.fn(),
   },
 }));
 
-vi.mock('./orchestrator.prompt.js', () => ({
+vi.mock('./orchestrator.prompt.ts', () => ({
   getMasterPrompt: vi.fn().mockReturnValue('Mock prompt'),
 }));
 
-vi.mock('./responseSchema.js', () => ({
+vi.mock('./responseSchema.ts', () => ({
   llmResponseSchema: {
     parse: vi.fn().mockReturnValue({ answer: 'WebSocket test response' }),
   },
@@ -231,8 +231,8 @@ describe('WebSocket Real-time Communication Integration Tests', () => {
     });
 
     it('should stream agent thoughts in real-time', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       const thoughtStream = [
         'I need to analyze this request carefully...',
@@ -266,9 +266,9 @@ describe('WebSocket Real-time Communication Integration Tests', () => {
     });
 
     it('should broadcast tool execution results in real-time', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"command": {"name": "webSearch", "params": {"query": "real-time updates"}}}'
@@ -444,8 +444,8 @@ describe('WebSocket Real-time Communication Integration Tests', () => {
     });
 
     it('should synchronize canvas updates across clients', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"canvas": {"content": "<h1>Collaborative Canvas</h1>", "contentType": "html"}}'
@@ -614,7 +614,7 @@ describe('WebSocket Real-time Communication Integration Tests', () => {
 
       await agent.run();
 
-      const redisClient = require('../redis/redisClient.js').getRedisClientInstance();
+      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         'websocket_metrics',
         expect.objectContaining({
@@ -695,7 +695,7 @@ describe('WebSocket Real-time Communication Integration Tests', () => {
       expect(detectedAnomalies).toContain('high_connection_drop');
       expect(detectedAnomalies).toContain('low_message_rate');
 
-      const redisClient = require('../redis/redisClient.js').getRedisClientInstance();
+      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'alerts:websocket_anomaly',
         expect.stringContaining('high_latency')
@@ -744,7 +744,7 @@ describe('WebSocket Real-time Communication Integration Tests', () => {
 
       await agent.run();
 
-      const redisClient = require('../redis/redisClient.js').getRedisClientInstance();
+      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         expect.stringContaining('rate_limit'),
         expect.any(Object)

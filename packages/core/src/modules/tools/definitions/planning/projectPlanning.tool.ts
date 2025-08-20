@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import type { Ctx, Tool } from '../../../../types.js';
-import { sendToCanvas } from '../../../../utils/canvasUtils.js';
+import type { Ctx, Tool } from '../../../../types.ts';
+import { sendToCanvas } from '../../../../utils/canvasUtils.ts';
 
 // Schema for project planning parameters
 const projectPlanningParams = z.object({

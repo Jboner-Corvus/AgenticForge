@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
-import { getConfig } from './config.js';
+import { getConfig } from './config.ts';
 
 describe('Auth JWT Lifecycle Integration Tests', () => {
   let config: ReturnType<typeof getConfig>;

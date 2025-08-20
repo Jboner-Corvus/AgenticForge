@@ -1,5 +1,5 @@
 // src/utils/validationUtils.test.ts (Corrigé)
-import { isValidHttpUrl } from './validationUtils.js';
+import { isValidHttpUrl } from './validationUtils.ts';
 
 describe('validationUtils', () => {
   describe('isValidHttpUrl', () => {

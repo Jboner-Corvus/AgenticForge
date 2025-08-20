@@ -5,8 +5,8 @@ import { Client as PgClient } from 'pg';
 import { Redis } from 'ioredis';
 import { Server } from 'http';
 
-import { initializeWebServer } from './webServer.js';
-import { getConfig } from './config.js';
+import { initializeWebServer } from './webServer.ts';
+import { getConfig } from './config.ts';
 
 describe('API Integration Tests', () => {
   let app: Application;

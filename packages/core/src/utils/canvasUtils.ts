@@ -1,4 +1,4 @@
-import { getRedisClientInstance } from '../modules/redis/redisClient.js';
+import { getRedisClientInstance } from '../modules/redis/redisClient.ts';
 
 /**
  * Ferme le canvas

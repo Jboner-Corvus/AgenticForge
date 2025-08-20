@@ -2,7 +2,7 @@ import { describe, expect, it, beforeAll, afterAll, beforeEach } from 'vitest';
 import express from 'express';
 import { Server } from 'http';
 import request from 'supertest';
-import { getConfig } from './config.js';
+import { getConfig } from './config.ts';
 
 describe('API Middleware Chain Integration Tests', () => {
   let app: express.Application;

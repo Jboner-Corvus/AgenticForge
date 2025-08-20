@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 // Mock modules first
-vi.mock('../../../../config.js', async () => {
+vi.mock('../../../../config.ts', async () => {
   return {
     config: {
       WORKSPACE_PATH: '/mock-workspace',
@@ -27,9 +27,9 @@ import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-import { config } from '../../../../config.js';
-import { getLoggerInstance } from '../../../../logger.js';
-import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
+import { config } from '../../../../config.ts';
+import { getLoggerInstance } from '../../../../logger.ts';
+import { Ctx, ILlmProvider, SessionData } from '../../../../types.ts';
 
 const mockLogger = {
   child: vi.fn().mockReturnThis(),
@@ -39,10 +39,10 @@ const mockLogger = {
   warn: vi.fn(),
 };
 
-vi.mock('../../../../logger.js', () => ({
+vi.mock('../../../../logger.ts', () => ({
   getLoggerInstance: vi.fn(() => mockLogger),
 }));
-import { writeFile as writeFileTool } from './writeFile.tool.js';
+import { writeFile as writeFileTool } from './writeFile.tool.ts';
 
 describe('writeFileTool', () => {
   let mockCtx: Ctx;

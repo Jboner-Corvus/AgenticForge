@@ -1,15 +1,15 @@
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../../../types.js';
+import type { Ctx, Tool } from '../../../../types.ts';
 
-import { getRedisClientInstance } from '../../../../modules/redis/redisClient.js';
+import { getRedisClientInstance } from '../../../../modules/redis/redisClient.ts';
 
 // Dynamically import Playwright to handle potential import errors
 let getBrowser: (() => Promise<any>) | null = null;
 let getPageContent: ((page: any) => Promise<string>) | null = null;
 
 try {
-  const browserManager = await import('./browserManager.js');
+  const browserManager = await import('./browserManager.ts');
   getBrowser = browserManager.getBrowser;
   
   getPageContent = async (page: any): Promise<string> => {

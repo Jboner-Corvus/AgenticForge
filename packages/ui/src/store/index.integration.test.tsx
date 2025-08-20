@@ -55,10 +55,24 @@ const TestStoreComponent = () => {
       <button 
         data-testid="add-llm-key" 
         onClick={() => addLlmApiKey({
+          id: 'test-id',
+          providerId: 'test-provider',
+          providerName: 'test-provider',
+          keyName: 'test-key',
+          keyValue: 'test-key-123',
+          isEncrypted: false,
+          isActive: true,
+          priority: 1,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          usageCount: 0,
+          metadata: {
+            environment: 'universal',
+            tags: []
+          },
           provider: 'test-provider',
           key: 'test-key-123',
-          nickname: 'test-key',
-          createdAt: Date.now()
+          nickname: 'test-key'
         })}
       >
         Add LLM Key

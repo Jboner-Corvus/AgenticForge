@@ -10,8 +10,8 @@ const mockLoggerInstance = {
   warn: vi.fn(),
 };
 
-let getDeadLetterQueue: typeof import('./queue.js').getDeadLetterQueue;
-let getJobQueue: typeof import('./queue.js').getJobQueue;
+let getDeadLetterQueue: typeof import('./queue.ts').getDeadLetterQueue;
+let getJobQueue: typeof import('./queue.ts').getJobQueue;
 
 describe('Queue Initialization and Error Handling', () => {
   let jobQueue: Queue;
@@ -21,7 +21,7 @@ describe('Queue Initialization and Error Handling', () => {
     vi.resetModules(); // Reset module cache
 
     // Re-mock redis client
-    vi.mock('../redis/redisClient.js', () => ({
+    vi.mock('../redis/redisClient.ts', () => ({
       getRedisClientInstance: vi.fn(() => ({
         connect: vi.fn(),
         disconnect: vi.fn(),
@@ -37,12 +37,12 @@ describe('Queue Initialization and Error Handling', () => {
     }));
 
     // Re-mock logger
-    vi.mock('../../logger.js', () => ({
+    vi.mock('../../logger.ts', () => ({
       getLoggerInstance: vi.fn(() => mockLoggerInstance),
     }));
 
     // Now import the module under test after resetting modules and re-mocking
-    const queueModule = await import('./queue.js');
+    const queueModule = await import('./queue.ts');
     getJobQueue = queueModule.getJobQueue;
     getDeadLetterQueue = queueModule.getDeadLetterQueue;
 

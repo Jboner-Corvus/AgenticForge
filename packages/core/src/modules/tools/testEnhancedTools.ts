@@ -1,5 +1,5 @@
 // Test script to verify enhanced tools are working
-import { enhancedTodoListTool, projectPlanningTool } from './enhancedTools.js';
+import { enhancedTodoListTool, projectPlanningTool } from './enhancedTools.ts';
 
 console.log('Testing enhanced tools...');
 

@@ -250,8 +250,20 @@ rebuild_docker() {
     rm -f "${SCRIPT_DIR}/worker.log" "${SCRIPT_DIR}/docker.log"
     stop_services
     
-    # Build les images Docker (le Dockerfile gère le build des packages)
+    # 🏗️ BUILD DES PACKAGES AVANT DE CONSTRUIRE LES IMAGES DOCKER
+    echo -e "${COLOR_YELLOW}🏗️ Construction des packages UI et Core...${NC}"
+    cd "${SCRIPT_DIR}/packages/ui"
+    pnpm install --prod=false
+    pnpm run build
+    
+    cd "${SCRIPT_DIR}/packages/core"
+    pnpm install --prod=false
+    pnpm run build
+    
+    # Retour au répertoire racine
     cd "${SCRIPT_DIR}"
+    
+    # Build les images Docker (le Dockerfile gère le build des packages)
     echo -e "${COLOR_YELLOW}Construction des images Docker...${NC}"
     echo -e "${COLOR_CYAN}📦 Build en cours - AFFICHAGE LIVE :${NC}"
     
@@ -391,6 +403,19 @@ rebuild_rapid() {
     # Arrêt des services
     stop_services
     
+    # 🏗️ BUILD DES PACKAGES AVANT DE CONSTRUIRE LES IMAGES DOCKER
+    echo -e "${COLOR_YELLOW}🏗️ Construction des packages UI et Core...${NC}"
+    cd "${SCRIPT_DIR}/packages/ui"
+    pnpm install --prod=false
+    pnpm run build
+    
+    cd "${SCRIPT_DIR}/packages/core"
+    pnpm install --prod=false
+    pnpm run build
+    
+    # Retour au répertoire racine
+    cd "${SCRIPT_DIR}"
+    
     # 🐳 REBUILD DOCKER AVEC CACHE
     echo -e "${COLOR_YELLOW}🐳 Reconstruction Docker AVEC cache...${NC}"
     echo -e "${COLOR_CYAN}📦 Build en cours avec cache - BEAUCOUP plus rapide !${NC}"
@@ -440,6 +465,19 @@ rebuild_all() {
     echo -e "${COLOR_YELLOW}🧹 Nettoyage des répertoires dist...${NC}"
     rm -rf "${SCRIPT_DIR}/packages/ui/dist/"
     rm -rf "${SCRIPT_DIR}/packages/core/dist/"
+    
+    # 🏗️ BUILD DES PACKAGES AVANT DE CONSTRUIRE LES IMAGES DOCKER
+    echo -e "${COLOR_YELLOW}🏗️ Construction des packages UI et Core...${NC}"
+    cd "${SCRIPT_DIR}/packages/ui"
+    pnpm install --prod=false
+    pnpm run build
+    
+    cd "${SCRIPT_DIR}/packages/core"
+    pnpm install --prod=false
+    pnpm run build
+    
+    # Retour au répertoire racine
+    cd "${SCRIPT_DIR}"
     
     # 🐳 REBUILD DOCKER COMPLET AVEC BUILDKIT (le Dockerfile gère le build)
     echo -e "${COLOR_YELLOW}🐳 Reconstruction forcée des images Docker (--no-cache) avec BuildKit...${NC}"

@@ -2,8 +2,8 @@
 import { Queue } from 'bullmq';
 import { describe, expect, it, vi } from 'vitest';
 
-import { getLoggerInstance } from '../../../../logger.js';
-import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
+import { getLoggerInstance } from '../../../../logger.ts';
+import { Ctx, ILlmProvider, SessionData } from '../../../../types.ts';
 
 // Define the mock for getLoggerInstance outside vi.mock to ensure consistency
 const mockLoggerInstance = {
@@ -14,11 +14,11 @@ const mockLoggerInstance = {
   warn: vi.fn(),
 };
 
-vi.mock('../../../../logger.js', () => ({
+vi.mock('../../../../logger.ts', () => ({
   getLoggerInstance: vi.fn(() => mockLoggerInstance),
 }));
 
-import { agentResponseTool } from './agentResponse.tool.js';
+import { agentResponseTool } from './agentResponse.tool.ts';
 
 describe('agentResponseTool', () => {
   const mockCtx: Ctx = {

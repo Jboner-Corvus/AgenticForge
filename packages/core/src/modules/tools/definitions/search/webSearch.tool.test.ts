@@ -2,7 +2,7 @@ import { Queue } from 'bullmq';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getLoggerInstance } from '../../../../logger';
-import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
+import { Ctx, ILlmProvider, SessionData } from '../../../../types.ts';
 
 // Define the mock for getLoggerInstance outside vi.mock to ensure consistency
 const mockLoggerInstance = {
@@ -37,7 +37,7 @@ vi.mock('puppeteer', () => {
   };
 });
 
-import { webSearchTool } from './webSearch.tool.js';
+import { webSearchTool } from './webSearch.tool.ts';
 
 describe('webSearchTool', () => {
   let mockCtx: Ctx;

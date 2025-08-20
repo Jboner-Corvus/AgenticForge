@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { z } from 'zod';
-import { getMasterPrompt } from './orchestrator.prompt.js';
-import type { AgentSession, Tool, Message } from '../../types.js';
+import { getMasterPrompt } from './orchestrator.prompt.ts';
+import type { AgentSession, Tool, Message } from '../../types.ts';
 
 // Mock file system operations
 vi.mock('fs', () => ({
@@ -33,10 +33,10 @@ vi.mock('path', () => ({
 }));
 
 vi.mock('url', () => ({
-  fileURLToPath: vi.fn().mockReturnValue('/mock/path/orchestrator.prompt.js'),
+  fileURLToPath: vi.fn().mockReturnValue('/mock/path/orchestrator.prompt.ts'),
 }));
 
-vi.mock('./responseSchema.js', () => ({
+vi.mock('./responseSchema.ts', () => ({
   getResponseJsonSchema: vi.fn().mockReturnValue({
     type: 'object',
     properties: {

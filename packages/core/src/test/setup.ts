@@ -2,7 +2,7 @@ import 'vitest';
 import { vi } from 'vitest';
 
 // Mock the config module to ensure it's always defined during tests
-vi.mock('../../src/config.js', () => ({
+vi.mock('../../src/config.ts', () => ({
   config: {
     AGENT_MAX_ITERATIONS: 10,
     CODE_EXECUTION_TIMEOUT_MS: 60000,
@@ -55,8 +55,8 @@ vi.mock('../../src/config.js', () => ({
 }));
 
 // Mock the logger module
-vi.mock('../logger.js', async () => {
-  const { getLogger, getLoggerInstance } = await import('./mocks/logger.js');
+vi.mock('../logger.ts', async () => {
+  const { getLogger, getLoggerInstance } = await import('./mocks/logger.ts');
   return {
     getLogger,
     getLoggerInstance,

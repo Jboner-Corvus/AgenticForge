@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Agent } from './agent.js';
-import { getMockQueue } from '../../test/mockQueue.js';
-import type { SessionData } from '../../types.js';
+import { Agent } from './agent.ts';
+import { getMockQueue } from '../../test/mockQueue.ts';
+import type { SessionData } from '../../types.ts';
 
 // Mock monitoring and observability systems
 const mockTelemetry = {
@@ -23,14 +23,14 @@ const mockHealthCheck = {
 };
 
 // Mocks globaux simplifiés
-vi.mock('../../config.js', () => ({ config: { AGENT_MAX_ITERATIONS: 5, LLM_PROVIDER_HIERARCHY: ['openai'], MONITORING_ENABLED: true, TELEMETRY_ENDPOINT: 'http://localhost:4317' } }));
-vi.mock('../../logger.js', () => ({ getLoggerInstance: () => ({ child: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }), info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }) }));
-vi.mock('../redis/redisClient.js', () => ({ getRedisClientInstance: () => ({ publish: vi.fn(), hset: vi.fn(), hget: vi.fn(), incr: vi.fn(), duplicate: () => ({ on: vi.fn(), subscribe: vi.fn(), unsubscribe: vi.fn(), quit: vi.fn() }) }) }));
-vi.mock('../../utils/llmProvider.js', () => ({ getLlmProvider: () => ({ getLlmResponse: vi.fn().mockResolvedValue('{"answer": "Monitoring test"}') }) }));
-vi.mock('../llm/LlmKeyManager.js', () => ({ LlmKeyManager: { hasAvailableKeys: vi.fn().mockResolvedValue(true) } }));
-vi.mock('../tools/toolRegistry.js', () => ({ toolRegistry: { execute: vi.fn() } }));
-vi.mock('./orchestrator.prompt.js', () => ({ getMasterPrompt: vi.fn().mockReturnValue('Mock prompt') }));
-vi.mock('./responseSchema.js', () => ({ llmResponseSchema: { parse: vi.fn().mockReturnValue({ answer: 'Monitoring test' }) } }));
+vi.mock('../../config.ts', () => ({ config: { AGENT_MAX_ITERATIONS: 5, LLM_PROVIDER_HIERARCHY: ['openai'], MONITORING_ENABLED: true, TELEMETRY_ENDPOINT: 'http://localhost:4317' } }));
+vi.mock('../../logger.ts', () => ({ getLoggerInstance: () => ({ child: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }), info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }) }));
+vi.mock('../redis/redisClient.ts', () => ({ getRedisClientInstance: () => ({ publish: vi.fn(), hset: vi.fn(), hget: vi.fn(), incr: vi.fn(), duplicate: () => ({ on: vi.fn(), subscribe: vi.fn(), unsubscribe: vi.fn(), quit: vi.fn() }) }) }));
+vi.mock('../../utils/llmProvider.ts', () => ({ getLlmProvider: () => ({ getLlmResponse: vi.fn().mockResolvedValue('{"answer": "Monitoring test"}') }) }));
+vi.mock('../llm/LlmKeyManager.ts', () => ({ LlmKeyManager: { hasAvailableKeys: vi.fn().mockResolvedValue(true) } }));
+vi.mock('../tools/toolRegistry.ts', () => ({ toolRegistry: { execute: vi.fn() } }));
+vi.mock('./orchestrator.prompt.ts', () => ({ getMasterPrompt: vi.fn().mockReturnValue('Mock prompt') }));
+vi.mock('./responseSchema.ts', () => ({ llmResponseSchema: { parse: vi.fn().mockReturnValue({ answer: 'Monitoring test' }) } }));
 
 // Mock OpenTelemetry
 vi.mock('@opentelemetry/api', () => ({
@@ -71,7 +71,7 @@ describe('Monitoring and Observability Integration Tests', () => {
     });
 
     it('should track LLM provider performance metrics', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
       
       // Simulate LLM provider response time
       mockLlmProvider.getLlmResponse.mockImplementation(() => 
@@ -85,9 +85,9 @@ describe('Monitoring and Observability Integration Tests', () => {
     });
 
     it('should monitor tool execution statistics', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"command": {"name": "testTool", "params": {}}}'
@@ -111,7 +111,7 @@ describe('Monitoring and Observability Integration Tests', () => {
     });
 
     it('should trace cross-service communications', async () => {
-      const mockRedisClient = require('../redis/redisClient.js').getRedisClientInstance();
+      const mockRedisClient = require('../redis/redisClient.ts').getRedisClientInstance();
       
       await agent.run();
       
@@ -151,7 +151,7 @@ describe('Monitoring and Observability Integration Tests', () => {
 
     it('should detect and report degraded performance', async () => {
       // Simulate slow response
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
       mockLlmProvider.getLlmResponse.mockImplementation(() => 
         new Promise(resolve => 
           setTimeout(() => resolve('{"answer": "Slow response"}'), 3000)
@@ -182,7 +182,7 @@ describe('Monitoring and Observability Integration Tests', () => {
 
   describe('Error Tracking and Alerting', () => {
     it('should track and categorize errors', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
       mockLlmProvider.getLlmResponse.mockRejectedValue(new Error('LLM timeout'));
 
       await agent.run();
@@ -191,12 +191,12 @@ describe('Monitoring and Observability Integration Tests', () => {
 
     it('should generate alerts for critical failures', async () => {
       const criticalError = new Error('Critical system failure');
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
       mockLlmProvider.getLlmResponse.mockRejectedValue(criticalError);
 
       await agent.run();
       
-      const redisClient = require('../redis/redisClient.js').getRedisClientInstance();
+      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalled();
     });
 
@@ -228,7 +228,7 @@ describe('Monitoring and Observability Integration Tests', () => {
 
       await agent.run();
       
-      const redisClient = require('../redis/redisClient.js').getRedisClientInstance();
+      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         expect.stringContaining('quality_metrics'),
         expect.any(Object)
@@ -282,7 +282,7 @@ describe('Monitoring and Observability Integration Tests', () => {
 
       await agent.run();
       
-      const redisClient = require('../redis/redisClient.js').getRedisClientInstance();
+      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         expect.stringContaining('dashboard_update'),
         expect.any(String)
@@ -303,7 +303,7 @@ describe('Monitoring and Observability Integration Tests', () => {
 
       await agent.run();
       
-      const redisClient = require('../redis/redisClient.js').getRedisClientInstance();
+      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'metrics_stream',
         expect.stringContaining('executionTime')
@@ -328,7 +328,7 @@ describe('Monitoring and Observability Integration Tests', () => {
 
       await agent.run();
       
-      const redisClient = require('../redis/redisClient.js').getRedisClientInstance();
+      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         expect.stringContaining('audit_log'),
         expect.any(Object)

@@ -2,18 +2,18 @@ import { Job, Queue } from 'bullmq';
 import { Content } from 'fastmcp';
 import { Client as PgClient } from 'pg';
 
-import { config } from '../../config.js';
-import { getLogger, Logger } from '../../logger.js';
+import { config } from '../../config.ts';
+import { getLogger, Logger } from '../../logger.ts';
 import {
   ILlmProvider as _ILlmProvider,
   MinimalJob as _MinimalJob,
   Ctx,
   Message,
   SessionData,
-} from '../../types.js';
-import { getLlmProvider } from '../../utils/llmProvider.js';
-import { getRedisClientInstance } from '../redis/redisClient.js';
-import { summarizeTool } from '../tools/definitions/ai/summarize.tool.js';
+} from '../../types.ts';
+import { getLlmProvider } from '../../utils/llmProvider.ts';
+import { getRedisClientInstance } from '../redis/redisClient.ts';
+import { summarizeTool } from '../tools/definitions/ai/summarize.tool.ts';
 
 export type Session = SessionData;
 

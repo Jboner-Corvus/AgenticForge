@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 const tempToolsDir = path.resolve(__dirname, 'temp_tools_for_testing');
 
 // Mock logger to prevent console noise
-vi.mock('../logger.js', () => ({
+vi.mock('../logger.ts', () => ({
   getLogger: vi.fn(() => ({
     debug: vi.fn(),
     error: vi.fn(),
@@ -66,7 +66,7 @@ describe('toolLoader Integration Test', () => {
 
     // 4. Manually unregister all tools from the actual registry
     const { toolRegistry: actualRegistry } = await import(
-      '../modules/tools/toolRegistry.js'
+      '../modules/tools/toolRegistry.ts'
     );
     actualRegistry
       .getAll()
@@ -110,7 +110,7 @@ describe('toolLoader Integration Test', () => {
       const tools = await toolLoader.getTools();
       
       // Check the tool registry directly
-      const { toolRegistry } = await import('../modules/tools/toolRegistry.js');
+      const { toolRegistry } = await import('../modules/tools/toolRegistry.ts');
       const registryTools = toolRegistry.getAll();
       console.log('Tools in registry:', registryTools);
 

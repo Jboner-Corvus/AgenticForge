@@ -3,7 +3,7 @@ import express from 'express';
 import { Server } from 'http';
 import request from 'supertest';
 import rateLimit from 'express-rate-limit';
-import { getConfig } from './config.js';
+import { getConfig } from './config.ts';
 
 describe('API Rate Limiting Integration Tests', () => {
   let app: express.Application;

@@ -1,18 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
-import { Agent } from './agent.js';
-import { getMockQueue } from '../../test/mockQueue.js';
-import type { SessionData, Tool } from '../../types.js';
+import { Agent } from './agent.ts';
+import { getMockQueue } from '../../test/mockQueue.ts';
+import type { SessionData, Tool } from '../../types.ts';
 
 // Mocks globaux simplifiés
-vi.mock('../../config.js', () => ({ config: { AGENT_MAX_ITERATIONS: 10, LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'] } }));
-vi.mock('../../logger.js', () => ({ getLoggerInstance: () => ({ child: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }), info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }) }));
-vi.mock('../redis/redisClient.js', () => ({ getRedisClientInstance: () => ({ publish: vi.fn(), duplicate: () => ({ on: vi.fn(), subscribe: vi.fn(), unsubscribe: vi.fn(), quit: vi.fn() }), hset: vi.fn(), hget: vi.fn() }) }));
-vi.mock('../../utils/llmProvider.js', () => ({ getLlmProvider: () => ({ getLlmResponse: vi.fn() }) }));
-vi.mock('../llm/LlmKeyManager.js', () => ({ LlmKeyManager: { hasAvailableKeys: vi.fn().mockResolvedValue(true) } }));
-vi.mock('../tools/toolRegistry.js', () => ({ toolRegistry: { execute: vi.fn() } }));
-vi.mock('./orchestrator.prompt.js', () => ({ getMasterPrompt: vi.fn().mockReturnValue('Mock prompt') }));
-vi.mock('./responseSchema.js', () => ({ llmResponseSchema: { parse: vi.fn() } }));
+vi.mock('../../config.ts', () => ({ config: { AGENT_MAX_ITERATIONS: 10, LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'] } }));
+vi.mock('../../logger.ts', () => ({ getLoggerInstance: () => ({ child: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }), info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }) }));
+vi.mock('../redis/redisClient.ts', () => ({ getRedisClientInstance: () => ({ publish: vi.fn(), duplicate: () => ({ on: vi.fn(), subscribe: vi.fn(), unsubscribe: vi.fn(), quit: vi.fn() }), hset: vi.fn(), hget: vi.fn() }) }));
+vi.mock('../../utils/llmProvider.ts', () => ({ getLlmProvider: () => ({ getLlmResponse: vi.fn() }) }));
+vi.mock('../llm/LlmKeyManager.ts', () => ({ LlmKeyManager: { hasAvailableKeys: vi.fn().mockResolvedValue(true) } }));
+vi.mock('../tools/toolRegistry.ts', () => ({ toolRegistry: { execute: vi.fn() } }));
+vi.mock('./orchestrator.prompt.ts', () => ({ getMasterPrompt: vi.fn().mockReturnValue('Mock prompt') }));
+vi.mock('./responseSchema.ts', () => ({ llmResponseSchema: { parse: vi.fn() } }));
 
 describe('End-to-End Workflow Integration Tests', () => {
   let mockJob: any;
@@ -45,9 +45,9 @@ describe('End-to-End Workflow Integration Tests', () => {
 
   describe('Complete Data Analysis Workflow', () => {
     it('should execute complete data analysis pipeline', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
 
       // Workflow: Read data → Process → Analyze → Generate report
       mockLlmProvider.getLlmResponse
@@ -79,9 +79,9 @@ describe('End-to-End Workflow Integration Tests', () => {
     });
 
     it('should handle research and synthesis workflow', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
 
       // Research workflow: Search → Gather → Synthesize → Report
       mockLlmProvider.getLlmResponse
@@ -111,8 +111,8 @@ describe('End-to-End Workflow Integration Tests', () => {
 
   describe('Multi-step Problem Solving', () => {
     it('should solve complex problems requiring multiple iterations', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       // Complex problem: Plan → Execute → Validate → Adjust → Finalize
       const responses = [
@@ -131,7 +131,7 @@ describe('End-to-End Workflow Integration Tests', () => {
         mockResponseSchema.parse.mockReturnValueOnce(JSON.parse(response));
       });
 
-      const mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
       mockToolRegistry.execute
         .mockResolvedValueOnce('{"inconsistent_records": 15, "total_records": 1000}')
         .mockResolvedValueOnce('{"validation_methods": ["cross_reference", "statistical_check"]}')
@@ -145,9 +145,9 @@ describe('End-to-End Workflow Integration Tests', () => {
     });
 
     it('should handle error recovery and alternative approaches', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
 
       // Error recovery workflow
       mockLlmProvider.getLlmResponse
@@ -182,8 +182,8 @@ describe('End-to-End Workflow Integration Tests', () => {
         { type: 'user', content: 'Now compare with Q2 data', id: '3', timestamp: Date.now() - 3000 },
       ] as any[];
 
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"answer": "Comparing Q3 ($2.5M) with Q2 ($2.2M), we see a 13.6% growth quarter-over-quarter."}'
@@ -213,8 +213,8 @@ describe('End-to-End Workflow Integration Tests', () => {
         mockJob, persistedSession, getMockQueue(), mockTools, 'openai', mockSessionManager
       );
 
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"answer": "Continuing from previous analysis, I can now finalize the report."}'
@@ -232,9 +232,9 @@ describe('End-to-End Workflow Integration Tests', () => {
 
   describe('Integration with External Systems', () => {
     it('should integrate with multiple external APIs', async () => {
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.js').toolRegistry;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
 
       // Multi-API integration workflow
       mockLlmProvider.getLlmResponse
@@ -266,8 +266,8 @@ describe('End-to-End Workflow Integration Tests', () => {
         { service: 'reporting', status: 'pending' },
       ];
 
-      const mockLlmProvider = require('../../utils/llmProvider.js').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.js').llmResponseSchema;
+      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse.mockResolvedValue(
         '{"answer": "Workflow orchestration complete. All services executed successfully in sequence."}'

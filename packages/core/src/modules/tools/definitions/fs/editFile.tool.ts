@@ -2,8 +2,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
 
-import { config } from '../../../../config.js';
-import { Ctx, Tool } from '../../../../types.js';
+import { config } from '../../../../config.ts';
+import { Ctx, Tool } from '../../../../types.ts';
 
 // Un schéma de paramètres plus puissant pour l'édition
 export const editFileParams = z.object({

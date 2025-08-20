@@ -289,7 +289,7 @@ export const useCombinedStore = create<CombinedAppState>()(
       addLlmApiKey: async (apiKey: LlmApiKey) => {
         set({ isAddingLlmApiKey: true });
         try {
-          await addLlmApiKeyApi(apiKey.provider, apiKey.key, apiKey.baseUrl, apiKey.model);
+          await addLlmApiKeyApi(apiKey.provider || '', apiKey.key || '', apiKey.baseUrl, apiKey.model);
           
           // Update local state
           set((state) => ({
@@ -349,7 +349,7 @@ export const useCombinedStore = create<CombinedAppState>()(
 
         set({ isSettingActiveLlmApiKey: true });
         try {
-          await editLlmApiKeyApi(index, apiKey.provider, apiKey.key, apiKey.baseUrl, apiKey.model);
+          await editLlmApiKeyApi(index, apiKey.provider || '', apiKey.key || '', apiKey.baseUrl, apiKey.model);
           
           // Update local state
           const newKeys = [...state.llmApiKeys];

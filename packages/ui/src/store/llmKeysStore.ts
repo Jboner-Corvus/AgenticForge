@@ -181,8 +181,8 @@ const DEFAULT_PROVIDERS: LLMProvider[] = [
   }
 ];
 
-// API ENDPOINTS
-const API_BASE = '/api/llm-api-keys';
+// API ENDPOINTS - Unified endpoint
+const API_BASE = '/api/llm-keys';
 
 // HELPER FUNCTION FOR AUTH HEADERS
 function getAuthHeaders(): Record<string, string> {
@@ -289,18 +289,22 @@ export const useLLMKeysStore = create<LLMKeysState>()(
             };
           }).filter((key: LLMKey | null): key is LLMKey => key !== null); // Filter out null values
           
-          // Remove duplicates with better algorithm
+          // Remove duplicates with improved algorithm including apiModel + baseUrl
           const keysMap = new Map<string, LLMKey>();
           rawKeys.forEach((key: LLMKey) => {
-            // Use a more robust key for deduplication
-            const primaryKey = `${key.providerId}-${key.keyValue}`;
+            // Create comprehensive key for deduplication including model and description
+            const apiModel = key.metadata?.tags?.[0] || '';
+            const description = key.metadata?.description || '';
+            const primaryKey = `${key.providerId}|${key.keyValue}|${apiModel}|${description}`;
             
             if (!keysMap.has(primaryKey)) {
               keysMap.set(primaryKey, key);
             } else {
-              // If duplicate found, keep the active one or the one with more usage
+              // If duplicate found, keep the active one or the one with more recent usage
               const existing = keysMap.get(primaryKey)!;
               if (key.isActive && !existing.isActive) {
+                keysMap.set(primaryKey, key);
+              } else if ((key.lastUsed || '') > (existing.lastUsed || '')) {
                 keysMap.set(primaryKey, key);
               } else if (key.usageCount > existing.usageCount) {
                 keysMap.set(primaryKey, key);
@@ -346,8 +350,15 @@ export const useLLMKeysStore = create<LLMKeysState>()(
         }
       },
 
-      // Add new key
+      // Add new key - fixed race condition
       addKey: async (keyData) => {
+        const state = get();
+        
+        // Prevent multiple concurrent additions
+        if (state.isLoading) {
+          throw new Error('Another key operation is in progress. Please wait.');
+        }
+        
         set({ isLoading: true, error: null });
         try {
           // Validate required fields
@@ -355,15 +366,21 @@ export const useLLMKeysStore = create<LLMKeysState>()(
             throw new Error('Provider and API key are required');
           }
           
-          // Check for existing duplicate before adding
+          // Use comprehensive duplicate check (same as deduplication algorithm)
+          const apiModel = keyData.metadata?.tags?.[0] || '';
+          const description = keyData.metadata?.description || '';
+          const duplicateCheck = `${keyData.providerId}|${keyData.keyValue}|${apiModel}|${description}`;
+          
           const currentKeys = get().keys;
-          const duplicateCheck = `${keyData.providerId}-${keyData.keyValue}`;
-          const existingKey = currentKeys.find(key => 
-            `${key.providerId}-${key.keyValue}` === duplicateCheck
-          );
+          const existingKey = currentKeys.find(key => {
+            const keyApiModel = key.metadata?.tags?.[0] || '';
+            const keyDescription = key.metadata?.description || '';
+            const keyId = `${key.providerId}|${key.keyValue}|${keyApiModel}|${keyDescription}`;
+            return keyId === duplicateCheck;
+          });
           
           if (existingKey) {
-            throw new Error('This API key already exists for this provider');
+            throw new Error('This API key already exists for this provider and model');
           }
 
           const response = await fetch(`${API_BASE}`, {
@@ -627,23 +644,27 @@ export const useLLMKeysStore = create<LLMKeysState>()(
         }
       },
 
-      // Force deduplication côté client
+      // Force deduplication côté client - fixed algorithm
       forceDeduplication: () => {
         const state = get();
-        console.log('🧹 Force deduplication - Avant:', state.keys.length);
         
         const uniqueKeysMap = new Map();
         state.keys.forEach((key: LLMKey) => {
-          // Amélioration de la déduplication: utiliser providerId + keyValue comme identifiant unique
-          const uniqueId = `${key.providerId}-${key.keyValue}`;
+          // Use same comprehensive deduplication as fetchKeys
+          const apiModel = key.metadata?.tags?.[0] || '';
+          const description = key.metadata?.description || '';
+          const uniqueId = `${key.providerId}|${key.keyValue}|${apiModel}|${description}`;
+          
           if (!uniqueKeysMap.has(uniqueId)) {
             uniqueKeysMap.set(uniqueId, key);
           } else {
-            // Garder la clé la plus récente ou la plus utilisée
+            // Keep the most recently used or active key
             const existing = uniqueKeysMap.get(uniqueId);
-            if ((key.usageCount || 0) > (existing.usageCount || 0)) {
+            if (key.isActive && !existing.isActive) {
               uniqueKeysMap.set(uniqueId, key);
-            } else if ((key.createdAt || '') > (existing.createdAt || '')) {
+            } else if ((key.lastUsed || '') > (existing.lastUsed || '')) {
+              uniqueKeysMap.set(uniqueId, key);
+            } else if ((key.usageCount || 0) > (existing.usageCount || 0)) {
               uniqueKeysMap.set(uniqueId, key);
             }
           }
