@@ -20,6 +20,7 @@ export interface LlmApiKey {
   isDisabledUntil?: number;
   isPermanentlyDisabled?: boolean;
   lastUsed?: number;
+  priority?: number; // Add priority field
 }
 
 // Constants for the master key from environment
@@ -29,6 +30,7 @@ const DEFAULT_MASTER_KEY_PROVIDER = 'google-flash'; // Align with .env.example L
 const DEFAULT_MASTER_KEY_MODEL = 'gemini-2.5-flash'; // Align with .env.example
 
 const LLM_API_KEYS_REDIS_KEY = 'llmApiKeys';
+const LLM_API_KEYS_HIERARCHY_REDIS_KEY = 'llmApiKeysHierarchy'; // New key for hierarchy
 const MAX_TEMPORARY_ERROR_COUNT = 8; // Max consecutive temporary errors before disabling key temporarily
 const TEMPORARY_DISABLE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -101,10 +103,11 @@ export class LlmKeyManager {
     providerName?: string,
     modelName?: string,
   ): Promise<LlmApiKey | null> {
-    const keys = await this.getKeys();
+    // Get keys with hierarchy priority
+    const keys = await this.getKeysWithHierarchy();
     const now = Date.now();
 
-    // Filter out temporarily and permanently disabled keys and sort by lastUsed (oldest first)
+    // Filter out temporarily and permanently disabled keys and sort by priority
     const availableKeys = keys
       .filter(
         (key) =>
@@ -113,7 +116,18 @@ export class LlmKeyManager {
           !key.isPermanentlyDisabled &&
           (!key.isDisabledUntil || key.isDisabledUntil <= now),
       )
-      .sort((a, b) => (a.lastUsed || 0) - (b.lastUsed || 0));
+      .sort((a, b) => {
+        // Sort by priority first (lower number = higher priority)
+        const priorityA = a.priority ?? Number.MAX_SAFE_INTEGER;
+        const priorityB = b.priority ?? Number.MAX_SAFE_INTEGER;
+        
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB;
+        }
+        
+        // If priority is the same, sort by lastUsed (oldest first)
+        return (a.lastUsed || 0) - (b.lastUsed || 0);
+      });
 
     if (availableKeys.length === 0) {
       getLogger().warn('No available LLM API keys.');
@@ -247,6 +261,40 @@ export class LlmKeyManager {
         ...keys.map((key) => JSON.stringify(key)),
       );
     }
+  }
+
+  // New methods for key hierarchy management
+  public static async getKeyHierarchy(): Promise<{[key: string]: number}> {
+    try {
+      const hierarchyJson = await getRedisClientInstance().get(LLM_API_KEYS_HIERARCHY_REDIS_KEY);
+      return hierarchyJson ? JSON.parse(hierarchyJson) : {};
+    } catch (error) {
+      getLogger().error({ error }, 'Failed to get key hierarchy from Redis');
+      return {};
+    }
+  }
+
+  public static async setKeyHierarchy(hierarchy: {[key: string]: number}): Promise<void> {
+    try {
+      await getRedisClientInstance().set(LLM_API_KEYS_HIERARCHY_REDIS_KEY, JSON.stringify(hierarchy));
+      getLogger().info('Key hierarchy saved to Redis');
+    } catch (error) {
+      getLogger().error({ error }, 'Failed to save key hierarchy to Redis');
+    }
+  }
+
+  private static async getKeysWithHierarchy(): Promise<LlmApiKey[]> {
+    const keys = await this.getKeys();
+    const hierarchy = await this.getKeyHierarchy();
+    
+    // Add priority to each key based on hierarchy
+    return keys.map(key => {
+      const keyIdentifier = `${key.apiProvider}|${key.apiKey}|${key.apiModel}|${key.baseUrl || ''}`;
+      return {
+        ...key,
+        priority: hierarchy[keyIdentifier]
+      };
+    });
   }
 
   /**

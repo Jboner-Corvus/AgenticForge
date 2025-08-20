@@ -5,7 +5,7 @@
     "target": "esnext",
     "module": "esnext",
     "lib": ["es2022", "dom"],
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "declaration": true,
     "declarationMap": true,
     "esModuleInterop": true,

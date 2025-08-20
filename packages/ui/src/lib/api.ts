@@ -382,12 +382,7 @@ export async function getLeaderboardStats(authToken: string | null = null, sessi
   return await response.json();
 }
 
-interface LlmApiKey {
-  provider: string;
-  key: string;
-  baseUrl?: string;
-  model?: string;
-}
+import { type LlmApiKey } from '../store/types';
 
 /**
  * Ajoute une clé API LLM.
@@ -468,4 +463,28 @@ export async function setActiveLlmProviderApi(providerName: string, authToken: n
     const errorData = await response.json();
     throw new Error(errorData.message || `Erreur lors de la définition du fournisseur LLM actif`);
   }
+}
+
+/**
+ * Teste une clé API LLM auprès du backend.
+ */
+export async function testLlmApiKey(
+  provider: string,
+  apiKey: string,
+  baseUrl: string | undefined,
+  authToken: string | null,
+  sessionId: string | null,
+): Promise<{ success: boolean; message: string }> {
+  const response = await fetch(buildApiUrl('/api/llm-keys/test'), {
+    method: 'POST',
+    headers: getAuthHeaders(authToken, sessionId),
+    body: JSON.stringify({ provider, apiKey, baseUrl }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.status}` }));
+    throw new Error(errorData.message || `Erreur lors du test de la clé API LLM`);
+  }
+
+  return await response.json();
 }

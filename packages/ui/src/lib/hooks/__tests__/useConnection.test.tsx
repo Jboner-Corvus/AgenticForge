@@ -13,22 +13,15 @@ beforeAll(() => {
   global.fetch = mockFetch;
 });
 
-beforeEach(() => {
-  mockFetch.mockClear();
-  vi.useFakeTimers();
-});
-
-afterEach(() => {
-  vi.useRealTimers();
-  vi.clearAllMocks();
-});
-
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { z } from "zod";
 import { vi, expect, describe, beforeEach, beforeAll, test } from 'vitest';
 
 import { DEFAULT_INSPECTOR_CONFIG } from "../../constants";
 import { useConnection } from "../useConnection";
+import * as mcp from "@modelcontextprotocol/sdk/client/index.js";
+import * as sse from "@modelcontextprotocol/sdk/client/sse.js";
+import * as streamableHttp from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 // Mock the SDK dependencies
 const mockRequest = vi.fn().mockResolvedValue({ test: "response" });
@@ -58,59 +51,6 @@ interface MockStreamableHTTPClientTransport extends InstanceType<typeof Streamab
 let mockSSETransportInstance: MockSSEClientTransport;
 let mockStreamableHTTPTransportInstance: MockStreamableHTTPClientTransport;
 
-vi.mock("@modelcontextprotocol/sdk/client/index.js", () => {
-  return {
-    Client: vi.fn().mockImplementation(() => {
-      return mockClient;
-    }),
-  };
-});
-
-vi.mock("@modelcontextprotocol/sdk/client/sse.js", () => {
-  const actual = vi.importActual<typeof import("@modelcontextprotocol/sdk/client/sse.js")>("@modelcontextprotocol/sdk/client/sse.js");
-  return {
-    ...actual,
-    SSEClientTransport: vi.fn(function(url: string, options: SSEClientTransportOptions) {
-      mockSSETransportInstance = {
-        url: new URL(url),
-        options: options,
-        start: vi.fn(),
-        close: vi.fn(),
-        _reconnectionOptions: undefined,
-        finishAuth: vi.fn(),
-        send: vi.fn(),
-        setProtocolVersion: vi.fn(),
-      } as unknown as InstanceType<typeof SSEClientTransport>;
-      return mockSSETransportInstance;
-    }) as unknown as typeof SSEClientTransport,
-  };
-});
-
-vi.mock("@modelcontextprotocol/sdk/client/streamableHttp.js", () => ({
-  StreamableHTTPClientTransport: vi.fn(function(url: string, options: StreamableHTTPClientTransportOptions) {
-    mockStreamableHTTPTransportInstance = {
-      url: new URL(url),
-      options: options,
-      start: vi.fn(),
-      close: vi.fn(),
-      _url: new URL(url),
-      _reconnectionOptions: undefined,
-      _authThenStart: vi.fn(),
-      _commonHeaders: undefined,
-      _startOrAuthSse: vi.fn(),
-      _getNextReconnectionDelay: vi.fn(),
-      _normalizeHeaders: vi.fn(),
-      _scheduleReconnection: vi.fn(),
-      // Add other missing properties as vi.fn() or undefined if needed
-    } as unknown as InstanceType<typeof StreamableHTTPClientTransport>;
-    return mockStreamableHTTPTransportInstance;
-  }),
-}));
-
-vi.mock("@modelcontextprotocol/sdk/client/auth.js", () => ({
-  auth: vi.fn().mockResolvedValue("AUTHORIZED"),
-}));
-
 // Mock the toast hook
 vi.mock("@/lib/hooks/useToast", () => ({
   useToast: () => ({
@@ -136,11 +76,8 @@ describe("useConnection", () => {
   };
 
   describe("Request Configuration", () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
-    });
-
     test("uses the default config values in makeRequest", async () => {
+      vi.spyOn(mcp, "Client").mockImplementation(() => mockClient as unknown as mcp.Client);
       const { result } = renderHook(() => useConnection(defaultProps));
 
       // Connect the client
@@ -179,6 +116,7 @@ describe("useConnection", () => {
     });
 
     test("overrides the default config values when passed in options in makeRequest", async () => {
+      vi.spyOn(mcp, "Client").mockImplementation(() => mockClient as unknown as mcp.Client);
       const { result } = renderHook(() => useConnection(defaultProps));
 
       // Connect the client
@@ -242,14 +180,14 @@ describe("useConnection", () => {
   });
 
   describe("URL Port Handling", () => {
-    beforeEach(() => {
-      // Reset the mock transport objects before each test
-      mockSSETransportInstance = undefined as unknown as MockSSEClientTransport;
-      mockStreamableHTTPTransportInstance = undefined as unknown as MockStreamableHTTPClientTransport;
-      vi.clearAllMocks();
-    });
-
     test("preserves HTTPS port number when connecting", async () => {
+      vi.spyOn(sse, "SSEClientTransport").mockImplementation((url, options) => {
+        mockSSETransportInstance = {
+          url: new URL(url),
+          options: options,
+        } as unknown as MockSSEClientTransport;
+        return mockSSETransportInstance;
+      });
       const props = {
         ...defaultProps,
         sseUrl: "https://example.com:8443/api",
@@ -270,6 +208,13 @@ describe("useConnection", () => {
     });
 
     test("preserves HTTP port number when connecting", async () => {
+      vi.spyOn(sse, "SSEClientTransport").mockImplementation((url, options) => {
+        mockSSETransportInstance = {
+          url: new URL(url),
+          options: options,
+        } as unknown as MockSSEClientTransport;
+        return mockSSETransportInstance;
+      });
       const props = {
         ...defaultProps,
         sseUrl: "http://localhost:3000/api",
@@ -290,6 +235,13 @@ describe("useConnection", () => {
     });
 
     test("uses default port for HTTPS when not specified", async () => {
+      vi.spyOn(sse, "SSEClientTransport").mockImplementation((url, options) => {
+        mockSSETransportInstance = {
+          url: new URL(url),
+          options: options,
+        } as unknown as MockSSEClientTransport;
+        return mockSSETransportInstance;
+      });
       const props = {
         ...defaultProps,
         sseUrl: "https://example.com/api",
@@ -310,6 +262,13 @@ describe("useConnection", () => {
     });
 
     test("preserves port number in streamable-http transport", async () => {
+      vi.spyOn(streamableHttp, "StreamableHTTPClientTransport").mockImplementation((url, options) => {
+        mockStreamableHTTPTransportInstance = {
+          url: new URL(url),
+          options: options,
+        } as unknown as MockStreamableHTTPClientTransport;
+        return mockStreamableHTTPTransportInstance;
+      });
       const props = {
         ...defaultProps,
         sseUrl: "https://example.com:8443/api",
@@ -332,11 +291,7 @@ describe("useConnection", () => {
 
   describe("Proxy Authentication Headers", () => {
     beforeEach(() => {
-      vi.clearAllMocks();
       vi.stubEnv('VITE_MCP_PROXY_AUTH_TOKEN', 'test-proxy-token');
-      // Reset the mock transport objects
-      mockSSETransportInstance = undefined as unknown as MockSSEClientTransport;
-      mockStreamableHTTPTransportInstance = undefined as unknown as MockStreamableHTTPClientTransport;
     });
 
     afterEach(() => {
@@ -344,6 +299,13 @@ describe("useConnection", () => {
     });
 
     test("sends X-MCP-Proxy-Auth header when proxy auth token is configured", async () => {
+      vi.spyOn(sse, "SSEClientTransport").mockImplementation((url, options) => {
+        mockSSETransportInstance = {
+          url: new URL(url),
+          options: options,
+        } as unknown as MockSSEClientTransport;
+        return mockSSETransportInstance;
+      });
       const propsWithProxyAuth = {
         ...defaultProps,
         config: {
@@ -372,6 +334,13 @@ describe("useConnection", () => {
     });
 
     test("does NOT send Authorization header for proxy auth", async () => {
+      vi.spyOn(sse, "SSEClientTransport").mockImplementation((url, options) => {
+        mockSSETransportInstance = {
+          url: new URL(url),
+          options: options,
+        } as unknown as MockSSEClientTransport;
+        return mockSSETransportInstance;
+      });
       const propsWithProxyAuth = {
         ...defaultProps,
         config: {
@@ -398,6 +367,13 @@ describe("useConnection", () => {
     });
 
     test("preserves server Authorization header when proxy auth is configured", async () => {
+      vi.spyOn(sse, "SSEClientTransport").mockImplementation((url, options) => {
+        mockSSETransportInstance = {
+          url: new URL(url),
+          options: options,
+        } as unknown as MockSSEClientTransport;
+        return mockSSETransportInstance;
+      });
       const propsWithBothAuth = {
         ...defaultProps,
         bearerToken: "server-auth-token",
@@ -430,6 +406,13 @@ describe("useConnection", () => {
     });
 
     test("works correctly with streamable-http transport", async () => {
+      vi.spyOn(streamableHttp, "StreamableHTTPClientTransport").mockImplementation((url, options) => {
+        mockStreamableHTTPTransportInstance = {
+          url: new URL(url),
+          options: options,
+        } as unknown as MockStreamableHTTPClientTransport;
+        return mockStreamableHTTPTransportInstance;
+      });
       const propsWithStreamableHttp = {
         ...defaultProps,
         config: {

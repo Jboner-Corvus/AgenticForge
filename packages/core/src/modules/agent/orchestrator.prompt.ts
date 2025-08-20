@@ -154,13 +154,21 @@ const zodToJsonSchema = (_schema: any): any => {
 };
 
 const formatToolForPrompt = (tool: Tool): string => {
-  if (
-    !tool.parameters ||
-    !('shape' in tool.parameters) ||
-    Object.keys(tool.parameters.shape).length === 0
-  ) {
+  console.log('tool.parameters:', tool.parameters);
+  if (!tool.parameters) {
     return `### ${tool.name}\nDescription: ${tool.description}\nParameters: None\n`;
   }
+  
+  // Check if parameters is a valid Zod schema
+  if (typeof tool.parameters !== 'object' || !('_def' in tool.parameters)) {
+    throw new Error('Invalid Zod schema provided');
+  }
+  
+  // Check if it's an empty schema or has no shape
+  if (!('shape' in tool.parameters) || Object.keys(tool.parameters.shape).length === 0) {
+    return `### ${tool.name}\nDescription: ${tool.description}\nParameters: None\n`;
+  }
+  
   const params = JSON.stringify(zodToJsonSchema(tool.parameters), null, 2);
   return `### ${tool.name}\nDescription: ${tool.description}\nParameters (JSON Schema):\n${params}\n`;
 };
@@ -172,8 +180,7 @@ const formatHistoryMessage = (message: Message): string => {
   switch (message.type) {
     case 'agent_canvas_output':
       role = 'ASSISTANT';
-      content = `Canvas Output (${message.contentType}):
-${message.content}`;
+      content = `Canvas Output (${message.contentType}):\n${message.content}`;
       break;
     case 'agent_response':
       role = 'ASSISTANT';

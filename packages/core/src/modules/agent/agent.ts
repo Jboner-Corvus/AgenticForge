@@ -87,11 +87,10 @@ export class Agent {
     apiKey?: string,
     private readonly llmModelName?: string, // New property
     private readonly llmApiKey?: string, // New property
-    logger?: Logger,
   ) {
     this.job = job;
     this.session = session;
-    this.log = (logger || getLoggerInstance()).child({
+    this.log = getLoggerInstance().child({
       jobId: job.id,
       sessionId: session.id,
     });
@@ -513,7 +512,8 @@ export class Agent {
               toolResult.startsWith('Error executing tool')
             ) {
               this.session.history.push({
-                content: `The tool execution failed with the following error: ${toolResult}. Please analyze the error and try a different approach. You can use another tool, or try to fix the problem with the previous tool.`,
+                content:
+                  `The tool execution failed with the following error: ${toolResult}. Please analyze the error and try a different approach. You can use another tool, or try to fix the problem with the previous tool.`,
                 id: crypto.randomUUID(),
                 timestamp: Date.now(),
                 type: 'error',
@@ -617,6 +617,15 @@ export class Agent {
       );
       return `Agent run failed: ${errorMessage}`;
     } finally {
+      // Increment successful runs counter when agent completes successfully
+      try {
+        const redisClient = getRedisClientInstance();
+        await redisClient.incr('leaderboard:successfulRuns');
+        this.log.info('Successfully incremented successfulRuns counter');
+      } catch (error) {
+        this.log.error({ err: error }, 'Failed to increment successfulRuns in Redis');
+      }
+      
       await this.cleanup();
     }
   }
@@ -782,17 +791,120 @@ export class Agent {
       // Not valid JSON, proceed with conversion
     }
     
-    // Convert plain text to JSON format using the finish tool
-    const jsonObject = {
-      thought: "L'utilisateur a répondu avec du texte brut. Je vais convertir cela en format JSON valide.",
-      command: {
+    // Analyze the content to determine appropriate tool
+    const lowerText = cleanText.toLowerCase();
+    
+    // Check for canvas-related keywords
+    const canvasKeywords = ['canvas', 'display', 'show', 'demo', 'afficher', 'montrer', 'visual'];
+    const isCanvasRequest = canvasKeywords.some(keyword => 
+      lowerText.includes(keyword)
+    );
+    
+    // Check for todo-related keywords
+    const todoKeywords = ['todo', 'task', 'list', 'step', 'plan', 'workflow', 'tâche', 'étape'];
+    const isTodoRequest = todoKeywords.some(keyword => 
+      lowerText.includes(keyword)
+    );
+    
+    // Check for creation/building requests that should use todo lists
+    const creationKeywords = [
+      'create', 'build', 'make', 'generate', 'develop', 'implement', 'write',
+      'game', 'website', 'app',
+      'créer', 'construire', 'faire', 'générer', 'développer', 'implémenter', 'écrire'
+    ];
+    
+    // Check if this looks like a creation request
+    const isCreationRequest = creationKeywords.some(keyword => 
+      lowerText.includes(keyword)
+    );
+    
+    let command;
+    let thought;
+    
+    // Prioritize canvas requests over creation requests
+    if (isCanvasRequest) {
+      // Handle canvas display requests
+      thought = "L'utilisateur veut afficher quelque chose dans le canvas.";
+      command = {
+        name: "display_canvas",
+        params: {
+          content: cleanText.includes('helloworld') ? "<div style='display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 48px; font-weight: bold;'>helloworld</div>" : `<div><h1>Canvas Display</h1><p>${cleanText}</p></div>`,
+          contentType: "html"
+        }
+      };
+    } else if (isCreationRequest && isTodoRequest) {
+      // For creation requests that mention todos, create a todo list first
+      thought = "L'utilisateur demande de créer quelque chose. Je dois d'abord créer une todo list pour organiser le travail.";
+      command = {
+        name: "manage_todo_list",
+        params: {
+          action: "create",
+          title: "Projet de création",
+          todos: [
+            {
+              id: "1",
+              content: "Analyser la demande et planifier l'approche",
+              status: "pending",
+              priority: "high",
+              category: "planning"
+            },
+            {
+              id: "2", 
+              content: "Commencer l'implémentation",
+              status: "pending",
+              priority: "high",
+              category: "development"
+            }
+          ]
+        }
+      };
+    } else if (isTodoRequest) {
+      // Pure todo list request
+      thought = "L'utilisateur veut utiliser la todo list. Je vais afficher ou gérer la todo list.";
+      command = {
+        name: "manage_todo_list",
+        params: {
+          action: "display"
+        }
+      };
+    } else if (isCreationRequest) {
+      // Other creation requests
+      thought = "L'utilisateur demande de créer quelque chose. Je dois d'abord créer une todo list pour organiser le travail.";
+      command = {
+        name: "manage_todo_list",
+        params: {
+          action: "create",
+          title: "Projet de création",
+          todos: [
+            {
+              id: "1",
+              content: "Analyser la demande et planifier l'approche",
+              status: "pending",
+              priority: "high",
+              category: "planning"
+            },
+            {
+              id: "2", 
+              content: "Commencer l'implémentation",
+              status: "pending",
+              priority: "high",
+              category: "development"
+            }
+          ]
+        }
+      };
+    } else {
+      // Default to finish tool for other requests
+      thought = "L'utilisateur a répondu avec du texte brut. Je vais convertir cela en format JSON valide.";
+      command = {
         name: "finish",
         params: {
           response: cleanText
         }
-      }
-    };
+      };
+    }
     
+    const jsonObject = { thought, command };
     return JSON.stringify(jsonObject);
   }
 

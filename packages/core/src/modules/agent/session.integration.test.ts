@@ -34,6 +34,12 @@ const mockRedisClient = {
   scan: vi.fn(),
   publish: vi.fn(),
   subscribe: vi.fn(),
+  duplicate: () => ({
+    on: vi.fn(),
+    subscribe: vi.fn(),
+    unsubscribe: vi.fn(),
+    quit: vi.fn(),
+  }),
 };
 
 // Mocks globaux

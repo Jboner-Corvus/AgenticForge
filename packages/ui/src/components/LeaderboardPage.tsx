@@ -1,7 +1,5 @@
-import { BarChart, Flame, Zap, Clock, Sparkles } from 'lucide-react';
+import { BarChart, Clock, Sparkles, CheckCircle } from 'lucide-react';
 import { memo, useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from './ui/badge';
 import { OpenAILogo, AnthropicLogo, GeminiLogo, OpenRouterLogo } from './icons/LlmLogos';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -26,27 +24,14 @@ const getProviderVisuals = (provider: LlmApiKey['providerName']) => {
     return visuals[provider] || { Logo: Sparkles, color: 'bg-gray-500', name: 'Unknown' };
 };
 
-const UsageBar = ({ value, limit, color }: { value: number; limit: number; color: string }) => {
-    const percentage = (value / limit) * 100;
-    return (
-      <div className="w-full">
-        <div className="flex justify-between text-xs text-muted-foreground mb-1">
-          <span>{value.toLocaleString()}</span>
-          <span>{limit.toLocaleString()}</span>
-        </div>
-        <Progress value={percentage} indicatorClassName={color} />
-      </div>
-    );
-};
-
 // --- Main Component ---
 export const LeaderboardPage = memo(() => {
   const [leaderboardData, setLeaderboardData] = useState<ApiKeyUsage[]>([]);
   const llmApiKeys = useCombinedStore((state) => state.llmApiKeys);
   const isLoadingLeaderboardStats = useCombinedStore((state) => state.isLoadingLeaderboardStats);
-  const leaderboardStats = useCombinedStore((state) => state.leaderboardStats);
   const authToken = useCombinedStore((state) => state.authToken);
   const sessionId = useCombinedStore((state) => state.sessionId);
+  const activeLlmApiKeyIndex = useCombinedStore((state) => state.activeLlmApiKeyIndex);
 
   // Generate mock data based on actual leaderboard stats and API keys
   useEffect(() => {
@@ -77,12 +62,6 @@ export const LeaderboardPage = memo(() => {
     
     return () => clearInterval(timer);
   }, []);
-
-  const groupedByProvider = leaderboardData.reduce((acc, key) => {
-    const providerName = key.providerName || 'unknown';
-    (acc[providerName] = acc[providerName] || []).push(key);
-    return acc;
-  }, {} as Record<string, ApiKeyUsage[]>);
 
   if (isLoadingLeaderboardStats) {
     return (
@@ -115,54 +94,6 @@ export const LeaderboardPage = memo(() => {
           </div>
         </div>
 
-        {/* Display leaderboard stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center">
-                <Sparkles className="h-8 w-8 text-primary mr-3" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Tokens Saved</p>
-                  <p className="text-2xl font-bold">{leaderboardStats.tokensSaved.toLocaleString()}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center">
-                <Zap className="h-8 w-8 text-primary mr-3" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Successful Runs</p>
-                  <p className="text-2xl font-bold">{leaderboardStats.successfulRuns.toLocaleString()}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center">
-                <Clock className="h-8 w-8 text-primary mr-3" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Sessions Created</p>
-                  <p className="text-2xl font-bold">{leaderboardStats.sessionsCreated.toLocaleString()}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center">
-                <Flame className="h-8 w-8 text-primary mr-3" />
-                <div>
-                  <p className="text-sm text-muted-foreground">API Keys Added</p>
-                  <p className="text-2xl font-bold">{leaderboardStats.apiKeysAdded.toLocaleString()}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {llmApiKeys.length === 0 ? (
           <div className="text-center py-12">
             <Sparkles className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -172,53 +103,55 @@ export const LeaderboardPage = memo(() => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {Object.entries(groupedByProvider).map(([providerName, keys]) => {
-              const { Logo, color, name } = getProviderVisuals(providerName as LlmApiKey['providerName']);
-              return (
-                <Card key={providerName} className="overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
-                  <CardHeader className={`flex flex-row items-center justify-between p-4 ${color}`}>
-                    <div className="flex items-center">
-                      <Logo className="h-6 w-6 mr-3 text-white" />
-                      <CardTitle className="text-xl font-bold text-white">{name}</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-4 space-y-4">
-                    {keys.map((key) => (
-                      <motion.div
-                        key={key.key}
-                        className="p-4 border rounded-lg bg-background/50"
-                        whileHover={{ scale: 1.02, boxShadow: '0px 5px 15px rgba(0,0,0,0.1)' }}
-                        transition={{ type: 'spring', stiffness: 300 }}
-                      >
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center">
-                            <Badge className={`mr-3 text-lg font-bold ${color} text-white`}>#{key.rank}</Badge>
-                            <span className="font-mono text-sm">{key.keyMask}</span>
-                          </div>
+          <div className="overflow-x-auto rounded-lg border border-gray-700">
+            <table className="min-w-full divide-y divide-gray-700">
+              <thead className="bg-gray-800/50">
+                <tr>
+                  <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6">Rang</th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-white">Fournisseur</th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-white">Surnom</th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-white">Requêtes</th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-white">Tokens</th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-white">Statut</th>
+                  <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800 bg-background/50">
+                {leaderboardData.map((key) => {
+                  const { Logo, color, name } = getProviderVisuals(key.providerName);
+                  const isActive = llmApiKeys[activeLlmApiKeyIndex]?.key === key.keyValue;
+                  return (
+                    <tr key={key.key} className="hover:bg-gray-800/50 transition-colors">
+                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6">
+                        <Badge className={`text-lg font-bold ${color} text-white`}>#{key.rank}</Badge>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                        <div className="flex items-center">
+                          <Logo className="h-5 w-5 mr-2" />
+                          {name}
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <div className="flex items-center text-sm font-medium mb-2">
-                              <Zap className="h-4 w-4 mr-2 text-primary" />
-                              Requests
-                            </div>
-                            <UsageBar value={key.usageStats?.totalRequests || 0} limit={10000} color={color} />
-                          </div>
-                          <div>
-                            <div className="flex items-center text-sm font-medium mb-2">
-                              <Flame className="h-4 w-4 mr-2 text-orange-500" />
-                              Tokens
-                            </div>
-                            <UsageBar value={key.usageStats?.successfulRequests || 0} limit={1000000} color={color} />
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 font-medium">{key.nickname}</td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">{key.usageStats?.totalRequests || 0}</td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">{key.usageStats?.successfulRequests || 0}</td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                        {isActive && (
+                          <Badge className="bg-green-900/50 text-green-300 border border-green-700/50">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Active
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                        {/* Espace pour les futurs boutons d'action */}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </motion.div>

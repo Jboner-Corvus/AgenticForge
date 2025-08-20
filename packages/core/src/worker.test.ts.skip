@@ -26,6 +26,8 @@ vi.mock('./modules/redis/redisClient', async () => {
   };
 });
 
+
+
 vi.mock('pg', () => ({
   Client: vi.fn(() => ({
     connect: vi.fn().mockResolvedValue(undefined),
@@ -126,8 +128,7 @@ describe('processJob', () => {
     // Mock config.HISTORY_MAX_LENGTH for testing purposes
     config.HISTORY_MAX_LENGTH = 10;
 
-    // Reset mocks
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     _mockSessionManagerInstance.getSession.mockResolvedValue(mockSessionData);
     (Agent as Mock).mockImplementation(() => ({
       run: vi.fn().mockResolvedValue('Agent final response'),
@@ -136,8 +137,52 @@ describe('processJob', () => {
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.resetAllMocks();
   });
+
+  afterAll(() => {
+    const redisClient = getRedisClientInstance();
+    if (redisClient && typeof redisClient.quit === 'function') {
+      redisClient.quit();
+    }
+  });
+
+  it('should handle AppError and publish an error event', async () => {
+    const errorMessage = 'This is an application error';
+    (Agent as any).mockImplementation(() => ({
+      run: vi.fn().mockRejectedValue(new _AppError(errorMessage)),
+    }));
+
+    await expect(
+      processJob(
+        mockJob as Job,
+        mockJobQueue,
+        _mockSessionManagerInstance as any,
+        mockRedisConnection,
+      ),
+    ).rejects.toThrow(_AppError);
+
+    expect(getLoggerInstance().child).toHaveBeenCalledWith({
+      jobId: 'testJobId',
+      sessionId: 'testSessionId',
+    });
+    const childLogger = (getLoggerInstance().child as Mock).mock.results[0]
+      .value;
+    expect(childLogger.error).toHaveBeenCalledWith(
+      expect.any(Object),
+      `Erreur dans l'exécution de l'agent`,
+    );
+    await expect(mockRedisConnection.publish).toHaveBeenCalledWith(
+      'job:testJobId:events',
+      JSON.stringify({ message: errorMessage, type: 'error' }),
+    );
+    await expect(mockRedisConnection.publish).toHaveBeenCalledWith(
+      'job:testJobId:events',
+      JSON.stringify({ content: 'Stream terminé.', type: 'close' }),
+    );
+    // Explicitly assert that saveSession is NOT called in the error path
+    expect(_mockSessionManagerInstance.saveSession).not.toHaveBeenCalled();
+  }, 30000);
 
   it('should process a job successfully and return the final response', async () => {
     mockSessionData.history = Array(10).fill({
@@ -169,41 +214,4 @@ describe('processJob', () => {
     expect(result).toBe('Agent final response');
     expect(_mockSessionManagerInstance.saveSession).toHaveBeenCalled();
   }, 30000);
-
-  it('should handle AppError and publish an error event', async () => {
-    const errorMessage = 'This is an application error';
-    (Agent as any).mockImplementation(() => ({
-      run: vi.fn().mockRejectedValue(new _AppError(errorMessage)),
-    }));
-
-    await expect(
-      processJob(
-        mockJob as Job,
-        mockJobQueue,
-        _mockSessionManagerInstance as any,
-        mockRedisConnection,
-      ),
-    ).rejects.toThrow(_AppError);
-
-    expect(getLoggerInstance().child).toHaveBeenCalledWith({
-      jobId: 'testJobId',
-      sessionId: 'testSessionId',
-    });
-    const childLogger = (getLoggerInstance().child as Mock).mock.results[0]
-      .value;
-    expect(childLogger.error).toHaveBeenCalledWith(
-      expect.any(Object),
-      `Erreur dans l'exécution de l'agent`,
-    );
-    expect(mockRedisConnection.publish).toHaveBeenCalledWith(
-      'job:testJobId:events',
-      JSON.stringify({ message: errorMessage, type: 'error' }),
-    );
-    expect(mockRedisConnection.publish).toHaveBeenCalledWith(
-      'job:testJobId:events',
-      JSON.stringify({ content: 'Stream terminé.', type: 'close' }),
-    );
-    // Explicitly assert that saveSession is NOT called in the error path
-    expect(_mockSessionManagerInstance.saveSession).not.toHaveBeenCalled();
-  });
 });

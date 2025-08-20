@@ -265,14 +265,20 @@ Ce guide identifie les tests d'intégration existants et ceux à créer pour ass
 
 ### Phase 1 - Infrastructure Critique (Semaines 1-3)
 **Priorité 1 - Fondations**
-1. `postgres.advanced.integration.test.ts` - Base données avancée
-2. `redis.cluster.integration.test.ts` - Clustering Redis
-3. `api.streaming.integration.test.ts` - Streaming API
+1. `[x]` `postgres.advanced.integration.test.ts` - Base données avancée
+2. `[x]` `redis.cluster.integration.test.ts` - Clustering Redis
+3. `[x]` `api.streaming.integration.test.ts` - Streaming API
+4. `[x]` `auth.jwt.lifecycle.integration.test.ts` - Authentification JWT
+5. `[x]` `security.input.validation.integration.test.ts` - Validation sécurisée
 4. `auth.jwt.lifecycle.integration.test.ts` - Authentification JWT
 5. `security.input.validation.integration.test.ts` - Validation sécurisée
 
 **Priorité 2 - Core Services**
-6. `worker.concurrent.processing.integration.test.ts` - Workers concurrents
+**Priorité 2 - Core Services**
+6. `[x]` `worker.concurrent.processing.integration.test.ts` - Workers concurrents
+7. `[x]` `llm.provider.failover.integration.test.ts` - Failover LLM
+8. `[x]` `otel.tracing.integration.test.ts` - Tracing distribué
+9. `[⏳]` `tools.browser.integration.test.ts` - Automatisation browser
 7. `llm.provider.failover.integration.test.ts` - Failover LLM
 8. `otel.tracing.integration.test.ts` - Tracing distribué
 9. `tools.browser.integration.test.ts` - Automatisation browser

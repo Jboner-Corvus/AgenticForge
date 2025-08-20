@@ -9,12 +9,35 @@ export function getLogger(): Logger {
   if (!loggerInstance) {
     const config = getConfig();
     loggerInstance = pino({
-      level: config.LOG_LEVEL || 'debug',
+      level: config.LOG_LEVEL || 'info',
+      serializers: {
+        // Filtrer les objets Zod pour éviter les logs verbeux
+        tool: (tool: any) => {
+          if (tool && typeof tool === 'object' && tool.parameters) {
+            // Ne pas afficher les détails complets des paramètres Zod
+            return {
+              name: tool.name,
+              description: tool.description,
+              // Masquer les paramètres Zod verbeux
+              parameters: '[ZodObject - details hidden to reduce verbosity]'
+            };
+          }
+          return tool;
+        },
+        // Serializer pour les objets Zod dans les logs
+        zod: (obj: any) => {
+          if (obj && typeof obj === 'object' && obj._def) {
+            // Ne pas afficher les détails internes des objets Zod
+            return '[ZodObject - details hidden]';
+          }
+          return obj;
+        }
+      },
       ...(config.NODE_ENV === 'development' && {
         transport: {
           options: {
             colorize: true,
-            depth: 5,
+            depth: 2,  // Réduire encore la profondeur d'affichage
             levelFirst: true,
             singleLine: false,
             translateTime: 'SYS:standard',

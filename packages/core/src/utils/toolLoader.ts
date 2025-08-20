@@ -192,32 +192,30 @@ async function findToolFiles(
 
 async function loadToolFile(file: string): Promise<void> {
   const logger = getLogger();
-  logger.info({ file }, `[loadToolFile] Attempting to load tool file.`);
-  console.log(`[loadToolFile] Attempting to load tool file: ${file}`);
+  logger.debug({ file }, `[loadToolFile] Attempting to load tool file.`);
+  
   try {
     const module = await import(`${path.resolve(file)}?v=${Date.now()}`); // Cache-busting
-    logger.info(
+    logger.debug(
       { file, moduleExports: Object.keys(module) },
       `[loadToolFile] Successfully imported module.`,
     );
-    console.log(`[loadToolFile] Successfully imported module. Exports:`, Object.keys(module));
 
     for (const exportName in module) {
       const exportedItem = module[exportName];
-      console.log(`[loadToolFile] Processing export: ${exportName}`, exportedItem);
 
       if (
         typeof exportedItem === 'object' &&
         exportedItem !== null &&
         'name' in exportedItem
       ) {
-        logger.info(
+        logger.debug(
           { exportName, file },
           `[loadToolFile] Found potential tool export.`,
         );
-        console.log(`[loadToolFile] Found potential tool export: ${exportName}`);
+        
+        // Valider l'objet avec Zod mais ne pas afficher les détails verbeux
         const parsedTool = toolSchema.safeParse(exportedItem);
-        console.log(`[loadToolFile] Zod validation result for ${exportName}:`, parsedTool);
 
         if (parsedTool.success) {
           const tool = parsedTool.data as Tool;
@@ -228,20 +226,24 @@ async function loadToolFile(file: string): Promise<void> {
             { file, toolName: tool.name },
             `[loadToolFile] Successfully registered tool.`,
           );
-          console.log(`[loadToolFile] Successfully registered tool: ${tool.name}`);
         } else {
           logger.warn(
-            { errors: parsedTool.error.issues, exportName, file },
+            { 
+              errors: parsedTool.error.issues.map(issue => ({
+                message: issue.message,
+                path: issue.path.join('.')
+              })), 
+              exportName, 
+              file 
+            },
             `[loadToolFile] Skipping invalid tool export due to Zod schema mismatch.`,
           );
-          console.log(`[loadToolFile] Skipping invalid tool export ${exportName} due to Zod schema mismatch:`, parsedTool.error.issues);
         }
       } else {
         logger.debug(
           { exportName, file },
           `[loadToolFile] Skipping non-tool export.`,
         );
-        console.log(`[loadToolFile] Skipping non-tool export: ${exportName}`);
       }
     }
   } catch (error) {
@@ -252,7 +254,6 @@ async function loadToolFile(file: string): Promise<void> {
         file,
         logContext: `[loadToolFile] Failed to load browser tool (likely due to Playwright issues). This tool will be skipped.`,
       });
-      console.log(`[loadToolFile] Failed to load browser tool (likely due to Playwright issues). This tool will be skipped.`);
       return; // Skip this tool but continue loading others
     }
     
@@ -261,7 +262,6 @@ async function loadToolFile(file: string): Promise<void> {
       file,
       logContext: `[loadToolFile] Failed to dynamically load or process tool file.`,
     });
-    console.log(`[loadToolFile] Failed to dynamically load or process tool file:`, error);
   }
 }
 

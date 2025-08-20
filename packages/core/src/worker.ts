@@ -12,8 +12,8 @@ import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.js'
 import { AppError, getErrDetails, UserError } from './utils/errorUtils.js';
 import { getTools } from './utils/toolLoader.js';
 
-console.log('[WORKER-STARTUP] process.cwd():', process.cwd());
-console.log('[WORKER-STARTUP] process.env.PATH:', process.env.PATH);
+getLoggerInstance().debug('[WORKER-STARTUP] process.cwd():', process.cwd());
+getLoggerInstance().debug('[WORKER-STARTUP] process.env.PATH:', process.env.PATH);
 
 export async function initializeWorker(
   redisConnection: Redis,
@@ -26,8 +26,6 @@ export async function initializeWorker(
   
   // Afficher les outils détectés au démarrage
   const tools = await getTools();
-  console.log(`[WORKER-STARTUP] ${tools.length} tools detected:`);
-  tools.forEach(tool => console.log(`[WORKER-STARTUP] - ${tool.name}`));
   getLoggerInstance().info(`${tools.length} tools detected at startup`);
   
   const _jobQueue = new Queue('tasks', { connection: redisConnection });
@@ -49,22 +47,16 @@ export async function initializeWorker(
         log.info(`Executing detached shell command: ${command}`);
 
         return new Promise((resolve, reject) => {
-          // --- Début du débogage ---
-          console.log('BullMQ Worker is starting a job.');
-          console.log(`process.cwd(): ${process.cwd()}`);
-          console.log(`HOST_SYSTEM_PATH: ${process.env.HOST_SYSTEM_PATH}`);
-          console.log(`PATH: ${process.env.PATH}`);
-          // --- Fin du débogage ---
           const env = {
             ...process.env,
             PATH: process.env.HOST_SYSTEM_PATH || process.env.PATH,
           };
-          console.log(`[WORKER-SPAWN-DEBUG] Spawning command: ${command}`);
-          console.log(`[WORKER-SPAWN-DEBUG] With shell: /usr/bin/env bash`);
-          console.log(
+          getLoggerInstance().debug(`[WORKER-SPAWN-DEBUG] Spawning command: ${command}`);
+          getLoggerInstance().debug(`[WORKER-SPAWN-DEBUG] With shell: /usr/bin/env bash`);
+          getLoggerInstance().debug(
             `[WORKER-SPAWN-DEBUG] With cwd: ${config.WORKSPACE_PATH}`,
           );
-          console.log(`[WORKER-SPAWN-DEBUG] With env.PATH: ${env.PATH}`);
+          getLoggerInstance().debug(`[WORKER-SPAWN-DEBUG] With env.PATH: ${env.PATH}`);
 
           const child = _spawn(command, {
             cwd: config.WORKSPACE_PATH,

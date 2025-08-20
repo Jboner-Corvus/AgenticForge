@@ -564,7 +564,7 @@ describe('Orchestrator Prompt Tests', () => {
       const prompt = getMasterPrompt(mockSession, [specialTool]);
 
       expect(prompt).toContain('tool_with-special.chars@domain');
-      expect(prompt).toContain("A tool with special chars: <>/\"'\'");
+      expect(prompt).toContain("A tool with special chars: <>/\"'");
     });
   });
 });

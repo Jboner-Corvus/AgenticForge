@@ -14,6 +14,10 @@ export default defineConfig({
   format: ['esm'],
   dts: true,
   clean: true,
+  banner: {
+    js: `import { createRequire } from 'module';
+const require = createRequire(import.meta.url);`,
+  },
   external: [
     'express',
     'cookie-parser',

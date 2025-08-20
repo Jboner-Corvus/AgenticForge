@@ -1,5 +1,6 @@
 // API utilitaires pour la gestion des clés LLM avec Redis
 import { clientConfig } from '../../config';
+
 export interface RedisKeyPattern {
   pattern: string;
   description: string;
@@ -261,6 +262,35 @@ export class LLMKeysApi {
     }
 
     return response.json();
+  }
+
+  // Key hierarchy operations
+  async getKeyHierarchy(): Promise<{[key: string]: number}> {
+    const response = await fetch(`${this.baseUrl}/hierarchy`, {
+      method: 'GET',
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get key hierarchy: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  async setKeyHierarchy(hierarchy: {[key: string]: number}): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/hierarchy`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeaders()
+      },
+      body: JSON.stringify(hierarchy)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to set key hierarchy: ${response.statusText}`);
+    }
   }
 
   // Utilities

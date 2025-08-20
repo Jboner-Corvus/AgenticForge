@@ -90,7 +90,6 @@ const KeyPerformanceStats: React.FC = () => {
 // EPIC KEY STATS COMPONENT
 const EpicKeyStats: React.FC = () => {
   const { stats, isLoading, isSyncing } = useLLMKeysStore();
-  // const keys = useLLMKeysStore(state => state.keys); // Unused for now
   
   const statItems = [
     { label: 'TOTAL KEYS', value: stats.totalKeys, icon: Key, color: 'text-cyan-400' },
@@ -269,32 +268,10 @@ const RedisControlPanel: React.FC = () => {
   );
 };
 
-// API function placeholders for HierarchyManager
-const getMasterKey = async (): Promise<LLMKey | null> => {
-  console.log('Fetching master key...');
-  return {
-    id: 'master-key',
-    providerId: 'master',
-    providerName: 'Master',
-    keyName: 'Master Key (.env)',
-    keyValue: 'master-key-from-env',
-    isEncrypted: false,
-    isActive: true,
-    priority: 1, // Priorité élevée pour la clé master
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    usageCount: 0,
-    metadata: { environment: 'universal', tags: [], description: 'Master key loaded from .env file' }
-  };
-};
 
-const saveKeyHierarchy = async (orderedKeys: LLMKey[]) => {
-  console.log('Saving new key hierarchy:', orderedKeys.map(k => k.keyName));
-  await new Promise(resolve => setTimeout(resolve, 500));
-};
 
 // SORTABLE KEY ITEM FOR HIERARCHY
-const SortableKeyItem = ({ keyData, isMaster }: { keyData: LLMKey, isMaster: boolean }) => {
+const SortableKeyItem = ({ keyData, isMaster, priority }: { keyData: LLMKey, isMaster: boolean, priority?: number }) => {
   const {
     attributes,
     listeners,
@@ -329,6 +306,11 @@ const SortableKeyItem = ({ keyData, isMaster }: { keyData: LLMKey, isMaster: boo
         <span className="font-bold text-white">{keyData.keyName}</span>
         <div className="text-xs text-gray-400">{keyData.providerName}</div>
       </div>
+      {priority !== undefined && !isMaster && (
+        <Badge className="bg-gray-700 text-gray-300 border-gray-600">
+          P{priority}
+        </Badge>
+      )}
       {isMaster && (
         <Badge className="bg-yellow-900/50 text-yellow-300 border border-yellow-700/50">
           <Shield className="h-3 w-3 mr-1" />
@@ -341,22 +323,96 @@ const SortableKeyItem = ({ keyData, isMaster }: { keyData: LLMKey, isMaster: boo
 
 // HIERARCHY MANAGER COMPONENT
 const HierarchyManager: React.FC = () => {
-  const { keys } = useLLMKeysStore();
+  const { keys, fetchKeys } = useLLMKeysStore();
   const [masterKey, setMasterKey] = useState<LLMKey | null>(null);
   const [orderedKeys, setOrderedKeys] = useState<LLMKey[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchMaster = async () => {
-      const key = await getMasterKey();
-      setMasterKey(key);
+      // Fetch master key from backend
+      try {
+        const response = await fetch('/api/llm-keys/master-key', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('backendAuthToken') || ''}`
+          }
+        });
+        
+        if (response.ok) {
+          const masterKeyData = await response.json();
+          setMasterKey({
+            id: 'master-key',
+            providerId: 'master',
+            providerName: 'Master',
+            keyName: 'Master Key (.env)',
+            keyValue: masterKeyData.apiKey,
+            isEncrypted: false,
+            isActive: true,
+            priority: 0, // Highest priority for master key
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            usageCount: 0,
+            metadata: { 
+              environment: 'universal', 
+              tags: [], 
+              description: 'Master key loaded from .env file' 
+            }
+          });
+        }
+      } catch (error) {
+        console.warn('Failed to fetch master key:', error);
+      }
     };
+    
     fetchMaster();
   }, []);
 
   useEffect(() => {
-    const allKeys = [...(masterKey ? [masterKey] : []), ...keys];
-    setOrderedKeys(allKeys);
+    // Load key hierarchy from backend
+    const loadKeyHierarchy = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/llm-keys/hierarchy', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('backendAuthToken') || ''}`
+          }
+        });
+        
+        if (response.ok) {
+          const hierarchy = await response.json();
+          
+          // Sort keys based on hierarchy
+          const sortedKeys = [...keys].sort((a, b) => {
+            const keyAIdentifier = `${a.providerId}|${a.keyValue}|${a.providerName}|`;
+            const keyBIdentifier = `${b.providerId}|${b.keyValue}|${b.providerName}|`;
+            
+            const priorityA = hierarchy[keyAIdentifier] ?? Number.MAX_SAFE_INTEGER;
+            const priorityB = hierarchy[keyBIdentifier] ?? Number.MAX_SAFE_INTEGER;
+            
+            return priorityA - priorityB;
+          });
+          
+          setOrderedKeys([
+            ...(masterKey ? [masterKey] : []),
+            ...sortedKeys
+          ]);
+        } else {
+          // Fallback to default ordering
+          const allKeys = [...(masterKey ? [masterKey] : []), ...keys];
+          setOrderedKeys(allKeys);
+        }
+      } catch (error) {
+        console.warn('Failed to load key hierarchy:', error);
+        // Fallback to default ordering
+        const allKeys = [...(masterKey ? [masterKey] : []), ...keys];
+        setOrderedKeys(allKeys);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadKeyHierarchy();
   }, [keys, masterKey]);
 
   const sensors = useSensors(
@@ -378,10 +434,52 @@ const HierarchyManager: React.FC = () => {
 
   const handleSaveChanges = async () => {
     setIsSaving(true);
-    const userConfigurableKeys = orderedKeys.filter(k => k.providerId !== 'master');
-    await saveKeyHierarchy(userConfigurableKeys);
-    setIsSaving(false);
+    try {
+      // Create hierarchy object with key identifiers and priorities
+      const hierarchy: {[key: string]: number} = {};
+      
+      orderedKeys.forEach((key, index) => {
+        // Skip master key as it always has highest priority
+        if (key.providerId !== 'master') {
+          // Create a unique identifier for the key
+          const keyIdentifier = `${key.providerId}|${key.keyValue}|${key.providerName}|`;
+          hierarchy[keyIdentifier] = index;
+        }
+      });
+      
+      // Save hierarchy to backend
+      const response = await fetch('/api/llm-keys/hierarchy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('backendAuthToken') || ''}`
+        },
+        body: JSON.stringify(hierarchy)
+      });
+      
+      if (response.ok) {
+        // Refresh keys to ensure UI is updated
+        await fetchKeys();
+      } else {
+        throw new Error('Failed to save key hierarchy');
+      }
+    } catch (error) {
+      console.error('Failed to save key hierarchy:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <Card className="mb-6 bg-gradient-to-br from-gray-900/90 to-gray-800/90 border-gray-700">
+        <CardContent className="p-6 flex items-center justify-center">
+          <LoadingSpinner className="h-6 w-6" />
+          <span className="ml-2 text-gray-400">Chargement de la hiérarchie...</span>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="mb-6 bg-gradient-to-br from-gray-900/90 to-gray-800/90 border-gray-700">
@@ -397,8 +495,13 @@ const HierarchyManager: React.FC = () => {
         </p>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={orderedKeys.map(k => k.id)} strategy={verticalListSortingStrategy}>
-            {orderedKeys.map((key) => (
-              <SortableKeyItem key={key.id} keyData={key} isMaster={key.providerId === 'master'} />
+            {orderedKeys.map((key, index) => (
+              <SortableKeyItem 
+                key={key.id} 
+                keyData={key} 
+                isMaster={key.providerId === 'master'} 
+                priority={index}
+              />
             ))}
           </SortableContext>
         </DndContext>
@@ -408,7 +511,14 @@ const HierarchyManager: React.FC = () => {
             disabled={isSaving}
             className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500"
           >
-            {isSaving ? 'Sauvegarde...' : 'Sauvegarder la Hiérarchie'}
+            {isSaving ? (
+              <>
+                <LoadingSpinner className="h-4 w-4 mr-2" />
+                Sauvegarde...
+              </>
+            ) : (
+              'Sauvegarder la Hiérarchie'
+            )}
           </Button>
         </div>
       </CardContent>

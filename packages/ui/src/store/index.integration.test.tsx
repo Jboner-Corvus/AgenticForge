@@ -42,7 +42,12 @@ const TestStoreComponent = () => {
       
       <button 
         data-testid="add-llm-key" 
-        onClick={() => addLlmApiKey('test-provider', 'test-key-123')}
+        onClick={() => addLlmApiKey({
+          provider: 'test-provider',
+          key: 'test-key-123',
+          nickname: 'test-key',
+          createdAt: Date.now()
+        })}
       >
         Add LLM Key
       </button>

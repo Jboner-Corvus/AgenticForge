@@ -172,6 +172,37 @@ export async function initializeWebServer(
           return next();
         }
         
+        // Handle authentication for SSE through query parameters as fallback
+        if (
+          req.path.startsWith('/api/chat/stream/') &&
+          !req.headers.authorization &&
+          (req.query.auth || req.query.token)
+        ) {
+          const token = req.query.auth || req.query.token;
+          getLoggerInstance().debug(
+            { tokenType: typeof token, tokenValue: token ? `${String(token).substring(0, 20)}...` : 'undefined' },
+            'Processing SSE auth token from query parameters in main auth middleware',
+          );
+          if (typeof token === 'string') {
+            // Check if token already has Bearer prefix
+            if (token.startsWith('Bearer ')) {
+              req.headers.authorization = token;
+            } else {
+              req.headers.authorization = `Bearer ${token}`;
+            }
+            getLoggerInstance().debug(
+              { authorizationHeader: req.headers.authorization },
+              'Set authorization header for SSE in main auth middleware',
+            );
+          }
+        }
+        
+        // Skip authentication for SSE streams as they have their own auth middleware
+        if (req.path.startsWith('/api/chat/stream/')) {
+          console.log('Skipping auth for SSE stream:', req.path);
+          return next();
+        }
+        
         // Routes exemptées d'authentification (accès libre pour navigation)
         const publicRoutes = [
           '/api/health',
@@ -179,6 +210,8 @@ export async function initializeWebServer(
           '/api/auth/qwen', 
           '/api/llm-api-keys/providers', // Pour afficher les providers LLM
           '/api/llm-keys/providers', // Pour afficher les providers LLM
+          '/api/llm-keys/hierarchy', // Pour afficher la hiérarchie des clés
+          '/api/llm-keys/master-key', // Pour afficher la clé maîtresse
           '/api/sessions', // Pour naviguer dans les sessions
           '/api/leaderboard' // Pour la page leaderboard
         ];
@@ -211,7 +244,7 @@ export async function initializeWebServer(
         
         // SIMPLIFIÉ: Utiliser uniquement AUTH_TOKEN (qui est dans .env)
         // Utiliser la configuration chargée au lieu de process.env directement
-        const expectedToken = config.AUTH_TOKEN || process.env.AUTH_TOKEN || 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0';
+        const expectedToken = config.AUTH_TOKEN || process.env.AUTH_TOKEN || '';
         const expectedBearer = `Bearer ${expectedToken}`;
         
         console.log('🔐 SIMPLIFIED AUTH - Expected Bearer:', expectedBearer.substring(0, 50) + '...');
@@ -345,87 +378,169 @@ export async function initializeWebServer(
       },
     );
 
+    // Middleware d'authentification pour les routes SSE
+    const sseAuthMiddleware = (
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction,
+    ) => {
+      getLoggerInstance().debug(
+        { 
+          path: req.path,
+          hasAuthHeader: !!req.headers.authorization,
+          hasAuthQuery: !!req.query.auth,
+          hasTokenQuery: !!req.query.token,
+          query: req.query
+        },
+        'SSE auth middleware called',
+      );
+      
+      // Handle authentication for SSE through query parameters as fallback
+      if (
+        req.path.startsWith('/api/chat/stream/') &&
+        !req.headers.authorization &&
+        (req.query.auth || req.query.token)
+      ) {
+        const token = req.query.auth || req.query.token;
+        getLoggerInstance().debug(
+          { tokenType: typeof token, tokenValue: token ? `${String(token).substring(0, 20)}...` : 'undefined' },
+          'Processing SSE auth token from query parameters in SSE auth middleware',
+        );
+        if (typeof token === 'string') {
+          // Check if token already has Bearer prefix
+          if (token.startsWith('Bearer ')) {
+            req.headers.authorization = token;
+          } else {
+            req.headers.authorization = `Bearer ${token}`;
+          }
+          getLoggerInstance().debug(
+            { authorizationHeader: req.headers.authorization },
+            'Set authorization header for SSE in SSE auth middleware',
+          );
+        }
+      }
+      
+      // Apply authentication middleware to SSE endpoint
+      const apiKey = req.headers.authorization;
+      getLoggerInstance().debug(
+        { apiKey: apiKey ? `${apiKey.substring(0, 20)}...` : 'undefined' },
+        'Checking authorization header for SSE stream',
+      );
+      
+      // UNIFIÉ: Utiliser uniquement AUTH_TOKEN partout
+      const expectedToken = config.AUTH_TOKEN || process.env.AUTH_TOKEN || '';
+      const expectedBearer = `Bearer ${expectedToken}`;
+      getLoggerInstance().debug(
+        { 
+          providedKey: apiKey, 
+          requiredKey: expectedBearer,
+          configToken: config.AUTH_TOKEN ? `${config.AUTH_TOKEN.substring(0, 10)}...` : 'undefined',
+          envToken: process.env.AUTH_TOKEN ? `${process.env.AUTH_TOKEN.substring(0, 10)}...` : 'undefined',
+          expectedTokenLength: expectedToken.length,
+          providedKeyLength: apiKey ? apiKey.length : 0,
+          matchResult: apiKey === expectedBearer
+        },
+        'SSE auth validation - Detailed comparison',
+      );
+      if (apiKey !== expectedBearer) {
+        getLoggerInstance().warn(
+          { 
+            providedKey: apiKey, 
+            requiredKey: expectedBearer,
+            configToken: config.AUTH_TOKEN ? `${config.AUTH_TOKEN.substring(0, 10)}...` : 'undefined',
+            envToken: process.env.AUTH_TOKEN ? `${process.env.AUTH_TOKEN.substring(0, 10)}...` : 'undefined'
+          },
+          'Unauthorized SSE access attempt',
+        );
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      
+      next();
+    };
+    
     app.get(
       '/api/chat/stream/:jobId',
+      sseAuthMiddleware,
       async (
         req: express.Request,
         res: express.Response,
         _next: express.NextFunction,
       ) => {
-        // Handle authentication for SSE through query parameters as fallback
-        if (
-          req.path.startsWith('/api/chat/stream/') &&
-          !req.headers.authorization &&
-          (req.query.auth || req.query.token)
-        ) {
-          const token = req.query.auth || req.query.token;
-          if (typeof token === 'string') {
-            req.headers.authorization = `Bearer ${token}`;
-          }
-        }
+        console.log('SSE route called');
         
-        // Apply authentication middleware to SSE endpoint
-        const apiKey = req.headers.authorization;
-        getLoggerInstance().debug(
-          { apiKey: apiKey ? `${apiKey.substring(0, 20)}...` : 'undefined' },
-          'Checking authorization header for SSE stream',
-        );
-        
-        // UNIFIÉ: Utiliser uniquement AUTH_TOKEN partout
-        const expectedToken = config.AUTH_TOKEN || process.env.AUTH_TOKEN || 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0';
-        if (apiKey !== `Bearer ${expectedToken}`) {
-          getLoggerInstance().warn(
-            { providedKey: apiKey, requiredKey: `Bearer ${expectedToken.substring(0, 10)}...` },
-            'Unauthorized SSE access attempt',
-          );
-          return res.status(401).json({ error: 'Unauthorized' });
-        }
-
         const { jobId } = req.params;
-
+        
+        // Set SSE headers
         res.writeHead(200, {
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
           'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Cache-Control'
         });
-
-        const subscriber = redisClient.duplicate();
-        const channel = `job:${jobId}:events`;
-
-        await subscriber.subscribe(channel);
-        getLoggerInstance().info(`[SSE] Subscribed to ${channel} for SSE. Client connected.`);
-
-        subscriber.on('message', (channel: string, message: string) => {
-          getLoggerInstance().info(
-            { channel, message },
-            '[SSE] Received message from Redis channel - sending to client',
-          );
-          res.write('data: ' + message + '\n\n');
-        });
-
-        // Send initial heartbeat immediately
-        res.write(`data: {"type":"heartbeat","timestamp":${Date.now()}}\n\n`);
-        getLoggerInstance().info(`[SSE] Initial heartbeat sent to client`);
-
-        const heartbeatInterval = setInterval(() => {
-          res.write(`data: {"type":"heartbeat","timestamp":${Date.now()}}\n\n`);
-          getLoggerInstance().info(`[SSE] Heartbeat sent to client`);
-        }, 10000);
-
-        req.on('close', () => {
-          getLoggerInstance().info(
-            `Client disconnected from SSE for job ${jobId}. Unsubscribing.`, 
-          );
-          getLoggerInstance().debug(
-            `Attempting to unsubscribe from channel: ${channel}`,
-          );
-          clearInterval(heartbeatInterval);
-          subscriber.unsubscribe(channel);
-          subscriber.quit();
-          getLoggerInstance().debug(
-            `Unsubscribed and quit for channel: ${channel}`,
-          );
-        });
+        
+        // Send initial connection message
+        res.write('data: {"type":"connection","message":"Connected to stream"}\n\n');
+        
+        try {
+          // Create Redis subscriber for job events
+          const subscriber = redisClient.duplicate();
+          
+          // Handle client disconnect
+          req.on('close', () => {
+            console.log(`Client disconnected from stream for job ${jobId}`);
+            subscriber.quit();
+          });
+          
+          // Subscribe to job events
+          await subscriber.subscribe(`job:${jobId}:events`);
+          
+          subscriber.on('message', (channel, message) => {
+            try {
+              // Parse the message
+              const eventData = JSON.parse(message);
+              
+              // Send the event data
+              res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+              
+              // If this is a completion event, end the stream
+              if (eventData.type === 'completed' || eventData.type === 'error') {
+                res.write('data: {"type":"stream_end","message":"Stream closed"}\n\n');
+                res.end();
+                subscriber.quit();
+              }
+            } catch (err) {
+              console.error('Error processing stream message:', err);
+              res.write(`data: {"type":"error","message":"Error processing message"}\n\n`);
+            }
+          });
+          
+          // Also listen for job completion through another channel if needed
+          const jobCompletionChannel = `job:${jobId}:completed`;
+          await subscriber.subscribe(jobCompletionChannel);
+          
+          subscriber.on('message', (channel, message) => {
+            if (channel === jobCompletionChannel) {
+              try {
+                const completionData = JSON.parse(message);
+                res.write(`data: ${JSON.stringify(completionData)}\n\n`);
+                res.write('data: {"type":"stream_end","message":"Stream closed"}\n\n');
+                res.end();
+                subscriber.quit();
+              } catch (err) {
+                console.error('Error processing completion message:', err);
+                res.write(`data: {"type":"error","message":"Error processing completion"}\n\n`);
+                res.end();
+                subscriber.quit();
+              }
+            }
+          });
+          
+        } catch (error) {
+          console.error('Error in SSE stream:', error);
+          res.write(`data: {"type":"error","message":"Stream error: ${error}"}\n\n`);
+          res.end();
+        }
       },
     );
 
@@ -504,14 +619,30 @@ export async function initializeWebServer(
         next: express.NextFunction,
       ) => {
         try {
-          const sessionsCreated =
-            (await redisClient.get('leaderboard:sessionsCreated')) || '0';
-          const tokensSaved =
-            (await redisClient.get('leaderboard:tokensSaved')) || '0';
-          const successfulRuns =
-            (await redisClient.get('leaderboard:successfulRuns')) || '0';
-          const apiKeysAdded =
-            (await redisClient.get('leaderboard:apiKeysAdded')) || '0';
+          // Initialize stats with 0 if they don't exist
+          let sessionsCreated = await redisClient.get('leaderboard:sessionsCreated');
+          if (sessionsCreated === null) {
+            sessionsCreated = '0';
+            await redisClient.set('leaderboard:sessionsCreated', '0');
+          }
+          
+          let tokensSaved = await redisClient.get('leaderboard:tokensSaved');
+          if (tokensSaved === null) {
+            tokensSaved = '0';
+            await redisClient.set('leaderboard:tokensSaved', '0');
+          }
+          
+          let successfulRuns = await redisClient.get('leaderboard:successfulRuns');
+          if (successfulRuns === null) {
+            successfulRuns = '0';
+            await redisClient.set('leaderboard:successfulRuns', '0');
+          }
+          
+          let apiKeysAdded = await redisClient.get('leaderboard:apiKeysAdded');
+          if (apiKeysAdded === null) {
+            apiKeysAdded = '0';
+            await redisClient.set('leaderboard:apiKeysAdded', '0');
+          }
 
           res.status(200).json({
             apiKeysAdded: parseInt(apiKeysAdded, 10),
@@ -878,6 +1009,110 @@ export async function initializeWebServer(
       },
     );
 
+    // Endpoint pour tester une clé API LLM
+    app.post(
+      '/api/llm-keys/test',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { provider, apiKey, baseUrl } = req.body;
+
+          if (!provider || !apiKey) {
+            throw new AppError('Le fournisseur et la clé API sont requis.', { statusCode: 400 });
+          }
+
+          let requestUrl = '';
+          let requestOptions: RequestInit = {};
+
+          switch (provider) {
+            case 'openai':
+              requestUrl = baseUrl || 'https://api.openai.com/v1/chat/completions';
+              requestOptions = {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify({
+                  model: 'gpt-3.5-turbo',
+                  messages: [{ role: 'user', content: 'test' }],
+                  max_tokens: 1,
+                }),
+              };
+              break;
+            case 'anthropic':
+              requestUrl = baseUrl || 'https://api.anthropic.com/v1/messages';
+              requestOptions = {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'x-api-key': apiKey,
+                  'anthropic-version': '2023-06-01',
+                },
+                body: JSON.stringify({
+                  model: 'claude-3-haiku-20240307',
+                  messages: [{ role: 'user', content: 'test' }],
+                  max_tokens: 1,
+                }),
+              };
+              break;
+            case 'gemini':
+              requestUrl = baseUrl || `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+              requestOptions = {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  contents: [{ parts: [{ text: 'test' }] }],
+                }),
+              };
+              break;
+            case 'qwen':
+                requestUrl = baseUrl || 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation';
+                requestOptions = {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${apiKey}`,
+                    },
+                    body: JSON.stringify({
+                        model: 'qwen-turbo',
+                        input: {
+                            prompt: 'test'
+                        },
+                        parameters: {
+                            max_tokens: 1
+                        }
+                    }),
+                };
+                break;
+            default:
+              throw new AppError(`Le fournisseur '${provider}' n'est pas supporté pour le test.`, { statusCode: 400 });
+          }
+          
+          const response = await fetch(requestUrl, requestOptions);
+
+          if (response.ok) {
+            res.status(200).json({ success: true, message: 'La clé est valide.' });
+          } else {
+            const errorBody = await response.text();
+            getLoggerInstance().warn({
+              provider,
+              status: response.status,
+              error: errorBody,
+            }, 'Test de clé API LLM échoué');
+            res.status(200).json({ success: false, message: `Clé invalide ou erreur API (status: ${response.status})` });
+          }
+        } catch (error) {
+          next(error);
+        }
+      },
+    );
+
     // Legacy endpoints for backward compatibility
     app.post(
       '/api/llm-api-keys',
@@ -1095,7 +1330,10 @@ export async function initializeWebServer(
         token = authHeader.substring(7); // Remove 'Bearer ' prefix
       }
       
-      if (!token || token !== config.AUTH_TOKEN) {
+      // Use the same token logic as the main auth middleware
+      const expectedToken = config.AUTH_TOKEN || process.env.AUTH_TOKEN || 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0';
+      
+      if (!token || token !== expectedToken) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
       
@@ -1986,6 +2224,88 @@ export async function initializeWebServer(
       },
     );
 
+    // New endpoints for key hierarchy management
+    // GET /api/llm-keys/hierarchy - Get key hierarchy
+    app.get(
+      '/api/llm-keys/hierarchy',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Get key hierarchy from Redis
+          const hierarchyJson = await redisClient.get('llmApiKeysHierarchy');
+          const hierarchy = hierarchyJson ? JSON.parse(hierarchyJson) : {};
+          
+          res.status(200).json(hierarchy);
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error getting key hierarchy from Redis',
+          );
+          next(error);
+        }
+      },
+    );
+
+    // POST /api/llm-keys/hierarchy - Set key hierarchy
+    app.post(
+      '/api/llm-keys/hierarchy',
+      verifyAuthToken,
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const hierarchy = req.body;
+          
+          // Save key hierarchy to Redis
+          await redisClient.set('llmApiKeysHierarchy', JSON.stringify(hierarchy));
+          
+          res.status(200).json({ message: 'Key hierarchy saved successfully' });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error saving key hierarchy to Redis',
+          );
+          next(error);
+        }
+      },
+    );
+
+    // GET /api/llm-keys/master-key - Get master key info
+    app.get(
+      '/api/llm-keys/master-key',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Get master key from environment variables
+          const masterApiKey = process.env.MASTER_LLM_API_KEY || process.env.LLM_API_KEY || config.LLM_API_KEY;
+          
+          if (!masterApiKey) {
+            return res.status(404).json({ error: 'Master key not found' });
+          }
+          
+          res.status(200).json({ 
+            apiKey: masterApiKey,
+            provider: 'google-flash', // Default provider for master key
+            model: 'gemini-2.5-flash' // Default model for master key
+          });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error getting master key info',
+          );
+          next(error);
+        }
+      },
+    );
+
     app.put(
       '/api/llm-keys/redis/key/:keyPath',
       async (
@@ -2292,6 +2612,40 @@ export async function initializeWebServer(
             { error },
             'Error importing LLM keys from Redis',
           );
+          next(error);
+        }
+      },
+    );
+
+    // Cleanup duplicate keys endpoint for the new API
+    app.post(
+      '/api/llm-keys/cleanup-duplicates',
+      verifyAuthToken,
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          // Use the new integrated deduplication method
+          const result = await _LlmKeyManager.deduplicateKeys();
+          
+          if (result.duplicatesRemoved > 0) {
+            res.status(200).json({ 
+              message: `🧹 Cleanup completed. Removed ${result.duplicatesRemoved} duplicates.`,
+              before: result.originalCount,
+              after: result.uniqueCount,
+              duplicatesRemoved: result.duplicatesRemoved
+            });
+          } else {
+            res.status(200).json({ 
+              message: '✅ No duplicates found - all keys are unique!',
+              before: result.originalCount,
+              after: result.uniqueCount,
+              duplicatesRemoved: 0
+            });
+          }
+        } catch (error) {
           next(error);
         }
       },

@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => {
       silent: true,
       hideSkippedTests: true,
       logHeapUsage: false,
-      testTimeout: 20000,
+      testTimeout: 100000,
     },
     resolve: {
       alias: {

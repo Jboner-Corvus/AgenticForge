@@ -29,6 +29,7 @@ import {
 import { useCanvasStore } from '../store/canvasStore';
 import { useLanguage } from '../lib/contexts/LanguageContext';
 import { useToast } from '../lib/hooks/useToast';
+import TodoListView from './TodoListView';
 
 const AgentOutputCanvas: React.FC = () => {
   const { translations } = useLanguage();
@@ -211,6 +212,36 @@ const AgentOutputCanvas: React.FC = () => {
             initial="hidden"
             animate="visible"
           />
+        );
+      case 'json':
+        // Handle todo list JSON data
+        try {
+          const jsonData = JSON.parse(canvasContent);
+          if (jsonData.type === 'todo_list') {
+            return (
+              <motion.div 
+                className="p-4 h-full overflow-y-auto bg-gradient-to-br from-cyan-900/5 to-blue-900/5 rounded-lg"
+                variants={contentVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <TodoListView data={jsonData} />
+              </motion.div>
+            );
+          }
+        } catch (e) {
+          // Fall through to text display if JSON parsing fails
+        }
+        // If not a todo list or parsing fails, display as text
+        return (
+          <motion.pre 
+            className="p-4 text-sm whitespace-pre-wrap h-full overflow-y-auto bg-black/5 rounded-lg"
+            variants={contentVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {canvasContent}
+          </motion.pre>
         );
       case 'text':
       default:

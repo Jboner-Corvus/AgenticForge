@@ -26,17 +26,17 @@ For each test in the list, follow these 6 steps:
 Pour envoyer une requête à l'API, vous pouvez utiliser la commande `curl` suivante :
 
 ```bash
-curl -X POST http://localhost:8081/api/chat \
+curl -X POST http://localhost:3001/api/chat \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0" \
+  -H "Authorization: Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0" \
   -d '{"prompt": "Fait moi le jeux duke nukem2 (c est un test) et affiche une demo dans le canvas"}'
 ```
 
 Après avoir envoyé cette requête, vous recevrez une réponse contenant un `jobId`. Utilisez ce `jobId` pour vous connecter au stream :
 
 ```bash
-curl -H "Authorization: Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0" \
-  http://localhost:3002/api/chat/stream/:jobId
+curl -H "Authorization: Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0" \
+  http://localhost:3001/api/chat/stream/:jobId
 ```
 
 Remplacez `:jobId` par l'identifiant réel retourné par la première requête.
@@ -131,12 +131,12 @@ Ces améliorations permettent à l'interface utilisateur de gérer efficacement 
 -   [x] 41. Conteneuriser l'API Express/Node avec un Dockerfile (En cours le 2025-08-15 - Conteneurisation de l'API minimal-api)
 -   [x] 42. Créer une base de données SQLite et l'intégrer à un script (ÉCHEC - Quota API dépassé le 2025-08-09)
 -   [x] 43. Développer une application "Livre d'Or" Full-Stack (En cours le 2025-08-15 - Backend Node.js/Express créé, frontend en développement)
--   [ ] 44. Automatiser des tâches basées sur un fichier YAML (Nécessite des précisions supplémentaires dans prompts.yaml)
+-   [x] 44. Automatiser des tâches basées sur un fichier YAML (Complété le 2025-08-19 - Script Python + YAML fonctionnel dans /workspace/yaml-automation)
 -   [x] 45. Écrire un script de "benchmark" de performance (En cours le 2025-08-15 - Script de benchmark complet avec tests CPU/mémoire/I/O)
 -   [x] 46. Générer la documentation technique d'un projet (En cours le 2025-08-15 - Documentation automatique en développement)
--   [ ] 47. Créer un workflow Git (Branches et Merge)
+-   [x] 47. Créer un workflow Git (Branches et Merge) (Complété le 2025-08-19 - Workflow Git complet avec branches feature/bugfix et merges dans /workspace/git-workflow-demo)
 -   [x] 48. Créer une micro-librairie Typescript et l'utiliser (En cours le 2025-08-15 - Librairie TypeScript en développement)
--   [ ] 49. Résoudre un problème logique en "Chain-of-Thought"
+-   [x] 49. Résoudre un problème logique en "Chain-of-Thought" (Complété le 2025-08-19 - Solution détaillée du problème des 3 étages dans /workspace/logic-problem-solution.md)
 -   [ ] 50. Développer les tests les plus critiques d'une grosse Biblio comme Fastmcp
 -   [ ] 51. Développer un outil pour faire la maintenance du systeme,
 -   [ ] 52. Développer un leger antivirus pour le systeme

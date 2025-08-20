@@ -39,9 +39,6 @@ Object.defineProperty(window, 'localStorage', {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
-  // Reset timers after each test
-  vi.useRealTimers();
-  vi.useFakeTimers();
 });
 
 process.env.VITE_MCP_PROXY_ADDRESS = "http://localhost:6277";

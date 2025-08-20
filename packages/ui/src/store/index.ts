@@ -140,9 +140,9 @@ export interface CombinedAppState {
   setIsRenamingSession: (isRenaming: boolean) => void;
   
   // Main actions
-  addLlmApiKey: (provider: string, key: string, baseUrl?: string, model?: string) => Promise<void>;
+  addLlmApiKey: (apiKey: LlmApiKey) => Promise<void>;
   removeLlmApiKey: (index: number) => Promise<void>;
-  editLlmApiKey: (index: number, provider: string, key: string, baseUrl?: string, model?: string) => Promise<void>;
+  editLlmApiKey: (index: number, apiKey: LlmApiKey) => Promise<void>;
   setActiveLlmApiKey: (index: number) => Promise<void>;
   
   updateLeaderboardStats: (stats: Partial<LeaderboardStats>) => void;
@@ -286,22 +286,21 @@ export const useCombinedStore = create<CombinedAppState>()(
       setIsRenamingSession: (isRenaming: boolean) => useSessionStore.getState().setIsRenamingSession(isRenaming),
 
       // LLM API Key Management
-      addLlmApiKey: async (provider: string, key: string, baseUrl?: string, model?: string, keyName?: string) => {
+      addLlmApiKey: async (apiKey: LlmApiKey) => {
         set({ isAddingLlmApiKey: true });
         try {
-          await addLlmApiKeyApi(provider, key, baseUrl, model);
+          await addLlmApiKeyApi(apiKey.provider, apiKey.key, apiKey.baseUrl, apiKey.model);
           
           // Update local state
-          const newKey: LlmApiKey = { provider, key, baseUrl, model, keyName };
           set((state) => ({
-            llmApiKeys: [...state.llmApiKeys, newKey],
+            llmApiKeys: [...state.llmApiKeys, apiKey],
             leaderboardStats: {
               ...state.leaderboardStats,
               apiKeysAdded: state.leaderboardStats.apiKeysAdded + 1
             }
           }));
           
-          console.log(`✅ LLM API Key added: ${provider}`);
+          console.log(`✅ LLM API Key added: ${apiKey.provider}`);
         } catch (error) {
           console.error('Failed to add LLM API key:', error);
           throw error;
@@ -344,17 +343,17 @@ export const useCombinedStore = create<CombinedAppState>()(
         }
       },
 
-      editLlmApiKey: async (index: number, provider: string, key: string, baseUrl?: string, model?: string, keyName?: string) => {
+      editLlmApiKey: async (index: number, apiKey: LlmApiKey) => {
         const state = get();
         if (index < 0 || index >= state.llmApiKeys.length) return;
 
         set({ isSettingActiveLlmApiKey: true });
         try {
-          await editLlmApiKeyApi(index, provider, key, baseUrl, model);
+          await editLlmApiKeyApi(index, apiKey.provider, apiKey.key, apiKey.baseUrl, apiKey.model);
           
           // Update local state
           const newKeys = [...state.llmApiKeys];
-          newKeys[index] = { provider, key, baseUrl, model, keyName };
+          newKeys[index] = apiKey;
           
           set({ llmApiKeys: newKeys });
           

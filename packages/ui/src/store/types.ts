@@ -14,7 +14,8 @@ export interface Session {
 export interface LlmApiKey {
   provider: string;
   key: string;
-  keyName?: string;
+  nickname: string; // Remplacer keyName par nickname et le rendre obligatoire
+  createdAt: number; // Timestamp de la date d'ajout
   baseUrl?: string;
   model?: string;
   // Ajout des propriétés pour le classement
@@ -26,17 +27,32 @@ export interface LlmApiKey {
   };
 }
 
+// Interface pour les clés API retournées par le backend
+export interface BackendLlmApiKey {
+  apiKey: string;
+  apiModel: string;
+  apiProvider: string;
+  baseUrl?: string;
+  errorCount: number;
+  isDisabledUntil?: number;
+  isPermanentlyDisabled?: boolean;
+  lastUsed?: number;
+  priority?: number;
+}
+
 export interface ToastOptions {
   title?: string;
   description?: string;
   variant?: "default" | "destructive";
 }
 
+import type { CanvasType } from './canvasStore';
+
 export interface CanvasHistoryItem {
   id: string;
   title: string;
   content: string;
-  type: 'html' | 'markdown' | 'url' | 'text';
+  type: CanvasType;
   timestamp: number;
 }
 

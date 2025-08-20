@@ -33,6 +33,7 @@ usage() {
     echo "   rebuild-rapid  : Rebuild rapide avec cache (Docker + worker externe) (~2-5min)."
     echo "   dev-web        : Lance/rebuild le serveur web en mode preview (port 3003)."
     echo "   rebuild-worker : Reconstruit et redémarre le worker local."
+    echo "   rebuild-dev    : Reconstruit en mode développement et lance tout en dev."
     echo "   rebuild-all    : Reconstruit l'intégralité du projet (Docker et worker local)."
     echo "   clean-docker   : Nettoie le système Docker (supprime conteneurs, volumes, etc.)."
     echo "   clean-caches   : Nettoie TOUS les caches (pnpm, Vite, TypeScript, Docker)."
@@ -169,8 +170,6 @@ start_services() {
     load_env_vars
     stop_worker
     stop_docker_log_collector
-    echo -e "${COLOR_YELLOW}Construction du package 'core'...${NC}"
-    pnpm --filter @gforge/core build
     echo -e "${COLOR_YELLOW}Démarrage des services Docker...${NC}"
     docker compose -f "${SCRIPT_DIR}/docker-compose.yml" up -d
     if ! check_redis_availability; then
@@ -200,24 +199,18 @@ restart_all_services() {
     rm -f "${SCRIPT_DIR}/worker.log" "${SCRIPT_DIR}/docker.log"
     stop_services
     
-    # Vérifier s'il s'agit d'un premier démarrage
-    if is_first_startup; then
-        echo -e "${COLOR_YELLOW}Premier démarrage détecté - Build nécessaire...${NC}"
-        start_services  # Utilise start_services qui fait le build
-    else
-        # Redémarrage sans rebuild
-        cd "${SCRIPT_DIR}"
-        check_and_create_env
-        load_env_vars
-        echo -e "${COLOR_YELLOW}Démarrage des services Docker...${NC}"
-        docker compose -f "${SCRIPT_DIR}/docker-compose.yml" up -d
-        if ! check_redis_availability; then
-            echo -e "${COLOR_RED}Démarrage interrompu car Redis n'est pas accessible.${NC}"
-            return 1
-        fi
-        start_worker
-        start_docker_log_collector
+    # Redémarrage des services
+    cd "${SCRIPT_DIR}"
+    check_and_create_env
+    load_env_vars
+    echo -e "${COLOR_YELLOW}Démarrage des services Docker...${NC}"
+    docker compose -f "${SCRIPT_DIR}/docker-compose.yml" up -d
+    if ! check_redis_availability; then
+        echo -e "${COLOR_RED}Démarrage interrompu car Redis n'est pas accessible.${NC}"
+        return 1
     fi
+    start_worker
+    start_docker_log_collector
 }
 
 restart_worker() {
@@ -253,17 +246,11 @@ shell_access() {
 
 rebuild_docker() {
     cd "${SCRIPT_DIR}"
-    echo -e "${COLOR_YELLOW}Reconstruction forcée des images Docker...${NC}"
+    echo -e "${COLOR_YELLOW}Reconstruction forcée des images Docker en mode production...${NC}"
     rm -f "${SCRIPT_DIR}/worker.log" "${SCRIPT_DIR}/docker.log"
     stop_services
     
-    # Build the UI on the host first
-    echo -e "${COLOR_YELLOW}Construction de l'interface utilisateur - AFFICHAGE LIVE :${NC}"
-    cd "${SCRIPT_DIR}/packages/ui"
-    pnpm install --prod=false
-    pnpm build
-    
-    # Then build the Docker images
+    # Build les images Docker (le Dockerfile gère le build des packages)
     cd "${SCRIPT_DIR}"
     echo -e "${COLOR_YELLOW}Construction des images Docker...${NC}"
     echo -e "${COLOR_CYAN}📦 Build en cours - AFFICHAGE LIVE :${NC}"
@@ -271,12 +258,13 @@ rebuild_docker() {
     # 🚀 ACTIVATION DE BUILDKIT pour des builds plus rapides
     export DOCKER_BUILDKIT=1  # Active BuildKit pour de meilleures performances
     export COMPOSE_DOCKER_CLI_BUILD=1
+    export NODE_ENV=production
     
     # Build avec BuildKit activé pour de meilleures performances
     echo -e "${COLOR_GREEN}🚀 BuildKit activé pour des builds plus rapides !${NC}"
     docker compose --progress=plain -f "${SCRIPT_DIR}/docker-compose.yml" build --no-cache
     
-    # Redémarrage des services (sans rebuild du Core)
+    # Redémarrage des services
     check_and_create_env
     load_env_vars
     echo -e "${COLOR_YELLOW}Démarrage des services Docker...${NC}"
@@ -330,21 +318,15 @@ clean_all_caches() {
 }
 
 rebuild_web() {
-    echo -e "${COLOR_YELLOW}Reconstruction rapide du frontend...${NC}"
+    echo -e "${COLOR_YELLOW}Reconstruction rapide du frontend en mode production...${NC}"
     
     # Arrêter les services
     stop_services
     
-    # Nettoyer les caches frontend uniquement
-    echo -e "${COLOR_YELLOW}Nettoyage des caches frontend...${NC}"
-    cd "${SCRIPT_DIR}/packages/ui"
-    rm -rf dist/
-    rm -rf node_modules/.vite/
-    
-    # Reconstruire le frontend
-    echo -e "${COLOR_YELLOW}Reconstruction du frontend - AFFICHAGE LIVE :${NC}"
-    pnpm install --prod=false
-    pnpm build
+    # Reconstruire le frontend via Docker (le Dockerfile.web.nginx gère le build)
+    echo -e "${COLOR_YELLOW}Reconstruction du frontend via Docker...${NC}"
+    export NODE_ENV=production
+    docker compose --progress=plain -f "${SCRIPT_DIR}/docker-compose.yml" build web
     
     # Redémarrer les services (sans rebuild du worker)
     echo -e "${COLOR_YELLOW}Redémarrage des services Docker...${NC}"
@@ -380,6 +362,7 @@ dev_web() {
 
     echo " │ Lancement du serveur de développement UI..."
     echo " │ Interface accessible sur: http://localhost:3003"
+    echo " │ Backend accessible sur: http://localhost:8080"
     echo " │ Utilisez Ctrl+C pour arrêter le serveur."
     echo " ╰──────────────────────────────────────────────────────────────────────╯"
     
@@ -389,10 +372,11 @@ dev_web() {
 }
 
 rebuild_worker() {
-    echo -e "${COLOR_YELLOW}Reconstruction du worker local - AFFICHAGE LIVE :${NC}"
+    echo -e "${COLOR_YELLOW}Reconstruction du worker local en mode production - AFFICHAGE LIVE :${NC}"
     rm -f "${SCRIPT_DIR}/worker.log"
     stop_worker
     cd "${SCRIPT_DIR}"
+    export NODE_ENV=production
     pnpm --filter @gforge/core install
     pnpm --filter @gforge/core build
     start_worker
@@ -401,17 +385,13 @@ rebuild_worker() {
 
 rebuild_rapid() {
     cd "${SCRIPT_DIR}"
-    echo -e "${COLOR_YELLOW}🚀 Rebuild rapide avec cache (Docker + worker externe)...${NC}"
+    echo -e "${COLOR_YELLOW}🚀 Rebuild rapide avec cache en mode production...${NC}"
     rm -f "${SCRIPT_DIR}/worker.log" "${SCRIPT_DIR}/docker.log"
     
     # Arrêt des services
     stop_services
     
-    # Build Core package (nécessaire pour le worker)
-    echo -e "${COLOR_YELLOW}🔨 Reconstruction du package 'core' (avec cache) - AFFICHAGE LIVE :${NC}"
-    pnpm --filter @gforge/core build
-    
-    # Build Docker avec cache (plus rapide)
+    # 🐳 REBUILD DOCKER AVEC CACHE
     echo -e "${COLOR_YELLOW}🐳 Reconstruction Docker AVEC cache...${NC}"
     echo -e "${COLOR_CYAN}📦 Build en cours avec cache - BEAUCOUP plus rapide !${NC}"
     echo -e "${COLOR_CYAN}   Note: Le build utilise le cache Docker, donc le output détaillé est limité${NC}"
@@ -420,13 +400,14 @@ rebuild_rapid() {
     # 🚀 ACTIVATION DE BUILDKIT pour des builds plus rapides
     export DOCKER_BUILDKIT=1  # Active BuildKit pour de meilleures performances
     export COMPOSE_DOCKER_CLI_BUILD=1
+    export NODE_ENV=production
     
     echo -e "${COLOR_GREEN}🚀 BuildKit activé pour des builds plus rapides !${NC}"
     echo -e "${COLOR_YELLOW}🔧 Exécution de la commande: docker compose --progress=plain -f \"${SCRIPT_DIR}/docker-compose.yml\" build${NC}"
     docker compose --progress=plain -f "${SCRIPT_DIR}/docker-compose.yml" build
     echo -e "${COLOR_GREEN}✅ Build Docker terminé${NC}"
     
-    # Redémarrage des services (sans rebuild du Core)
+    # Redémarrage des services
     echo -e "${COLOR_YELLOW}🚀 Redémarrage des services...${NC}"
     check_and_create_env
     load_env_vars
@@ -438,12 +419,12 @@ rebuild_rapid() {
     fi
     start_worker
     start_docker_log_collector
-    echo -e "${COLOR_GREEN}✅ Rebuild rapide terminé ! Docker + worker externe reconstruits avec cache (Core buildé 1 seule fois).${NC}"
+    echo -e "${COLOR_GREEN}✅ Rebuild rapide terminé !${NC}"
 }
 
 rebuild_all() {
     cd "${SCRIPT_DIR}"
-    echo -e "${COLOR_YELLOW}Reconstruction complète avec nettoyage total des caches...${NC}"
+    echo -e "${COLOR_YELLOW}Reconstruction complète avec nettoyage total des caches en mode production...${NC}"
     rm -f "${SCRIPT_DIR}/worker.log" "${SCRIPT_DIR}/docker.log"
     
     # Arrêt complet
@@ -455,44 +436,20 @@ rebuild_all() {
     # Nettoyer les caches pnpm
     pnpm store prune
     
-    # UI: Nettoyage complet
-    cd "${SCRIPT_DIR}/packages/ui"
-    echo -e "${COLOR_YELLOW}🧹 Nettoyage cache UI (Vite, TypeScript, node_modules)...${NC}"
-    rm -rf node_modules/.vite/
-    rm -rf dist/
-    rm -f tsconfig.tsbuildinfo
-    rm -f tsconfig.*.tsbuildinfo
-    rm -rf node_modules/.cache/
+    # Nettoyage complet des répertoires dist
+    echo -e "${COLOR_YELLOW}🧹 Nettoyage des répertoires dist...${NC}"
+    rm -rf "${SCRIPT_DIR}/packages/ui/dist/"
+    rm -rf "${SCRIPT_DIR}/packages/core/dist/"
     
-    # Réinstallation et rebuild UI avec cache forcé
-    echo -e "${COLOR_YELLOW}📦 Réinstallation des dépendances UI - AFFICHAGE LIVE :${NC}"
-    pnpm install --prod=false --force
-    echo -e "${COLOR_YELLOW}🔨 Reconstruction UI (avec nouvelles configs) - AFFICHAGE LIVE :${NC}"
-    pnpm build
-    
-    # Core: Nettoyage complet  
-    cd "${SCRIPT_DIR}/packages/core"
-    echo -e "${COLOR_YELLOW}🧹 Nettoyage cache Core package...${NC}"
-    rm -rf dist/
-    rm -rf node_modules/.cache/
-    rm -f tsconfig.tsbuildinfo
-    rm -f tsconfig.*.tsbuildinfo
-    
-    # Build Core package avec cache forcé
-    cd "${SCRIPT_DIR}"
-    echo -e "${COLOR_YELLOW}📦 Réinstallation des dépendances Core - AFFICHAGE LIVE :${NC}"
-    pnpm --filter @gforge/core install --force
-    echo -e "${COLOR_YELLOW}🔨 Reconstruction du package 'core' - AFFICHAGE LIVE :${NC}"
-    pnpm --filter @gforge/core build
-    
-    # 🐳 REBUILD DOCKER COMPLET AVEC BUILDKIT
+    # 🐳 REBUILD DOCKER COMPLET AVEC BUILDKIT (le Dockerfile gère le build)
     echo -e "${COLOR_YELLOW}🐳 Reconstruction forcée des images Docker (--no-cache) avec BuildKit...${NC}"
     export DOCKER_BUILDKIT=1  # Active BuildKit pour de meilleures performances
     export COMPOSE_DOCKER_CLI_BUILD=1
+    export NODE_ENV=production
     echo -e "${COLOR_GREEN}🚀 BuildKit activé pour des builds plus rapides !${NC}"
     docker compose --progress=plain -f "${SCRIPT_DIR}/docker-compose.yml" build --no-cache --pull
     
-    # Redémarrage complet (sans rebuild du Core)
+    # Redémarrage complet
     echo -e "${COLOR_YELLOW}🚀 Redémarrage des services...${NC}"
     check_and_create_env
     load_env_vars
@@ -504,12 +461,41 @@ rebuild_all() {
     fi
     start_worker
     start_docker_log_collector
-    echo -e "${COLOR_GREEN}✅ Reconstruction complète terminée avec prise en compte des nouvelles configs (Core buildé 1 seule fois) !${NC}"
+    echo -e "${COLOR_GREEN}✅ Reconstruction complète terminée !${NC}"
 }
 
 # =============================================================================
 # Fonctions de développement
 # =============================================================================
+
+rebuild_dev() {
+    echo -e "${COLOR_YELLOW}🔧 Rebuilding for development mode...${NC}"
+    
+    # Build core en mode dev
+    echo -e "${COLOR_YELLOW}📦 Building core package in development mode...${NC}"
+    (cd packages/core && NODE_ENV=development pnpm install && NODE_ENV=development pnpm run build)
+    
+    # Build UI en mode dev
+    echo -e "${COLOR_YELLOW}🌐 Building UI package in development mode...${NC}"
+    (cd packages/ui && NODE_ENV=development pnpm install && NODE_ENV=development pnpm run build)
+    
+    # Build Docker en mode dev
+    echo -e "${COLOR_YELLOW}🐳 Building Docker images in development mode...${NC}"
+    export NODE_ENV=development
+    docker compose --progress=plain build
+    
+    echo -e "${COLOR_GREEN}✅ Development rebuild complete!${NC}"
+    
+    # Lancer tout en mode dev
+    start_services_dev
+}
+
+start_services_dev() {
+    echo -e "${COLOR_YELLOW}🚀 Starting all services in development mode...${NC}"
+    export NODE_ENV=development
+    docker compose up -d
+    echo -e "${COLOR_GREEN}🔄 Services restarted in development mode!${NC}"
+}
 
 run_lint() {
     cd "${SCRIPT_DIR}"
@@ -540,39 +526,31 @@ run_typecheck() {
 run_unit_tests() {
     cd "${SCRIPT_DIR}"
     echo -e "${COLOR_YELLOW}Lancement des tests unitaires...${NC}"
-    local output_file
-    output_file=$(mktemp)
-    pnpm run test:unit -- "$@" >"$output_file" 2>&1
+    # Exécuter les tests unitaires directement sans redirection complexe
+    cd packages/core
+    pnpm run test:unit
     local exit_code=$?
-    
-    echo "=== Résumé des tests unitaires ==="
-    grep -E "(Test Files|Tests|Duration)" "$output_file" | tail -3
-    
-    if [ $exit_code -ne 0 ]; then
-        echo ""
-        echo -e "${COLOR_RED}Erreurs détectées :${NC}"
-        grep -E "(FAILED|ERROR|failed|erreur)" "$output_file"
-    fi
-    
-    echo "$output_file" > /tmp/unit_test_output_file
+    cd "${SCRIPT_DIR}"
     return $exit_code
 }
 
 run_integration_tests() {
     cd "${SCRIPT_DIR}"
     echo -e "${COLOR_YELLOW}Lancement des tests d'intégration...${NC}"
-    echo -e "${COLOR_YELLOW}Démarrage des services Docker pour l'environnement de test...${NC}"
-    start_services
-    echo -e "${COLOR_GREEN}Services Docker démarrés. Lancement des tests...${NC}"
+
+    # Vérifier si les services Docker sont déjà en cours d'exécution
+    if [ -z "$(docker compose -f "${SCRIPT_DIR}/docker-compose.yml" ps -q g_forge_server 2>/dev/null)" ]; then
+        echo -e "${COLOR_RED}✗ Le serveur n'est pas en cours d'exécution. Veuillez le démarrer avec './run.sh start' avant de lancer les tests d'intégration.${NC}"
+        return 1
+    fi
+
+    echo -e "${COLOR_GREEN}✓ Les services Docker sont en cours d'exécution. Lancement des tests...${NC}"
     
-    local output
-    output=$(pnpm run test:integration 2>&1)
+    pnpm run test:integration
     local test_exit_code=$?
     
-    echo "$output" | tail -10
+    echo -e "${COLOR_YELLOW}Tests terminés.${NC}"
     
-    echo -e "${COLOR_YELLOW}Tests terminés. Arrêt des services Docker...${NC}"
-    stop_services
     return $test_exit_code
 }
 
@@ -775,11 +753,15 @@ run_all_checks() {
         local duration=$((end_time - start_time))
         
         if [ -f /tmp/unit_test_output_file ]; then
-            local output_file
-            output_file=$(cat /tmp/unit_test_output_file)
-            local failed_tests
-            failed_tests=$(grep -cE "(failed|FAILED)" "$output_file")
-            echo -e "${COLOR_RED}✗ $failed_tests erreurs de tests unitaires détectées.${NC}"
+            local output_file_path
+            output_file_path=$(cat /tmp/unit_test_output_file)
+            if [ -f "$output_file_path" ]; then
+                local failed_tests
+                failed_tests=$(grep -cE "(failed|FAILED)" "$output_file_path" 2>/dev/null || echo 0)
+                echo -e "${COLOR_RED}✗ $failed_tests erreurs de tests unitaires détectées.${NC}"
+                # Nettoyer le fichier temporaire
+                rm -f "$output_file_path"
+            fi
         fi
         
         echo -e "${COLOR_RED}✗ Certaines vérifications ont échoué après ${duration} secondes.${NC}"
@@ -796,9 +778,7 @@ run_all_checks() {
     return 0
 }
 
-# =============================================================================
-# UI du Menu
-# =============================================================================
+# =============================================================================\n# Fonctions de développement\n# =============================================================================\n\nrebuild_dev() {\n    echo -e "${COLOR_YELLOW}🔧 Rebuilding for development mode...${NC}"\n    \n    # Build core en mode dev\n    echo -e "${COLOR_YELLOW}📦 Building core package in development mode...${NC}"\n    (cd packages/core && NODE_ENV=development pnpm install && NODE_ENV=development pnpm run build)\n    \n    # Build Docker en mode dev\n    echo -e "${COLOR_YELLOW}🐳 Building Docker images in development mode...${NC}"\n    export NODE_ENV=development\n    docker compose --progress=plain build\n    \n    # Build frontend en mode dev\n    echo -e "${COLOR_YELLOW}🌐 Building web interface in development mode...${NC}"\n    docker compose -f docker-compose.frontend.yml build\n    \n    echo -e "${COLOR_GREEN}✅ Development rebuild complete!${NC}"\n    \n    # Lancer tout en mode dev\n    start_services_dev\n}\n\nstart_services_dev() {\n    echo -e "${COLOR_YELLOW}🚀 Starting all services in development mode...${NC}"\n    export NODE_ENV=development\n    docker compose up -d\n    echo -e "${COLOR_GREEN}🔄 Services restarted in development mode!${NC}"\n}\n\n# =============================================================================\n# UI du Menu\n# =============================================================================
 
 show_menu() {
     clear
@@ -828,6 +808,7 @@ show_menu() {
     printf "   20) ${COLOR_BLUE}🧪 Lancer TOUS les tests${NC}\n"
     echo ""
     printf "   17) ${COLOR_RED}🚪 Quitter${NC}\n"
+    printf "   26) ${COLOR_GREEN}🔧 Rebuild Dev${NC}\n"
     echo ""
 }
 
@@ -860,6 +841,7 @@ main() {
             rebuild-all) rebuild_all ;; 
             rebuild-docker|rebuild) rebuild_docker ;; 
             rebuild-worker) rebuild_worker ;; 
+            rebuild-dev) rebuild_dev ;;
             clean-docker) clean_docker ;;
             clean-caches) clean_all_caches ;; 
             shell) shell_access ;; 
@@ -909,7 +891,8 @@ main() {
             22) rebuild_all ;;
             23) clean_all_caches ;; 
             24) dev_web ;;
-            25) rebuild_rapid ;; 
+            25) rebuild_rapid ;;
+            26) rebuild_dev ;; 
             *) echo -e "${COLOR_RED}Option invalide, veuillez réessayer.${NC}" ;; 
         esac
         echo -e "\nAppuyez sur Entree pour continuer..."

@@ -24,7 +24,7 @@ class AgenticForgeTester:
         """Initialize the tester with configuration."""
         # Utilisation de l'adresse IP du serveur distant
         self.api_url = "http://192.168.40.6:3001/api"
-        self.api_token = "Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0"
+        self.api_token = "Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0"
         self.poll_interval = 2  # secondes
         self.poll_timeout = 120  # secondes (augmenté pour les tâches longues)
         self.run_sh_api_base_url = "http://192.168.40.6:3005"

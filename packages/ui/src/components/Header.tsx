@@ -4,7 +4,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 
 import { Logo } from './Logo';
 import { ConnectionStatus } from './ConnectionStatus';
-import { EpicPinningControls } from './EpicPinningControls';
 
 // import { Settings, PanelLeft, Sun, Moon, Bell, LayoutDashboard, BarChart, Key, MessageSquare, Bug, Square } from 'lucide-react'; // Supprimé: never used
 import { PanelLeft, Sun, Moon, LayoutDashboard, BarChart, Key, MessageSquare, Bug, Crown, Rocket } from 'lucide-react';
@@ -120,7 +119,7 @@ export function Header({
       </div>
 
       <div className="flex items-center space-x-1">
-        <TooltipProvider>
+        <TooltipProvider delayDuration={0}>
           {buttonConfig.map((button, index) => {
             const Icon = button.icon;
             return (
@@ -170,11 +169,7 @@ export function Header({
             );
           })}
           
-          {/* CONTRÔLES DE PINNING ÉPIQUES */}
-          <div className="ml-2 pl-2 border-l border-gray-700">
-            <EpicPinningControls />
-          </div>
-        </TooltipProvider>
+          </TooltipProvider>
       </div>
     </header>
   );

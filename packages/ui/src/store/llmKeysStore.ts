@@ -312,10 +312,13 @@ export const useLLMKeysStore = create<LLMKeysState>()(
           // Sort keys by priority (lower number = higher priority)
           keys.sort((a, b) => a.priority - b.priority);
           
+          // Get unique providers from keys
+          const uniqueProviders = Array.from(new Set(keys.map(k => k.providerId)));
+          
           const stats = {
             totalKeys: keys.length,
             activeKeys: keys.filter(k => k.isActive).length,
-            providersCount: new Set(keys.map(k => k.providerId)).size,
+            providersCount: uniqueProviders.length,
             totalUsage: keys.reduce((sum, k) => sum + k.usageCount, 0),
             lastSync: new Date().toISOString()
           };
@@ -631,13 +634,16 @@ export const useLLMKeysStore = create<LLMKeysState>()(
         
         const uniqueKeysMap = new Map();
         state.keys.forEach((key: LLMKey) => {
-          const uniqueId = `${key.providerId}-${key.keyName}-${key.keyValue}`;
+          // Amélioration de la déduplication: utiliser providerId + keyValue comme identifiant unique
+          const uniqueId = `${key.providerId}-${key.keyValue}`;
           if (!uniqueKeysMap.has(uniqueId)) {
             uniqueKeysMap.set(uniqueId, key);
           } else {
-            // Garder la clé la plus récente
+            // Garder la clé la plus récente ou la plus utilisée
             const existing = uniqueKeysMap.get(uniqueId);
-            if ((key.createdAt || '') > (existing.createdAt || '')) {
+            if ((key.usageCount || 0) > (existing.usageCount || 0)) {
+              uniqueKeysMap.set(uniqueId, key);
+            } else if ((key.createdAt || '') > (existing.createdAt || '')) {
               uniqueKeysMap.set(uniqueId, key);
             }
           }
@@ -646,10 +652,13 @@ export const useLLMKeysStore = create<LLMKeysState>()(
         const uniqueKeys = Array.from(uniqueKeysMap.values());
         console.log('🧹 Force deduplication - Après:', uniqueKeys.length);
         
+        // Recalculer les fournisseurs uniques
+        const uniqueProviders = Array.from(new Set(uniqueKeys.map(k => k.providerId)));
+        
         const newStats = {
           totalKeys: uniqueKeys.length,
           activeKeys: uniqueKeys.filter(k => k.isActive).length,
-          providersCount: new Set(uniqueKeys.map(k => k.providerId)).size,
+          providersCount: uniqueProviders.length,
           totalUsage: uniqueKeys.reduce((sum, k) => sum + (k.usageCount || 0), 0),
           lastSync: new Date().toISOString()
         };

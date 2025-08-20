@@ -103,10 +103,16 @@ export default defineConfig(({ mode }) => {
     port: 3003,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080', // Backend accessible sur port 8080
+        target: 'http://localhost:3002', // Backend running on port 3002
         changeOrigin: true,
         secure: false,
         ws: true, // Support WebSockets pour SSE
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            // Forcer l'auth header sur toutes les requêtes proxy
+            proxyReq.setHeader('Authorization', 'Bearer ' + (rootEnv.AUTH_TOKEN || process.env.AUTH_TOKEN || ''));
+          });
+        },
       },
     },
   },
@@ -115,14 +121,14 @@ export default defineConfig(({ mode }) => {
     port: 3003,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080', // Backend accessible depuis l'extérieur
+        target: 'http://localhost:3002', // Backend running on port 3002
         changeOrigin: true,
         secure: false,
         ws: true, // Support WebSockets pour SSE
         configure: (proxy) => {
           proxy.on('proxyReq', (proxyReq, req, res) => {
             // Forcer l'auth header sur toutes les requêtes proxy
-            proxyReq.setHeader('Authorization', 'Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpP77JU0');
+            proxyReq.setHeader('Authorization', 'Bearer ' + (rootEnv.AUTH_TOKEN || process.env.AUTH_TOKEN || ''));
           });
         },
       },

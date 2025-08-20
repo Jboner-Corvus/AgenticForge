@@ -2,7 +2,8 @@ import { useCallback, useRef, useEffect } from 'react';
 import { produce } from 'immer';
 import { sendMessage, interrupt } from '../api';
 import { useSessionStore } from '../../store/sessionStore';
-import { useUIStore } from '../../store/uiStore'; // Import useUIStore
+import { useUIStore } from '../../store/uiStore';
+import { useCanvasStore } from '../../store/canvasStore'; // Import useCanvasStore
 import { type NewChatMessage, type AgentToolResult, type ChatMessage, type ToolResultMessage } from '@/types/chat';
 
 // Define the structure of messages coming from the stream
@@ -129,11 +130,8 @@ export const useAgentStream = () => {
   const isProcessing = useUIStore((state) => state.isProcessing);
   const jobIdStore = useUIStore((state) => state.jobId);
   
-  // TODO: Trouver où est addCanvasToHistory
-  const addCanvasToHistory = useCallback((title: string, content: string, type: string) => {
-    console.log('Canvas:', title, content, type);
-    // Temporairement désactivé pour éviter les erreurs
-  }, []);
+  // Get addCanvasToHistory from canvas store
+  const addCanvasToHistory = useCanvasStore((state) => state.addCanvasToHistory);
 
   const startAgent = useCallback(async (message: string) => {
     console.log('🔥🔥🔥 [DEBUG] startAgent called with message:', message);
@@ -204,19 +202,12 @@ export const useAgentStream = () => {
 
     const handleClose = () => {
       addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] handleClose called. Current EventSource state: ${eventSourceRef.current?.readyState}`);
-      // Force console log to debug
-      if (window.console?.log) {
-        window.console.log('handleClose called. Current EventSource state:', eventSourceRef.current?.readyState);
-      }
       
       setIsProcessing(false);
       setJobId(null);
       
       if (eventSourceRef.current) {
         addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Closing EventSource connection`);
-        if (window.console?.log) {
-          window.console.log('Closing EventSource connection');
-        }
         eventSourceRef.current.close(); // Close the EventSource
         eventSourceRef.current = null;
       }
@@ -570,6 +561,12 @@ export const useAgentStream = () => {
             if (data.data) {
               window.postMessage({ type: 'todo_list', data: data.data }, '*');
               console.log('📤 [useAgentStream] Todo list forwarded to components');
+              
+              // Also add to canvas history for Mission Control display
+              const todoData = data.data as TodoListData;
+              const canvasTitle = todoData.title || `Todo List ${new Date().toLocaleTimeString()}`;
+              const canvasContent = JSON.stringify(todoData);
+              addCanvasToHistory(canvasTitle, canvasContent, 'json');
             }
             break;
           case 'close':

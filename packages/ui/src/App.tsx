@@ -18,6 +18,7 @@ import { ChatMessagesContainer } from './components/ChatMessagesContainer';
 import { usePinningStore } from './store/pinningStore';
 import { Eye } from 'lucide-react';
 import { VersionDisplay } from './components/VersionDisplay';
+import TodoListHandler from './components/TodoListHandler';
 // Lazy imports pour optimiser le bundle
 import { 
   LazyLeaderboardPage, 
@@ -32,7 +33,7 @@ import {
 } from './components/optimized/LazyComponents';
 // Import du store unifié
 import { useCombinedStore as useStore } from './store';
-import {
+import { 
   useCurrentPage,
   useIsControlPanelVisible,
   useIsCanvasVisible,
@@ -40,7 +41,8 @@ import {
   useIsCanvasFullscreen,
   useCanvasWidth,
   useCanvasContent,
-  useActiveCliJobId
+  useActiveCliJobId,
+  useIsDarkMode
 } from './store/hooks';
 
 
@@ -56,9 +58,16 @@ export default function App() {
   const canvasWidth = useCanvasWidth();
   const canvasContent = useCanvasContent();
   const activeCliJobId = useActiveCliJobId();
+  const isDarkMode = useIsDarkMode();
   
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const { translations } = useLanguage();
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove(isDarkMode ? 'light' : 'dark');
+    root.classList.add(isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
 
   // Pinning store states
   const layoutMode = usePinningStore((state) => state.layoutMode);
@@ -121,6 +130,7 @@ export default function App() {
       <SessionIdProvider>
         <div className="min-h-screen flex flex-col bg-background text-foreground overflow-x-hidden relative">
           <AppInitializer />
+          <TodoListHandler />
         <HeaderContainer />
         <Suspense fallback={<div>Loading Settings...</div>}>
           <SettingsModalContainer />
