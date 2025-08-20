@@ -2,7 +2,6 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Mock } from 'vitest';
 import { UserInput } from './UserInput';
-import type { AppState } from '../lib/store';
 
 // Mock external hooks and modules
 vi.mock('../lib/store', async () => {

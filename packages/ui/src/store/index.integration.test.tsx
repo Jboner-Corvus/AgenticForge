@@ -4,6 +4,18 @@ import { useCombinedStore } from './index';
 import { useUIStore } from './uiStore';
 import { useSessionStore } from './sessionStore';
 
+// Mock the API calls
+vi.mock('../lib/api', () => ({
+  addLlmApiKeyApi: vi.fn().mockResolvedValue(undefined),
+  getLlmApiKeysApi: vi.fn().mockResolvedValue([]),
+  getLeaderboardStats: vi.fn().mockResolvedValue({
+    tokensSaved: 0,
+    successfulRuns: 0,
+    sessionsCreated: 0,
+    apiKeysAdded: 0,
+  }),
+}));
+
 // Test component to interact with the store
 const TestStoreComponent = () => {
   const { 
@@ -123,18 +135,6 @@ describe('Store Integration Tests', () => {
   });
 
   it('should add LLM API keys and update stats', async () => {
-    // Mock the API calls
-    vi.mock('../lib/api', () => ({
-      addLlmApiKeyApi: vi.fn().mockResolvedValue(undefined),
-      getLlmApiKeysApi: vi.fn().mockResolvedValue([]),
-      getLeaderboardStats: vi.fn().mockResolvedValue({
-        tokensSaved: 0,
-        successfulRuns: 0,
-        sessionsCreated: 0,
-        apiKeysAdded: 0,
-      }),
-    }));
-
     render(<TestStoreComponent />);
     
     expect(screen.getByTestId('llm-keys-count')).toHaveTextContent('0');

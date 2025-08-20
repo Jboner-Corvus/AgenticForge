@@ -2,7 +2,6 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Mock } from 'vitest';
 import { UserInput } from './UserInput';
-import type { AppState } from '../lib/store';
 
 // Mock external hooks and modules
 vi.mock('../lib/store', async () => {
@@ -39,30 +38,6 @@ const renderWithProviders = (component: React.ReactNode) => {
 };
 
 describe('UI - Critical Tests', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    // Mock window.prompt and window.confirm
-    vi.spyOn(window, 'prompt').mockImplementation(() => 'Test Session Name');
-    vi.spyOn(window, 'confirm').mockImplementation(() => true);
-
-    // Mock console.log to prevent test output pollution
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-  });
-
-  it('should handle API quota exceeded error in ControlPanel', () => {
-    // This test is skipped because we can't easily verify the debug log display
-    expect(true).toBe(true);
-  });
-
-  it('should handle browser launch failure in ControlPanel', () => {
-    // This test is skipped because we can't easily verify the debug log display
-    expect(true).toBe(true);
-  });
-
-  it('should disable UI elements when processing', () => {
-    // Modify mock state to simulate processing state
-    describe('UI - Critical Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -113,26 +88,6 @@ describe('UI - Critical Tests', () => {
     };
     
     (useStore.getState as Mock).mockReturnValue(notProcessingState);
-    
-    renderWithProviders(<UserInput />);
-    
-    const sendButton = screen.getByRole('button', { name: /send message/i });
-    
-    // Try to send empty message
-    fireEvent.click(sendButton);
-    
-    // Verify that startAgent is not called for empty input
-    // expect(useStore.getState().startAgent).not.toHaveBeenCalled(); // TS2339: startAgent doesn't exist on AppState. Test needs fix.
-  });
-
-  it('should handle empty user input gracefully', () => {
-    // Set processing state to false for this test
-    const notProcessingState = {
-      ...useStore.getState(),
-      isProcessing: false,
-    };
-    
-    (useStore as unknown as Mock).mockImplementation((selector: (state: AppState) => unknown) => selector(notProcessingState));
     
     renderWithProviders(<UserInput />);
     
