@@ -539,7 +539,7 @@ run_integration_tests() {
     echo -e "${COLOR_YELLOW}Lancement des tests d'intégration...${NC}"
 
     # Vérifier si les services Docker sont déjà en cours d'exécution
-    if [ -z "$(docker compose -f "${SCRIPT_DIR}/docker-compose.yml" ps -q g_forge_server 2>/dev/null)" ]; then
+    if [ -z "$(docker compose -f "${SCRIPT_DIR}/docker-compose.yml" ps -q server 2>/dev/null)" ]; then
         echo -e "${COLOR_RED}✗ Le serveur n'est pas en cours d'exécution. Veuillez le démarrer avec './run.sh start' avant de lancer les tests d'intégration.${NC}"
         return 1
     fi

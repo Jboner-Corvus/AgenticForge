@@ -48,8 +48,10 @@ interface MockStreamableHTTPClientTransport extends InstanceType<typeof Streamab
   options?: StreamableHTTPClientTransportOptions;
 }
 
-let mockSSETransportInstance: MockSSEClientTransport;
-let mockStreamableHTTPTransportInstance: MockStreamableHTTPClientTransport;
+let mockSSETransportInstance: MockSSEClientTransport | undefined;
+let mockStreamableHTTPTransportInstance:
+  | MockStreamableHTTPClientTransport
+  | undefined;
 
 // Mock the toast hook
 vi.mock("@/lib/hooks/useToast", () => ({
@@ -66,6 +68,16 @@ vi.mock("../../auth", () => ({
 }));
 
 describe("useConnection", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Reset transport instances before each test
+    mockSSETransportInstance = undefined;
+    mockStreamableHTTPTransportInstance = undefined;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
   const defaultProps = {
     args: "",
     command: "",
@@ -202,9 +214,9 @@ describe("useConnection", () => {
 
       // Check that the URL contains the correct host and port
       expect(mockSSETransportInstance).toBeDefined();
-      expect(mockSSETransportInstance.url).toBeDefined();
-      expect(mockSSETransportInstance.url?.host).toBe("example.com:8443");
-      expect(mockSSETransportInstance.url?.pathname).toBe("/api");
+      expect(mockSSETransportInstance!.url).toBeDefined();
+      expect(mockSSETransportInstance!.url?.host).toBe("example.com:8443");
+      expect(mockSSETransportInstance!.url?.pathname).toBe("/api");
     });
 
     test("preserves HTTP port number when connecting", async () => {
@@ -229,9 +241,9 @@ describe("useConnection", () => {
 
       // Check that the URL contains the correct host and port
       expect(mockSSETransportInstance).toBeDefined();
-      expect(mockSSETransportInstance.url).toBeDefined();
-      expect(mockSSETransportInstance.url?.host).toBe("localhost:3000");
-      expect(mockSSETransportInstance.url?.pathname).toBe("/api");
+      expect(mockSSETransportInstance!.url).toBeDefined();
+      expect(mockSSETransportInstance!.url?.host).toBe("localhost:3000");
+      expect(mockSSETransportInstance!.url?.pathname).toBe("/api");
     });
 
     test("uses default port for HTTPS when not specified", async () => {
@@ -256,9 +268,9 @@ describe("useConnection", () => {
 
       // Check that the URL contains the correct host without explicit port
       expect(mockSSETransportInstance).toBeDefined();
-      expect(mockSSETransportInstance.url).toBeDefined();
-      expect(mockSSETransportInstance.url?.host).toBe("example.com");
-      expect(mockSSETransportInstance.url?.pathname).toBe("/api");
+      expect(mockSSETransportInstance!.url).toBeDefined();
+      expect(mockSSETransportInstance!.url?.host).toBe("example.com");
+      expect(mockSSETransportInstance!.url?.pathname).toBe("/api");
     });
 
     test("preserves port number in streamable-http transport", async () => {
@@ -283,9 +295,9 @@ describe("useConnection", () => {
 
       // Check that the URL contains the correct host and port
       expect(mockStreamableHTTPTransportInstance).toBeDefined();
-      expect(mockStreamableHTTPTransportInstance.url).toBeDefined();
-      expect(mockStreamableHTTPTransportInstance.url?.host).toBe("example.com:8443");
-      expect(mockStreamableHTTPTransportInstance.url?.pathname).toBe("/api");
+      expect(mockStreamableHTTPTransportInstance!.url).toBeDefined();
+      expect(mockStreamableHTTPTransportInstance!.url?.host).toBe("example.com:8443");
+      expect(mockStreamableHTTPTransportInstance!.url?.pathname).toBe("/api");
     });
   });
 
@@ -324,10 +336,10 @@ describe("useConnection", () => {
 
       // Check that the transport was created with the correct headers
       expect(mockSSETransportInstance).toBeDefined();
-      expect(mockSSETransportInstance.options).toBeDefined();
-      expect(mockSSETransportInstance.options?.requestInit).toBeDefined();
+      expect(mockSSETransportInstance!.options).toBeDefined();
+      expect(mockSSETransportInstance!.options?.requestInit).toBeDefined();
 
-      expect(mockSSETransportInstance.options?.requestInit?.headers).toHaveProperty(
+      expect(mockSSETransportInstance!.options?.requestInit?.headers).toHaveProperty(
         "X-MCP-Proxy-Auth",
         "Bearer test-proxy-token",
       );
@@ -359,8 +371,8 @@ describe("useConnection", () => {
 
       // Check that Authorization header is NOT used for proxy auth
       expect(mockSSETransportInstance).toBeDefined();
-      expect(mockSSETransportInstance.options).toBeDefined();
-      expect(mockSSETransportInstance.options?.requestInit?.headers).not.toHaveProperty(
+      expect(mockSSETransportInstance!.options).toBeDefined();
+      expect(mockSSETransportInstance!.options?.requestInit?.headers).not.toHaveProperty(
         "Authorization",
         "Bearer test-proxy-token",
       );
@@ -393,8 +405,8 @@ describe("useConnection", () => {
 
       // Check that both headers are present and distinct
       expect(mockSSETransportInstance).toBeDefined();
-      expect(mockSSETransportInstance.options).toBeDefined();
-      const headers = mockSSETransportInstance.options?.requestInit?.headers;
+      expect(mockSSETransportInstance!.options).toBeDefined();
+      const headers = mockSSETransportInstance!.options?.requestInit?.headers;
       expect(headers).toHaveProperty(
         "Authorization",
         "Bearer server-auth-token",
@@ -434,9 +446,9 @@ describe("useConnection", () => {
 
       // Check that the streamable HTTP transport was created with the correct headers
       expect(mockStreamableHTTPTransportInstance).toBeDefined();
-      expect(mockStreamableHTTPTransportInstance.options).toBeDefined();
+      expect(mockStreamableHTTPTransportInstance!.options).toBeDefined();
       expect(
-        mockStreamableHTTPTransportInstance.options?.requestInit?.headers,
+        mockStreamableHTTPTransportInstance!.options?.requestInit?.headers,
       ).toHaveProperty("X-MCP-Proxy-Auth", "Bearer test-proxy-token");
     });
   });

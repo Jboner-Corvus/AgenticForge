@@ -124,6 +124,7 @@ export async function initializeWorker(
       connection: redisConnection,
       maxStalledCount: config.WORKER_MAX_STALLED_COUNT,
       stalledInterval: config.WORKER_STALLED_INTERVAL_MS,
+      autorun: true,
     },
   );
 
@@ -133,6 +134,10 @@ export async function initializeWorker(
 
   worker.on('failed', (_job, err) => {
     getLoggerInstance().error({ err }, `Le job ${_job?.id} a échoué`);
+  });
+  
+  worker.on('error', (err) => {
+    getLoggerInstance().error({ err }, 'Worker error');
   });
 
   console.log('Worker initialisé et prêt à traiter les jobs.');
@@ -150,12 +155,12 @@ export async function processJob(
     jobId: _job.id,
     sessionId: _job.data.sessionId,
   });
-  log.info(`Traitement du job ${_job.id} avec les données:`, _job.data);
+  log.info(`Traitement du job ${_job.id}`);
 
   const channel = `job:${_job.id}:events`;
 
   // Add a small delay to ensure frontend can establish EventSource connection
-  await new Promise(resolve => setTimeout(resolve, 1500));
+  await new Promise(resolve => setTimeout(resolve, 100));
   log.info(`Job ${_job.id} starting after synchronization delay`);
 
   try {
@@ -163,6 +168,7 @@ export async function processJob(
     const session = await _sessionManager.getSession(_job.data.sessionId);
     const activeLlmProvider = session.activeLlmProvider || config.LLM_PROVIDER; // Use configured provider as default
     const { llmApiKey, llmModelName, llmProvider } = _job.data;
+    log.info(`Agent starting with ${tools.length} tools available`);
     const agent = new Agent(
       _job,
       session,
@@ -173,7 +179,9 @@ export async function processJob(
       llmApiKey,
       llmModelName,
     );
+    log.info(`Agent execution starting...`);
     const finalResponse = await agent.run();
+    log.info(`Agent execution completed successfully`);
 
     session.history.push({
       content: finalResponse,
@@ -262,6 +270,8 @@ export async function processJob(
       JSON.stringify({ content: 'Stream terminé.', type: 'close' }),
     );
     log.info(`Traitement du job ${_job.id} terminé`);
+    // Attendre un peu pour s'assurer que le message 'close' est envoyé
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 }
 

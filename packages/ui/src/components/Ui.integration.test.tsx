@@ -72,7 +72,7 @@ describe('UI Integration Tests', () => {
       isProcessing: true,
     };
     
-    (useStore as unknown as Mock).mockImplementation((selector: (state: AppState) => unknown) => selector(processingState));
+    (useStore.getState as Mock).mockReturnValue(processingState);
     
     renderWithProviders(<UserInput />);
     
@@ -96,7 +96,7 @@ describe('UI Integration Tests', () => {
       isProcessing: false,
     };
     
-    (useStore as unknown as Mock).mockImplementation((selector: (state: AppState) => unknown) => selector(notProcessingState));
+    (useStore.getState as Mock).mockReturnValue(notProcessingState);
     
     renderWithProviders(<UserInput />);
     

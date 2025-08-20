@@ -75,7 +75,7 @@ class ToolRegistry {
     this.tools.set(tool.name, tool);
     console.log(`Tool registered: ${tool.name}`);
     getLoggerInstance().debug(
-      { parameters: tool.parameters.shape, toolName: tool.name },
+      { toolName: tool.name },
       `Tool registered: ${tool.name}`,
     );
   }

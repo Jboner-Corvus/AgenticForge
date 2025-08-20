@@ -31,6 +31,14 @@ export function getLogger(): Logger {
             return '[ZodObject - details hidden]';
           }
           return obj;
+        },
+        // Serializer pour les paramètres d'outils
+        toolParameters: (params: any) => {
+          if (params && typeof params === 'object' && params._def) {
+            // Ne pas afficher les détails complets des schémas Zod
+            return '[ZodSchema - details hidden to reduce verbosity]';
+          }
+          return params;
         }
       },
       ...(config.NODE_ENV === 'development' && {

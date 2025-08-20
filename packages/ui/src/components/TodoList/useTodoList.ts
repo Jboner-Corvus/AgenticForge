@@ -55,6 +55,10 @@ export const useTodoList = () => {
             }
             
             setTodoData(parsedData);
+            
+            // Envoyer les tâches au canevas (Mission Control)
+            window.postMessage({ type: 'todo_list', data: parsedData }, '*');
+            
             return;
           } else {
             console.log('📋 [TodoList] Todo list expirée, suppression...');
@@ -83,6 +87,9 @@ export const useTodoList = () => {
       };
       
       setTodoData(initialTodoData);
+      
+      // Envoyer les tâches au canevas (Mission Control)
+      window.postMessage({ type: 'todo_list', data: initialTodoData }, '*');
     };
 
     loadTodoData();
@@ -134,6 +141,10 @@ export const useTodoList = () => {
     
     setTodoData(newTodoData);
     saveTodoData(newTodoData);
+    
+    // Envoyer les tâches au canevas (Mission Control)
+    window.postMessage({ type: 'todo_list', data: newTodoData }, '*');
+    
     setNewTodo('');
   };
 
@@ -155,6 +166,9 @@ export const useTodoList = () => {
     
     setTodoData(newTodoData);
     saveTodoData(newTodoData);
+    
+    // Envoyer les tâches au canevas (Mission Control)
+    window.postMessage({ type: 'todo_list', data: newTodoData }, '*');
   };
 
   // Mettre à jour le statut d'une tâche
@@ -178,6 +192,9 @@ export const useTodoList = () => {
     
     setTodoData(newTodoData);
     saveTodoData(newTodoData);
+    
+    // Envoyer les tâches au canevas (Mission Control)
+    window.postMessage({ type: 'todo_list', data: newTodoData }, '*');
   };
 
   // Fonctions d'export/import
@@ -205,6 +222,9 @@ export const useTodoList = () => {
         setTodoData(importedData);
         saveTodoData(importedData);
         console.log('📋 [TodoList] Import réussi:', importedData.todos.length, 'tâches');
+        
+        // Envoyer les tâches au canevas (Mission Control)
+        window.postMessage({ type: 'todo_list', data: importedData }, '*');
       } catch (error) {
         console.error('📋 [TodoList] Erreur d\'import:', error);
       }
@@ -223,6 +243,9 @@ export const useTodoList = () => {
       };
       setTodoData(updatedData);
       saveTodoData(updatedData);
+      
+      // Envoyer les tâches au canevas (Mission Control)
+      window.postMessage({ type: 'todo_list', data: updatedData }, '*');
     }
   };
 
