@@ -1,11 +1,11 @@
 // FICHIER : src/server.ts
-import '../../tracing.js'; // Initialize OpenTelemetry
+import '../../tracing.ts'; // Initialize OpenTelemetry
 import { Client as PgClient } from 'pg';
 
-import { config } from '../../config.js';
-import { getLogger } from '../../logger.js';
-import { getRedisClientInstance } from '../../modules/redis/redisClient.js';
-import { initializeWebServer } from '../../webServer.js';
+import { config } from '../../config.ts';
+import { getLogger } from '../../logger.ts';
+import { getRedisClientInstance } from '../../modules/redis/redisClient.ts';
+import { initializeWebServer } from '../../webServer.ts';
 
 async function startApplication() {
   const logger = getLogger();

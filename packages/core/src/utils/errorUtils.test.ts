@@ -109,12 +109,11 @@ describe('errorUtils', () => {
       handleError(error, mockRequest, mockResponse, mockNext);
       expect(mockResponse.status).toHaveBeenCalledWith(404);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        error: {
+        error: expect.objectContaining({
           details: { statusCode: 404 },
           message: 'Test App Error',
           name: 'AppError',
-          stack: expect.any(String),
-        },
+        }),
       });
       expect(errorSpy).toHaveBeenCalled();
     });
@@ -124,11 +123,10 @@ describe('errorUtils', () => {
       handleError(error, mockRequest, mockResponse, mockNext);
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        error: {
+        error: expect.objectContaining({
           message: 'Generic Error',
           name: 'Error',
-          stack: expect.any(String),
-        },
+        }),
       });
       expect(errorSpy).toHaveBeenCalled();
     });

@@ -1,0 +1,16 @@
+{
+  "watch": ["src"],
+  "ignore": [
+    "dist",
+    "node_modules",
+    "*.test.ts",
+    "*.spec.ts",
+    "coverage",
+    ".git",
+    "*.log",
+    "src/utils/temp_tools_for_testing/**/*"
+  ],
+  "ext": "ts,json",
+  "delay": "2000",
+  "verbose": true
+}

@@ -1,7 +1,7 @@
 import { exec } from 'child_process';
 import { z } from 'zod';
 
-import type { Tool } from '../../../../types.js';
+import type { Tool } from '../../../../types.ts';
 
 export const simpleListParams = z.object({
   detailed: z.boolean().optional(),

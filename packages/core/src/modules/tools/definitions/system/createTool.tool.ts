@@ -5,10 +5,10 @@ import { promisify } from 'util';
 // src/tools/system/createTool.tool.ts
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../../../types.js';
+import type { Ctx, Tool } from '../../../../types.ts';
 
-import { getErrDetails } from '../../../../utils/errorUtils.js';
-import { runQualityGate } from '../../../../utils/qualityGate.js';
+import { getErrDetails } from '../../../../utils/errorUtils.ts';
+import { runQualityGate } from '../../../../utils/qualityGate.ts';
 
 const execAsync = promisify(exec);
 
@@ -34,7 +34,7 @@ const TOOL_TEMPLATE = `
 // 📁 Localisation: dist/tools/generated/ (outils runtime générés)
 // 🔄 Distinction: outils natifs dans src/ vs outils générés dans dist/
 import { z } from 'zod';
-import type { Ctx, Tool } from '../../../../types.js';
+import type { Ctx, Tool } from '../../../../types.ts';
 
 
 export const {{toolVarName}}Params = z.object({{{parameters}}});
@@ -55,7 +55,7 @@ const TEST_TEMPLATE = `
 // 🎯 Tests pour outils runtime (vs outils natifs dans src/)
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { {{toolVarName}}Tool } from './{{toolFileName}}';
-import type { Ctx } from '../../../../types.js';
+import type { Ctx } from '../../../../types.ts';
 
 describe('{{toolVarName}}Tool', () => {
   let mockCtx: Ctx;
@@ -162,9 +162,9 @@ export const createToolTool: Tool<typeof parameters> = {
       await fs.writeFile(testFilePath, testFileContent, 'utf-8');
       
       // Générer aussi la version JavaScript pour l'exécution runtime
-      const jsFilePath = toolFilePath.replace('.ts', '.js');
+      const jsFilePath = toolFilePath.replace('.ts', '.ts');
       const jsContent = toolFileContent
-        .replace(/import.*from.*\.js';/g, '') // Supprimer les imports TS
+        .replace(/import.*from.*\.ts';/g, '') // Supprimer les imports TS
         .replace('export const', 'const')
         .replace(/: Tool<.*>/g, '')
         + '\nexport { ' + toolVarName + 'Tool };';

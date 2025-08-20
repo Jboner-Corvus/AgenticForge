@@ -1,16 +1,16 @@
-import type { SessionData } from '../types.js';
+import type { SessionData } from '../types.ts';
 
 // src/utils/asyncToolHelper.ts (Corrigé pour SessionData)
-import { getLogger } from '../logger.js';
+import { getLogger } from '../logger.ts';
 import {
   type AsyncTaskJobPayload,
   getJobQueue,
-} from '../modules/queue/queue.js';
+} from '../modules/queue/queue.ts';
 import {
   EnqueueTaskError,
   type ErrorDetails,
   getErrDetails,
-} from './errorUtils.js';
+} from './errorUtils.ts';
 
 export interface EnqueueParams<TParams> {
   auth: SessionData | undefined;

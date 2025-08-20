@@ -150,6 +150,6 @@ export const resetMockStore = () => {
   ];
   mockState.activeSessionId = 'session-1';
   mockState.sessionId = 'session-1';
-  mockState.tokenStatus = false;
+  mockState.tokenStatus = true;
   // ... reset other relevant state properties
 };

@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
-import { Ctx } from '../../../../types.js';
-import { ILlmProvider } from '../../../../types.js';
-import { getLlmProvider } from '../../../../utils/llmProvider.js';
-import { summarizeTool } from './summarize.tool.js';
+import { Ctx } from '../../../../types.ts';
+import { ILlmProvider } from '../../../../types.ts';
+import { getLlmProvider } from '../../../../utils/llmProvider.ts';
+import { summarizeTool } from './summarize.tool.ts';
 
 // Mock dependencies
-vi.mock('../../../../utils/llmProvider.js', () => {
+vi.mock('../../../../utils/llmProvider.ts', () => {
   const mockGetLlmResponse = vi.fn();
   return {
     getLlmProvider: vi.fn(() => ({

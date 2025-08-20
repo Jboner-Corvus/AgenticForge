@@ -2,7 +2,7 @@ import 'vitest';
 import { vi } from 'vitest';
 
 // Mock the config module to ensure it's always defined during tests
-vi.mock('../../src/config.js', () => ({
+vi.mock('../../src/config.ts', () => ({
   config: {
     AGENT_MAX_ITERATIONS: 10,
     CODE_EXECUTION_TIMEOUT_MS: 60000,
@@ -16,7 +16,7 @@ vi.mock('../../src/config.js', () => ({
     MAX_FILE_SIZE_BYTES: 10 * 1024 * 1024,
     PORT: 3001,
     POSTGRES_DB: 'agenticforge',
-    POSTGRES_HOST: 'postgres',
+    POSTGRES_HOST: 'localhost',
     POSTGRES_PORT: 5432,
     POSTGRES_USER: 'user',
     REDIS_DB: 0,
@@ -40,7 +40,7 @@ vi.mock('../../src/config.js', () => ({
     MAX_FILE_SIZE_BYTES: 10 * 1024 * 1024,
     PORT: 3001,
     POSTGRES_DB: 'agenticforge',
-    POSTGRES_HOST: 'postgres',
+    POSTGRES_HOST: 'localhost',
     POSTGRES_PORT: 5432,
     POSTGRES_USER: 'user',
     REDIS_DB: 0,
@@ -53,3 +53,12 @@ vi.mock('../../src/config.js', () => ({
   })),
   loadConfig: vi.fn(), // Mock loadConfig as well
 }));
+
+// Mock the logger module
+vi.mock('../logger.ts', async () => {
+  const { getLogger, getLoggerInstance } = await import('./mocks/logger.ts');
+  return {
+    getLogger,
+    getLoggerInstance,
+  };
+});

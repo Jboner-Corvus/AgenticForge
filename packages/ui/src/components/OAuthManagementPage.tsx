@@ -1,36 +1,58 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { useLanguage } from '../lib/contexts/LanguageContext';
-import { useStore } from '../lib/store';
+import { useCombinedStore } from '../store';
 import { LoadingSpinner } from './LoadingSpinner';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { AlertTriangle, Github, Chrome, Twitter, ChevronDown, ChevronRight, Key, Bot, Shield, Zap } from 'lucide-react';
+import { AlertTriangle, Github, Chrome, Twitter, ChevronDown, ChevronRight, Key, Bot, Shield, Zap, Clock, RefreshCw, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 
-export const OAuthManagementPage = () => {
+export const OAuthManagementPage = memo(() => {
   const { translations } = useLanguage()
   const [isGitHubConnected, setIsGitHubConnected] = useState(false)
   const [isGoogleConnected, setIsGoogleConnected] = useState(false)
   const [isTwitterConnected, setIsTwitterConnected] = useState(false)
   const [isQwenConnected, setIsQwenConnected] = useState(false)
+  const [qwenTokenStatus, setQwenTokenStatus] = useState<{ 
+    isValid: boolean; 
+    lastChecked: string | null; 
+    nextCheck: string | null;
+    requestsRemaining: number | null;
+    errorMessage?: string;
+  }>({
+    isValid: false,
+    lastChecked: null,
+    nextCheck: null,
+    requestsRemaining: null
+  });
   const [isCheckingStatus, setIsCheckingStatus] = useState(true)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
-  const addDebugLog = useStore((state) => state.addDebugLog)
-  const debugLogs = useStore((state) => state.debugLog)
-  const setAuthToken = useStore((state) => state.setAuthToken);
-  const setTokenStatus = useStore((state) => state.setTokenStatus);
-  const setCurrentPage = useStore((state) => state.setCurrentPage);
+  const addDebugLog = useCombinedStore((state) => state.addDebugLog)
+  const debugLogs = useCombinedStore((state) => state.debugLog)
+  const setAuthToken = useCombinedStore((state) => state.setAuthToken);
+  const setTokenStatus = useCombinedStore((state) => state.setTokenStatus);
+  const setCurrentPage = useCombinedStore((state) => state.setCurrentPage);
+  const initializeSessionAndMessages = useCombinedStore((state) => state.initializeSessionAndMessages);
   const [bearerToken, setBearerToken] = useState('');
 
-  const handleSaveToken = () => {
+  const handleSaveToken = async () => {
     if (bearerToken.trim()) {
       localStorage.setItem('authToken', bearerToken.trim());
       setAuthToken(bearerToken.trim());
       setTokenStatus(true);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Bearer token saved successfully - Redirecting to chat`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Bearer token saved successfully - Loading sessions`);
+      
+      // Recharger les sessions maintenant que l'utilisateur est authentifié
+      try {
+        await initializeSessionAndMessages();
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Sessions loaded successfully - Redirecting to chat`);
+      } catch (error) {
+        console.error('Failed to load sessions after authentication:', error);
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Failed to load sessions: ${error}`);
+      }
       
       // Redirection vers la page de chat après une courte pause
       setTimeout(() => {
@@ -97,23 +119,38 @@ export const OAuthManagementPage = () => {
           cookie.trim().length > 'agenticforge_twitter_token='.length
         )
 
-        // Check Qwen connection status via API
+        // Check Qwen connection status via API avec timeout
         let hasQwenToken = false;
         try {
-          const response = await fetch('/api/auth/qwen/status');
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+          
+          const response = await fetch('/api/auth/qwen/status', {
+            signal: controller.signal,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          clearTimeout(timeoutId);
+          
           if (response.ok) {
             const data = await response.json();
             hasQwenToken = data.connected;
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Qwen connection status: ${hasQwenToken ? 'connected' : 'disconnected'}`);
+          } else {
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [WARNING] Qwen status API returned: ${response.status}`);
           }
         } catch (error) {
           console.error('Error checking Qwen connection status:', error);
+          addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Qwen connection check failed: ${error instanceof Error ? error.message : String(error)}`);
         }
         
         // Log the OAuth status check
         addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Checking OAuth status - GitHub: ${hasGitHubToken}, Google: ${hasGoogleToken}, Twitter: ${isTwitterConnected}, Qwen: ${hasQwenToken}`);
         
         // Extract and log the bearer token if present
-        const authHeader = localStorage.getItem('authToken');
+        const authHeader = localStorage.getItem('backendAuthToken');
         if (authHeader) {
           addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Backend Bearer Token found in localStorage: ${authHeader.substring(0, 20)}...`);
         } else {
@@ -140,7 +177,48 @@ export const OAuthManagementPage = () => {
     };
 
     checkOAuthStatus()
+    
+    // Timeout de sécurité - force le déverrouillage après 10 secondes
+    const timeoutId = setTimeout(() => {
+      setIsCheckingStatus(false);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [WARNING] OAuth status check timeout - forced unlock`);
+    }, 10000);
+    
+    return () => clearTimeout(timeoutId);
   }, [addDebugLog, isTwitterConnected])
+
+  // Check Qwen token status periodically
+  useEffect(() => {
+    const checkQwenTokenStatus = async () => {
+      if (!isQwenConnected) return;
+      
+      try {
+        const response = await fetch('/api/llm-keys/qwen/status');
+        if (response.ok) {
+          const data = await response.json();
+          setQwenTokenStatus({
+            isValid: data.isValid,
+            lastChecked: new Date().toLocaleTimeString(),
+            nextCheck: new Date(Date.now() + 300000).toLocaleTimeString(), // 5 minutes
+            requestsRemaining: data.requestsRemaining,
+            errorMessage: data.errorMessage
+          });
+        }
+      } catch (error) {
+        console.error('Error checking Qwen token status:', error);
+        setQwenTokenStatus(prev => ({
+          ...prev,
+          errorMessage: 'Failed to check token status'
+        }));
+      }
+    };
+
+    // Check immediately and then every 5 minutes
+    checkQwenTokenStatus();
+    const interval = setInterval(checkQwenTokenStatus, 300000); // 5 minutes
+
+    return () => clearInterval(interval);
+  }, [isQwenConnected]);
 
   const handleGitHubLogin = () => {
     try {
@@ -591,7 +669,7 @@ The full token has been copied to your clipboard.`);
                   </div>
                 ) : (
                   <motion.div 
-                    className={`flex items-center justify-between p-4 border rounded-lg transition-all duration-300 backdrop-blur-sm ${
+                    className={`flex flex-col p-4 border rounded-lg transition-all duration-300 backdrop-blur-sm ${
                       isQwenConnected 
                         ? PROVIDER_CONFIG.qwen.connectedColor 
                         : PROVIDER_CONFIG.qwen.disconnectedColor
@@ -599,40 +677,132 @@ The full token has been copied to your clipboard.`);
                     whileHover={{ y: -2 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
-                    <div>
-                      <p className="font-medium text-white">Qwen.AI Chat 2000 Status</p>
-                      <p className="text-sm text-gray-400">
-                        {isQwenConnected 
-                          ? 'Qwen.AI Chat 2000 ready - 2000 free requests/day' 
-                          : 'Check for local credentials or connect to Qwen.AI'}
-                      </p>
-                      <p className="text-xs text-purple-400/80 mt-1">
-                        Advanced AI interface with Qwen models - 2000 free requests per day
-                      </p>
-                      {isQwenConnected && (
-                        <p className="text-xs text-green-400/90 mt-1">
-                          ✓ Access token found and copied to clipboard
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-white">Qwen.AI Chat 2000 Status</p>
+                        <p className="text-sm text-gray-400">
+                          {isQwenConnected 
+                            ? 'Qwen.AI Chat 2000 ready - 2000 free requests/day' 
+                            : 'Check for local credentials or connect to Qwen.AI'}
                         </p>
-                      )}
+                        <p className="text-xs text-purple-400/80 mt-1">
+                          Advanced AI interface with Qwen models - 2000 free requests per day
+                        </p>
+                        {isQwenConnected && (
+                          <p className="text-xs text-green-400/90 mt-1">
+                            ✓ Access token found and copied to clipboard
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        {isQwenConnected ? (
+                          <Button 
+                            variant="destructive" 
+                            onClick={handleQwenLogout}
+                            className={PROVIDER_CONFIG.qwen.buttonDisconnect}
+                          >
+                            {translations.disconnect}
+                          </Button>
+                        ) : (
+                          <Button 
+                            onClick={handleQwenLogin}
+                            className={PROVIDER_CONFIG.qwen.buttonConnect}
+                          >
+                            Check & Copy Token
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      {isQwenConnected ? (
-                        <Button 
-                          variant="destructive" 
-                          onClick={handleQwenLogout}
-                          className={PROVIDER_CONFIG.qwen.buttonDisconnect}
-                        >
-                          {translations.disconnect}
-                        </Button>
-                      ) : (
-                        <Button 
-                          onClick={handleQwenLogin}
-                          className={PROVIDER_CONFIG.qwen.buttonConnect}
-                        >
-                          Check & Copy Token
-                        </Button>
-                      )}
-                    </div>
+                    
+                    {/* Qwen Token Monitoring */}
+                    {isQwenConnected && (
+                      <div className="mt-4 pt-4 border-t border-purple-800/50">
+                        <Alert variant="default" className="mb-4 border-2 border-amber-700/50 bg-amber-900/20 backdrop-blur-sm">
+                          <AlertTriangle className="h-5 w-5 text-amber-400" />
+                          <AlertTitle className="font-bold text-amber-300">Note importante</AlertTitle>
+                          <AlertDescription className="text-amber-400/80">
+                            Pour maintenir la validité de la clé, ne rouvrez jamais l'interface CLI de Qwen après l'avoir obtenue.
+                          </AlertDescription>
+                        </Alert>
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium text-purple-300 flex items-center">
+                            <Settings className="mr-2 h-4 w-4" />
+                            Token Monitoring
+                          </h4>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => {
+                              // Trigger manual refresh
+                              const checkQwenTokenStatus = async () => {
+                                try {
+                                  const response = await fetch('/api/llm-keys/qwen/status');
+                                  if (response.ok) {
+                                    const data = await response.json();
+                                    setQwenTokenStatus({
+                                      isValid: data.isValid,
+                                      lastChecked: new Date().toLocaleTimeString(),
+                                      nextCheck: new Date(Date.now() + 300000).toLocaleTimeString(), // 5 minutes
+                                      requestsRemaining: data.requestsRemaining,
+                                      errorMessage: data.errorMessage
+                                    });
+                                  }
+                                } catch (error) {
+                                  console.error('Error checking Qwen token status:', error);
+                                  setQwenTokenStatus(prev => ({
+                                    ...prev,
+                                    errorMessage: 'Failed to check token status'
+                                  }));
+                                }
+                              };
+                              checkQwenTokenStatus();
+                            }}
+                            className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/50"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                          <div className="flex items-center">
+                            <Clock className="mr-2 h-3 w-3 text-purple-400" />
+                            <span className="text-gray-400">Last checked:</span>
+                            <span className="ml-1 text-purple-300">
+                              {qwenTokenStatus.lastChecked || 'Never'}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <Clock className="mr-2 h-3 w-3 text-purple-400" />
+                            <span className="text-gray-400">Next check:</span>
+                            <span className="ml-1 text-purple-300">
+                              {qwenTokenStatus.nextCheck || 'N/A'}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <Zap className="mr-2 h-3 w-3 text-purple-400" />
+                            <span className="text-gray-400">Requests left:</span>
+                            <span className="ml-1 text-purple-300">
+                              {qwenTokenStatus.requestsRemaining !== null 
+                                ? qwenTokenStatus.requestsRemaining 
+                                : 'Unknown'}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            <Shield className="mr-2 h-3 w-3 text-purple-400" />
+                            <span className="text-gray-400">Status:</span>
+                            <span className={`ml-1 ${qwenTokenStatus.isValid ? 'text-green-400' : 'text-red-400'}`}>
+                              {qwenTokenStatus.isValid ? 'Valid' : 'Invalid'}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {qwenTokenStatus.errorMessage && (
+                          <div className="mt-2 p-2 bg-red-900/30 rounded border border-red-700/50 text-xs text-red-300">
+                            Error: {qwenTokenStatus.errorMessage}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </motion.div>
@@ -691,4 +861,6 @@ The full token has been copied to your clipboard.`);
       </motion.div>
     </motion.div>
   );
-}
+});
+
+OAuthManagementPage.displayName = 'OAuthManagementPage';

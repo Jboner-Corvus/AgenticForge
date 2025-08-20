@@ -2,13 +2,15 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Mock } from 'vitest';
 import { UserInput } from './UserInput';
-import type { AppState } from '../lib/store';
 
 // Mock external hooks and modules
 vi.mock('../lib/store', async () => {
   const mod = await import('../lib/__mocks__/store');
+  const useStore = mod.useStore;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (useStore as any).getState = vi.fn(() => mod.mockState);
   return {
-    useStore: mod.useStore,
+    useStore,
   };
 });
 
@@ -39,6 +41,8 @@ describe('UI - Critical Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
+    (useStore.getState as Mock).mockReturnValue(useStore.getState());
+
     // Mock window.prompt and window.confirm
     vi.spyOn(window, 'prompt').mockImplementation(() => 'Test Session Name');
     vi.spyOn(window, 'confirm').mockImplementation(() => true);
@@ -64,7 +68,7 @@ describe('UI - Critical Tests', () => {
       isProcessing: true,
     };
     
-    (useStore as unknown as Mock).mockImplementation((selector: (state: AppState) => unknown) => selector(processingState));
+    (useStore.getState as Mock).mockReturnValue(processingState);
     
     renderWithProviders(<UserInput />);
     
@@ -83,7 +87,7 @@ describe('UI - Critical Tests', () => {
       isProcessing: false,
     };
     
-    (useStore as unknown as Mock).mockImplementation((selector: (state: AppState) => unknown) => selector(notProcessingState));
+    (useStore.getState as Mock).mockReturnValue(notProcessingState);
     
     renderWithProviders(<UserInput />);
     

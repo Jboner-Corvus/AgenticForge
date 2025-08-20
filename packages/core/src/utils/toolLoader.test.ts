@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 const tempToolsDir = path.resolve(__dirname, 'temp_tools_for_testing');
 
 // Mock logger to prevent console noise
-vi.mock('../logger.js', () => ({
+vi.mock('../logger.ts', () => ({
   getLogger: vi.fn(() => ({
     debug: vi.fn(),
     error: vi.fn(),
@@ -55,6 +55,9 @@ describe('toolLoader Integration Test', () => {
     // 2. Set up environment variables
     delete process.env.TOOLS_PATH;
     process.env.TOOLS_PATH = tempToolsDir;
+    
+    // Explicitly set NODE_ENV to development for tests
+    process.env.NODE_ENV = 'development';
 
     // 3. Re-import the module to be tested AFTER resetting modules
     toolLoader = await import('./toolLoader');
@@ -63,7 +66,7 @@ describe('toolLoader Integration Test', () => {
 
     // 4. Manually unregister all tools from the actual registry
     const { toolRegistry: actualRegistry } = await import(
-      '../modules/tools/toolRegistry.js'
+      '../modules/tools/toolRegistry.ts'
     );
     actualRegistry
       .getAll()
@@ -86,19 +89,30 @@ describe('toolLoader Integration Test', () => {
 
     it('should correctly load a valid tool file', async () => {
       // Arrange
-      const validToolContent = `
-        import { z } from 'zod';
-        export const myTestTool = {
-          name: 'myTool',
-          description: 'A test tool',
-          parameters: z.object({ param1: z.string() }),
-          execute: () => 'result',
-        };
-      `;
-      await createToolFile('valid.tool.ts', validToolContent);
+      await createToolFile(
+        'myTool.tool.ts',
+        `import { z } from 'zod';
+        export const myTool = { 
+          name: 'myTool', 
+          description: 'A test tool', 
+          parameters: z.object({}), 
+          execute: () => 'result' 
+        };`,
+      );
+      
+      // Check that the file was created
+      const files = await fs.readdir(tempToolsDir);
+      console.log('Files in temp directory:', files);
 
       // Act
+      // Force a reload of tools by resetting the loadedToolFiles cache
+      toolLoader._resetTools();
       const tools = await toolLoader.getTools();
+      
+      // Check the tool registry directly
+      const { toolRegistry } = await import('../modules/tools/toolRegistry.ts');
+      const registryTools = toolRegistry.getAll();
+      console.log('Tools in registry:', registryTools);
 
       // Assert
       expect(tools).toHaveLength(1);
@@ -117,6 +131,8 @@ describe('toolLoader Integration Test', () => {
       );
 
       // Act
+      // Force a reload of tools by resetting the loadedToolFiles cache
+      toolLoader._resetTools();
       const tools = await toolLoader.getTools();
 
       // Assert
@@ -133,6 +149,8 @@ describe('toolLoader Integration Test', () => {
       await createToolFile('not_a_tool.ts', 'export const a = 1;');
 
       // Act
+      // Force a reload of tools by resetting the loadedToolFiles cache
+      toolLoader._resetTools();
       const tools = await toolLoader.getTools();
 
       // Assert

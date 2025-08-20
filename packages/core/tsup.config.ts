@@ -7,12 +7,17 @@ export default defineConfig({
     'src/worker.ts', 
     'src/server-start.ts',
     'src/utils/toolLoader.ts',
+    'src/utils/llmProvider.ts',
     'src/modules/tools/toolRegistry.ts',
     'src/modules/tools/definitions/**/*.ts'
   ],
   format: ['esm'],
   dts: true,
   clean: true,
+  banner: {
+    js: `import { createRequire } from 'module';
+const require = createRequire(import.meta.url);`,
+  },
   external: [
     'express',
     'cookie-parser',

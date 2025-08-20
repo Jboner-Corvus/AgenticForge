@@ -1,7 +1,7 @@
 import { Job, Queue } from 'bullmq';
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
-import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
+import { Ctx, ILlmProvider, SessionData } from '../../../../types.ts';
 
 vi.mock('../../../../config', async () => {
   const actual = await vi.importActual('../../../../config');
@@ -40,7 +40,7 @@ vi.mock('../../../../config', async () => {
   };
 });
 
-import { getLoggerInstance } from '../../../../logger.js';
+import { getLoggerInstance } from '../../../../logger.ts';
 
 // Define the mock for getLoggerInstance outside vi.mock to ensure consistency
 const mockLoggerInstance = {
@@ -51,11 +51,11 @@ const mockLoggerInstance = {
   warn: vi.fn(),
 };
 
-vi.mock('../../../../logger.js', () => ({
+vi.mock('../../../../logger.ts', () => ({
   getLoggerInstance: vi.fn(() => mockLoggerInstance),
 }));
 
-import { finishTool, FinishToolSignal } from './finish.tool.js';
+import { finishTool, FinishToolSignal } from './finish.tool.ts';
 
 describe('finishTool', () => {
   let mockCtx: Ctx;

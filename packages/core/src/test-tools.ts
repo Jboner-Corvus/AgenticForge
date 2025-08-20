@@ -1,4 +1,4 @@
-import { getAllTools } from './modules/tools/definitions/index.js';
+import { getAllTools } from './modules/tools/definitions/index.ts';
 
 async function testTools() {
   try {

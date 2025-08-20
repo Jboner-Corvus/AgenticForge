@@ -24,6 +24,7 @@
 </p>
 <br>
 <p align="center">
+    <a href="https://discord.gg/VNtXQByKfg"><img src="https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
     <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
     <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
     <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
@@ -38,6 +39,10 @@
 
 🛠️ **Auto-Forge d'Outils MCP** - AgenticForge code directement des outils MCP personnalisés en TypeScript avec schémas Zod, les intègre au worker en temps réel et les affiche dans l'interface avec transparence totale.
 
+💰 **Fonctionnement Gratuit Prolongé** - Grâce à une astuce de gestion de clés, notamment avec Qwen, AgenticForge peut fonctionner en continu pendant plusieurs jours sans frais.
+
+🤖 **Contrôle de Sous-Agents** - Capable d'orchestrer et de contrôler d'autres agents en ligne de commande (CLI) pour déléguer et paralléliser des tâches complexes.
+
 💻 **Assistant de Codage Autonome** - Besoin de code ? Il peut écrire, déboguer et exécuter des programmes en Python, TypeScript, Bash et plus — sans supervision.
 
 🧠 **Sélection Intelligente d'Outils** - Vous demandez, il trouve automatiquement le meilleur outil pour le travail. Comme avoir une forge d'experts prêts à aider.
@@ -46,21 +51,15 @@
 
 🌐 **Navigation Web Intelligente** - AgenticForge peut naviguer sur internet de manière autonome — rechercher, lire, extraire des infos, automatiser des tâches — le tout sans intervention.
 
-🔄 **Routeur de Clés API Intelligent** - Système de hiérarchie configurable qui bascule automatiquement entre plusieurs clés API pour ne jamais être à court de requêtes.
+🔄 **LlmKeyManager Intelligent** - Système de gestion avancé des clés API avec basculement automatique, monitoring de performance et désactivation temporaire des clés défaillantes.
 
 🚀 **Forge MCP Native** - Utilise le protocole MCP avec FastMCP pour créer, modifier et déployer des outils personnalisés en temps réel. Chaque outil est codé, testé et intégré automatiquement au worker.
 
 ---
 
-## Démo
-
-> **"Peux-tu créer un outil pour analyser une une cotation boursiere pour en faire le trading?"**
-
----
-
 ## 🛠️ ⚠️ Travail Actif en Cours
 
-🙏 Ce projet a commencé pour prouver que MCP etait mieux que API et a grandi au-delà des attentes. Les contributions, commentaires et patience sont profondément appréciés alors que nous forgeons de l'avant.
+🙏 Ce projet a commencé pour prouver que MCP était mieux que API et a grandi au-delà des attentes. Les contributions, commentaires et patience sont profondément appréciés alors que nous forgeons de l'avant.
 
 ---
 
@@ -82,8 +81,7 @@
 ### 🖥️ Compatibilité Système
 
 > **AgenticForge** est conçu pour être déployé sur **Linux** ou **macOS**.  
-> **Windows n'est pas officiellement supporté** pour le serveur ou les workers, en raison de dépendances systèmes spécifiques (Docker, shell scripts, etc.).  
-> Une version **client léger** pour Windows pourrait être envisagée dans le futur, mais reste **expérimentale**.
+> **Windows n'est pas officiellement supporté**.
 
 ---
 
@@ -139,13 +137,9 @@ chmod +x run.sh
 
 ## ⚙️ Configuration Rapide
 
-### Configuration Automatique
+### Configuration Initiale
 
-Le système créera automatiquement le fichier `.env` avec des valeurs par défaut au premier démarrage.
-
-### Configuration Manuelle
-
-Éditez le fichier `.env` généré automatiquement :
+Au premier démarrage, le fichier `.env` est créé avec des valeurs par défaut. Vous pouvez y définir votre première clé API pour un démarrage rapide.
 
 ```env
 # === CONFIGURATION AGENTIC FORGE ===
@@ -159,14 +153,11 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=""        # Laissez vide pour un usage local
 
-# Intelligence Artificielle
+# Intelligence Artificielle - Clé de démarrage
 LLM_API_KEY="votre_cle_api_preferee"
-LLM_MODEL_NAME="gemini-2.5-pro"   # ou "gpt-5", "claude-3.5-sonnet"
-LLM_API_BASE_URL=""      # Auto-détecté selon le modèle
-
-# Routeur de clés API (pour éviter les limites)
-LLM_API_KEY_BACKUP="cle_api_secondaire"     # Optionnel
-LLM_API_KEY_TERTIARY="cle_api_tertiaire"   # Optionnel
+LLM_PROVIDER="gemini"          # ou "openai", "anthropic", "grok", etc.
+LLM_MODEL_NAME="gemini-2.5-pro"   # Modèle correspondant au provider
+LLM_API_BASE_URL=""            # Optionnel, auto-détecté si non fourni
 
 # Sécurité
 AUTH_TOKEN="$(openssl rand -hex 32)"     # Généré automatiquement
@@ -176,20 +167,32 @@ NODE_ENV=production
 LOG_LEVEL=info
 ```
 
-### 🔑 Configuration Multi-Clés API
+### 🔑 Gestion Multi-Clés API via l'Interface Web
 
-Pour une disponibilité maximale, configurez plusieurs clés API :
+AgenticForge intègre un **LlmKeyManager** puissant pour une gestion centralisée et dynamique de vos clés API, accessible directement depuis l'interface web.
 
-```env
-# Clé principale
-LLM_API_KEY="sk-xxxxxxxxxxxxxxxxx"
+1.  **Accédez à l'interface** : Ouvrez votre navigateur sur [http://localhost:3002](http://localhost:3002).
+2.  **Allez dans le "LLM Key Manager"** : Utilisez le menu pour naviguer vers la page de gestion des clés.
 
-# Clés de secours (AgenticForge basculera automatiquement)
-LLM_API_KEY_BACKUP="gsk-xxxxxxxxxxxxxxxxx"      # Google AI
-LLM_API_KEY_TERTIARY="claude-xxxxxxxxxxxxxxxxx"  # Anthropic
+#### Fonctionnalités du LlmKeyManager :
 
-# Le système utilisera automatiquement la hiérarchie : Principale → Backup → Tertiaire
-```
+-   **Ajout/Suppression de Clés en Temps Réel** : Ajoutez ou supprimez des clés API pour différents fournisseurs (OpenAI, Gemini, Anthropic, etc.) sans redémarrer le système.
+-   **Activation/Désactivation** : Activez ou désactivez des clés à la volée.
+-   **Basculement Automatique (Failover)** : Si une clé API échoue (limite de requêtes atteinte, erreur), le système bascule automatiquement sur la prochaine clé valide pour garantir une continuité de service.
+-   **Monitoring et Statistiques** : Suivez l'utilisation de vos clés, le nombre de clés actives, et le nombre de fournisseurs configurés.
+-   **Tests de Validité** : Testez la validité de chaque clé directement depuis l'interface.
+
+#### Ajout de Clés Supplémentaires
+1. **Via l'Interface Web** : [localhost:3002](http://localhost:3002) → Onglet "Clés API"
+2. **Fonctionnalités** :
+   - ✅ Ajout/suppression de clés en temps réel
+   - ✅ Basculement automatique en cas d'erreur
+   - ✅ Monitoring des performances par clé
+   - ✅ Désactivation temporaire des clés défaillantes
+   - ✅ Support multi-providers simultané
+
+#### Hiérarchie Automatique
+Le système teste les clés dans l'ordre de fiabilité et bascule automatiquement si une clé échoue.
 
 ---
 
@@ -197,22 +200,35 @@ LLM_API_KEY_TERTIARY="claude-xxxxxxxxxxxxxxxxx"  # Anthropic
 
 ### Option 1 : API Cloud (Recommandée pour débuter)
 
-| Fournisseur | Modèles Recommandés | Obtenir une clé API |
+| Fournisseur | Modèles Recommandés (2025) | Obtenir une clé API |
 |-------------|---------------------|---------------------|
-| **Google AI** | `gemini-2.5-pro`, `flash-2.5-pro` | [aistudio.google.com](https://aistudio.google.com/keys) |
-| **OpenAI** | `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `gpt-4o`, `gpt-4o-mini` | [platform.openai.com](https://platform.openai.com/signup) |
-| **Anthropic** | `claude-3.5-sonnet` | [console.anthropic.com](https://console.anthropic.com/) |
-| **DeepSeek** | `deepseek-chat` | [platform.deepseek.com](https://platform.deepseek.com) |
+| **Google AI** | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys) |
+| **OpenAI** | `gpt-5`, `gpt-4o`, `gpt-4.1` | [platform.openai.com](https://platform.openai.com/signup) |
+| **Anthropic** | `claude-4-opus`, `claude-4-sonnet` | [console.anthropic.com](https://console.anthropic.com/) |
+| **DeepSeek** | `deepseek-v3`, `deepseek-r1` | [platform.deepseek.com](https://platform.deepseek.com) |
 
 ### Option 2 : IA Locale (Pour la confidentialité)
 
+#### Ollama
 1. **Installer Ollama** : [ollama.ai](https://ollama.ai/)
 2. **Télécharger un modèle** :
    ```bash
    ollama pull deepseek-r1:14b  # Recommandé pour la plupart des tâches
    ollama serve
    ```
-3. **Configuration** : Le système détectera automatiquement Ollama
+
+#### LM Studio
+1. **Installer LM Studio** : [lmstudio.ai](https://lmstudio.ai/)
+2. **Télécharger un modèle** et démarrer le serveur local
+3. **Configuration** : 
+   ```env
+   LLM_PROVIDER="openai"
+   LLM_API_BASE_URL="http://localhost:1234/v1"
+   LLM_API_KEY="lm-studio"  # Valeur quelconque
+   LLM_MODEL_NAME="votre-modele-local"
+   ```
+
+**Note** : Le système détecte automatiquement les serveurs locaux
 
 ---
 
@@ -253,23 +269,7 @@ LLM_API_KEY_TERTIARY="claude-xxxxxxxxxxxxxxxxx"  # Anthropic
 | Interface | URL | Description |
 |-----------|-----|-------------|
 | **🎨 Interface Web** | [localhost:3002](http://localhost:3002) | Interface principale pour interagir avec l'agent |
-| **⚡ API** | [localhost:8080](http://localhost:8080) | API REST pour intégrations |
-| **❤️ Health** | [localhost:8080/api/health](http://localhost:8080/api/health) | Monitoring système |
-
-### 🎯 Fonctionnalités de l'Interface
-
-- **Chat Intelligent** : Conversation naturelle avec l'agent
-- **👁️ Transparence** : Visualisation en temps réel des outils créés
-- **⚡ Streaming** : Réponses instantanées
-- **📊 Dashboard** : Monitoring des clés API et performances
-- **🛠️ Outils** : Catalogue des capacités disponibles
-
-### Test Rapide
-
-```bash
-# Vérifier que tout fonctionne
-curl http://localhost:8080/api/health
-```
+|-----------|-----|-------------|
 
 ---
 
@@ -311,50 +311,7 @@ curl http://localhost:8080/api/health
 - Stockage automatique en base locale"
 ```
 
-#### 🗄️ Outils Base de Données Custom
-```bash
-"Développe un outil MCP pour gérer PostgreSQL :
-- Outil avec connexions, requêtes, migrations
-- Interface graphique intégrée à AgenticForge  
-- Validation des schémas avec Zod
-- Export/Import automatique des données
-- Déploie et test l'outil en une commande"
-```
-
-### 💼 Projets de Développement
-
-#### 🏗️ Refactorisation et Optimisation Système
-```bash
-"Scan tous mes scripts Python dans /home/projects, identifie ceux qui ont 
-des problèmes de performance, refactorise-les automatiquement et exécute 
-les tests pour vérifier que tout fonctionne encore"
-```
-
-#### 🐳 Conteneurisation Automatique
-```bash
-"Prends mon projet dans le dossier courant, génère un Dockerfile optimisé,
-crée le docker-compose.yml, build l'image et lance le conteneur.
-Vérifie que l'application répond correctement sur le port configuré"
-```
-
-#### 🗄️ Base de Données et Déploiement Local
-```bash
-"Crée une base SQLite dans ./data/, initialise le schéma depuis ce fichier SQL,
-génère une API CRUD complète, installe les dépendances et lance le serveur.
-Teste tous les endpoints avec curl et génère un rapport"
-```
-
 ### 🌐 Applications Full-Stack
-
-#### 📝 Application Livre d'Or avec Déploiement
-```bash
-"Crée une app complète dans ./guestbook/ :
-- Frontend React + build automatique
-- Backend Express + base SQLite
-- Lance npm install, build le frontend, démarre le serveur
-- Ouvre automatiquement le navigateur sur localhost:3000
-- Configure nginx comme reverse proxy local"
-```
 
 #### ⚙️ Automation & Supervision Système
 ```bash
@@ -410,17 +367,6 @@ Teste tous les endpoints avec curl et génère un rapport"
 - Interface web sur port 3001 montrant tous les outils en action
 - Base SQLite pour persistance + outils MCP pour la gérer
 - Test complet de la suite d'outils forgés automatiquement"
-```
-
-#### 🔍 Scraping et Traitement Local
-```bash
-"Crée un scraper intelligent qui s'exécute sur cette machine :
-- Installe Chrome/Playwright automatiquement
-- Scrappe les sites avec rotation d'User-Agent
-- Stocke en PostgreSQL local (via Docker)
-- Génère des rapports PDF avec des graphiques
-- Programme des tâches cron pour l'automatisation
-- Dashboard web local pour visualiser les données"
 ```
 
 #### 💻 Administration Système Intelligente  
@@ -494,9 +440,10 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour les détails.
 
 ## Support
 
-- **Issues** : [GitHub Issues](https://github.com/votre-username/g-forge/issues)
-- **Discussions** : [GitHub Discussions](https://github.com/votre-username/g-forge/discussions)
-- **Documentation** : [Wiki du Projet](https://github.com/votre-username/g-forge/wiki)
+- **🚨 Issues** : [GitHub Issues](https://github.com/votre-username/g-forge/issues)
+- **💬 Discussions** : [GitHub Discussions](https://github.com/votre-username/g-forge/discussions)
+- **📚 Documentation** : [Wiki du Projet](https://github.com/votre-username/g-forge/wiki)
+- **🎮 Discord** : [Rejoignez la communauté](https://discord.gg/VNtXQByKfg) - *Partagez vos créations, obtenez de l'aide en temps réel et découvrez les dernières nouveautés en avant-première*
 
 ---
 

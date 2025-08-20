@@ -2,9 +2,9 @@ import { Job, Queue } from 'bullmq';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { getLoggerInstance } from '../../logger.js';
-import { Ctx, ILlmProvider, SessionData } from '../../types.js';
-import { Agent } from './agent.js';
+import { getLoggerInstance } from '../../logger.ts';
+import { Ctx, ILlmProvider, SessionData } from '../../types.ts';
+import { Agent } from './agent.ts';
 
 // Create mock logger functions
 const mockLogError = vi.fn();
@@ -14,7 +14,7 @@ const mockLogWarn = vi.fn();
 const mockLogChild = vi.fn().mockReturnThis();
 
 // Mock modules
-vi.mock('../../logger.js', () => ({
+vi.mock('../../logger.ts', () => ({
   getLoggerInstance: vi.fn(() => ({
     child: mockLogChild,
     debug: mockLogDebug,
@@ -24,14 +24,14 @@ vi.mock('../../logger.js', () => ({
   })),
 }));
 
-vi.mock('../../utils/llmProvider.js', () => ({
+vi.mock('../../utils/llmProvider.ts', () => ({
   getLlmProvider: vi.fn().mockImplementation(() => ({
     getErrorType: vi.fn(),
     getLlmResponse: vi.fn().mockResolvedValue('Mocked response'),
   })),
 }));
 
-vi.mock('../../modules/tools/toolRegistry.js', async () => {
+vi.mock('../../modules/tools/toolRegistry.ts', async () => {
   return {
     toolRegistry: {
       execute: vi.fn().mockResolvedValue('Tool execution result'),
@@ -128,7 +128,7 @@ describe('Agent - Critical Tests', () => {
 
     // Mock tool execution to simulate browser launch failure
     const mockToolRegistry = await import(
-      '../../modules/tools/toolRegistry.js'
+      '../../modules/tools/toolRegistry.ts'
     );
     vi.mocked(mockToolRegistry.toolRegistry.get).mockReturnValueOnce({
       description: 'Mock tool for testing',
@@ -169,7 +169,7 @@ describe('Agent - Critical Tests', () => {
 
     // Mock tool execution to simulate file system error
     const mockToolRegistry = await import(
-      '../../modules/tools/toolRegistry.js'
+      '../../modules/tools/toolRegistry.ts'
     );
     vi.mocked(mockToolRegistry.toolRegistry.get).mockReturnValueOnce({
       description: 'Mock tool for testing',
@@ -210,7 +210,7 @@ describe('Agent - Critical Tests', () => {
 
     // Mock tool execution to simulate network timeout
     const mockToolRegistry = await import(
-      '../../modules/tools/toolRegistry.js'
+      '../../modules/tools/toolRegistry.ts'
     );
     vi.mocked(mockToolRegistry.toolRegistry.get).mockReturnValueOnce({
       description: 'Mock tool for testing',

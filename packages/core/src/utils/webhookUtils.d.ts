@@ -1,4 +1,4 @@
-import type { TaskOutcome } from './asyncToolHelper.js';
+import type { TaskOutcome } from './asyncToolHelper.ts';
 /**
  * Envoie un webhook à l'URL spécifiée avec le payload.
  */

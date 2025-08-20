@@ -3,17 +3,17 @@ import { spawn as _spawn } from 'child_process';
 import { Redis } from 'ioredis';
 import { Client as PgClient } from 'pg';
 
-import { config, loadConfig } from './config.js';
-import { getLoggerInstance } from './logger.js';
-import { Agent } from './modules/agent/agent.js';
-import { getRedisClientInstance } from './modules/redis/redisClient.js';
-import { SessionManager } from './modules/session/sessionManager.js';
-import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.js';
-import { AppError, getErrDetails, UserError } from './utils/errorUtils.js';
-import { getTools } from './utils/toolLoader.js';
+import { config, loadConfig } from './config.ts';
+import { getLoggerInstance } from './logger.ts';
+import { Agent } from './modules/agent/agent.ts';
+import { getRedisClientInstance } from './modules/redis/redisClient.ts';
+import { SessionManager } from './modules/session/sessionManager.ts';
+import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.ts';
+import { AppError, getErrDetails, UserError } from './utils/errorUtils.ts';
+import { getTools } from './utils/toolLoader.ts';
 
-console.log('[WORKER-STARTUP] process.cwd():', process.cwd());
-console.log('[WORKER-STARTUP] process.env.PATH:', process.env.PATH);
+getLoggerInstance().debug('[WORKER-STARTUP] process.cwd():', process.cwd());
+getLoggerInstance().debug('[WORKER-STARTUP] process.env.PATH:', process.env.PATH);
 
 export async function initializeWorker(
   redisConnection: Redis,
@@ -26,12 +26,10 @@ export async function initializeWorker(
   
   // Afficher les outils détectés au démarrage
   const tools = await getTools();
-  console.log(`[WORKER-STARTUP] ${tools.length} tools detected:`);
-  tools.forEach(tool => console.log(`[WORKER-STARTUP] - ${tool.name}`));
   getLoggerInstance().info(`${tools.length} tools detected at startup`);
   
   const _jobQueue = new Queue('tasks', { connection: redisConnection });
-  const sessionManager = new SessionManager(pgClient);
+  const sessionManager = await SessionManager.create(pgClient);
 
   const worker = new Worker(
     'tasks',
@@ -49,22 +47,16 @@ export async function initializeWorker(
         log.info(`Executing detached shell command: ${command}`);
 
         return new Promise((resolve, reject) => {
-          // --- Début du débogage ---
-          console.log('BullMQ Worker is starting a job.');
-          console.log(`process.cwd(): ${process.cwd()}`);
-          console.log(`HOST_SYSTEM_PATH: ${process.env.HOST_SYSTEM_PATH}`);
-          console.log(`PATH: ${process.env.PATH}`);
-          // --- Fin du débogage ---
           const env = {
             ...process.env,
             PATH: process.env.HOST_SYSTEM_PATH || process.env.PATH,
           };
-          console.log(`[WORKER-SPAWN-DEBUG] Spawning command: ${command}`);
-          console.log(`[WORKER-SPAWN-DEBUG] With shell: /usr/bin/env bash`);
-          console.log(
+          getLoggerInstance().debug(`[WORKER-SPAWN-DEBUG] Spawning command: ${command}`);
+          getLoggerInstance().debug(`[WORKER-SPAWN-DEBUG] With shell: /usr/bin/env bash`);
+          getLoggerInstance().debug(
             `[WORKER-SPAWN-DEBUG] With cwd: ${config.WORKSPACE_PATH}`,
           );
-          console.log(`[WORKER-SPAWN-DEBUG] With env.PATH: ${env.PATH}`);
+          getLoggerInstance().debug(`[WORKER-SPAWN-DEBUG] With env.PATH: ${env.PATH}`);
 
           const child = _spawn(command, {
             cwd: config.WORKSPACE_PATH,
@@ -132,6 +124,7 @@ export async function initializeWorker(
       connection: redisConnection,
       maxStalledCount: config.WORKER_MAX_STALLED_COUNT,
       stalledInterval: config.WORKER_STALLED_INTERVAL_MS,
+      autorun: true,
     },
   );
 
@@ -141,6 +134,10 @@ export async function initializeWorker(
 
   worker.on('failed', (_job, err) => {
     getLoggerInstance().error({ err }, `Le job ${_job?.id} a échoué`);
+  });
+  
+  worker.on('error', (err) => {
+    getLoggerInstance().error({ err }, 'Worker error');
   });
 
   console.log('Worker initialisé et prêt à traiter les jobs.');
@@ -158,19 +155,20 @@ export async function processJob(
     jobId: _job.id,
     sessionId: _job.data.sessionId,
   });
-  log.info(`Traitement du job ${_job.id} avec les données:`, _job.data);
+  log.info(`Traitement du job ${_job.id}`);
 
   const channel = `job:${_job.id}:events`;
 
   // Add a small delay to ensure frontend can establish EventSource connection
-  await new Promise(resolve => setTimeout(resolve, 1500));
+  await new Promise(resolve => setTimeout(resolve, 100));
   log.info(`Job ${_job.id} starting after synchronization delay`);
 
   try {
     const tools = await getTools();
     const session = await _sessionManager.getSession(_job.data.sessionId);
-    const activeLlmProvider = session.activeLlmProvider || 'gemini'; // Default to 'gemini' if not set
+    const activeLlmProvider = session.activeLlmProvider || config.LLM_PROVIDER; // Use configured provider as default
     const { llmApiKey, llmModelName, llmProvider } = _job.data;
+    log.info(`Agent starting with ${tools.length} tools available`);
     const agent = new Agent(
       _job,
       session,
@@ -181,7 +179,9 @@ export async function processJob(
       llmApiKey,
       llmModelName,
     );
+    log.info(`Agent execution starting...`);
     const finalResponse = await agent.run();
+    log.info(`Agent execution completed successfully`);
 
     session.history.push({
       content: finalResponse,
@@ -270,10 +270,12 @@ export async function processJob(
       JSON.stringify({ content: 'Stream terminé.', type: 'close' }),
     );
     log.info(`Traitement du job ${_job.id} terminé`);
+    // Attendre un peu pour s'assurer que le message 'close' est envoyé
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 }
 
-import { LlmKeyManager } from './modules/llm/LlmKeyManager.js';
+import { LlmKeyManager } from './modules/llm/LlmKeyManager.ts';
 
 if (process.env.NODE_ENV !== 'test') {
   // Load configuration for the worker process
@@ -306,7 +308,34 @@ if (process.env.NODE_ENV !== 'test') {
   const pgClient = new PgClient({
     connectionString: connectionString,
   });
-  pgClient.connect();
+
+  // Gestion d'erreur PostgreSQL avec reconnexion
+  pgClient.on('error', (err) => {
+    getLoggerInstance().error({ err }, 'PostgreSQL connection error, attempting to reconnect...');
+    setTimeout(() => {
+      pgClient.connect().catch((connectErr) => {
+        getLoggerInstance().error({ err: connectErr }, 'Failed to reconnect to PostgreSQL');
+      });
+    }, 5000);
+  });
+
+  pgClient.on('end', () => {
+    getLoggerInstance().info('PostgreSQL connection ended, attempting to reconnect...');
+    setTimeout(() => {
+      pgClient.connect().catch((connectErr) => {
+        getLoggerInstance().error({ err: connectErr }, 'Failed to reconnect to PostgreSQL');
+      });
+    }, 2000);
+  });
+
+  try {
+    await pgClient.connect();
+    getLoggerInstance().info('PostgreSQL connected successfully');
+  } catch (err) {
+    getLoggerInstance().error({ err }, 'Failed to connect to PostgreSQL initially');
+    process.exit(1);
+  }
+
   initializeWorker(redisConnection, pgClient).catch((err) => {
     getLoggerInstance().error({ err }, "Échec de l'initialisation du worker");
     process.exit(1);

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { getLogger } from '../logger.js';
+import { getLogger } from '../logger.ts';
 
 export interface AppErrorDetails {
   [key: string]: unknown;

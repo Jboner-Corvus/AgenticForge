@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { Tool } from '@/types.js';
+import type { Tool } from '@/types.ts';
 export declare const readFileParams: z.ZodObject<
   {
     path: z.ZodString;

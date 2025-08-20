@@ -1,51 +1,90 @@
 // packages/ui/src/lib/api.ts
 
+// Get base URL from environment variable or default to relative path for proxy
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
 /**
- * Construit les en-têtes d'authentification pour les requêtes API.
+ * Récupère le token d'authentification backend valide.
+ * Priorité: paramètre fourni > localStorage > variable d'environnement
+ */
+function getBackendAuthToken(providedToken?: string | null): string | null {
+  // 1. Utiliser le token fourni en paramètre
+  if (providedToken) {
+    return providedToken;
+  }
+  
+  // 2. Essayer localStorage (token utilisateur sauvegardé)
+  try {
+    const storedToken = localStorage.getItem('backendAuthToken');
+    if (storedToken) {
+      return storedToken;
+    }
+  } catch (error) {
+    console.warn('🔐 [getBackendAuthToken] Failed to get token from localStorage:', error);
+  }
+  
+  // 3. Fallback sur la variable d'environnement (pour le développement)
+  const envToken = import.meta.env.VITE_AUTH_TOKEN || import.meta.env.AUTH_TOKEN;
+  if (envToken) {
+    return envToken;
+  }
+  
+  return null;
+}
+
+/**
+ * Construit les en-têtes d'authentification pour les requêtes API backend.
+ * IMPORTANT: Ceci est pour l'authentification backend, PAS pour les clés LLM!
  */
 function getAuthHeaders(
   authToken: string | null,
   sessionId: string | null,
 ): Record<string, string> {
+  console.log('🔐 [getAuthHeaders] === CONSTRUCTION HEADERS BACKEND ===');
+  
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
 
-  // Try to get JWT from cookie
-  const cookieName = 'agenticforge_jwt=';
-  const decodedCookie = decodeURIComponent(document.cookie);
-  const ca = decodedCookie.split(';');
-  for(let i = 0; i < ca.length; i++) {
-    let c = ca[i];
-    while (c.charAt(0) === ' ') {
-      c = c.substring(1);
-    }
-    if (c.indexOf(cookieName) === 0) {
-      const jwtToken = c.substring(cookieName.length, c.length);
-      if (jwtToken) {
-        headers['Authorization'] = 'Bearer ' + jwtToken;
-      }
-      break;
-    }
-  }
-
-  // Try to get token from localStorage as fallback
-  if (!headers['Authorization']) {
-    const localStorageToken = localStorage.getItem('authToken');
-    if (localStorageToken) {
-      headers['Authorization'] = 'Bearer ' + localStorageToken;
-    }
-  }
-
-  // Fallback to authToken if provided (e.g., for static API key)
-  if (authToken && !headers['Authorization']) {
-    headers['Authorization'] = 'Bearer ' + authToken;
+  // Récupérer le token backend (PAS un token LLM !)
+  const backendToken = getBackendAuthToken(authToken);
+  
+  if (backendToken) {
+    headers['Authorization'] = 'Bearer ' + backendToken;
+    console.log('✅ [getAuthHeaders] Backend token utilisé:', backendToken.substring(0, 30) + '...');
+  } else {
+    console.log('❌ [getAuthHeaders] Aucun token backend trouvé - requête non authentifiée');
+    console.warn('🚨 [getAuthHeaders] ATTENTION: Backend authentication manquante! Vérifiez votre token AUTH_TOKEN.');
   }
 
   if (sessionId) {
     headers['X-Session-ID'] = String(sessionId);
   }
+  
+  console.log('🔐 [getAuthHeaders] HEADERS BACKEND FINAUX:');
+  console.log('🔐 [getAuthHeaders] - Authorization:', headers['Authorization'] ? 'PRÉSENT' : 'ABSENT');
+  console.log('🔐 [getAuthHeaders] - X-Session-ID:', headers['X-Session-ID'] || 'ABSENT');
+  console.log('🔐 [getAuthHeaders] === FIN CONSTRUCTION HEADERS BACKEND ===');
+  
   return headers;
+}
+
+/**
+ * Construit une URL complète pour les requêtes API.
+ */
+function buildApiUrl(endpoint: string): string {
+  // Remove leading slash from endpoint if it exists
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  
+  // Handle different cases for BASE_URL
+  if (!BASE_URL || BASE_URL === '/') {
+    // If base URL is empty or root, just return the endpoint with leading slash
+    return `/${cleanEndpoint}`;
+  } else {
+    // Ensure base URL ends with a slash if it's not empty
+    const formattedBaseUrl = BASE_URL.endsWith('/') ? BASE_URL : BASE_URL + '/';
+    return `${formattedBaseUrl}${cleanEndpoint}`;
+  }
 }
 
 /**
@@ -70,7 +109,7 @@ export async function sendMessage(
     
     addDebugLog?.(`[API] 🚀 Envoi de la requête vers /api/chat avec prompt de ${prompt.length} caractères`);
 
-    const response = await fetch('/api/chat', { // <-- URL Relative
+    const response = await fetch(buildApiUrl('/api/chat'), {
       method: 'POST',
       headers,
       body: JSON.stringify({ prompt }),
@@ -120,7 +159,10 @@ export async function sendMessage(
     addDebugLog?.(`[API] ✅ Job ID reçu: ${jobId}`);
     
     // Établit la connexion SSE pour les mises à jour en streaming
-    const eventSourceUrl = `/api/chat/stream/${jobId}`;
+    // Add authentication token as query parameter since EventSource doesn't support headers
+    const baseUrl = buildApiUrl(`/api/chat/stream/${jobId}`);
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    const eventSourceUrl = `${baseUrl}${separator}auth=${encodeURIComponent(authToken || '')}&sessionId=${encodeURIComponent(sessionId || '')}`;
     console.log('🔗 [sendMessage] Creating EventSource with URL:', eventSourceUrl);
     addDebugLog?.(`[SSE] 🔗 Création EventSource avec URL: ${eventSourceUrl}`);
     
@@ -202,10 +244,11 @@ export interface SessionData {
   messages: Message[];
   timestamp: number;
   activeLlmProvider?: string;
+  status?: string;
 }
 
 export const getTools = async (authToken: string, sessionId: string) => {
-  const response = await fetch('/api/tools', { // <-- URL Relative
+  const response = await fetch(buildApiUrl('/api/tools'), {
     headers: getAuthHeaders(authToken, sessionId),
   });
   if (!response.ok) {
@@ -219,7 +262,7 @@ export const getTools = async (authToken: string, sessionId: string) => {
  */
 export async function testServerHealth(): Promise<boolean> {
   try {
-    const response = await fetch('/api/health'); // <-- URL Relative
+    const response = await fetch(buildApiUrl('/api/health'));
     return response.ok;
   } catch (error) {
     console.error(`Erreur lors de la vérification de la santé du serveur:`, error);
@@ -231,7 +274,7 @@ export async function testServerHealth(): Promise<boolean> {
  * Interrompt un job en cours.
  */
 export async function interrupt(jobId: string, authToken: null | string, sessionId: null | string): Promise<void> {
-    const response = await fetch(`/api/interrupt/${jobId}`, { // <-- URL Relative
+    const response = await fetch(buildApiUrl(`/api/interrupt/${jobId}`), {
       method: 'POST',
       headers: getAuthHeaders(authToken, sessionId),
     });
@@ -246,10 +289,10 @@ export async function interrupt(jobId: string, authToken: null | string, session
 /**
  * Sauvegarde une session.
  */
-export async function saveSessionApi(session: SessionData): Promise<void> {
-  const response = await fetch('/api/sessions/save', {
+export async function saveSessionApi(session: SessionData, authToken: string | null = null, sessionId: string | null = null): Promise<void> {
+  const response = await fetch(buildApiUrl('/api/sessions/save'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(authToken, sessionId),
     body: JSON.stringify(session),
   });
   if (!response.ok) {
@@ -261,8 +304,10 @@ export async function saveSessionApi(session: SessionData): Promise<void> {
 /**
  * Charge une session.
  */
-export async function loadSessionApi(id: string): Promise<SessionData> {
-  const response = await fetch(`/api/sessions/${id}`);
+export async function loadSessionApi(id: string, authToken: string | null = null, sessionId: string | null = null): Promise<SessionData> {
+  const response = await fetch(buildApiUrl(`/api/sessions/${id}`), {
+    headers: getAuthHeaders(authToken, sessionId),
+  });
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || `Erreur lors du chargement de la session`);
@@ -273,9 +318,10 @@ export async function loadSessionApi(id: string): Promise<SessionData> {
 /**
  * Supprime une session.
  */
-export async function deleteSessionApi(id: string): Promise<void> {
-  const response = await fetch(`/api/sessions/${id}`, {
+export async function deleteSessionApi(id: string, authToken: string | null = null, sessionId: string | null = null): Promise<void> {
+  const response = await fetch(buildApiUrl(`/api/sessions/${id}`), {
     method: 'DELETE',
+    headers: getAuthHeaders(authToken, sessionId),
   });
   if (!response.ok) {
     const errorData = await response.json();
@@ -286,10 +332,10 @@ export async function deleteSessionApi(id: string): Promise<void> {
 /**
  * Renomme une session.
  */
-export async function renameSessionApi(id: string, newName: string): Promise<void> {
-  const response = await fetch(`/api/sessions/${id}/rename`, {
+export async function renameSessionApi(id: string, newName: string, authToken: string | null = null, sessionId: string | null = null): Promise<void> {
+  const response = await fetch(buildApiUrl(`/api/sessions/${id}/rename`), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(authToken, sessionId),
     body: JSON.stringify({ newName }),
   });
   if (!response.ok) {
@@ -301,8 +347,13 @@ export async function renameSessionApi(id: string, newName: string): Promise<voi
 /**
  * Charge toutes les sessions.
  */
-export async function loadAllSessionsApi(): Promise<SessionData[]> {
-  const response = await fetch('/api/sessions');
+export async function loadAllSessionsApi(authToken: string | null = null, sessionId: string | null = null): Promise<SessionData[]> {
+  const headers = getAuthHeaders(authToken, sessionId);
+  
+  const response = await fetch(buildApiUrl('/api/sessions'), {
+    method: 'GET',
+    headers
+  });
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || `Erreur lors du chargement de toutes les sessions`);
@@ -313,38 +364,38 @@ export async function loadAllSessionsApi(): Promise<SessionData[]> {
 /**
  * Récupère les statistiques du leaderboard.
  */
-export async function getLeaderboardStats(): Promise<{
+export async function getLeaderboardStats(authToken: string | null = null, sessionId: string | null = null): Promise<{
   tokensSaved: number;
   successfulRuns: number;
   sessionsCreated: number;
   apiKeysAdded: number;
 }> {
-  const response = await fetch('/api/leaderboard-stats');
+  const headers = getAuthHeaders(authToken, sessionId);
+  
+  const response = await fetch(buildApiUrl('/api/leaderboard-stats'), {
+    method: 'GET',
+    headers
+  });
   if (!response.ok) {
     throw new Error(`Erreur lors de la récupération des statistiques du leaderboard`);
   }
   return await response.json();
 }
 
-interface LlmApiKey {
-  provider: string;
-  key: string;
-  baseUrl?: string;
-  model?: string;
-}
+import { type LlmApiKey } from '../store/types';
 
 /**
  * Ajoute une clé API LLM.
  */
-export async function addLlmApiKeyApi(provider: string, key: string, baseUrl?: string, model?: string): Promise<void> {
+export async function addLlmApiKeyApi(provider: string, key: string, baseUrl?: string, model?: string, authToken: string | null = null, sessionId: string | null = null): Promise<void> {
   // --- DEBOGAGE: Log uniquement si les données obligatoires sont manquantes ---
   if (!provider || !key) {
     console.warn("WARNING addLlmApiKeyApi: Missing provider or key!", { provider, key, baseUrl, model });
   }
   // --- FIN DEBOGAGE ---
-  const response = await fetch('/api/llm-api-keys', {
+  const response = await fetch(buildApiUrl('/api/llm-api-keys'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(authToken, sessionId),
     body: JSON.stringify({ provider, key, baseUrl, model }),
   });
   if (!response.ok) {
@@ -356,8 +407,13 @@ export async function addLlmApiKeyApi(provider: string, key: string, baseUrl?: s
 /**
  * Récupère toutes les clés API LLM.
  */
-export async function getLlmApiKeysApi(): Promise<LlmApiKey[]> {
-  const response = await fetch('/api/llm-api-keys');
+export async function getLlmApiKeysApi(authToken: string | null = null, sessionId: string | null = null): Promise<LlmApiKey[]> {
+  const headers = getAuthHeaders(authToken, sessionId);
+  
+  const response = await fetch(buildApiUrl('/api/llm-api-keys'), {
+    method: 'GET',
+    headers
+  });
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || `Erreur lors de la récupération des clés API LLM`);
@@ -368,9 +424,10 @@ export async function getLlmApiKeysApi(): Promise<LlmApiKey[]> {
 /**
  * Supprime une clé API LLM par index.
  */
-export async function removeLlmApiKeyApi(index: number): Promise<void> {
-  const response = await fetch(`/api/llm-api-keys/${index}`, {
+export async function removeLlmApiKeyApi(index: number, authToken: string | null = null, sessionId: string | null = null): Promise<void> {
+  const response = await fetch(buildApiUrl(`/api/llm-api-keys/${index}`), {
     method: 'DELETE',
+    headers: getAuthHeaders(authToken, sessionId),
   });
   if (!response.ok) {
     const errorData = await response.json();
@@ -381,10 +438,10 @@ export async function removeLlmApiKeyApi(index: number): Promise<void> {
 /**
  * Met à jour une clé API LLM par index.
  */
-export async function editLlmApiKeyApi(index: number, provider: string, key: string, baseUrl?: string, model?: string): Promise<void> {
-  const response = await fetch(`/api/llm-api-keys/${index}`, {
+export async function editLlmApiKeyApi(index: number, provider: string, key: string, baseUrl?: string, model?: string, authToken: string | null = null, sessionId: string | null = null): Promise<void> {
+  const response = await fetch(buildApiUrl(`/api/llm-api-keys/${index}`), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(authToken, sessionId),
     body: JSON.stringify({ provider, key, baseUrl, model }),
   });
   if (!response.ok) {
@@ -397,7 +454,7 @@ export async function editLlmApiKeyApi(index: number, provider: string, key: str
  * Définit le fournisseur LLM actif pour la session.
  */
 export async function setActiveLlmProviderApi(providerName: string, authToken: null | string, sessionId: null | string): Promise<void> {
-  const response = await fetch('/api/session/llm-provider', {
+  const response = await fetch(buildApiUrl('/api/session/llm-provider'), {
     method: 'POST',
     headers: getAuthHeaders(authToken, sessionId),
     body: JSON.stringify({ providerName }),
@@ -406,4 +463,28 @@ export async function setActiveLlmProviderApi(providerName: string, authToken: n
     const errorData = await response.json();
     throw new Error(errorData.message || `Erreur lors de la définition du fournisseur LLM actif`);
   }
+}
+
+/**
+ * Teste une clé API LLM auprès du backend.
+ */
+export async function testLlmApiKey(
+  provider: string,
+  apiKey: string,
+  baseUrl: string | undefined,
+  authToken: string | null,
+  sessionId: string | null,
+): Promise<{ success: boolean; message: string }> {
+  const response = await fetch(buildApiUrl('/api/llm-keys/test'), {
+    method: 'POST',
+    headers: getAuthHeaders(authToken, sessionId),
+    body: JSON.stringify({ provider, apiKey, baseUrl }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.status}` }));
+    throw new Error(errorData.message || `Erreur lors du test de la clé API LLM`);
+  }
+
+  return await response.json();
 }

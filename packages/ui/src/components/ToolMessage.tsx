@@ -53,12 +53,18 @@ const formatToolDescription = (toolName: string, isCall: boolean, params?: unkno
         return `Gestion des tâches: ${(params as Record<string, unknown>)?.action || 'action inconnue'}`;
       case 'displayCanvas':
         return `Affichage dans le canvas: ${(params as Record<string, unknown>)?.contentType || 'contenu inconnu'}`;
+      case 'finish':
+        return `Finalisation de la réponse`;
       default:
         return `Appel de l'outil: ${toolName}`;
     }
   } else {
-    // Tool result
-    if ((result as Record<string, unknown>)?.error || (result as Record<string, unknown>)?.erreur) {
+    // Tool result - Special handling for finish tool with FinishToolSignal
+    const error = (result as Record<string, unknown>)?.error;
+    if (error && typeof error === 'object' && (error as Record<string, unknown>)?.name === 'FinishToolSignal') {
+      return `Réponse finalisée avec succès`;
+    }
+    if (error || (result as Record<string, unknown>)?.erreur) {
       return `Erreur lors de l'exécution`;
     }
     return `Résultat obtenu avec succès`;

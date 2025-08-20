@@ -2,8 +2,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { z } from 'zod';
 
-import { config } from '../../../../config.js';
-import { Ctx, Tool } from '../../../../types.js';
+import { config } from '../../../../config.ts';
+import { Ctx, Tool } from '../../../../types.ts';
 
 const WORKSPACE_DIR = config.WORKER_WORKSPACE_PATH || config.HOST_PROJECT_PATH;
 

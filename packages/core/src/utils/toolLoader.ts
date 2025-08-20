@@ -4,10 +4,10 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
 
-import { getLogger } from '../logger.js';
-import { toolRegistry } from '../modules/tools/toolRegistry.js';
-import { Tool } from '../types.js';
-import { getErrDetails } from './errorUtils.js';
+import { getLogger } from '../logger.ts';
+import { toolRegistry } from '../modules/tools/toolRegistry.ts';
+import { Tool } from '../types.ts';
+import { getErrDetails } from './errorUtils.ts';
 
 // Schéma Zod pour valider la structure d'un outil
 const toolSchema = z.object({
@@ -108,6 +108,7 @@ export async function getTools(): Promise<Tool[]> {
 export function getToolsDir(): string {
   // Check if TOOLS_PATH environment variable is set (used in tests)
   if (process.env.TOOLS_PATH) {
+    console.log(`[getToolsDir] Using TOOLS_PATH: ${process.env.TOOLS_PATH}`);
     return process.env.TOOLS_PATH;
   }
 
@@ -118,21 +119,30 @@ export function getToolsDir(): string {
     `[getToolsDir] process.env.NODE_ENV: ${process.env.NODE_ENV}`,
   );
 
-  // In production (dist), tools are in dist/modules/tools/definitions
-  // In development, they're in src/modules/tools/definitions
+  // In production (dist), tools are in packages/core/dist/modules/tools/definitions
+  // In development, they're in packages/core/src/modules/tools/definitions
   let toolsPath: string;
   
   if (runningInDist) {
-    // When running in Docker, __dirname might be "." so we need to use process.cwd()
-    if (__dirname === '.' || __dirname === process.cwd()) {
-      toolsPath = path.resolve(process.cwd(), 'packages', 'core', 'dist', 'modules', 'tools', 'definitions');
+    // When running in Docker or as a worker, we need to construct the path correctly
+    // The worker runs from /home/demon/agentforge/AgenticForge2/AgenticForge
+    // The tools are in /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions
+    // Check if we're already in the packages/core directory
+    if (process.cwd().endsWith('packages/core')) {
+      toolsPath = path.resolve(process.cwd(), 'dist/modules/tools/definitions');
     } else {
-      toolsPath = path.resolve(__dirname, 'modules', 'tools', 'definitions');
+      toolsPath = path.resolve(process.cwd(), 'packages/core/dist/modules/tools/definitions');
     }
   } else {
-    toolsPath = path.resolve(__dirname, '..', 'modules', 'tools', 'definitions');
+    // Check if we're already in the packages/core directory
+    if (process.cwd().endsWith('packages/core')) {
+      toolsPath = path.resolve(process.cwd(), 'src/modules/tools/definitions');
+    } else {
+      toolsPath = path.resolve(process.cwd(), 'packages/core/src/modules/tools/definitions');
+    }
   }
 
+  console.log(`[getToolsDir] Constructed tools path: ${toolsPath}`);
   getLogger().debug(`[getToolsDir] Constructed tools path: ${toolsPath}`);
   return toolsPath;
 }
@@ -147,15 +157,20 @@ async function findToolFiles(
   let files: string[] = [];
 
   getLogger().info(`[findToolFiles] Scanning directory: ${dir}`);
+  console.log(`[findToolFiles] Scanning directory: ${dir}`);
+  console.log(`[findToolFiles] Looking for files with extension: ${extension}`);
   try {
     const entries = await fs.readdir(dir, { withFileTypes: true });
+    console.log(`[findToolFiles] Found ${entries.length} entries in directory`);
 
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
+      console.log(`[findToolFiles] Processing entry: ${entry.name}, isDirectory: ${entry.isDirectory()}, isFile: ${entry.isFile()}`);
 
       if (entry.isDirectory()) {
         files = files.concat(await findToolFiles(fullPath, extension));
       } else if (entry.isFile() && entry.name.endsWith(extension)) {
+        console.log(`[findToolFiles] Found matching file: ${fullPath}`);
         files.push(fullPath);
       }
     }
@@ -166,19 +181,22 @@ async function findToolFiles(
       directory: dir,
       logContext: "Erreur lors du parcours du répertoire d'outils.",
     });
+    console.log(`[findToolFiles] Error scanning directory: ${dir}`, error);
 
     throw error; // Re-throw to ensure the error is propagated
   }
 
+  console.log(`[findToolFiles] Returning files: ${files.join(', ')}`);
   return files;
 }
 
 async function loadToolFile(file: string): Promise<void> {
   const logger = getLogger();
-  logger.info({ file }, `[loadToolFile] Attempting to load tool file.`);
+  logger.debug({ file }, `[loadToolFile] Attempting to load tool file.`);
+  
   try {
     const module = await import(`${path.resolve(file)}?v=${Date.now()}`); // Cache-busting
-    logger.info(
+    logger.debug(
       { file, moduleExports: Object.keys(module) },
       `[loadToolFile] Successfully imported module.`,
     );
@@ -191,10 +209,12 @@ async function loadToolFile(file: string): Promise<void> {
         exportedItem !== null &&
         'name' in exportedItem
       ) {
-        logger.info(
+        logger.debug(
           { exportName, file },
           `[loadToolFile] Found potential tool export.`,
         );
+        
+        // Valider l'objet avec Zod mais ne pas afficher les détails verbeux
         const parsedTool = toolSchema.safeParse(exportedItem);
 
         if (parsedTool.success) {
@@ -208,7 +228,14 @@ async function loadToolFile(file: string): Promise<void> {
           );
         } else {
           logger.warn(
-            { errors: parsedTool.error.issues, exportName, file },
+            { 
+              errors: parsedTool.error.issues.map(issue => ({
+                message: issue.message,
+                path: issue.path.join('.')
+              })), 
+              exportName, 
+              file 
+            },
             `[loadToolFile] Skipping invalid tool export due to Zod schema mismatch.`,
           );
         }

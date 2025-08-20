@@ -2,8 +2,8 @@ import { Queue } from 'bullmq';
 import { promises as fs } from 'fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getLoggerInstance } from '../../../../logger.js';
-import { Ctx, ILlmProvider, SessionData } from '../../../../types.js';
+import { getLoggerInstance } from '../../../../logger.ts';
+import { Ctx, ILlmProvider, SessionData } from '../../../../types.ts';
 import { runQualityGate } from '../../../../utils/qualityGate';
 import { createToolTool } from './createTool.tool';
 
@@ -27,7 +27,7 @@ const mockLoggerInstance = {
   warn: vi.fn(),
 };
 
-vi.mock('../../../../logger.js', () => ({
+vi.mock('../../../../logger.ts', () => ({
   getLoggerInstance: vi.fn(() => mockLoggerInstance),
 }));
 

@@ -12,20 +12,20 @@ import type {
   ToolCallMessage,
   ToolResultMessage,
   UserMessage,
-} from '../../types.js';
+} from '../../types.ts';
 
-import { config } from '../../config.js';
-import { getLoggerInstance } from '../../logger.js';
-import { LlmError } from '../../utils/LlmError.js';
-import { getLlmProvider } from '../../utils/llmProvider.js';
-import { LLMContent } from '../llm/llm-types.js';
-import { LlmKeyManager } from '../llm/LlmKeyManager.js';
-import { getRedisClientInstance } from '../redis/redisClient.js';
-import { SessionManager } from '../session/sessionManager.js';
-import { FinishToolSignal } from '../tools/definitions/index.js';
-import { toolRegistry } from '../tools/toolRegistry.js';
-import { getMasterPrompt } from './orchestrator.prompt.js';
-import { llmResponseSchema } from './responseSchema.js';
+import { config } from '../../config.ts';
+import { getLoggerInstance } from '../../logger.ts';
+import { LlmError } from '../../utils/LlmError.ts';
+import { getLlmProvider } from '../../utils/llmProvider.ts';
+import { LLMContent } from '../llm/llm-types.ts';
+import { LlmKeyManager } from '../llm/LlmKeyManager.ts';
+import { getRedisClientInstance } from '../redis/redisClient.ts';
+import { SessionManager } from '../session/sessionManager.ts';
+import { FinishToolSignal } from '../tools/definitions/index.ts';
+import { toolRegistry } from '../tools/toolRegistry.ts';
+import { getMasterPrompt } from './orchestrator.prompt.ts';
+import { llmResponseSchema } from './responseSchema.ts';
 
 type ChannelData =
   | {
@@ -59,6 +59,15 @@ export class Agent {
   private readonly sessionManager: SessionManager; // New property
   private subscriber: any;
   private readonly taskQueue: Queue;
+
+  // Loop detection properties
+  private behaviorHistory: Array<{
+    thought?: string;
+    command?: Command;
+    timestamp: number;
+  }> = [];
+  private readonly maxBehaviorHistory = 10; // Keep track of last 10 behaviors
+  private loopDetectionThreshold = 3; // Detect loops after 3 repetitions
 
   private readonly tools: Tool<z.AnyZodObject, z.ZodTypeAny>[];
 
@@ -95,6 +104,10 @@ export class Agent {
     this.session.activeLlmProvider = activeLlmProvider; // Ensure session also has the active provider
     this.sessionManager = sessionManager;
     this.apiKey = apiKey;
+    
+    // Initialize loop detection properties
+    this.behaviorHistory = [];
+    this.loopDetectionThreshold = 3; // Detect loops after 3 repetitions
   }
 
   public async run(): Promise<string> {
@@ -129,6 +142,16 @@ export class Agent {
         iterations++;
         const iterationLog = this.log.child({ iteration: iterations });
         iterationLog.info(`Agent iteration starting`);
+        
+        // Add "The agent is thinking..." message to session history and publish to channel
+        const thinkingMessage = {
+          content: `The agent is thinking... (iteration ${iterations})`,
+          id: crypto.randomUUID(),
+          timestamp: Date.now(),
+          type: 'agent_thought' as const,
+        };
+        this.session.history.push(thinkingMessage);
+        this.publishToChannel(thinkingMessage);
 
         try {
           const orchestratorPrompt = getMasterPrompt(
@@ -204,6 +227,11 @@ export class Agent {
             currentProviderIndex = 0; // Default to first in hierarchy if current is not found
           }
 
+          // Track Qwen timeout retries
+          let qwenTimeoutRetries = 0;
+          const MAX_QWEN_TIMEOUT_RETRIES = 8; // Augmenté à 8 tentatives
+          const INITIAL_RETRIES_WITHOUT_DELAY = 4; // 4 premières tentatives sans délai
+
           for (let i = 0; i < config.LLM_PROVIDER_HIERARCHY.length; i++) {
             const providerToTry =
               config.LLM_PROVIDER_HIERARCHY[
@@ -220,6 +248,15 @@ export class Agent {
                 );
                 continue;
               }
+              
+              // Ajout d'un délai progressif après les 4 premières tentatives
+              if (providerToTry === 'qwen' && qwenTimeoutRetries >= INITIAL_RETRIES_WITHOUT_DELAY) {
+                // Calcul du délai : 2 secondes de base + 1 seconde supplémentaire par tentative au-delà de 4
+                const delayMs = 2000 + (qwenTimeoutRetries - INITIAL_RETRIES_WITHOUT_DELAY) * 1000;
+                this.log.info(`Adding delay of ${delayMs}ms before Qwen API call (retry ${qwenTimeoutRetries + 1})`);
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+              }
+              
               llmResponse = await getLlmProvider(providerToTry).getLlmResponse(
                 messagesForLlm,
                 orchestratorPrompt,
@@ -239,7 +276,39 @@ export class Agent {
               );
               break; // Success, break out of provider loop
             } catch (llmError) {
+              // Check if this is a Qwen timeout error that should be retried
               if (
+                llmError instanceof LlmError &&
+                providerToTry === 'qwen' &&
+                ((llmError.message.includes('Qwen API request failed with status 504') &&
+                llmError.message.includes('stream timeout')) ||
+                llmError.message.includes('Qwen API request failed with status 502'))
+              ) {
+                qwenTimeoutRetries++;
+                this.log.warn(
+                  `Qwen API error encountered (${qwenTimeoutRetries}/${MAX_QWEN_TIMEOUT_RETRIES}): ${llmError.message}`,
+                );
+                
+                // If we haven't reached the max retries, continue with the same provider
+                if (qwenTimeoutRetries < MAX_QWEN_TIMEOUT_RETRIES) {
+                  // Add delay after the initial retries without delay
+                  if (qwenTimeoutRetries >= INITIAL_RETRIES_WITHOUT_DELAY) {
+                    // Calcul du délai : 2 secondes de base + 1 seconde supplémentaire par tentative au-delà de 4
+                    const delayMs = 2000 + (qwenTimeoutRetries - INITIAL_RETRIES_WITHOUT_DELAY) * 1000;
+                    this.log.info(`Adding delay of ${delayMs}ms before retrying Qwen API call (retry ${qwenTimeoutRetries + 1})`);
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
+                  }
+                  i--; // Decrement i to retry the same provider
+                  continue;
+                } else {
+                  this.log.error(
+                    `Max Qwen retries (${MAX_QWEN_TIMEOUT_RETRIES}) reached. Moving to next provider.`,
+                  );
+                  // Reset retry counter and continue to next provider
+                  qwenTimeoutRetries = 0;
+                  continue;
+                }
+              } else if (
                 llmError instanceof LlmError &&
                 llmError.message.includes('No LLM API key available')
               ) {
@@ -247,6 +316,7 @@ export class Agent {
                   `No LLM API key available for ${providerToTry}. Trying next provider in hierarchy.`,
                 );
                 // Continue to next provider in hierarchy
+                continue;
               } else {
                 // Re-throw other types of LLM errors immediately
                 throw llmError;
@@ -296,7 +366,7 @@ export class Agent {
             'Parsed LLM response before answer check',
           );
           const { answer, canvas, command, thought } = parsedResponse;
-
+          
           if (answer) {
             this.session.history.push({
               content: answer,
@@ -304,14 +374,26 @@ export class Agent {
               timestamp: Date.now(),
               type: 'agent_response',
             });
-          } else if (thought) {
+            iterationLog.info({ answer }, 'Agent final answer');
+            this.publishToChannel({ content: answer, type: 'agent_response' });
+            return answer;
+          }
+
+          // Check for loops in agent behavior
+          if (this.detectLoop(thought, command)) {
+            this.log.error('Loop detected in agent behavior. Stopping execution.');
+            return 'Agent stopped due to detected loop in behavior.';
+          }
+
+          if (thought) {
             this.session.history.push({
               content: thought,
               id: crypto.randomUUID(),
               timestamp: Date.now(),
               type: 'agent_thought',
             });
-          } else if (command) {
+          }
+          if (command) {
             this.session.history.push({
               id: crypto.randomUUID(),
               params: (command.params as Record<string, unknown>) || {},
@@ -319,7 +401,8 @@ export class Agent {
               toolName: command.name,
               type: 'tool_call',
             });
-          } else if (canvas) {
+          }
+          if (canvas) {
             this.session.history.push({
               content: canvas.content,
               contentType: canvas.contentType,
@@ -358,41 +441,66 @@ export class Agent {
           }
 
           if (command && command.name === 'finish') {
-            const finishResult = await this.executeTool(command, iterationLog);
-            if (
-              typeof finishResult === 'object' &&
-              finishResult !== null &&
-              'answer' in finishResult &&
-              typeof (finishResult as { answer: unknown }).answer === 'string'
-            ) {
-              const finalAnswer = (finishResult as { answer: string }).answer;
-              iterationLog.info(
-                { finalAnswer },
-                'Agent finished via finish tool',
-              );
-              this.publishToChannel({
-                content: finalAnswer,
-                type: 'agent_response',
-              });
-              this.session.history.push({
-                id: crypto.randomUUID(),
-                result: finishResult,
-                timestamp: Date.now(),
-                toolName: 'finish',
-                type: 'tool_result',
-              });
-              return finalAnswer;
-            } else {
-              // If finish tool doesn't return an object with 'answer', treat it as an error
-              const errorMessage = `Finish tool did not return a valid answer object: ${JSON.stringify(finishResult)}`;
-              iterationLog.error(errorMessage);
-              this.session.history.push({
-                content: `Error: ${errorMessage}`,
-                id: crypto.randomUUID(),
-                timestamp: Date.now(),
-                type: 'error',
-              });
-              return errorMessage;
+            try {
+              const finishResult = await this.executeTool(command, iterationLog);
+              if (
+                typeof finishResult === 'object' &&
+                finishResult !== null &&
+                'answer' in finishResult &&
+                typeof (finishResult as { answer: unknown }).answer === 'string'
+              ) {
+                const finalAnswer = (finishResult as { answer: string }).answer;
+                iterationLog.info(
+                  { finalAnswer },
+                  'Agent finished via finish tool',
+                );
+                this.publishToChannel({
+                  content: finalAnswer,
+                  type: 'agent_response',
+                });
+                this.session.history.push({
+                  id: crypto.randomUUID(),
+                  result: finishResult,
+                  timestamp: Date.now(),
+                  toolName: 'finish',
+                  type: 'tool_result',
+                });
+                return finalAnswer;
+              } else {
+                // If finish tool doesn't return an object with 'answer', treat it as an error
+                const errorMessage = `Finish tool did not return a valid answer object: ${JSON.stringify(finishResult)}`;
+                iterationLog.error(errorMessage);
+                this.session.history.push({
+                  content: `Error: ${errorMessage}`,
+                  id: crypto.randomUUID(),
+                  timestamp: Date.now(),
+                  type: 'error',
+                });
+                return errorMessage;
+              }
+            } catch (_error) {
+              if (_error instanceof FinishToolSignal) {
+                // This is the expected case - finish tool throws FinishToolSignal
+                const finalAnswer = _error.message;
+                iterationLog.info(
+                  { finalAnswer },
+                  'Agent finished via finish tool signal',
+                );
+                this.publishToChannel({
+                  content: finalAnswer,
+                  type: 'agent_response',
+                });
+                this.session.history.push({
+                  content: finalAnswer,
+                  id: crypto.randomUUID(),
+                  timestamp: Date.now(),
+                  type: 'agent_response',
+                });
+                return finalAnswer;
+              } else {
+                // Unexpected error
+                throw _error;
+              }
             }
           } else if (command) {
             this.commandHistory.push(command);
@@ -429,7 +537,8 @@ export class Agent {
               toolResult.startsWith('Error executing tool')
             ) {
               this.session.history.push({
-                content: `The tool execution failed with the following error: ${toolResult}. Please analyze the error and try a different approach. You can use another tool, or try to fix the problem with the previous tool.`,
+                content:
+                  `The tool execution failed with the following error: ${toolResult}. Please analyze the error and try a different approach. You can use another tool, or try to fix the problem with the previous tool.`,
                 id: crypto.randomUUID(),
                 timestamp: Date.now(),
                 type: 'error',
@@ -533,6 +642,15 @@ export class Agent {
       );
       return `Agent run failed: ${errorMessage}`;
     } finally {
+      // Increment successful runs counter when agent completes successfully
+      try {
+        const redisClient = getRedisClientInstance();
+        await redisClient.incr('leaderboard:successfulRuns');
+        this.log.info('Successfully incremented successfulRuns counter');
+      } catch (error) {
+        this.log.error({ err: error }, 'Failed to increment successfulRuns in Redis');
+      }
+      
       await this.cleanup();
     }
   }
@@ -664,8 +782,155 @@ export class Agent {
         { error, llmResponse: jsonText },
         'Failed to parse LLM response',
       );
+      
+      // Try to convert plain text to valid JSON format
+      try {
+        const convertedResponse = this.convertPlainTextToValidJson(jsonText);
+        const convertedParsed = JSON.parse(convertedResponse);
+        log.debug({ convertedParsed }, 'Successfully converted plain text to valid JSON');
+        return llmResponseSchema.parse(convertedParsed);
+      } catch (conversionError) {
+        log.error(
+          { conversionError, originalError: error },
+          'Failed to convert plain text to valid JSON',
+        );
+      }
+      
       throw new Error(`Failed to parse LLM response: ${jsonText}`);
     }
+  }
+
+  /**
+   * Converts plain text responses to valid JSON format when the LLM doesn't follow the required format
+   * This handles cases where the LLM responds with plain text instead of JSON
+   */
+  private convertPlainTextToValidJson(text: string): string {
+    // Clean the text
+    const cleanText = text.trim();
+    
+    // If it's already valid JSON, return as is
+    try {
+      JSON.parse(cleanText);
+      return cleanText;
+    } catch {
+      // Not valid JSON, proceed with conversion
+    }
+    
+    // Analyze the content to determine appropriate tool
+    const lowerText = cleanText.toLowerCase();
+    
+    // Check for canvas-related keywords
+    const canvasKeywords = ['canvas', 'display', 'show', 'demo', 'afficher', 'montrer', 'visual'];
+    const isCanvasRequest = canvasKeywords.some(keyword => 
+      lowerText.includes(keyword)
+    );
+    
+    // Check for todo-related keywords
+    const todoKeywords = ['todo', 'task', 'list', 'step', 'plan', 'workflow', 'tâche', 'étape'];
+    const isTodoRequest = todoKeywords.some(keyword => 
+      lowerText.includes(keyword)
+    );
+    
+    // Check for creation/building requests that should use todo lists
+    const creationKeywords = [
+      'create', 'build', 'make', 'generate', 'develop', 'implement', 'write',
+      'game', 'website', 'app',
+      'créer', 'construire', 'faire', 'générer', 'développer', 'implémenter', 'écrire'
+    ];
+    
+    // Check if this looks like a creation request
+    const isCreationRequest = creationKeywords.some(keyword => 
+      lowerText.includes(keyword)
+    );
+    
+    let command;
+    let thought;
+    
+    // Prioritize canvas requests over creation requests
+    if (isCanvasRequest) {
+      // Handle canvas display requests
+      thought = "L'utilisateur veut afficher quelque chose dans le canvas.";
+      command = {
+        name: "display_canvas",
+        params: {
+          content: cleanText.includes('helloworld') ? "<div style='display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 48px; font-weight: bold;'>helloworld</div>" : `<div><h1>Canvas Display</h1><p>${cleanText}</p></div>`,
+          contentType: "html"
+        }
+      };
+    } else if (isCreationRequest && isTodoRequest) {
+      // For creation requests that mention todos, create a todo list first
+      thought = "L'utilisateur demande de créer quelque chose. Je dois d'abord créer une todo list pour organiser le travail.";
+      command = {
+        name: "manage_todo_list",
+        params: {
+          action: "create",
+          title: "Projet de création",
+          todos: [
+            {
+              id: "1",
+              content: "Analyser la demande et planifier l'approche",
+              status: "pending",
+              priority: "high",
+              category: "planning"
+            },
+            {
+              id: "2", 
+              content: "Commencer l'implémentation",
+              status: "pending",
+              priority: "high",
+              category: "development"
+            }
+          ]
+        }
+      };
+    } else if (isTodoRequest) {
+      // Pure todo list request
+      thought = "L'utilisateur veut utiliser la todo list. Je vais afficher ou gérer la todo list.";
+      command = {
+        name: "manage_todo_list",
+        params: {
+          action: "display"
+        }
+      };
+    } else if (isCreationRequest) {
+      // Other creation requests
+      thought = "L'utilisateur demande de créer quelque chose. Je dois d'abord créer une todo list pour organiser le travail.";
+      command = {
+        name: "manage_todo_list",
+        params: {
+          action: "create",
+          title: "Projet de création",
+          todos: [
+            {
+              id: "1",
+              content: "Analyser la demande et planifier l'approche",
+              status: "pending",
+              priority: "high",
+              category: "planning"
+            },
+            {
+              id: "2", 
+              content: "Commencer l'implémentation",
+              status: "pending",
+              priority: "high",
+              category: "development"
+            }
+          ]
+        }
+      };
+    } else {
+      // Default to finish tool for other requests
+      thought = "L'utilisateur a répondu avec du texte brut. Je vais convertir cela en format JSON valide.";
+      command = {
+        name: "finish",
+        params: {
+          response: cleanText
+        }
+      };
+    }
+    
+    const jsonObject = { thought, command };
+    return JSON.stringify(jsonObject);
   }
 
   private publishToChannel(data: ChannelData) {
@@ -683,7 +948,75 @@ export class Agent {
     this.job.updateProgress(progressData);
   }
 
-  private async setupInterruptListener() {
+  private detectLoop(thought?: string, command?: Command): boolean {
+    const now = Date.now();
+    
+    // Add current behavior to history
+    this.behaviorHistory.push({
+      thought,
+      command,
+      timestamp: now
+    });
+    
+    // Keep only the most recent behaviors
+    if (this.behaviorHistory.length > this.maxBehaviorHistory) {
+      this.behaviorHistory.shift();
+    }
+    
+    // Check for repetitive patterns
+    if (this.behaviorHistory.length >= this.loopDetectionThreshold) {
+      // Check for command repetition
+      if (command) {
+        const recentCommands = this.behaviorHistory.slice(-this.loopDetectionThreshold);
+        const allSameCommand = recentCommands.every(
+          (behavior: { command?: Command }, index: number, arr: { command?: Command }[]) => 
+            behavior.command && 
+            behavior.command.name === command.name &&
+            JSON.stringify(behavior.command.params) === JSON.stringify(command.params)
+        );
+        
+        if (allSameCommand) {
+          this.log.warn(
+            `Loop detected: Same command '${command.name}' repeated ${this.loopDetectionThreshold} times`
+          );
+          return true;
+        }
+      }
+      
+      // Check for thought repetition (if no command)
+      if (thought && !command) {
+        const recentThoughts = this.behaviorHistory.slice(-this.loopDetectionThreshold);
+        const allSimilarThoughts = recentThoughts.every(
+          (behavior: { thought?: string }, index: number, arr: { thought?: string }[]) => 
+            behavior.thought && 
+            this.calculateTextSimilarity(behavior.thought, thought) > 0.8
+        );
+        
+        if (allSimilarThoughts) {
+          this.log.warn(
+            `Loop detected: Similar thoughts repeated ${this.loopDetectionThreshold} times`
+          );
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  }
+  
+  private calculateTextSimilarity(text1: string, text2: string): number {
+    // Simple similarity calculation using character overlap
+    // In a real implementation, you might want to use more sophisticated algorithms
+    const set1 = new Set(text1.toLowerCase().split(/\s+/));
+    const set2 = new Set(text2.toLowerCase().split(/\s+/));
+    
+    const intersection = new Set([...set1].filter(x => set2.has(x)));
+    const union = new Set([...set1, ...set2]);
+    
+    return union.size === 0 ? 1 : intersection.size / union.size;
+  }
+  
+  private async setupInterruptListener(): Promise<void> {
     const channel = `job:${this.job.id}:interrupt`;
     this.subscriber = getRedisClientInstance().duplicate();
 

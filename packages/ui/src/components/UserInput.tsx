@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useStore, AppState } from '../lib/store';
+import { useIsProcessing } from '../store/hooks';
 import { useAgentStream } from '../lib/hooks/useAgentStream';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -11,13 +11,21 @@ export const UserInput = () => {
   const { translations } = useLanguage();
   const [inputValue, setInputValue] = useState('');
   const { startAgent } = useAgentStream();
-  const isProcessing = useStore((state: AppState) => state.isProcessing);
-  const tokenStatus = useStore((state: AppState) => state.tokenStatus);
+  const isProcessing = useIsProcessing();
 
   const handleSendMessage = () => {
+    console.log('🔥🔥🔥 [DEBUG] UserInput handleSendMessage called');
+    console.log('🔥🔥🔥 [DEBUG] inputValue:', inputValue);
+    console.log('🔥🔥🔥 [DEBUG] isProcessing:', isProcessing);
+    console.log('🔥🔥🔥 [DEBUG] startAgent function:', typeof startAgent);
+    
     if (inputValue.trim() && !isProcessing) {
+      console.log('🔥🔥🔥 [DEBUG] Calling startAgent with:', inputValue.trim());
       startAgent(inputValue);
       setInputValue('');
+      console.log('🔥🔥🔥 [DEBUG] startAgent called, input cleared');
+    } else {
+      console.log('🔥🔥🔥 [DEBUG] NOT calling startAgent - conditions not met');
     }
   };
 
@@ -28,7 +36,7 @@ export const UserInput = () => {
           name="user-input"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          placeholder={translations.typeYourMessage}
+          placeholder={translations?.typeYourMessage || "Type your message..."}
           className="flex-1 resize-none min-h-[50px] rounded-full py-3 px-6 pr-16 shadow-sm border-border focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 ease-in-out"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey && !isProcessing) {
@@ -36,7 +44,7 @@ export const UserInput = () => {
               handleSendMessage();
             }
           }}
-          disabled={isProcessing || !tokenStatus}
+          disabled={false}
           style={{ borderRadius: '30px' }}
         />
         {isProcessing ? (
@@ -45,7 +53,7 @@ export const UserInput = () => {
           <Button 
             onClick={handleSendMessage} 
             size="icon" 
-            disabled={!inputValue.trim() || !tokenStatus}
+            disabled={false}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-primary hover:bg-primary/90 h-9 w-9"
             aria-label="Send message"
           >

@@ -1,4 +1,4 @@
-import type { Tool } from '@/types.js';
+import type { Tool } from '@/types.ts';
 /**
  * Récupère la liste de tous les outils, en les chargeant s'ils ne le sont pas déjà.
  * C'est la fonction à utiliser dans toute l'application pour garantir une seule source de vérité.

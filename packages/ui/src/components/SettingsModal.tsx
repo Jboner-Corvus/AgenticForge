@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 
 import { useLanguage } from '../lib/contexts/LanguageContext';
-import { useStore } from '../lib/store';
+import { useCombinedStore } from '../store';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -16,16 +16,16 @@ interface SettingsModalProps {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const { translations } = useLanguage();
-  const setAuthToken = useStore((state) => state.setAuthToken);
-  const fetchAndDisplayToolCount = useStore((state) => state.fetchAndDisplayToolCount);
-  const addDebugLog = useStore((state) => state.addDebugLog);
-  const setToolCount = useStore((state) => state.setToolCount);
-  const setTokenStatus = useStore((state) => state.setTokenStatus);
-  const isLoadingTools = useStore((state) => state.isLoadingTools);
-  const isCanvasPinned = useStore((state) => state.isCanvasPinned);
-  const setCanvasPinned = useStore((state) => state.setCanvasPinned);
-  const canvasWidth = useStore((state) => state.canvasWidth);
-  const setCanvasWidth = useStore((state) => state.setCanvasWidth);
+  const setAuthToken = useCombinedStore((state) => state.setAuthToken);
+  const fetchAndDisplayToolCount = useCombinedStore((state) => state.fetchAndDisplayToolCount);
+  const addDebugLog = useCombinedStore((state) => state.addDebugLog);
+  const setToolCount = useCombinedStore((state) => state.setToolCount);
+  const setTokenStatus = useCombinedStore((state) => state.setTokenStatus);
+  const isLoadingTools = useCombinedStore((state) => state.isLoadingTools);
+  const isCanvasPinned = useCombinedStore((state) => state.isCanvasPinned);
+  const setCanvasPinned = useCombinedStore((state) => state.setCanvasPinned);
+  const canvasWidth = useCombinedStore((state) => state.canvasWidth);
+  const setCanvasWidth = useCombinedStore((state) => state.setCanvasWidth);
 
   const [tokenInputValue, setTokenInputValue] = useState<string>('');
   const [tempCanvasWidth, setTempCanvasWidth] = useState<number>(canvasWidth);

@@ -19,23 +19,16 @@
       "why": "You have sent too many requests to the Gemini API within a short period, exceeding your allocated quota. This is common with free-tier accounts or during heavy usage.",
       "how": "1. Wait for the quota to reset (usually a few minutes).\n2. Review your usage patterns and optimize API calls.\n3. Consider upgrading your plan or requesting a quota increase from Google Cloud if this is a recurring issue.",
       "last_seen": "2025-07-30T22:52:50.562Z"
+    },
+    {
+      "code": "STREAM_TIMEOUT",
+      "http_status_code": 504,
+      "provider": "qwen",
+      "reason": "The Qwen API request timed out while streaming the response.",
+      "exact_message": "stream timeout",
+      "why": "The Qwen API took too long to respond to the request, causing a timeout. This can happen due to network issues, high server load on Qwen's side, or complex requests that take longer to process.",
+      "how": "1. Retry the request as this may be a temporary issue.\n2. Check your network connection stability.\n3. Simplify your request if it was particularly complex.\n4. If the issue persists, consider using a different provider or model.\n5. The system automatically handles temporary errors by rotating to other API keys, so no immediate action is needed unless the issue persists.",
+      "last_seen": "2025-08-10T10:00:00.000Z"
     }
   ]
 }
-
-
-
-✕ [API Error: OpenAI API error: 429 Rate limit exceeded:
-  free-models-per-day-high-balance. ]
-
-
-│ ... first 436 lines hidden ...                            │
-│        at async                                           │
-│    file:///usr/lib/node_modules/@qwen-code/qwen-code/bund │
-│    le/gemini.js:255228:34                                 │
-│ ✖  OpenAI API Streaming Error: 429 Rate limit exceeded:   │
-│    free-models-per-day-high-balance.                      │
-│ ✖  Error when talking to Gemini API Full report available │
-│    at:                                                    │
-│    /tmp/gemini-client-error-Turn.run-sendMessageStream-20 │
-│    25-08-03T16-45-12-595Z.json   

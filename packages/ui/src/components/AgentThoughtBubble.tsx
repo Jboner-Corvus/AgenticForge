@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Card, CardContent } from './ui/card';
-import { Lightbulb } from 'lucide-react';
+import React from 'react';
+import { Brain, Clipboard } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Button } from './ui/button';
 
 interface ThoughtBubbleProps {
   content: string;
@@ -9,53 +9,51 @@ interface ThoughtBubbleProps {
 }
 
 export const AgentThoughtBubble: React.FC<ThoughtBubbleProps> = ({ content, timestamp }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const toggleExpansion = () => {
-    setIsExpanded((prev) => !prev);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(content);
   };
 
   return (
     <motion.div
+      className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 group"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      whileHover={{ y: -2 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
     >
-      <Card
-        className="bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200 text-amber-800 animate-fade-in cursor-pointer hover:from-yellow-100 hover:to-amber-100 rounded-2xl shadow-md transition-all duration-300 overflow-hidden"
-        onClick={toggleExpansion}
-        role="button"
-        tabIndex={0}
-        aria-expanded={isExpanded}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            toggleExpansion();
-          }
-        }}
-      >
-        <CardContent className="p-4 flex items-start space-x-3">
-          <div className="bg-yellow-100 rounded-full p-2 flex-shrink-0">
-            <Lightbulb className="h-5 w-5 text-yellow-600" />
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0 w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+          <Brain className="w-4 h-4 text-white" />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-blue-700 dark:text-blue-300 uppercase tracking-wide">
+              Réflexion
+            </span>
+            <motion.div
+              className="opacity-0 group-hover:opacity-100 transition-opacity"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 rounded-md"
+                onClick={handleCopy}
+              >
+                <Clipboard className="h-3 w-3" />
+              </Button>
+            </motion.div>
           </div>
-          <div className="flex-1 min-w-0">
-            <div className={`text-sm ${isExpanded ? 'max-h-96 overflow-y-auto pr-2' : 'line-clamp-2'}`}>
-              {isExpanded ? (
-                <p className="whitespace-pre-wrap break-words">{content}</p>
-              ) : (
-                <p className="italic">The agent is thinking... (click to expand)</p>
-              )}
+          <div className="text-sm text-blue-900 dark:text-blue-100 leading-relaxed font-mono whitespace-pre-wrap">
+            {content}
+          </div>
+          {timestamp && (
+            <div className="text-xs text-blue-600 dark:text-blue-400 mt-2 font-medium">
+              {timestamp}
             </div>
-            {timestamp && (
-              <div className="text-xs text-amber-600 mt-2 flex items-center">
-                <span className="w-2 h-2 rounded-full bg-yellow-400 mr-2"></span>
-                {timestamp}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 };

@@ -14,10 +14,11 @@ import { z } from 'zod';
 // Assurez-vous que chaque outil a un nom unique, une description pertinente pour le LLM,
 // et un schéma de paramètres Zod correct.
 // packages/core/src/tools/index.ts
-import type { Ctx as _Ctx, Tool } from '../../../types.js';
+import type { Ctx as _Ctx, Tool } from '../../../types.ts';
 
-import { getTools } from '../../../utils/toolLoader.js';
-import { finishTool, FinishToolSignal } from './system/finish.tool.js';
+import { getTools } from '../../../utils/toolLoader.ts';
+import { finishTool, FinishToolSignal } from './system/finish.tool.ts';
+import { clientConsoleTool } from './clientConsole.tool.ts';
 
 export const getAllTools = async (): Promise<
   Tool<z.AnyZodObject, z.ZodTypeAny>[]
@@ -25,6 +26,7 @@ export const getAllTools = async (): Promise<
   console.log('[getAllTools] function called');
   const tools = await getTools();
   tools.push(finishTool as unknown as Tool<z.AnyZodObject, z.ZodTypeAny>);
+  tools.push(clientConsoleTool as unknown as Tool<z.AnyZodObject, z.ZodTypeAny>);
   return tools;
 };
 

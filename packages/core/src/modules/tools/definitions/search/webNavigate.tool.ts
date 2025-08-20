@@ -2,7 +2,7 @@ import { z } from 'zod';
 import * as cheerio from 'cheerio';
 import { Readability } from '@mozilla/readability';
 
-import type { Ctx, Tool } from '../../../../types.js';
+import type { Ctx, Tool } from '../../../../types.ts';
 
 export const webNavigateParams = z.object({
   url: z.string().url().describe('The URL to navigate to.'),

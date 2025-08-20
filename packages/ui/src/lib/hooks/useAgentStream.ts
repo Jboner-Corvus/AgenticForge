@@ -1,7 +1,9 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { produce } from 'immer';
 import { sendMessage, interrupt } from '../api';
-import { useStore } from '../store';
+import { useSessionStore } from '../../store/sessionStore';
+import { useUIStore } from '../../store/uiStore';
+import { useCanvasStore } from '../../store/canvasStore'; // Import useCanvasStore
 import { type NewChatMessage, type AgentToolResult, type ChatMessage, type ToolResultMessage } from '@/types/chat';
 
 // Define the structure of messages coming from the stream
@@ -16,6 +18,8 @@ interface StreamMessage {
     | 'agent_response'
     | 'raw_llm_response'
     | 'error'
+    | 'llm_error'
+    | 'api_key_error'
     | 'close'
     | 'quota_exceeded'
     | 'browser.navigating'
@@ -27,7 +31,8 @@ interface StreamMessage {
     | 'agent_canvas_output'
     | 'agent_canvas_close'
     | 'cli_task_start'
-    | 'cli_task_end';
+    | 'cli_task_end'
+    | 'todo_list';
   content?: string;
   contentType?: 'html' | 'markdown' | 'url' | 'text';
   toolName?: string; // Added toolName here
@@ -35,15 +40,47 @@ interface StreamMessage {
   result?: Record<string, unknown>;
   message?: string;
   jobId?: string; // For CLI tasks
-  data?: {
-    name?: string;
-    args?: Record<string, unknown>;
-    content?: string;
-    url?: string;
-    length?: number;
-    message?: string;
+  data?: StreamMessageData;
+}
+
+// Define specific data structures for different message types
+interface ToolStartData {
+  name?: string;
+  args?: Record<string, unknown>;
+  content?: string;
+  canvas?: {
+    content: string;
+    contentType: 'html' | 'markdown' | 'url' | 'text';
   };
 }
+
+interface BrowserData {
+  url?: string;
+  length?: number;
+  message?: string;
+}
+
+interface TodoListData {
+  type?: string;
+  title?: string;
+  timestamp?: number;
+  todos?: Array<{
+    id: string;
+    content: string;
+    status: 'pending' | 'in_progress' | 'completed';
+    priority: 'low' | 'medium' | 'high';
+    category?: string;
+  }>;
+  stats?: {
+    pending: number;
+    in_progress: number;
+    completed: number;
+    total: number;
+  };
+}
+
+// Union type for all possible data structures
+type StreamMessageData = ToolStartData | BrowserData | TodoListData;
 
 const isAgentToolResult = (message: ChatMessage | undefined): message is AgentToolResult => {
   return (
@@ -54,29 +91,69 @@ const isAgentToolResult = (message: ChatMessage | undefined): message is AgentTo
   );
 };
 
+// Type guards for narrowing StreamMessageData union types
+const isToolStartData = (data: StreamMessageData | undefined): data is ToolStartData => {
+  if (!data) return false;
+  return 'name' in data || 'args' in data || 'content' in data || 'canvas' in data;
+};
+
+const isBrowserData = (data: StreamMessageData | undefined): data is BrowserData => {
+  if (!data) return false;
+  return 'url' in data || 'length' in data || 'message' in data;
+};
+
 export const useAgentStream = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
+  const responseCountRef = useRef<number>(0); // Compteur des réponses pour limiter à 5 étapes
+  
+  // 🚨 IMPORTANT: Obtenir le token d'authentification BACKEND (PAS un token LLM !)
+  // Ce token sert à authentifier les requêtes vers l'API AgenticForge
+  const backendAuthToken = useUIStore((state) => state.authToken);
+  
+  // Renommer pour plus de clarté - ce n'est PAS un token LLM
+  const authToken = backendAuthToken;
 
-  const {
-    addMessage,
-    authToken,
-    sessionId,
-    setIsProcessing,
-    setJobId,
-    setMessageInputValue,
-    setAgentStatus,
-    addDebugLog,
-    setAgentProgress,
-    setBrowserStatus,
-    setActiveCliJobId,
-    addCanvasToHistory,
-  } = useStore();
+  // Session store for messages
+  const addMessage = useSessionStore((state) => state.addMessage);
+  const sessionId = useSessionStore((state) => state.sessionId);
+  const setSessionId = useSessionStore((state) => state.setSessionId);
+  
+  // UI store for other state
+  const setIsProcessing = useUIStore((state) => state.setIsProcessing);
+  const setJobId = useUIStore((state) => state.setJobId);
+  const setMessageInputValue = useUIStore((state) => state.setMessageInputValue);
+  const setAgentStatus = useUIStore((state) => state.setAgentStatus);
+  const addDebugLog = useUIStore((state) => state.addDebugLog);
+  const setAgentProgress = useUIStore((state) => state.setAgentProgress);
+  const setBrowserStatus = useUIStore((state) => state.setBrowserStatus);
+  const setActiveCliJobId = useUIStore((state) => state.setActiveCliJobId);
+  const isProcessing = useUIStore((state) => state.isProcessing);
+  const jobIdStore = useUIStore((state) => state.jobId);
+  
+  // Get addCanvasToHistory from canvas store
+  const addCanvasToHistory = useCanvasStore((state) => state.addCanvasToHistory);
 
   const startAgent = useCallback(async (message: string) => {
-    console.log('🚀 [useAgentStream] startAgent called');
-    console.log('📝 [useAgentStream] message:', message);
-    console.log('🔐 [useAgentStream] authToken available:', !!authToken);
+    console.log('🔥🔥🔥 [DEBUG] startAgent called with message:', message);
+    console.log('🔥🔥🔥 [DEBUG] authToken available:', !!authToken);
+    console.log('🔥🔥🔥 [DEBUG] sessionId:', sessionId);
+    console.log('🔥🔥🔥 [DEBUG] addMessage function:', typeof addMessage);
+    console.log('🔐 [useAgentStream] authTokenFromStore:', backendAuthToken);
+    console.log('🔐 [useAgentStream] authToken (final):', authToken);
+    console.log('🔐 [useAgentStream] authToken type:', typeof authToken);
+    console.log('🔐 [useAgentStream] authToken length:', authToken?.length);
+    console.log('🔐 [useAgentStream] authToken first 30 chars:', authToken?.substring(0, 30));
     console.log('🆔 [useAgentStream] sessionId available:', !!sessionId);
+    console.log('🆔 [useAgentStream] sessionId value:', sessionId);
+    
+    // 🚨 TOKEN BACKEND AUTHENTICATION LOGGING
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] 🔐 === ANALYSE TOKEN BACKEND ===`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] Backend Token: ${backendAuthToken ? `PRÉSENT (${backendAuthToken.substring(0, 30)}...)` : 'ABSENT'}`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] Final Auth Token: ${authToken ? `PRÉSENT (${authToken.substring(0, 30)}...)` : 'ABSENT'}`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] Token Length: ${authToken?.length || 0}`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] Session ID: ${sessionId}`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] IMPORTANT: Ceci est le token BACKEND, pas un token LLM !`);
+    addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] === FIN ANALYSE TOKEN BACKEND ===`);
     
     if (!message.trim()) {
       console.warn('⚠️ [useAgentStream] Empty message, aborting');
@@ -85,54 +162,52 @@ export const useAgentStream = () => {
     }
 
     if (!authToken) {
-      console.error('❌ [useAgentStream] No authToken available');
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Token d'authentification manquant`);
+      console.error('❌ [useAgentStream] No backend authToken available');
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Token d'authentification BACKEND manquant`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] IMPORTANT: Il faut un token AUTH_TOKEN pour accéder au backend AgenticForge`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Ce n'est PAS lié aux clés LLM - c'est pour l'authentification backend`);
       const errorMessage: NewChatMessage = {
         type: 'error',
-        content: 'Token d\'authentification manquant. Veuillez vous reconnecter.',
+        content: '🔐 ERREUR AUTHENTIFICATION BACKEND\n\nToken d\'authentification backend manquant (AUTH_TOKEN).\n\nℹ️ Ceci est différent des clés LLM - il s\'agit du token pour accéder au backend AgenticForge.\n\nVérifiez votre configuration AUTH_TOKEN.',
       };
       addMessage(errorMessage);
       return;
     }
 
-    if (!sessionId) {
-      console.error('❌ [useAgentStream] No sessionId available');
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] ID de session manquant`);
-      const errorMessage: NewChatMessage = {
-        type: 'error',
-        content: 'ID de session manquant. Veuillez recharger la page.',
-      };
-      addMessage(errorMessage);
-      return;
+    // Créer un sessionId si nécessaire
+    let currentSessionId = sessionId;
+    if (!currentSessionId) {
+      console.log('📝 [useAgentStream] Creating new sessionId');
+      currentSessionId = crypto.randomUUID();
+      setSessionId(currentSessionId);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Nouvelle session créée: ${currentSessionId}`);
     }
 
-    console.log('✅ [useAgentStream] Starting agent process...');
+    console.log('🔥🔥🔥 [DEBUG] Starting agent process...');
     setIsProcessing(true);
     const userMessage: NewChatMessage = {
       type: 'user',
       content: message,
     };
+    console.log('🔥🔥🔥 [DEBUG] About to call addMessage with:', userMessage);
     addMessage(userMessage);
+    console.log('🔥🔥🔥 [DEBUG] addMessage called successfully');
     const goal = message;
     setMessageInputValue('');
+    
+    // Réinitialiser le compteur de réponses au début d'une nouvelle conversation
+    responseCountRef.current = 0;
     
     addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🚀 Démarrage de l'agent avec le message: "${goal}"`);
 
     const handleClose = () => {
       addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] handleClose called. Current EventSource state: ${eventSourceRef.current?.readyState}`);
-      // Force console log to debug
-      if (window.console?.log) {
-        window.console.log('handleClose called. Current EventSource state:', eventSourceRef.current?.readyState);
-      }
       
       setIsProcessing(false);
       setJobId(null);
       
       if (eventSourceRef.current) {
         addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Closing EventSource connection`);
-        if (window.console?.log) {
-          window.console.log('Closing EventSource connection');
-        }
         eventSourceRef.current.close(); // Close the EventSource
         eventSourceRef.current = null;
       }
@@ -142,12 +217,38 @@ export const useAgentStream = () => {
 
     const handleError = (error: Error) => {
       console.error('❌ [useAgentStream] ERROR:', error);
-      const errorMessage: NewChatMessage = {
-        type: 'error',
-        content: `🚨 ERREUR AGENT: ${error.message}`,
-      };
-      addMessage(errorMessage);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] 🚨 ERREUR CRITIQUE: ${error.message}`);
+      
+      // Détecter les types d'erreurs spécifiques
+      const errorMessage = error.message.toLowerCase();
+      let chatMessage: NewChatMessage;
+      
+      if (errorMessage.includes('invalid_api_key') || errorMessage.includes('token expired') || errorMessage.includes('unauthorized')) {
+        chatMessage = {
+          type: 'error',
+          content: `🔑 ERREUR CLÉ API: ${error.message}\n\n💡 Solution: Votre clé API est expirée ou invalide. Veuillez la renouveler dans le gestionnaire de clés LLM.`,
+        };
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [API_KEY_ERROR] 🔑 ${error.message}`);
+      } else if (errorMessage.includes('quota') || errorMessage.includes('rate limit') || errorMessage.includes('limit exceeded')) {
+        chatMessage = {
+          type: 'error',
+          content: `📊 QUOTA DÉPASSÉ: ${error.message}\n\n💡 Solution: Attendez un moment ou changez de clé API.`,
+        };
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [QUOTA_ERROR] 📊 ${error.message}`);
+      } else if (errorMessage.includes('network') || errorMessage.includes('connection') || errorMessage.includes('timeout')) {
+        chatMessage = {
+          type: 'error',
+          content: `🌐 ERREUR RÉSEAU: ${error.message}\n\n💡 Solution: Vérifiez votre connexion internet et réessayez.`,
+        };
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [NETWORK_ERROR] 🌐 ${error.message}`);
+      } else {
+        chatMessage = {
+          type: 'error',
+          content: `🚨 ERREUR AGENT: ${error.message}`,
+        };
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] 🚨 ERREUR CRITIQUE: ${error.message}`);
+      }
+      
+      addMessage(chatMessage);
       console.error('🔥 Agent stream error details:', {
         error,
         message: error.message,
@@ -161,13 +262,30 @@ export const useAgentStream = () => {
     };
 
     const handleMessage = (content: string) => {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Agent response: ${content}`);
+      responseCountRef.current += 1;
+      
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Agent response (${responseCountRef.current}/5): ${content}`);
+      
       const agentMessage: NewChatMessage = {
         type: 'agent_response',
         content,
       };
       addMessage(agentMessage);
-      setAgentProgress(Math.min(99, useStore.getState().agentProgress + 5));
+      
+      // Calculer le progrès basé sur le nombre d'étapes (20% par étape)
+      const progressIncrement = Math.min(99, responseCountRef.current * 20);
+      setAgentProgress(progressIncrement);
+      
+      // Arrêter après 5 étapes automatiquement
+      if (responseCountRef.current >= 5) {
+        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🛑 Limite de 5 étapes atteinte - Arrêt automatique`);
+        setTimeout(() => {
+          handleClose();
+          setAgentProgress(100);
+          setIsProcessing(false);
+          setAgentStatus(null);
+        }, 1000);
+      }
     };
 
     const handleThought = (thought: string) => {
@@ -228,11 +346,32 @@ export const useAgentStream = () => {
         
         // Log all incoming messages for debugging
         addDebugLog(`[${new Date().toLocaleTimeString()}] [STREAM] 🏷️ Type de message reçu: ${data.type}`);
+        
+        // Détecter les erreurs d'API dans n'importe quel message
+        const messageContent = data.content || data.message || JSON.stringify(data.result || {});
+        if (messageContent && typeof messageContent === 'string') {
+          const contentLower = messageContent.toLowerCase();
+          if (contentLower.includes('invalid_api_key') || 
+              contentLower.includes('invalid access token') || 
+              contentLower.includes('token expired') ||
+              contentLower.includes('unauthorized') ||
+              contentLower.includes('authentication failed')) {
+            console.warn('🔑 [useAgentStream] API key error detected in message content!');
+            const apiErrorMessage: NewChatMessage = {
+              type: 'error',
+              content: `🔑 ERREUR CLÉ API DÉTECTÉE: ${messageContent}\n\n💡 Solution: Votre clé API semble expirée ou invalide. Veuillez la vérifier dans le gestionnaire de clés LLM.`,
+            };
+            addMessage(apiErrorMessage);
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [API_KEY_ERROR] 🔑 Erreur détectée: ${messageContent}`);
+            setIsProcessing(false);
+            return; // Ne pas traiter le message normalement
+          }
+        }
 
         switch (data.type) {
           case 'tool_stream':
-            if (data.data?.content) {
-              useStore.setState(produce((state: { messages: ChatMessage[] }) => {
+            if (data.data && isToolStartData(data.data) && data.data.content) {
+              useSessionStore.setState(produce((state: { messages: ChatMessage[] }) => {
                 const lastMessage = state.messages[state.messages.length - 1];
                 const getLastToolName = (messages: ChatMessage[]): string | undefined => {
                   for (let i = messages.length - 1; i >= 0; i--) {
@@ -246,18 +385,18 @@ export const useAgentStream = () => {
                 const inferredToolName = getLastToolName(state.messages);
 
                 // Prioritize toolName from the stream message itself
-                const streamToolName = data.toolName || data.data?.name;
+                const streamToolName = data.toolName || (data.data as ToolStartData).name;
                 const finalToolName = streamToolName || inferredToolName || 'unknown_tool';
 
                 if (isAgentToolResult(lastMessage) && lastMessage.toolName === finalToolName) {
-                  lastMessage.result.output += data.data?.content ?? '';
+                  lastMessage.result.output += (data.data as ToolStartData).content ?? '';
                 } else {
                   const newToolResult: ToolResultMessage = {
                     id: crypto.randomUUID(),
                     timestamp: Date.now(),
                     type: 'tool_result',
                     toolName: finalToolName,
-                    result: { output: data.data?.content ?? '' },
+                    result: { output: (data.data as ToolStartData).content ?? '' },
                   } as ToolResultMessage; // Explicitly cast to avoid type issues
                   state.messages.push(newToolResult);
                 }
@@ -273,36 +412,38 @@ export const useAgentStream = () => {
             break;
           }
           case 'tool.start': { // New case for backend's tool.start event
-            const toolName = data.data?.name;
-            const params = data.data?.args;
-            
-            // Handle canvas output if present in tool args
-            if (params && typeof params === 'object' && 'canvas' in params) {
-              const canvas = params.canvas as { content: string; contentType: 'html' | 'markdown' | 'url' | 'text' };
-              console.log('🎨 [useAgentStream] CANVAS OUTPUT received!');
-              console.log('🎨 [useAgentStream] Canvas content type:', canvas.contentType);
-              console.log('🎨 [useAgentStream] Canvas content length:', canvas.content.length);
+            if (data.data && isToolStartData(data.data)) {
+              const toolName = (data.data as ToolStartData).name;
+              const params = (data.data as ToolStartData).args;
               
-              addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas reçu ! Type: ${canvas.contentType}, Taille: ${canvas.content.length}`);
+              // Handle canvas output if present in tool args
+              if (params && typeof params === 'object' && 'canvas' in params) {
+                const canvas = params.canvas as { content: string; contentType: 'html' | 'markdown' | 'url' | 'text' };
+                console.log('🎨 [useAgentStream] CANVAS OUTPUT received!');
+                console.log('🎨 [useAgentStream] Canvas content type:', canvas.contentType);
+                console.log('🎨 [useAgentStream] Canvas content length:', canvas.content.length);
+                
+                addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas reçu ! Type: ${canvas.contentType}, Taille: ${canvas.content.length}`);
+                
+                // Add canvas to history instead of just setting content
+                const canvasTitle = `Canvas ${new Date().toLocaleTimeString()}`;
+                addCanvasToHistory(canvasTitle, canvas.content, canvas.contentType);
+                
+                console.log('🎨 [useAgentStream] Canvas content updated in store!');
+                addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas mis à jour dans le store et rendu visible!`);
+                
+                // Send canvas output message
+                const canvasMessage: NewChatMessage = {
+                  type: 'agent_canvas_output',
+                  content: canvas.content,
+                  contentType: canvas.contentType,
+                };
+                addMessage(canvasMessage);
+              }
               
-              // Add canvas to history instead of just setting content
-              const canvasTitle = `Canvas ${new Date().toLocaleTimeString()}`;
-              addCanvasToHistory(canvasTitle, canvas.content, canvas.contentType);
-              
-              console.log('🎨 [useAgentStream] Canvas content updated in store!');
-              addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas mis à jour dans le store et rendu visible!`);
-              
-              // Send canvas output message
-              const canvasMessage: NewChatMessage = {
-                type: 'agent_canvas_output',
-                content: canvas.content,
-                contentType: canvas.contentType,
-              };
-              addMessage(canvasMessage);
-            }
-            
-            if (toolName && params) {
-              handleToolCall(toolName, params as Record<string, unknown>); // Cast params to correct type
+              if (toolName && params) {
+                handleToolCall(toolName, params as Record<string, unknown>); // Cast params to correct type
+              }
             }
             break;
           }
@@ -331,23 +472,55 @@ export const useAgentStream = () => {
           case 'error':
             if (data.message) handleError(new Error(data.message));
             break;
+          case 'llm_error':
+            if (data.message) {
+              console.error('🚨 [useAgentStream] LLM ERROR:', data.message);
+              const llmErrorMessage: NewChatMessage = {
+                type: 'error',
+                content: `🚨 ERREUR LLM: ${data.message}`,
+              };
+              addMessage(llmErrorMessage);
+              addDebugLog(`[${new Date().toLocaleTimeString()}] [LLM_ERROR] 🚨 ${data.message}`);
+              setIsProcessing(false);
+            }
+            break;
+          case 'api_key_error':
+            if (data.message) {
+              console.error('🔑 [useAgentStream] API KEY ERROR:', data.message);
+              const apiKeyErrorMessage: NewChatMessage = {
+                type: 'error',
+                content: `🔑 ERREUR CLÉ API: ${data.message}\n\n💡 Solution: Vérifiez vos clés API dans le gestionnaire de clés LLM.`,
+              };
+              addMessage(apiKeyErrorMessage);
+              addDebugLog(`[${new Date().toLocaleTimeString()}] [API_KEY_ERROR] 🔑 ${data.message}`);
+              setIsProcessing(false);
+            }
+            break;
           case 'quota_exceeded':
               if (data.message) handleError(new Error(data.message));
               break;
           case 'browser.navigating':
-            setBrowserStatus(`Navigating to ${data.data?.url}`);
+            if (data.data && isBrowserData(data.data)) {
+              setBrowserStatus(`Navigating to ${(data.data as BrowserData).url}`);
+            }
             break;
           case 'browser.page.created':
             setBrowserStatus('Page created');
             break;
           case 'browser.page.loaded':
-            setBrowserStatus(`Page loaded: ${data.data?.url}`);
+            if (data.data && isBrowserData(data.data)) {
+              setBrowserStatus(`Page loaded: ${(data.data as BrowserData).url}`);
+            }
             break;
           case 'browser.content.extracted':
-            setBrowserStatus(`Content extracted: ${data.data?.length} bytes`);
+            if (data.data && isBrowserData(data.data)) {
+              setBrowserStatus(`Content extracted: ${(data.data as BrowserData).length} bytes`);
+            }
             break;
           case 'browser.error':
-            setBrowserStatus(`Error: ${data.data?.message}`);
+            if (data.data && isBrowserData(data.data)) {
+              setBrowserStatus(`Error: ${(data.data as BrowserData).message}`);
+            }
             break;
           case 'browser.closed':
             setBrowserStatus('Browser closed');
@@ -381,6 +554,21 @@ export const useAgentStream = () => {
           case 'cli_task_end':
             setActiveCliJobId(null);
             break;
+          case 'todo_list':
+            console.log('📝 [useAgentStream] TODO_LIST message received!');
+            addDebugLog(`[${new Date().toLocaleTimeString()}] [TODO] 📝 Todo list reçue !`);
+            // Forward the todo list data to any listening components via postMessage
+            if (data.data) {
+              window.postMessage({ type: 'todo_list', data: data.data }, '*');
+              console.log('📤 [useAgentStream] Todo list forwarded to components');
+              
+              // Also add to canvas history for Mission Control display
+              const todoData = data.data as TodoListData;
+              const canvasTitle = todoData.title || `Todo List ${new Date().toLocaleTimeString()}`;
+              const canvasContent = JSON.stringify(todoData);
+              addCanvasToHistory(canvasTitle, canvasContent, 'json');
+            }
+            break;
           case 'close':
             addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Received 'close' message from server`);
             console.log('Received close message from server');
@@ -404,10 +592,18 @@ export const useAgentStream = () => {
       console.log('🔄 [useAgentStream] Calling sendMessage...');
       addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🔄 Appel de sendMessage pour: ${goal}`);
       
+      // 🚨 BACKEND AUTH: Log exactly what we're sending to backend
+      console.log('🚨 [BACKEND-AUTH] About to call sendMessage with:');
+      console.log('🚨 [BACKEND-AUTH] goal:', goal);
+      console.log('🚨 [BACKEND-AUTH] backend authToken:', authToken);
+      console.log('🚨 [BACKEND-AUTH] sessionId:', sessionId);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] 🚨 ENVOI VERS BACKEND - Token: ${authToken?.substring(0, 30)}... Session: ${sessionId}`);
+      addDebugLog(`[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] NOTE: Les clés LLM sont gérées séparément par le backend`);
+      
       const { jobId, eventSource } = await sendMessage(
         goal,
         authToken,
-        sessionId,
+        currentSessionId,
         onMessage,
         (error) => {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -446,7 +642,7 @@ export const useAgentStream = () => {
             clearInterval(monitorInterval);
             
             // Attempt to reconnect if we're still processing
-            if (useStore.getState().isProcessing) {
+            if (isProcessing) {
               console.log('🔄 [useAgentStream] Attempting to reconnect...');
               addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] 🔄 Tentative de reconnexion...`);
               setTimeout(() => startAgent('Reconnection attempt'), 3000);
@@ -471,7 +667,8 @@ export const useAgentStream = () => {
     }
   }, [
     addCanvasToHistory,
-    authToken,
+    authToken, // Backend auth token (not LLM key!)
+    backendAuthToken, // Same as authToken, for clarity
     sessionId,
     addMessage,
     setIsProcessing,
@@ -482,18 +679,51 @@ export const useAgentStream = () => {
     setAgentProgress,
     setBrowserStatus,
     setActiveCliJobId,
+    isProcessing,
+    setSessionId
   ]);
 
   const interruptAgent = useCallback(async () => {
-    const { jobId, authToken, sessionId } = useStore.getState();
+    const jobId = jobIdStore;
     if (jobId && eventSourceRef.current) {
-      await interrupt(jobId, authToken, sessionId);
+      await interrupt(jobId, authToken, sessionId || 'unknown');
       eventSourceRef.current.close(); // Close EventSource directly
       eventSourceRef.current = null;
-      useStore.getState().setIsProcessing(false);
-      useStore.getState().setJobId(null);
+      setIsProcessing(false);
+      setJobId(null);
     }
+  }, [setIsProcessing, setJobId, jobIdStore, authToken, sessionId]);
+
+  // Cleanup effect pour éviter les fuites mémoire
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        console.log('🧹 [useAgentStream] Cleaning up EventSource on unmount');
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    };
   }, []);
+
+  // Effect pour nettoyer les connexions en cas de changement de session
+  useEffect(() => {
+    const cleanup = () => {
+      if (eventSourceRef.current && eventSourceRef.current.readyState !== 2) {
+        console.log('🧹 [useAgentStream] Cleaning up active EventSource for session change');
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+        setIsProcessing(false);
+      }
+    };
+
+    // Cleanup si changement de session
+    const currentSessionId = sessionId;
+    return () => {
+      if (currentSessionId !== sessionId) {
+        cleanup();
+      }
+    };
+  }, [sessionId, setIsProcessing]);
 
   return {
     startAgent,

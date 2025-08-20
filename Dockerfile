@@ -26,7 +26,7 @@ FROM node:20-alpine
 
 WORKDIR /usr/src/app
 
-# Install Chromium for Puppeteer
+# Install Chromium for Puppeteer/Playwright
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -46,13 +46,14 @@ COPY .env ./
 # Install curl for healthcheck
 RUN apk add --no-cache curl
 
-# Supprimer pnpm si non nécessaire à l'exécution
-# RUN npm uninstall -g pnpm # Uncomment if pnpm is not needed at runtime
-
 RUN mkdir -p workspace
 
-# Set environment variables for Puppeteer
+# Skip Playwright install for faster builds
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PLAYWRIGHT_BROWSERS_PATH=0
+
+# Set default API base URL (can be overridden at runtime)
+ENV VITE_API_BASE_URL=/
 
 EXPOSE 8080 3000
 

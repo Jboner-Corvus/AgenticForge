@@ -1,6 +1,6 @@
-import type { SessionData } from '@/types.js';
+import type { SessionData } from '@/types.ts';
 
-import { type ErrorDetails } from './errorUtils.js';
+import { type ErrorDetails } from './errorUtils.ts';
 export interface EnqueueParams<TParams> {
   auth: SessionData | undefined;
   cbUrl?: string;

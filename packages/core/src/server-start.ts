@@ -1,9 +1,9 @@
 import { Client as PgClient } from 'pg';
 
-import { config, loadConfig } from './config.js';
-import { getLoggerInstance } from './logger.js';
-import { getRedisClientInstance } from './modules/redis/redisClient.js';
-import { initializeWebServer } from './webServer.js';
+import { config, loadConfig } from './config.ts';
+import { getLoggerInstance } from './logger.ts';
+import { getRedisClientInstance } from './modules/redis/redisClient.ts';
+import { initializeWebServer } from './webServer.ts';
 
 async function startServer() {
   await loadConfig(); // Load configuration

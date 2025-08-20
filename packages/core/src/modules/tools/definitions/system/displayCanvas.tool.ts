@@ -1,5 +1,5 @@
-import { Tool } from '../../../../types.js';
-import { sendToCanvas } from '../../../../utils/canvasUtils.js';
+import { Tool } from '../../../../types.ts';
+import { sendToCanvas } from '../../../../utils/canvasUtils.ts';
 import { z } from 'zod';
 
 const DisplayCanvasParams = z.object({

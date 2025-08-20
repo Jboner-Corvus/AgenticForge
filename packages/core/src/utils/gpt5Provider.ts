@@ -1,8 +1,8 @@
-import { getConfig } from '../config.js';
-import { getLogger } from '../logger.js';
-import { LLMContent, LlmError, LlmKeyErrorType } from '../modules/llm/llm-types.js';
-import { LlmApiKey, LlmKeyManager } from '../modules/llm/LlmKeyManager.js';
-import { getRedisClientInstance } from '../modules/redis/redisClient.js';
+import { getConfig } from '../config.ts';
+import { getLogger } from '../logger.ts';
+import { LLMContent, LlmError, LlmKeyErrorType } from '../modules/llm/llm-types.ts';
+import { LlmApiKey, LlmKeyManager } from '../modules/llm/LlmKeyManager.ts';
+import { getRedisClientInstance } from '../modules/redis/redisClient.ts';
 
 export interface Gpt5ReasoningOptions {
   effort: 'high' | 'low' | 'medium' | 'minimal';

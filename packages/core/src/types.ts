@@ -1,11 +1,12 @@
 import type { Context as FastMCPContext } from 'fastmcp';
 import type { Redis as _Redis } from 'ioredis';
 
-import { Queue } from 'bullmq';
-import { Job } from 'bullmq';
+import { Queue, Job } from 'bullmq';
 import { z, ZodTypeAny } from 'zod';
 
-import { SessionManager } from './modules/session/sessionManager.js';
+export { Job } from 'bullmq';
+
+import { SessionManager } from './modules/session/sessionManager.ts';
 
 export interface AgentCanvasOutputMessage {
   content: string;
@@ -22,7 +23,7 @@ export interface AgentResponseMessage {
   type: 'agent_response';
 }
 
-import type { LLMContent } from './modules/llm/llm-types.js';
+import type { LLMContent } from './modules/llm/llm-types.ts';
 
 export interface AgentSession {
   data: SessionData;
@@ -62,7 +63,7 @@ export interface ILlmProvider {
   ): Promise<string>;
 }
 
-import { LlmKeyErrorType } from './modules/llm/LlmKeyManager.js';
+import { LlmKeyErrorType } from './modules/llm/LlmKeyManager.ts';
 
 export type Message =
   | AgentCanvasOutputMessage

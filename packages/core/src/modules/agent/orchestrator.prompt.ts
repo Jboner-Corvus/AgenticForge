@@ -14,9 +14,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // FICHIER : src/prompts/orchestrator.prompt.ts
-import type { AgentSession, Message, Tool } from '../../types.js';
+import type { AgentSession, Message, Tool } from '../../types.ts';
 
-import { getResponseJsonSchema } from './responseSchema.js';
+import { getResponseJsonSchema } from './responseSchema.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,6 +69,11 @@ const zodToJsonSchema = (_schema: any): any => {
   }
 
   switch (_schema._def.typeName) {
+    case 'ZodAny':
+      // ZodAny accepts any type of value
+      jsonSchema.type = ['string', 'number', 'boolean', 'object', 'array', 'null'];
+      jsonSchema.description = 'Accepts any type of value';
+      break;
     case 'ZodArray':
       jsonSchema.type = 'array';
       jsonSchema.items = zodToJsonSchema(_schema._def.type); // _schema._def.type holds the element _schema
@@ -116,6 +121,18 @@ const zodToJsonSchema = (_schema: any): any => {
     case 'ZodString':
       jsonSchema.type = 'string';
       break;
+    case 'ZodUnknown':
+      // ZodUnknown is similar to ZodAny but more explicit about accepting unknown values
+      jsonSchema.type = ['string', 'number', 'boolean', 'object', 'array', 'null'];
+      jsonSchema.description = 'Accepts unknown type of value';
+      break;
+    case 'ZodRecord':
+      // ZodRecord represents an object with string keys and typed values
+      jsonSchema.type = 'object';
+      jsonSchema.additionalProperties = _schema._def.valueType ? 
+        zodToJsonSchema(_schema._def.valueType) : 
+        { type: ['string', 'number', 'boolean', 'object', 'array', 'null'] };
+      break;
     case 'ZodUnion':
       jsonSchema.anyOf = _schema._def.options.map((option: any) =>
         zodToJsonSchema(option),
@@ -137,13 +154,21 @@ const zodToJsonSchema = (_schema: any): any => {
 };
 
 const formatToolForPrompt = (tool: Tool): string => {
-  if (
-    !tool.parameters ||
-    !('shape' in tool.parameters) ||
-    Object.keys(tool.parameters.shape).length === 0
-  ) {
+  console.log('tool.parameters:', tool.parameters);
+  if (!tool.parameters) {
     return `### ${tool.name}\nDescription: ${tool.description}\nParameters: None\n`;
   }
+  
+  // Check if parameters is a valid Zod schema
+  if (typeof tool.parameters !== 'object' || !('_def' in tool.parameters)) {
+    throw new Error('Invalid Zod schema provided');
+  }
+  
+  // Check if it's an empty schema or has no shape
+  if (!('shape' in tool.parameters) || Object.keys(tool.parameters.shape).length === 0) {
+    return `### ${tool.name}\nDescription: ${tool.description}\nParameters: None\n`;
+  }
+  
   const params = JSON.stringify(zodToJsonSchema(tool.parameters), null, 2);
   return `### ${tool.name}\nDescription: ${tool.description}\nParameters (JSON Schema):\n${params}\n`;
 };
@@ -155,8 +180,7 @@ const formatHistoryMessage = (message: Message): string => {
   switch (message.type) {
     case 'agent_canvas_output':
       role = 'ASSISTANT';
-      content = `Canvas Output (${message.contentType}):
-${message.content}`;
+      content = `Canvas Output (${message.contentType}):\n${message.content}`;
       break;
     case 'agent_response':
       role = 'ASSISTANT';

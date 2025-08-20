@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../../../types.js';
+import type { Ctx, Tool } from '../../../../types.ts';
 
 export const parameters = z.object({
   response: z.string().describe('The final, complete answer to the user.'),

@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { getLoggerInstance } from '../../logger.js';
+import { getLoggerInstance } from '../../logger.ts';
 
 // Mock logger
-vi.mock('../../logger.js', () => ({
+vi.mock('../../logger.ts', () => ({
   getLoggerInstance: vi.fn(() => ({
     child: vi.fn().mockReturnThis(),
     debug: vi.fn(),

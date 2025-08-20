@@ -1,3 +1,9 @@
+// packages/ui/src/lib/store.ts
+// 🚨 IMPORTANT: AUTH TOKEN CLARIFICATION
+// authToken = Token d'authentification BACKEND pour l'accès à l'API AgenticForge
+// LLM API Keys = Gérées séparément dans llmApiKeys (ce sont les clés pour OpenAI, Anthropic, etc.)
+// 📝 NE PAS confondre ces deux types de tokens!
+
 import { create } from 'zustand';
 
 import { getTools, saveSessionApi, loadSessionApi, deleteSessionApi, renameSessionApi, addLlmApiKeyApi, removeLlmApiKeyApi, editLlmApiKeyApi, getLeaderboardStats, getLlmApiKeysApi, loadAllSessionsApi, setActiveLlmProviderApi } from './api';
@@ -36,7 +42,7 @@ export interface AppState {
   addMessage: (item: NewChatMessage) => void;
   agentStatus: string | null;
   toolStatus: string;
-  authToken: null | string;
+  authToken: null | string; // Token d'authentification BACKEND (pas LLM!)
   browserStatus: string;
   clearDebugLog: () => void;
   clearMessages: () => void;
@@ -126,7 +132,7 @@ export interface AppState {
   sessionStatus: 'error' | 'unknown' | 'valid';
   setAgentStatus: (agentStatus: string | null) => void;
   setToolStatus: (toolStatus: string) => void;
-  setAuthToken: (authToken: null | string) => void;
+  setAuthToken: (authToken: null | string) => void; // Pour l'auth backend seulement
   setBrowserStatus: (status: string) => void;
   setCodeExecutionEnabled: (codeExecutionEnabled: boolean) => void;
   
@@ -310,19 +316,51 @@ export const useStore = create<AppState>((set, get) => ({
   isLoadingLeaderboardStats: false,
 
   // LLM API Key Management initialization
-  llmApiKeys: [],
-  activeLlmApiKeyIndex: -1, // -1 indicates no key is active
+  llmApiKeys: (() => {
+    try {
+      const saved = localStorage.getItem('agenticForgeLlmApiKeys');
+      if (saved) {
+        const keys = JSON.parse(saved);
+        // Remove duplicates based on provider and key combination
+        const uniqueKeys = keys.filter((key: LlmApiKey, index: number, arr: LlmApiKey[]) => 
+          arr.findIndex(k => k.provider === key.provider && k.key === key.key) === index
+        );
+        // If duplicates were found, save the cleaned version
+        if (uniqueKeys.length !== keys.length) {
+          console.log('🔑 [CLEANUP] Removed duplicate LLM API keys');
+          localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(uniqueKeys));
+        }
+        return uniqueKeys;
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  })(),
+  activeLlmApiKeyIndex: (() => {
+    try {
+      const saved = localStorage.getItem('agenticForgeActiveLlmKeyIndex');
+      return saved ? parseInt(saved, 10) : -1;
+    } catch {
+      return -1;
+    }
+  })(), // -1 indicates no key is active
 
   sessionStatus: 'unknown',
   setAgentStatus: (agentStatus) => set({ agentStatus }),
   setToolStatus: (toolStatus) => set({ toolStatus }),
-  setAuthToken: (authToken) => set({ authToken }),
+  setAuthToken: (authToken) => {
+    console.log('🔐 [Store] Setting backend auth token (not LLM key):', authToken?.substring(0, 30) + '...');
+    set({ authToken });
+  },
   setBrowserStatus: (status) => set({ browserStatus: status }),
   setCodeExecutionEnabled: (codeExecutionEnabled) => set({ codeExecutionEnabled }),
   
   setIsProcessing: (isProcessing) => set((state) => {
     if (state.isProcessing && !isProcessing && state.agentStatus !== 'error') {
-      state.updateLeaderboardStats({ successfulRuns: 1 });
+      setTimeout(() => {
+        get().updateLeaderboardStats({ successfulRuns: 1 });
+      }, 0);
     }
     return { isProcessing };
   }),
@@ -389,7 +427,9 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       await addLlmApiKeyApi(provider, key, baseUrl, model);
       const llmApiKeys = get().llmApiKeys; // Get current keys
-      set({ llmApiKeys: [...llmApiKeys, { provider, key, baseUrl, model }] });
+      const newKeys = [...llmApiKeys, { provider, key, baseUrl, model }];
+      set({ llmApiKeys: newKeys });
+      localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(newKeys));
       updateLeaderboardStats({ apiKeysAdded: 1 });
     } catch (error) {
       console.error("Failed to add LLM API key to backend:", error);
@@ -404,6 +444,8 @@ export const useStore = create<AppState>((set, get) => ({
       await removeLlmApiKeyApi(index);
       const newKeys = get().llmApiKeys.filter((_, i) => i !== index);
       set({ llmApiKeys: newKeys, activeLlmApiKeyIndex: -1 });
+      localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(newKeys));
+      localStorage.setItem('agenticForgeActiveLlmKeyIndex', '-1');
     } catch (error) {
       console.error("Failed to remove LLM API key from backend:", error);
     } finally {
@@ -440,6 +482,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       await setActiveLlmProviderApi(selectedProvider, authToken, sessionId);
       set({ activeLlmApiKeyIndex: index });
+      localStorage.setItem('agenticForgeActiveLlmKeyIndex', index.toString());
       addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Active LLM provider set to: ${selectedProvider}`);
       toast({ title: "LLM Provider Changed", description: `Active LLM provider set to ${selectedProvider}.` });
     } catch (error) {
@@ -706,10 +749,21 @@ export const useStore = create<AppState>((set, get) => ({
   initializeSessionAndMessages: async () => {
     const { setSessions, setActiveSessionId, setMessages, setSessionId, addDebugLog, updateLeaderboardStats, setIsLoadingLeaderboardStats, setIsLoadingSessions } = get();
 
+    // Check if user is authenticated FIRST before any API calls
+    const authToken = localStorage.getItem('backendAuthToken');
+    if (!authToken) {
+      console.log('🔐 [INIT] No auth token found, skipping all backend loading. User needs to authenticate first.');
+      setIsLoadingLeaderboardStats(false);
+      setIsLoadingSessions(false);
+      return;
+    }
+
+    console.log('🔐 [INIT] Auth token found, proceeding with backend data loading...');
+
     // Load leaderboard stats from backend
     setIsLoadingLeaderboardStats(true);
     try {
-      const stats = await getLeaderboardStats();
+      const stats = await getLeaderboardStats(authToken, null);
       updateLeaderboardStats(stats);
     } catch (error) {
       console.error("Failed to fetch leaderboard stats:", error);
@@ -717,24 +771,57 @@ export const useStore = create<AppState>((set, get) => ({
       setIsLoadingLeaderboardStats(false);
     }
 
-    // Load LLM API keys from backend
-    // No explicit loading state for this as it's usually quick and part of init
+    // Load LLM API keys from backend only if localStorage is empty
+    console.log('🔑 [INIT] Starting to load LLM API keys from backend...');
     try {
-      const keys = await getLlmApiKeysApi();
-      const validKeys = keys.filter(key => key.provider && key.key);
+      const currentKeys = get().llmApiKeys;
       
-      if (validKeys.length > 0) {
-        // Set all keys at once instead of one by one to avoid multiple re-renders
-        set({ llmApiKeys: validKeys, activeLlmApiKeyIndex: 0 });
+      // Only load from backend if no keys in localStorage
+      if (currentKeys.length === 0) {
+        const keys = await getLlmApiKeysApi(authToken, null);
+        console.log('🔑 [INIT] Fetched keys from backend:', keys);
+        const validKeys = keys
+          .filter(key => key.provider && key.key)
+          .map(key => ({
+            ...key,
+            id: key.id || Math.random().toString(36).substring(2, 15),
+            providerId: key.provider!,
+            providerName: key.provider!,
+            keyName: key.nickname || key.key!,
+            keyValue: key.key!,
+            isEncrypted: key.isEncrypted || false,
+            isActive: key.isActive || true,
+            priority: key.priority || 5,
+            createdAt: key.createdAt || new Date().toISOString(),
+            updatedAt: key.updatedAt || new Date().toISOString(),
+            usageCount: key.usageCount || 0,
+            metadata: key.metadata || {
+              environment: 'universal',
+              tags: [],
+            },
+            provider: key.provider!,
+            key: key.key!
+          }));
+        console.log('🔑 [INIT] Valid keys after filtering:', validKeys);
+        
+        if (validKeys.length > 0) {
+          // Set all keys at once instead of one by one to avoid multiple re-renders
+          set({ llmApiKeys: validKeys, activeLlmApiKeyIndex: 0 });
+          localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(validKeys));
+          localStorage.setItem('agenticForgeActiveLlmKeyIndex', '0');
+          console.log('🔑 [INIT] Keys loaded successfully, active index set to 0');
+        }
+      } else {
+        console.log('🔑 [INIT] Keys already loaded from localStorage, skipping backend fetch');
       }
     } catch (error) {
-      console.error("Failed to fetch LLM API keys:", error);
+      console.error("🔑 [INIT] Failed to fetch LLM API keys:", error);
     }
 
     // Load sessions from backend first
     setIsLoadingSessions(true);
     try {
-      const backendSessions = await loadAllSessionsApi();
+      const backendSessions = await loadAllSessionsApi(authToken, null);
       if (backendSessions && backendSessions.length > 0) {
         setSessions(backendSessions);
         const currentSessionId = localStorage.getItem('agenticForgeSessionId');

@@ -13,4 +13,5 @@ export const mockLogger: Logger = {
   warn: vi.fn(),
 } as any;
 
-export const getLoggerInstance = vi.fn((): Logger => mockLogger);
+export const getLogger = vi.fn((): Logger => mockLogger);
+export const getLoggerInstance = getLogger;

@@ -2,18 +2,18 @@ import { Job, Queue } from 'bullmq';
 import { Content } from 'fastmcp';
 import { Client as PgClient } from 'pg';
 
-import { config } from '../../config.js';
-import { getLogger, Logger } from '../../logger.js';
+import { config } from '../../config.ts';
+import { getLogger, Logger } from '../../logger.ts';
 import {
   ILlmProvider as _ILlmProvider,
   MinimalJob as _MinimalJob,
   Ctx,
   Message,
   SessionData,
-} from '../../types.js';
-import { getLlmProvider } from '../../utils/llmProvider.js';
-import { getRedisClientInstance } from '../redis/redisClient.js';
-import { summarizeTool } from '../tools/definitions/ai/summarize.tool.js';
+} from '../../types.ts';
+import { getLlmProvider } from '../../utils/llmProvider.ts';
+import { getRedisClientInstance } from '../redis/redisClient.ts';
+import { summarizeTool } from '../tools/definitions/ai/summarize.tool.ts';
 
 export type Session = SessionData;
 
@@ -21,9 +21,14 @@ export class SessionManager {
   private static activeSessions = new Map<string, SessionData>();
   private pgClient: PgClient;
 
-  constructor(pgClient: PgClient) {
+  private constructor(pgClient: PgClient) {
     this.pgClient = pgClient;
-    this.initDb();
+  }
+
+  public static async create(pgClient: PgClient): Promise<SessionManager> {
+    const manager = new SessionManager(pgClient);
+    await manager.initDb();
+    return manager;
   }
 
   public static clearActiveSessionsForTest(): void {

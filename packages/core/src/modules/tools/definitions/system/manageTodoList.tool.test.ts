@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { manageTodoListTool } from './manageTodoList.tool';
-import { sendToCanvas } from '../../../../utils/canvasUtils.js';
-import { getRedisClientInstance } from '../../../../modules/redis/redisClient.js';
+import { sendToCanvas } from '../../../../utils/canvasUtils.ts';
+import { getRedisClientInstance } from '../../../../modules/redis/redisClient.ts';
 
 // Mock the canvasUtils
-vi.mock('../../../../utils/canvasUtils.js', () => ({
+vi.mock('../../../../utils/canvasUtils.ts', () => ({
   sendToCanvas: vi.fn(),
 }));
 
 // Mock the redis client
-vi.mock('../../../../modules/redis/redisClient.js', () => ({
+vi.mock('../../../../modules/redis/redisClient.ts', () => ({
   getRedisClientInstance: vi.fn(() => ({
     publish: vi.fn(),
   })),

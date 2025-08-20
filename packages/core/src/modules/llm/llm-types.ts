@@ -1,4 +1,4 @@
-import { LlmKeyErrorType } from './LlmKeyManager.js';
+import { LlmKeyErrorType } from './LlmKeyManager.ts';
 
 export interface LlmApiKey {
   apiKey: string;

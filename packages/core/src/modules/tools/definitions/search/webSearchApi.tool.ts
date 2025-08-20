@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { Ctx, Tool } from '../../../../types.js';
+import type { Ctx, Tool } from '../../../../types.ts';
 
 export const webSearchApiParams = z.object({
   query: z.string().describe('The search query.'),
