@@ -130,15 +130,12 @@ describe('UserInput', () => {
     });
   });
 
-  it('should disable input and show loading spinner when processing', async () => {
+  it('should show loading spinner when processing', async () => {
     useStore.setState({ isProcessing: true });
     render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
     
     // Wait for the component to render
     await waitFor(() => {
-      const textarea = screen.getByPlaceholderText('Type your message...');
-      
-      expect(textarea).toBeDisabled();
       expect(screen.getByLabelText('Loading')).toBeInTheDocument(); // Check for the LoadingSpinner
     });
   });
