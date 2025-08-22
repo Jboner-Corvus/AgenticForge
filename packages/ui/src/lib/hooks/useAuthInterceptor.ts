@@ -45,41 +45,37 @@ export const useAuthInterceptor = (options: UseAuthInterceptorOptions = {}) => {
     let errorCount = 0;
     
     window.fetch = async (...args: Parameters<typeof fetch>): Promise<Response> => {
-      try {
-        const response = await originalFetch(...args);
+      const response = await originalFetch(...args);
+      
+      // Reset error count on successful response
+      if (response.ok) {
+        errorCount = 0;
+      }
+      
+      // Détecter les erreurs 401
+      if (response.status === 401) {
+        const url = typeof args[0] === 'string' ? args[0] : args[0].url;
+        const method = typeof args[1] === 'object' && args[1]?.method ? args[1].method : 'GET';
         
-        // Reset error count on successful response
-        if (response.ok) {
-          errorCount = 0;
-        }
-        
-        // Détecter les erreurs 401
-        if (response.status === 401) {
-          const url = typeof args[0] === 'string' ? args[0] : args[0].url;
-          const method = typeof args[1] === 'object' && args[1]?.method ? args[1].method : 'GET';
+        // Éviter les boucles infinies sur les endpoints publics
+        if (!shouldIgnoreUrl(url)) {
+          errorCount++;
           
-          // Éviter les boucles infinies sur les endpoints publics
-          if (!shouldIgnoreUrl(url)) {
-            errorCount++;
+          if (errorCount >= maxErrors) {
+            const authError: AuthError = {
+              url,
+              status: response.status,
+              timestamp: Date.now(),
+              method
+            };
             
-            if (errorCount >= maxErrors) {
-              const authError: AuthError = {
-                url,
-                status: response.status,
-                timestamp: Date.now(),
-                method
-              };
-              
-              handleAuthError(authError);
-              errorCount = 0; // Reset after triggering
-            }
+            handleAuthError(authError);
+            errorCount = 0; // Reset after triggering
           }
         }
-        
-        return response;
-      } catch (error) {
-        throw error;
       }
+      
+      return response;
     };
 
     // Nettoyer l'intercepteur lors du démontage
