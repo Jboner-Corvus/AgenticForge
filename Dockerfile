@@ -3,6 +3,10 @@ FROM node:20-alpine AS builder
 
 WORKDIR /usr/src/app
 
+# Accept build arguments
+ARG VITE_AUTH_TOKEN
+ENV VITE_AUTH_TOKEN=$VITE_AUTH_TOKEN
+
 # Installer pnpm
 RUN npm install -g pnpm
 

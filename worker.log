@@ -1,0 +1,1810 @@
+nohup: ignoring input
+DEBUG: __dirname: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist
+DEBUG: promptFilePath: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/system.prompt.md
+DEBUG: File exists: true
+DEBUG: File is readable.
+DEBUG: process.cwd(): /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core
+DEBUG: Resolved .env path: /home/demon/agentforge/AgenticForge2/AgenticForge/.env
+DEBUG: .env file loaded successfully. Keys loaded: [
+  'PUBLIC_PORT',            'WEB_PORT',
+  'PORT',                   'AUTH_TOKEN',
+  'VITE_AUTH_TOKEN',        'LLM_PROVIDER',
+  'LLM_PROVIDER_HIERARCHY', 'LLM_MODEL_NAME',
+  'LLM_API_KEY',            'POSTGRES_HOST',
+  'POSTGRES_USER',          'POSTGRES_PASSWORD',
+  'POSTGRES_DB',            'REDIS_HOST',
+  'REDIS_PORT',             'REDIS_HOST_PORT',
+  'REDIS_PASSWORD',         'NODE_ENV',
+  'LOG_LEVEL',              'CONTAINER_MEMORY_LIMIT',
+  'HOST_PROJECT_PATH',      'WORKER_WORKSPACE_PATH',
+  'GEMINI_API_KEY',         'GEMINI_MODEL'
+]
+Resolved WORKSPACE_PATH: /home/demon/agentforge/workspace
+process.env.REDIS_HOST: localhost
+config.REDIS_HOST: localhost
+config.LLM_API_KEY: QnjWvS30gTpTEikkEGG-vl5Fswzx9haCdixd61P5DF15eQNjkOFC_CsGwa0Zp_CrHBD2MgfoOJR-4SQZinsU9A
+{"level":30,"time":1755894771110,"pid":196061,"hostname":"tiloup","msg":"Successfully connected to Redis."}
+{"level":30,"time":1755894771117,"pid":196061,"hostname":"tiloup","apiKey":"QnjWvS30gT...","apiModel":"qwen3-coder-plus","apiProvider":"qwen","msg":"LLM API key added."}
+{"level":30,"time":1755894771117,"pid":196061,"hostname":"tiloup","msg":"LLM API key for qwen added to KeyManager."}
+{"level":30,"time":1755894771117,"pid":196061,"hostname":"tiloup","msg":"[INIT LLM] LLM API key management is now handled dynamically."}
+{"level":30,"time":1755894771117,"pid":196061,"hostname":"tiloup","msg":"PostgreSQL Host for Worker: localhost"}
+{"level":30,"time":1755894771143,"pid":196061,"hostname":"tiloup","msg":"PostgreSQL connected successfully"}
+[_internalLoadTools] Starting to load tools dynamically.
+[getToolsDir] Constructed tools path: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions
+[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions
+[findToolFiles] Looking for files with extension: .tool.js
+{"level":30,"time":1755894771143,"pid":196061,"hostname":"tiloup","path":"/home/demon/.qoder-server/bin/dfb66331a59270f1c56eae9e5d252fc321af0cbc/bin/remote-cli:/home/demon/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin","msg":"Worker process.env.PATH at startup:"}
+{"level":30,"time":1755894771143,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Starting to load tools dynamically."}
+{"level":30,"time":1755894771144,"pid":196061,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions"}
+[findToolFiles] Found 16 entries in directory
+[findToolFiles] Processing entry: ai, isDirectory: true, isFile: false
+[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai
+[findToolFiles] Looking for files with extension: .tool.js
+{"level":30,"time":1755894771144,"pid":196061,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai"}
+[findToolFiles] Found 13 entries in directory
+[findToolFiles] Processing entry: summarize.tool.d.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarize.tool.d.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarize.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarize.tool.d.ts.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarize.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js
+[findToolFiles] Processing entry: summarize.tool.js.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarize.tool.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarize.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarize.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarize.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarizer.prompt.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarizer.prompt.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarizer.prompt.ts, isDirectory: false, isFile: true
+[findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js
+[findToolFiles] Processing entry: browser, isDirectory: true, isFile: false
+[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/browser
+[findToolFiles] Looking for files with extension: .tool.js
+{"level":30,"time":1755894771146,"pid":196061,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/browser"}
+[findToolFiles] Found 3 entries in directory
+[findToolFiles] Processing entry: tools.browser.integration.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: tools.browser.integration.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: tools.browser.integration.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Returning files: 
+[findToolFiles] Processing entry: clientConsole.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: clientConsole.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js
+[findToolFiles] Processing entry: clientConsole.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: code, isDirectory: true, isFile: false
+[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code
+[findToolFiles] Looking for files with extension: .tool.js
+{"level":30,"time":1755894771146,"pid":196061,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code"}
+[findToolFiles] Found 6 entries in directory
+[findToolFiles] Processing entry: executeShellCommand.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: executeShellCommand.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js
+[findToolFiles] Processing entry: executeShellCommand.tool.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: executeShellCommand.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: executeShellCommand.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: executeShellCommand.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js
+[findToolFiles] Processing entry: fs, isDirectory: true, isFile: false
+[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs
+[findToolFiles] Looking for files with extension: .tool.js
+{"level":30,"time":1755894771147,"pid":196061,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs"}
+[findToolFiles] Found 40 entries in directory
+[findToolFiles] Processing entry: editFile.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: editFile.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js
+[findToolFiles] Processing entry: editFile.tool.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: editFile.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: editFile.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: editFile.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listDirectory.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listDirectory.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js
+[findToolFiles] Processing entry: listDirectory.tool.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listDirectory.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listDirectory.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listDirectory.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listFiles.tool.d.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listFiles.tool.d.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listFiles.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listFiles.tool.d.ts.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listFiles.tool.js.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: readFile.tool.d.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: readFile.tool.d.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: readFile.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: readFile.tool.d.ts.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: readFile.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js
+[findToolFiles] Processing entry: readFile.tool.js.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: readFile.tool.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: readFile.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: readFile.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: readFile.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: simpleList.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: simpleList.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js
+[findToolFiles] Processing entry: simpleList.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: writeFile.tool.d.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: writeFile.tool.d.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: writeFile.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: writeFile.tool.d.ts.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: writeFile.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js
+[findToolFiles] Processing entry: writeFile.tool.js.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: writeFile.tool.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: writeFile.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: writeFile.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: writeFile.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js
+[findToolFiles] Processing entry: index.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: index.d.ts.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: index.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: index.js.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: index.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: planning, isDirectory: true, isFile: false
+[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning
+[findToolFiles] Looking for files with extension: .tool.js
+{"level":30,"time":1755894771150,"pid":196061,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning"}
+[findToolFiles] Found 6 entries in directory
+[findToolFiles] Processing entry: projectPlanning.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: projectPlanning.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js
+[findToolFiles] Processing entry: projectPlanning.tool.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: projectPlanning.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: projectPlanning.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: projectPlanning.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js
+[findToolFiles] Processing entry: search, isDirectory: true, isFile: false
+[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search
+[findToolFiles] Looking for files with extension: .tool.js
+{"level":30,"time":1755894771150,"pid":196061,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search"}
+[findToolFiles] Found 16 entries in directory
+[findToolFiles] Processing entry: webNavigate.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webNavigate.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js
+[findToolFiles] Processing entry: webNavigate.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearch.tool.d.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearch.tool.d.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearch.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearch.tool.d.ts.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearch.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js
+[findToolFiles] Processing entry: webSearch.tool.js.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearch.tool.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearch.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearch.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearch.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearchApi.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearchApi.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js
+[findToolFiles] Processing entry: webSearchApi.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js
+[findToolFiles] Processing entry: system, isDirectory: true, isFile: false
+[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system
+[findToolFiles] Looking for files with extension: .tool.js
+{"level":30,"time":1755894771152,"pid":196061,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system"}
+[findToolFiles] Found 48 entries in directory
+[findToolFiles] Processing entry: agentResponse.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: agentResponse.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentResponse.tool.js
+[findToolFiles] Processing entry: agentResponse.tool.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: agentResponse.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: agentResponse.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: agentResponse.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: createTool.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: createTool.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js
+[findToolFiles] Processing entry: createTool.tool.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: createTool.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: createTool.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: createTool.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: delegateTask.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: delegateTask.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js
+[findToolFiles] Processing entry: delegateTask.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: displayCanvas.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: displayCanvas.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js
+[findToolFiles] Processing entry: displayCanvas.tool.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: displayCanvas.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: displayCanvas.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: displayCanvas.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: echo.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: echo.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/echo.tool.js
+[findToolFiles] Processing entry: echo.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: enhancedTodoList.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: enhancedTodoList.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/enhancedTodoList.tool.js
+[findToolFiles] Processing entry: enhancedTodoList.tool.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: enhancedTodoList.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: enhancedTodoList.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: enhancedTodoList.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: finish.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: finish.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js
+[findToolFiles] Processing entry: finish.tool.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: finish.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: finish.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: finish.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listTools.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listTools.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js
+[findToolFiles] Processing entry: listTools.tool.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listTools.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listTools.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listTools.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: manageTodoList.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: manageTodoList.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/manageTodoList.tool.js
+[findToolFiles] Processing entry: manageTodoList.tool.test.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: manageTodoList.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: manageTodoList.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: manageTodoList.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentResponse.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/echo.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/enhancedTodoList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/manageTodoList.tool.js
+[findToolFiles] Processing entry: web, isDirectory: true, isFile: false
+{"level":30,"time":1755894771154,"pid":196061,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web"}
+[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web
+[findToolFiles] Looking for files with extension: .tool.js
+[findToolFiles] Found 6 entries in directory
+[findToolFiles] Processing entry: browser.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: browser.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js
+[findToolFiles] Processing entry: browser.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: browserManager.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: browserManager.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: browserManager.ts, isDirectory: false, isFile: true
+[findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js
+[findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentResponse.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/echo.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/enhancedTodoList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/manageTodoList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js
+[_internalLoadTools] Found tool files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentResponse.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/echo.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/enhancedTodoList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/manageTodoList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js
+{"level":30,"time":1755894771155,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Found tool files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentResponse.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/echo.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/enhancedTodoList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/manageTodoList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js"}
+Tool registered: ai_summarize
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js
+Tool registered: client_console
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js
+Tool registered: executeShellCommand
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js
+Tool registered: editFile
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js
+Tool registered: listFiles
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js
+Tool registered: readFile
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js
+Tool registered: simpleList
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js
+Tool registered: writeFile
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js
+Tool registered: project_planning
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js
+Tool registered: webNavigate
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js
+Tool registered: webSearch
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js
+Tool registered: webSearchApi
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentResponse.tool.js
+Tool registered: agentResponse
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentResponse.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js
+Tool registered: system_createTool
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js
+Tool registered: delegateTask
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js
+Tool registered: display_canvas
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/echo.tool.js
+Tool registered: echo
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/echo.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/enhancedTodoList.tool.js
+Tool registered: enhanced_todo_list
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/enhancedTodoList.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js
+Tool registered: finish
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js
+Tool registered: listTools
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/manageTodoList.tool.js
+Tool registered: manage_todo_list
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/manageTodoList.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js
+Tool registered: browser
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js
+22 tools have been loaded dynamically.
+[getToolsDir] Constructed tools path: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions
+{"level":30,"time":1755894771158,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js","toolName":"ai_summarize","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771158,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js"}
+{"level":30,"time":1755894771160,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js","toolName":"client_console","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771160,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js"}
+{"level":30,"time":1755894771163,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js","toolName":"executeShellCommand","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771163,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js"}
+{"level":30,"time":1755894771166,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js","toolName":"editFile","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771166,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js"}
+{"level":30,"time":1755894771169,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js","toolName":"listFiles","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771169,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js"}
+{"level":30,"time":1755894771172,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js","toolName":"readFile","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771172,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js"}
+{"level":30,"time":1755894771174,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js","toolName":"simpleList","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771174,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js"}
+{"level":30,"time":1755894771177,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js","toolName":"writeFile","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771177,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js"}
+{"level":30,"time":1755894771181,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js","toolName":"project_planning","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771181,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js"}
+{"level":30,"time":1755894771474,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js","toolName":"webNavigate","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771474,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js"}
+{"level":30,"time":1755894771741,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js","toolName":"webSearch","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771742,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js"}
+{"level":30,"time":1755894771743,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js","toolName":"webSearchApi","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771744,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js"}
+{"level":30,"time":1755894771746,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentResponse.tool.js","toolName":"agentResponse","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771746,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentResponse.tool.js"}
+{"level":30,"time":1755894771749,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js","toolName":"system_createTool","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771749,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js"}
+{"level":30,"time":1755894771764,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js","toolName":"delegateTask","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771764,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js"}
+{"level":30,"time":1755894771771,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js","toolName":"display_canvas","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771771,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js"}
+{"level":30,"time":1755894771773,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/echo.tool.js","toolName":"echo","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771773,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/echo.tool.js"}
+{"level":30,"time":1755894771778,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/enhancedTodoList.tool.js","toolName":"enhanced_todo_list","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771778,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/enhancedTodoList.tool.js"}
+{"level":30,"time":1755894771779,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js","toolName":"finish","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771779,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js"}
+{"level":30,"time":1755894771781,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js","toolName":"listTools","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894771781,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js"}
+{"level":30,"time":1755894771785,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/manageTodoList.tool.js","toolName":"manage_todo_list","msg":"[loadToolFile] Successfully registered tool."}
+{"level":50,"time":1755894771786,"pid":196061,"hostname":"tiloup","message":"Tool with name manage_todo_list already registered.","name":"UserError","stack":"UserError: Tool with name manage_todo_list already registered.\n    at _ToolRegistry.register (file:///home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/chunk-TJOGLTT7.js:67:13)\n    at loadToolFile (file:///home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/chunk-6VDWH2OR.js:174:24)\n    at async _internalLoadTools (file:///home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/chunk-6VDWH2OR.js:52:7)\n    at async getTools (file:///home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/chunk-6VDWH2OR.js:88:5)\n    at async initializeWorker (file:///home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/chunk-5HC4NAMP.js:2476:17)","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/manageTodoList.tool.js","logContext":"[loadToolFile] Failed to dynamically load or process tool file."}
+{"level":30,"time":1755894771786,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/manageTodoList.tool.js"}
+{"level":30,"time":1755894772184,"pid":196061,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js","toolName":"browser","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1755894772184,"pid":196061,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js"}
+{"level":30,"time":1755894772184,"pid":196061,"hostname":"tiloup","msg":"22 tools have been loaded dynamically."}
+{"level":30,"time":1755894772184,"pid":196061,"hostname":"tiloup","msg":"[watchTools] Watching for tool changes in: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions"}
+{"level":30,"time":1755894772184,"pid":196061,"hostname":"tiloup","msg":"[watchTools] Also watching generated tools in: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/tools/generated"}
+{"level":30,"time":1755894772187,"pid":196061,"hostname":"tiloup","msg":"22 tools detected at startup"}
+Worker initialisé et prêt à traiter les jobs.
+{"level":30,"time":1755894772207,"pid":196061,"hostname":"tiloup","msg":"[watchTools] Initial scan complete. Ready for changes."}
+{"level":30,"time":1755894772207,"pid":196061,"hostname":"tiloup","msg":"[watchTools] Initial scan complete. Ready for changes."}
+{"level":30,"time":1755894772209,"pid":196061,"hostname":"tiloup","msg":"PostgreSQL sessions table ensured."}
+{"level":30,"time":1755894772212,"pid":196061,"hostname":"tiloup","msg":"Worker initialisé et prêt à traiter les jobs."}
+{"level":30,"time":1755895030598,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"Traitement du job 48"}
+{"level":30,"time":1755895030699,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"Job 48 starting after synchronization delay"}
+{"level":30,"time":1755895030744,"pid":196061,"hostname":"tiloup","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"No session found in PostgreSQL, creating new one."}
+DEBUG: Agent constructor received tools: [
+  'ai_summarize',        'client_console',
+  'executeShellCommand', 'editFile',
+  'listFiles',           'readFile',
+  'simpleList',          'writeFile',
+  'project_planning',    'webNavigate',
+  'webSearch',           'webSearchApi',
+  'agentResponse',       'system_createTool',
+  'delegateTask',        'display_canvas',
+  'echo',                'enhanced_todo_list',
+  'finish',              'listTools',
+  'manage_todo_list',    'browser'
+]
+{"level":30,"time":1755895030744,"pid":196061,"hostname":"tiloup","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"Created new session data from PostgreSQL."}
+{"level":30,"time":1755895030744,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"Agent starting with 22 tools available"}
+{"level":30,"time":1755895030745,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"Agent execution starting..."}
+{"level":30,"time":1755895030746,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"Agent starting..."}
+{"level":30,"time":1755895030749,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"Subscribed to job:48:interrupt. Total subscriptions: 1"}
+{"level":30,"time":1755895030750,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","iteration":1,"msg":"Agent iteration starting"}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+tool.parameters: ZodObject {
+  spa: [Function: bound safeParseAsync] AsyncFunction,
+  _def: {
+    shape: [Function: shape],
+    unknownKeys: 'strip',
+    catchall: ZodNever {
+      spa: [Function: bound safeParseAsync] AsyncFunction,
+      _def: [Object],
+      parse: [Function: bound parse],
+      safeParse: [Function: bound safeParse],
+      parseAsync: [Function: bound parseAsync] AsyncFunction,
+      safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+      refine: [Function: bound refine],
+      refinement: [Function: bound refinement],
+      superRefine: [Function: bound superRefine],
+      optional: [Function: bound optional],
+      nullable: [Function: bound nullable],
+      nullish: [Function: bound nullish],
+      array: [Function: bound array],
+      promise: [Function: bound promise],
+      or: [Function: bound or],
+      and: [Function: bound and],
+      transform: [Function: bound transform],
+      brand: [Function: bound brand],
+      default: [Function: bound default],
+      catch: [Function: bound catch],
+      describe: [Function: bound describe],
+      pipe: [Function: bound pipe],
+      readonly: [Function: bound readonly],
+      isNullable: [Function: bound isNullable],
+      isOptional: [Function: bound isOptional],
+      '~standard': [Object]
+    },
+    typeName: 'ZodObject'
+  },
+  parse: [Function: bound parse],
+  safeParse: [Function: bound safeParse],
+  parseAsync: [Function: bound parseAsync] AsyncFunction,
+  safeParseAsync: [Function: bound safeParseAsync] AsyncFunction,
+  refine: [Function: bound refine],
+  refinement: [Function: bound refinement],
+  superRefine: [Function: bound superRefine],
+  optional: [Function: bound optional],
+  nullable: [Function: bound nullable],
+  nullish: [Function: bound nullish],
+  array: [Function: bound array],
+  promise: [Function: bound promise],
+  or: [Function: bound or],
+  and: [Function: bound and],
+  transform: [Function: bound transform],
+  brand: [Function: bound brand],
+  default: [Function: bound default],
+  catch: [Function: bound catch],
+  describe: [Function: bound describe],
+  pipe: [Function: bound pipe],
+  readonly: [Function: bound readonly],
+  isNullable: [Function: bound isNullable],
+  isOptional: [Function: bound isOptional],
+  '~standard': { version: 1, vendor: 'zod', validate: [Function: validate] },
+  _cached: null,
+  nonstrict: [Function: passthrough],
+  augment: [Function: extend]
+}
+{"level":30,"time":1755895030750,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","channel":"job:48:events","message":"{\"content\":\"The agent is thinking... (iteration 1)\",\"id\":\"3984ee15-848d-4377-a6a8-fa09a1a3d475\",\"timestamp\":1755895030750,\"type\":\"agent_thought\"}","dataType":"agent_thought","msg":"[PUBLISH] Publishing message to Redis channel"}
+{"level":30,"time":1755895030751,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"[PUBLISH] Message published to Redis successfully"}
+{"level":30,"time":1755895030771,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"Attempting LLM call with provider: qwen"}
+{"level":30,"time":1755895032779,"pid":196061,"hostname":"tiloup","module":"QwenProvider","msg":"[LLM CALL] Sending request to model: qwen3-coder-plus via qwen (attempt 1/8)"}
+{"level":30,"time":1755895037102,"pid":196061,"hostname":"tiloup","provider":"qwen","msg":"LLM API key status reset."}
+{"level":30,"time":1755895037108,"pid":196061,"hostname":"tiloup","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"Session history saved to PostgreSQL."}
+{"level":30,"time":1755895037108,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","llmResponse":"```json\n{\n  \"thought\": \"L'utilisateur a envoyé un message de test. Je vais répondre de manière appropriée pour indiquer que le système fonctionne correctly.\",\n  \"command\": {\n    \"name\": \"finish\",\n    \"params\": {\n      \"response\": \"Test réussi ! Le système est opérationnel et prêt à vous aider. Sur quoi puis-je vous assister aujourd'hui ?\"\n    }\n  }\n}\n```","provider":"qwen","msg":"Raw LLM response"}
+{"level":30,"time":1755895037109,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","iteration":1,"thought":"L'utilisateur a envoyé un message de test. Je vais répondre de manière appropriée pour indiquer que le système fonctionne correctly.","msg":"Agent thought"}
+{"level":30,"time":1755895037109,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","channel":"job:48:events","message":"{\"content\":\"L'utilisateur a envoyé un message de test. Je vais répondre de manière appropriée pour indiquer que le système fonctionne correctly.\",\"type\":\"agent_thought\"}","dataType":"agent_thought","msg":"[PUBLISH] Publishing message to Redis channel"}
+{"level":30,"time":1755895037109,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"[PUBLISH] Message published to Redis successfully"}
+{"level":30,"time":1755895037109,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","channel":"job:48:events","message":"{\"data\":{\"args\":{\"response\":\"Test réussi ! Le système est opérationnel et prêt à vous aider. Sur quoi puis-je vous assister aujourd'hui ?\"},\"name\":\"finish\"},\"type\":\"tool.start\"}","dataType":"tool.start","msg":"[PUBLISH] Publishing message to Redis channel"}
+{"level":30,"time":1755895037109,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"[PUBLISH] Message published to Redis successfully"}
+{"level":30,"time":1755895037109,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","iteration":1,"msg":"Executing tool: finish with params: {\"response\":\"Test réussi ! Le système est opérationnel et prêt à vous aider. Sur quoi puis-je vous assister aujourd'hui ?\"}"}
+{"level":30,"time":1755895037109,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","iteration":1,"msg":"Goal accomplished: Test réussi ! Le système est opérationnel et prêt à vous aider. Sur quoi puis-je vous assister aujourd'hui ?"}
+{"level":30,"time":1755895037110,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","iteration":1,"finalAnswer":"Test réussi ! Le système est opérationnel et prêt à vous aider. Sur quoi puis-je vous assister aujourd'hui ?","msg":"Agent finished via finish tool signal"}
+{"level":30,"time":1755895037110,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","channel":"job:48:events","message":"{\"content\":\"Test réussi ! Le système est opérationnel et prêt à vous aider. Sur quoi puis-je vous assister aujourd'hui ?\",\"type\":\"agent_response\"}","dataType":"agent_response","msg":"[PUBLISH] Publishing message to Redis channel"}
+{"level":30,"time":1755895037110,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"[PUBLISH] Message published to Redis successfully"}
+{"level":30,"time":1755895037111,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"Successfully incremented successfulRuns counter"}
+{"level":30,"time":1755895037112,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"Agent execution completed successfully"}
+{"level":30,"time":1755895037115,"pid":196061,"hostname":"tiloup","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"Session history saved to PostgreSQL."}
+{"level":30,"time":1755895037115,"pid":196061,"hostname":"tiloup","jobId":"48","sessionId":"f25474d0-66fa-4a6e-911a-f285889d5263","msg":"Traitement du job 48 terminé"}
+{"level":30,"time":1755895037217,"pid":196061,"hostname":"tiloup","msg":"Job 48 terminé avec succès."}

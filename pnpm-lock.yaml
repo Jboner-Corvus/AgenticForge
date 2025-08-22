@@ -9,50 +9,50 @@ importers:
   .:
     dependencies:
       '@dnd-kit/utilities':
-        specifier: ^3.2.2
+        specifier: 3.2.2
         version: 3.2.2(react@19.1.0)
       '@eslint/js':
-        specifier: ^9.33.0
+        specifier: 9.33.0
         version: 9.33.0
       '@typescript-eslint/eslint-plugin':
-        specifier: ^8.39.0
+        specifier: 8.39.0
         version: 8.39.0(@typescript-eslint/parser@8.39.0(eslint@9.33.0(jiti@2.4.2))(typescript@5.9.2))(eslint@9.33.0(jiti@2.4.2))(typescript@5.9.2)
       '@typescript-eslint/parser':
-        specifier: ^8.39.0
+        specifier: 8.39.0
         version: 8.39.0(eslint@9.33.0(jiti@2.4.2))(typescript@5.9.2)
       eslint:
-        specifier: ^9.33.0
+        specifier: 9.33.0
         version: 9.33.0(jiti@2.4.2)
       eslint-config-prettier:
-        specifier: ^10.1.8
+        specifier: 10.1.8
         version: 10.1.8(eslint@9.33.0(jiti@2.4.2))
       eslint-plugin-perfectionist:
-        specifier: ^4.15.0
+        specifier: 4.15.0
         version: 4.15.0(eslint@9.33.0(jiti@2.4.2))(typescript@5.9.2)
       globals:
-        specifier: ^16.3.0
+        specifier: 16.3.0
         version: 16.3.0
       playwright-core:
-        specifier: ^1.54.2
+        specifier: 1.54.2
         version: 1.54.2
       prettier:
-        specifier: ^3.6.2
+        specifier: 3.6.2
         version: 3.6.2
       typescript-eslint:
-        specifier: ^8.39.0
+        specifier: 8.39.0
         version: 8.39.0(eslint@9.33.0(jiti@2.4.2))(typescript@5.9.2)
     devDependencies:
       '@types/pg':
-        specifier: ^8.15.5
+        specifier: 8.15.5
         version: 8.15.5
       execa:
-        specifier: ^9.6.0
+        specifier: 9.6.0
         version: 9.6.0
       semver:
-        specifier: ^7.7.2
+        specifier: 7.7.2
         version: 7.7.2
       tsup:
-        specifier: ^8.5.0
+        specifier: 8.5.0
         version: 8.5.0(@swc/core@1.13.3)(jiti@2.4.2)(postcss@8.5.6)(tsx@4.20.3)(typescript@5.9.2)(yaml@2.8.0)
 
   packages/core:
@@ -9524,7 +9524,7 @@ snapshots:
 
   '@types/pg-pool@2.0.6':
     dependencies:
-      '@types/pg': 8.15.4
+      '@types/pg': 8.15.5
 
   '@types/pg@8.15.4':
     dependencies:

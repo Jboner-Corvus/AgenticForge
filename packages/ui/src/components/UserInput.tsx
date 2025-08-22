@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useIsProcessing } from '../store/hooks';
+import { useIsProcessing, useMessageInputValue } from '../store/hooks';
+import { useUIStore } from '../store/uiStore';
 import { useAgentStream } from '../lib/hooks/useAgentStream';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -9,7 +9,8 @@ import { LoadingSpinner } from './LoadingSpinner';
 
 export const UserInput = () => {
   const { translations } = useLanguage();
-  const [inputValue, setInputValue] = useState('');
+  const inputValue = useMessageInputValue();
+  const setInputValue = useUIStore(state => state.setMessageInputValue);
   const { startAgent } = useAgentStream();
   const isProcessing = useIsProcessing();
 
@@ -44,7 +45,7 @@ export const UserInput = () => {
               handleSendMessage();
             }
           }}
-          disabled={false}
+          disabled={isProcessing}
           style={{ borderRadius: '30px' }}
         />
         {isProcessing ? (
@@ -53,7 +54,7 @@ export const UserInput = () => {
           <Button 
             onClick={handleSendMessage} 
             size="icon" 
-            disabled={false}
+            disabled={isProcessing}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-primary hover:bg-primary/90 h-9 w-9"
             aria-label="Send message"
           >

@@ -153,7 +153,7 @@ start_worker() {
     fi
     
     # Start worker
-    nohup node dist/worker.js > "$ROOT_DIR/worker.log" 2>&1 &
+    REDIS_HOST=localhost POSTGRES_HOST=localhost nohup node dist/worker.js > "$ROOT_DIR/worker.log" 2>&1 &
     echo $! > "$ROOT_DIR/worker.pid"
     
     echo -e "${COLOR_GREEN}✅ Worker started${NC}"
