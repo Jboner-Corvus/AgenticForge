@@ -4,6 +4,7 @@ import { LoginModal } from './components/LoginModal';
 import { LanguageProvider } from './lib/contexts/LanguageProvider';
 import { useLanguage } from './lib/contexts/LanguageContext';
 import { SessionIdProvider } from './components/SessionIdProvider';
+import { AuthManager } from './components/AuthManager';
 
 import { AppInitializer } from './components/AppInitializer';
 import { AnimatePresence } from 'framer-motion';
@@ -228,6 +229,11 @@ export default function App() {
         
         <LazyDebugLogContainer />
         <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
+        <AuthManager 
+          showStatusIndicator={true}
+          indicatorPosition="bottom-right"
+          onAuthError={() => console.log('🔐 Système d\'authentification activé')}
+        />
         <VersionDisplay />
         </div>
       </SessionIdProvider>

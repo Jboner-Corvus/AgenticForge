@@ -1,6 +1,6 @@
 {
   "name": "@jboner-corvus/agenticforge",
-  "version": "1.0.296",
+  "version": "1.0.314",
   "description": "Une plateforme avancée pour la création et la gestion d'agents intelligents.",
   "main": "dist/index.js",
   "files": [
@@ -26,22 +26,22 @@
   "author": "Jboner",
   "license": "ISC",
   "devDependencies": {
-    "@types/pg": "^8.15.5",
-    "execa": "^9.6.0",
-    "semver": "^7.7.2",
-    "tsup": "^8.5.0"
+    "@types/pg": "8.15.5",
+    "execa": "9.6.0",
+    "semver": "7.7.2",
+    "tsup": "8.5.0"
   },
   "dependencies": {
-    "@dnd-kit/utilities": "^3.2.2",
-    "@eslint/js": "^9.33.0",
-    "@typescript-eslint/eslint-plugin": "^8.39.0",
-    "@typescript-eslint/parser": "^8.39.0",
-    "eslint": "^9.33.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-perfectionist": "^4.15.0",
-    "globals": "^16.3.0",
-    "playwright-core": "^1.54.2",
-    "prettier": "^3.6.2",
-    "typescript-eslint": "^8.39.0"
+    "@dnd-kit/utilities": "3.2.2",
+    "@eslint/js": "9.33.0",
+    "@typescript-eslint/eslint-plugin": "8.39.0",
+    "@typescript-eslint/parser": "8.39.0",
+    "eslint": "9.33.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-perfectionist": "4.15.0",
+    "globals": "16.3.0",
+    "playwright-core": "1.54.2",
+    "prettier": "3.6.2",
+    "typescript-eslint": "8.39.0"
   }
 }

@@ -60,10 +60,10 @@ jobs:
       - name: Run Linter
         run: pnpm run lint
 
-      # Étape 6 : Lancement des tests
-      # Exécute le script "test" de votre package.json avec Vitest
-      - name: Run Tests
-        run: pnpm run test
+      # Étape 6 : Lancement des tests unitaires
+      # Exécute le script "test:unit" de votre package.json avec Vitest
+      - name: Run Unit Tests
+        run: pnpm run test:unit
         env:
           REDIS_HOST: 127.0.0.1
 

@@ -228,7 +228,7 @@ export const useLLMKeysStore = create<LLMKeysState>()(
         try {
           const headers = getAuthHeaders();
           
-          const response = await fetch(`${API_BASE}`, {
+          const response = await fetch(`${API_BASE}/keys`, {
             headers
           });
           
@@ -383,7 +383,7 @@ export const useLLMKeysStore = create<LLMKeysState>()(
             throw new Error('This API key already exists for this provider and model');
           }
 
-          const response = await fetch(`${API_BASE}`, {
+          const response = await fetch(`${API_BASE}/keys`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({
