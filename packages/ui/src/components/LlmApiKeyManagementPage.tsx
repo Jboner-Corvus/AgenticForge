@@ -24,60 +24,64 @@ interface LlmProviderConfig {
 }
 
 const PROVIDERS: LlmProviderConfig[] = [
-  // Hiérarchie des fournisseurs:
-  // 1. OpenAI (gpt-5)
   {
     id: 'openai', 
     name: 'OpenAI', 
     logo: OpenAILogo, 
-    models: ['gpt-5'], 
+    models: ['gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'], 
     baseUrl: 'https://api.openai.com/v1',
-    description: 'GPT-5 est le modèle le plus avancé d\'OpenAI avec des capacités de raisonnement améliorées.'
+    description: 'Modèles GPT d\'OpenAI avec des capacités avancées de raisonnement.'
   },
-  // 2. Google Gemini (gemini-2.5-pro)
   {
     id: 'gemini', 
-    name: 'Gemini', 
+    name: 'Google Gemini', 
     logo: GeminiLogo, 
-    models: ['gemini-2.5-pro'], 
+    models: ['gemini-2.5-pro', 'gemini-2.5-flash'], 
     baseUrl: 'https://generativelanguage.googleapis.com',
-    description: 'Modèle Google Gemini 2.5 Pro. Haute performance avec des capacités avancées.'
+    description: 'Modèles Google Gemini 2.5 Pro. Haute performance avec des capacités avancées.'
   },
-  // 3. Qwen (qwen3-coder-plus)
   {
     id: 'qwen',
     name: 'Qwen (Tongyi Lab)',
     logo: QwenLogo,
     models: ['qwen3-coder-plus'],
-    baseUrl: 'https://portal.qwen.ai/v1',
+    baseUrl: 'https://dashscope.aliyuncs.com/api/v1',
     description: 'Qwen 3 Coder Plus d\'Alibaba Cloud. Modèle spécialisé pour le développement logiciel.'
   },
-  // 4. OpenRouter (qwen/qwen3-235b-a22b:free)
   {
     id: 'openrouter', 
-    name: 'OpenRouter (Qwen 3 235B)', 
+    name: 'OpenRouter', 
     logo: OpenRouterLogo,
-    models: ['qwen/qwen3-235b-a22b:free'], 
+    models: ['z-ai/glm-4.5-air:free'], 
     baseUrl: 'https://openrouter.ai/api/v1',
-    description: 'OpenRouter avec modèle Qwen 3 235B gratuit - Fonctionne parfaitement ✅'
+    description: 'OpenRouter avec modèle GLM-4.5 Air gratuit - Fonctionne parfaitement ✅'
   },
-  // 5. Google Gemini (gemini-2.5-flash)
   {
-    id: 'gemini-flash', 
-    name: 'Google Gemini Flash', 
-    logo: GeminiLogo, 
-    models: ['gemini-2.5-flash'], 
-    baseUrl: 'https://generativelanguage.googleapis.com',
-    description: 'Modèle Google Gemini 2.5 Flash. Version rapide et économique.'
+    id: 'anthropic', 
+    name: 'Anthropic Claude', 
+    logo: OpenAILogo, // Using OpenAI logo as placeholder
+    models: ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'], 
+    baseUrl: 'https://api.anthropic.com/v1',
+    description: 'Modèles Claude d\'Anthropic. Excellence en raisonnement et en compréhension.'
   },
-];
+  {
+    id: 'xai', 
+    name: 'xAI Grok', 
+    logo: OpenAILogo, // Using OpenAI logo as placeholder
+    models: ['grok-4'], 
+    baseUrl: 'https://api.x.ai/v1',
+    description: 'Grok-4 modèle avancé de xAI.'
+  },
+]
+
 
 // Status Banner avec thème gothique
 const StatusBanner = ({ backendKeys }: { backendKeys?: BackendLlmApiKey[] }) => {
   const llmApiKeys = useCombinedStore((state: CombinedAppState) => state.llmApiKeys);
   const hasKeys = (backendKeys && backendKeys.length > 0) || llmApiKeys.length > 0;
   const totalKeys = backendKeys ? backendKeys.length : llmApiKeys.length;
-  const activeKeys = backendKeys ? backendKeys.filter(k => !k.isPermanentlyDisabled).length : totalKeys;
+  const activeKeys = backendKeys ? backendKeys.filter(k => !k.isPermanentlyDisabled).length : 
+                 llmApiKeys.filter(k => k.isActive).length;
 
   // Debug: Log current state
   // Debug logging removed to reduce console noise
@@ -486,7 +490,7 @@ const OnboardingInfo = () => {
       animate={{ opacity: 1, scale: 1 }}
     >
       <div className="flex justify-between items-start mb-4">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-33">
           <div className="h-12 w-12 bg-purple-900/50 rounded-full flex items-center justify-center border border-purple-700/50">
             <Key className="h-6 w-6 text-purple-400" />
           </div>
@@ -591,30 +595,26 @@ export const LlmApiKeyManagementPage = memo(() => {
 
   // Fonction pour tester une clé LLM
   const testKey = async (keyIndex: number) => {
-    if (!authToken) return;
+    if (!authToken) {
+      alert('Authentication token is missing. Please check your configuration.');
+      return;
+    }
     
     setTestingKey(keyIndex);
     try {
       const keyToTest = backendKeys[keyIndex];
       if (!keyToTest) throw new Error('Key not found');
       
-      // Use dedicated test endpoint instead of consuming tokens
-      const response = await fetch('/api/llm-keys/test', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          providerId: keyToTest.apiProvider,
-          keyValue: keyToTest.apiKey,
-          model: keyToTest.apiModel || undefined
-        })
-      });
+      // Use the existing testLlmApiKey function
+      const result = await testLlmApiKey(
+        keyToTest.apiProvider, 
+        keyToTest.apiKey, 
+        keyToTest.baseUrl || undefined, 
+        authToken, 
+        null
+      );
       
-      const result = await response.json();
-      
-      if (response.ok && result.valid) {
+      if (result.success) {
         // Reload keys to see updates
         const keys = await getLlmApiKeysApi(authToken, null);
         const backendKeysConverted: BackendLlmApiKey[] = keys.map(key => ({
@@ -622,17 +622,19 @@ export const LlmApiKeyManagementPage = memo(() => {
           apiModel: key.model || '',
           apiProvider: key.provider || '',
           baseUrl: key.baseUrl,
-          errorCount: 0,
-          isPermanentlyDisabled: false,
+          errorCount: key.usageStats?.failedRequests || 0,
+          lastUsed: key.usageStats?.lastUsed ? new Date(key.usageStats.lastUsed).getTime() : undefined,
+          priority: key.priority,
+          isPermanentlyDisabled: (key.usageStats?.failedRequests || 0) > 10
         }));
-        setBackendKeys(backendKeysConverted || []);
-        console.log(`✅ Key ${keyIndex} tested successfully`);
+        setBackendKeys(backendKeysConverted);
+        alert(`✅ Key tested successfully: ${result.message || 'Valid key'}`);
       } else {
-        throw new Error(result.error || 'Key validation failed');
+        throw new Error(result.message || 'Key validation failed');
       }
     } catch (error) {
       console.error(`❌ Key test failed for ${keyIndex}:`, error);
-      throw error; // Re-throw so UI can show error state
+      alert(`Test failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setTestingKey(null);
     }
@@ -645,103 +647,139 @@ export const LlmApiKeyManagementPage = memo(() => {
       <OnboardingInfo />
       
       {/* Master Key Display */}
-      {masterKey && (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 bg-gradient-to-r from-yellow-900/30 to-amber-900/30 rounded-lg border border-yellow-800/50"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Shield className="h-5 w-5 text-yellow-500 mr-2" />
-              <h3 className="text-lg font-semibold text-yellow-300">Master Key (.env)</h3>
-            </div>
-            <Badge className="bg-yellow-900/50 text-yellow-300 border border-yellow-700/50">
-              Environment Variable
-            </Badge>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-6 p-4 bg-gradient-to-r from-yellow-900/30 to-amber-900/30 rounded-lg border border-yellow-800/50"
+      >
+        <div className="flex flex-col md:flex-row md:items-center justify-between">
+          <div className="flex items-center">
+            <Shield className="h-5 w-5 text-yellow-500 mr-2" />
+            <h3 className="text-lg font-semibold text-yellow-300">Master Key (.env)</h3>
           </div>
-          <div className="mt-2 text-sm text-yellow-200/80">
-            This key is loaded from your environment variables and serves as a fallback.
-          </div>
-          <div className="mt-2 flex items-center text-xs text-yellow-400/80">
-            <Key className="h-3 w-3 mr-1" />
-            <span>{masterKey.keyValue ? `${masterKey.keyValue.substring(0, 8)}...${masterKey.keyValue.substring(masterKey.keyValue.length - 4)}` : 'No key found'}</span>
-          </div>
-        </motion.div>
-      )}
+          <Badge className="bg-yellow-900/50 text-yellow-300 border border-yellow-700/50 mt-2 md:mt-0">
+            Variable d'environnement
+          </Badge>
+        </div>
+        <div className="mt-3 text-sm text-yellow-200/90">
+          Cette clé est chargée depuis vos variables d'environnement et sert de solution de repli.
+          Elle a la plus haute priorité dans la hiérarchie des clés.
+        </div>
+        <div className="mt-3 flex items-center text-xs text-yellow-400/90">
+          <Key className="h-3 w-3 mr-1" />
+          <span>
+            {masterKey?.keyValue ? 
+              `${masterKey.keyValue.substring(0, 8)}...${masterKey.keyValue.substring(masterKey.keyValue.length - 4)}` : 
+              'Aucune clé maîtresse trouvée dans les variables d\'environnement'}
+          </span>
+        </div>
+        <div className="mt-2 text-xs text-yellow-400/70">
+          Pour configurer une clé maîtresse, ajoutez LLM_API_KEY=valeur_de_votre_clé dans votre fichier .env
+        </div>
+      </motion.div>
 
       {/* User Keys */}
       <div className="space-y-4">
+        <h2 className="text-xl font-bold text-white flex items-center">
+          <Key className="h-5 w-5 mr-2 text-purple-400" />
+          Clés API configurées
+        </h2>
         {backendKeys.length === 0 ? (
           <Card className="bg-gray-800/50 border-gray-700">
             <CardContent className="p-6 text-center">
               <Key className="mx-auto h-12 w-12 text-gray-500" />
-              <h3 className="mt-4 text-lg font-medium text-gray-300">No API Keys Added</h3>
+              <h3 className="mt-4 text-lg font-medium text-gray-300">Aucune clé API ajoutée</h3>
               <p className="mt-2 text-gray-500">
-                Add your first API key to get started with different LLM providers.
+                Ajoutez votre première clé API pour commencer à utiliser différents fournisseurs LLM.
               </p>
             </CardContent>
           </Card>
         ) : (
-          backendKeys.map((key, index) => (
-            <div key={index} className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
-              index === 0 ? 'bg-green-900/30 border-green-600/50' : 'bg-gray-700/50 border-gray-600/50'
-            }`}>
-              <div className="flex items-center space-x-3">
-                {index === 0 && (
-                  <Badge className="bg-green-900/50 text-green-300 border border-green-700/50">
-                    <Zap className="h-3 w-3 mr-1" />
-                    ACTIVE
-                  </Badge>
-                )}
-                <Badge className="bg-purple-900/50 text-purple-300 border border-purple-700/50">
-                  {key.apiProvider}
-                </Badge>
-                <span className="text-white font-medium">{key.apiModel || 'Modèle par défaut'}</span>
-                <span className="text-gray-400 text-sm">
-                  Clé: {key.apiKey?.substring(0, 20)}...
-                </span>
-                {key.baseUrl && (
-                  <span className="text-blue-400 text-xs">
-                    {new URL(key.baseUrl).hostname}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center space-x-2">
-                {key.lastUsed && (
-                  <Badge className="bg-green-900/50 text-green-300 border border-green-700/50 text-xs">
-                    Utilisée: {new Date(key.lastUsed).toLocaleString()}
-                  </Badge>
-                )}
-                {key.errorCount > 0 && (
-                  <Badge className="bg-red-900/50 text-red-300 border border-red-700/50 text-xs">
-                    Erreurs: {key.errorCount}
-                  </Badge>
-                )}
-                {key.isPermanentlyDisabled && (
-                  <Badge className="bg-red-900/50 text-red-300 border border-red-700/50 text-xs">
-                    DÉSACTIVÉE
-                  </Badge>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => testKey(index)}
-                  disabled={testingKey === index}
-                  className="border-purple-500/50 text-purple-400 hover:bg-purple-900/30 hover:text-purple-300 text-xs"
-                >
-                  {testingKey === index ? (
-                    <>
-                      <LoadingSpinner className="h-3 w-3 mr-1" />
-                      Test...
-                    </>
-                  ) : (
-                    'Tester'
+          <div className="grid grid-cols-1 gap-4">
+            {backendKeys.map((key, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className={`flex flex-col md:flex-row md:items-center justify-between p-4 rounded-lg border-2 transition-all ${
+                  index === 0 
+                    ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-600/50' 
+                    : key.isPermanentlyDisabled
+                      ? 'bg-gradient-to-r from-red-900/30 to-rose-900/30 border-red-600/50'
+                      : 'bg-gray-700/50 border-gray-600/50'
+                }`}
+              >
+                <div className="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4">
+                  <div className="flex items-center space-x-2">
+                    {index === 0 && (
+                      <Badge className="bg-green-900/50 text-green-300 border border-green-700/50">
+                        <Zap className="h-3 w-3 mr-1" />
+                        ACTIVE
+                      </Badge>
+                    )}
+                    {key.isPermanentlyDisabled && index !== 0 && (
+                      <Badge className="bg-red-900/50 text-red-300 border border-red-700/50">
+                        <XCircle className="h-3 w-3 mr-1" />
+                        DÉSACTIVÉE
+                      </Badge>
+                    )}
+                    {key.priority && (
+                      <Badge className="bg-blue-900/50 text-blue-300 border border-blue-700/50">
+                        <Settings className="h-3 w-3 mr-1" />
+                        Priorité: {key.priority}
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className="bg-purple-900/50 text-purple-300 border border-purple-700/50">
+                      {key.apiProvider}
+                    </Badge>
+                    <span className="text-white font-medium">{key.apiModel || 'Modèle par défaut'}</span>
+                    <span className="text-gray-400 text-sm truncate max-w-xs">
+                      Clé: {key.apiKey?.substring(0, 8)}...{key.apiKey?.substring(key.apiKey.length - 4)}
+                    </span>
+                    {key.baseUrl && (
+                      <span className="text-blue-400 text-xs">
+                        {new URL(key.baseUrl).hostname}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-2 mt-2 md:mt-0">
+                  {key.lastUsed && (
+                    <Badge className="bg-green-900/50 text-green-300 border border-green-700/50 text-xs">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {new Date(key.lastUsed).toLocaleDateString()}
+                    </Badge>
                   )}
-                </Button>
-              </div>
-            </div>
-          ))
+                  {key.errorCount > 0 && (
+                    <Badge className={`${key.errorCount > 5 ? 'bg-red-900/50 text-red-300 border-red-700/50' : 'bg-orange-900/50 text-orange-300 border-orange-700/50'} text-xs`}>
+                      Erreurs: {key.errorCount}
+                    </Badge>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => testKey(index)}
+                    disabled={testingKey === index}
+                    className="border-purple-500/50 text-purple-400 hover:bg-purple-900/30 hover:text-purple-300 text-xs"
+                  >
+                    {testingKey === index ? (
+                      <>
+                        <LoadingSpinner className="h-3 w-3 mr-1" />
+                        Test...
+                      </>
+                    ) : (
+                      'Tester'
+                    )}
+                  </Button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         )}
       </div>
       

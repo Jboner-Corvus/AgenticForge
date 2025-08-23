@@ -424,14 +424,20 @@ export async function getMasterLlmApiKeyApi(authToken: string | null = null, ses
   }
   
   const data = await response.json();
+  
+  // Check if master key exists
+  if (!data.apiKey) {
+    return null;
+  }
+  
   return {
     id: 'master-key',
-    providerId: data.provider,
-    providerName: data.provider,
+    providerId: data.apiProvider,
+    providerName: data.apiProvider,
     keyName: 'Master Key (.env)',
     keyValue: data.apiKey,
     isEncrypted: false,
-    isActive: true,
+    isActive: data.isActive,
     priority: 1,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

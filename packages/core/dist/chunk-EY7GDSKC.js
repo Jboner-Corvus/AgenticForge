@@ -2,7 +2,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
   sendToCanvas
-} from "./chunk-5OJML75I.js";
+} from "./chunk-3B2NS2K5.js";
 import {
   init_esm_shims
 } from "./chunk-SB7UONON.js";

@@ -568,6 +568,7 @@ export const unifiedTodoListTool: Tool<
           if (typeof window !== 'undefined' && window.postMessage) {
             const todoMessage = {
               data: {
+                isAgentInternal: true, // Mark as agent-generated to prevent automatic canvas display
                 stats: stats,
                 timestamp: Date.now(),
                 title: args.title || 'Mission Control',
@@ -597,6 +598,7 @@ export const unifiedTodoListTool: Tool<
           if (typeof window !== 'undefined' && window.postMessage) {
             const todoMessage = {
               data: {
+                isAgentInternal: true, // Mark as agent-generated to prevent automatic canvas display
                 stats: stats,
                 timestamp: Date.now(),
                 title: args.title || 'Mission Control',
@@ -660,6 +662,7 @@ export const unifiedTodoListTool: Tool<
           if (typeof window !== 'undefined' && window.postMessage) {
             const todoMessage = {
               data: {
+                isAgentInternal: true, // Mark as agent-generated to prevent automatic canvas display
                 stats: stats,
                 timestamp: Date.now(),
                 title: args.title || 'Mission Control',

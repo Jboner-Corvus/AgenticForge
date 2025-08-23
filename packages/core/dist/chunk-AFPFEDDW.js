@@ -282,6 +282,8 @@ var unifiedTodoListTool = {
           if (typeof window !== "undefined" && window.postMessage) {
             const todoMessage = {
               data: {
+                isAgentInternal: true,
+                // Mark as agent-generated to prevent automatic canvas display
                 stats,
                 timestamp: Date.now(),
                 title: args.title || "Mission Control",
@@ -307,6 +309,8 @@ var unifiedTodoListTool = {
           if (typeof window !== "undefined" && window.postMessage) {
             const todoMessage = {
               data: {
+                isAgentInternal: true,
+                // Mark as agent-generated to prevent automatic canvas display
                 stats,
                 timestamp: Date.now(),
                 title: args.title || "Mission Control",
@@ -361,6 +365,8 @@ var unifiedTodoListTool = {
           if (typeof window !== "undefined" && window.postMessage) {
             const todoMessage = {
               data: {
+                isAgentInternal: true,
+                // Mark as agent-generated to prevent automatic canvas display
                 stats,
                 timestamp: Date.now(),
                 title: args.title || "Mission Control",

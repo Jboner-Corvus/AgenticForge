@@ -8,7 +8,7 @@ import {
 } from "./chunk-FG6D2ATS.js";
 import {
   sendToCanvas
-} from "./chunk-5OJML75I.js";
+} from "./chunk-3B2NS2K5.js";
 import {
   init_esm_shims
 } from "./chunk-SB7UONON.js";
@@ -101,6 +101,8 @@ var initializeFromPersistence = async (sessionKey) => {
 };
 var createProjectData = (project, tasks, title) => {
   return {
+    isAgentInternal: true,
+    // Mark as agent-generated to prevent automatic canvas display
     project,
     stats: {
       blocked: tasks.filter((t) => t.status === "blocked").length,
