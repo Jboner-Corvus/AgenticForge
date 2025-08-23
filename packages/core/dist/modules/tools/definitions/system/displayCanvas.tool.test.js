@@ -2,10 +2,10 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
   displayCanvasTool
-} from "../../../../chunk-LVFLQU5L.js";
+} from "../../../../chunk-UN6Q5SXR.js";
 import {
   sendToCanvas
-} from "../../../../chunk-5OJML75I.js";
+} from "../../../../chunk-3B2NS2K5.js";
 import {
   beforeEach,
   describe,

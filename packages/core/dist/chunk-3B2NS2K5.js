@@ -10,6 +10,14 @@ import {
 // src/utils/canvasUtils.ts
 init_esm_shims();
 function sendToCanvas(jobId, content, contentType = "html") {
+  try {
+    const parsedContent = JSON.parse(content);
+    if (parsedContent.isAgentInternal === true) {
+      console.log(`[CANVAS] Skipping agent-internal content for job ${jobId}`);
+      return;
+    }
+  } catch (_e) {
+  }
   const channel = `job:${jobId}:events`;
   const message = JSON.stringify({
     content,

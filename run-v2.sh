@@ -534,18 +534,23 @@ show_guided_menu() {
     printf "    8) \033[0;34m🐳 Docker Logs\033[0m        - View all container logs\n"
     printf "    9) \033[1;33m🔄 Restart Worker\033[0m     - Restart worker only\n"
     echo ""
-    echo -e "    ${COLOR_CYAN}🧪 Testing & Quality${NC}"
-    printf "   10) \033[0;34m🔬 Unit Tests\033[0m          - Run unit tests only\n"
-    printf "   11) \033[0;34m🔗 Integration Tests\033[0m   - Test service integration\n"
-    printf "   12) \033[0;34m🧪 All Tests\033[0m          - Run complete test suite\n"
-    printf "   13) \033[0;34m🎯 Quality Check\033[0m       - Lint + TypeCheck + Unit Tests\n"
-    printf "   14) \033[0;34m🔍 Lint Code\033[0m          - Check code quality\n"
-    printf "   15) \033[0;34m✨ Format Code\033[0m        - Auto-format source code\n"
-    printf "   16) \033[0;34m📘 Type Check\033[0m         - Verify TypeScript types\n"
-    printf "   17) \033[0;34m🔄 Integration Test Runner\033[0m - Run comprehensive integration tests\n"
+    echo -e "    ${COLOR_CYAN}🔧 Development${NC}"
+    printf "   10) \033[0;34m💻 Dev Server (3003)\033[0m  - Start development server on port 3003\n"
+    printf "   11) \033[0;31m🛑 Stop Dev Server\033[0m     - Stop development server\n"
+    printf "   12) \033[0;34m📋 Dev Server Logs\033[0m    - View development server logs\n"
     echo ""
-    printf "   18) \033[0;36m❓ Help\033[0m               - Get help and troubleshooting\n"
-    printf "   19) \033[0;31m🚪 Exit\033[0m               - Close this menu\n"
+    echo -e "    ${COLOR_CYAN}🧪 Testing & Quality${NC}"
+    printf "   13) \033[0;34m🔬 Unit Tests\033[0m          - Run unit tests only\n"
+    printf "   14) \033[0;34m🔗 Integration Tests\033[0m   - Test service integration\n"
+    printf "   15) \033[0;34m🧪 All Tests\033[0m          - Run complete test suite\n"
+    printf "   16) \033[0;34m🎯 Quality Check\033[0m       - Lint + TypeCheck + Unit Tests\n"
+    printf "   17) \033[0;34m🔍 Lint Code\033[0m          - Check code quality\n"
+    printf "   18) \033[0;34m✨ Format Code\033[0m        - Auto-format source code\n"
+    printf "   19) \033[0;34m📘 Type Check\033[0m         - Verify TypeScript types\n"
+    printf "   20) \033[0;34m🔄 Integration Test Runner\033[0m - Run comprehensive integration tests\n"
+    echo ""
+    printf "   21) \033[0;36m❓ Help\033[0m               - Get help and troubleshooting\n"
+    printf "   22) \033[0;31m🚪 Exit\033[0m               - Close this menu\n"
     echo ""
     echo -e "${COLOR_YELLOW}💡 Tip: First time? Try option 1 to start services!${NC}"
     echo ""
@@ -1016,6 +1021,75 @@ show_menu() {
 }
 
 # =============================================================================
+# Development Server Functions
+# =============================================================================
+
+# Start development server on port 3003
+start_dev_server() {
+    echo -e "${COLOR_BLUE}🚀 Starting development server on port 3003...${NC}"
+    
+    # Stop any existing dev server
+    stop_dev_server
+    
+    # Navigate to the UI package
+    cd "$ROOT_DIR/packages/ui"
+    
+    # Install dependencies if needed
+    if [[ ! -d "node_modules" ]]; then
+        echo -e "${COLOR_YELLOW}📦 Installing UI dependencies...${NC}"
+        pnpm install
+    fi
+    
+    # Set the port and start the development server in the background
+    echo -e "${COLOR_GREEN}✅ Starting development server in background...${NC}"
+    echo -e "${COLOR_CYAN}   🌐 Access at: http://localhost:3003${NC}"
+    echo -e "${COLOR_CYAN}   📋 Logs will be available in: $ROOT_DIR/dev-server.log${NC}"
+    
+    # Start server in background and redirect output to log file
+    PORT=3003 nohup pnpm run dev > "$ROOT_DIR/dev-server.log" 2>&1 &
+    local dev_pid=$!
+    
+    # Save PID to file
+    echo $dev_pid > "$ROOT_DIR/dev-server.pid"
+    
+    # Wait a moment for server to start
+    sleep 3
+    
+    # Check if server is still running
+    if kill -0 $dev_pid 2>/dev/null; then
+        echo -e "${COLOR_GREEN}✅ Development server started successfully (PID: $dev_pid)${NC}"
+    else
+        echo -e "${COLOR_RED}❌ Development server failed to start${NC}"
+        echo -e "${COLOR_YELLOW}💡 Check logs: tail -f $ROOT_DIR/dev-server.log${NC}"
+        rm -f "$ROOT_DIR/dev-server.pid"
+        return 1
+    fi
+}
+
+# Stop development server
+stop_dev_server() {
+    if [[ -f "$ROOT_DIR/dev-server.pid" ]]; then
+        local pid
+        pid=$(cat "$ROOT_DIR/dev-server.pid")
+        if kill -0 "$pid" 2>/dev/null; then
+            echo -e "${COLOR_YELLOW}🛑 Stopping development server (PID: $pid)...${NC}"
+            kill "$pid" 2>/dev/null || true
+            sleep 2
+            
+            # Force kill if still running
+            if kill -0 "$pid" 2>/dev/null; then
+                echo -e "${COLOR_YELLOW}⚠️ Force stopping development server...${NC}"
+                kill -9 "$pid" 2>/dev/null || true
+            fi
+        fi
+        rm -f "$ROOT_DIR/dev-server.pid"
+        echo -e "${COLOR_GREEN}✅ Development server stopped${NC}"
+    else
+        echo -e "${COLOR_YELLOW}ℹ️ No development server running${NC}"
+    fi
+}
+
+# =============================================================================
 # Main Function
 # =============================================================================
 
@@ -1060,6 +1134,10 @@ main() {
                 echo -e "${COLOR_YELLOW}🔄 Restarting worker...${NC}"
                 restart_worker 
                 ;;
+            dev) 
+                echo -e "${COLOR_BLUE}🚀 Starting development server on port 3003...${NC}"
+                start_dev_server 
+                ;;
             install|deploy)
                 echo -e "${COLOR_BLUE}🤖 Running automated installation...${NC}"
                 automated_install true
@@ -1083,7 +1161,7 @@ main() {
             *) 
                 echo -e "${COLOR_RED}Unknown command: $1${NC}"
                 echo ""
-                echo "Usage: $0 {start|stop|restart|status|rebuild-all|restart-worker|install|deploy|setup|test:unit|test:integration|test:all|quality-check|help|menu}"
+                echo "Usage: $0 {start|stop|restart|status|rebuild-all|restart-worker|install|deploy|setup|test:unit|test:integration|test:all|quality-check|help|menu|dev}"
                 echo ""
                 echo -e "${COLOR_CYAN}Available commands:${NC}"
                 echo -e "  ${COLOR_GREEN}install/deploy${NC}   - Fully automated installation (no prompts)"
@@ -1094,6 +1172,7 @@ main() {
                 echo -e "  ${COLOR_CYAN}status${NC}           - Show service status"
                 echo -e "  ${COLOR_BLUE}rebuild-all${NC}      - Complete rebuild"
                 echo -e "  ${COLOR_BLUE}setup${NC}            - Run interactive setup wizard"
+                echo -e "  ${COLOR_BLUE}dev${NC}              - Start development server on port 3003"
                 echo -e "  ${COLOR_BLUE}test:unit${NC}        - Run unit tests only"
                 echo -e "  ${COLOR_BLUE}test:integration${NC} - Run integration tests"
                 echo -e "  ${COLOR_BLUE}test:all${NC}         - Run all tests"
@@ -1113,7 +1192,7 @@ main() {
     # Interactive menu loop
     while true; do
         show_guided_menu
-        echo -n "Choose an option (1-19): "
+        echo -n "Choose an option (1-22): "
         read -r choice
         echo ""
         
@@ -1155,51 +1234,63 @@ main() {
                 restart_worker 
                 ;;
             10) 
-                echo -e "${COLOR_BLUE}🔬 Running unit tests...${NC}"
-                run_unit_tests 
+                echo -e "${COLOR_BLUE}💻 Starting development server on port 3003...${NC}"
+                start_dev_server 
                 ;;
             11) 
+                echo -e "${COLOR_RED}🛑 Stopping development server...${NC}"
+                stop_dev_server 
+                ;;
+            12) 
+                echo -e "${COLOR_BLUE}📋 Showing development server logs (Ctrl+C to exit):${NC}"
+                tail -f "$ROOT_DIR/dev-server.log" 2>/dev/null || echo "No development server log found" 
+                ;;
+            13) 
+                echo -e "${COLOR_BLUE}🔬 Running unit tests...${NC}"
+                run_unit_tests
+                ;;
+            14) 
                 echo -e "${COLOR_BLUE}🔗 Running integration tests...${NC}"
                 run_integration_tests 
                 ;;
-            12) 
+            15) 
                 echo -e "${COLOR_BLUE}🧪 Running all tests...${NC}"
                 run_all_tests 
                 ;;
-            13) 
+            16) 
                 echo -e "${COLOR_BLUE}🎯 Running quality check...${NC}"
                 run_quality_check
                 ;;
-            14) 
+            17) 
                 echo -e "${COLOR_BLUE}🔍 Running code linting...${NC}"
                 cd "$ROOT_DIR" && pnpm run lint 
                 ;;
-            15) 
+            18) 
                 echo -e "${COLOR_BLUE}✨ Formatting code...${NC}"
                 cd "$ROOT_DIR" && pnpm run format 
                 ;;
-            16) 
+            19) 
                 echo -e "${COLOR_BLUE}📘 Checking TypeScript types...${NC}"
                 cd "$ROOT_DIR" && pnpm run typecheck 
                 ;;
-            17)
+            20)
                 echo -e "${COLOR_BLUE}🔄 Running integration test runner...${NC}"
                 cd "$ROOT_DIR" && ./integration-test-runner.sh
                 ;;
-            18)
+            21)
                 echo -e "${COLOR_CYAN}❓ Help & Troubleshooting${NC}"
                 show_main_help
                 ;;
-            19) 
+            22) 
                 echo -e "${COLOR_CYAN}👋 Thanks for using AgenticForge! Goodbye!${NC}"
                 exit 0 
                 ;;
             *) 
-                echo -e "${COLOR_RED}❌ Invalid option '$choice'. Please choose 1-19.${NC}" 
+                echo -e "${COLOR_RED}❌ Invalid option '$choice'. Please choose 1-22.${NC}" 
                 ;;
         esac
         
-        if [[ "$choice" =~ ^[1-9]$|^1[0-8]$ ]]; then
+        if [[ "$choice" =~ ^[1-9]$|^1[0-9]$|^2[0-2]$ ]]; then
             echo ""
             echo -e "${COLOR_YELLOW}🔙 Press Enter to return to menu...${NC}"
             read -r

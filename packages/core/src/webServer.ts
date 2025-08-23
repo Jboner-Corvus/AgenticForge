@@ -713,6 +713,12 @@ export async function initializeWebServer(
               // Parse the message
               const eventData = JSON.parse(message);
 
+              // Filter out agent_thought messages to prevent them from being displayed in the canvas
+              if (eventData.type === 'agent_thought') {
+                console.log(`[FILTER] Skipping agent_thought message for job ${jobId}`);
+                return;
+              }
+
               // Send the event data
               res.write(`data: ${JSON.stringify(eventData)}\n\n`);
 
@@ -1261,9 +1267,96 @@ export async function initializeWebServer(
         next: express.NextFunction,
       ) => {
         try {
-          // const providers = await _LlmKeyManager.getProviders();  // Method does not exist
-          // TODO: Implement proper provider listing
-          const providers: string[] = [];
+          // Return the same provider list as the working endpoint
+          const providers = [
+            {
+              description: 'GPT models including GPT-4, GPT-3.5, and DALL-E',
+              displayName: 'OpenAI',
+              id: 'openai',
+              isActive: true,
+              keyFormat: 'sk-...',
+              name: 'openai',
+              supportedModels: [
+                'gpt-4',
+                'gpt-4-turbo',
+                'gpt-3.5-turbo',
+                'dall-e-3',
+                'whisper-1',
+              ],
+              testEndpoint: '/v1/models',
+              website: 'https://openai.com',
+            },
+            {
+              description: 'Claude models for advanced AI assistance',
+              displayName: 'Anthropic',
+              id: 'anthropic',
+              isActive: true,
+              keyFormat: 'sk-ant-...',
+              name: 'anthropic',
+              supportedModels: [
+                'claude-3-opus',
+                'claude-3-sonnet',
+                'claude-3-haiku',
+              ],
+              testEndpoint: '/v1/models',
+              website: 'https://anthropic.com',
+            },
+            {
+              description: 'Gemini 2.5 Flash - Fast and efficient model',
+              displayName: 'Google Gemini Flash',
+              id: 'google-flash',
+              isActive: true,
+              keyFormat: 'AI...',
+              name: 'google',
+              supportedModels: ['gemini-2.5-flash'],
+              testEndpoint: '/v1/models',
+              website: 'https://ai.google.dev',
+            },
+            {
+              description: 'Gemini 2.5 Pro - Advanced reasoning model',
+              displayName: 'Gemini',
+              id: 'gemini',
+              isActive: true,
+              keyFormat: 'AI...',
+              name: 'google',
+              supportedModels: ['gemini-2.5-pro'],
+              testEndpoint: '/v1/models',
+              website: 'https://ai.google.dev',
+            },
+            {
+              description: 'Grok-4 advanced reasoning model',
+              displayName: 'xAI Grok',
+              id: 'xai',
+              isActive: true,
+              keyFormat: 'xai-...',
+              name: 'xai',
+              supportedModels: ['grok-4'],
+              testEndpoint: '/v1/models',
+              website: 'https://x.ai',
+            },
+            {
+              description: 'Qwen3 Coder Plus - Advanced coding model',
+              displayName: 'Qwen',
+              id: 'qwen',
+              isActive: true,
+              keyFormat: '...',
+              name: 'qwen',
+              supportedModels: ['qwen3-coder-plus'],
+              testEndpoint: 'https://portal.qwen.ai/v1/chat/completions',
+              website: 'https://portal.qwen.ai',
+            },
+            {
+              description: 'Access to multiple AI models via unified API - GLM-4.5-Air Free',
+              displayName: 'OpenRouter',
+              id: 'openrouter',
+              isActive: true,
+              keyFormat: 'sk-or-...',
+              name: 'openrouter',
+              supportedModels: ['z-ai/glm-4.5-air:free'],
+              testEndpoint: 'https://openrouter.ai/api/v1/models',
+              website: 'https://openrouter.ai',
+            },
+          ];
           res.status(200).json(providers);
         } catch (_error) {
           next(_error);
@@ -1296,8 +1389,7 @@ export async function initializeWebServer(
       ) => {
         try {
           // Get master key from environment variables
-          const masterApiKey =
-            process.env.MASTER_LLM_API_KEY || config.LLM_API_KEY;
+          const masterApiKey = process.env.LLM_API_KEY || config.LLM_API_KEY;
 
           if (!masterApiKey) {
             return res.status(200).json(null);
@@ -1305,8 +1397,8 @@ export async function initializeWebServer(
 
           const masterKey = {
             apiKey: masterApiKey,
-            apiModel: config.LLM_MODEL_NAME || 'gemini-2.5-flash',
-            apiProvider: 'master',
+            apiModel: process.env.LLM_MODEL_NAME || config.LLM_MODEL_NAME || 'qwen3-coder-plus',
+            apiProvider: process.env.LLM_PROVIDER || 'qwen',
             errorCount: 0,
           };
 
@@ -1383,9 +1475,96 @@ export async function initializeWebServer(
         next: express.NextFunction,
       ) => {
         try {
-          // const providers = await _LlmKeyManager.getProviders();  // Method does not exist
-          // TODO: Implement proper provider listing
-          const providers: string[] = [];
+          // Return the same provider list as the working endpoint
+          const providers = [
+            {
+              description: 'GPT models including GPT-4, GPT-3.5, and DALL-E',
+              displayName: 'OpenAI',
+              id: 'openai',
+              isActive: true,
+              keyFormat: 'sk-...',
+              name: 'openai',
+              supportedModels: [
+                'gpt-4',
+                'gpt-4-turbo',
+                'gpt-3.5-turbo',
+                'dall-e-3',
+                'whisper-1',
+              ],
+              testEndpoint: '/v1/models',
+              website: 'https://openai.com',
+            },
+            {
+              description: 'Claude models for advanced AI assistance',
+              displayName: 'Anthropic',
+              id: 'anthropic',
+              isActive: true,
+              keyFormat: 'sk-ant-...',
+              name: 'anthropic',
+              supportedModels: [
+                'claude-3-opus',
+                'claude-3-sonnet',
+                'claude-3-haiku',
+              ],
+              testEndpoint: '/v1/models',
+              website: 'https://anthropic.com',
+            },
+            {
+              description: 'Gemini 2.5 Flash - Fast and efficient model',
+              displayName: 'Google Gemini Flash',
+              id: 'google-flash',
+              isActive: true,
+              keyFormat: 'AI...',
+              name: 'google',
+              supportedModels: ['gemini-2.5-flash'],
+              testEndpoint: '/v1/models',
+              website: 'https://ai.google.dev',
+            },
+            {
+              description: 'Gemini 2.5 Pro - Advanced reasoning model',
+              displayName: 'Gemini',
+              id: 'gemini',
+              isActive: true,
+              keyFormat: 'AI...',
+              name: 'google',
+              supportedModels: ['gemini-2.5-pro'],
+              testEndpoint: '/v1/models',
+              website: 'https://ai.google.dev',
+            },
+            {
+              description: 'Grok-4 advanced reasoning model',
+              displayName: 'xAI Grok',
+              id: 'xai',
+              isActive: true,
+              keyFormat: 'xai-...',
+              name: 'xai',
+              supportedModels: ['grok-4'],
+              testEndpoint: '/v1/models',
+              website: 'https://x.ai',
+            },
+            {
+              description: 'Qwen3 Coder Plus - Advanced coding model',
+              displayName: 'Qwen',
+              id: 'qwen',
+              isActive: true,
+              keyFormat: '...',
+              name: 'qwen',
+              supportedModels: ['qwen3-coder-plus'],
+              testEndpoint: 'https://portal.qwen.ai/v1/chat/completions',
+              website: 'https://portal.qwen.ai',
+            },
+            {
+              description: 'Access to multiple AI models via unified API - GLM-4.5-Air Free',
+              displayName: 'OpenRouter',
+              id: 'openrouter',
+              isActive: true,
+              keyFormat: 'sk-or-...',
+              name: 'openrouter',
+              supportedModels: ['z-ai/glm-4.5-air:free'],
+              testEndpoint: 'https://openrouter.ai/api/v1/models',
+              website: 'https://openrouter.ai',
+            },
+          ];
           res.status(200).json(providers);
         } catch (_error) {
           next(_error);

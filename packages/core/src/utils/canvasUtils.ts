@@ -27,6 +27,18 @@ export function sendToCanvas(
   content: string,
   contentType: 'html' | 'json' | 'markdown' | 'text' | 'url' = 'html',
 ) {
+  // Vérifier si le contenu est une todo list générée par l'agent interne
+  try {
+    const parsedContent = JSON.parse(content);
+    // Si c'est une todo list interne de l'agent, ne pas l'envoyer au canvas
+    if (parsedContent.isAgentInternal === true) {
+      console.log(`[CANVAS] Skipping agent-internal content for job ${jobId}`);
+      return;
+    }
+  } catch (_e) {
+    // Si le contenu n'est pas un JSON valide, continuer normalement
+  }
+
   const channel = `job:${jobId}:events`;
   const message = JSON.stringify({
     content,

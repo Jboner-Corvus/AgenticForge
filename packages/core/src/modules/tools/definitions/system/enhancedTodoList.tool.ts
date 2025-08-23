@@ -170,6 +170,7 @@ const createProjectData = (
   title?: string,
 ) => {
   return {
+    isAgentInternal: true, // Mark as agent-generated to prevent automatic canvas display
     project,
     stats: {
       blocked: tasks.filter((t) => t.status === 'blocked').length,

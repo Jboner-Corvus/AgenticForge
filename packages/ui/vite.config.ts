@@ -103,7 +103,7 @@ export default defineConfig(({ mode }) => {
     port: 3003,
     proxy: {
       '/api': {
-        target: 'http://localhost:3002', // Backend running on port 3002
+        target: 'http://localhost:3007', // Backend running on port 3007 (fixed version)
         changeOrigin: true,
         secure: false,
         ws: true, // Support WebSockets pour SSE
@@ -121,7 +121,7 @@ export default defineConfig(({ mode }) => {
     port: 3003,
     proxy: {
       '/api': {
-        target: 'http://localhost:3002', // Backend running on port 3002
+        target: 'http://localhost:3007', // Backend running on port 3007 (fixed version)
         changeOrigin: true,
         secure: false,
         ws: true, // Support WebSockets pour SSE

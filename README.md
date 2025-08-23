@@ -19,7 +19,7 @@
 
 <p align="center">
   <em>
-     Votre IA privée qui ne vous trahit jamais. Orchestrez des sous-agents spécialisés, visualisez chaque outil MCP en temps réel dans le canvas, et regardez vos idées prendre vie instantanément. Basculement API intelligent, zéro interruption. L'IA souveraine est là - la maîtriserez-vous ?
+     Automatisez vos opérations en toute confiance. AgentMCP orchestre des sous-agents spécialisés, vous permettant de visualiser chaque outil MCP en temps réel dans le canevas. Regardez vos idées prendre vie instantanément. Grâce au basculement API intelligent, profitez d'une continuité sans interruption. L'IA souveraine est là. Saurez-vous la maîtriser ?
   </em>
 </p>
 <br>
