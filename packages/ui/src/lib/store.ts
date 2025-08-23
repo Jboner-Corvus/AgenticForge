@@ -6,8 +6,9 @@
 
 import { create } from 'zustand';
 
-import { getTools, saveSessionApi, loadSessionApi, deleteSessionApi, renameSessionApi, addLlmApiKeyApi, removeLlmApiKeyApi, editLlmApiKeyApi, getLeaderboardStats, getLlmApiKeysApi, loadAllSessionsApi, setActiveLlmProviderApi } from './api';
+import { getTools, saveSessionApi, loadSessionApi, deleteSessionApi, renameSessionApi, addLlmApiKeyApi, removeLlmApiKeyApi, editLlmApiKeyApi, getLeaderboardStats, getLlmApiKeysApi, loadAllSessionsApi, setActiveLlmProviderApi, getMasterLlmApiKeyApi } from './api';
 import type { SessionData } from './api';
+import type { LlmApiKey as ExternalLlmApiKey, LlmApiKey } from '../store/types';
 import { getTranslations } from './translations';
 import { generateUUID } from './utils/uuid';
 import { type ChatMessage as ExternalChatMessage, type NewChatMessage } from '../types/chat.d';
@@ -24,12 +25,47 @@ interface Session {
   status?: string; // Added status property
 }
 
-interface LlmApiKey {
-  provider: string;
-  key: string;
+// Using external LlmApiKey type
+
+interface PartialLlmApiKey {
+  provider?: string;
+  key?: string;
   baseUrl?: string;
   model?: string;
+  id?: string;
+  nickname?: string;
+  keyName?: string;
+  keyValue?: string;
+  isEncrypted?: boolean;
+  isActive?: boolean;
+  priority?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  usageCount?: number;
+  metadata?: { environment: 'universal'; tags: string[]; description?: string };
 }
+
+const createLlmApiKey = (provider: string, key: string, baseUrl?: string, model?: string): ExternalLlmApiKey => ({
+  id: Math.random().toString(36).substring(2, 15),
+  providerId: provider,
+  providerName: provider,
+  keyName: key.substring(0, 8) + '...',
+  keyValue: key,
+  isEncrypted: false,
+  isActive: true,
+  priority: 5,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  usageCount: 0,
+  metadata: {
+    environment: 'universal',
+    tags: [],
+  },
+  provider,
+  key,
+  baseUrl,
+  model,
+});
 
 interface ToastOptions {
   title?: string;
@@ -99,7 +135,7 @@ export interface AppState {
   toggleDebugLogVisibility: () => void;
 
   // LLM API Key Management
-  llmApiKeys: LlmApiKey[];
+  llmApiKeys: ExternalLlmApiKey[];
   activeLlmApiKeyIndex: number;
   addLlmApiKey: (provider: string, key: string, baseUrl?: string, model?: string) => Promise<void>;
   removeLlmApiKey: (index: number) => Promise<void>;
@@ -321,10 +357,18 @@ export const useStore = create<AppState>((set, get) => ({
       const saved = localStorage.getItem('agenticForgeLlmApiKeys');
       if (saved) {
         const keys = JSON.parse(saved);
-        // Remove duplicates based on provider and key combination
-        const uniqueKeys = keys.filter((key: LlmApiKey, index: number, arr: LlmApiKey[]) => 
-          arr.findIndex(k => k.provider === key.provider && k.key === key.key) === index
-        );
+        // Remove duplicates based on provider and key combination, but preserve master key
+        const uniqueKeys = keys.filter((key: ExternalLlmApiKey, index: number, arr: ExternalLlmApiKey[]) => {
+          // Always keep master keys
+          if (key.id === 'master-key' || key.keyName === 'Master Key (.env)') {
+            return true;
+          }
+          // For other keys, remove duplicates based on provider and key combination
+          return arr.findIndex(k => 
+            (k.id === 'master-key' || k.keyName === 'Master Key (.env)') || 
+            (k.provider === key.provider && k.key === key.key)
+          ) === index;
+        });
         // If duplicates were found, save the cleaned version
         if (uniqueKeys.length !== keys.length) {
           console.log('🔑 [CLEANUP] Removed duplicate LLM API keys');
@@ -427,7 +471,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       await addLlmApiKeyApi(provider, key, baseUrl, model);
       const llmApiKeys = get().llmApiKeys; // Get current keys
-      const newKeys = [...llmApiKeys, { provider, key, baseUrl, model }];
+      const newKeys = [...llmApiKeys, createLlmApiKey(provider, key, baseUrl, model)];
       set({ llmApiKeys: newKeys });
       localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(newKeys));
       updateLeaderboardStats({ apiKeysAdded: 1 });
@@ -462,7 +506,7 @@ export const useStore = create<AppState>((set, get) => ({
       // Update the state
       const llmApiKeys = get().llmApiKeys;
       const newKeys = [...llmApiKeys];
-      newKeys[index] = { provider, key, baseUrl, model };
+      newKeys[index] = createLlmApiKey(provider, key, baseUrl, model);
       set({ llmApiKeys: newKeys });
     } catch (error) {
       console.error("Failed to edit LLM API key:", error);
@@ -477,7 +521,7 @@ export const useStore = create<AppState>((set, get) => ({
       console.error("Invalid LLM API key index.");
       return;
     }
-    const selectedProvider = llmApiKeys[index].provider;
+    const selectedProvider = llmApiKeys[index].provider || llmApiKeys[index].providerId;
     setIsSettingActiveLlmApiKey(true);
     try {
       await setActiveLlmProviderApi(selectedProvider, authToken, sessionId);
@@ -778,30 +822,58 @@ export const useStore = create<AppState>((set, get) => ({
       
       // Only load from backend if no keys in localStorage
       if (currentKeys.length === 0) {
+        // Fetch regular LLM API keys
         const keys = await getLlmApiKeysApi(authToken, null);
         console.log('🔑 [INIT] Fetched keys from backend:', keys);
-        const validKeys = keys
+        
+        // Fetch master key
+        let masterKey: ExternalLlmApiKey | null = null;
+        try {
+          masterKey = await getMasterLlmApiKeyApi(authToken, null);
+          console.log('🔑 [INIT] Fetched master key from backend:', masterKey);
+        } catch (error) {
+          console.warn("Failed to fetch master key:", error);
+        }
+        
+        // Combine master key with regular keys
+        const allKeys = masterKey ? [masterKey, ...keys] : keys;
+        
+        const validKeys = allKeys
           .filter(key => key.provider && key.key)
-          .map(key => ({
-            ...key,
-            id: key.id || Math.random().toString(36).substring(2, 15),
-            providerId: key.provider!,
-            providerName: key.provider!,
-            keyName: key.nickname || key.key!,
-            keyValue: key.key!,
-            isEncrypted: key.isEncrypted || false,
-            isActive: key.isActive || true,
-            priority: key.priority || 5,
-            createdAt: key.createdAt || new Date().toISOString(),
-            updatedAt: key.updatedAt || new Date().toISOString(),
-            usageCount: key.usageCount || 0,
-            metadata: key.metadata || {
-              environment: 'universal',
-              tags: [],
-            },
-            provider: key.provider!,
-            key: key.key!
-          }));
+          .map((key: PartialLlmApiKey, index: number, arr: PartialLlmApiKey[]) => {
+            // Check if this is a master key or if it's a duplicate
+            const isMasterKey = key.id === 'master-key' || key.keyName === 'Master Key (.env)';
+            const isDuplicate = !isMasterKey && arr.findIndex((k, i) => 
+              i < index && k.provider === key.provider && k.key === key.key
+            ) !== -1;
+            
+            // Skip duplicates that are not master keys
+            if (isDuplicate && !isMasterKey) {
+              return null;
+            }
+            
+            return {
+              ...key,
+              id: key.id || (isMasterKey ? 'master-key' : Math.random().toString(36).substring(2, 15)),
+              providerId: key.provider!,
+              providerName: key.provider!,
+              keyName: key.nickname || key.keyName || key.key!,
+              keyValue: key.keyValue || key.key!,
+              isEncrypted: key.isEncrypted || false,
+              isActive: key.isActive !== undefined ? key.isActive : true,
+              priority: key.priority || 5,
+              createdAt: key.createdAt || new Date().toISOString(),
+              updatedAt: key.updatedAt || new Date().toISOString(),
+              usageCount: key.usageCount || 0,
+              metadata: key.metadata || {
+                environment: 'universal',
+                tags: isMasterKey ? ['master'] : [],
+              },
+              provider: key.provider!,
+              key: key.key!
+            } as LlmApiKey;
+          })
+          .filter((key): key is LlmApiKey => key !== null); // Remove null values
         console.log('🔑 [INIT] Valid keys after filtering:', validKeys);
         
         if (validKeys.length > 0) {
