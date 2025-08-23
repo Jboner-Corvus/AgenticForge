@@ -1,4 +1,5 @@
 import IORedis, { RedisOptions } from 'ioredis';
+
 import { getLogger } from '../../logger.ts';
 
 const logger = getLogger();
@@ -6,8 +7,8 @@ let redisClient: IORedis | null = null;
 
 const redisOptions: RedisOptions = {
   host: process.env.REDIS_HOST || 'localhost',
-  port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : 6379,
   maxRetriesPerRequest: null,
+  port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : 6379,
 };
 
 export const getRedisClientInstance = (): IORedis => {

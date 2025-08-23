@@ -2,7 +2,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { UserInput } from './UserInput';
-import { useCombinedStore } from '../store';
 import { TestLanguageProvider } from '../lib/__mocks__/TestLanguageProvider';
 
 // Mock the store

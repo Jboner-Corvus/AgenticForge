@@ -1,4 +1,4 @@
-import { BarChart, Clock, Sparkles, CheckCircle } from 'lucide-react';
+import { BarChart, Clock, Sparkles, CheckCircle, Shield } from 'lucide-react';
 import { memo, useState, useEffect } from 'react';
 import { Badge } from './ui/badge';
 import { OpenAILogo, AnthropicLogo, GeminiLogo, OpenRouterLogo } from './icons/LlmLogos';
@@ -40,7 +40,7 @@ export const LeaderboardPage = memo(() => {
     // Create mock data based on the actual API keys
     const mockData: ApiKeyUsage[] = llmApiKeys.map((key, index) => ({
       ...key,
-      keyMask: `${key.keyValue?.substring(0, 8)}...${key.keyValue?.substring(key.keyValue.length - 4)}`,
+      keyMask: key.keyValue ? `${key.keyValue?.substring(0, 8)}...${key.keyValue?.substring(key.keyValue.length - 4)}` : 'No Key',
       rank: index + 1
     }));
     
@@ -119,21 +119,41 @@ export const LeaderboardPage = memo(() => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800 bg-background/50">
-                {leaderboardData.map((key) => {
+                {leaderboardData.map((key, index) => {
                   const { Logo, color, name } = getProviderVisuals(key.providerName);
                   const isActive = llmApiKeys[activeLlmApiKeyIndex]?.key === key.keyValue;
+                  const isMasterKey = key.keyName === 'Master Key (.env)' || key.id === 'master-key';
+                  
                   return (
-                    <tr key={key.key} className="hover:bg-gray-800/50 transition-colors">
+                    <tr 
+                      key={key.key || index} 
+                      className={`hover:bg-gray-800/50 transition-colors ${isMasterKey ? 'bg-yellow-900/10' : ''}`}
+                    >
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6">
-                        <Badge className={`text-lg font-bold ${color} text-white`}>#{key.rank}</Badge>
+                        <div className="flex items-center">
+                          <Badge className={`text-lg font-bold ${color} text-white`}>#{key.rank}</Badge>
+                          {isMasterKey && (
+                            <Shield className="h-4 w-4 ml-2 text-yellow-500" />
+                          )}
+                        </div>
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
                         <div className="flex items-center">
                           <Logo className="h-5 w-5 mr-2" />
                           {name}
+                          {isMasterKey && (
+                            <Badge className="ml-2 bg-yellow-900/50 text-yellow-300 border border-yellow-700/50">
+                              Master
+                            </Badge>
+                          )}
                         </div>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 font-medium">{key.nickname}</td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 font-medium">
+                        {key.nickname || key.keyName}
+                        {isMasterKey && (
+                          <div className="text-xs text-yellow-500/80">From Environment</div>
+                        )}
+                      </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">{key.usageStats?.totalRequests || 0}</td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">{key.usageStats?.successfulRequests || 0}</td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
@@ -141,6 +161,12 @@ export const LeaderboardPage = memo(() => {
                           <Badge className="bg-green-900/50 text-green-300 border border-green-700/50">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Active
+                          </Badge>
+                        )}
+                        {isMasterKey && !isActive && (
+                          <Badge className="bg-yellow-900/50 text-yellow-300 border border-yellow-700/50">
+                            <Shield className="h-3 w-3 mr-1" />
+                            Available
                           </Badge>
                         )}
                       </td>

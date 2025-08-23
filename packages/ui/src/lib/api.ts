@@ -405,6 +405,52 @@ export async function addLlmApiKeyApi(provider: string, key: string, baseUrl?: s
 }
 
 /**
+ * Récupère la clé API maîtresse depuis les variables d'environnement.
+ */
+export async function getMasterLlmApiKeyApi(authToken: string | null = null, sessionId: string | null = null): Promise<LlmApiKey | null> {
+  const headers = getAuthHeaders(authToken, sessionId);
+  
+  const response = await fetch(buildApiUrl('/api/llm-keys/master-key'), {
+    method: 'GET',
+    headers
+  });
+  
+  if (!response.ok) {
+    if (response.status === 404) {
+      // Master key not found, return null
+      return null;
+    }
+    throw new Error(`Erreur lors de la récupération de la clé API maîtresse`);
+  }
+  
+  const data = await response.json();
+  return {
+    id: 'master-key',
+    providerId: data.provider,
+    providerName: data.provider,
+    keyName: 'Master Key (.env)',
+    keyValue: data.apiKey,
+    isEncrypted: false,
+    isActive: true,
+    priority: 1,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    usageCount: 0,
+    metadata: {
+      environment: 'universal',
+      tags: ['master']
+    },
+    usageStats: {
+      totalRequests: 0,
+      successfulRequests: 0,
+      failedRequests: 0,
+      averageResponseTime: 0,
+      errorRate: 0
+    }
+  };
+}
+
+/**
  * Récupère toutes les clés API LLM.
  */
 export async function getLlmApiKeysApi(authToken: string | null = null, sessionId: string | null = null): Promise<LlmApiKey[]> {

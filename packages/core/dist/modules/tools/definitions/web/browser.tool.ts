@@ -11,7 +11,7 @@ let getPageContent: ((page: any) => Promise<string>) | null = null;
 try {
   const browserManager = await import('./browserManager.ts');
   getBrowser = browserManager.getBrowser;
-  
+
   getPageContent = async (page: any): Promise<string> => {
     const mainContent = await page.evaluate(() => {
       const main = document.querySelector('main') || document.body;
@@ -52,11 +52,12 @@ export const browserTool: Tool<typeof parameters, typeof browserOutput> = {
   execute: async (args: z.infer<typeof parameters>, ctx: Ctx) => {
     // Check if Playwright is available
     if (!getBrowser || !getPageContent) {
-      return { 
-        erreur: 'Browser tool is not available due to missing Playwright dependencies.' 
+      return {
+        erreur:
+          'Browser tool is not available due to missing Playwright dependencies.',
       };
     }
-    
+
     ctx.log.info(`Navigating to URL: ${args.url}`);
     await sendEvent(ctx, 'browser.navigating', { url: args.url });
 

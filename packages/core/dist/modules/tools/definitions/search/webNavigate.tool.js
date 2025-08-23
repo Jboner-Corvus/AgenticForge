@@ -6,12 +6,12 @@ import {
 
 // src/modules/tools/definitions/search/webNavigate.tool.ts
 init_esm_shims();
-import { z } from "zod";
-import * as cheerio from "cheerio";
 import { Readability } from "@mozilla/readability";
+import * as cheerio from "cheerio";
+import { z } from "zod";
 var webNavigateParams = z.object({
-  url: z.string().url().describe("The URL to navigate to."),
-  action: z.enum(["summarize", "extract_text", "get_title"]).optional().describe("The action to perform on the page. Default is summarize.")
+  action: z.enum(["summarize", "extract_text", "get_title"]).optional().describe("The action to perform on the page. Default is summarize."),
+  url: z.string().url().describe("The URL to navigate to.")
 });
 var webNavigateOutput = z.object({
   result: z.string().describe("The result of the navigation and action.")
@@ -37,9 +37,6 @@ var webNavigateTool = {
       const $ = cheerio.load(html);
       let result = "";
       switch (args.action) {
-        case "get_title":
-          result = $("title").text() || "No title found";
-          break;
         case "extract_text":
           $("script, style").remove();
           result = $("body").text().replace(/\s+/g, " ").trim();
@@ -47,12 +44,15 @@ var webNavigateTool = {
             result = result.substring(0, 2e3) + "...";
           }
           break;
+        case "get_title":
+          result = $("title").text() || "No title found";
+          break;
         case "summarize":
         default:
           try {
             const doc = {
-              title: $("title").text(),
-              content: html
+              content: html,
+              title: $("title").text()
             };
             const reader = new Readability(doc);
             const article = reader.parse();
@@ -75,10 +75,7 @@ var webNavigateTool = {
       }
       return { result };
     } catch (error) {
-      ctx.log.error(
-        { err: error },
-        "Failed to navigate to web page."
-      );
+      ctx.log.error({ err: error }, "Failed to navigate to web page.");
       if (error instanceof Error && error.name === "AbortError") {
         return {
           result: "Request timed out while trying to navigate to the web page."

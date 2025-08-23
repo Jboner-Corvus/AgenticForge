@@ -1,0 +1,121 @@
+import { z } from 'zod';
+
+declare const unifiedTodoItemSchema: z.ZodObject<{
+    actualTime: z.ZodOptional<z.ZodNumber>;
+    assignedTo: z.ZodOptional<z.ZodString>;
+    category: z.ZodOptional<z.ZodString>;
+    content: z.ZodString;
+    createdAt: z.ZodNumber;
+    dependencies: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+    estimatedTime: z.ZodOptional<z.ZodNumber>;
+    id: z.ZodString;
+    parentId: z.ZodOptional<z.ZodString>;
+    priority: z.ZodDefault<z.ZodEnum<["low", "medium", "high", "critical"]>>;
+    progress: z.ZodDefault<z.ZodNumber>;
+    projectId: z.ZodOptional<z.ZodString>;
+    status: z.ZodEnum<["pending", "in_progress", "completed", "blocked", "cancelled"]>;
+    tags: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+    updatedAt: z.ZodNumber;
+}, "strip", z.ZodTypeAny, {
+    status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
+    id: string;
+    content: string;
+    createdAt: number;
+    dependencies: string[];
+    priority: "high" | "low" | "medium" | "critical";
+    tags: string[];
+    updatedAt: number;
+    progress: number;
+    actualTime?: number | undefined;
+    assignedTo?: string | undefined;
+    category?: string | undefined;
+    estimatedTime?: number | undefined;
+    parentId?: string | undefined;
+    projectId?: string | undefined;
+}, {
+    status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
+    id: string;
+    content: string;
+    createdAt: number;
+    updatedAt: number;
+    actualTime?: number | undefined;
+    assignedTo?: string | undefined;
+    category?: string | undefined;
+    dependencies?: string[] | undefined;
+    estimatedTime?: number | undefined;
+    parentId?: string | undefined;
+    priority?: "high" | "low" | "medium" | "critical" | undefined;
+    projectId?: string | undefined;
+    tags?: string[] | undefined;
+    progress?: number | undefined;
+}>;
+declare const unifiedProjectSchema: z.ZodObject<{
+    completedTaskCount: z.ZodDefault<z.ZodNumber>;
+    createdAt: z.ZodNumber;
+    description: z.ZodOptional<z.ZodString>;
+    endDate: z.ZodOptional<z.ZodNumber>;
+    id: z.ZodString;
+    name: z.ZodString;
+    progress: z.ZodDefault<z.ZodNumber>;
+    startDate: z.ZodOptional<z.ZodNumber>;
+    status: z.ZodDefault<z.ZodEnum<["planning", "active", "on_hold", "completed", "cancelled"]>>;
+    taskCount: z.ZodDefault<z.ZodNumber>;
+    updatedAt: z.ZodNumber;
+}, "strip", z.ZodTypeAny, {
+    status: "completed" | "cancelled" | "planning" | "on_hold" | "active";
+    name: string;
+    id: string;
+    createdAt: number;
+    updatedAt: number;
+    progress: number;
+    completedTaskCount: number;
+    taskCount: number;
+    description?: string | undefined;
+    endDate?: number | undefined;
+    startDate?: number | undefined;
+}, {
+    name: string;
+    id: string;
+    createdAt: number;
+    updatedAt: number;
+    status?: "completed" | "cancelled" | "planning" | "on_hold" | "active" | undefined;
+    description?: string | undefined;
+    endDate?: number | undefined;
+    progress?: number | undefined;
+    startDate?: number | undefined;
+    completedTaskCount?: number | undefined;
+    taskCount?: number | undefined;
+}>;
+declare class TodoStateManager {
+    private projects;
+    private tasks;
+    private templateCache;
+    constructor();
+    clearAll(sessionKey: string): Promise<void>;
+    createProject(sessionKey: string, project: z.infer<typeof unifiedProjectSchema>): Promise<z.infer<typeof unifiedProjectSchema>>;
+    createTask(sessionKey: string, task: z.infer<typeof unifiedTodoItemSchema>): Promise<z.infer<typeof unifiedTodoItemSchema>>;
+    deleteTask(sessionKey: string, taskId: string): Promise<boolean>;
+    getProject(sessionKey: string, projectId: string): null | z.infer<typeof unifiedProjectSchema>;
+    getStats(sessionKey: string, projectId?: string): {
+        blocked: number;
+        cancelled: number;
+        completed: number;
+        in_progress: number;
+        pending: number;
+        projectProgress: number;
+        total: number;
+    };
+    getTasks(sessionKey: string, filters?: any): Array<z.infer<typeof unifiedTodoItemSchema>>;
+    initializeFromPersistence(sessionKey: string): Promise<boolean>;
+    loadState(sessionKey: string): Promise<boolean>;
+    updateProject(sessionKey: string, projectId: string, updates: Partial<z.infer<typeof unifiedProjectSchema>>): Promise<null | z.infer<typeof unifiedProjectSchema>>;
+    updateTask(sessionKey: string, taskId: string, updates: Partial<z.infer<typeof unifiedTodoItemSchema>>): Promise<null | z.infer<typeof unifiedTodoItemSchema>>;
+    private generateId;
+    private initializeDefaults;
+    private persistState;
+    private updateProjectProgress;
+    private updateProjectTaskCount;
+}
+declare const todoStateManager: TodoStateManager;
+
+export { TodoStateManager, todoStateManager };

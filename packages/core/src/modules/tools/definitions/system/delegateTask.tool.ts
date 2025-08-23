@@ -1,14 +1,18 @@
-
-import { z } from 'zod';
-import { Tool } from '../../../../types';
 import { spawn } from 'child_process';
-import { getRedisClientInstance } from '../../../redis/redisClient';
 import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
+
+import { Tool } from '../../../../types';
+import { getRedisClientInstance } from '../../../redis/redisClient';
 
 // Define the parameters for the delegateTask tool
 const delegateTaskParams = z.object({
-  taskDescription: z.string().describe("The task to delegate to a specialized agent."),
-  agent: z.enum(['gemini-cli', 'qwen-cli']).describe("The specialized agent to use."),
+  agent: z
+    .enum(['gemini-cli', 'qwen-cli'])
+    .describe('The specialized agent to use.'),
+  taskDescription: z
+    .string()
+    .describe('The task to delegate to a specialized agent.'),
 });
 
 const getApiCredits = async (agent: string): Promise<number> => {
@@ -26,10 +30,9 @@ const getApiCredits = async (agent: string): Promise<number> => {
 };
 
 const delegateTaskTool: Tool<typeof delegateTaskParams> = {
-  name: 'delegateTask',
-  description: 'Delegates a task to a specialized agent and returns a job ID to stream the output.',
-  parameters: delegateTaskParams,
-  execute: async ({ taskDescription, agent }) => {
+  description:
+    'Delegates a task to a specialized agent and returns a job ID to stream the output.',
+  execute: async ({ agent, taskDescription }) => {
     const redis = getRedisClientInstance();
     const credits = await getApiCredits(agent);
 
@@ -39,20 +42,28 @@ const delegateTaskTool: Tool<typeof delegateTaskParams> = {
 
     const creditsKey = `api-credits:${agent}`;
     await redis.decr(creditsKey);
-    
+
     const jobId = uuidv4();
     const channel = `job:${jobId}:events`;
 
-    console.log(`Delegating task "${taskDescription}" to ${agent}. Streaming output to job ID: ${jobId}`);
+    console.log(
+      `Delegating task "${taskDescription}" to ${agent}. Streaming output to job ID: ${jobId}`,
+    );
 
     // Do not wait for the promise to resolve
     spawnChildProcess(taskDescription, agent, channel);
 
     return `Task delegated. You can stream the output using the job ID: ${jobId}`;
   },
+  name: 'delegateTask',
+  parameters: delegateTaskParams,
 };
 
-const spawnChildProcess = (taskDescription: string, agent: string, channel: string) => {
+const spawnChildProcess = (
+  taskDescription: string,
+  agent: string,
+  channel: string,
+) => {
   const redis = getRedisClientInstance();
   const child = spawn(agent, [taskDescription], {
     shell: true,
@@ -60,22 +71,28 @@ const spawnChildProcess = (taskDescription: string, agent: string, channel: stri
   });
 
   child.stdout.on('data', (data) => {
-    const message = { type: 'stdout', content: data.toString() };
+    const message = { content: data.toString(), type: 'stdout' };
     redis.publish(channel, JSON.stringify(message));
   });
 
   child.stderr.on('data', (data) => {
-    const message = { type: 'stderr', content: data.toString() };
+    const message = { content: data.toString(), type: 'stderr' };
     redis.publish(channel, JSON.stringify(message));
   });
 
   child.on('close', (code) => {
-    const message = { type: 'status', content: `Agent ${agent} exited with code ${code}.` };
+    const message = {
+      content: `Agent ${agent} exited with code ${code}.`,
+      type: 'status',
+    };
     redis.publish(channel, JSON.stringify(message));
   });
 
   child.on('error', (err) => {
-    const message = { type: 'error', content: `Failed to start agent ${agent}: ${err.message}` };
+    const message = {
+      content: `Failed to start agent ${agent}: ${err.message}`,
+      type: 'error',
+    };
     redis.publish(channel, JSON.stringify(message));
   });
 };

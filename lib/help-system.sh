@@ -64,6 +64,7 @@ show_main_help() {
     echo "    test:unit                Run unit tests only"
     echo "    test:integration         Run integration tests"
     echo "    test:all                 Run all tests (unit + integration)"
+    echo "    quality-check            Run quality checks (lint + typecheck + unit tests)"
     echo ""
     echo -e "  ${HELP_COLOR_CYAN}Maintenance:${HELP_COLOR_NC}"
     echo "    menu                     Interactive menu interface"

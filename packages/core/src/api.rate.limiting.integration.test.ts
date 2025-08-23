@@ -1,8 +1,9 @@
-import { describe, expect, it, beforeAll, afterAll, beforeEach } from 'vitest';
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { Server } from 'http';
 import request from 'supertest';
-import rateLimit from 'express-rate-limit';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+
 import { getConfig } from './config.ts';
 
 describe('API Rate Limiting Integration Tests', () => {
@@ -21,10 +22,16 @@ describe('API Rate Limiting Integration Tests', () => {
     // Add CORS middleware
     app.use((req, res, next) => {
       res.header('Access-Control-Allow-Origin', '*');
-      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+      res.header(
+        'Access-Control-Allow-Methods',
+        'GET, POST, PUT, DELETE, OPTIONS',
+      );
+      res.header(
+        'Access-Control-Allow-Headers',
+        'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+      );
       res.header('Access-Control-Allow-Credentials', 'true');
-      
+
       if (req.method === 'OPTIONS') {
         res.sendStatus(200);
       } else {
@@ -34,42 +41,42 @@ describe('API Rate Limiting Integration Tests', () => {
 
     // Global rate limiter - 100 requests per 15 minutes
     const globalLimiter = rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
+      legacyHeaders: false, // Disable the `X-RateLimit-*` headers
       max: 100, // limit each IP to 100 requests per windowMs
       message: {
         error: 'Too many requests from this IP, please try again later.',
+        retryAfter: '15 minutes',
         type: 'rate_limit_exceeded',
-        retryAfter: '15 minutes'
       },
       standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-      legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+      windowMs: 15 * 60 * 1000, // 15 minutes
     });
 
     // Strict rate limiter for authentication endpoints - 5 requests per 15 minutes
     const authLimiter = rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
+      legacyHeaders: false,
       max: 5, // limit each IP to 5 requests per windowMs
       message: {
         error: 'Too many authentication attempts, please try again later.',
+        retryAfter: '15 minutes',
         type: 'auth_rate_limit_exceeded',
-        retryAfter: '15 minutes'
       },
-      standardHeaders: true,
-      legacyHeaders: false,
       skipSuccessfulRequests: true, // Don't count successful requests
+      standardHeaders: true,
+      windowMs: 15 * 60 * 1000, // 15 minutes
     });
 
     // Chat rate limiter - 10 requests per minute
     const chatLimiter = rateLimit({
-      windowMs: 60 * 1000, // 1 minute
+      legacyHeaders: false,
       max: 10, // limit each IP to 10 requests per minute
       message: {
         error: 'Too many chat requests, please slow down.',
+        retryAfter: '1 minute',
         type: 'chat_rate_limit_exceeded',
-        retryAfter: '1 minute'
       },
       standardHeaders: true,
-      legacyHeaders: false,
+      windowMs: 60 * 1000, // 1 minute
     });
 
     // Apply global rate limiting to all requests
@@ -82,22 +89,25 @@ describe('API Rate Limiting Integration Tests', () => {
 
     // Authentication endpoints with strict rate limiting
     app.post('/api/auth/login', authLimiter, (req, res) => {
-      const { username, password } = req.body;
+      const { password, username } = req.body;
       if (username === 'admin' && password === 'password') {
-        res.json({ token: 'mock-jwt-token', user: { id: 1, username: 'admin' } });
+        res.json({
+          token: 'mock-jwt-token',
+          user: { id: 1, username: 'admin' },
+        });
       } else {
         res.status(401).json({ error: 'Invalid credentials' });
       }
     });
 
     app.post('/api/auth/register', authLimiter, (req, res) => {
-      const { username, email } = req.body;
+      const { email, username } = req.body;
       if (!username || !email) {
         return res.status(400).json({ error: 'Username and email required' });
       }
-      res.status(201).json({ 
+      res.status(201).json({
         message: 'User registered successfully',
-        user: { id: Date.now(), username, email }
+        user: { email, id: Date.now(), username },
       });
     });
 
@@ -115,12 +125,12 @@ describe('API Rate Limiting Integration Tests', () => {
       if (!message) {
         return res.status(400).json({ error: 'Message required' });
       }
-      
+
       const jobId = `job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       res.status(202).json({
         jobId,
         message: 'Chat request accepted',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     });
 
@@ -128,53 +138,60 @@ describe('API Rate Limiting Integration Tests', () => {
       res.json({
         history: [
           { id: 1, message: 'Hello', timestamp: Date.now() - 60000 },
-          { id: 2, message: 'How are you?', timestamp: Date.now() - 30000 }
-        ]
+          { id: 2, message: 'How are you?', timestamp: Date.now() - 30000 },
+        ],
       });
     });
 
     // API endpoints for testing different scenarios
     app.get('/api/public/info', (req, res) => {
-      res.json({ 
+      res.json({
         message: 'Public information endpoint',
         rateLimit: {
-          global: '100 requests per 15 minutes',
+          auth: '5 requests per 15 minutes',
           chat: '10 requests per minute',
-          auth: '5 requests per 15 minutes'
-        }
+          global: '100 requests per 15 minutes',
+        },
       });
     });
 
     // Admin endpoints with custom rate limiting
     const adminLimiter = rateLimit({
-      windowMs: 60 * 1000, // 1 minute
       max: 20, // 20 requests per minute for admin operations
       message: {
         error: 'Too many admin requests',
-        type: 'admin_rate_limit_exceeded'
-      }
+        type: 'admin_rate_limit_exceeded',
+      },
+      windowMs: 60 * 1000, // 1 minute
     });
 
     app.get('/api/admin/stats', adminLimiter, (req, res) => {
       res.json({
-        totalUsers: 1250,
+        systemLoad: 0.65,
         totalChats: 5000,
-        systemLoad: 0.65
+        totalUsers: 1250,
       });
     });
 
     // Error handling middleware
-    app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-      if (error.status === 429) {
-        res.status(429).json({
-          error: 'Rate limit exceeded',
-          message: error.message,
-          retryAfter: error.retryAfter
-        });
-      } else {
-        next(error);
-      }
-    });
+    app.use(
+      (
+        error: any,
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        if (error.status === 429) {
+          res.status(429).json({
+            error: 'Rate limit exceeded',
+            message: error.message,
+            retryAfter: error.retryAfter,
+          });
+        } else {
+          next(error);
+        }
+      },
+    );
 
     // 404 handler
     app.use('*', (req, res) => {
@@ -195,14 +212,12 @@ describe('API Rate Limiting Integration Tests', () => {
 
   beforeEach(async () => {
     // Wait a bit between tests to avoid rate limiting interference
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   });
 
   describe('Global Rate Limiting', () => {
     it('should allow requests within global rate limit', async () => {
-      const response = await request(app)
-        .get('/api/health')
-        .expect(200);
+      const response = await request(app).get('/api/health').expect(200);
 
       expect(response.body).toHaveProperty('status', 'ok');
       expect(response.headers).toHaveProperty('ratelimit-limit');
@@ -211,29 +226,23 @@ describe('API Rate Limiting Integration Tests', () => {
     });
 
     it('should include rate limit headers in responses', async () => {
-      const response = await request(app)
-        .get('/api/public/info')
-        .expect(200);
+      const response = await request(app).get('/api/public/info').expect(200);
 
       expect(response.headers['ratelimit-limit']).toBeDefined();
       expect(response.headers['ratelimit-remaining']).toBeDefined();
       expect(response.headers['ratelimit-reset']).toBeDefined();
-      
+
       const limit = parseInt(response.headers['ratelimit-limit']);
       const remaining = parseInt(response.headers['ratelimit-remaining']);
-      
+
       expect(limit).toBeGreaterThan(0);
       expect(remaining).toBeLessThanOrEqual(limit);
     });
 
     it('should decrement remaining requests count', async () => {
-      const first = await request(app)
-        .get('/api/public/info')
-        .expect(200);
+      const first = await request(app).get('/api/public/info').expect(200);
 
-      const second = await request(app)
-        .get('/api/public/info')
-        .expect(200);
+      const second = await request(app).get('/api/public/info').expect(200);
 
       const firstRemaining = parseInt(first.headers['ratelimit-remaining']);
       const secondRemaining = parseInt(second.headers['ratelimit-remaining']);
@@ -246,7 +255,7 @@ describe('API Rate Limiting Integration Tests', () => {
     it('should allow valid authentication requests', async () => {
       const response = await request(app)
         .post('/api/auth/login')
-        .send({ username: 'admin', password: 'password' })
+        .send({ password: 'password', username: 'admin' })
         .expect(200);
 
       expect(response.body).toHaveProperty('token');
@@ -256,11 +265,11 @@ describe('API Rate Limiting Integration Tests', () => {
     it('should apply stricter rate limits to auth endpoints', async () => {
       const response = await request(app)
         .post('/api/auth/login')
-        .send({ username: 'admin', password: 'password' })
+        .send({ password: 'password', username: 'admin' })
         .expect(200);
 
       const authLimit = parseInt(response.headers['ratelimit-limit']);
-      
+
       // Auth endpoints should have much lower limits than global
       expect(authLimit).toBeLessThan(50);
     });
@@ -268,7 +277,7 @@ describe('API Rate Limiting Integration Tests', () => {
     it('should handle registration rate limiting', async () => {
       const response = await request(app)
         .post('/api/auth/register')
-        .send({ username: 'testuser', email: 'test@example.com' })
+        .send({ email: 'test@example.com', username: 'testuser' })
         .expect(201);
 
       expect(response.body).toHaveProperty('message');
@@ -304,16 +313,14 @@ describe('API Rate Limiting Integration Tests', () => {
         .expect(202);
 
       const chatLimit = parseInt(response.headers['ratelimit-limit']);
-      
+
       // Chat should have moderate limits
       expect(chatLimit).toBeGreaterThan(5);
       expect(chatLimit).toBeLessThan(50);
     });
 
     it('should rate limit chat history requests', async () => {
-      const response = await request(app)
-        .get('/api/chat/history')
-        .expect(200);
+      const response = await request(app).get('/api/chat/history').expect(200);
 
       expect(response.body).toHaveProperty('history');
       expect(Array.isArray(response.body.history)).toBe(true);
@@ -324,35 +331,31 @@ describe('API Rate Limiting Integration Tests', () => {
   describe('Rate Limit Enforcement', () => {
     it('should handle multiple rapid requests gracefully', async () => {
       const requests = Array.from({ length: 3 }, () =>
-        request(app)
-          .get('/api/health')
-          .expect(200)
+        request(app).get('/api/health').expect(200),
       );
 
       const responses = await Promise.all(requests);
-      
+
       // All should succeed within normal limits
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect(response.body).toHaveProperty('status', 'ok');
         expect(response.headers['ratelimit-remaining']).toBeDefined();
       });
     });
 
     it('should provide consistent rate limit information', async () => {
-      const response1 = await request(app)
-        .get('/api/public/info')
-        .expect(200);
+      const response1 = await request(app).get('/api/public/info').expect(200);
 
-      const response2 = await request(app)
-        .get('/api/public/info')
-        .expect(200);
+      const response2 = await request(app).get('/api/public/info').expect(200);
 
       // Rate limit headers should be consistent
-      expect(response1.headers['ratelimit-limit']).toBe(response2.headers['ratelimit-limit']);
-      
+      expect(response1.headers['ratelimit-limit']).toBe(
+        response2.headers['ratelimit-limit'],
+      );
+
       const remaining1 = parseInt(response1.headers['ratelimit-remaining']);
       const remaining2 = parseInt(response2.headers['ratelimit-remaining']);
-      
+
       expect(remaining2).toBeLessThanOrEqual(remaining1);
     });
 
@@ -360,13 +363,13 @@ describe('API Rate Limiting Integration Tests', () => {
       const concurrentRequests = Array.from({ length: 5 }, (_, i) =>
         request(app)
           .post('/api/chat')
-          .send({ message: `Concurrent message ${i}` })
+          .send({ message: `Concurrent message ${i}` }),
       );
 
       const responses = await Promise.all(concurrentRequests);
-      
+
       // All should succeed if within limits
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect([200, 202, 429]).toContain(response.status);
         if (response.status === 202) {
           expect(response.body).toHaveProperty('jobId');
@@ -380,16 +383,14 @@ describe('API Rate Limiting Integration Tests', () => {
       // This test assumes we might hit rate limits in CI
       // We'll make many requests to potentially trigger it
       const manyRequests = Array.from({ length: 15 }, () =>
-        request(app)
-          .post('/api/chat')
-          .send({ message: 'Rapid test message' })
+        request(app).post('/api/chat').send({ message: 'Rapid test message' }),
       );
 
       const responses = await Promise.all(manyRequests);
-      
+
       // Check if any were rate limited
-      const rateLimitedResponse = responses.find(r => r.status === 429);
-      
+      const rateLimitedResponse = responses.find((r) => r.status === 429);
+
       if (rateLimitedResponse) {
         expect(rateLimitedResponse.body).toHaveProperty('error');
         expect(rateLimitedResponse.body.error).toContain('Too many');
@@ -399,29 +400,25 @@ describe('API Rate Limiting Integration Tests', () => {
     });
 
     it('should include retry-after information', async () => {
-      const response = await request(app)
-        .get('/api/public/info')
-        .expect(200);
+      const response = await request(app).get('/api/public/info').expect(200);
 
       // Check headers are present (whether rate limited or not)
       expect(response.headers['ratelimit-reset']).toBeDefined();
-      
+
       const resetTime = parseInt(response.headers['ratelimit-reset']);
       const currentTime = Math.floor(Date.now() / 1000);
-      
+
       expect(resetTime).toBeGreaterThan(currentTime);
     });
   });
 
   describe('Admin Rate Limiting', () => {
     it('should apply custom rate limits to admin endpoints', async () => {
-      const response = await request(app)
-        .get('/api/admin/stats')
-        .expect(200);
+      const response = await request(app).get('/api/admin/stats').expect(200);
 
       expect(response.body).toHaveProperty('totalUsers');
       expect(response.body).toHaveProperty('systemLoad');
-      
+
       const adminLimit = parseInt(response.headers['ratelimit-limit']);
       expect(adminLimit).toBeGreaterThan(10); // Admin should have reasonable limits
     });
@@ -439,9 +436,7 @@ describe('API Rate Limiting Integration Tests', () => {
     });
 
     it('should handle OPTIONS requests for CORS', async () => {
-      const response = await request(app)
-        .options('/api/chat')
-        .expect(200);
+      const response = await request(app).options('/api/chat').expect(200);
 
       // OPTIONS requests should still be rate limited
       expect(response.headers['ratelimit-remaining']).toBeDefined();
@@ -451,13 +446,13 @@ describe('API Rate Limiting Integration Tests', () => {
       // First failed attempt
       const first = await request(app)
         .post('/api/auth/login')
-        .send({ username: 'wrong', password: 'wrong' })
+        .send({ password: 'wrong', username: 'wrong' })
         .expect(401);
 
       // Second failed attempt
       const second = await request(app)
         .post('/api/auth/login')
-        .send({ username: 'wrong', password: 'wrong' })
+        .send({ password: 'wrong', username: 'wrong' })
         .expect(401);
 
       const firstRemaining = parseInt(first.headers['ratelimit-remaining']);

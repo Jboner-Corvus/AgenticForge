@@ -1,6 +1,10 @@
 import { getConfig } from '../config.ts';
 import { getLogger } from '../logger.ts';
-import { ILlmProvider, LLMContent, LlmError } from '../modules/llm/llm-types.ts';
+import {
+  ILlmProvider,
+  LLMContent,
+  LlmError,
+} from '../modules/llm/llm-types.ts';
 import { LlmApiKey, LlmKeyManager } from '../modules/llm/LlmKeyManager.ts';
 import { LlmKeyErrorType } from '../modules/llm/LlmKeyManager.ts';
 import { QwenProvider } from '../modules/llm/qwenProvider.ts';
@@ -75,7 +79,10 @@ class AnthropicProvider implements ILlmProvider {
           role: 'user',
         };
       }
-      return { content: msg.parts.map((p: { text: string }) => p.text).join(''), role };
+      return {
+        content: msg.parts.map((p: { text: string }) => p.text).join(''),
+        role,
+      };
     });
 
     const requestBody: any = {
@@ -144,7 +151,8 @@ class AnthropicProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) =>
+                partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -249,7 +257,11 @@ class GeminiProvider implements ILlmProvider {
         // Gemini API does not directly support 'tool' role in 'contents'.
         // Convert tool outputs to user messages.
         role = 'user';
-        parts = [{ text: `Tool output: ${parts.map((p: { text: string }) => p.text).join('')}` }];
+        parts = [
+          {
+            text: `Tool output: ${parts.map((p: { text: string }) => p.text).join('')}`,
+          },
+        ];
       }
 
       return { parts, role };
@@ -333,7 +345,8 @@ class GeminiProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) =>
+                partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -497,7 +510,8 @@ class GrokProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) =>
+                partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -658,7 +672,8 @@ class HuggingFaceProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) =>
+                partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -821,7 +836,8 @@ class MistralProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) =>
+                partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -989,7 +1005,8 @@ class OpenAIProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) =>
+                partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -1162,7 +1179,8 @@ class OpenRouterProvider implements ILlmProvider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) =>
+                partSum + (part.text?.length || 0),
               0,
             ),
           0,
@@ -1200,7 +1218,10 @@ class OpenRouterProvider implements ILlmProvider {
   }
 }
 
-export function getLlmProvider(providerName: string, modelName?: string): ILlmProvider {
+export function getLlmProvider(
+  providerName: string,
+  modelName?: string,
+): ILlmProvider {
   let currentLlmProvider: ILlmProvider;
 
   // Check if it's a GPT-5 model
@@ -1225,14 +1246,14 @@ export function getLlmProvider(providerName: string, modelName?: string): ILlmPr
       currentLlmProvider = new MistralProvider();
       break;
     case 'openai':
-        currentLlmProvider = new OpenAIProvider();
-        break;
+      currentLlmProvider = new OpenAIProvider();
+      break;
     case 'openrouter':
-        currentLlmProvider = new OpenRouterProvider();
-        break;
+      currentLlmProvider = new OpenRouterProvider();
+      break;
     case 'qwen':
-        currentLlmProvider = new QwenProvider();
-        break;
+      currentLlmProvider = new QwenProvider();
+      break;
     default:
       getLogger().warn(
         `Unknown LLM provider requested: ${providerName}. Defaulting to GeminiProvider.`,

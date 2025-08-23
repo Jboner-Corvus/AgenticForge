@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { T as Tool } from '../../../../types-C2iGLYUf.js';
+import { T as Tool } from '../../../../types-X5iVOMgV.js';
 import 'fastmcp';
 import 'ioredis';
 import 'bullmq';
@@ -7,8 +7,8 @@ import 'pg';
 import 'pino';
 
 declare const webNavigateParams: z.ZodObject<{
-    url: z.ZodString;
     action: z.ZodOptional<z.ZodEnum<["summarize", "extract_text", "get_title"]>>;
+    url: z.ZodString;
 }, "strip", z.ZodTypeAny, {
     url: string;
     action?: "summarize" | "extract_text" | "get_title" | undefined;

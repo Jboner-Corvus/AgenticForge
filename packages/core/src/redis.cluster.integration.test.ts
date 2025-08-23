@@ -1,5 +1,15 @@
-import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import IORedis from 'ioredis';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
+
 import { getConfig } from './config.ts';
 
 describe('Redis Cluster Integration Tests', () => {
@@ -8,15 +18,15 @@ describe('Redis Cluster Integration Tests', () => {
 
   beforeAll(async () => {
     config = getConfig();
-    
+
     // Create Redis connection
     redis = new IORedis({
-      host: config.REDIS_HOST,
-      port: config.REDIS_PORT,
-      password: config.REDIS_PASSWORD,
       db: config.REDIS_DB,
       enableReadyCheck: false,
+      host: config.REDIS_HOST,
       maxRetriesPerRequest: 3,
+      password: config.REDIS_PASSWORD,
+      port: config.REDIS_PORT,
     });
 
     // Wait for connection
@@ -73,10 +83,10 @@ describe('Redis Cluster Integration Tests', () => {
   it('should handle Redis Hash operations', async () => {
     const hashKey = 'test:session:123';
     const sessionData = {
-      userId: 'user123',
       agentId: 'agent456',
+      messages: '10',
       startTime: Date.now().toString(),
-      messages: '10'
+      userId: 'user123',
     };
 
     // HSET multiple fields
@@ -114,7 +124,7 @@ describe('Redis Cluster Integration Tests', () => {
     // RPOP - process jobs (FIFO)
     const job1 = await redis.rpop(queueKey);
     const job2 = await redis.rpop(queueKey);
-    
+
     expect(JSON.parse(job1!)).toEqual({ jobId: '1', type: 'agent' });
     expect(JSON.parse(job2!)).toEqual({ jobId: '2', type: 'worker' });
 
@@ -149,10 +159,10 @@ describe('Redis Cluster Integration Tests', () => {
 
   it('should handle Redis expiration and TTL', async () => {
     const key = 'test:temp-data';
-    
+
     // Set with expiration
     await redis.setex(key, 2, 'temporary-value');
-    
+
     // Check initial value
     const value = await redis.get(key);
     expect(value).toBe('temporary-value');
@@ -163,7 +173,7 @@ describe('Redis Cluster Integration Tests', () => {
     expect(ttl).toBeLessThanOrEqual(2);
 
     // Wait for expiration
-    await new Promise(resolve => setTimeout(resolve, 2100));
+    await new Promise((resolve) => setTimeout(resolve, 2100));
 
     // Value should be expired
     const expiredValue = await redis.get(key);
@@ -175,7 +185,7 @@ describe('Redis Cluster Integration Tests', () => {
     const subscriber = redis.duplicate();
     const publisher = redis.duplicate();
 
-    let receivedMessage: string | null = null;
+    let receivedMessage: null | string = null;
 
     // Set up subscriber
     subscriber.on('message', (receivedChannel, message) => {
@@ -187,11 +197,14 @@ describe('Redis Cluster Integration Tests', () => {
     await subscriber.subscribe(channel);
 
     // Publish message
-    const testMessage = JSON.stringify({ type: 'agent-status', status: 'running' });
+    const testMessage = JSON.stringify({
+      status: 'running',
+      type: 'agent-status',
+    });
     await publisher.publish(channel, testMessage);
 
     // Wait for message
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(receivedMessage).toBe(testMessage);
 
@@ -208,7 +221,7 @@ describe('Redis Cluster Integration Tests', () => {
     });
 
     const results = await Promise.all(promises);
-    
+
     // All increments should be unique
     const uniqueResults = new Set(results);
     expect(uniqueResults.size).toBe(100);
@@ -240,7 +253,7 @@ describe('Redis Cluster Integration Tests', () => {
     // Verify final values
     const balance1 = await redis.get(key1);
     const balance2 = await redis.get(key2);
-    
+
     expect(parseInt(balance1!)).toBe(75);
     expect(parseInt(balance2!)).toBe(75);
   });
@@ -264,7 +277,7 @@ describe('Redis Cluster Integration Tests', () => {
 
     // Verify data was stored
     const values = await Promise.all(
-      Array.from({ length: 10 }, (_, i) => redis.get(`test:batch:${i}`))
+      Array.from({ length: 10 }, (_, i) => redis.get(`test:batch:${i}`)),
     );
 
     values.forEach((value, index) => {
@@ -291,7 +304,7 @@ describe('Redis Cluster Integration Tests', () => {
 
     const results = await Promise.all(promises);
     const successRate = results.filter(Boolean).length / results.length;
-    
+
     // Expect at least 80% success rate
     expect(successRate).toBeGreaterThan(0.8);
   });
@@ -303,8 +316,8 @@ describe('Redis Cluster Integration Tests', () => {
 
     // Store some data
     const dataSize = 1000;
-    const promises = Array.from({ length: dataSize }, (_, i) => 
-      redis.set(`test:memory:${i}`, 'x'.repeat(100))
+    const promises = Array.from({ length: dataSize }, (_, i) =>
+      redis.set(`test:memory:${i}`, 'x'.repeat(100)),
     );
     await Promise.all(promises);
 

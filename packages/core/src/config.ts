@@ -15,40 +15,49 @@ const configSchema = z.object({
   GITHUB_CLIENT_ID: z.string().optional(),
   GITHUB_CLIENT_SECRET: z.string().optional(),
   GROK_API_KEY: z.string().optional(),
-  QWEN_CLIENT_ID: z.string().optional(),
-  QWEN_CLIENT_SECRET: z.string().optional(),
-
   HISTORY_LOAD_LENGTH: z.coerce.number().default(200), // Load more messages to preserve context
   HISTORY_MAX_LENGTH: z.coerce.number().default(1000),
   HOST_PROJECT_PATH: z.string().default(process.cwd()),
+
   HUGGINGFACE_API_KEY: z.string().optional(),
-  JWT_SECRET: z.string().optional(),
   JWT_REFRESH_SECRET: z.string().optional(),
+  JWT_SECRET: z.string().optional(),
   LLM_API_KEY: z.string().optional(), // Added LLM_API_KEY
   LLM_MODEL_NAME: z.string().default('gemini-2.5-pro'),
   LLM_PROVIDER: z
-    .enum(['gemini', 'openai', 'mistral', 'huggingface', 'grok', 'openrouter', 'qwen'])
+    .enum([
+      'gemini',
+      'openai',
+      'mistral',
+      'huggingface',
+      'grok',
+      'openrouter',
+      'qwen',
+    ])
     .default('gemini'),
   LLM_PROVIDER_HIERARCHY: z
     .string()
     .default('huggingface,grok,gemini,openai,mistral,openrouter,qwen')
     .transform((str) => str.split(',').map((s) => s.trim())),
-  LLM_REQUEST_DELAY_MS: z.coerce.number().default(2000), // 2-second delay for stability
+  LLM_REQUEST_DELAY_MS: z.coerce.number().default(1000), // Reduced delay for better performance
   LOG_LEVEL: z.string().default('debug'),
   MAX_FILE_SIZE_BYTES: z.coerce.number().default(10 * 1024 * 1024), // 10 MB
   MCP_API_KEY: z.string().optional(),
   MCP_WEBHOOK_URL: z.string().optional(),
   NODE_ENV: z.string().default('development'),
   PORT: z.coerce.number().default(3001),
-
   POSTGRES_DB: z.string().default('gforge'),
   POSTGRES_HOST: z.string().default('postgres'),
   POSTGRES_PASSWORD: z.string().optional(),
+
   POSTGRES_PORT: z.coerce.number().default(5432),
   POSTGRES_USER: z.string().default('user'),
-
   QUALITY_GATE_API_KEY: z.string().optional(),
   QUALITY_GATE_URL: z.string().optional(),
+  QWEN_API_BASE_URL: z.string().optional(), // Add Qwen base URL support
+
+  QWEN_CLIENT_ID: z.string().optional(),
+  QWEN_CLIENT_SECRET: z.string().optional(),
   REDIS_DB: z.coerce.number().default(0),
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PASSWORD: z.string().optional(),

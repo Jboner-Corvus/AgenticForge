@@ -5,38 +5,38 @@ import {
   getDeadLetterQueue,
   getJobQueue,
   initializeWebServer
-} from "./chunk-UAWRYNOZ.js";
+} from "./chunk-M7D2HK3L.js";
 import {
   Agent,
   getMasterPrompt,
   initializeWorker,
   processJob
-} from "./chunk-5HC4NAMP.js";
+} from "./chunk-ED5Q3YIE.js";
 import {
   getAllTools
-} from "./chunk-MFMC7ZCN.js";
+} from "./chunk-VW7SQC4G.js";
 import {
   FinishToolSignal
 } from "./chunk-CZQPSXPM.js";
 import {
   SessionManager
-} from "./chunk-KBVJI43H.js";
-import "./chunk-5OF3AFAD.js";
+} from "./chunk-R6HWQ2WP.js";
+import "./chunk-JKB35YK2.js";
 import "./chunk-DE5MSL2E.js";
 import {
   LlmError2 as LlmError,
   LlmKeyErrorType
-} from "./chunk-ZEBJECHX.js";
+} from "./chunk-BGGAYOXK.js";
 import {
   _internalLoadTools,
   _resetTools,
   fileExtension,
   getTools,
   getToolsDir
-} from "./chunk-6VDWH2OR.js";
+} from "./chunk-S6Z5ZD2I.js";
 import {
   toolRegistry
-} from "./chunk-TJOGLTT7.js";
+} from "./chunk-WG6XU6O4.js";
 import {
   AppError,
   EnqueueTaskError,
@@ -45,23 +45,23 @@ import {
   WebhookError,
   getErrDetails,
   handleError
-} from "./chunk-LCH7Z4UB.js";
-import "./chunk-E7DBRVAD.js";
+} from "./chunk-E73UG3QD.js";
+import "./chunk-AKPOKJ5Q.js";
 import {
   disconnectRedis,
   getRedisClientInstance,
   setRedisClientInstance
-} from "./chunk-SIBAPVHV.js";
+} from "./chunk-2TWFUMQU.js";
 import {
   getLogger,
   getLoggerInstance,
   resetLoggerForTesting
-} from "./chunk-E5QXXMSG.js";
+} from "./chunk-5JE7E5SU.js";
 import {
   config,
   getConfig,
   loadConfig
-} from "./chunk-6NLBXREQ.js";
+} from "./chunk-DVHMHG4X.js";
 import {
   __commonJS,
   __require,
@@ -7725,7 +7725,9 @@ async function runQualityGate(_ctx) {
   logger.info("Running quality checks following run.sh small-checks logic...");
   outputMessages.push("--- Running Quality Gate (small-checks logic) ---");
   if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
-    outputMessages.push("Development/test environment detected, quality checks skipped.");
+    outputMessages.push(
+      "Development/test environment detected, quality checks skipped."
+    );
     outputMessages.push("--- Quality Gate Passed (simulated) ---");
     logger.info("Quality checks skipped in development/test environment.");
     return {
@@ -7787,7 +7789,9 @@ ${output}`;
       combinedOutput += `
 ${check.name} Error:
 ${errorMessage}`;
-      outputMessages.push(`${check.name} FAILED with exception: ${errorMessage}`);
+      outputMessages.push(
+        `${check.name} FAILED with exception: ${errorMessage}`
+      );
       logger.error(`${check.name} FAILED with exception`, { error });
     }
   }

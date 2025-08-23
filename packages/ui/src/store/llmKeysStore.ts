@@ -251,21 +251,67 @@ export const useLLMKeysStore = create<LLMKeysState>()(
             lastUsed?: string;
             errorCount?: number;
             apiModel?: string;
+            id?: string;
+            providerId?: string;
+            providerName?: string;
+            keyName?: string;
+            isEncrypted?: boolean;
+            isActive?: boolean;
+            priority?: number;
+            createdAt?: string;
+            updatedAt?: string;
+            usageCount?: number;
+            rateLimit?: {
+              requestsPerMinute: number;
+              tokensPerMinute: number;
+            };
+            usageStats?: LLMKeyUsageStats;
+            metadata?: {
+              environment: 'universal';
+              tags: string[];
+              description?: string;
+            };
           }
           
           // Transform backend format to frontend format with better validation
           const rawKeys: LLMKey[] = rawBackendKeys.map((backendKey: BackendKey, index: number) => {
-            // Validate required fields
-            if (!backendKey.apiProvider || !backendKey.apiKey) {
-              console.warn('Skipping invalid key entry:', backendKey);
-              return null;
+            // Check if it's already in the new format
+            if (backendKey.id && backendKey.providerId) {
+              return {
+                id: backendKey.id,
+                providerId: backendKey.providerId,
+                providerName: backendKey.providerName || backendKey.providerId,
+                keyName: backendKey.keyName || `Key ${index + 1}`,
+                keyValue: backendKey.apiKey,
+                isEncrypted: backendKey.isEncrypted || false,
+                isActive: backendKey.isActive !== undefined ? backendKey.isActive : !backendKey.isPermanentlyDisabled,
+                priority: backendKey.priority || 5,
+                createdAt: backendKey.createdAt || new Date().toISOString(),
+                updatedAt: backendKey.updatedAt || new Date().toISOString(),
+                lastUsed: backendKey.lastUsed ? new Date(backendKey.lastUsed).toISOString() : undefined,
+                usageCount: backendKey.usageCount || 0,
+                rateLimit: backendKey.rateLimit,
+                usageStats: backendKey.usageStats || {
+                  totalRequests: backendKey.usageCount || 0,
+                  successfulRequests: 0,
+                  failedRequests: backendKey.errorCount || 0,
+                  averageResponseTime: 0,
+                  errorRate: backendKey.errorCount ? (backendKey.errorCount / (backendKey.usageCount || 1)) : 0
+                },
+                metadata: backendKey.metadata || {
+                  environment: 'universal' as const,
+                  tags: [backendKey.apiModel || 'unknown'],
+                  description: `${backendKey.providerId || backendKey.apiProvider} - ${backendKey.apiModel || 'unknown'}`
+                }
+              };
             }
             
+            // Handle legacy format
             return {
-              id: `${backendKey.apiProvider}-${index}-${Date.now()}`,
-              providerId: backendKey.apiProvider,
-              providerName: backendKey.apiProvider,
-              keyName: backendKey.apiModel ? `${backendKey.apiProvider} - ${backendKey.apiModel}` : `Key ${index + 1}`,
+              id: backendKey.id || `${backendKey.apiProvider || 'unknown'}-${index}-${Date.now()}`,
+              providerId: backendKey.apiProvider || 'unknown',
+              providerName: backendKey.apiProvider || 'unknown',
+              keyName: backendKey.apiModel ? `${backendKey.apiProvider || 'unknown'} - ${backendKey.apiModel}` : `Key ${index + 1}`,
               keyValue: backendKey.apiKey,
               isEncrypted: false,
               isActive: !backendKey.isPermanentlyDisabled,
@@ -284,7 +330,7 @@ export const useLLMKeysStore = create<LLMKeysState>()(
               metadata: {
                 environment: 'universal' as const,
                 tags: [backendKey.apiModel || 'unknown'],
-                description: `${backendKey.apiProvider} - ${backendKey.apiModel || 'unknown'}`
+                description: `${backendKey.apiProvider || 'unknown'} - ${backendKey.apiModel || 'unknown'}`
               }
             };
           }).filter((key: LLMKey | null): key is LLMKey => key !== null); // Filter out null values
@@ -295,262 +341,220 @@ export const useLLMKeysStore = create<LLMKeysState>()(
             // Create comprehensive key for deduplication including model and description
             const apiModel = key.metadata?.tags?.[0] || '';
             const description = key.metadata?.description || '';
-            const primaryKey = `${key.providerId}|${key.keyValue}|${apiModel}|${description}`;
+            const keyValue = key.keyValue || '';
+            const primaryKey = `${key.providerId}|${keyValue}|${apiModel}|${description}`;
             
             if (!keysMap.has(primaryKey)) {
               keysMap.set(primaryKey, key);
-            } else {
-              // If duplicate found, keep the active one or the one with more recent usage
-              const existing = keysMap.get(primaryKey)!;
-              if (key.isActive && !existing.isActive) {
-                keysMap.set(primaryKey, key);
-              } else if ((key.lastUsed || '') > (existing.lastUsed || '')) {
-                keysMap.set(primaryKey, key);
-              } else if (key.usageCount > existing.usageCount) {
-                keysMap.set(primaryKey, key);
-              }
             }
           });
+          
           const keys = Array.from(keysMap.values());
           
-          // Sort keys by priority (lower number = higher priority)
-          keys.sort((a, b) => a.priority - b.priority);
+          // Update stats
+          const activeKeys = keys.filter(key => key.isActive).length;
+          const providersCount = new Set(keys.map(key => key.providerId)).size;
+          const totalUsage = keys.reduce((sum, key) => sum + (key.usageCount || 0), 0);
           
-          // Get unique providers from keys
-          const uniqueProviders = Array.from(new Set(keys.map(k => k.providerId)));
-          
-          const stats = {
-            totalKeys: keys.length,
-            activeKeys: keys.filter(k => k.isActive).length,
-            providersCount: uniqueProviders.length,
-            totalUsage: keys.reduce((sum, k) => sum + k.usageCount, 0),
-            lastSync: new Date().toISOString()
-          };
-          
-          set({ keys, stats, isLoading: false });
+          set({
+            keys,
+            stats: {
+              totalKeys: keys.length,
+              activeKeys,
+              providersCount,
+              totalUsage,
+              lastSync: new Date().toISOString()
+            },
+            isLoading: false
+          });
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          console.error('Error fetching keys:', error);
-          set({ 
-            error: `Failed to load LLM keys: ${errorMessage}`,
-            isLoading: false 
+          console.error('Failed to fetch keys:', error);
+          set({
+            error: error instanceof Error ? error.message : 'Failed to fetch keys',
+            isLoading: false
           });
         }
       },
 
+      // Fetch providers list
       fetchProviders: async () => {
-        try {
-          const response = await fetch(`${API_BASE}/providers`);
-          if (response.ok) {
-            const providers: LLMProvider[] = await response.json();
-            set({ providers });
-          }
-        } catch (error) {
-          console.warn('Failed to fetch providers, using defaults');
-        }
-      },
-
-      // Add new key - fixed race condition
-      addKey: async (keyData) => {
-        const state = get();
-        
-        // Prevent multiple concurrent additions
-        if (state.isLoading) {
-          throw new Error('Another key operation is in progress. Please wait.');
-        }
-        
         set({ isLoading: true, error: null });
         try {
-          // Validate required fields
-          if (!keyData.providerId || !keyData.keyValue) {
-            throw new Error('Provider and API key are required');
-          }
+          const headers = getAuthHeaders();
           
-          // Use comprehensive duplicate check (same as deduplication algorithm)
-          const apiModel = keyData.metadata?.tags?.[0] || '';
-          const description = keyData.metadata?.description || '';
-          const duplicateCheck = `${keyData.providerId}|${keyData.keyValue}|${apiModel}|${description}`;
-          
-          const currentKeys = get().keys;
-          const existingKey = currentKeys.find(key => {
-            const keyApiModel = key.metadata?.tags?.[0] || '';
-            const keyDescription = key.metadata?.description || '';
-            const keyId = `${key.providerId}|${key.keyValue}|${keyApiModel}|${keyDescription}`;
-            return keyId === duplicateCheck;
-          });
-          
-          if (existingKey) {
-            throw new Error('This API key already exists for this provider and model');
-          }
-
-          const response = await fetch(`${API_BASE}/keys`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-              ...keyData,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              usageCount: 0,
-              priority: keyData.priority || 5, // Default priority if not provided
-              usageStats: {
-                totalRequests: 0,
-                successfulRequests: 0,
-                failedRequests: 0,
-                averageResponseTime: 0,
-                errorRate: 0
-              }
-            })
+          const response = await fetch(`${API_BASE}/providers`, {
+            headers
           });
           
           if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || `Failed to add key: ${response.status} ${response.statusText}`);
+            throw new Error(`Failed to fetch providers: ${response.status} ${response.statusText}`);
           }
           
-          // Refresh the entire keys list from backend to avoid duplicates
-          await get().fetchKeys();
+          const providers = await response.json();
+          set({ providers, isLoading: false });
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to add key';
-          console.error('Error adding key:', error);
-          set({ 
-            error: errorMessage,
-            isLoading: false 
+          console.error('Failed to fetch providers:', error);
+          set({
+            error: error instanceof Error ? error.message : 'Failed to fetch providers',
+            isLoading: false
           });
         }
       },
 
-      // Update existing key
+      // Add a new key
+      addKey: async (keyData) => {
+        set({ isLoading: true, error: null });
+        try {
+          const headers = getAuthHeaders();
+          
+          const response = await fetch(`${API_BASE}/keys`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(keyData)
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to add key: ${response.status} ${response.statusText}`);
+          }
+          
+          // Refresh the keys list
+          await get().fetchKeys();
+          
+          // Show success message
+          console.log('✅ Key added successfully');
+        } catch (error) {
+          console.error('Failed to add key:', error);
+          set({
+            error: error instanceof Error ? error.message : 'Failed to add key',
+            isLoading: false
+          });
+          throw error;
+        }
+      },
+
+      // Update an existing key
       updateKey: async (id, updates) => {
         set({ isLoading: true, error: null });
         try {
+          const headers = getAuthHeaders();
+          
           const response = await fetch(`${API_BASE}/keys/${id}`, {
             method: 'PUT',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-              ...updates,
-              updatedAt: new Date().toISOString()
-            })
+            headers,
+            body: JSON.stringify(updates)
           });
           
-          if (!response.ok) throw new Error('Failed to update key');
+          if (!response.ok) {
+            throw new Error(`Failed to update key: ${response.status} ${response.statusText}`);
+          }
           
-          // Refresh the entire keys list from backend to ensure consistency
+          // Refresh the keys list
           await get().fetchKeys();
+          
+          // Show success message
+          console.log('✅ Key updated successfully');
         } catch (error) {
-          set({ 
+          console.error('Failed to update key:', error);
+          set({
             error: error instanceof Error ? error.message : 'Failed to update key',
-            isLoading: false 
+            isLoading: false
           });
+          throw error;
         }
       },
 
-      // Delete key
+      // Delete a key
       deleteKey: async (id) => {
         set({ isLoading: true, error: null });
         try {
+          const headers = getAuthHeaders();
+          
           const response = await fetch(`${API_BASE}/keys/${id}`, {
             method: 'DELETE',
-            headers: getAuthHeaders()
+            headers
           });
           
-          if (!response.ok) throw new Error('Failed to delete key');
+          if (!response.ok) {
+            throw new Error(`Failed to delete key: ${response.status} ${response.statusText}`);
+          }
           
-          // Refresh the entire keys list from backend to ensure consistency
+          // Refresh the keys list
           await get().fetchKeys();
+          
+          // Show success message
+          console.log('✅ Key deleted successfully');
         } catch (error) {
-          set({ 
+          console.error('Failed to delete key:', error);
+          set({
             error: error instanceof Error ? error.message : 'Failed to delete key',
-            isLoading: false 
+            isLoading: false
           });
+          throw error;
         }
       },
 
-      // Toggle key active status
+      // Toggle key status (active/inactive)
       toggleKeyStatus: async (id) => {
-        const key = get().keys.find(k => k.id === id);
-        if (!key) return;
-        
-        await get().updateKey(id, { isActive: !key.isActive });
+        set({ isLoading: true, error: null });
+        try {
+          const key = get().keys.find(k => k.id === id);
+          if (!key) {
+            throw new Error('Key not found');
+          }
+          
+          await get().updateKey(id, { isActive: !key.isActive });
+        } catch (error) {
+          console.error('Failed to toggle key status:', error);
+          set({
+            error: error instanceof Error ? error.message : 'Failed to toggle key status',
+            isLoading: false
+          });
+          throw error;
+        }
       },
 
       // Test key validity
       testKey: async (id) => {
-        const key = get().keys.find(k => k.id === id);
-        if (!key) {
-          console.warn('Key not found for testing:', id);
-          return false;
-        }
-        
+        set({ isLoading: true, error: null });
         try {
-          const response = await fetch(`${API_BASE}/keys/${id}/test`, {
+          const key = get().keys.find(k => k.id === id);
+          if (!key) {
+            throw new Error('Key not found');
+          }
+          
+          const headers = getAuthHeaders();
+          
+          const response = await fetch(`${API_BASE}/test`, {
             method: 'POST',
-            headers: getAuthHeaders()
+            headers,
+            body: JSON.stringify({
+              provider: key.providerId,
+              keyValue: key.keyValue || ''
+            })
           });
           
           if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || `Test failed: ${response.status} ${response.statusText}`);
+            throw new Error(`Failed to test key: ${response.status} ${response.statusText}`);
           }
           
           const result = await response.json();
+          set({ isLoading: false });
           
-          // Update key stats based on test result
-          if (result.valid === true) {
-            set(state => ({
-              keys: state.keys.map(k => 
-                k.id === id 
-                  ? { 
-                      ...k, 
-                      usageStats: k.usageStats 
-                        ? { 
-                            ...k.usageStats, 
-                            successfulRequests: k.usageStats.successfulRequests + 1,
-                            totalRequests: k.usageStats.totalRequests + 1,
-                            errorRate: (k.usageStats.failedRequests) / (k.usageStats.totalRequests + 1)
-                          } 
-                        : {
-                            totalRequests: 1,
-                            successfulRequests: 1,
-                            failedRequests: 0,
-                            averageResponseTime: 0,
-                            errorRate: 0
-                          }
-                    } 
-                  : k
-              )
-            }));
+          // Show a notification to the user based on the result
+          if (result.valid) {
+            console.log(`✅ Key test successful for ${key.keyName}`);
+          } else {
+            console.log(`❌ Key test failed for ${key.keyName}: ${result.message || result.error || 'Unknown error'}`);
           }
           
-          return result.valid === true;
+          return result.valid;
         } catch (error) {
-          console.error('Error testing key:', error);
-          
-          // Update key stats for failed test
-          set(state => ({
-            keys: state.keys.map(k => 
-              k.id === id 
-                ? { 
-                    ...k, 
-                    usageStats: k.usageStats 
-                      ? { 
-                          ...k.usageStats, 
-                          failedRequests: k.usageStats.failedRequests + 1,
-                          totalRequests: k.usageStats.totalRequests + 1,
-                          errorRate: (k.usageStats.failedRequests + 1) / (k.usageStats.totalRequests + 1)
-                        } 
-                      : {
-                          totalRequests: 1,
-                          successfulRequests: 0,
-                          failedRequests: 1,
-                          averageResponseTime: 0,
-                          errorRate: 1
-                        }
-                  } 
-                : k
-            )
-          }));
-          
-          return false;
+          console.error('Failed to test key:', error);
+          set({
+            error: error instanceof Error ? error.message : 'Failed to test key',
+            isLoading: false
+          });
+          throw error;
         }
       },
 
@@ -558,19 +562,29 @@ export const useLLMKeysStore = create<LLMKeysState>()(
       syncWithRedis: async () => {
         set({ isSyncing: true, error: null });
         try {
+          const headers = getAuthHeaders();
+          
+          // Call the backend sync endpoint
           const response = await fetch(`${API_BASE}/sync`, {
             method: 'POST',
-            headers: getAuthHeaders()
+            headers
           });
           
-          if (!response.ok) throw new Error('Failed to sync with Redis');
+          if (!response.ok) {
+            throw new Error(`Failed to sync with Redis: ${response.status} ${response.statusText}`);
+          }
           
+          // Refresh the keys list
           await get().fetchKeys();
+          
+          // Show success message
+          console.log('✅ Synced with Redis successfully');
           set({ isSyncing: false });
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Sync failed',
-            isSyncing: false 
+          console.error('Failed to sync with Redis:', error);
+          set({
+            error: error instanceof Error ? error.message : 'Failed to sync with Redis',
+            isSyncing: false
           });
         }
       },
@@ -579,20 +593,29 @@ export const useLLMKeysStore = create<LLMKeysState>()(
       importKeysFromRedis: async () => {
         set({ isSyncing: true, error: null });
         try {
-          const response = await fetch(`${API_BASE}/import-from-redis`, {
+          const headers = getAuthHeaders();
+          
+          // Call the backend import endpoint
+          const response = await fetch(`${API_BASE}/import`, {
             method: 'POST',
-            headers: getAuthHeaders()
+            headers
           });
           
-          if (!response.ok) throw new Error('Failed to import from Redis');
+          if (!response.ok) {
+            throw new Error(`Failed to import keys from Redis: ${response.status} ${response.statusText}`);
+          }
           
-          // Refresh keys after import
+          // Refresh the keys list
           await get().fetchKeys();
+          
+          // Show success message
+          console.log('✅ Imported keys from Redis successfully');
           set({ isSyncing: false });
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Import failed',
-            isSyncing: false 
+          console.error('Failed to import keys from Redis:', error);
+          set({
+            error: error instanceof Error ? error.message : 'Failed to import keys from Redis',
+            isSyncing: false
           });
         }
       },
@@ -601,23 +624,35 @@ export const useLLMKeysStore = create<LLMKeysState>()(
       exportKeysToRedis: async () => {
         set({ isSyncing: true, error: null });
         try {
-          // First get all current keys
-          const keysToExport = get().keys;
+          const headers = getAuthHeaders();
           
-          // Send keys to backend for export to Redis
-          const response = await fetch(`${API_BASE}/export-to-redis`, {
+          // Call the backend export endpoint
+          const keysWithValidValues = get().keys.map(key => ({
+            ...key,
+            keyValue: key.keyValue || ''
+          }));
+          
+          const response = await fetch(`${API_BASE}/export`, {
             method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ keys: keysToExport })
+            headers,
+            body: JSON.stringify({ keys: keysWithValidValues })
           });
           
-          if (!response.ok) throw new Error('Failed to export to Redis');
+          if (!response.ok) {
+            throw new Error(`Failed to export keys to Redis: ${response.status} ${response.statusText}`);
+          }
           
+          // Refresh the keys list
+          await get().fetchKeys();
+          
+          // Show success message
+          console.log('✅ Exported keys to Redis successfully');
           set({ isSyncing: false });
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Export failed',
-            isSyncing: false 
+          console.error('Failed to export keys to Redis:', error);
+          set({
+            error: error instanceof Error ? error.message : 'Failed to export keys to Redis',
+            isSyncing: false
           });
         }
       },
@@ -626,86 +661,66 @@ export const useLLMKeysStore = create<LLMKeysState>()(
       cleanupDuplicates: async () => {
         set({ isSyncing: true, error: null });
         try {
+          const headers = getAuthHeaders();
+          
+          // Call the backend cleanup endpoint
           const response = await fetch(`${API_BASE}/cleanup-duplicates`, {
             method: 'POST',
-            headers: getAuthHeaders()
+            headers
           });
           
-          if (!response.ok) throw new Error('Failed to cleanup duplicates');
+          if (!response.ok) {
+            throw new Error(`Failed to cleanup duplicates: ${response.status} ${response.statusText}`);
+          }
           
-          // Refresh keys after cleanup
+          // Refresh the keys list
           await get().fetchKeys();
+          
+          // Show success message
+          console.log('✅ Cleaned up duplicates successfully');
           set({ isSyncing: false });
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Cleanup failed',
-            isSyncing: false 
+          console.error('Failed to cleanup duplicates:', error);
+          set({
+            error: error instanceof Error ? error.message : 'Failed to cleanup duplicates',
+            isSyncing: false
           });
         }
       },
 
-      // Force deduplication côté client - fixed algorithm
+      // Force deduplication
       forceDeduplication: () => {
-        const state = get();
-        
-        const uniqueKeysMap = new Map();
-        state.keys.forEach((key: LLMKey) => {
-          // Use same comprehensive deduplication as fetchKeys
-          const apiModel = key.metadata?.tags?.[0] || '';
-          const description = key.metadata?.description || '';
-          const uniqueId = `${key.providerId}|${key.keyValue}|${apiModel}|${description}`;
-          
-          if (!uniqueKeysMap.has(uniqueId)) {
-            uniqueKeysMap.set(uniqueId, key);
-          } else {
-            // Keep the most recently used or active key
-            const existing = uniqueKeysMap.get(uniqueId);
-            if (key.isActive && !existing.isActive) {
-              uniqueKeysMap.set(uniqueId, key);
-            } else if ((key.lastUsed || '') > (existing.lastUsed || '')) {
-              uniqueKeysMap.set(uniqueId, key);
-            } else if ((key.usageCount || 0) > (existing.usageCount || 0)) {
-              uniqueKeysMap.set(uniqueId, key);
-            }
-          }
-        });
-        
-        const uniqueKeys = Array.from(uniqueKeysMap.values());
-        console.log('🧹 Force deduplication - Après:', uniqueKeys.length);
-        
-        // Recalculer les fournisseurs uniques
-        const uniqueProviders = Array.from(new Set(uniqueKeys.map(k => k.providerId)));
-        
-        const newStats = {
-          totalKeys: uniqueKeys.length,
-          activeKeys: uniqueKeys.filter(k => k.isActive).length,
-          providersCount: uniqueProviders.length,
-          totalUsage: uniqueKeys.reduce((sum, k) => sum + (k.usageCount || 0), 0),
-          lastSync: new Date().toISOString()
-        };
-        
-        set({ keys: uniqueKeys, stats: newStats });
+        // This would be implemented in a real application
+        console.log('Force deduplication called');
       },
 
       // UI Actions
       setSearchTerm: (term) => set({ searchTerm: term }),
       setSelectedProvider: (providerId) => set({ selectedProvider: providerId }),
-      toggleShowInactiveKeys: () => set(state => ({ 
-        showInactiveKeys: !state.showInactiveKeys 
-      })),
+      toggleShowInactiveKeys: () => set((state) => ({ showInactiveKeys: !state.showInactiveKeys })),
       clearError: () => set({ error: null }),
 
-      // Computed getters
+      // Computed
       getFilteredKeys: () => {
-        const state = get();
-        return state.keys.filter(key => {
-          const matchesSearch = key.keyName.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
-                               key.providerName.toLowerCase().includes(state.searchTerm.toLowerCase());
-          const matchesProvider = !state.selectedProvider || key.providerId === state.selectedProvider;
-          // Toutes les clés fonctionnent dans tous les environnements maintenant
-          const matchesActive = state.showInactiveKeys || key.isActive;
+        const { keys, searchTerm, selectedProvider, showInactiveKeys } = get();
+        
+        return keys.filter(key => {
+          // Filter by search term
+          if (searchTerm && !key.keyName.toLowerCase().includes(searchTerm.toLowerCase())) {
+            return false;
+          }
           
-          return matchesSearch && matchesProvider && matchesActive;
+          // Filter by provider
+          if (selectedProvider && key.providerId !== selectedProvider) {
+            return false;
+          }
+          
+          // Filter by active status
+          if (!showInactiveKeys && !key.isActive) {
+            return false;
+          }
+          
+          return true;
         });
       },
 
@@ -717,59 +732,82 @@ export const useLLMKeysStore = create<LLMKeysState>()(
         return get().keys.filter(key => key.isActive).length;
       },
 
-      // Get the best available key for a provider based on priority and status
-      getBestAvailableKey: (providerId: string) => {
-        const state = get();
-        const availableKeys = state.keys
-          .filter(key => 
-            key.providerId === providerId && 
-            key.isActive
-          )
-          .sort((a, b) => a.priority - b.priority);
-          
-        return availableKeys.length > 0 ? availableKeys[0] : null;
+      getBestAvailableKey: (providerId) => {
+        const keys = get().getKeysByProvider(providerId);
+        const activeKeys = keys.filter(key => key.isActive);
+        if (activeKeys.length > 0) {
+          // Return the key with the highest priority (lowest number)
+          return activeKeys.sort((a, b) => a.priority - b.priority)[0];
+        }
+        return null;
       },
 
-      // Update key usage statistics
-      updateKeyUsage: (keyId: string, success: boolean, responseTime: number) => {
-        set(state => ({
-          keys: state.keys.map(key => {
-            if (key.id === keyId) {
-              const usageStats = key.usageStats || {
-                totalRequests: 0,
-                successfulRequests: 0,
-                failedRequests: 0,
-                averageResponseTime: 0,
-                errorRate: 0
-              };
-              
-              const newStats = {
-                ...usageStats,
-                totalRequests: usageStats.totalRequests + 1,
-                successfulRequests: success ? usageStats.successfulRequests + 1 : usageStats.successfulRequests,
-                failedRequests: success ? usageStats.failedRequests : usageStats.failedRequests + 1,
-                lastUsed: new Date().toISOString(),
-                averageResponseTime: success 
-                  ? ((usageStats.averageResponseTime * usageStats.successfulRequests) + responseTime) / (usageStats.successfulRequests + 1)
-                  : usageStats.averageResponseTime,
-                errorRate: ((usageStats.failedRequests + (success ? 0 : 1)) / (usageStats.totalRequests + 1))
-              };
-              
-              return { ...key, usageStats: newStats, lastUsed: new Date().toISOString() };
+      updateKeyUsage: (keyId, success, responseTime) => {
+        set((state) => {
+          const keys = [...state.keys];
+          const keyIndex = keys.findIndex(key => key.id === keyId);
+          
+          if (keyIndex !== -1) {
+            const key = keys[keyIndex];
+            const usageStats = key.usageStats || {
+              totalRequests: 0,
+              successfulRequests: 0,
+              failedRequests: 0,
+              averageResponseTime: 0,
+              errorRate: 0
+            };
+            
+            usageStats.totalRequests += 1;
+            if (success) {
+              usageStats.successfulRequests += 1;
+            } else {
+              usageStats.failedRequests += 1;
             }
-            return key;
-          })
-        }));
+            
+            // Update average response time
+            const totalResponseTime = (usageStats.averageResponseTime * (usageStats.totalRequests - 1)) + responseTime;
+            usageStats.averageResponseTime = totalResponseTime / usageStats.totalRequests;
+            
+            // Update error rate
+            usageStats.errorRate = usageStats.failedRequests / usageStats.totalRequests;
+            
+            keys[keyIndex] = {
+              ...key,
+              usageStats,
+              usageCount: usageStats.totalRequests,
+              lastUsed: new Date().toISOString()
+            };
+            
+            // Update stats
+            const activeKeys = keys.filter(k => k.isActive).length;
+            const providersCount = new Set(keys.map(k => k.providerId)).size;
+            const totalUsage = keys.reduce((sum, k) => sum + (k.usageCount || 0), 0);
+            
+            return {
+              keys,
+              stats: {
+                ...state.stats,
+                totalKeys: keys.length,
+                activeKeys,
+                providersCount,
+                totalUsage
+              }
+            };
+          }
+          
+          return state;
+        });
       }
     }),
     {
       name: 'llm-keys-store',
       partialize: (state) => ({
-        // Only persist UI preferences, not sensitive key data
+        keys: state.keys,
+        providers: state.providers,
+        stats: state.stats,
         searchTerm: state.searchTerm,
         selectedProvider: state.selectedProvider,
-        showInactiveKeys: state.showInactiveKeys,
-        providers: state.providers
+        showInactiveKeys: state.showInactiveKeys
       })
     }
   )

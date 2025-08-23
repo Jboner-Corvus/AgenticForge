@@ -20,17 +20,22 @@ interface QualityResult {
 export async function runQualityGate(_ctx: Ctx): Promise<QualityResult> {
   const logger = getLogger();
   const outputMessages: string[] = [];
-  
+
   logger.info('Running quality checks following run.sh small-checks logic...');
   outputMessages.push('--- Running Quality Gate (small-checks logic) ---');
 
   // Dans l'environnement de développement/test, ignorer les vérifications de qualité
   // pour éviter les problèmes liés à pnpm
-  if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
-    outputMessages.push('Development/test environment detected, quality checks skipped.');
+  if (
+    process.env.NODE_ENV === 'development' ||
+    process.env.NODE_ENV === 'test'
+  ) {
+    outputMessages.push(
+      'Development/test environment detected, quality checks skipped.',
+    );
     outputMessages.push('--- Quality Gate Passed (simulated) ---');
     logger.info('Quality checks skipped in development/test environment.');
-    
+
     return {
       output: outputMessages.join('\n'),
       success: true,
@@ -39,29 +44,29 @@ export async function runQualityGate(_ctx: Ctx): Promise<QualityResult> {
 
   // Définir les vérifications à exécuter (suivant la logique de run.sh small-checks)
   const checks = [
-    { 
-      args: ['exec', 'tsc', '--noEmit', '-p', 'tsconfig.app.json'], 
-      command: 'pnpm', 
+    {
+      args: ['exec', 'tsc', '--noEmit', '-p', 'tsconfig.app.json'],
+      command: 'pnpm',
       cwd: path.resolve(__dirname, '../../ui'),
-      name: 'TypeCheck UI'
+      name: 'TypeCheck UI',
     },
-    { 
-      args: ['exec', 'tsc', '--noEmit'], 
-      command: 'pnpm', 
+    {
+      args: ['exec', 'tsc', '--noEmit'],
+      command: 'pnpm',
       cwd: path.resolve(__dirname, '..'),
-      name: 'TypeCheck Core'
+      name: 'TypeCheck Core',
     },
-    { 
-      args: ['lint'], 
-      command: 'pnpm', 
+    {
+      args: ['lint'],
+      command: 'pnpm',
       cwd: path.resolve(__dirname, '../../ui'),
-      name: 'Lint UI'
+      name: 'Lint UI',
     },
-    { 
-      args: ['lint'], 
-      command: 'pnpm', 
+    {
+      args: ['lint'],
+      command: 'pnpm',
       cwd: path.resolve(__dirname, '..'),
-      name: 'Lint Core'
+      name: 'Lint Core',
     },
   ];
 
@@ -71,13 +76,13 @@ export async function runQualityGate(_ctx: Ctx): Promise<QualityResult> {
   // Exécuter chaque vérification
   for (const check of checks) {
     outputMessages.push(`\n--- Running: ${check.name} ---`);
-    
+
     try {
-      const { stderr, stdout } = await execa(check.command, check.args, { 
+      const { stderr, stdout } = await execa(check.command, check.args, {
         cwd: check.cwd,
-        reject: false // Ne pas rejeter la promesse en cas d'erreur
+        reject: false, // Ne pas rejeter la promesse en cas d'erreur
       });
-      
+
       const output = `${stdout || ''}${stderr ? '\n' + stderr : ''}`;
       combinedOutput += `\n${check.name} Output:\n${output}`;
 
@@ -90,9 +95,12 @@ export async function runQualityGate(_ctx: Ctx): Promise<QualityResult> {
       }
     } catch (error) {
       success = false;
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       combinedOutput += `\n${check.name} Error:\n${errorMessage}`;
-      outputMessages.push(`${check.name} FAILED with exception: ${errorMessage}`);
+      outputMessages.push(
+        `${check.name} FAILED with exception: ${errorMessage}`,
+      );
       logger.error(`${check.name} FAILED with exception`, { error });
     }
   }

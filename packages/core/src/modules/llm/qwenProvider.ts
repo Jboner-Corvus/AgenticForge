@@ -16,7 +16,9 @@ export class QwenProvider implements ILlmProvider {
       return LlmKeyErrorType.TEMPORARY;
     } else if (
       _errorBody.includes('invalid_api_key') ||
-      _errorBody.includes('Incorrect API key')
+      _errorBody.includes('Incorrect API key') ||
+      _errorBody.includes('invalid access token') ||
+      _errorBody.includes('token expired')
     ) {
       return LlmKeyErrorType.PERMANENT;
     }
@@ -50,8 +52,15 @@ export class QwenProvider implements ILlmProvider {
       throw new LlmError(errorMessage);
     }
 
-    // Qwen Portal API endpoint
-    const apiUrl = activeKey.baseUrl ? `${activeKey.baseUrl}/chat/completions` : 'https://portal.qwen.ai/v1/chat/completions';
+    // Qwen Portal API endpoint (hardcoded as requested)
+    const QWEN_API_BASE_URL = 'https://portal.qwen.ai/v1';
+    const apiUrls = [
+      activeKey.baseUrl ? `${activeKey.baseUrl}/chat/completions` : null,
+      `${QWEN_API_BASE_URL}/chat/completions`, // Hardcoded endpoint as requested
+      'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation',
+      'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+      'https://qwen.aliyuncs.com/v1/chat/completions',
+    ].filter(Boolean) as string[];
 
     // Format messages for Qwen Portal API (OpenAI-compatible)
     const qwenMessages = messages.map((msg) => ({
@@ -64,155 +73,184 @@ export class QwenProvider implements ILlmProvider {
     }
 
     const requestBody = {
-      model: modelName || activeKey.apiModel || 'qwen3-coder-plus',
-      messages: qwenMessages,
       max_tokens: 2000,
+      messages: qwenMessages,
+      model: modelName || activeKey.apiModel || 'qwen3-coder-plus',
     };
 
     const body = JSON.stringify(requestBody);
 
-    // Implémentation d'une logique de retry avec délais progressifs pour les erreurs temporaires
+    // Improved retry logic with exponential backoff and endpoint fallback
     let lastError: Error | null = null;
-    const MAX_RETRIES = 8;
-    const INITIAL_RETRIES_WITHOUT_DELAY = 4;
-    
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      try {
-        // Add a delay before making the LLM request (sauf pour les premières tentatives)
-        if (attempt > 0) {
-          // Pas de délai pour les 4 premières tentatives, puis délai progressif
-          if (attempt >= INITIAL_RETRIES_WITHOUT_DELAY) {
-            // Calcul du délai : 2 secondes de base + 1 seconde supplémentaire par tentative au-delà de 4
-            const delayMs = 2000 + (attempt - INITIAL_RETRIES_WITHOUT_DELAY) * 1000;
-            log.info(`Adding delay of ${delayMs}ms before Qwen API call (attempt ${attempt + 1})`);
-            await new Promise(resolve => setTimeout(resolve, delayMs));
+    const MAX_RETRIES = 5; // Reduced from 8 for better performance
+    const INITIAL_DELAY_MS = 1000;
+    const MAX_DELAY_MS = 10000;
+
+    // Try each API endpoint
+    for (const apiUrl of apiUrls) {
+      log.info(`Trying Qwen API endpoint: ${apiUrl}`);
+
+      // Reset retry count for each endpoint
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+          // Add exponential backoff delay (except for first attempt)
+          if (attempt > 0) {
+            const delayMs = Math.min(
+              INITIAL_DELAY_MS * Math.pow(2, attempt - 1),
+              MAX_DELAY_MS,
+            );
+            log.info(
+              `Adding delay of ${delayMs}ms before Qwen API call (attempt ${attempt + 1}/${MAX_RETRIES})`,
+            );
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
           }
-        } else {
-          // Délai standard pour la première tentative
-          await new Promise((resolve) =>
-            setTimeout(resolve, config.LLM_REQUEST_DELAY_MS),
+
+          log.info(
+            `[LLM CALL] Sending request to model: ${
+              activeKey!.apiModel
+            } via ${activeKey!.apiProvider} at ${apiUrl} (attempt ${attempt + 1}/${MAX_RETRIES})`,
           );
-        }
 
-        log.info(
-          `[LLM CALL] Sending request to model: ${
-            activeKey!.apiModel
-          } via ${activeKey!.apiProvider} (attempt ${attempt + 1}/${MAX_RETRIES})`,
-        );
-        const response = await fetch(apiUrl, {
-          body,
-          headers: {
-            Authorization: `Bearer ${activeKey!.apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          method: 'POST',
-          signal: AbortSignal.timeout(40000), // 40 second timeout
-        });
+          // Use AbortSignal with shorter timeout for better responsiveness
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-        if (!response.ok) {
-          const errorBody = await response.text();
-          const errorMessage = `Qwen API request failed with status ${response.status}: ${errorBody}`;
-          log.error({ errorBody, status: response.status }, errorMessage);
-          
-          // Vérifier si c'est une erreur temporaire (502, 504, etc.)
-          const errorType = this.getErrorType(response.status, errorBody);
-          if (errorType === LlmKeyErrorType.TEMPORARY && attempt < MAX_RETRIES - 1) {
-            // Pour les erreurs temporaires, on réessaie jusqu'au max de tentatives
-            lastError = new LlmError(errorMessage);
-            log.warn(`Temporary error encountered. Retrying... (attempt ${attempt + 1}/${MAX_RETRIES})`);
-            continue; // Réessayer
-          } else {
-            // Pour les erreurs permanentes ou si on a atteint le max de tentatives, on marque la clé comme mauvaise
-            await LlmKeyManager.markKeyAsBad(
-              activeKey!.apiProvider,
-              activeKey!.apiKey,
-              errorType,
-            );
-            throw new LlmError(errorMessage);
-          }
-        }
-
-        const data = await response.json();
-
-        const content = data.choices?.[0]?.message?.content;
-        if (content === undefined || content === null) {
-          log.error(
-            { response: data },
-            'Invalid response structure from Qwen API',
-          );
-          const errorType = this.getErrorType(
-            response.status,
-            JSON.stringify(data),
-          );
-          // Vérifier si c'est une erreur temporaire
-          if (errorType === LlmKeyErrorType.TEMPORARY && attempt < MAX_RETRIES - 1) {
-            lastError = new LlmError(
-              'Invalid response structure from Qwen API. The model may have returned an empty response.',
-            );
-            log.warn(`Temporary error encountered. Retrying... (attempt ${attempt + 1}/${MAX_RETRIES})`);
-            continue; // Réessayer
-          } else {
-            await LlmKeyManager.markKeyAsBad(
-              activeKey!.apiProvider,
-              activeKey!.apiKey,
-              errorType,
-            );
-            throw new LlmError(
-              'Invalid response structure from Qwen API. The model may have returned an empty response.',
-            );
-          }
-        }
-
-        const estimatedTokens =
-          messages.reduce(
-            (sum, msg) =>
-              sum +
-              msg.parts.reduce(
-                (partSum, part) => partSum + (part.text?.length || 0),
-                0,
-              ),
-            0,
-          ) + content.length;
-        getRedisClientInstance()
-          .incrby('leaderboard:tokensSaved', estimatedTokens)
-          .catch((error: unknown) => {
-            getLogger().error(
-              { error },
-              'Failed to increment tokensSaved in Redis',
-            );
+          const response = await fetch(apiUrl, {
+            body,
+            headers: {
+              Authorization: `Bearer ${activeKey!.apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            method: 'POST',
+            signal: controller.signal,
           });
 
-        await LlmKeyManager.resetKeyStatus(
-          activeKey!.apiProvider,
-          activeKey!.apiKey,
-        );
+          clearTimeout(timeoutId);
 
-        return content.trim();
-      } catch (error) {
-        if (error instanceof LlmError) {
-          // Si c'est une erreur LLM et que ce n'est pas la dernière tentative, on continue
+          if (!response.ok) {
+            const errorBody = await response.text();
+            const errorMessage = `Qwen API request failed with status ${response.status}: ${errorBody}`;
+            log.error({ errorBody, status: response.status }, errorMessage);
+
+            // Check if it's a permanent error
+            const errorType = this.getErrorType(response.status, errorBody);
+            if (errorType === LlmKeyErrorType.PERMANENT) {
+              // For permanent errors, mark key as bad and try next endpoint
+              await LlmKeyManager.markKeyAsBad(
+                activeKey!.apiProvider,
+                activeKey!.apiKey,
+                errorType,
+              );
+              throw new LlmError(errorMessage);
+            } else if (attempt < MAX_RETRIES - 1) {
+              // For temporary errors, retry
+              lastError = new LlmError(errorMessage);
+              log.warn(
+                `Temporary error encountered. Retrying... (attempt ${attempt + 1}/${MAX_RETRIES})`,
+              );
+              continue;
+            } else {
+              // Last attempt, mark key as bad
+              await LlmKeyManager.markKeyAsBad(
+                activeKey!.apiProvider,
+                activeKey!.apiKey,
+                errorType,
+              );
+              throw new LlmError(errorMessage);
+            }
+          }
+
+          const data = await response.json();
+
+          const content = data.choices?.[0]?.message?.content;
+          if (content === undefined || content === null) {
+            log.error(
+              { response: data },
+              'Invalid response structure from Qwen API',
+            );
+            const errorType = this.getErrorType(
+              response.status,
+              JSON.stringify(data),
+            );
+            // Check if it's a temporary error
+            if (attempt < MAX_RETRIES - 1) {
+              lastError = new LlmError(
+                'Invalid response structure from Qwen API. The model may have returned an empty response.',
+              );
+              log.warn(
+                `Temporary error encountered. Retrying... (attempt ${attempt + 1}/${MAX_RETRIES})`,
+              );
+              continue;
+            } else {
+              await LlmKeyManager.markKeyAsBad(
+                activeKey!.apiProvider,
+                activeKey!.apiKey,
+                errorType,
+              );
+              throw new LlmError(
+                'Invalid response structure from Qwen API. The model may have returned an empty response.',
+              );
+            }
+          }
+
+          const estimatedTokens =
+            messages.reduce(
+              (sum, msg) =>
+                sum +
+                msg.parts.reduce(
+                  (partSum, part) => partSum + (part.text?.length || 0),
+                  0,
+                ),
+              0,
+            ) + content.length;
+          getRedisClientInstance()
+            .incrby('leaderboard:tokensSaved', estimatedTokens)
+            .catch((error: unknown) => {
+              getLogger().error(
+                { error },
+                'Failed to increment tokensSaved in Redis',
+              );
+            });
+
+          await LlmKeyManager.resetKeyStatus(
+            activeKey!.apiProvider,
+            activeKey!.apiKey,
+          );
+
+          return content.trim();
+        } catch (error) {
+          if (error instanceof LlmError) {
+            // If it's an LLM error and not the last attempt, continue
+            if (attempt < MAX_RETRIES - 1) {
+              lastError = error;
+              log.warn(
+                `LLM error encountered. Retrying... (attempt ${attempt + 1}/${MAX_RETRIES})`,
+              );
+              continue;
+            } else {
+              // Last attempt, propagate the error
+              throw error;
+            }
+          }
+
+          log.error({ error }, 'Failed to get response from LLM');
+          lastError = error instanceof Error ? error : new Error(String(error));
+
+          // If not the last attempt, continue
           if (attempt < MAX_RETRIES - 1) {
-            lastError = error;
-            log.warn(`LLM error encountered. Retrying... (attempt ${attempt + 1}/${MAX_RETRIES})`);
+            log.warn(
+              `Network error encountered. Retrying... (attempt ${attempt + 1}/${MAX_RETRIES})`,
+            );
             continue;
-          } else {
-            // Dernière tentative, on propage l'erreur
-            throw error;
           }
         }
-        
-        log.error({ error }, 'Failed to get response from LLM');
-        lastError = error instanceof Error ? error : new Error(String(error));
-        
-        // Si ce n'est pas la dernière tentative, on continue
-        if (attempt < MAX_RETRIES - 1) {
-          log.warn(`Network error encountered. Retrying... (attempt ${attempt + 1}/${MAX_RETRIES})`);
-          continue;
-        }
       }
+
+      // If we get here, all retries for this endpoint failed
+      log.warn(`All retries failed for endpoint: ${apiUrl}`);
     }
-    
-    // Si on arrive ici, c'est que toutes les tentatives ont échoué
+
+    // If we get here, all endpoints failed
     if (lastError) {
       if (activeKey) {
         await LlmKeyManager.markKeyAsBad(
@@ -221,10 +259,12 @@ export class QwenProvider implements ILlmProvider {
           LlmKeyErrorType.TEMPORARY,
         );
       }
-      throw new LlmError(`Failed to communicate with the LLM after ${MAX_RETRIES} attempts. Last error: ${lastError.message}`);
+      throw new LlmError(
+        `Failed to communicate with the LLM after trying all endpoints. Last error: ${lastError.message}`,
+      );
     }
-    
-    // Cas par défaut (ne devrait pas arriver)
+
+    // Default case (should not happen)
     throw new LlmError('Failed to communicate with the LLM.');
   }
 }

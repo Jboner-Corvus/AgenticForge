@@ -26,7 +26,7 @@ export async function getBrowser(): Promise<any> {
   if (!chromium) {
     throw new Error('Playwright is not available');
   }
-  
+
   if (!browser) {
     getLogger().info('Launching new browser instance...');
     browser = await chromium.launch({});

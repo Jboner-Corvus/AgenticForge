@@ -1,4 +1,13 @@
-import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 describe('Browser Automation Tools Integration Tests', () => {
   beforeAll(async () => {
@@ -20,17 +29,18 @@ describe('Browser Automation Tools Integration Tests', () => {
   it('should navigate to a webpage and extract content', async () => {
     // Simulate browser navigation
     const browserAction = {
-      url: 'https://example.com',
       action: 'navigate',
       result: {
+        content:
+          'This domain is for use in illustrative examples in documents.',
+        statusCode: 200,
         title: 'Example Domain',
-        content: 'This domain is for use in illustrative examples in documents.',
-        statusCode: 200
-      }
+      },
+      url: 'https://example.com',
     };
 
     // Simulate navigation delay
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(browserAction.url).toBe('https://example.com');
     expect(browserAction.result.title).toBe('Example Domain');
@@ -40,14 +50,14 @@ describe('Browser Automation Tools Integration Tests', () => {
   it('should handle browser errors gracefully', async () => {
     // Simulate browser error
     const browserError = {
-      url: 'https://nonexistent-site-12345.com',
       action: 'navigate',
       error: {
-        name: 'NavigationError',
+        code: 'ENOTFOUND',
         message: 'Failed to navigate to page',
-        code: 'ENOTFOUND'
+        name: 'NavigationError',
       },
-      result: null
+      result: null,
+      url: 'https://nonexistent-site-12345.com',
     };
 
     // Simulate error handling
@@ -64,14 +74,14 @@ describe('Browser Automation Tools Integration Tests', () => {
   it('should execute JavaScript in browser context', async () => {
     // Simulate JavaScript execution
     const jsExecution = {
-      url: 'https://example.com',
       action: 'executeScript',
+      result: 'Example Domain',
       script: 'document.title',
-      result: 'Example Domain'
+      url: 'https://example.com',
     };
 
     // Simulate script execution delay
-    await new Promise(resolve => setTimeout(resolve, 5));
+    await new Promise((resolve) => setTimeout(resolve, 5));
 
     expect(jsExecution.script).toBe('document.title');
     expect(jsExecution.result).toBe('Example Domain');
@@ -80,21 +90,21 @@ describe('Browser Automation Tools Integration Tests', () => {
   it('should take screenshots of webpages', async () => {
     // Simulate screenshot capture
     const screenshotAction = {
-      url: 'https://example.com',
       action: 'screenshot',
       options: {
         fullPage: true,
-        type: 'png'
+        type: 'png',
       },
       result: {
+        format: 'png',
         screenshotData: 'base64-encoded-screenshot-data',
         size: 102400, // 100KB
-        format: 'png'
-      }
+      },
+      url: 'https://example.com',
     };
 
     // Simulate screenshot processing
-    await new Promise(resolve => setTimeout(resolve, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(screenshotAction.options.fullPage).toBe(true);
     expect(screenshotAction.result.format).toBe('png');
@@ -104,23 +114,21 @@ describe('Browser Automation Tools Integration Tests', () => {
   it('should handle form filling and submission', async () => {
     // Simulate form interaction
     const formAction = {
-      url: 'https://example.com/login',
       action: 'fillForm',
       formData: {
+        password: 'testpass123',
         username: 'testuser',
-        password: 'testpass123'
       },
       result: {
-        success: true,
+        cookies: [{ domain: 'example.com', name: 'session', value: 'abc123' }],
         redirectedTo: 'https://example.com/dashboard',
-        cookies: [
-          { name: 'session', value: 'abc123', domain: 'example.com' }
-        ]
-      }
+        success: true,
+      },
+      url: 'https://example.com/login',
     };
 
     // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 15));
+    await new Promise((resolve) => setTimeout(resolve, 15));
 
     expect(formAction.formData.username).toBe('testuser');
     expect(formAction.result.success).toBe(true);
@@ -130,19 +138,19 @@ describe('Browser Automation Tools Integration Tests', () => {
   it('should handle browser timeouts properly', async () => {
     // Simulate timeout scenario
     const timeoutAction = {
-      url: 'https://slow-website.com',
       action: 'navigate',
-      timeout: 5000, // 5 seconds
       result: {
         error: {
+          message: 'Navigation timeout of 5000 ms exceeded',
           name: 'TimeoutError',
-          message: 'Navigation timeout of 5000 ms exceeded'
-        }
-      }
+        },
+      },
+      timeout: 5000, // 5 seconds
+      url: 'https://slow-website.com',
     };
 
     // Simulate timeout
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(timeoutAction.timeout).toBe(5000);
     expect(timeoutAction.result.error.name).toBe('TimeoutError');
@@ -152,36 +160,36 @@ describe('Browser Automation Tools Integration Tests', () => {
     // Simulate multi-tab scenario
     const tabs = [
       {
-        id: 'tab-1',
-        url: 'https://example.com',
         active: true,
-        title: 'Example Domain'
+        id: 'tab-1',
+        title: 'Example Domain',
+        url: 'https://example.com',
       },
       {
+        active: false,
         id: 'tab-2',
+        title: 'Google',
         url: 'https://google.com',
-        active: false,
-        title: 'Google'
       },
       {
-        id: 'tab-3',
-        url: 'https://github.com',
         active: false,
-        title: 'GitHub'
-      }
+        id: 'tab-3',
+        title: 'GitHub',
+        url: 'https://github.com',
+      },
     ];
 
     // Simulate tab switching
     const switchToTab = (tabId: string) => {
-      tabs.forEach(tab => {
+      tabs.forEach((tab) => {
         tab.active = tab.id === tabId;
       });
-      return tabs.find(tab => tab.active);
+      return tabs.find((tab) => tab.active);
     };
 
     const activeTab = switchToTab('tab-2');
 
-    expect(tabs.filter(tab => tab.active)).toHaveLength(1);
+    expect(tabs.filter((tab) => tab.active)).toHaveLength(1);
     expect(activeTab?.id).toBe('tab-2');
     expect(activeTab?.title).toBe('Google');
   });
@@ -189,22 +197,22 @@ describe('Browser Automation Tools Integration Tests', () => {
   it('should handle file downloads', async () => {
     // Simulate file download
     const downloadAction = {
-      url: 'https://example.com/download',
       action: 'downloadFile',
       options: {
         fileName: 'test-document.pdf',
-        waitForDownload: true
+        waitForDownload: true,
       },
       result: {
-        success: true,
         filePath: '/tmp/test-document.pdf',
         fileSize: 2048000, // 2MB
-        mimeType: 'application/pdf'
-      }
+        mimeType: 'application/pdf',
+        success: true,
+      },
+      url: 'https://example.com/download',
     };
 
     // Simulate download process
-    await new Promise(resolve => setTimeout(resolve, 25));
+    await new Promise((resolve) => setTimeout(resolve, 25));
 
     expect(downloadAction.options.fileName).toBe('test-document.pdf');
     expect(downloadAction.result.success).toBe(true);
@@ -215,21 +223,21 @@ describe('Browser Automation Tools Integration Tests', () => {
     // Simulate cookie operations
     const cookies = [
       {
-        name: 'session_id',
-        value: 'abc123',
         domain: 'example.com',
-        path: '/',
         httpOnly: true,
-        secure: true
+        name: 'session_id',
+        path: '/',
+        secure: true,
+        value: 'abc123',
       },
       {
-        name: 'user_preference',
-        value: 'dark_mode',
         domain: 'example.com',
-        path: '/',
         httpOnly: false,
-        secure: false
-      }
+        name: 'user_preference',
+        path: '/',
+        secure: false,
+        value: 'dark_mode',
+      },
     ];
 
     // Simulate cookie management
@@ -238,7 +246,7 @@ describe('Browser Automation Tools Integration Tests', () => {
     };
 
     const deleteCookie = (name: string) => {
-      const index = cookies.findIndex(c => c.name === name);
+      const index = cookies.findIndex((c) => c.name === name);
       if (index !== -1) {
         cookies.splice(index, 1);
       }
@@ -246,12 +254,12 @@ describe('Browser Automation Tools Integration Tests', () => {
 
     // Add a new cookie
     addCookie({
-      name: 'tracking_id',
-      value: 'xyz789',
       domain: 'example.com',
-      path: '/',
       httpOnly: false,
-      secure: true
+      name: 'tracking_id',
+      path: '/',
+      secure: true,
+      value: 'xyz789',
     });
 
     expect(cookies).toHaveLength(3);
@@ -259,30 +267,30 @@ describe('Browser Automation Tools Integration Tests', () => {
     // Delete a cookie
     deleteCookie('user_preference');
     expect(cookies).toHaveLength(2);
-    expect(cookies.find(c => c.name === 'user_preference')).toBeUndefined();
+    expect(cookies.find((c) => c.name === 'user_preference')).toBeUndefined();
   });
 
   it('should handle browser network interception', async () => {
     // Simulate network interception
     const interceptedRequests = [
       {
-        url: 'https://example.com/api/data',
-        method: 'GET',
         headers: {
-          'Authorization': 'Bearer token123',
-          'Content-Type': 'application/json'
+          Authorization: 'Bearer token123',
+          'Content-Type': 'application/json',
         },
-        intercepted: true
+        intercepted: true,
+        method: 'GET',
+        url: 'https://example.com/api/data',
       },
       {
-        url: 'https://example.com/api/submit',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({ name: 'test' }),
-        intercepted: true
-      }
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        intercepted: true,
+        method: 'POST',
+        url: 'https://example.com/api/submit',
+      },
     ];
 
     // Simulate request modification
@@ -295,7 +303,9 @@ describe('Browser Automation Tools Integration Tests', () => {
       return request;
     };
 
-    const modifiedRequests = interceptedRequests.map(req => modifyRequest(req));
+    const modifiedRequests = interceptedRequests.map((req) =>
+      modifyRequest(req),
+    );
 
     expect(modifiedRequests[0].headers).toHaveProperty('X-Custom-Header');
     expect(modifiedRequests[1].headers).toHaveProperty('X-Request-ID');
@@ -305,39 +315,39 @@ describe('Browser Automation Tools Integration Tests', () => {
     // Simulate authentication scenarios
     const authScenarios = [
       {
-        type: 'basic',
         credentials: {
+          password: 'secret',
           username: 'admin',
-          password: 'secret'
         },
-        url: 'https://secure.example.com'
+        type: 'basic',
+        url: 'https://secure.example.com',
       },
       {
-        type: 'bearer',
         token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        url: 'https://api.example.com'
-      }
+        type: 'bearer',
+        url: 'https://api.example.com',
+      },
     ];
 
     // Simulate authentication process
     const authenticate = (scenario: any) => {
       if (scenario.type === 'basic') {
         return {
-          success: true,
           authenticated: true,
-          user: scenario.credentials.username
+          success: true,
+          user: scenario.credentials.username,
         };
       } else if (scenario.type === 'bearer') {
         return {
-          success: true,
           authenticated: true,
-          tokenValid: true
+          success: true,
+          tokenValid: true,
         };
       }
-      return { success: false, authenticated: false };
+      return { authenticated: false, success: false };
     };
 
-    const results = authScenarios.map(scenario => authenticate(scenario));
+    const results = authScenarios.map((scenario) => authenticate(scenario));
 
     expect(results[0].authenticated).toBe(true);
     expect(results[0].user).toBe('admin');
@@ -349,22 +359,22 @@ describe('Browser Automation Tools Integration Tests', () => {
     const emulationSettings = [
       {
         device: 'iPhone 12',
+        isMobile: true,
         userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X)',
-        viewport: { width: 390, height: 844 },
-        isMobile: true
+        viewport: { height: 844, width: 390 },
       },
       {
         device: 'iPad Pro',
+        isMobile: true,
         userAgent: 'Mozilla/5.0 (iPad; CPU OS 14_6 like Mac OS X)',
-        viewport: { width: 1024, height: 1366 },
-        isMobile: true
+        viewport: { height: 1366, width: 1024 },
       },
       {
         device: 'Desktop',
+        isMobile: false,
         userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-        viewport: { width: 1920, height: 1080 },
-        isMobile: false
-      }
+        viewport: { height: 1080, width: 1920 },
+      },
     ];
 
     // Simulate emulation switching
@@ -378,66 +388,74 @@ describe('Browser Automation Tools Integration Tests', () => {
   it('should handle browser performance monitoring', async () => {
     // Simulate performance metrics
     const performanceMetrics = {
-      navigationStart: Date.now() - 5000,
-      responseStart: Date.now() - 4800,
       domContentLoaded: Date.now() - 3000,
       loadEventEnd: Date.now() - 1000,
       metrics: {
-        firstContentfulPaint: 1200,
-        largestContentfulPaint: 2500,
         cumulativeLayoutShift: 0.05,
-        firstInputDelay: 50
-      }
+        firstContentfulPaint: 1200,
+        firstInputDelay: 50,
+        largestContentfulPaint: 2500,
+      },
+      navigationStart: Date.now() - 5000,
+      responseStart: Date.now() - 4800,
     };
 
     // Simulate performance calculation
     const calculateLoadTime = () => {
-      return performanceMetrics.loadEventEnd - performanceMetrics.navigationStart;
+      return (
+        performanceMetrics.loadEventEnd - performanceMetrics.navigationStart
+      );
     };
 
     const loadTime = calculateLoadTime();
 
     expect(loadTime).toBeGreaterThan(0);
     expect(performanceMetrics.metrics.firstContentfulPaint).toBeGreaterThan(0);
-    expect(performanceMetrics.metrics.cumulativeLayoutShift).toBeGreaterThanOrEqual(0);
+    expect(
+      performanceMetrics.metrics.cumulativeLayoutShift,
+    ).toBeGreaterThanOrEqual(0);
   });
 
   it('should handle browser security features', async () => {
     // Simulate security scenarios
     const securityScenarios = [
       {
+        hasMixedContent: false,
+        secure: true,
         type: 'mixed-content',
         url: 'https://example.com',
-        hasMixedContent: false,
-        secure: true
       },
       {
+        certificateValid: false,
+        error: 'CERT_HAS_EXPIRED',
         type: 'certificate-error',
         url: 'https://expired.badssl.com',
-        certificateValid: false,
-        error: 'CERT_HAS_EXPIRED'
-      }
+      },
     ];
 
     // Simulate security checks
     const checkSecurity = (scenario: any) => {
       if (scenario.type === 'mixed-content') {
         return {
-          secure: scenario.secure,
           hasMixedContent: scenario.hasMixedContent,
-          message: scenario.hasMixedContent ? 'Mixed content detected' : 'Secure connection'
+          message: scenario.hasMixedContent
+            ? 'Mixed content detected'
+            : 'Secure connection',
+          secure: scenario.secure,
         };
       } else if (scenario.type === 'certificate-error') {
         return {
           certificateValid: scenario.certificateValid,
           error: scenario.error,
-          message: `Certificate error: ${scenario.error}`
+          message: `Certificate error: ${scenario.error}`,
         };
       }
-      return { secure: false, message: 'Unknown security status' };
+      return { message: 'Unknown security status', secure: false };
     };
 
-    const results = securityScenarios.map(scenario => checkSecurity(scenario));
+    const results = securityScenarios.map((scenario) =>
+      checkSecurity(scenario),
+    );
 
     expect(results[0].secure).toBe(true);
     expect(results[1].certificateValid).toBe(false);
@@ -447,31 +465,37 @@ describe('Browser Automation Tools Integration Tests', () => {
   it('should handle complex browser workflows', async () => {
     // Simulate a complex workflow: login, navigate, interact, download
     const workflowSteps = [
-      { step: 1, action: 'navigate', url: 'https://example.com/login' },
-      { step: 2, action: 'fillForm', fields: { username: 'user', password: 'pass' } },
-      { step: 3, action: 'click', selector: '#login-button' },
-      { step: 4, action: 'waitForNavigation' },
-      { step: 5, action: 'click', selector: '.download-link' },
-      { step: 6, action: 'waitForDownload' }
+      { action: 'navigate', step: 1, url: 'https://example.com/login' },
+      {
+        action: 'fillForm',
+        fields: { password: 'pass', username: 'user' },
+        step: 2,
+      },
+      { action: 'click', selector: '#login-button', step: 3 },
+      { action: 'waitForNavigation', step: 4 },
+      { action: 'click', selector: '.download-link', step: 5 },
+      { action: 'waitForDownload', step: 6 },
     ];
 
     // Simulate workflow execution
     const executedSteps: any[] = [];
-    
+
     for (const step of workflowSteps) {
       // Simulate step execution time
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 20));
-      
+      await new Promise((resolve) => setTimeout(resolve, Math.random() * 20));
+
       executedSteps.push({
         ...step,
         status: 'completed',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
     expect(executedSteps).toHaveLength(6);
-    expect(executedSteps.every(step => step.status === 'completed')).toBe(true);
-    
+    expect(executedSteps.every((step) => step.status === 'completed')).toBe(
+      true,
+    );
+
     // Check workflow order
     expect(executedSteps[0].step).toBe(1);
     expect(executedSteps[5].step).toBe(6);

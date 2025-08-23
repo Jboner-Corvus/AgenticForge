@@ -1,6 +1,10 @@
 import { getConfig } from '../config.ts';
 import { getLogger } from '../logger.ts';
-import { LLMContent, LlmError, LlmKeyErrorType } from '../modules/llm/llm-types.ts';
+import {
+  LLMContent,
+  LlmError,
+  LlmKeyErrorType,
+} from '../modules/llm/llm-types.ts';
 import { LlmApiKey, LlmKeyManager } from '../modules/llm/LlmKeyManager.ts';
 import { getRedisClientInstance } from '../modules/redis/redisClient.ts';
 
@@ -74,8 +78,7 @@ export class Gpt5Provider {
       throw new LlmError(errorMessage);
     }
 
-    const apiUrl =
-      activeKey.baseUrl || 'https://api.openai.com/v1/responses'; // New endpoint for GPT-5
+    const apiUrl = activeKey.baseUrl || 'https://api.openai.com/v1/responses'; // New endpoint for GPT-5
 
     // Convert messages to the format expected by GPT-5
     const gpt5Messages = messages.map((msg) => ({
@@ -84,7 +87,7 @@ export class Gpt5Provider {
     }));
 
     // Prepare the input content
-    const inputContent = gpt5Messages.map(m => m.content).join('\n');
+    const inputContent = gpt5Messages.map((m) => m.content).join('\n');
 
     const requestBody: any = {
       input: inputContent,
@@ -95,7 +98,7 @@ export class Gpt5Provider {
     if (gpt5Options?.reasoning) {
       requestBody.reasoning = gpt5Options.reasoning;
     }
-    
+
     if (gpt5Options?.text) {
       requestBody.text = gpt5Options.text;
     }
@@ -112,7 +115,7 @@ export class Gpt5Provider {
       log.info(
         `[LLM CALL] Envoi de la requête au modèle GPT-5 : ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
       );
-      
+
       const response = await fetch(apiUrl, {
         body,
         headers: {
@@ -164,7 +167,8 @@ export class Gpt5Provider {
           (sum, msg) =>
             sum +
             msg.parts.reduce(
-              (partSum: number, part: { text?: string }) => partSum + (part.text?.length || 0),
+              (partSum: number, part: { text?: string }) =>
+                partSum + (part.text?.length || 0),
               0,
             ),
           0,

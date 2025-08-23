@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { C as Ctx, T as Tool } from '../../../../types-C2iGLYUf.js';
+import { C as Ctx, T as Tool } from '../../../../types-X5iVOMgV.js';
 import 'fastmcp';
 import 'ioredis';
 import 'bullmq';
@@ -7,68 +7,68 @@ import 'pg';
 import 'pino';
 
 declare const projectPlanningParams: z.ZodObject<{
-    projectName: z.ZodString;
+    complexity: z.ZodOptional<z.ZodEnum<["simple", "medium", "complex"]>>;
     projectDescription: z.ZodString;
     projectId: z.ZodOptional<z.ZodString>;
-    complexity: z.ZodOptional<z.ZodEnum<["simple", "medium", "complex"]>>;
+    projectName: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    projectName: string;
     projectDescription: string;
-    projectId?: string | undefined;
+    projectName: string;
     complexity?: "simple" | "medium" | "complex" | undefined;
+    projectId?: string | undefined;
 }, {
-    projectName: string;
     projectDescription: string;
-    projectId?: string | undefined;
+    projectName: string;
     complexity?: "simple" | "medium" | "complex" | undefined;
+    projectId?: string | undefined;
 }>;
 declare const projectPlanningOutput: z.ZodUnion<[z.ZodObject<{
-    success: z.ZodBoolean;
     message: z.ZodString;
     plan: z.ZodArray<z.ZodObject<{
-        id: z.ZodString;
-        title: z.ZodString;
         description: z.ZodString;
+        estimatedTime: z.ZodNumber;
+        id: z.ZodString;
         phase: z.ZodString;
         priority: z.ZodEnum<["low", "medium", "high", "critical"]>;
-        estimatedTime: z.ZodNumber;
+        title: z.ZodString;
     }, "strip", z.ZodTypeAny, {
-        id: string;
-        title: string;
         description: string;
+        estimatedTime: number;
+        id: string;
         phase: string;
         priority: "medium" | "low" | "high" | "critical";
-        estimatedTime: number;
+        title: string;
     }, {
-        id: string;
-        title: string;
         description: string;
+        estimatedTime: number;
+        id: string;
         phase: string;
         priority: "medium" | "low" | "high" | "critical";
-        estimatedTime: number;
+        title: string;
     }>, "many">;
+    success: z.ZodBoolean;
 }, "strip", z.ZodTypeAny, {
     message: string;
-    success: boolean;
     plan: {
-        id: string;
-        title: string;
         description: string;
+        estimatedTime: number;
+        id: string;
         phase: string;
         priority: "medium" | "low" | "high" | "critical";
-        estimatedTime: number;
+        title: string;
     }[];
+    success: boolean;
 }, {
     message: string;
-    success: boolean;
     plan: {
-        id: string;
-        title: string;
         description: string;
+        estimatedTime: number;
+        id: string;
         phase: string;
         priority: "medium" | "low" | "high" | "critical";
-        estimatedTime: number;
+        title: string;
     }[];
+    success: boolean;
 }>, z.ZodObject<{
     error: z.ZodString;
 }, "strip", z.ZodTypeAny, {

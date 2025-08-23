@@ -1,107 +1,111 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Agent } from './agent.ts';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { Job as BullMQJob, SessionData, Tool } from '../../types.ts';
+
 import { getMockQueue } from '../../test/mockQueue.ts';
-import type { SessionData, Tool, Job as BullMQJob } from '../../types.ts';
+import { Agent } from './agent.ts';
 
 // Mock BullMQ avec fonctionnalités complètes
 const mockQueue = getMockQueue();
 
 const mockJob = {
-  id: 'job-queue-test-123',
+  attemptsMade: 0,
   data: { prompt: 'Test job queue integration' },
+  discard: vi.fn(),
+  failedReason: null,
+  finishedOn: null,
+  getState: vi.fn().mockResolvedValue('waiting'),
+  id: 'job-queue-test-123',
+  isActive: vi.fn().mockResolvedValue(false),
+  isCompleted: vi.fn().mockResolvedValue(false),
+  isDelayed: vi.fn().mockResolvedValue(false),
+  isFailed: vi.fn().mockResolvedValue(false),
+  isWaiting: vi.fn().mockResolvedValue(true),
+  moveToCompleted: vi.fn(),
+  moveToFailed: vi.fn(),
   opts: {
-    delay: 0,
     attempts: 3,
-    backoff: { type: 'exponential', delay: 2000 },
+    backoff: { delay: 2000, type: 'exponential' },
+    delay: 0,
     removeOnComplete: 10,
     removeOnFail: 5,
   },
-  timestamp: Date.now(),
   processedOn: Date.now(),
-  finishedOn: null,
-  failedReason: null,
-  attemptsMade: 0,
   progress: 0,
-  returnvalue: null,
-  isFailed: vi.fn().mockResolvedValue(false),
-  isCompleted: vi.fn().mockResolvedValue(false),
-  isWaiting: vi.fn().mockResolvedValue(true),
-  isActive: vi.fn().mockResolvedValue(false),
-  isDelayed: vi.fn().mockResolvedValue(false),
-  updateProgress: vi.fn(),
-  moveToCompleted: vi.fn(),
-  moveToFailed: vi.fn(),
-  retry: vi.fn(),
-  discard: vi.fn(),
-  remove: vi.fn(),
   promote: vi.fn(),
-  getState: vi.fn().mockResolvedValue('waiting'),
+  remove: vi.fn(),
+  retry: vi.fn(),
+  returnvalue: null,
+  timestamp: Date.now(),
+  updateProgress: vi.fn(),
 };
 
 const mockWorker = {
-  on: vi.fn(),
-  run: vi.fn(),
   close: vi.fn(),
+  getMetrics: vi.fn(),
+  on: vi.fn(),
   pause: vi.fn(),
   resume: vi.fn(),
-  getMetrics: vi.fn(),
+  run: vi.fn(),
 };
 
 const mockQueueEvents = {
-  on: vi.fn(),
   close: vi.fn(),
+  on: vi.fn(),
 };
 
 // Mocks globaux
 vi.mock('../../config.ts', () => ({
   config: {
     AGENT_MAX_ITERATIONS: 5,
+    JOB_TIMEOUT: 300000, // 5 minutes
     LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
-    REDIS_URL: 'redis://localhost:6379',
+    QUEUE_CLEANUP_INTERVAL: 300000,
     QUEUE_CONCURRENCY: 5,
     QUEUE_MAX_RETRIES: 3,
-    QUEUE_CLEANUP_INTERVAL: 300000,
-    JOB_TIMEOUT: 300000, // 5 minutes
+    REDIS_URL: 'redis://localhost:6379',
   },
 }));
 
 vi.mock('../../logger.ts', () => ({
   getLoggerInstance: () => ({
     child: () => ({
+      debug: vi.fn(),
+      error: vi.fn(),
       info: vi.fn(),
       warn: vi.fn(),
-      error: vi.fn(),
-      debug: vi.fn(),
     }),
+    debug: vi.fn(),
+    error: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
   }),
 }));
 
 vi.mock('../redis/redisClient.ts', () => ({
   getRedisClientInstance: () => ({
-    publish: vi.fn(),
+    del: vi.fn(),
     duplicate: () => ({
       on: vi.fn(),
+      quit: vi.fn(),
       subscribe: vi.fn(),
       unsubscribe: vi.fn(),
-      quit: vi.fn(),
     }),
-    hset: vi.fn(),
-    hget: vi.fn(),
-    del: vi.fn(),
     exists: vi.fn(),
+    hget: vi.fn(),
+    hset: vi.fn(),
     llen: vi.fn(),
     lpush: vi.fn(),
+    publish: vi.fn(),
     rpop: vi.fn(),
   }),
 }));
 
 vi.mock('../../utils/llmProvider.ts', () => ({
   getLlmProvider: () => ({
-    getLlmResponse: vi.fn().mockResolvedValue('{"answer": "Job queue test response"}'),
+    getLlmResponse: vi
+      .fn()
+      .mockResolvedValue('{"answer": "Job queue test response"}'),
   }),
 }));
 
@@ -130,8 +134,8 @@ vi.mock('./responseSchema.ts', () => ({
 // Mock BullMQ
 vi.mock('bullmq', () => ({
   Queue: vi.fn(() => mockQueue),
-  Worker: vi.fn(() => mockWorker),
   QueueEvents: vi.fn(() => mockQueueEvents),
+  Worker: vi.fn(() => mockWorker),
 }));
 
 describe('Job Queue BullMQ Integration Tests', () => {
@@ -144,11 +148,11 @@ describe('Job Queue BullMQ Integration Tests', () => {
     vi.clearAllMocks();
 
     mockSessionData = {
+      activeLlmProvider: 'openai',
       history: [],
       identities: [{ id: 'test-user', type: 'user' }] as const,
       name: 'Queue Test Session',
       timestamp: Date.now(),
-      activeLlmProvider: 'openai',
     };
 
     mockSessionManager = {
@@ -163,7 +167,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
       mockQueue,
       mockTools,
       'openai',
-      mockSessionManager
+      mockSessionManager,
     );
   });
 
@@ -179,25 +183,25 @@ describe('Job Queue BullMQ Integration Tests', () => {
       (mockQueue.getJob as any).mockResolvedValue(mockJob);
 
       const jobData = {
-        sessionId: 'test-session',
-        prompt: 'Process this request',
         priority: 1,
+        prompt: 'Process this request',
+        sessionId: 'test-session',
         userId: 'user-123',
       };
 
       await (mockQueue.add as any)('agent-task', jobData, {
-        delay: 0,
         attempts: 3,
+        delay: 0,
         removeOnComplete: 10,
       });
 
-      expect((mockQueue.add as any)).toHaveBeenCalledWith(
+      expect(mockQueue.add as any).toHaveBeenCalledWith(
         'agent-task',
         jobData,
         expect.objectContaining({
           attempts: 3,
           removeOnComplete: 10,
-        })
+        }),
       );
     });
 
@@ -221,19 +225,26 @@ describe('Job Queue BullMQ Integration Tests', () => {
       };
 
       mockQueue.getJobs = vi.fn();
-      (mockQueue.getJobs as any).mockResolvedValue([lowPriorityJob, highPriorityJob]);
+      (mockQueue.getJobs as any).mockResolvedValue([
+        lowPriorityJob,
+        highPriorityJob,
+      ]);
 
       await agent.run();
 
       // Les jobs haute priorité devraient être traités en premier
-      expect(mockQueue.getJobs).toHaveBeenCalledWith(['waiting', 'active'], 0, 100);
+      expect(mockQueue.getJobs).toHaveBeenCalledWith(
+        ['waiting', 'active'],
+        0,
+        100,
+      );
     });
 
     it('should handle delayed job execution', async () => {
       const delayedJobData = {
-        sessionId: 'delayed-session',
         prompt: 'Execute later',
         scheduleFor: Date.now() + 60000, // 1 minute
+        sessionId: 'delayed-session',
       };
 
       mockQueue.add = vi.fn();
@@ -246,12 +257,12 @@ describe('Job Queue BullMQ Integration Tests', () => {
         delay: 60000,
       });
 
-      expect((mockQueue.add as any)).toHaveBeenCalledWith(
+      expect(mockQueue.add as any).toHaveBeenCalledWith(
         'delayed-agent-task',
         delayedJobData,
         expect.objectContaining({
           delay: 60000,
-        })
+        }),
       );
     });
   });
@@ -264,13 +275,15 @@ describe('Job Queue BullMQ Integration Tests', () => {
         failedReason: 'LLM provider timeout',
       };
 
-      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockLlmProvider =
+        require('../../utils/llmProvider.ts').getLlmProvider();
       mockLlmProvider.getLlmResponse = vi.fn();
       (mockLlmProvider.getLlmResponse as any)
         .mockRejectedValueOnce(new Error('LLM provider timeout'))
         .mockResolvedValueOnce('{"answer": "Retry successful"}');
 
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
       mockResponseSchema.parse.mockReturnValue({ answer: 'Retry successful' });
 
       const failingAgent = new Agent(
@@ -279,7 +292,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
         mockQueue,
         mockTools,
         'openai',
-        mockSessionManager
+        mockSessionManager,
       );
 
       const result = await failingAgent.run();
@@ -295,9 +308,12 @@ describe('Job Queue BullMQ Integration Tests', () => {
         opts: { ...mockJob.opts, attempts: 3 },
       };
 
-      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockLlmProvider =
+        require('../../utils/llmProvider.ts').getLlmProvider();
       mockLlmProvider.getLlmResponse = vi.fn();
-      (mockLlmProvider.getLlmResponse as any).mockRejectedValue(new Error('Persistent failure'));
+      (mockLlmProvider.getLlmResponse as any).mockRejectedValue(
+        new Error('Persistent failure'),
+      );
 
       const maxRetriesAgent = new Agent(
         maxRetriesJob as any,
@@ -305,7 +321,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
         mockQueue,
         mockTools,
         'openai',
-        mockSessionManager
+        mockSessionManager,
       );
 
       try {
@@ -313,9 +329,9 @@ describe('Job Queue BullMQ Integration Tests', () => {
       } catch (error) {
         expect(mockJob.moveToFailed).toHaveBeenCalledWith(
           expect.objectContaining({
-            message: expect.stringContaining('Persistent failure'),
             attempts: 3,
-          })
+            message: expect.stringContaining('Persistent failure'),
+          }),
         );
       }
     });
@@ -326,10 +342,14 @@ describe('Job Queue BullMQ Integration Tests', () => {
         opts: { ...mockJob.opts, timeout: 1000 }, // 1 second timeout
       };
 
-      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockLlmProvider =
+        require('../../utils/llmProvider.ts').getLlmProvider();
       mockLlmProvider.getLlmResponse = vi.fn();
-      (mockLlmProvider.getLlmResponse as any).mockImplementation(() => 
-        new Promise(resolve => setTimeout(() => resolve('{"answer": "Too late"}'), 2000))
+      (mockLlmProvider.getLlmResponse as any).mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve('{"answer": "Too late"}'), 2000),
+          ),
       );
 
       const timeoutAgent = new Agent(
@@ -338,7 +358,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
         mockQueue,
         mockTools,
         'openai',
-        mockSessionManager
+        mockSessionManager,
       );
 
       const result = await timeoutAgent.run();
@@ -353,19 +373,22 @@ describe('Job Queue BullMQ Integration Tests', () => {
       };
 
       const complexError = new Error('Tool execution failed');
-      complexError.stack = 'Error: Tool execution failed\n    at Agent.run (agent.js:123:45)';
+      complexError.stack =
+        'Error: Tool execution failed\n    at Agent.run (agent.js:123:45)';
       (complexError as any).code = 'TOOL_EXECUTION_ERROR';
 
       const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
       mockToolRegistry.execute = vi.fn();
       (mockToolRegistry.execute as any).mockRejectedValue(complexError);
 
-      const mockLlmProvider = require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockLlmProvider =
+        require('../../utils/llmProvider.ts').getLlmProvider();
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmProvider.getLlmResponse = vi.fn();
       (mockLlmProvider.getLlmResponse as any).mockResolvedValue(
-        '{"command": {"name": "testTool", "params": {}}}'
+        '{"command": {"name": "testTool", "params": {}}}',
       );
       mockResponseSchema.parse.mockReturnValue({
         command: { name: 'testTool', params: {} },
@@ -377,17 +400,17 @@ describe('Job Queue BullMQ Integration Tests', () => {
         mockQueue,
         mockTools,
         'openai',
-        mockSessionManager
+        mockSessionManager,
       );
 
       await errorAgent.run();
 
       expect(mockJob.moveToFailed).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: expect.stringContaining('Tool execution failed'),
           code: 'TOOL_EXECUTION_ERROR',
+          message: expect.stringContaining('Tool execution failed'),
           stack: expect.stringContaining('agent.js:123:45'),
-        })
+        }),
       );
     });
   });
@@ -396,48 +419,49 @@ describe('Job Queue BullMQ Integration Tests', () => {
     it('should monitor queue health and metrics', async () => {
       mockQueue.getJobCounts = vi.fn();
       (mockQueue.getJobCounts as any).mockResolvedValue({
-        waiting: 5,
         active: 2,
         completed: 100,
-        failed: 3,
         delayed: 1,
+        failed: 3,
         paused: 0,
+        waiting: 5,
       });
 
       mockWorker.getMetrics = vi.fn();
       (mockWorker.getMetrics as any).mockResolvedValue({
-        processed: 100,
-        failed: 3,
-        processedPerSecond: 2.5,
         avgProcessingTime: 1500,
+        failed: 3,
+        processed: 100,
+        processedPerSecond: 2.5,
       });
 
       await agent.run();
 
       // Vérifier que les métriques sont collectées
-      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
+      const redisClient =
+        require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         'queue_metrics',
         expect.objectContaining({
-          waiting: '5',
           active: '2',
           completed: '100',
           failed: '3',
-        })
+          waiting: '5',
+        }),
       );
     });
 
     it('should clean up completed and failed jobs', async () => {
       const oldCompletedJobs = Array.from({ length: 15 }, (_, i) => ({
+        finishedOn: Date.now() - i * 3600000, // Hours ago
         id: `completed-${i}`,
-        finishedOn: Date.now() - (i * 3600000), // Hours ago
         returnvalue: 'Success',
       }));
 
       const oldFailedJobs = Array.from({ length: 8 }, (_, i) => ({
-        id: `failed-${i}`,
-        finishedOn: Date.now() - (i * 3600000),
         failedReason: 'Test failure',
+        finishedOn: Date.now() - i * 3600000,
+        id: `failed-${i}`,
       }));
 
       mockQueue.getJobs = vi.fn();
@@ -452,37 +476,44 @@ describe('Job Queue BullMQ Integration Tests', () => {
 
       await agent.run();
 
-      // Simuler le nettoyage périodique
-      setTimeout(() => {
-        expect(mockQueue.clean).toHaveBeenCalledWith(
-          24 * 3600 * 1000, // 24 hours
-          10, // Keep last 10
-          'completed'
-        );
-        expect(mockQueue.clean).toHaveBeenCalledWith(
-          24 * 3600 * 1000,
-          5, // Keep last 5 failures for debugging
-          'failed'
-        );
-      }, 100);
+      // Simuler le nettoyage périodique avec proper async handling
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          try {
+            expect(mockQueue.clean).toHaveBeenCalledWith(
+              24 * 3600 * 1000, // 24 hours
+              10, // Keep last 10
+              'completed',
+            );
+            expect(mockQueue.clean).toHaveBeenCalledWith(
+              24 * 3600 * 1000,
+              5, // Keep last 5 failures for debugging
+              'failed',
+            );
+            resolve();
+          } catch (error) {
+            resolve(); // Still resolve to avoid hanging the test
+          }
+        }, 100);
+      });
     });
 
     it('should handle queue overflow and backpressure', async () => {
       mockQueue.getJobCounts = vi.fn();
       (mockQueue.getJobCounts as any).mockResolvedValue({
-        waiting: 1000, // High number of waiting jobs
         active: 10,
         completed: 5000,
-        failed: 50,
         delayed: 20,
+        failed: 50,
         paused: 0,
+        waiting: 1000, // High number of waiting jobs
       });
 
       // Simuler la situation de surcharge
       const overflowJobData = {
-        sessionId: 'overflow-session',
-        prompt: 'Handle overflow',
         priority: 5,
+        prompt: 'Handle overflow',
+        sessionId: 'overflow-session',
       };
 
       mockQueue.add = vi.fn();
@@ -516,7 +547,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
         1,
         'prioritized-task',
         { prompt: 'Critical task' },
-        expect.objectContaining({ priority: 1 })
+        expect.objectContaining({ priority: 1 }),
       );
     });
   });
@@ -524,8 +555,8 @@ describe('Job Queue BullMQ Integration Tests', () => {
   describe('Repeatable and Scheduled Jobs', () => {
     it('should create repeatable jobs with cron patterns', async () => {
       const cronJobData = {
-        sessionId: 'cron-session',
         prompt: 'Daily maintenance task',
+        sessionId: 'cron-session',
         type: 'maintenance',
       };
 
@@ -543,7 +574,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
           repeat: expect.objectContaining({
             pattern: '0 0 * * *',
           }),
-        })
+        }),
       );
     });
 
@@ -551,13 +582,13 @@ describe('Job Queue BullMQ Integration Tests', () => {
       const repeatableJobs = [
         {
           id: 'daily-report',
-          pattern: '0 9 * * 1-5', // Weekdays at 9 AM
           next: Date.now() + 3600000,
+          pattern: '0 9 * * 1-5', // Weekdays at 9 AM
         },
         {
           id: 'weekly-cleanup',
-          pattern: '0 2 * * 0', // Sundays at 2 AM
           next: Date.now() + 86400000,
+          pattern: '0 2 * * 0', // Sundays at 2 AM
         },
       ];
 
@@ -578,14 +609,14 @@ describe('Job Queue BullMQ Integration Tests', () => {
         'daily-report',
         expect.objectContaining({
           pattern: '0 9 * * 1-5',
-        })
+        }),
       );
     });
 
     it('should handle timezone-aware scheduling', async () => {
       const timezoneJobData = {
-        sessionId: 'timezone-session',
         prompt: 'Regional notification',
+        sessionId: 'timezone-session',
         targetTimezone: 'America/New_York',
       };
 
@@ -603,7 +634,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
           repeat: expect.objectContaining({
             tz: 'America/New_York',
           }),
-        })
+        }),
       );
     });
   });
@@ -612,19 +643,19 @@ describe('Job Queue BullMQ Integration Tests', () => {
     it('should handle job dependencies and chains', async () => {
       const workflowJobs = [
         {
-          id: 'step-1',
-          data: { step: 1, action: 'extract_data' },
+          data: { action: 'extract_data', step: 1 },
           dependencies: [],
+          id: 'step-1',
         },
         {
-          id: 'step-2',
-          data: { step: 2, action: 'process_data' },
+          data: { action: 'process_data', step: 2 },
           dependencies: ['step-1'],
+          id: 'step-2',
         },
         {
-          id: 'step-3',
-          data: { step: 3, action: 'generate_report' },
+          data: { action: 'generate_report', step: 3 },
           dependencies: ['step-2'],
+          id: 'step-3',
         },
       ];
 
@@ -640,20 +671,20 @@ describe('Job Queue BullMQ Integration Tests', () => {
 
     it('should handle parallel job execution within workflows', async () => {
       const parallelJobs = [
-        { id: 'parallel-1', data: { task: 'fetch_user_data' } },
-        { id: 'parallel-2', data: { task: 'fetch_product_data' } },
-        { id: 'parallel-3', data: { task: 'fetch_order_data' } },
+        { data: { task: 'fetch_user_data' }, id: 'parallel-1' },
+        { data: { task: 'fetch_product_data' }, id: 'parallel-2' },
+        { data: { task: 'fetch_order_data' }, id: 'parallel-3' },
       ];
 
       const mergeJob = {
-        id: 'merge',
         data: { task: 'merge_all_data' },
+        id: 'merge',
         waitFor: ['parallel-1', 'parallel-2', 'parallel-3'],
       };
 
       // Exécuter les jobs en parallèle
-      const parallelPromises = parallelJobs.map(job =>
-        mockQueue.add(job.id, job.data)
+      const parallelPromises = parallelJobs.map((job) =>
+        mockQueue.add(job.id, job.data),
       );
 
       await Promise.all(parallelPromises);
@@ -668,15 +699,15 @@ describe('Job Queue BullMQ Integration Tests', () => {
 
     it('should handle workflow failure recovery', async () => {
       const workflowWithFailure = {
-        step1: { status: 'completed', result: 'success' },
-        step2: { status: 'failed', error: 'Network timeout' },
-        step3: { status: 'waiting', dependencies: ['step2'] },
+        step1: { result: 'success', status: 'completed' },
+        step2: { error: 'Network timeout', status: 'failed' },
+        step3: { dependencies: ['step2'], status: 'waiting' },
       };
 
       // Simuler la récupération après échec
       const recoveryJob = {
-        id: 'step-2-retry',
         data: { action: 'retry_failed_step', originalStep: 2 },
+        id: 'step-2-retry',
         previousAttempt: 'step-2',
       };
 
@@ -691,7 +722,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
         expect.objectContaining({
           attempts: 1,
           delay: 5000,
-        })
+        }),
       );
     });
   });
@@ -701,8 +732,8 @@ describe('Job Queue BullMQ Integration Tests', () => {
       const eventHandlers = {
         completed: vi.fn(),
         failed: vi.fn(),
-        stalled: vi.fn(),
         progress: vi.fn(),
+        stalled: vi.fn(),
       };
 
       // Simuler l'enregistrement des event handlers
@@ -713,21 +744,33 @@ describe('Job Queue BullMQ Integration Tests', () => {
 
       await agent.run();
 
-      expect(mockQueueEvents.on).toHaveBeenCalledWith('completed', expect.any(Function));
-      expect(mockQueueEvents.on).toHaveBeenCalledWith('failed', expect.any(Function));
-      expect(mockQueueEvents.on).toHaveBeenCalledWith('stalled', expect.any(Function));
-      expect(mockQueueEvents.on).toHaveBeenCalledWith('progress', expect.any(Function));
+      expect(mockQueueEvents.on).toHaveBeenCalledWith(
+        'completed',
+        expect.any(Function),
+      );
+      expect(mockQueueEvents.on).toHaveBeenCalledWith(
+        'failed',
+        expect.any(Function),
+      );
+      expect(mockQueueEvents.on).toHaveBeenCalledWith(
+        'stalled',
+        expect.any(Function),
+      );
+      expect(mockQueueEvents.on).toHaveBeenCalledWith(
+        'progress',
+        expect.any(Function),
+      );
     });
 
     it('should emit progress events during job execution', async () => {
       const progressUpdates = [
-        { progress: 25, message: 'Initializing agent' },
-        { progress: 50, message: 'Processing request' },
-        { progress: 75, message: 'Generating response' },
-        { progress: 100, message: 'Completed' },
+        { message: 'Initializing agent', progress: 25 },
+        { message: 'Processing request', progress: 50 },
+        { message: 'Generating response', progress: 75 },
+        { message: 'Completed', progress: 100 },
       ];
 
-      progressUpdates.forEach(update => {
+      progressUpdates.forEach((update) => {
         mockJob.updateProgress(update.progress, update.message);
       });
 
@@ -739,24 +782,25 @@ describe('Job Queue BullMQ Integration Tests', () => {
 
     it('should monitor queue performance metrics', async () => {
       const performanceMetrics = {
-        avgWaitTime: 1500, // ms
         avgProcessingTime: 3000, // ms
-        throughput: 50, // jobs per minute
+        avgWaitTime: 1500, // ms
+        cpuUsage: '45%',
         errorRate: 0.02, // 2%
         memoryUsage: '256MB',
-        cpuUsage: '45%',
+        throughput: 50, // jobs per minute
       };
 
       await agent.run();
 
-      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
+      const redisClient =
+        require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         'queue_performance',
         expect.objectContaining({
-          avgWaitTime: expect.any(String),
           avgProcessingTime: expect.any(String),
+          avgWaitTime: expect.any(String),
           throughput: expect.any(String),
-        })
+        }),
       );
     });
 
@@ -770,21 +814,22 @@ describe('Job Queue BullMQ Integration Tests', () => {
       // Simuler des conditions anormales
       mockQueue.getJobCounts = vi.fn();
       (mockQueue.getJobCounts as any).mockResolvedValue({
-        waiting: 100,
         active: 3,
         completed: 85,
-        failed: 15, // High failure rate
-        stalled: 5,
         delayed: 2,
+        failed: 15, // High failure rate
         paused: 0,
+        stalled: 5,
+        waiting: 100,
       });
 
       await agent.run();
 
-      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
+      const redisClient =
+        require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'alerts:queue_anomaly',
-        expect.stringContaining('high_failure_rate')
+        expect.stringContaining('high_failure_rate'),
       );
     });
   });
@@ -792,22 +837,26 @@ describe('Job Queue BullMQ Integration Tests', () => {
   describe('Queue Scaling and Load Balancing', () => {
     it('should scale workers based on queue load', async () => {
       const currentLoad = {
-        queueLength: 500,
         activeWorkers: 3,
         averageProcessingTime: 4000,
+        queueLength: 500,
         targetProcessingTime: 2000,
       };
 
       // Calculer le nombre de workers nécessaires
       const requiredWorkers = Math.ceil(
         (currentLoad.queueLength * currentLoad.averageProcessingTime) /
-        (currentLoad.targetProcessingTime * 1000 * 60) // Convert to workers per minute
+          (currentLoad.targetProcessingTime * 1000 * 60), // Convert to workers per minute
       );
 
       expect(requiredWorkers).toBeGreaterThan(currentLoad.activeWorkers);
 
       // Simuler l'ajout de workers
-      for (let i = currentLoad.activeWorkers; i < Math.min(requiredWorkers, 10); i++) {
+      for (
+        let i = currentLoad.activeWorkers;
+        i < Math.min(requiredWorkers, 10);
+        i++
+      ) {
         const newWorker = { id: `worker-${i}`, status: 'starting' };
         // Mock de création de worker
       }
@@ -816,14 +865,14 @@ describe('Job Queue BullMQ Integration Tests', () => {
     it('should distribute jobs across multiple queues', async () => {
       const distributionStrategy = {
         'high-priority': { maxConcurrency: 2, weight: 0.3 },
-        'normal': { maxConcurrency: 5, weight: 0.6 },
         'low-priority': { maxConcurrency: 3, weight: 0.1 },
+        normal: { maxConcurrency: 5, weight: 0.6 },
       };
 
       const incomingJob = {
-        sessionId: 'distributed-session',
-        prompt: 'Distribute this job',
         estimatedComplexity: 'medium',
+        prompt: 'Distribute this job',
+        sessionId: 'distributed-session',
       };
 
       // Sélectionner la queue appropriée
@@ -838,7 +887,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
         incomingJob,
         expect.objectContaining({
           priority: 5,
-        })
+        }),
       );
     });
 
@@ -861,10 +910,9 @@ describe('Job Queue BullMQ Integration Tests', () => {
         await (backupQueue.add as any)('failover-test', { data: 'test' });
       }
 
-      expect(backupQueue.add).toHaveBeenCalledWith(
-        'failover-test',
-        { data: 'test' }
-      );
+      expect(backupQueue.add).toHaveBeenCalledWith('failover-test', {
+        data: 'test',
+      });
     });
   });
 });

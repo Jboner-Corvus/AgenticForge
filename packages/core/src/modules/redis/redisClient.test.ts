@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
 import IORedis from 'ioredis';
+import { describe, expect, it, vi } from 'vitest';
 
 // Mock the ioredis module to prevent actual Redis connections
 vi.mock('ioredis', () => {
@@ -12,7 +12,10 @@ vi.mock('ioredis', () => {
   };
 });
 
-import { getRedisClientInstance, setRedisClientInstance } from './redisClient.ts';
+import {
+  getRedisClientInstance,
+  setRedisClientInstance,
+} from './redisClient.ts';
 
 // Mock the logger to prevent console output during tests
 vi.mock('../../logger', () => ({
@@ -31,7 +34,7 @@ describe('redisClient', () => {
     // Create a mock Redis client for testing
     const mockRedisClient = new IORedis();
     setRedisClientInstance(mockRedisClient);
-    
+
     expect(getRedisClientInstance()).toBeDefined();
   });
 });

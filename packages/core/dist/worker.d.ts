@@ -1,7 +1,7 @@
 import { Worker, Job, Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 import { Client } from 'pg';
-import { S as SessionManager } from './types-C2iGLYUf.js';
+import { S as SessionManager } from './types-X5iVOMgV.js';
 import 'fastmcp';
 import 'zod';
 import 'pino';

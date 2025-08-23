@@ -1,5 +1,15 @@
-import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
+
 import { getConfig } from './config.ts';
 
 describe('Auth JWT Lifecycle Integration Tests', () => {
@@ -27,15 +37,15 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
 
   it('should generate valid JWT access tokens', async () => {
     const payload = {
-      userId: 'user123',
       email: 'test@example.com',
-      role: 'user'
+      role: 'user',
+      userId: 'user123',
     };
 
-    const token = jwt.sign(payload, jwtSecret, { 
+    const token = jwt.sign(payload, jwtSecret, {
+      audience: 'agenticforge-users',
       expiresIn: '15m',
       issuer: 'agenticforge',
-      audience: 'agenticforge-users'
     });
 
     expect(typeof token).toBe('string');
@@ -52,14 +62,14 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
 
   it('should generate valid JWT refresh tokens', async () => {
     const payload = {
+      tokenType: 'refresh',
       userId: 'user123',
-      tokenType: 'refresh'
     };
 
-    const refreshToken = jwt.sign(payload, refreshSecret, { 
+    const refreshToken = jwt.sign(payload, refreshSecret, {
+      audience: 'agenticforge-refresh',
       expiresIn: '7d',
       issuer: 'agenticforge',
-      audience: 'agenticforge-refresh'
     });
 
     expect(typeof refreshToken).toBe('string');
@@ -80,7 +90,7 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
     const expiredToken = jwt.sign(payload, jwtSecret, { expiresIn: '1ms' });
 
     // Wait for expiration
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     // Verification should fail
     expect(() => {
@@ -110,10 +120,10 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
       'not.jwt.token.format',
       '',
       null,
-      undefined
+      undefined,
     ];
 
-    malformedTokens.forEach(token => {
+    malformedTokens.forEach((token) => {
       expect(() => {
         jwt.verify(token as any, jwtSecret);
       }).toThrow();
@@ -122,18 +132,18 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
 
   it('should implement token refresh workflow', async () => {
     const userId = 'user123';
-    
+
     // Create initial tokens
     const accessToken = jwt.sign(
-      { userId, email: 'test@example.com', role: 'user' },
+      { email: 'test@example.com', role: 'user', userId },
       jwtSecret,
-      { expiresIn: '15m', issuer: 'agenticforge' }
+      { expiresIn: '15m', issuer: 'agenticforge' },
     );
 
     const refreshToken = jwt.sign(
-      { userId, tokenType: 'refresh' },
+      { tokenType: 'refresh', userId },
       refreshSecret,
-      { expiresIn: '7d', issuer: 'agenticforge' }
+      { expiresIn: '7d', issuer: 'agenticforge' },
     );
 
     // Verify refresh token is valid
@@ -143,9 +153,13 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
 
     // Use refresh token to generate new access token
     const newAccessToken = jwt.sign(
-      { userId: refreshDecoded.userId, email: 'test@example.com', role: 'user' },
+      {
+        email: 'test@example.com',
+        role: 'user',
+        userId: refreshDecoded.userId,
+      },
       jwtSecret,
-      { expiresIn: '15m', issuer: 'agenticforge' }
+      { expiresIn: '15m', issuer: 'agenticforge' },
     );
 
     // Verify new access token
@@ -155,23 +169,23 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
 
   it('should validate JWT claims correctly', async () => {
     const payload = {
-      userId: 'user123',
       email: 'test@example.com',
-      role: 'admin'
+      role: 'admin',
+      userId: 'user123',
     };
 
     const token = jwt.sign(payload, jwtSecret, {
+      audience: 'agenticforge-users',
       expiresIn: '1h',
       issuer: 'agenticforge',
-      audience: 'agenticforge-users',
+      notBefore: '0s',
       subject: 'user123',
-      notBefore: '0s'
     });
 
     const decoded = jwt.verify(token, jwtSecret, {
-      issuer: 'agenticforge',
       audience: 'agenticforge-users',
-      subject: 'user123'
+      issuer: 'agenticforge',
+      subject: 'user123',
     }) as any;
 
     expect(decoded.userId).toBe(payload.userId);
@@ -186,13 +200,13 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
     const payload = { userId: 'user123' };
     const token = jwt.sign(payload, jwtSecret, {
       audience: 'wrong-audience',
-      issuer: 'agenticforge'
+      issuer: 'agenticforge',
     });
 
     expect(() => {
       jwt.verify(token, jwtSecret, {
         audience: 'agenticforge-users',
-        issuer: 'agenticforge'
+        issuer: 'agenticforge',
       });
     }).toThrow('jwt audience invalid');
   });
@@ -200,21 +214,21 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
   it('should reject tokens with invalid issuer', async () => {
     const payload = { userId: 'user123' };
     const token = jwt.sign(payload, jwtSecret, {
+      audience: 'agenticforge-users',
       issuer: 'wrong-issuer',
-      audience: 'agenticforge-users'
     });
 
     expect(() => {
       jwt.verify(token, jwtSecret, {
+        audience: 'agenticforge-users',
         issuer: 'agenticforge',
-        audience: 'agenticforge-users'
       });
     }).toThrow('jwt issuer invalid');
   });
 
   it('should handle token blacklisting scenario', async () => {
     const blacklistedTokens = new Set<string>();
-    
+
     const payload = { userId: 'user123' };
     const token = jwt.sign(payload, jwtSecret, { expiresIn: '1h' });
 
@@ -238,18 +252,18 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
 
   it('should handle concurrent token operations', async () => {
     const userIds = Array.from({ length: 10 }, (_, i) => `user${i}`);
-    
+
     // Generate tokens concurrently
-    const tokenPromises = userIds.map(userId => 
-      Promise.resolve(jwt.sign({ userId }, jwtSecret, { expiresIn: '1h' }))
+    const tokenPromises = userIds.map((userId) =>
+      Promise.resolve(jwt.sign({ userId }, jwtSecret, { expiresIn: '1h' })),
     );
 
     const tokens = await Promise.all(tokenPromises);
     expect(tokens).toHaveLength(10);
 
     // Verify all tokens concurrently
-    const verificationPromises = tokens.map(token =>
-      Promise.resolve(jwt.verify(token, jwtSecret))
+    const verificationPromises = tokens.map((token) =>
+      Promise.resolve(jwt.verify(token, jwtSecret)),
     );
 
     const decodedTokens = await Promise.all(verificationPromises);
@@ -271,7 +285,9 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
 
     // Test HS512
     const hs512Token = jwt.sign(payload, jwtSecret, { algorithm: 'HS512' });
-    const hs512Decoded = jwt.verify(hs512Token, jwtSecret, { algorithms: ['HS512'] }) as any;
+    const hs512Decoded = jwt.verify(hs512Token, jwtSecret, {
+      algorithms: ['HS512'],
+    }) as any;
     expect(hs512Decoded.userId).toBe(payload.userId);
   });
 
@@ -281,7 +297,7 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
 
     // Token not valid before future time
     const futureToken = jwt.sign(payload, jwtSecret, {
-      notBefore: now + 3600 // 1 hour from now
+      notBefore: now + 3600, // 1 hour from now
     });
 
     expect(() => {
@@ -290,7 +306,7 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
 
     // Token valid immediately
     const immediateToken = jwt.sign(payload, jwtSecret, {
-      notBefore: now - 10 // 10 seconds ago
+      notBefore: now - 10, // 10 seconds ago
     });
 
     expect(() => {
@@ -301,9 +317,9 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
   it('should handle token payload size limits', async () => {
     // Large payload
     const largePayload = {
-      userId: 'user123',
       data: 'x'.repeat(10000), // 10KB of data
-      permissions: Array.from({ length: 1000 }, (_, i) => `permission${i}`)
+      permissions: Array.from({ length: 1000 }, (_, i) => `permission${i}`),
+      userId: 'user123',
     };
 
     const largeToken = jwt.sign(largePayload, jwtSecret);
@@ -321,31 +337,31 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
 
     // Create initial token pair
     const accessToken1 = jwt.sign(
-      { userId, sessionId, version: 1 },
+      { sessionId, userId, version: 1 },
       jwtSecret,
-      { expiresIn: '15m' }
+      { expiresIn: '15m' },
     );
 
     const refreshToken1 = jwt.sign(
-      { userId, sessionId, tokenType: 'refresh', version: 1 },
+      { sessionId, tokenType: 'refresh', userId, version: 1 },
       refreshSecret,
-      { expiresIn: '7d' }
+      { expiresIn: '7d' },
     );
 
     // Simulate token rotation
     const refreshDecoded = jwt.verify(refreshToken1, refreshSecret) as any;
-    
+
     // Create new token pair with incremented version
     const accessToken2 = jwt.sign(
-      { userId, sessionId, version: 2 },
+      { sessionId, userId, version: 2 },
       jwtSecret,
-      { expiresIn: '15m' }
+      { expiresIn: '15m' },
     );
 
     const refreshToken2 = jwt.sign(
-      { userId, sessionId, tokenType: 'refresh', version: 2 },
+      { sessionId, tokenType: 'refresh', userId, version: 2 },
       refreshSecret,
-      { expiresIn: '7d' }
+      { expiresIn: '7d' },
     );
 
     // Verify new tokens
@@ -366,10 +382,12 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
     const [header, payloadPart, signature] = token.split('.');
 
     // Try to manipulate header
-    const manipulatedHeader = Buffer.from(JSON.stringify({
-      alg: 'none',
-      typ: 'JWT'
-    })).toString('base64url');
+    const manipulatedHeader = Buffer.from(
+      JSON.stringify({
+        alg: 'none',
+        typ: 'JWT',
+      }),
+    ).toString('base64url');
 
     const manipulatedToken = `${manipulatedHeader}.${payloadPart}.${signature}`;
 

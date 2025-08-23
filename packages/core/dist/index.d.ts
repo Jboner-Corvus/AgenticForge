@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { Logger } from 'pino';
 export { Logger } from 'pino';
 import { Job, Queue } from 'bullmq';
-import { a as SessionData, T as Tool, S as SessionManager, A as AgentSession } from './types-C2iGLYUf.js';
-export { I as ILlmProvider, c as LLMContent, b as LlmApiKey, d as LlmError, L as LlmKeyErrorType, e as Session } from './types-C2iGLYUf.js';
+import { a as SessionData, T as Tool, S as SessionManager, A as AgentSession } from './types-X5iVOMgV.js';
+export { I as ILlmProvider, c as LLMContent, b as LlmApiKey, d as LlmError, L as LlmKeyErrorType, e as Session } from './types-X5iVOMgV.js';
 import IORedis from 'ioredis';
 export { getAllTools } from './modules/tools/definitions/index.js';
 export { toolRegistry } from './modules/tools/toolRegistry.js';
@@ -25,14 +25,12 @@ declare const configSchema: z.ZodObject<{
     GITHUB_CLIENT_ID: z.ZodOptional<z.ZodString>;
     GITHUB_CLIENT_SECRET: z.ZodOptional<z.ZodString>;
     GROK_API_KEY: z.ZodOptional<z.ZodString>;
-    QWEN_CLIENT_ID: z.ZodOptional<z.ZodString>;
-    QWEN_CLIENT_SECRET: z.ZodOptional<z.ZodString>;
     HISTORY_LOAD_LENGTH: z.ZodDefault<z.ZodNumber>;
     HISTORY_MAX_LENGTH: z.ZodDefault<z.ZodNumber>;
     HOST_PROJECT_PATH: z.ZodDefault<z.ZodString>;
     HUGGINGFACE_API_KEY: z.ZodOptional<z.ZodString>;
-    JWT_SECRET: z.ZodOptional<z.ZodString>;
     JWT_REFRESH_SECRET: z.ZodOptional<z.ZodString>;
+    JWT_SECRET: z.ZodOptional<z.ZodString>;
     LLM_API_KEY: z.ZodOptional<z.ZodString>;
     LLM_MODEL_NAME: z.ZodDefault<z.ZodString>;
     LLM_PROVIDER: z.ZodDefault<z.ZodEnum<["gemini", "openai", "mistral", "huggingface", "grok", "openrouter", "qwen"]>>;
@@ -51,6 +49,9 @@ declare const configSchema: z.ZodObject<{
     POSTGRES_USER: z.ZodDefault<z.ZodString>;
     QUALITY_GATE_API_KEY: z.ZodOptional<z.ZodString>;
     QUALITY_GATE_URL: z.ZodOptional<z.ZodString>;
+    QWEN_API_BASE_URL: z.ZodOptional<z.ZodString>;
+    QWEN_CLIENT_ID: z.ZodOptional<z.ZodString>;
+    QWEN_CLIENT_SECRET: z.ZodOptional<z.ZodString>;
     REDIS_DB: z.ZodDefault<z.ZodNumber>;
     REDIS_HOST: z.ZodDefault<z.ZodString>;
     REDIS_PASSWORD: z.ZodOptional<z.ZodString>;
@@ -95,17 +96,18 @@ declare const configSchema: z.ZodObject<{
     GITHUB_CLIENT_ID?: string | undefined;
     GITHUB_CLIENT_SECRET?: string | undefined;
     GROK_API_KEY?: string | undefined;
-    QWEN_CLIENT_ID?: string | undefined;
-    QWEN_CLIENT_SECRET?: string | undefined;
     HUGGINGFACE_API_KEY?: string | undefined;
-    JWT_SECRET?: string | undefined;
     JWT_REFRESH_SECRET?: string | undefined;
+    JWT_SECRET?: string | undefined;
     LLM_API_KEY?: string | undefined;
     MCP_API_KEY?: string | undefined;
     MCP_WEBHOOK_URL?: string | undefined;
     POSTGRES_PASSWORD?: string | undefined;
     QUALITY_GATE_API_KEY?: string | undefined;
     QUALITY_GATE_URL?: string | undefined;
+    QWEN_API_BASE_URL?: string | undefined;
+    QWEN_CLIENT_ID?: string | undefined;
+    QWEN_CLIENT_SECRET?: string | undefined;
     REDIS_PASSWORD?: string | undefined;
     REDIS_URL?: string | undefined;
     TAVILY_API_KEY?: string | undefined;
@@ -119,14 +121,12 @@ declare const configSchema: z.ZodObject<{
     GITHUB_CLIENT_ID?: string | undefined;
     GITHUB_CLIENT_SECRET?: string | undefined;
     GROK_API_KEY?: string | undefined;
-    QWEN_CLIENT_ID?: string | undefined;
-    QWEN_CLIENT_SECRET?: string | undefined;
     HISTORY_LOAD_LENGTH?: number | undefined;
     HISTORY_MAX_LENGTH?: number | undefined;
     HOST_PROJECT_PATH?: string | undefined;
     HUGGINGFACE_API_KEY?: string | undefined;
-    JWT_SECRET?: string | undefined;
     JWT_REFRESH_SECRET?: string | undefined;
+    JWT_SECRET?: string | undefined;
     LLM_API_KEY?: string | undefined;
     LLM_MODEL_NAME?: string | undefined;
     LLM_PROVIDER?: "gemini" | "openai" | "mistral" | "huggingface" | "grok" | "openrouter" | "qwen" | undefined;
@@ -145,6 +145,9 @@ declare const configSchema: z.ZodObject<{
     POSTGRES_USER?: string | undefined;
     QUALITY_GATE_API_KEY?: string | undefined;
     QUALITY_GATE_URL?: string | undefined;
+    QWEN_API_BASE_URL?: string | undefined;
+    QWEN_CLIENT_ID?: string | undefined;
+    QWEN_CLIENT_SECRET?: string | undefined;
     REDIS_DB?: number | undefined;
     REDIS_HOST?: string | undefined;
     REDIS_PASSWORD?: string | undefined;
@@ -173,19 +176,19 @@ declare class Agent {
     private readonly llmApiKey?;
     private activeLlmProvider;
     private apiKey?;
+    private behaviorHistory;
     private commandHistory;
     private interrupted;
     private readonly job;
     private readonly log;
     private loopCounter;
+    private loopDetectionThreshold;
     private malformedResponseCounter;
+    private readonly maxBehaviorHistory;
     private readonly session;
     private readonly sessionManager;
     private subscriber;
     private readonly taskQueue;
-    private behaviorHistory;
-    private readonly maxBehaviorHistory;
-    private loopDetectionThreshold;
     private readonly tools;
     constructor(job: Job<{
         apiKey?: string;
@@ -196,18 +199,18 @@ declare class Agent {
     }>, session: SessionData, taskQueue: Queue, tools: Tool<z.AnyZodObject, z.ZodTypeAny>[], activeLlmProvider: string, sessionManager: SessionManager, apiKey?: string, llmModelName?: string | undefined, // New property
     llmApiKey?: string | undefined);
     run(): Promise<string>;
+    private calculateTextSimilarity;
     private cleanup;
-    private executeTool;
-    private extractJsonFromMarkdown;
-    private parseLlmResponse;
     /**
      * Converts plain text responses to valid JSON format when the LLM doesn't follow the required format
      * This handles cases where the LLM responds with plain text instead of JSON
      */
     private convertPlainTextToValidJson;
-    private publishToChannel;
     private detectLoop;
-    private calculateTextSimilarity;
+    private executeTool;
+    private extractJsonFromMarkdown;
+    private parseLlmResponse;
+    private publishToChannel;
     private setupInterruptListener;
 }
 

@@ -1,27 +1,36 @@
 import { z } from 'zod';
+
 import type { Ctx, Tool } from '../../../../types.ts';
+
 import { sendToCanvas } from '../../../../utils/canvasUtils.ts';
 
 // Schema for project planning parameters
 const projectPlanningParams = z.object({
-  projectName: z.string().describe("Name of the project to plan"),
-  projectDescription: z.string().describe("Detailed description of the project"),
-  projectId: z.string().optional().describe("ID of existing project to update"),
-  complexity: z.enum(['simple', 'medium', 'complex']).optional().describe("Complexity level of the project"),
+  complexity: z
+    .enum(['simple', 'medium', 'complex'])
+    .optional()
+    .describe('Complexity level of the project'),
+  projectDescription: z
+    .string()
+    .describe('Detailed description of the project'),
+  projectId: z.string().optional().describe('ID of existing project to update'),
+  projectName: z.string().describe('Name of the project to plan'),
 });
 
 const projectPlanningOutput = z.union([
   z.object({
-    success: z.boolean(),
     message: z.string(),
-    plan: z.array(z.object({
-      id: z.string(),
-      title: z.string(),
-      description: z.string(),
-      phase: z.string(),
-      priority: z.enum(['low', 'medium', 'high', 'critical']),
-      estimatedTime: z.number(),
-    })),
+    plan: z.array(
+      z.object({
+        description: z.string(),
+        estimatedTime: z.number(),
+        id: z.string(),
+        phase: z.string(),
+        priority: z.enum(['low', 'medium', 'high', 'critical']),
+        title: z.string(),
+      }),
+    ),
+    success: z.boolean(),
   }),
   z.object({
     error: z.string(),
@@ -37,107 +46,119 @@ type ProjectPlanningTool = {
 
 // Game development project template
 const GAME_DEVELOPMENT_TEMPLATE = {
-  name: "Game Development Project",
+  name: 'Game Development Project',
   tasks: [
     {
-      title: "Project Setup & Planning",
-      description: "Define project scope, create development environment, and establish team roles",
-      phase: "Pre-Production",
-      priority: "high" as const,
-      estimatedTime: 120
+      description:
+        'Define project scope, create development environment, and establish team roles',
+      estimatedTime: 120,
+      phase: 'Pre-Production',
+      priority: 'high' as const,
+      title: 'Project Setup & Planning',
     },
     {
-      title: "Game Design Document",
-      description: "Create comprehensive GDD including story, mechanics, characters, and level design",
-      phase: "Pre-Production",
-      priority: "critical" as const,
-      estimatedTime: 240
+      description:
+        'Create comprehensive GDD including story, mechanics, characters, and level design',
+      estimatedTime: 240,
+      phase: 'Pre-Production',
+      priority: 'critical' as const,
+      title: 'Game Design Document',
     },
     {
-      title: "Prototype Development",
-      description: "Build basic gameplay prototype to test core mechanics",
-      phase: "Pre-Production",
-      priority: "high" as const,
-      estimatedTime: 180
+      description: 'Build basic gameplay prototype to test core mechanics',
+      estimatedTime: 180,
+      phase: 'Pre-Production',
+      priority: 'high' as const,
+      title: 'Prototype Development',
     },
     {
-      title: "Art Asset Creation",
-      description: "Design and create all visual assets including characters, environments, and UI elements",
-      phase: "Production",
-      priority: "high" as const,
-      estimatedTime: 480
+      description:
+        'Design and create all visual assets including characters, environments, and UI elements',
+      estimatedTime: 480,
+      phase: 'Production',
+      priority: 'high' as const,
+      title: 'Art Asset Creation',
     },
     {
-      title: "Core Engine Development",
-      description: "Implement game engine with physics, rendering, and audio systems",
-      phase: "Production",
-      priority: "critical" as const,
-      estimatedTime: 360
+      description:
+        'Implement game engine with physics, rendering, and audio systems',
+      estimatedTime: 360,
+      phase: 'Production',
+      priority: 'critical' as const,
+      title: 'Core Engine Development',
     },
     {
-      title: "Level Design",
-      description: "Create engaging levels with proper difficulty progression",
-      phase: "Production",
-      priority: "high" as const,
-      estimatedTime: 300
+      description: 'Create engaging levels with proper difficulty progression',
+      estimatedTime: 300,
+      phase: 'Production',
+      priority: 'high' as const,
+      title: 'Level Design',
     },
     {
-      title: "Gameplay Implementation",
-      description: "Code all gameplay mechanics, controls, and interactions",
-      phase: "Production",
-      priority: "critical" as const,
-      estimatedTime: 420
+      description: 'Code all gameplay mechanics, controls, and interactions',
+      estimatedTime: 420,
+      phase: 'Production',
+      priority: 'critical' as const,
+      title: 'Gameplay Implementation',
     },
     {
-      title: "Audio Implementation",
-      description: "Integrate sound effects, music, and voice acting",
-      phase: "Production",
-      priority: "medium" as const,
-      estimatedTime: 180
+      description: 'Integrate sound effects, music, and voice acting',
+      estimatedTime: 180,
+      phase: 'Production',
+      priority: 'medium' as const,
+      title: 'Audio Implementation',
     },
     {
-      title: "UI/UX Development",
-      description: "Design and implement user interface and experience elements",
-      phase: "Production",
-      priority: "high" as const,
-      estimatedTime: 240
+      description:
+        'Design and implement user interface and experience elements',
+      estimatedTime: 240,
+      phase: 'Production',
+      priority: 'high' as const,
+      title: 'UI/UX Development',
     },
     {
-      title: "Testing & QA",
-      description: "Conduct thorough testing including unit tests, integration tests, and playtesting",
-      phase: "Post-Production",
-      priority: "critical" as const,
-      estimatedTime: 300
+      description:
+        'Conduct thorough testing including unit tests, integration tests, and playtesting',
+      estimatedTime: 300,
+      phase: 'Post-Production',
+      priority: 'critical' as const,
+      title: 'Testing & QA',
     },
     {
-      title: "Bug Fixes & Polishing",
-      description: "Address all identified issues and polish the game for release",
-      phase: "Post-Production",
-      priority: "high" as const,
-      estimatedTime: 240
+      description:
+        'Address all identified issues and polish the game for release',
+      estimatedTime: 240,
+      phase: 'Post-Production',
+      priority: 'high' as const,
+      title: 'Bug Fixes & Polishing',
     },
     {
-      title: "Deployment & Release",
-      description: "Prepare final build, create distribution packages, and deploy to platforms",
-      phase: "Post-Production",
-      priority: "medium" as const,
-      estimatedTime: 180
-    }
-  ]
+      description:
+        'Prepare final build, create distribution packages, and deploy to platforms',
+      estimatedTime: 180,
+      phase: 'Post-Production',
+      priority: 'medium' as const,
+      title: 'Deployment & Release',
+    },
+  ],
 };
 
 // Function to generate a unique ID
-const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
+const generateId = () =>
+  Date.now().toString(36) + Math.random().toString(36).substr(2);
 
 // Function to create the project plan template
-const createProjectPlanTemplate = (projectName: string, plan: Array<{
-  id: string;
-  title: string;
-  description: string;
-  phase: string;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  estimatedTime: number;
-}>) => {
+const createProjectPlanTemplate = (
+  projectName: string,
+  plan: Array<{
+    description: string;
+    estimatedTime: number;
+    id: string;
+    phase: string;
+    priority: 'critical' | 'high' | 'low' | 'medium';
+    title: string;
+  }>,
+) => {
   return `
   <!DOCTYPE html>
   <html>
@@ -317,7 +338,7 @@ const createProjectPlanTemplate = (projectName: string, plan: Array<{
                   <div class="stat-label">Tasks</div>
               </div>
               <div class="stat">
-                  <div class="stat-value" style="color: #10b981;">${plan.filter(t => t.phase === 'Implementation').length}</div>
+                  <div class="stat-value" style="color: #10b981;">${plan.filter((t) => t.phase === 'Implementation').length}</div>
                   <div class="stat-label">In Progress</div>
               </div>
               <div class="stat">
@@ -407,43 +428,53 @@ const createProjectPlanTemplate = (projectName: string, plan: Array<{
 };
 
 export const projectPlanningTool: ProjectPlanningTool = {
-  description: "Creates detailed project plans by breaking down complex projects into manageable tasks and phases. Useful for planning large projects like game development, software development, or research projects.",
+  description:
+    'Creates detailed project plans by breaking down complex projects into manageable tasks and phases. Useful for planning large projects like game development, software development, or research projects.',
   execute: async (args, ctx) => {
     try {
       ctx.log.info(`Generating project plan for: ${args.projectName}`);
-      
+
       // Determine which template to use based on project description
       let template = GAME_DEVELOPMENT_TEMPLATE;
-      
+
       // Check if it's about game development
-      if (args.projectDescription.toLowerCase().includes('game') || 
-          args.projectDescription.toLowerCase().includes('jeu') ||
-          args.projectName.toLowerCase().includes('game') ||
-          args.projectName.toLowerCase().includes('jeu')) {
+      if (
+        args.projectDescription.toLowerCase().includes('game') ||
+        args.projectDescription.toLowerCase().includes('jeu') ||
+        args.projectName.toLowerCase().includes('game') ||
+        args.projectName.toLowerCase().includes('jeu')
+      ) {
         template = GAME_DEVELOPMENT_TEMPLATE;
       }
-      
+
       // Generate unique IDs for tasks
-      const planWithIds = template.tasks.map(task => ({
+      const planWithIds = template.tasks.map((task) => ({
         ...task,
-        id: generateId()
+        id: generateId(),
       }));
-      
+
       // Send plan to canvas for visualization
       if (ctx.job?.id) {
-        const planTemplate = createProjectPlanTemplate(args.projectName, planWithIds);
+        const planTemplate = createProjectPlanTemplate(
+          args.projectName,
+          planWithIds,
+        );
         await sendToCanvas(ctx.job.id, planTemplate, 'html');
         ctx.log.info('Project plan sent to canvas for visualization');
       }
-      
+
       return {
-        success: true,
         message: `Project plan generated for "${args.projectName}" with ${planWithIds.length} tasks`,
         plan: planWithIds,
+        success: true,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      ctx.log.error({ err: error }, `Error in projectPlanningTool: ${errorMessage}`);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      ctx.log.error(
+        { err: error },
+        `Error in projectPlanningTool: ${errorMessage}`,
+      );
       return { error: `Failed to generate project plan: ${errorMessage}` };
     }
   },

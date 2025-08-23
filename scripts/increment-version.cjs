@@ -1,21 +1,42 @@
 #!/usr/bin/env node
 
-// Simple version incrementer script
+// Simple script to increment version in package.json files
 const fs = require('fs');
 const path = require('path');
 
-// Get package.json path
-const packagePath = path.join(process.cwd(), 'package.json');
+// Function to increment version
+function incrementVersion(version) {
+  const parts = version.split('.');
+  const patch = parseInt(parts[2]) + 1;
+  parts[2] = patch.toString();
+  return parts.join('.');
+}
 
-// Read package.json
-const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+// Update core package.json
+const corePackagePath = path.join(__dirname, '..', 'packages', 'core', 'package.json');
+if (fs.existsSync(corePackagePath)) {
+  const corePackage = JSON.parse(fs.readFileSync(corePackagePath, 'utf8'));
+  corePackage.version = incrementVersion(corePackage.version);
+  fs.writeFileSync(corePackagePath, JSON.stringify(corePackage, null, 2));
+  console.log(`Updated core package version to ${corePackage.version}`);
+}
 
-// Increment version (patch)
-const versionParts = packageJson.version.split('.');
-versionParts[2] = parseInt(versionParts[2]) + 1;
-packageJson.version = versionParts.join('.');
+// Update UI package.json
+const uiPackagePath = path.join(__dirname, '..', 'packages', 'ui', 'package.json');
+if (fs.existsSync(uiPackagePath)) {
+  const uiPackage = JSON.parse(fs.readFileSync(uiPackagePath, 'utf8'));
+  uiPackage.version = incrementVersion(uiPackage.version);
+  fs.writeFileSync(uiPackagePath, JSON.stringify(uiPackage, null, 2));
+  console.log(`Updated UI package version to ${uiPackage.version}`);
+}
 
-// Write updated package.json
-fs.writeFileSync(packagePath, JSON.stringify(packageJson, null, 2) + '\n');
+// Update root package.json
+const rootPackagePath = path.join(__dirname, '..', 'package.json');
+if (fs.existsSync(rootPackagePath)) {
+  const rootPackage = JSON.parse(fs.readFileSync(rootPackagePath, 'utf8'));
+  rootPackage.version = incrementVersion(rootPackage.version);
+  fs.writeFileSync(rootPackagePath, JSON.stringify(rootPackage, null, 2));
+  console.log(`Updated root package version to ${rootPackage.version}`);
+}
 
-console.log(`✅ Version incremented to ${packageJson.version}`);
+console.log('Version increment completed.');

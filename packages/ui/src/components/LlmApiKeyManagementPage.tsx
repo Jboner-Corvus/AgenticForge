@@ -1,6 +1,7 @@
 import { Save, Info, CheckCircle, Settings, Key, Zap, Shield, Copy, Eye, EyeOff, Calendar, Check, XCircle } from 'lucide-react';
 import { memo, useState, useEffect } from 'react';
 import { useCombinedStore } from '../store';
+import { getMasterLlmApiKeyApi } from '../lib/api';
 import { OpenAILogo, GeminiLogo, QwenLogo } from './icons/LlmLogos';
 import { OpenRouterLogo } from './icons/LlmLogos/OpenRouterLogo';
 import { Input } from './ui/input';
@@ -135,7 +136,6 @@ const StatusBanner = ({ backendKeys }: { backendKeys?: BackendLlmApiKey[] }) => 
 };
 
 // Composant Provider avec thème gothique professionnel
-// Composant Provider avec thème gothique professionnel
 const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
   const llmApiKeys = useCombinedStore((state: CombinedAppState) => state.llmApiKeys);
   const addLlmApiKey = useCombinedStore((state: CombinedAppState) => state.addLlmApiKey);
@@ -215,7 +215,7 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
       usageCount: 0,
       metadata: {
         environment: 'universal',
-        tags: []
+        tags: [provider.models[0]]
       },
       provider: provider.id,
       key: apiKey,
@@ -224,6 +224,29 @@ const SimpleProviderCard = ({ provider }: { provider: LlmProviderConfig }) => {
       model: provider.models[0]
     };
     await addLlmApiKey(newKey);
+    
+    // Refresh the backend keys display
+    const authToken = useCombinedStore.getState().authToken;
+    if (authToken) {
+      try {
+        const keys = await getLlmApiKeysApi(authToken, null);
+        const backendKeysConverted: BackendLlmApiKey[] = keys.map(key => ({
+          apiKey: key.key || '',
+          apiModel: key.model || '',
+          apiProvider: key.provider || '',
+          baseUrl: key.baseUrl,
+          errorCount: key.usageStats?.failedRequests || 0,
+          lastUsed: key.usageStats?.lastUsed ? new Date(key.usageStats.lastUsed).getTime() : undefined,
+          priority: key.priority,
+          isPermanentlyDisabled: (key.usageStats?.failedRequests || 0) > 10
+        }));
+        console.log('Backend keys converted:', backendKeysConverted);
+        // We need to update the parent component state, but we can't directly access it
+        // The parent component will refresh automatically when the store updates
+      } catch (error) {
+        console.error('Failed to refresh backend keys:', error);
+      }
+    }
   };
 
   const handleRemove = async () => {
@@ -522,6 +545,7 @@ import { HierarchyManager } from './HierarchyManager';
 export const LlmApiKeyManagementPage = memo(() => {
   const authToken = useCombinedStore((state: CombinedAppState) => state.authToken);
   const [backendKeys, setBackendKeys] = useState<BackendLlmApiKey[]>([]);
+  const [masterKey, setMasterKey] = useState<LlmApiKey | null>(null);
   const [testingKey, setTestingKey] = useState<number | null>(null);
 
   // Charger les clés du backend au montage
@@ -530,17 +554,32 @@ export const LlmApiKeyManagementPage = memo(() => {
       if (!authToken) return;
       
       try {
+        // Fetch regular LLM API keys
         const keys = await getLlmApiKeysApi(authToken, null);
-        // Convertir LlmApiKey[] en BackendLlmApiKey[]
+        
+        // Fetch master key
+        let masterKeyData: LlmApiKey | null = null;
+        try {
+          masterKeyData = await getMasterLlmApiKeyApi(authToken, null);
+        } catch (error) {
+          console.warn("Failed to fetch master key:", error);
+        }
+        
+        setMasterKey(masterKeyData);
+        
+        // Convert LlmApiKey[] to BackendLlmApiKey[]
         const backendKeysConverted: BackendLlmApiKey[] = keys.map(key => ({
           apiKey: key.key || '',
           apiModel: key.model || '',
           apiProvider: key.provider || '',
           baseUrl: key.baseUrl,
-          errorCount: 0, // Valeur par défaut
-          isPermanentlyDisabled: false, // Valeur par défaut
+          errorCount: key.usageStats?.failedRequests || 0,
+          lastUsed: key.usageStats?.lastUsed ? new Date(key.usageStats.lastUsed).getTime() : undefined,
+          priority: key.priority,
+          isPermanentlyDisabled: (key.usageStats?.failedRequests || 0) > 10 // Mark as disabled if too many errors
         }));
-        setBackendKeys(backendKeysConverted || []);
+        
+        setBackendKeys(backendKeysConverted);
         console.log('🔑 Backend keys loaded:', keys);
       } catch (error) {
         console.error('Failed to load backend keys:', error);
@@ -605,76 +644,106 @@ export const LlmApiKeyManagementPage = memo(() => {
       <HierarchyManager />
       <OnboardingInfo />
       
-      {/* Section d'affichage des clés actives du backend */}
-      {backendKeys.length > 0 && (
-        <div className="mb-8 p-6 bg-gray-800/50 rounded-xl border border-gray-700">
-          <h3 className="text-lg font-semibold text-green-300 mb-4 flex items-center">
-            <CheckCircle className="h-5 w-5 mr-2" />
-            Clés LLM Actives ({backendKeys.length})
-          </h3>
-          <div className="space-y-3">
-            {backendKeys.map((key, index) => (
-              <div key={index} className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
-                index === 0 ? 'bg-green-900/30 border-green-600/50' : 'bg-gray-700/50 border-gray-600/50'
-              }`}>
-                <div className="flex items-center space-x-3">
-                  {index === 0 && (
-                    <Badge className="bg-green-900/50 text-green-300 border border-green-700/50">
-                      <Zap className="h-3 w-3 mr-1" />
-                      ACTIVE
-                    </Badge>
-                  )}
-                  <Badge className="bg-purple-900/50 text-purple-300 border border-purple-700/50">
-                    {key.apiProvider}
-                  </Badge>
-                  <span className="text-white font-medium">{key.apiModel || 'Modèle par défaut'}</span>
-                  <span className="text-gray-400 text-sm">
-                    Clé: {key.apiKey?.substring(0, 20)}...
-                  </span>
-                  {key.baseUrl && (
-                    <span className="text-blue-400 text-xs">
-                      {new URL(key.baseUrl).hostname}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  {key.lastUsed && (
-                    <Badge className="bg-green-900/50 text-green-300 border border-green-700/50 text-xs">
-                      Utilisée: {new Date(key.lastUsed).toLocaleString()}
-                    </Badge>
-                  )}
-                  {key.errorCount > 0 && (
-                    <Badge className="bg-red-900/50 text-red-300 border border-red-700/50 text-xs">
-                      Erreurs: {key.errorCount}
-                    </Badge>
-                  )}
-                  {key.isPermanentlyDisabled && (
-                    <Badge className="bg-red-900/50 text-red-300 border border-red-700/50 text-xs">
-                      DÉSACTIVÉE
-                    </Badge>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => testKey(index)}
-                    disabled={testingKey === index}
-                    className="border-purple-500/50 text-purple-400 hover:bg-purple-900/30 hover:text-purple-300 text-xs"
-                  >
-                    {testingKey === index ? (
-                      <>
-                        <LoadingSpinner className="h-3 w-3 mr-1" />
-                        Test...
-                      </>
-                    ) : (
-                      'Tester'
-                    )}
-                  </Button>
-                </div>
-              </div>
-            ))}
+      {/* Master Key Display */}
+      {masterKey && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 bg-gradient-to-r from-yellow-900/30 to-amber-900/30 rounded-lg border border-yellow-800/50"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Shield className="h-5 w-5 text-yellow-500 mr-2" />
+              <h3 className="text-lg font-semibold text-yellow-300">Master Key (.env)</h3>
+            </div>
+            <Badge className="bg-yellow-900/50 text-yellow-300 border border-yellow-700/50">
+              Environment Variable
+            </Badge>
           </div>
-        </div>
+          <div className="mt-2 text-sm text-yellow-200/80">
+            This key is loaded from your environment variables and serves as a fallback.
+          </div>
+          <div className="mt-2 flex items-center text-xs text-yellow-400/80">
+            <Key className="h-3 w-3 mr-1" />
+            <span>{masterKey.keyValue ? `${masterKey.keyValue.substring(0, 8)}...${masterKey.keyValue.substring(masterKey.keyValue.length - 4)}` : 'No key found'}</span>
+          </div>
+        </motion.div>
       )}
+
+      {/* User Keys */}
+      <div className="space-y-4">
+        {backendKeys.length === 0 ? (
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardContent className="p-6 text-center">
+              <Key className="mx-auto h-12 w-12 text-gray-500" />
+              <h3 className="mt-4 text-lg font-medium text-gray-300">No API Keys Added</h3>
+              <p className="mt-2 text-gray-500">
+                Add your first API key to get started with different LLM providers.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          backendKeys.map((key, index) => (
+            <div key={index} className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
+              index === 0 ? 'bg-green-900/30 border-green-600/50' : 'bg-gray-700/50 border-gray-600/50'
+            }`}>
+              <div className="flex items-center space-x-3">
+                {index === 0 && (
+                  <Badge className="bg-green-900/50 text-green-300 border border-green-700/50">
+                    <Zap className="h-3 w-3 mr-1" />
+                    ACTIVE
+                  </Badge>
+                )}
+                <Badge className="bg-purple-900/50 text-purple-300 border border-purple-700/50">
+                  {key.apiProvider}
+                </Badge>
+                <span className="text-white font-medium">{key.apiModel || 'Modèle par défaut'}</span>
+                <span className="text-gray-400 text-sm">
+                  Clé: {key.apiKey?.substring(0, 20)}...
+                </span>
+                {key.baseUrl && (
+                  <span className="text-blue-400 text-xs">
+                    {new URL(key.baseUrl).hostname}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center space-x-2">
+                {key.lastUsed && (
+                  <Badge className="bg-green-900/50 text-green-300 border border-green-700/50 text-xs">
+                    Utilisée: {new Date(key.lastUsed).toLocaleString()}
+                  </Badge>
+                )}
+                {key.errorCount > 0 && (
+                  <Badge className="bg-red-900/50 text-red-300 border border-red-700/50 text-xs">
+                    Erreurs: {key.errorCount}
+                  </Badge>
+                )}
+                {key.isPermanentlyDisabled && (
+                  <Badge className="bg-red-900/50 text-red-300 border border-red-700/50 text-xs">
+                    DÉSACTIVÉE
+                  </Badge>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => testKey(index)}
+                  disabled={testingKey === index}
+                  className="border-purple-500/50 text-purple-400 hover:bg-purple-900/30 hover:text-purple-300 text-xs"
+                >
+                  {testingKey === index ? (
+                    <>
+                      <LoadingSpinner className="h-3 w-3 mr-1" />
+                      Test...
+                    </>
+                  ) : (
+                    'Tester'
+                  )}
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
       
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-white flex items-center">

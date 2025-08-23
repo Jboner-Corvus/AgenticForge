@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { C as Ctx, T as Tool } from '../../../../types-C2iGLYUf.js';
+import { C as Ctx, T as Tool } from '../../../../types-X5iVOMgV.js';
 import 'fastmcp';
 import 'ioredis';
 import 'bullmq';
@@ -8,74 +8,74 @@ import 'pino';
 
 declare const parameters: z.ZodObject<{
     action: z.ZodEnum<["create", "update", "display", "clear"]>;
-    todos: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        id: z.ZodString;
-        content: z.ZodString;
-        status: z.ZodEnum<["pending", "in_progress", "completed"]>;
-        priority: z.ZodOptional<z.ZodEnum<["low", "medium", "high"]>>;
-        category: z.ZodOptional<z.ZodString>;
-    }, "strip", z.ZodTypeAny, {
-        status: "in_progress" | "pending" | "completed";
-        id: string;
-        content: string;
-        priority?: "high" | "low" | "medium" | undefined;
-        category?: string | undefined;
-    }, {
-        status: "in_progress" | "pending" | "completed";
-        id: string;
-        content: string;
-        priority?: "high" | "low" | "medium" | undefined;
-        category?: string | undefined;
-    }>, "many">>;
     itemId: z.ZodOptional<z.ZodString>;
     status: z.ZodOptional<z.ZodEnum<["pending", "in_progress", "completed"]>>;
     title: z.ZodOptional<z.ZodString>;
-}, "strip", z.ZodTypeAny, {
-    action: "create" | "display" | "clear" | "update";
-    status?: "in_progress" | "pending" | "completed" | undefined;
-    title?: string | undefined;
-    todos?: {
-        status: "in_progress" | "pending" | "completed";
-        id: string;
-        content: string;
-        priority?: "high" | "low" | "medium" | undefined;
-        category?: string | undefined;
-    }[] | undefined;
-    itemId?: string | undefined;
-}, {
-    action: "create" | "display" | "clear" | "update";
-    status?: "in_progress" | "pending" | "completed" | undefined;
-    title?: string | undefined;
-    todos?: {
-        status: "in_progress" | "pending" | "completed";
-        id: string;
-        content: string;
-        priority?: "high" | "low" | "medium" | undefined;
-        category?: string | undefined;
-    }[] | undefined;
-    itemId?: string | undefined;
-}>;
-declare const todoListOutput: z.ZodUnion<[z.ZodObject<{
-    success: z.ZodBoolean;
-    message: z.ZodString;
     todos: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        id: z.ZodString;
-        content: z.ZodString;
-        status: z.ZodEnum<["pending", "in_progress", "completed"]>;
-        priority: z.ZodOptional<z.ZodEnum<["low", "medium", "high"]>>;
         category: z.ZodOptional<z.ZodString>;
+        content: z.ZodString;
+        id: z.ZodString;
+        priority: z.ZodOptional<z.ZodEnum<["low", "medium", "high"]>>;
+        status: z.ZodEnum<["pending", "in_progress", "completed"]>;
     }, "strip", z.ZodTypeAny, {
         status: "in_progress" | "pending" | "completed";
         id: string;
         content: string;
-        priority?: "high" | "low" | "medium" | undefined;
         category?: string | undefined;
+        priority?: "high" | "low" | "medium" | undefined;
     }, {
         status: "in_progress" | "pending" | "completed";
         id: string;
         content: string;
-        priority?: "high" | "low" | "medium" | undefined;
         category?: string | undefined;
+        priority?: "high" | "low" | "medium" | undefined;
+    }>, "many">>;
+}, "strip", z.ZodTypeAny, {
+    action: "create" | "display" | "clear" | "update";
+    status?: "in_progress" | "pending" | "completed" | undefined;
+    title?: string | undefined;
+    itemId?: string | undefined;
+    todos?: {
+        status: "in_progress" | "pending" | "completed";
+        id: string;
+        content: string;
+        category?: string | undefined;
+        priority?: "high" | "low" | "medium" | undefined;
+    }[] | undefined;
+}, {
+    action: "create" | "display" | "clear" | "update";
+    status?: "in_progress" | "pending" | "completed" | undefined;
+    title?: string | undefined;
+    itemId?: string | undefined;
+    todos?: {
+        status: "in_progress" | "pending" | "completed";
+        id: string;
+        content: string;
+        category?: string | undefined;
+        priority?: "high" | "low" | "medium" | undefined;
+    }[] | undefined;
+}>;
+declare const todoListOutput: z.ZodUnion<[z.ZodObject<{
+    message: z.ZodString;
+    success: z.ZodBoolean;
+    todos: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        category: z.ZodOptional<z.ZodString>;
+        content: z.ZodString;
+        id: z.ZodString;
+        priority: z.ZodOptional<z.ZodEnum<["low", "medium", "high"]>>;
+        status: z.ZodEnum<["pending", "in_progress", "completed"]>;
+    }, "strip", z.ZodTypeAny, {
+        status: "in_progress" | "pending" | "completed";
+        id: string;
+        content: string;
+        category?: string | undefined;
+        priority?: "high" | "low" | "medium" | undefined;
+    }, {
+        status: "in_progress" | "pending" | "completed";
+        id: string;
+        content: string;
+        category?: string | undefined;
+        priority?: "high" | "low" | "medium" | undefined;
     }>, "many">>;
 }, "strip", z.ZodTypeAny, {
     message: string;
@@ -84,8 +84,8 @@ declare const todoListOutput: z.ZodUnion<[z.ZodObject<{
         status: "in_progress" | "pending" | "completed";
         id: string;
         content: string;
-        priority?: "high" | "low" | "medium" | undefined;
         category?: string | undefined;
+        priority?: "high" | "low" | "medium" | undefined;
     }[] | undefined;
 }, {
     message: string;
@@ -94,8 +94,8 @@ declare const todoListOutput: z.ZodUnion<[z.ZodObject<{
         status: "in_progress" | "pending" | "completed";
         id: string;
         content: string;
-        priority?: "high" | "low" | "medium" | undefined;
         category?: string | undefined;
+        priority?: "high" | "low" | "medium" | undefined;
     }[] | undefined;
 }>, z.ZodObject<{
     error: z.ZodString;

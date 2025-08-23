@@ -1,6 +1,6 @@
 {
   "name": "@jboner-corvus/agenticforge",
-  "version": "1.0.314",
+  "version": "1.0.328",
   "description": "Une plateforme avancée pour la création et la gestion d'agents intelligents.",
   "main": "dist/index.js",
   "files": [
@@ -13,7 +13,8 @@
     "typecheck": "pnpm --recursive run typecheck",
     "test": "pnpm --recursive run test",
     "test:unit": "pnpm --recursive run test:unit",
-    "test:integration": "pnpm --recursive run test:integration"
+    "test:integration": "pnpm --recursive run test:integration",
+    "test:integration:runner": "./integration-test-runner.sh"
   },
   "repository": {
     "type": "git",

@@ -54,7 +54,7 @@ export const useAuthInterceptor = (options: UseAuthInterceptorOptions = {}) => {
       
       // Détecter les erreurs 401
       if (response.status === 401) {
-        const url = typeof args[0] === 'string' ? args[0] : args[0].url;
+        const url = typeof args[0] === 'string' ? args[0] : args[0] instanceof URL ? args[0].toString() : (args[0] as Request).url;
         const method = typeof args[1] === 'object' && args[1]?.method ? args[1].method : 'GET';
         
         // Éviter les boucles infinies sur les endpoints publics

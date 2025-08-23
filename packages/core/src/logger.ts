@@ -16,13 +16,21 @@ export function getLogger(): Logger {
           if (tool && typeof tool === 'object' && tool.parameters) {
             // Ne pas afficher les détails complets des paramètres Zod
             return {
-              name: tool.name,
               description: tool.description,
+              name: tool.name,
               // Masquer les paramètres Zod verbeux
-              parameters: '[ZodObject - details hidden to reduce verbosity]'
+              parameters: '[ZodObject - details hidden to reduce verbosity]',
             };
           }
           return tool;
+        },
+        // Serializer pour les paramètres d'outils
+        toolParameters: (params: any) => {
+          if (params && typeof params === 'object' && params._def) {
+            // Ne pas afficher les détails complets des schémas Zod
+            return '[ZodSchema - details hidden to reduce verbosity]';
+          }
+          return params;
         },
         // Serializer pour les objets Zod dans les logs
         zod: (obj: any) => {
@@ -32,20 +40,17 @@ export function getLogger(): Logger {
           }
           return obj;
         },
-        // Serializer pour les paramètres d'outils
-        toolParameters: (params: any) => {
-          if (params && typeof params === 'object' && params._def) {
-            // Ne pas afficher les détails complets des schémas Zod
-            return '[ZodSchema - details hidden to reduce verbosity]';
-          }
-          return params;
-        }
+      },
+      // Ensure logs are flushed immediately in production
+      transport: {
+        options: { destination: 1, sync: true },
+        target: 'pino/file',
       },
       ...(config.NODE_ENV === 'development' && {
         transport: {
           options: {
             colorize: true,
-            depth: 2,  // Réduire encore la profondeur d'affichage
+            depth: 2, // Réduire encore la profondeur d'affichage
             levelFirst: true,
             singleLine: false,
             translateTime: 'SYS:standard',

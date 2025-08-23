@@ -55,7 +55,7 @@ describe('toolLoader Integration Test', () => {
     // 2. Set up environment variables
     delete process.env.TOOLS_PATH;
     process.env.TOOLS_PATH = tempToolsDir;
-    
+
     // Explicitly set NODE_ENV to development for tests
     process.env.NODE_ENV = 'development';
 
@@ -99,7 +99,7 @@ describe('toolLoader Integration Test', () => {
           execute: () => 'result' 
         };`,
       );
-      
+
       // Check that the file was created
       const files = await fs.readdir(tempToolsDir);
       console.log('Files in temp directory:', files);
@@ -108,7 +108,7 @@ describe('toolLoader Integration Test', () => {
       // Force a reload of tools by resetting the loadedToolFiles cache
       toolLoader._resetTools();
       const tools = await toolLoader.getTools();
-      
+
       // Check the tool registry directly
       const { toolRegistry } = await import('../modules/tools/toolRegistry.ts');
       const registryTools = toolRegistry.getAll();

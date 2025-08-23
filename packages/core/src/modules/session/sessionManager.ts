@@ -25,14 +25,14 @@ export class SessionManager {
     this.pgClient = pgClient;
   }
 
+  public static clearActiveSessionsForTest(): void {
+    SessionManager.activeSessions.clear();
+  }
+
   public static async create(pgClient: PgClient): Promise<SessionManager> {
     const manager = new SessionManager(pgClient);
     await manager.initDb();
     return manager;
-  }
-
-  public static clearActiveSessionsForTest(): void {
-    SessionManager.activeSessions.clear();
   }
 
   private static createToolContext(
