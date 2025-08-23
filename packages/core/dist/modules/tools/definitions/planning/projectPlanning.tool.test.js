@@ -2,10 +2,10 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
   projectPlanningTool
-} from "../../../../chunk-HC7ITZPF.js";
+} from "../../../../chunk-TDNMQPBK.js";
 import {
   sendToCanvas
-} from "../../../../chunk-KBBD5YYX.js";
+} from "../../../../chunk-5OJML75I.js";
 import {
   beforeEach,
   describe,
@@ -13,9 +13,9 @@ import {
   it,
   vi
 } from "../../../../chunk-AQKYZ7X3.js";
-import "../../../../chunk-SIBAPVHV.js";
-import "../../../../chunk-E5QXXMSG.js";
-import "../../../../chunk-6NLBXREQ.js";
+import "../../../../chunk-2TWFUMQU.js";
+import "../../../../chunk-5JE7E5SU.js";
+import "../../../../chunk-DVHMHG4X.js";
 import {
   init_esm_shims
 } from "../../../../chunk-SB7UONON.js";
@@ -35,43 +35,61 @@ describe("projectPlanningTool", () => {
     vi.clearAllMocks();
   });
   const createMockContext = (jobId) => ({
-    job: jobId ? { id: jobId, data: { prompt: "test" }, isFailed: async () => false, name: "test-job" } : void 0,
+    job: jobId ? {
+      data: { prompt: "test" },
+      id: jobId,
+      isFailed: async () => false,
+      name: "test-job"
+    } : void 0,
+    llm: {
+      getErrorType: () => "UNKNOWN",
+      getLlmResponse: async () => "test"
+    },
     log: {
-      info: vi.fn(),
-      error: vi.fn(),
-      warn: vi.fn(),
+      child: vi.fn(() => ({
+        debug: vi.fn(),
+        error: vi.fn(),
+        fatal: vi.fn(),
+        info: vi.fn(),
+        level: "info",
+        silent: false,
+        trace: vi.fn(),
+        warn: vi.fn()
+      })),
       debug: vi.fn(),
+      error: vi.fn(),
       fatal: vi.fn(),
-      trace: vi.fn(),
+      info: vi.fn(),
       level: "info",
       silent: false,
-      child: vi.fn(() => ({
-        info: vi.fn(),
-        error: vi.fn(),
-        warn: vi.fn(),
-        debug: vi.fn(),
-        fatal: vi.fn(),
-        trace: vi.fn(),
-        level: "info",
-        silent: false
-      }))
+      trace: vi.fn(),
+      warn: vi.fn()
+    },
+    reportProgress: vi.fn(),
+    session: {
+      history: [],
+      identities: [],
+      name: "test-session",
+      timestamp: Date.now()
     },
     streamContent: vi.fn(),
-    reportProgress: vi.fn(),
-    session: { history: [], identities: [], name: "test-session", timestamp: Date.now() },
-    taskQueue: {},
-    llm: { getErrorType: () => "UNKNOWN", getLlmResponse: async () => "test" }
+    taskQueue: {}
   });
   it("should have correct name and description", () => {
     globalExpect(projectPlanningTool.name).toBe("project_planning");
-    globalExpect(projectPlanningTool.description).toContain("Creates detailed project plans");
+    globalExpect(projectPlanningTool.description).toContain(
+      "Creates detailed project plans"
+    );
   });
   it("should generate a project plan successfully", async () => {
     const mockCtx = createMockContext("test-job-id");
-    const result = await projectPlanningTool.execute({
-      projectName: "Duke Nukem 2",
-      projectDescription: "Create a retro-style first-person shooter game"
-    }, mockCtx);
+    const result = await projectPlanningTool.execute(
+      {
+        projectDescription: "Create a retro-style first-person shooter game",
+        projectName: "Duke Nukem 2"
+      },
+      mockCtx
+    );
     globalExpect(result).toHaveProperty("success", true);
     globalExpect(result).toHaveProperty("plan");
     if ("plan" in result && result.plan) {
@@ -83,19 +101,32 @@ describe("projectPlanningTool", () => {
       globalExpect(result.plan[0]).toHaveProperty("estimatedTime");
       globalExpect(result.plan[0]).toHaveProperty("priority");
     }
-    globalExpect(sendToCanvas).toHaveBeenCalledWith("test-job-id", globalExpect.stringContaining("<!DOCTYPE html>"), "html");
-    globalExpect(sendToCanvas).toHaveBeenCalledWith("test-job-id", globalExpect.stringContaining("Project Plan: Duke Nukem 2"), "html");
-    globalExpect(mockCtx.log.info).toHaveBeenCalledWith("Generating project plan for: Duke Nukem 2");
+    globalExpect(sendToCanvas).toHaveBeenCalledWith(
+      "test-job-id",
+      globalExpect.stringContaining("<!DOCTYPE html>"),
+      "html"
+    );
+    globalExpect(sendToCanvas).toHaveBeenCalledWith(
+      "test-job-id",
+      globalExpect.stringContaining("Project Plan: Duke Nukem 2"),
+      "html"
+    );
+    globalExpect(mockCtx.log.info).toHaveBeenCalledWith(
+      "Generating project plan for: Duke Nukem 2"
+    );
   });
   it("should handle errors gracefully", async () => {
     const mockCtx = createMockContext("test-job-id");
     vi.mocked(sendToCanvas).mockImplementationOnce(() => {
       throw new Error("Canvas error");
     });
-    const result = await projectPlanningTool.execute({
-      projectName: "Test Project",
-      projectDescription: "Test project description"
-    }, mockCtx);
+    const result = await projectPlanningTool.execute(
+      {
+        projectDescription: "Test project description",
+        projectName: "Test Project"
+      },
+      mockCtx
+    );
     globalExpect(result).toHaveProperty("error");
     if ("error" in result) {
       globalExpect(result.error).toContain("Failed to generate project plan");
@@ -103,10 +134,13 @@ describe("projectPlanningTool", () => {
   });
   it("should work without job ID (no canvas display)", async () => {
     const mockCtx = createMockContext();
-    const result = await projectPlanningTool.execute({
-      projectName: "Test Project",
-      projectDescription: "Test project description"
-    }, mockCtx);
+    const result = await projectPlanningTool.execute(
+      {
+        projectDescription: "Test project description",
+        projectName: "Test Project"
+      },
+      mockCtx
+    );
     globalExpect(result).toHaveProperty("success", true);
     globalExpect(sendToCanvas).not.toHaveBeenCalled();
   });

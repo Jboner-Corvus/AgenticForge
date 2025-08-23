@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { T as Tool } from '../../../../types-C2iGLYUf.js';
+import { T as Tool } from '../../../../types-X5iVOMgV.js';
 import 'fastmcp';
 import 'ioredis';
 import 'bullmq';
@@ -7,14 +7,14 @@ import 'pg';
 import 'pino';
 
 declare const delegateTaskParams: z.ZodObject<{
-    taskDescription: z.ZodString;
     agent: z.ZodEnum<["gemini-cli", "qwen-cli"]>;
+    taskDescription: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    taskDescription: string;
     agent: "gemini-cli" | "qwen-cli";
+    taskDescription: string;
 }, {
-    taskDescription: string;
     agent: "gemini-cli" | "qwen-cli";
+    taskDescription: string;
 }>;
 declare const delegateTaskTool: Tool<typeof delegateTaskParams>;
 

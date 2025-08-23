@@ -8,7 +8,7 @@
 export function maskApiKey(
   key: string,
   visibleStart: number = 3,
-  visibleEnd: number = 4
+  visibleEnd: number = 4,
 ): string {
   if (!key || key.length <= visibleStart + visibleEnd) {
     // Si la clé est trop courte, on masque tout sauf le premier et dernier caractère

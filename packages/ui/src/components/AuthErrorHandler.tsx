@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { AlertTriangle, Key, Shield, CheckCircle, RefreshCw, Info, X } from 'lucide-react';
+import { AlertTriangle, Key, Shield, CheckCircle, RefreshCw, Info } from 'lucide-react';
 import { Modal } from './ui/modal';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -22,7 +22,6 @@ export const AuthErrorHandler: React.FC<AuthErrorHandlerProps> = ({ onAuthError 
   const [lastError, setLastError] = useState<AuthError | null>(null);
   
   const { 
-    authToken, 
     setAuthToken, 
     addDebugLog, 
     initializeSessionAndMessages 

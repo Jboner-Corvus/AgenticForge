@@ -31,7 +31,7 @@ export async function executeShellCommand(
     'killall -9',
     'pkill -9 -f',
   ];
-  
+
   const commandLower = command.toLowerCase();
   for (const dangerous of dangerousCommands) {
     if (commandLower.includes(dangerous.toLowerCase())) {
@@ -93,7 +93,9 @@ export async function executeShellCommand(
       if (!isFinished) {
         isFinished = true;
         child.kill('SIGKILL');
-        reject(new Error(`Commande interrompue après ${timeoutMs}ms (timeout)`));
+        reject(
+          new Error(`Commande interrompue après ${timeoutMs}ms (timeout)`),
+        );
       }
     }, timeoutMs);
 
@@ -107,7 +109,9 @@ export async function executeShellCommand(
         clearTimeout(timeoutId);
         if (!isFinished) {
           isFinished = true;
-          reject(new Error('Sortie trop volumineuse (>10MB), commande interrompue'));
+          reject(
+            new Error('Sortie trop volumineuse (>10MB), commande interrompue'),
+          );
         }
         return;
       }
@@ -126,7 +130,9 @@ export async function executeShellCommand(
         clearTimeout(timeoutId);
         if (!isFinished) {
           isFinished = true;
-          reject(new Error('Erreur trop volumineuse (>10MB), commande interrompue'));
+          reject(
+            new Error('Erreur trop volumineuse (>10MB), commande interrompue'),
+          );
         }
         return;
       }

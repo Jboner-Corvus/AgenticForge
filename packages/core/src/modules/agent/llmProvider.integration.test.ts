@@ -1,77 +1,79 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Agent } from './agent.ts';
-import { LlmError } from '../../utils/LlmError.ts';
-import { getMockQueue } from '../../test/mockQueue.ts';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import type { SessionData, Tool } from '../../types.ts';
+
+import { getMockQueue } from '../../test/mockQueue.ts';
+import { LlmError } from '../../utils/LlmError.ts';
+import { Agent } from './agent.ts';
 
 // Mock LLM Providers avec simulation de différents scénarios
 const mockOpenAIProvider = {
+  available: true,
   getLlmResponse: vi.fn(),
   name: 'openai',
-  available: true,
 };
 
 const mockAnthropicProvider = {
+  available: true,
   getLlmResponse: vi.fn(),
   name: 'anthropic',
-  available: true,
 };
 
 const mockQwenProvider = {
+  available: true,
   getLlmResponse: vi.fn(),
   name: 'qwen',
-  available: true,
 };
 
 const mockGpt5Provider = {
+  available: true,
   getLlmResponse: vi.fn(),
   name: 'gpt5',
-  available: true,
 };
 
 // Mocks globaux
 vi.mock('../../config.ts', () => ({
   config: {
     AGENT_MAX_ITERATIONS: 5,
+    ANTHROPIC_API_KEY: 'test-anthropic-key',
+    GPT5_API_KEY: 'test-gpt5-key',
     LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic', 'qwen', 'gpt5'],
     OPENAI_API_KEY: 'test-openai-key',
-    ANTHROPIC_API_KEY: 'test-anthropic-key',
     QWEN_API_KEY: 'test-qwen-key',
-    GPT5_API_KEY: 'test-gpt5-key',
   },
 }));
 
 vi.mock('../../logger.ts', () => ({
   getLoggerInstance: () => ({
     child: () => ({
+      debug: vi.fn(),
+      error: vi.fn(),
       info: vi.fn(),
       warn: vi.fn(),
-      error: vi.fn(),
-      debug: vi.fn(),
     }),
+    debug: vi.fn(),
+    error: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
   }),
 }));
 
 vi.mock('../redis/redisClient.ts', () => ({
   getRedisClientInstance: () => ({
-    publish: vi.fn(),
     duplicate: () => ({
       on: vi.fn(),
+      quit: vi.fn(),
       subscribe: vi.fn(),
       unsubscribe: vi.fn(),
-      quit: vi.fn(),
     }),
+    publish: vi.fn(),
   }),
 }));
 
 vi.mock('../llm/LlmKeyManager.ts', () => ({
   LlmKeyManager: {
-    hasAvailableKeys: vi.fn().mockResolvedValue(true),
     getKey: vi.fn().mockResolvedValue('test-key'),
+    hasAvailableKeys: vi.fn().mockResolvedValue(true),
     invalidateKey: vi.fn(),
     rotateKey: vi.fn(),
   },
@@ -96,26 +98,26 @@ vi.mock('./responseSchema.ts', () => ({
 // Mock du provider manager
 let currentProvider = mockOpenAIProvider;
 vi.mock('../../utils/llmProvider.ts', () => ({
+  getAvailableProviders: vi.fn(() => ['openai', 'anthropic', 'qwen', 'gpt5']),
   getLlmProvider: vi.fn(() => currentProvider),
+  getProviderHealth: vi.fn(() => ({ latency: 100, status: 'healthy' })),
   switchToProvider: vi.fn((providerName: string) => {
     switch (providerName) {
-      case 'openai':
-        currentProvider = mockOpenAIProvider;
-        break;
       case 'anthropic':
         currentProvider = mockAnthropicProvider;
-        break;
-      case 'qwen':
-        currentProvider = mockQwenProvider;
         break;
       case 'gpt5':
         currentProvider = mockGpt5Provider;
         break;
+      case 'openai':
+        currentProvider = mockOpenAIProvider;
+        break;
+      case 'qwen':
+        currentProvider = mockQwenProvider;
+        break;
     }
     return currentProvider;
   }),
-  getAvailableProviders: vi.fn(() => ['openai', 'anthropic', 'qwen', 'gpt5']),
-  getProviderHealth: vi.fn(() => ({ status: 'healthy', latency: 100 })),
 }));
 
 describe('LLM Provider Fallback Integration Tests', () => {
@@ -130,18 +132,18 @@ describe('LLM Provider Fallback Integration Tests', () => {
     currentProvider = mockOpenAIProvider;
 
     mockJob = {
-      id: 'llm-fallback-test',
       data: { prompt: 'Test LLM provider fallback' },
+      id: 'llm-fallback-test',
       isFailed: vi.fn().mockResolvedValue(false),
       updateProgress: vi.fn(),
     };
 
     mockSessionData = {
+      activeLlmProvider: 'openai',
       history: [],
       identities: [{ id: 'test-user', type: 'user' }],
       name: 'LLM Test Session',
       timestamp: Date.now(),
-      activeLlmProvider: 'openai',
     };
 
     mockSessionManager = {
@@ -156,7 +158,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
       getMockQueue(),
       mockTools,
       'openai',
-      mockSessionManager
+      mockSessionManager,
     );
   });
 
@@ -166,12 +168,19 @@ describe('LLM Provider Fallback Integration Tests', () => {
 
   describe('Provider Failover Scenarios', () => {
     it('should fallback from OpenAI to Anthropic on error', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       // OpenAI fails, Anthropic succeeds
-      mockOpenAIProvider.getLlmResponse.mockRejectedValue(new LlmError('OpenAI rate limit'));
-      mockAnthropicProvider.getLlmResponse.mockResolvedValue('{"answer": "Anthropic response"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Anthropic response' });
+      mockOpenAIProvider.getLlmResponse.mockRejectedValue(
+        new LlmError('OpenAI rate limit'),
+      );
+      mockAnthropicProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Anthropic response"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Anthropic response',
+      });
 
       const result = await agent.run();
 
@@ -182,14 +191,25 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should cascade through all providers on sequential failures', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       // All providers fail except the last one
-      mockOpenAIProvider.getLlmResponse.mockRejectedValue(new LlmError('OpenAI down'));
-      mockAnthropicProvider.getLlmResponse.mockRejectedValue(new LlmError('Anthropic down'));
-      mockQwenProvider.getLlmResponse.mockRejectedValue(new LlmError('Qwen down'));
-      mockGpt5Provider.getLlmResponse.mockResolvedValue('{"answer": "GPT5 backup response"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'GPT5 backup response' });
+      mockOpenAIProvider.getLlmResponse.mockRejectedValue(
+        new LlmError('OpenAI down'),
+      );
+      mockAnthropicProvider.getLlmResponse.mockRejectedValue(
+        new LlmError('Anthropic down'),
+      );
+      mockQwenProvider.getLlmResponse.mockRejectedValue(
+        new LlmError('Qwen down'),
+      );
+      mockGpt5Provider.getLlmResponse.mockResolvedValue(
+        '{"answer": "GPT5 backup response"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'GPT5 backup response',
+      });
 
       const result = await agent.run();
 
@@ -202,18 +222,27 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should handle Qwen timeout errors with specific retry logic', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       // Qwen timeout should trigger retries before fallback
-      const qwenTimeoutError = new LlmError('Qwen API request failed with status 504 stream timeout');
-      
-      mockOpenAIProvider.getLlmResponse.mockRejectedValue(new LlmError('OpenAI down'));
-      mockAnthropicProvider.getLlmResponse.mockRejectedValue(new LlmError('Anthropic down'));
+      const qwenTimeoutError = new LlmError(
+        'Qwen API request failed with status 504 stream timeout',
+      );
+
+      mockOpenAIProvider.getLlmResponse.mockRejectedValue(
+        new LlmError('OpenAI down'),
+      );
+      mockAnthropicProvider.getLlmResponse.mockRejectedValue(
+        new LlmError('Anthropic down'),
+      );
       mockQwenProvider.getLlmResponse
         .mockRejectedValueOnce(qwenTimeoutError)
         .mockRejectedValueOnce(qwenTimeoutError)
         .mockResolvedValueOnce('{"answer": "Qwen retry success"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Qwen retry success' });
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Qwen retry success',
+      });
 
       const result = await agent.run();
 
@@ -223,10 +252,18 @@ describe('LLM Provider Fallback Integration Tests', () => {
 
     it('should handle all providers failing gracefully', async () => {
       // Tous les providers échouent
-      mockOpenAIProvider.getLlmResponse.mockRejectedValue(new LlmError('OpenAI unavailable'));
-      mockAnthropicProvider.getLlmResponse.mockRejectedValue(new LlmError('Anthropic unavailable'));
-      mockQwenProvider.getLlmResponse.mockRejectedValue(new LlmError('Qwen unavailable'));
-      mockGpt5Provider.getLlmResponse.mockRejectedValue(new LlmError('GPT5 unavailable'));
+      mockOpenAIProvider.getLlmResponse.mockRejectedValue(
+        new LlmError('OpenAI unavailable'),
+      );
+      mockAnthropicProvider.getLlmResponse.mockRejectedValue(
+        new LlmError('Anthropic unavailable'),
+      );
+      mockQwenProvider.getLlmResponse.mockRejectedValue(
+        new LlmError('Qwen unavailable'),
+      );
+      mockGpt5Provider.getLlmResponse.mockRejectedValue(
+        new LlmError('GPT5 unavailable'),
+      );
 
       const result = await agent.run();
 
@@ -240,11 +277,15 @@ describe('LLM Provider Fallback Integration Tests', () => {
 
   describe('Provider Health Monitoring', () => {
     it('should monitor provider response times', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       // Simuler des temps de réponse différents
-      mockOpenAIProvider.getLlmResponse.mockImplementation(() => 
-        new Promise(resolve => setTimeout(() => resolve('{"answer": "Fast response"}'), 100))
+      mockOpenAIProvider.getLlmResponse.mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve('{"answer": "Fast response"}'), 100),
+          ),
       );
       mockResponseSchema.parse.mockReturnValue({ answer: 'Fast response' });
 
@@ -257,7 +298,8 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should track provider error rates', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       // Simuler des erreurs intermittentes
       let callCount = 0;
@@ -268,7 +310,9 @@ describe('LLM Provider Fallback Integration Tests', () => {
         }
         return Promise.resolve('{"answer": "Eventually successful"}');
       });
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Eventually successful' });
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Eventually successful',
+      });
 
       await agent.run();
 
@@ -276,11 +320,16 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should implement circuit breaker pattern for unhealthy providers', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       // Simuler un provider constamment en échec
-      mockOpenAIProvider.getLlmResponse.mockRejectedValue(new LlmError('Consistent failure'));
-      mockAnthropicProvider.getLlmResponse.mockResolvedValue('{"answer": "Anthropic healthy"}');
+      mockOpenAIProvider.getLlmResponse.mockRejectedValue(
+        new LlmError('Consistent failure'),
+      );
+      mockAnthropicProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Anthropic healthy"}',
+      );
       mockResponseSchema.parse.mockReturnValue({ answer: 'Anthropic healthy' });
 
       // Premier appel - devrait essayer OpenAI puis Anthropic
@@ -291,9 +340,16 @@ describe('LLM Provider Fallback Integration Tests', () => {
       vi.clearAllMocks();
 
       // Deuxième appel - devrait sauter OpenAI (circuit breaker ouvert)
-      const agent2 = new Agent(mockJob, mockSessionData, getMockQueue(), mockTools, 'openai', mockSessionManager);
+      const agent2 = new Agent(
+        mockJob,
+        mockSessionData,
+        getMockQueue(),
+        mockTools,
+        'openai',
+        mockSessionManager,
+      );
       await agent2.run();
-      
+
       // OpenAI ne devrait pas être appelé grâce au circuit breaker
       expect(mockAnthropicProvider.getLlmResponse).toHaveBeenCalledTimes(1);
     });
@@ -301,33 +357,55 @@ describe('LLM Provider Fallback Integration Tests', () => {
 
   describe('Provider Load Balancing', () => {
     it('should distribute load across healthy providers', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       // Tous les providers sont en bonne santé
-      mockOpenAIProvider.getLlmResponse.mockResolvedValue('{"answer": "OpenAI response"}');
-      mockAnthropicProvider.getLlmResponse.mockResolvedValue('{"answer": "Anthropic response"}');
-      mockQwenProvider.getLlmResponse.mockResolvedValue('{"answer": "Qwen response"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Load balanced response' });
+      mockOpenAIProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "OpenAI response"}',
+      );
+      mockAnthropicProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Anthropic response"}',
+      );
+      mockQwenProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Qwen response"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Load balanced response',
+      });
 
       // Créer plusieurs agents pour tester la distribution de charge
-      const agents = Array.from({ length: 6 }, () => 
-        new Agent(mockJob, { ...mockSessionData }, getMockQueue(), mockTools, 'openai', mockSessionManager)
+      const agents = Array.from(
+        { length: 6 },
+        () =>
+          new Agent(
+            mockJob,
+            { ...mockSessionData },
+            getMockQueue(),
+            mockTools,
+            'openai',
+            mockSessionManager,
+          ),
       );
 
-      await Promise.all(agents.map(agent => agent.run()));
+      await Promise.all(agents.map((agent) => agent.run()));
 
       // Vérifier que la charge est distribuée
-      const totalCalls = mockOpenAIProvider.getLlmResponse.mock.calls.length +
-                        mockAnthropicProvider.getLlmResponse.mock.calls.length +
-                        mockQwenProvider.getLlmResponse.mock.calls.length;
-      
+      const totalCalls =
+        mockOpenAIProvider.getLlmResponse.mock.calls.length +
+        mockAnthropicProvider.getLlmResponse.mock.calls.length +
+        mockQwenProvider.getLlmResponse.mock.calls.length;
+
       expect(totalCalls).toBe(6);
     });
 
     it('should respect provider priority in hierarchy', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
-      mockOpenAIProvider.getLlmResponse.mockResolvedValue('{"answer": "OpenAI priority"}');
+      mockOpenAIProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "OpenAI priority"}',
+      );
       mockResponseSchema.parse.mockReturnValue({ answer: 'OpenAI priority' });
 
       const result = await agent.run();
@@ -338,12 +416,19 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should handle provider capacity limits', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       // Simuler une limite de capacité
-      mockOpenAIProvider.getLlmResponse.mockRejectedValue(new LlmError('Rate limit exceeded'));
-      mockAnthropicProvider.getLlmResponse.mockResolvedValue('{"answer": "Anthropic capacity available"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Anthropic capacity available' });
+      mockOpenAIProvider.getLlmResponse.mockRejectedValue(
+        new LlmError('Rate limit exceeded'),
+      );
+      mockAnthropicProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Anthropic capacity available"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Anthropic capacity available',
+      });
 
       const result = await agent.run();
 
@@ -354,7 +439,8 @@ describe('LLM Provider Fallback Integration Tests', () => {
 
   describe('Provider Recovery and Auto-healing', () => {
     it('should automatically recover failed providers', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       // Premier échec, puis récupération
       mockOpenAIProvider.getLlmResponse
@@ -368,9 +454,13 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should perform health checks on recovered providers', async () => {
-      const mockGetProviderHealth = require('../../utils/llmProvider.ts').getProviderHealth;
-      
-      mockGetProviderHealth.mockResolvedValue({ status: 'healthy', latency: 120 });
+      const mockGetProviderHealth =
+        require('../../utils/llmProvider.ts').getProviderHealth;
+
+      mockGetProviderHealth.mockResolvedValue({
+        latency: 120,
+        status: 'healthy',
+      });
 
       await agent.run();
 
@@ -378,7 +468,8 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should gradually increase traffic to recovered providers', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       // Simuler une récupération progressive
       let healthScore = 0.1; // Commence à 10% de santé
@@ -389,29 +480,45 @@ describe('LLM Provider Fallback Integration Tests', () => {
         }
         return Promise.reject(new LlmError('Still recovering'));
       });
-      mockAnthropicProvider.getLlmResponse.mockResolvedValue('{"answer": "Anthropic stable"}');
+      mockAnthropicProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Anthropic stable"}',
+      );
       mockResponseSchema.parse.mockReturnValue({ answer: 'Recovery test' });
 
       // Plusieurs appels pour tester la récupération progressive
       for (let i = 0; i < 5; i++) {
-        const testAgent = new Agent(mockJob, { ...mockSessionData }, getMockQueue(), mockTools, 'openai', mockSessionManager);
+        const testAgent = new Agent(
+          mockJob,
+          { ...mockSessionData },
+          getMockQueue(),
+          mockTools,
+          'openai',
+          mockSessionManager,
+        );
         await testAgent.run();
       }
 
       // Vérifier que OpenAI a été testé plusieurs fois
-      expect(mockOpenAIProvider.getLlmResponse.mock.calls.length).toBeGreaterThan(2);
+      expect(
+        mockOpenAIProvider.getLlmResponse.mock.calls.length,
+      ).toBeGreaterThan(2);
     });
   });
 
   describe('Provider-Specific Error Handling', () => {
     it('should handle OpenAI-specific errors correctly', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       mockOpenAIProvider.getLlmResponse.mockRejectedValue(
-        new LlmError('OpenAI API key invalid')
+        new LlmError('OpenAI API key invalid'),
       );
-      mockAnthropicProvider.getLlmResponse.mockResolvedValue('{"answer": "Anthropic fallback"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Anthropic fallback' });
+      mockAnthropicProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Anthropic fallback"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Anthropic fallback',
+      });
 
       const result = await agent.run();
 
@@ -420,13 +527,18 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should handle Anthropic-specific errors correctly', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
-      mockOpenAIProvider.getLlmResponse.mockRejectedValue(new LlmError('OpenAI down'));
-      mockAnthropicProvider.getLlmResponse.mockRejectedValue(
-        new LlmError('Anthropic content policy violation')
+      mockOpenAIProvider.getLlmResponse.mockRejectedValue(
+        new LlmError('OpenAI down'),
       );
-      mockQwenProvider.getLlmResponse.mockResolvedValue('{"answer": "Qwen alternative"}');
+      mockAnthropicProvider.getLlmResponse.mockRejectedValue(
+        new LlmError('Anthropic content policy violation'),
+      );
+      mockQwenProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Qwen alternative"}',
+      );
       mockResponseSchema.parse.mockReturnValue({ answer: 'Qwen alternative' });
 
       const result = await agent.run();
@@ -436,14 +548,18 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should handle provider authentication failures', async () => {
-      const mockLlmKeyManager = require('../llm/LlmKeyManager.ts').LlmKeyManager;
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockLlmKeyManager =
+        require('../llm/LlmKeyManager.ts').LlmKeyManager;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       mockOpenAIProvider.getLlmResponse.mockRejectedValue(
-                 new LlmError('Authentication failed')
+        new LlmError('Authentication failed'),
       );
       mockLlmKeyManager.rotateKey.mockResolvedValue('new-key');
-      mockAnthropicProvider.getLlmResponse.mockResolvedValue('{"answer": "Auth recovered"}');
+      mockAnthropicProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Auth recovered"}',
+      );
       mockResponseSchema.parse.mockReturnValue({ answer: 'Auth recovered' });
 
       await agent.run();
@@ -455,20 +571,27 @@ describe('LLM Provider Fallback Integration Tests', () => {
 
   describe('Cost Optimization', () => {
     it('should prefer cost-effective providers when possible', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       // Configuration avec préférence de coût
       const costConfig = {
         providers: {
-          openai: { cost_per_token: 0.03 },
           anthropic: { cost_per_token: 0.025 },
+          openai: { cost_per_token: 0.03 },
           qwen: { cost_per_token: 0.01 },
-        }
+        },
       };
 
-      mockOpenAIProvider.getLlmResponse.mockResolvedValue('{"answer": "OpenAI response"}');
-      mockAnthropicProvider.getLlmResponse.mockResolvedValue('{"answer": "Anthropic response"}');
-      mockQwenProvider.getLlmResponse.mockResolvedValue('{"answer": "Qwen cost-effective"}');
+      mockOpenAIProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "OpenAI response"}',
+      );
+      mockAnthropicProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Anthropic response"}',
+      );
+      mockQwenProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Qwen cost-effective"}',
+      );
       mockResponseSchema.parse.mockReturnValue({ answer: 'Cost optimized' });
 
       // Simuler la sélection du provider le moins cher
@@ -478,7 +601,7 @@ describe('LLM Provider Fallback Integration Tests', () => {
         getMockQueue(),
         mockTools,
         'qwen', // Provider le moins cher
-        mockSessionManager
+        mockSessionManager,
       );
 
       await costOptimizedAgent.run();
@@ -487,18 +610,24 @@ describe('LLM Provider Fallback Integration Tests', () => {
     });
 
     it('should track token usage and costs per provider', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
-      mockOpenAIProvider.getLlmResponse.mockResolvedValue('{"answer": "Token usage tracking"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Token usage tracking' });
+      mockOpenAIProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Token usage tracking"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Token usage tracking',
+      });
 
       await agent.run();
 
       // Vérifier que les métriques de coût sont suivies
-      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
+      const redisClient =
+        require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'metrics:token_usage',
-        expect.stringContaining('openai')
+        expect.stringContaining('openai'),
       );
     });
   });

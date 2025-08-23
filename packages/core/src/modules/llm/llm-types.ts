@@ -1,5 +1,15 @@
 import { LlmKeyErrorType } from './LlmKeyManager.ts';
 
+export interface ILlmProvider {
+  getErrorType(statusCode: number, errorBody: string): LlmKeyErrorType;
+  getLlmResponse(
+    messages: LLMContent[],
+    systemPrompt?: string,
+    apiKey?: string,
+    modelName?: string,
+  ): Promise<string>;
+}
+
 export interface LlmApiKey {
   apiKey: string;
   apiModel: string;
@@ -14,16 +24,6 @@ export interface LlmApiKey {
 export interface LLMContent {
   parts: { text: string }[];
   role: 'model' | 'tool' | 'user';
-}
-
-export interface ILlmProvider {
-  getErrorType(statusCode: number, errorBody: string): LlmKeyErrorType;
-  getLlmResponse(
-    messages: LLMContent[],
-    systemPrompt?: string,
-    apiKey?: string,
-    modelName?: string,
-  ): Promise<string>;
 }
 
 export class LlmError extends Error {

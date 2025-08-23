@@ -1,7 +1,7 @@
 import type { Context as FastMCPContext } from 'fastmcp';
 import type { Redis as _Redis } from 'ioredis';
 
-import { Queue, Job } from 'bullmq';
+import { Job, Queue } from 'bullmq';
 import { z, ZodTypeAny } from 'zod';
 
 export { Job } from 'bullmq';

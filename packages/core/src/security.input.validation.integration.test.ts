@@ -1,4 +1,13 @@
-import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { z } from 'zod';
 
 describe('Security Input Validation Integration Tests', () => {
@@ -21,26 +30,32 @@ describe('Security Input Validation Integration Tests', () => {
   describe('Schema Validation with Zod', () => {
     it('should validate user input schemas correctly', async () => {
       const UserInputSchema = z.object({
-        username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_]+$/),
-        email: z.string().email(),
         age: z.number().int().min(13).max(120),
+        email: z.string().email(),
+        preferences: z
+          .object({
+            notifications: z.boolean(),
+            theme: z.enum(['light', 'dark']),
+          })
+          .optional(),
         role: z.enum(['user', 'admin', 'moderator']),
-        preferences: z.object({
-          theme: z.enum(['light', 'dark']),
-          notifications: z.boolean()
-        }).optional()
+        username: z
+          .string()
+          .min(3)
+          .max(50)
+          .regex(/^[a-zA-Z0-9_]+$/),
       });
 
       // Valid input
       const validInput = {
-        username: 'john_doe123',
-        email: 'john@example.com',
         age: 25,
-        role: 'user' as const,
+        email: 'john@example.com',
         preferences: {
+          notifications: true,
           theme: 'dark' as const,
-          notifications: true
-        }
+        },
+        role: 'user' as const,
+        username: 'john_doe123',
       };
 
       const result = UserInputSchema.safeParse(validInput);
@@ -60,7 +75,7 @@ describe('Security Input Validation Integration Tests', () => {
         { ...validInput, role: 'invalid' }, // Invalid role
       ];
 
-      invalidInputs.forEach(input => {
+      invalidInputs.forEach((input) => {
         const result = UserInputSchema.safeParse(input);
         expect(result.success).toBe(false);
       });
@@ -68,29 +83,32 @@ describe('Security Input Validation Integration Tests', () => {
 
     it('should validate agent configuration schemas', async () => {
       const AgentConfigSchema = z.object({
-        name: z.string().min(1).max(100),
-        type: z.enum(['assistant', 'worker', 'analyzer']),
-        model: z.string().regex(/^[a-zA-Z0-9\-_\.]+$/),
         maxTokens: z.number().int().min(1).max(100000),
+        metadata: z.record(
+          z.string(),
+          z.union([z.string(), z.number(), z.boolean()]),
+        ),
+        model: z.string().regex(/^[a-zA-Z0-9\-_\.]+$/),
+        name: z.string().min(1).max(100),
+        systemPrompt: z.string().max(10000),
         temperature: z.number().min(0).max(2),
         tools: z.array(z.string()).max(50),
-        systemPrompt: z.string().max(10000),
-        metadata: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+        type: z.enum(['assistant', 'worker', 'analyzer']),
       });
 
       const validConfig = {
-        name: 'Test Agent',
-        type: 'assistant' as const,
-        model: 'gpt-4',
         maxTokens: 4000,
+        metadata: {
+          enabled: true,
+          priority: 5,
+          version: '1.0',
+        },
+        model: 'gpt-4',
+        name: 'Test Agent',
+        systemPrompt: 'You are a helpful assistant.',
         temperature: 0.7,
         tools: ['web_search', 'calculator'],
-        systemPrompt: 'You are a helpful assistant.',
-        metadata: {
-          version: '1.0',
-          priority: 5,
-          enabled: true
-        }
+        type: 'assistant' as const,
       };
 
       const result = AgentConfigSchema.safeParse(validConfig);
@@ -107,7 +125,7 @@ describe('Security Input Validation Integration Tests', () => {
         { ...validConfig, systemPrompt: 'x'.repeat(10001) }, // Prompt too long
       ];
 
-      invalidConfigs.forEach(config => {
+      invalidConfigs.forEach((config) => {
         const result = AgentConfigSchema.safeParse(config);
         expect(result.success).toBe(false);
       });
@@ -124,7 +142,7 @@ describe('Security Input Validation Integration Tests', () => {
         "' OR 1=1 --",
         "admin'--",
         "' OR 'x'='x",
-        "'; EXEC sp_configure 'show advanced options', 1 --"
+        "'; EXEC sp_configure 'show advanced options', 1 --",
       ];
 
       const sanitizeSQL = (input: string): string => {
@@ -132,11 +150,13 @@ describe('Security Input Validation Integration Tests', () => {
         const sqlPatterns = [
           /('|(\\'))+.*(;|--|\||\/\*(\s|\S)*?\*\/)/i,
           /(union|select|insert|delete|update|drop|create|alter|exec|execute)/i,
-          /('|(\\'))\s*(or|and)\s*('|(\\'))/i
+          /('|(\\'))\s*(or|and)\s*('|(\\'))/i,
         ];
 
-        const containsSqlInjection = sqlPatterns.some(pattern => pattern.test(input));
-        
+        const containsSqlInjection = sqlPatterns.some((pattern) =>
+          pattern.test(input),
+        );
+
         if (containsSqlInjection) {
           throw new Error('Potential SQL injection detected');
         }
@@ -145,13 +165,15 @@ describe('Security Input Validation Integration Tests', () => {
         return input.replace(/'/g, "''");
       };
 
-      maliciousSqlInputs.forEach(maliciousInput => {
-        expect(() => sanitizeSQL(maliciousInput)).toThrow('Potential SQL injection detected');
+      maliciousSqlInputs.forEach((maliciousInput) => {
+        expect(() => sanitizeSQL(maliciousInput)).toThrow(
+          'Potential SQL injection detected',
+        );
       });
 
       // Valid inputs should pass
       const validInputs = ['john doe', 'user@example.com', 'normal text'];
-      validInputs.forEach(input => {
+      validInputs.forEach((input) => {
         expect(() => sanitizeSQL(input)).not.toThrow();
       });
     });
@@ -161,18 +183,18 @@ describe('Security Input Validation Integration Tests', () => {
         id: z.string().uuid(),
         limit: z.number().int().min(1).max(1000),
         offset: z.number().int().min(0),
+        search: z.string().max(255).optional(),
         sortBy: z.enum(['name', 'created_at', 'updated_at', 'id']),
         sortOrder: z.enum(['asc', 'desc']),
-        search: z.string().max(255).optional()
       });
 
       const validParams = {
         id: '550e8400-e29b-41d4-a716-446655440000',
         limit: 50,
         offset: 0,
+        search: 'valid search term',
         sortBy: 'created_at' as const,
         sortOrder: 'desc' as const,
-        search: 'valid search term'
       };
 
       const result = QueryParamSchema.safeParse(validParams);
@@ -184,10 +206,10 @@ describe('Security Input Validation Integration Tests', () => {
         { ...validParams, limit: 1001 },
         { ...validParams, offset: -1 },
         { ...validParams, sortBy: 'invalid_column' },
-        { ...validParams, search: 'x'.repeat(256) }
+        { ...validParams, search: 'x'.repeat(256) },
       ];
 
-      invalidParams.forEach(params => {
+      invalidParams.forEach((params) => {
         const result = QueryParamSchema.safeParse(params);
         expect(result.success).toBe(false);
       });
@@ -206,7 +228,7 @@ describe('Security Input Validation Integration Tests', () => {
         '<embed src="javascript:alert(1)">',
         '<link rel="stylesheet" href="javascript:alert(1)">',
         '<style>@import "javascript:alert(1)";</style>',
-        '<meta http-equiv="refresh" content="0;url=javascript:alert(1)">'
+        '<meta http-equiv="refresh" content="0;url=javascript:alert(1)">',
       ];
 
       const sanitizeHtml = (input: string): string => {
@@ -220,9 +242,9 @@ describe('Security Input Validation Integration Tests', () => {
           .replace(/<embed[^>]*>/gi, '');
       };
 
-      xssPayloads.forEach(payload => {
+      xssPayloads.forEach((payload) => {
         const sanitized = sanitizeHtml(payload);
-        
+
         // Should not contain script tags or javascript: protocol
         expect(sanitized).not.toContain('<script');
         expect(sanitized).not.toContain('javascript:');
@@ -238,9 +260,9 @@ describe('Security Input Validation Integration Tests', () => {
 
     it('should validate and sanitize user-generated content', async () => {
       const ContentSchema = z.object({
-        title: z.string().min(1).max(200),
         content: z.string().max(10000),
-        tags: z.array(z.string().max(50)).max(20)
+        tags: z.array(z.string().max(50)).max(20),
+        title: z.string().min(1).max(200),
       });
 
       const sanitizeContent = (data: any) => {
@@ -257,20 +279,20 @@ describe('Security Input Validation Integration Tests', () => {
         };
 
         return {
-          title: sanitizeHtml(validation.data.title),
           content: sanitizeHtml(validation.data.content),
-          tags: validation.data.tags.map(tag => sanitizeHtml(tag))
+          tags: validation.data.tags.map((tag) => sanitizeHtml(tag)),
+          title: sanitizeHtml(validation.data.title),
         };
       };
 
       const userContent = {
-        title: 'My Blog Post <script>alert("hack")</script>',
         content: '<p>This is safe content</p><script>alert("xss")</script>',
-        tags: ['tech', '<script>alert("tag")</script>', 'programming']
+        tags: ['tech', '<script>alert("tag")</script>', 'programming'],
+        title: 'My Blog Post <script>alert("hack")</script>',
       };
 
       const sanitized = sanitizeContent(userContent);
-      
+
       expect(sanitized.title).not.toContain('<script');
       expect(sanitized.content).toContain('<p>This is safe content</p>');
       expect(sanitized.content).not.toContain('<script');
@@ -281,27 +303,27 @@ describe('Security Input Validation Integration Tests', () => {
   describe('Input Length and Format Validation', () => {
     it('should enforce input length limits', async () => {
       const MessageSchema = z.object({
-        shortText: z.string().max(100),
-        mediumText: z.string().max(1000),
+        code: z.string().max(50000),
         longText: z.string().max(10000),
-        code: z.string().max(50000)
+        mediumText: z.string().max(1000),
+        shortText: z.string().max(100),
       });
 
       const validMessage = {
-        shortText: 'A'.repeat(100),
-        mediumText: 'B'.repeat(1000),
+        code: 'D'.repeat(50000),
         longText: 'C'.repeat(10000),
-        code: 'D'.repeat(50000)
+        mediumText: 'B'.repeat(1000),
+        shortText: 'A'.repeat(100),
       };
 
       const result = MessageSchema.safeParse(validMessage);
       expect(result.success).toBe(true);
 
       const invalidMessage = {
-        shortText: 'A'.repeat(101),
-        mediumText: 'B'.repeat(1001),
+        code: 'D'.repeat(50001),
         longText: 'C'.repeat(10001),
-        code: 'D'.repeat(50001)
+        mediumText: 'B'.repeat(1001),
+        shortText: 'A'.repeat(101),
       };
 
       const invalidResult = MessageSchema.safeParse(invalidMessage);
@@ -311,17 +333,20 @@ describe('Security Input Validation Integration Tests', () => {
     it('should validate email and URL formats', async () => {
       const ContactSchema = z.object({
         email: z.string().email(),
+        phone: z
+          .string()
+          .regex(/^\+?[\d\s\-\(\)]+$/)
+          .optional(),
         website: z.string().url().optional(),
-        phone: z.string().regex(/^\+?[\d\s\-\(\)]+$/).optional()
       });
 
       const validContacts = [
         { email: 'user@example.com' },
         { email: 'test+tag@domain.co.uk', website: 'https://example.com' },
-        { email: 'name@domain.org', phone: '+1 (555) 123-4567' }
+        { email: 'name@domain.org', phone: '+1 (555) 123-4567' },
       ];
 
-      validContacts.forEach(contact => {
+      validContacts.forEach((contact) => {
         const result = ContactSchema.safeParse(contact);
         expect(result.success).toBe(true);
       });
@@ -330,10 +355,10 @@ describe('Security Input Validation Integration Tests', () => {
         { email: 'invalid-email' },
         { email: 'user@', website: 'not-a-url' },
         { email: '@domain.com' },
-        { email: 'user@domain', phone: 'invalid-phone-format!@#' }
+        { email: 'user@domain', phone: 'invalid-phone-format!@#' },
       ];
 
-      invalidContacts.forEach(contact => {
+      invalidContacts.forEach((contact) => {
         const result = ContactSchema.safeParse(contact);
         expect(result.success).toBe(false);
       });
@@ -343,17 +368,27 @@ describe('Security Input Validation Integration Tests', () => {
   describe('File Upload Validation', () => {
     it('should validate file uploads securely', async () => {
       const FileUploadSchema = z.object({
+        content: z.string(), // base64 encoded
         filename: z.string().regex(/^[a-zA-Z0-9\-_\.]+$/),
-        mimeType: z.enum(['image/jpeg', 'image/png', 'image/gif', 'text/plain', 'application/pdf']),
-        size: z.number().int().min(1).max(50 * 1024 * 1024), // 50MB max
-        content: z.string() // base64 encoded
+        mimeType: z.enum([
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'text/plain',
+          'application/pdf',
+        ]),
+        size: z
+          .number()
+          .int()
+          .min(1)
+          .max(50 * 1024 * 1024), // 50MB max
       });
 
       const validFile = {
+        content: 'dGVzdCBjb250ZW50', // base64 for "test content"
         filename: 'document.pdf',
         mimeType: 'application/pdf' as const,
         size: 1024 * 1024, // 1MB
-        content: 'dGVzdCBjb250ZW50' // base64 for "test content"
       };
 
       const result = FileUploadSchema.safeParse(validFile);
@@ -367,7 +402,7 @@ describe('Security Input Validation Integration Tests', () => {
         { ...validFile, filename: 'file with spaces.pdf' }, // Invalid chars
       ];
 
-      maliciousFiles.forEach(file => {
+      maliciousFiles.forEach((file) => {
         const result = FileUploadSchema.safeParse(file);
         expect(result.success).toBe(false);
       });
@@ -386,13 +421,13 @@ describe('Security Input Validation Integration Tests', () => {
         '<%',
         'bash',
         'cmd.exe',
-        'powershell'
+        'powershell',
       ];
 
       const detectMaliciousContent = (content: string): boolean => {
         const lowerContent = content.toLowerCase();
-        return suspiciousPatterns.some(pattern => 
-          lowerContent.includes(pattern.toLowerCase())
+        return suspiciousPatterns.some((pattern) =>
+          lowerContent.includes(pattern.toLowerCase()),
         );
       };
 
@@ -402,10 +437,10 @@ describe('Security Input Validation Integration Tests', () => {
         'javascript:void(0)',
         '<?php system($_GET["cmd"]); ?>',
         'cmd.exe /c dir',
-        'powershell -Command "Get-Process"'
+        'powershell -Command "Get-Process"',
       ];
 
-      maliciousContents.forEach(content => {
+      maliciousContents.forEach((content) => {
         expect(detectMaliciousContent(content)).toBe(true);
       });
 
@@ -413,10 +448,10 @@ describe('Security Input Validation Integration Tests', () => {
         'This is a normal document.',
         'function description in text',
         'Scripts are useful tools',
-        'JavaScript is a programming language'
+        'JavaScript is a programming language',
       ];
 
-      safeContents.forEach(content => {
+      safeContents.forEach((content) => {
         expect(detectMaliciousContent(content)).toBe(false);
       });
     });
@@ -425,18 +460,22 @@ describe('Security Input Validation Integration Tests', () => {
   describe('API Rate Limiting Validation', () => {
     it('should validate rate limiting parameters', async () => {
       const RateLimitSchema = z.object({
-        windowMs: z.number().int().min(1000).max(24 * 60 * 60 * 1000), // 1s to 24h
-        maxRequests: z.number().int().min(1).max(10000),
         keyGenerator: z.enum(['ip', 'user', 'session']),
+        maxRequests: z.number().int().min(1).max(10000),
+        skipFailedRequests: z.boolean().optional(),
         skipSuccessfulRequests: z.boolean().optional(),
-        skipFailedRequests: z.boolean().optional()
+        windowMs: z
+          .number()
+          .int()
+          .min(1000)
+          .max(24 * 60 * 60 * 1000), // 1s to 24h
       });
 
       const validRateLimit = {
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        maxRequests: 100,
         keyGenerator: 'ip' as const,
-        skipSuccessfulRequests: false
+        maxRequests: 100,
+        skipSuccessfulRequests: false,
+        windowMs: 15 * 60 * 1000, // 15 minutes
       };
 
       const result = RateLimitSchema.safeParse(validRateLimit);
@@ -447,10 +486,10 @@ describe('Security Input Validation Integration Tests', () => {
         { ...validRateLimit, windowMs: 25 * 60 * 60 * 1000 }, // Too long
         { ...validRateLimit, maxRequests: 0 }, // Too few
         { ...validRateLimit, maxRequests: 10001 }, // Too many
-        { ...validRateLimit, keyGenerator: 'invalid' }
+        { ...validRateLimit, keyGenerator: 'invalid' },
       ];
 
-      invalidRateLimits.forEach(rateLimit => {
+      invalidRateLimits.forEach((rateLimit) => {
         const result = RateLimitSchema.safeParse(rateLimit);
         expect(result.success).toBe(false);
       });
@@ -469,14 +508,15 @@ describe('Security Input Validation Integration Tests', () => {
         '& net user',
         '|| dir c:\\',
         '; curl malicious.com',
-        '`cat ~/.ssh/id_rsa`'
+        '`cat ~/.ssh/id_rsa`',
       ];
 
       const validateCommand = (input: string): void => {
         // Check for command injection patterns
         const dangerousChars = /[;&|`$(){}]/;
-        const commandPatterns = /(ls|cat|rm|curl|wget|nc|telnet|ssh|scp|rsync)/i;
-        
+        const commandPatterns =
+          /(ls|cat|rm|curl|wget|nc|telnet|ssh|scp|rsync)/i;
+
         if (dangerousChars.test(input) || commandPatterns.test(input)) {
           throw new Error('Potential command injection detected');
         }
@@ -487,12 +527,17 @@ describe('Security Input Validation Integration Tests', () => {
         }
       };
 
-      commandInjectionPatterns.forEach(maliciousInput => {
+      commandInjectionPatterns.forEach((maliciousInput) => {
         expect(() => validateCommand(maliciousInput)).toThrow();
       });
 
-      const safeInputs = ['filename.txt', 'user-data', 'report_2024', 'document.pdf'];
-      safeInputs.forEach(input => {
+      const safeInputs = [
+        'filename.txt',
+        'user-data',
+        'report_2024',
+        'document.pdf',
+      ];
+      safeInputs.forEach((input) => {
         expect(() => validateCommand(input)).not.toThrow();
       });
     });
@@ -501,19 +546,23 @@ describe('Security Input Validation Integration Tests', () => {
   describe('Integer Overflow and Boundary Validation', () => {
     it('should validate numeric boundaries correctly', async () => {
       const NumericSchema = z.object({
-        smallInt: z.number().int().min(-32768).max(32767),
-        positiveInt: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
-        percentage: z.number().min(0).max(100),
         currency: z.number().min(0).max(999999.99),
-        timestamp: z.number().int().min(0).max(Math.pow(2, 32) - 1)
+        percentage: z.number().min(0).max(100),
+        positiveInt: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+        smallInt: z.number().int().min(-32768).max(32767),
+        timestamp: z
+          .number()
+          .int()
+          .min(0)
+          .max(Math.pow(2, 32) - 1),
       });
 
       const validNumbers = {
-        smallInt: 1000,
-        positiveInt: 123456,
-        percentage: 75.5,
         currency: 123.45,
-        timestamp: Math.floor(Date.now() / 1000)
+        percentage: 75.5,
+        positiveInt: 123456,
+        smallInt: 1000,
+        timestamp: Math.floor(Date.now() / 1000),
       };
 
       const result = NumericSchema.safeParse(validNumbers);
@@ -524,10 +573,10 @@ describe('Security Input Validation Integration Tests', () => {
         { ...validNumbers, positiveInt: -1 }, // Negative
         { ...validNumbers, percentage: 101 }, // Over 100%
         { ...validNumbers, currency: 1000000 }, // Too expensive
-        { ...validNumbers, timestamp: -1 } // Invalid timestamp
+        { ...validNumbers, timestamp: -1 }, // Invalid timestamp
       ];
 
-      invalidNumbers.forEach(numbers => {
+      invalidNumbers.forEach((numbers) => {
         const result = NumericSchema.safeParse(numbers);
         expect(result.success).toBe(false);
       });

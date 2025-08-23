@@ -7,8 +7,8 @@ export const LeaderboardPage = lazy(() =>
   import('../LeaderboardPage').then(module => ({ default: module.LeaderboardPage }))
 );
 
-export const EpicLlmKeyManager = lazy(() => 
-  import('../EpicLlmKeyManager').then(module => ({ default: module.EpicLlmKeyManager }))
+export const EnhancedLlmKeyManager = lazy(() => 
+  import('../EnhancedLlmKeyManager').then(module => ({ default: module.EnhancedLlmKeyManager }))
 );
 
 export const LlmApiKeyManagementPage = lazy(() => 
@@ -81,7 +81,7 @@ export const LazyLlmKeyManager: React.FC = memo(() => (
       <span className="ml-2 text-gray-400">Loading LLM key manager...</span>
     </div>
   }>
-    <EpicLlmKeyManager />
+    <EnhancedLlmKeyManager />
   </LazyWrapper>
 ));
 

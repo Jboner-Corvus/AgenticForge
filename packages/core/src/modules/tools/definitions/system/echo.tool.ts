@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import type { Tool } from '../../../../types.ts';
 
 export const echoToolParams = z.object({

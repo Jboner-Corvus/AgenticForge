@@ -13,7 +13,10 @@ import { AppError, getErrDetails, UserError } from './utils/errorUtils.ts';
 import { getTools } from './utils/toolLoader.ts';
 
 getLoggerInstance().debug('[WORKER-STARTUP] process.cwd():', process.cwd());
-getLoggerInstance().debug('[WORKER-STARTUP] process.env.PATH:', process.env.PATH);
+getLoggerInstance().debug(
+  '[WORKER-STARTUP] process.env.PATH:',
+  process.env.PATH,
+);
 
 export async function initializeWorker(
   redisConnection: Redis,
@@ -23,11 +26,11 @@ export async function initializeWorker(
     { path: process.env.PATH },
     'Worker process.env.PATH at startup:',
   );
-  
+
   // Afficher les outils détectés au démarrage
   const tools = await getTools();
   getLoggerInstance().info(`${tools.length} tools detected at startup`);
-  
+
   const _jobQueue = new Queue('tasks', { connection: redisConnection });
   const sessionManager = await SessionManager.create(pgClient);
 
@@ -51,12 +54,18 @@ export async function initializeWorker(
             ...process.env,
             PATH: process.env.HOST_SYSTEM_PATH || process.env.PATH,
           };
-          getLoggerInstance().debug(`[WORKER-SPAWN-DEBUG] Spawning command: ${command}`);
-          getLoggerInstance().debug(`[WORKER-SPAWN-DEBUG] With shell: /usr/bin/env bash`);
+          getLoggerInstance().debug(
+            `[WORKER-SPAWN-DEBUG] Spawning command: ${command}`,
+          );
+          getLoggerInstance().debug(
+            `[WORKER-SPAWN-DEBUG] With shell: /usr/bin/env bash`,
+          );
           getLoggerInstance().debug(
             `[WORKER-SPAWN-DEBUG] With cwd: ${config.WORKSPACE_PATH}`,
           );
-          getLoggerInstance().debug(`[WORKER-SPAWN-DEBUG] With env.PATH: ${env.PATH}`);
+          getLoggerInstance().debug(
+            `[WORKER-SPAWN-DEBUG] With env.PATH: ${env.PATH}`,
+          );
 
           const child = _spawn(command, {
             cwd: config.WORKSPACE_PATH,
@@ -120,11 +129,11 @@ export async function initializeWorker(
       }
     },
     {
+      autorun: true,
       concurrency: config.WORKER_CONCURRENCY,
       connection: redisConnection,
       maxStalledCount: config.WORKER_MAX_STALLED_COUNT,
       stalledInterval: config.WORKER_STALLED_INTERVAL_MS,
-      autorun: true,
     },
   );
 
@@ -135,7 +144,7 @@ export async function initializeWorker(
   worker.on('failed', (_job, err) => {
     getLoggerInstance().error({ err }, `Le job ${_job?.id} a échoué`);
   });
-  
+
   worker.on('error', (err) => {
     getLoggerInstance().error({ err }, 'Worker error');
   });
@@ -160,7 +169,7 @@ export async function processJob(
   const channel = `job:${_job.id}:events`;
 
   // Add a small delay to ensure frontend can establish EventSource connection
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
   log.info(`Job ${_job.id} starting after synchronization delay`);
 
   try {
@@ -271,7 +280,7 @@ export async function processJob(
     );
     log.info(`Traitement du job ${_job.id} terminé`);
     // Attendre un peu pour s'assurer que le message 'close' est envoyé
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }
 
@@ -311,19 +320,30 @@ if (process.env.NODE_ENV !== 'test') {
 
   // Gestion d'erreur PostgreSQL avec reconnexion
   pgClient.on('error', (err) => {
-    getLoggerInstance().error({ err }, 'PostgreSQL connection error, attempting to reconnect...');
+    getLoggerInstance().error(
+      { err },
+      'PostgreSQL connection error, attempting to reconnect...',
+    );
     setTimeout(() => {
       pgClient.connect().catch((connectErr) => {
-        getLoggerInstance().error({ err: connectErr }, 'Failed to reconnect to PostgreSQL');
+        getLoggerInstance().error(
+          { err: connectErr },
+          'Failed to reconnect to PostgreSQL',
+        );
       });
     }, 5000);
   });
 
   pgClient.on('end', () => {
-    getLoggerInstance().info('PostgreSQL connection ended, attempting to reconnect...');
+    getLoggerInstance().info(
+      'PostgreSQL connection ended, attempting to reconnect...',
+    );
     setTimeout(() => {
       pgClient.connect().catch((connectErr) => {
-        getLoggerInstance().error({ err: connectErr }, 'Failed to reconnect to PostgreSQL');
+        getLoggerInstance().error(
+          { err: connectErr },
+          'Failed to reconnect to PostgreSQL',
+        );
       });
     }, 2000);
   });
@@ -332,7 +352,10 @@ if (process.env.NODE_ENV !== 'test') {
     await pgClient.connect();
     getLoggerInstance().info('PostgreSQL connected successfully');
   } catch (err) {
-    getLoggerInstance().error({ err }, 'Failed to connect to PostgreSQL initially');
+    getLoggerInstance().error(
+      { err },
+      'Failed to connect to PostgreSQL initially',
+    );
     process.exit(1);
   }
 

@@ -1,5 +1,5 @@
 import { pino } from 'pino';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getLogger, resetLoggerForTesting } from './logger.ts';
 

@@ -2,78 +2,87 @@
 
 ## Overview
 
-This design document outlines the integration of a browser-based developer console accessible through a dedicated route on the AgenticForge server (port 3002). The solution will provide direct access to the browser's JavaScript console and development tools through a web interface, enabling real-time debugging and code execution within the browser environment.
+This design document outlines the integration of a browser-based developer console into the existing AgenticForge React application. Rather than creating a separate standalone application, the console will be integrated as a new component within the existing frontend architecture, accessible through the existing routing system. The solution leverages the current lazy-loading pattern and component structure to provide direct access to the browser's JavaScript console and development tools through the existing web interface.
 
 ## Architecture
 
-### System Integration Pattern
+### Integration with Existing Frontend
 
 ```mermaid
 graph TB
-    subgraph "AgenticForge Server (Port 3002)"
-        A[Express Server] --> B[Static File Handler]
-        A --> C[Console API Routes]
-        A --> D[WebSocket Handler]
+    subgraph "Existing AgenticForge Frontend"
+        A[App.tsx] --> B[Lazy Components]
+        A --> C[Page Router]
+        B --> D[LazyDevConsole]
+        C --> E[dev-console page]
         
-        C --> E[/api/dev-console/*]
-        D --> F[Real-time Communication]
+        F[ControlPanel] --> G[Console Toggle]
+        H[HeaderContainer] --> I[Console Menu Item]
     end
     
-    subgraph "Developer Console Interface"
-        G[Console HTML Page] --> H[JavaScript Console UI]
-        H --> I[Code Editor Component]
-        H --> J[Output Display]
-        H --> K[Browser Tools Integration]
+    subgraph "New Developer Console Components"
+        J[DevConsoleContainer] --> K[CodeEditor]
+        J --> L[OutputDisplay]
+        J --> M[BrowserToolsTabs]
+        J --> N[CommandHistory]
     end
     
-    subgraph "Browser Environment"
-        L[Window Object] --> M[Console API]
-        L --> N[DOM Manipulation]
-        L --> O[Performance Monitoring]
-        L --> P[Storage Access]
+    subgraph "Backend Integration"
+        O[Express Server] --> P[Existing API Routes]
+        P --> Q[/api/dev-console/*]
+        O --> R[clientConsole.api.ts]
     end
     
-    B --> G
-    F --> H
-    E --> M
+    subgraph "Browser APIs"
+        S[Console API] --> T[JavaScript Execution]
+        S --> U[DOM Inspector]
+        S --> V[Storage Manager]
+        S --> W[Performance Monitor]
+    end
+    
+    D --> J
+    E --> J
+    Q --> T
+    R --> S
     
     style A fill:#f9f,stroke:#333
-    style H fill:#bbf,stroke:#333
-    style M fill:#6f9,stroke:#333
+    style J fill:#bbf,stroke:#333
+    style Q fill:#6f9,stroke:#333
 ```
 
 ### Component Architecture
 
-The developer console integration consists of three main layers:
+The developer console integration leverages the existing AgenticForge architecture patterns:
 
-**Server Layer (Port 3002)**
-- Express route handler for `/dev-console` endpoint
-- Static file serving for console interface
-- API endpoints for code execution and result retrieval
-- WebSocket connection for real-time communication
+**React Component Layer**
+- New page route `dev-console` added to existing router
+- Lazy-loaded `DevConsoleContainer` component following existing patterns
+- Integration with existing state management (Zustand stores)
+- Reuse of existing UI components (buttons, panels, themes)
 
-**Interface Layer**
-- HTML/CSS/JavaScript console interface
-- Code editor with syntax highlighting
-- Output display with formatting
-- Browser tools integration panel
+**Backend API Layer**
+- Extension of existing `/api/dev-console/*` routes in `clientConsole.api.ts`
+- Integration with existing Redis pub/sub system
+- Reuse of existing authentication middleware
+- Extension of existing session management
 
 **Execution Layer**
-- Browser JavaScript engine integration
-- Console API wrapper
-- Error handling and security sandboxing
-- Result serialization and transmission
+- Browser JavaScript engine integration through existing client console mechanism
+- Enhanced command processing in existing `clientConsole.api.ts`
+- Error handling through existing error management system
+- Real-time communication via existing Redis channels
 
 ## API Endpoints Reference
 
-### Console Access Route
+### Enhanced Console Routes (Extension of Existing)
 
 | Endpoint | Method | Description | Response |
 |----------|--------|-------------|----------|
-| `/dev-console` | GET | Serves the developer console interface | HTML page with embedded console |
-| `/api/dev-console/execute` | POST | Executes JavaScript code in browser context | Execution result or error |
-| `/api/dev-console/history` | GET | Retrieves command history | Array of previous commands |
-| `/api/dev-console/clear` | DELETE | Clears console history | Success confirmation |
+| `/api/client-console/execute` | POST | **Enhanced** - Executes JavaScript code with advanced features | Execution result or error |
+| `/api/client-console/history` | GET | **New** - Retrieves command history for session | Array of previous commands |
+| `/api/client-console/clear` | DELETE | **New** - Clears console history | Success confirmation |
+| `/api/client-console/inspect` | POST | **New** - Inspects DOM elements | Element properties and methods |
+| `/api/client-console/performance` | GET | **New** - Gets performance metrics | Performance data object |
 
 ### Request/Response Schema
 
@@ -105,42 +114,50 @@ The developer console will use the same authentication mechanism as the existing
 - Session-based access control
 - CORS configuration for cross-origin requests
 
-## Console Interface Components
+## React Component Structure
 
-### Code Editor Component
+### DevConsole Components (Following Existing Patterns)
 
 ```mermaid
 classDiagram
-    class CodeEditor {
-        +monaco: MonacoEditor
-        +language: 'javascript'
-        +theme: 'vs-dark' | 'vs-light'
-        +autoComplete: boolean
-        +lineNumbers: boolean
+    class DevConsoleContainer {
+        +theme: from useTheme()
+        +session: from sessionStore
+        +isDarkMode: boolean
         +executeCode()
-        +clearEditor()
+        +clearConsole()
         +loadHistory()
-        +saveCommand()
+        +toggleTool()
     }
     
-    class OutputDisplay {
-        +results: ExecutionResult[]
+    class CodeEditorPanel {
+        +language: 'javascript'
+        +theme: 'vs-dark' | 'vs-light'
+        +value: string
+        +onChange()
+        +onExecute()
+        +suggestions: string[]
+    }
+    
+    class OutputPanel {
+        +results: ConsoleResult[]
         +formatOutput()
         +clearResults()
         +exportResults()
         +filterByType()
     }
     
-    class BrowserTools {
+    class BrowserToolsTabs {
+        +activeTab: string
+        +onTabChange()
         +inspectElement()
-        +networkMonitor()
-        +performanceProfile()
-        +storageViewer()
-        +cookieManager()
+        +showStorage()
+        +showPerformance()
     }
     
-    CodeEditor --> OutputDisplay : sends results
-    CodeEditor --> BrowserTools : triggers tools
+    DevConsoleContainer --> CodeEditorPanel
+    DevConsoleContainer --> OutputPanel
+    DevConsoleContainer --> BrowserToolsTabs
 ```
 
 ### Browser Integration Features
@@ -221,176 +238,360 @@ interface ConsoleMiddleware {
 - Timeout error management
 - User-friendly error messages
 
-## Console Interface Implementation
+## React Component Implementation
 
-### HTML Structure
+### DevConsoleContainer Component
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgenticForge Developer Console</title>
-    <link rel="stylesheet" href="/dev-console/styles.css">
-</head>
-<body>
-    <div class="console-container">
-        <div class="console-header">
-            <h1>Developer Console</h1>
-            <div class="console-controls">
-                <button id="clear-btn">Clear</button>
-                <button id="settings-btn">Settings</button>
-            </div>
-        </div>
-        
-        <div class="console-content">
-            <div class="code-editor" id="code-editor"></div>
-            <div class="output-panel" id="output-panel"></div>
-        </div>
-        
-        <div class="browser-tools">
-            <div class="tool-tabs">
-                <button class="tab-btn active" data-tab="console">Console</button>
-                <button class="tab-btn" data-tab="elements">Elements</button>
-                <button class="tab-btn" data-tab="network">Network</button>
-                <button class="tab-btn" data-tab="storage">Storage</button>
-            </div>
-            <div class="tool-content" id="tool-content"></div>
-        </div>
-    </div>
-    
-    <script src="/dev-console/console.js"></script>
-</body>
-</html>
-```
+```tsx
+// packages/ui/src/components/DevConsoleContainer.tsx
+import React, { useState, useCallback } from 'react';
+import { useTheme } from '../lib/hooks/useTheme';
+import { useLanguage } from '../lib/contexts/LanguageContext';
+import { useCombinedStore } from '../store';
+import { CodeEditorPanel } from './console/CodeEditorPanel';
+import { OutputPanel } from './console/OutputPanel';
+import { BrowserToolsTabs } from './console/BrowserToolsTabs';
+import { Button } from './ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
-### JavaScript Console Implementation
-
-```typescript
-class DeveloperConsole {
-  private editor: MonacoEditor;
-  private outputPanel: HTMLElement;
-  private commandHistory: string[] = [];
+export const DevConsoleContainer: React.FC = () => {
+  const { isDarkMode } = useTheme();
+  const { translations } = useLanguage();
+  const sessionId = useCombinedStore(state => state.sessionId);
   
-  constructor() {
-    this.initializeEditor();
-    this.setupEventListeners();
-    this.loadCommandHistory();
-  }
+  const [code, setCode] = useState('');
+  const [results, setResults] = useState<ConsoleResult[]>([]);
+  const [activeTab, setActiveTab] = useState('console');
   
-  async executeCode(code: string): Promise<void> {
+  const executeCode = useCallback(async (code: string) => {
     try {
-      const response = await fetch('/api/dev-console/execute', {
+      const response = await fetch('/api/client-console/execute', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.getAuthToken()}`
+          'X-Session-ID': sessionId || ''
         },
-        body: JSON.stringify({ code })
+        body: JSON.stringify({ 
+          command: code,
+          jobId: `console-${Date.now()}`,
+          args: [] 
+        })
       });
       
       const result = await response.json();
-      this.displayResult(result);
-      this.saveToHistory(code);
+      setResults(prev => [...prev, {
+        command: code,
+        result: result.output || result.status,
+        timestamp: Date.now(),
+        type: result.error ? 'error' : 'success'
+      }]);
     } catch (error) {
-      this.displayError(error);
+      setResults(prev => [...prev, {
+        command: code,
+        result: error.message,
+        timestamp: Date.now(),
+        type: 'error'
+      }]);
     }
-  }
+  }, [sessionId]);
   
-  private displayResult(result: ExecuteResponse): void {
-    const resultElement = document.createElement('div');
-    resultElement.className = 'console-result';
-    resultElement.innerHTML = this.formatResult(result);
-    this.outputPanel.appendChild(resultElement);
-  }
-}
+  return (
+    <div className="h-full flex flex-col bg-background text-foreground">
+      <div className="border-b border-border p-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Developer Console</h1>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setResults([])}
+            >
+              Clear
+            </Button>
+          </div>
+        </div>
+      </div>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="console">Console</TabsTrigger>
+          <TabsTrigger value="elements">Elements</TabsTrigger>
+          <TabsTrigger value="network">Network</TabsTrigger>
+          <TabsTrigger value="storage">Storage</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="console" className="flex-1 flex flex-col gap-4 p-4">
+          <div className="flex-1 grid grid-rows-2 gap-4">
+            <CodeEditorPanel 
+              value={code}
+              onChange={setCode}
+              onExecute={executeCode}
+              theme={isDarkMode ? 'vs-dark' : 'vs-light'}
+            />
+            <OutputPanel 
+              results={results}
+              onClear={() => setResults([])}
+            />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="elements" className="flex-1 p-4">
+          <BrowserToolsTabs type="elements" />
+        </TabsContent>
+        
+        <TabsContent value="network" className="flex-1 p-4">
+          <BrowserToolsTabs type="network" />
+        </TabsContent>
+        
+        <TabsContent value="storage" className="flex-1 p-4">
+          <BrowserToolsTabs type="storage" />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
 ```
 
-## Server Route Implementation
-
-### Express Route Handler
+### Integration with Existing App Router
 
 ```typescript
-// Route handler in webServer.ts
-app.get('/dev-console', (req: Request, res: Response) => {
-  const consolePath = path.join(__dirname, 'static', 'dev-console', 'index.html');
-  res.sendFile(consolePath);
-});
+// packages/ui/src/App.tsx - Extension of existing renderMainContent
+const renderMainContent = () => {
+  switch (currentPage) {
+    case 'chat':
+      return (
+        <div className="flex flex-col h-full w-full min-w-0">
+          <div className="flex-grow overflow-y-auto min-h-0">
+            <ChatMessagesContainer />
+          </div>
+          <div className="p-spacious flex items-center sticky bottom-0 bg-background border-t border-border flex-shrink-0">
+            <UserInput />
+          </div>
+        </div>
+      );
+    case 'leaderboard':
+      return <LazyLeaderboardPage />;
+    case 'llm-api-keys':
+      return <LazyLlmKeyManager />;
+    case 'oauth':
+      return <LazyOAuthPage />;
+    case 'dev-console': // NEW PAGE
+      return <LazyDevConsole />;
+    default:
+      return null;
+  }
+};
 
-app.use('/dev-console/static', express.static(
-  path.join(__dirname, 'static', 'dev-console')
-));
+// packages/ui/src/components/optimized/LazyComponents.tsx - New lazy component
+export const DevConsoleContainer = lazy(() => 
+  import('../DevConsoleContainer').then(module => ({ default: module.DevConsoleContainer }))
+);
 
-// API routes for console functionality
-app.post('/api/dev-console/execute', async (req: Request, res: Response) => {
+export const LazyDevConsole: React.FC = () => (
+  <LazyWrapper fallback={
+    <div className="flex items-center justify-center h-full bg-gray-900/50 rounded-lg">
+      <LoadingSpinner className="h-6 w-6" />
+      <span className="ml-2 text-gray-400 text-sm">Loading developer console...</span>
+    </div>
+  }>
+    <DevConsoleContainer />
+  </LazyWrapper>
+);
+```
+
+## Backend Integration (Extension of Existing)
+
+### Enhanced clientConsole.api.ts
+
+```typescript
+// packages/core/src/modules/api/clientConsole.api.ts - Extensions
+
+// Enhanced command handling for developer console
+router.post('/api/client-console/execute', async (req: express.Request, res: express.Response) => {
   try {
-    const { code, context = 'window' } = req.body;
+    const { jobId, command, args = [], context = 'window', timeout = 5000 } = req.body;
+    const sessionId = req.headers['x-session-id'] as string;
     
-    // Validate and sanitize code
-    const sanitizedCode = sanitizeJavaScript(code);
+    if (!jobId || !command) {
+      return res.status(400).json({ error: 'Missing jobId or command' });
+    }
     
-    // Execute code through existing client console mechanism
-    const result = await executeInBrowserContext(sanitizedCode, context);
+    // Enhanced command processing with developer console features
+    let jsCommand = command;
+    let isDeveloperCommand = false;
     
-    res.json({
-      success: true,
-      result: result.output,
-      type: typeof result.output,
-      executionTime: result.executionTime
+    // Developer console specific commands
+    switch (command) {
+      case 'inspect':
+        if (args[0]) {
+          jsCommand = `JSON.stringify(Object.getOwnPropertyDescriptors(${args[0]}))`;
+          isDeveloperCommand = true;
+        }
+        break;
+      case 'methods':
+        if (args[0]) {
+          jsCommand = `Object.getOwnPropertyNames(${args[0]}).filter(name => typeof ${args[0]}[name] === 'function')`;
+          isDeveloperCommand = true;
+        }
+        break;
+      case 'proto':
+        if (args[0]) {
+          jsCommand = `Object.getPrototypeOf(${args[0]})`;
+          isDeveloperCommand = true;
+        }
+        break;
+      case 'trace':
+        jsCommand = 'console.trace(); "Stack trace logged to browser console"';
+        isDeveloperCommand = true;
+        break;
+      default:
+        // Handle existing predefined commands from original implementation
+        switch (command) {
+          case 'ls':
+            jsCommand = 'Object.keys(window)';
+            break;
+          case 'url':
+            jsCommand = 'window.location.href';
+            break;
+          // ... other existing commands
+        }
+    }
+    
+    const redisClient = getRedisClientInstance();
+    
+    // Send enhanced command to frontend via SSE
+    const channel = `job:${jobId}:events`;
+    const message = JSON.stringify({
+      type: 'execute_client_command',
+      content: jsCommand,
+      originalCommand: command,
+      args: args,
+      context: context,
+      timeout: timeout,
+      isDeveloperCommand
+    });
+    
+    await redisClient.publish(channel, message);
+    
+    res.json({ 
+      status: "Enhanced command sent to client. Awaiting result...",
+      command: command,
+      args: args,
+      context: context
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      error: error.message
-    });
+    getLoggerInstance().error({ error }, 'Error executing enhanced client console command');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// New route for command history
+router.get('/api/client-console/history/:sessionId', async (req: express.Request, res: express.Response) => {
+  try {
+    const { sessionId } = req.params;
+    const redisClient = getRedisClientInstance();
+    
+    const history = await redisClient.lrange(`console:history:${sessionId}`, 0, -1);
+    const commands = history.map(h => JSON.parse(h));
+    
+    res.json({ history: commands });
+  } catch (error) {
+    getLoggerInstance().error({ error }, 'Error retrieving console history');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// New route for clearing history
+router.delete('/api/client-console/history/:sessionId', async (req: express.Request, res: express.Response) => {
+  try {
+    const { sessionId } = req.params;
+    const redisClient = getRedisClientInstance();
+    
+    await redisClient.del(`console:history:${sessionId}`);
+    
+    res.json({ message: 'Console history cleared' });
+  } catch (error) {
+    getLoggerInstance().error({ error }, 'Error clearing console history');
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 ```
 
 ## Testing Strategy
 
-### Unit Testing
+### Unit Testing (Following Existing Patterns)
 
-**Code Execution Tests**
-- Valid JavaScript execution
-- Syntax error handling
-- Security restriction enforcement
-- Result serialization accuracy
+**Component Tests (using existing Vitest setup)**
+```typescript
+// packages/ui/src/components/__tests__/DevConsoleContainer.test.tsx
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { DevConsoleContainer } from '../DevConsoleContainer';
+import { vi } from 'vitest';
 
-**API Endpoint Tests**
-- Authentication validation
-- Request/response format verification
-- Error handling scenarios
-- Rate limiting functionality
+describe('DevConsoleContainer', () => {
+  it('should execute JavaScript code and display results', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({ status: 'Command sent' })
+    });
+    
+    render(<DevConsoleContainer />);
+    
+    const codeInput = screen.getByRole('textbox');
+    const executeButton = screen.getByText('Execute');
+    
+    fireEvent.change(codeInput, { target: { value: 'console.log("test")' } });
+    fireEvent.click(executeButton);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Command sent')).toBeInTheDocument();
+    });
+  });
+});
+```
 
-**Interface Component Tests**
-- Code editor functionality
-- Output display formatting
-- Browser tools integration
-- User interaction handling
+**API Tests (extending existing test suite)**
+```typescript
+// packages/core/src/modules/api/__tests__/clientConsole.api.test.ts
+import request from 'supertest';
+import { app } from '../../../webServer';
+
+describe('Enhanced Client Console API', () => {
+  it('should handle developer console commands', async () => {
+    const response = await request(app)
+      .post('/api/client-console/execute')
+      .send({
+        jobId: 'test-job',
+        command: 'inspect',
+        args: ['window']
+      })
+      .expect(200);
+      
+    expect(response.body.status).toBe('Enhanced command sent to client. Awaiting result...');
+  });
+  
+  it('should retrieve command history', async () => {
+    await request(app)
+      .get('/api/client-console/history/test-session')
+      .expect(200);
+  });
+});
+```
 
 ### Integration Testing
 
-**Browser Integration Tests**
-- Console API access verification
-- DOM manipulation capabilities
-- Storage access functionality
-- Performance monitoring accuracy
+**Browser Integration (extending existing Playwright tests)**
+- Console API access verification through existing browser automation
+- DOM manipulation testing using existing Playwright setup
+- Storage access testing with existing authentication flow
+- Performance monitoring integration with existing metrics
 
-**Security Testing**
-- Malicious code prevention
-- Privilege escalation attempts
-- Cross-site scripting protection
-- Resource consumption limits
+### Security Testing
 
-### Performance Testing
-
-**Execution Performance**
-- Code execution latency
-- Memory usage monitoring
-- Concurrent user handling
-- Large result set processing
+**Code Execution Security (using existing security framework)**
+- Malicious code prevention through existing sanitization
+- Timeout enforcement using existing Redis mechanisms
+- Authentication testing with existing token system
+- Session management testing with existing session flow
 
 ## Security Considerations
 
@@ -416,35 +617,47 @@ app.post('/api/dev-console/execute', async (req: Request, res: Response) => {
 - Session timeout management
 - Audit logging for console usage
 
-## Browser Compatibility
+## Implementation Summary
 
-### Supported Browsers
+### What Can Be Reused from Existing Architecture
 
-| Browser | Version | Console Features | Browser Tools |
-|---------|---------|------------------|---------------|
-| Chrome | 80+ | Full Support | Complete |
-| Firefox | 75+ | Full Support | Complete |
-| Safari | 13+ | Partial Support | Limited |
-| Edge | 80+ | Full Support | Complete |
+✅ **Complete Reuse - No Changes Needed:**
+- Express server and routing system
+- Authentication and session management
+- Redis pub/sub communication system
+- Existing `clientConsole.api.ts` endpoints
+- React app structure and lazy loading pattern
+- State management (Zustand stores)
+- UI components and theming system
+- Build and deployment pipeline
 
-### Feature Detection
+✅ **Minor Extensions - Small Additions:**
+- Add new page route `dev-console` to existing router
+- Add new lazy component `LazyDevConsole`
+- Extend existing API routes with history and advanced commands
+- Add menu item to existing navigation
+- Enhance existing command processing
 
-```typescript
-interface BrowserCapabilities {
-  hasConsoleAPI: boolean;
-  hasPerformanceAPI: boolean;
-  hasStorageAPI: boolean;
-  hasDOM: boolean;
-  supportsES6: boolean;
-}
+✅ **New Components - Following Existing Patterns:**
+- `DevConsoleContainer` component (follows existing container patterns)
+- `CodeEditorPanel`, `OutputPanel`, `BrowserToolsTabs` (follows existing UI patterns)
+- Console-specific state management (extends existing store pattern)
 
-function detectBrowserCapabilities(): BrowserCapabilities {
-  return {
-    hasConsoleAPI: typeof console !== 'undefined',
-    hasPerformanceAPI: typeof performance !== 'undefined',
-    hasStorageAPI: typeof localStorage !== 'undefined',
-    hasDOM: typeof document !== 'undefined',
-    supportsES6: typeof Symbol !== 'undefined'
-  };
-}
-```
+### Why This Approach is Optimal
+
+1. **Zero Infrastructure Changes**: Uses existing server, database, and authentication
+2. **Consistent UX**: Follows existing design system and navigation patterns
+3. **Minimal Risk**: Extensions rather than rewrites reduce potential bugs
+4. **Fast Development**: Reuses 90% of existing codebase
+5. **Maintainability**: Single codebase, consistent patterns, shared dependencies
+
+### Development Effort Estimate
+
+**Total Effort: ~3-5 days**
+- Day 1: Create React components following existing patterns
+- Day 2: Extend API routes and enhance command processing
+- Day 3: Integrate with existing navigation and state management
+- Day 4: Testing with existing test framework
+- Day 5: Polish and documentation
+
+This approach leverages the existing AgenticForge architecture completely, requiring minimal new infrastructure while providing a powerful integrated developer console experience.

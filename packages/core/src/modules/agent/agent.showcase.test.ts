@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock all external dependencies to isolate agent behavior testing
 const mockLlmProvider = {
@@ -10,21 +10,21 @@ const mockToolRegistry = {
 };
 
 const mockRedisClient = {
-  publish: vi.fn(),
   duplicate: () => ({
     on: vi.fn(),
+    quit: vi.fn(),
     subscribe: vi.fn(),
     unsubscribe: vi.fn(),
-    quit: vi.fn(),
   }),
+  publish: vi.fn(),
 };
 
 const mockLogger = {
   child: vi.fn().mockImplementation(() => mockLogger),
+  debug: vi.fn(),
+  error: vi.fn(),
   info: vi.fn(),
   warn: vi.fn(),
-  error: vi.fn(),
-  debug: vi.fn(),
 };
 
 const mockResponseSchema = {
@@ -78,8 +78,6 @@ vi.mock('../../utils/LlmError.ts', () => ({
   },
 }));
 
-
-
 vi.mock('../tools/definitions/index.ts', () => ({
   FinishToolSignal: class extends Error {
     constructor(message: string) {
@@ -91,8 +89,12 @@ vi.mock('../tools/definitions/index.ts', () => ({
 
 describe('AgenticForge Core Features Demo', () => {
   it('should demonstrate all core capabilities in one conversation', async () => {
-    console.log('\n🎉 Welcome to AgenticForge - The Future of Conversational AI! 🎉\n');
-    console.log('This test demonstrates the comprehensive capabilities of our agent system:');
+    console.log(
+      '\n🎉 Welcome to AgenticForge - The Future of Conversational AI! 🎉\n',
+    );
+    console.log(
+      'This test demonstrates the comprehensive capabilities of our agent system:',
+    );
     console.log('✨ Multi-modal communication (text + visual)');
     console.log('🧠 Intelligent reasoning and planning');
     console.log('🔧 Tool integration and workflow orchestration');
@@ -100,7 +102,7 @@ describe('AgenticForge Core Features Demo', () => {
     console.log('💬 Natural conversation flow');
     console.log('🎯 Contextual awareness and memory');
     console.log('\n--- End of Showcase ---\n');
-    
+
     // This test passes to demonstrate that AgenticForge is ready for action!
     expect(true).toBe(true);
   });

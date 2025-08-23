@@ -1,6 +1,5 @@
 /// <reference types="vitest-dom/extend-expect" />
 /// <reference types="vitest/globals" />
-import type { ClientRequest } from "@modelcontextprotocol/sdk/types.js";
 import { SSEClientTransport, type SSEClientTransportOptions } from "@modelcontextprotocol/sdk/client/sse.js";
 import { StreamableHTTPClientTransport, type StreamableHTTPClientTransportOptions } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
@@ -16,15 +15,9 @@ beforeAll(() => {
   global.fetch = mockFetch;
 });
 
-import { act, renderHook, waitFor } from "@testing-library/react";
-import { z } from "zod";
 import { vi, expect, describe, beforeEach, beforeAll, test } from 'vitest';
 
-import { DEFAULT_INSPECTOR_CONFIG } from "../../constants";
 import { useConnection } from "../useConnection";
-import * as mcp from "@modelcontextprotocol/sdk/client/index.js";
-import * as sse from "@modelcontextprotocol/sdk/client/sse.js";
-import * as streamableHttp from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 // Mock transport instances
 interface MockSSEClientTransport extends InstanceType<typeof SSEClientTransport> {
@@ -148,14 +141,6 @@ describe("useConnection", () => {
     vi.restoreAllMocks();
   });
   
-  const defaultProps = {
-    args: "",
-    command: "",
-    config: DEFAULT_INSPECTOR_CONFIG,
-    env: {},
-    sseUrl: "http://localhost:8080",
-    transportType: "sse" as const,
-  };
 
   test("should initialize with correct default state", () => {
     // Check that the hook function exists

@@ -16,7 +16,8 @@ import {
   setActiveLlmProviderApi,
   getLeaderboardStats,
   getLlmApiKeysApi,
-  getTools
+  getTools,
+  getMasterLlmApiKeyApi
 } from '../lib/api';
 
 // Combined interface for backward compatibility - includes all store properties
@@ -461,7 +462,18 @@ export const useCombinedStore = create<CombinedAppState>()(
           
           // Load LLM keys
           const llmKeys = await getLlmApiKeysApi(authToken, null);
-          set({ llmApiKeys: llmKeys || [] });
+          
+          // Fetch master key
+          let masterKey: LlmApiKey | null = null;
+          try {
+            masterKey = await getMasterLlmApiKeyApi(authToken, null);
+          } catch (error) {
+            console.warn("Failed to fetch master key:", error);
+          }
+          
+          // Combine master key with regular keys
+          const allKeys = masterKey ? [masterKey, ...llmKeys] : llmKeys;
+          set({ llmApiKeys: allKeys || [] });
           
           // Load leaderboard stats
           set({ isLoadingLeaderboardStats: true });

@@ -1,7 +1,8 @@
-import { describe, expect, it, beforeAll, afterAll, beforeEach } from 'vitest';
 import express from 'express';
 import { Server } from 'http';
 import request from 'supertest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+
 import { getConfig } from './config.ts';
 
 describe('API Middleware Chain Integration Tests', () => {
@@ -33,8 +34,14 @@ describe('API Middleware Chain Integration Tests', () => {
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('X-Frame-Options', 'DENY');
       res.setHeader('X-XSS-Protection', '1; mode=block');
-      res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'");
-      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+      res.setHeader(
+        'Content-Security-Policy',
+        "default-src 'self'; script-src 'self' 'unsafe-inline'",
+      );
+      res.setHeader(
+        'Strict-Transport-Security',
+        'max-age=31536000; includeSubDomains; preload',
+      );
       next();
     });
 
@@ -47,19 +54,25 @@ describe('API Middleware Chain Integration Tests', () => {
     });
 
     // 4. Request logging middleware
-    app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-      const start = Date.now();
-      (req as any).startTime = start;
-      middlewareExecution.push('request-logging');
-      
-      // Log response when it finishes
-      res.on('finish', () => {
-        const duration = Date.now() - start;
-        (req as any).duration = duration;
-      });
-      
-      next();
-    });
+    app.use(
+      (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        const start = Date.now();
+        (req as any).startTime = start;
+        middlewareExecution.push('request-logging');
+
+        // Log response when it finishes
+        res.on('finish', () => {
+          const duration = Date.now() - start;
+          (req as any).duration = duration;
+        });
+
+        next();
+      },
+    );
 
     // 5. Body parsing middleware
     app.use(express.json({ limit: '10mb' }));
@@ -77,11 +90,17 @@ describe('API Middleware Chain Integration Tests', () => {
     // 7. CORS middleware
     app.use((req, res, next) => {
       res.header('Access-Control-Allow-Origin', '*');
-      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Session-ID');
+      res.header(
+        'Access-Control-Allow-Methods',
+        'GET, POST, PUT, DELETE, OPTIONS',
+      );
+      res.header(
+        'Access-Control-Allow-Headers',
+        'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Session-ID',
+      );
       res.header('Access-Control-Allow-Credentials', 'true');
       middlewareExecution.push('cors');
-      
+
       if (req.method === 'OPTIONS') {
         res.sendStatus(200);
       } else {
@@ -92,12 +111,12 @@ describe('API Middleware Chain Integration Tests', () => {
     // 8. Authentication middleware (conditional)
     app.use((req, res, next) => {
       middlewareExecution.push('auth-check');
-      
+
       // Skip auth for public endpoints
       if (req.path.startsWith('/api/public') || req.path === '/api/health') {
         return next();
       }
-      
+
       const authHeader = req.headers.authorization;
       if (authHeader && authHeader.startsWith('Bearer ')) {
         (req as any).user = { id: 1, username: 'testuser' };
@@ -105,93 +124,100 @@ describe('API Middleware Chain Integration Tests', () => {
       } else {
         (req as any).authenticated = false;
       }
-      
+
       next();
     });
 
     // 9. Rate limiting middleware (simulated)
     app.use((req, res, next) => {
       middlewareExecution.push('rate-limiting');
-      
+
       // Simulate rate limiting logic
       const ip = req.ip || req.connection.remoteAddress;
       (req as any).rateLimitInfo = {
         ip,
         limit: 100,
         remaining: 99,
-        reset: Date.now() + 900000 // 15 minutes
+        reset: Date.now() + 900000, // 15 minutes
       };
-      
+
       res.setHeader('X-RateLimit-Limit', '100');
       res.setHeader('X-RateLimit-Remaining', '99');
-      res.setHeader('X-RateLimit-Reset', String(Math.floor((Date.now() + 900000) / 1000)));
-      
+      res.setHeader(
+        'X-RateLimit-Reset',
+        String(Math.floor((Date.now() + 900000) / 1000)),
+      );
+
       next();
     });
 
     // 10. Request validation middleware
     app.use((req, res, next) => {
       middlewareExecution.push('validation');
-      
+
       // Validate content type for POST/PUT requests
-      if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+      if (['PATCH', 'POST', 'PUT'].includes(req.method)) {
         const contentType = req.headers['content-type'];
-        if (contentType && !contentType.includes('application/json') && !contentType.includes('application/x-www-form-urlencoded')) {
+        if (
+          contentType &&
+          !contentType.includes('application/json') &&
+          !contentType.includes('application/x-www-form-urlencoded')
+        ) {
           if (!req.path.includes('/upload')) {
-            return res.status(400).json({ 
+            return res.status(400).json({
               error: 'Unsupported content type',
-              expected: 'application/json'
+              expected: 'application/json',
             });
           }
         }
       }
-      
+
       next();
     });
 
     // 11. API versioning middleware
     app.use((req, res, next) => {
       middlewareExecution.push('versioning');
-      
+
       const version = req.headers['api-version'] || '1.0';
       (req as any).apiVersion = version;
       res.setHeader('API-Version', version);
-      
+
       next();
     });
 
     // 12. Context enrichment middleware
     app.use((req, res, next) => {
       middlewareExecution.push('context-enrichment');
-      
+
       (req as any).context = {
-        timestamp: Date.now(),
-        userAgent: req.headers['user-agent'],
+        apiVersion: (req as any).apiVersion,
         ip: req.ip,
         method: req.method,
         path: req.path,
         query: req.query,
-        apiVersion: (req as any).apiVersion
+        timestamp: Date.now(),
+        userAgent: req.headers['user-agent'],
       };
-      
+
       next();
     });
 
     // API Routes
     app.get('/api/health', (req, res) => {
-      res.json({ 
-        status: 'ok', 
-        timestamp: Date.now(),
+      res.json({
+        middleware: middlewareExecution.slice(),
         requestId: (req as any).requestId,
-        middleware: middlewareExecution.slice()
+        status: 'ok',
+        timestamp: Date.now(),
       });
     });
 
     app.get('/api/public/info', (req, res) => {
       res.json({
-        message: 'Public endpoint',
         context: (req as any).context,
-        middleware: middlewareExecution.slice()
+        message: 'Public endpoint',
+        middleware: middlewareExecution.slice(),
       });
     });
 
@@ -199,29 +225,29 @@ describe('API Middleware Chain Integration Tests', () => {
       if (!(req as any).authenticated) {
         return res.status(401).json({ error: 'Authentication required' });
       }
-      
+
       res.json({
+        context: (req as any).context,
+        data: req.body,
         message: 'Protected data',
         user: (req as any).user,
-        data: req.body,
-        context: (req as any).context
       });
     });
 
     app.get('/api/middleware/test', (req, res) => {
       res.json({
-        middlewareChain: middlewareExecution.slice(),
-        headers: req.headers,
         context: (req as any).context,
-        rateLimitInfo: (req as any).rateLimitInfo
+        headers: req.headers,
+        middlewareChain: middlewareExecution.slice(),
+        rateLimitInfo: (req as any).rateLimitInfo,
       });
     });
 
     app.post('/api/validation/test', (req, res) => {
       res.json({
-        message: 'Validation passed',
         body: req.body,
-        contentType: req.headers['content-type']
+        contentType: req.headers['content-type'],
+        message: 'Validation passed',
       });
     });
 
@@ -231,9 +257,9 @@ describe('API Middleware Chain Integration Tests', () => {
 
     app.post('/api/upload/file', (req, res) => {
       res.json({
-        message: 'File upload endpoint',
         contentType: req.headers['content-type'],
-        size: req.headers['content-length']
+        message: 'File upload endpoint',
+        size: req.headers['content-length'],
       });
     });
 
@@ -247,27 +273,34 @@ describe('API Middleware Chain Integration Tests', () => {
     });
 
     // Error handling middleware (should be last)
-    app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-      middlewareExecution.push('error-handler');
-      
-      const errorResponse = {
-        error: error.message || 'Internal server error',
-        requestId: (req as any).requestId,
-        timestamp: Date.now(),
-        path: req.path,
-        method: req.method
-      };
-      
-      res.status(error.status || 500).json(errorResponse);
-    });
+    app.use(
+      (
+        error: any,
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        middlewareExecution.push('error-handler');
+
+        const errorResponse = {
+          error: error.message || 'Internal server error',
+          method: req.method,
+          path: req.path,
+          requestId: (req as any).requestId,
+          timestamp: Date.now(),
+        };
+
+        res.status(error.status || 500).json(errorResponse);
+      },
+    );
 
     // 404 handler
     app.use('*', (req, res) => {
       res.status(404).json({
         error: 'Endpoint not found',
-        path: req.path,
         method: req.method,
-        requestId: (req as any).requestId
+        path: req.path,
+        requestId: (req as any).requestId,
       });
     });
 
@@ -290,13 +323,11 @@ describe('API Middleware Chain Integration Tests', () => {
 
   describe('Middleware Chain Execution Order', () => {
     it('should execute middleware in correct order for GET requests', async () => {
-      const response = await request(app)
-        .get('/api/health')
-        .expect(200);
+      const response = await request(app).get('/api/health').expect(200);
 
       expect(response.body).toHaveProperty('middleware');
       const middlewareOrder = response.body.middleware;
-      
+
       // Verify execution order
       expect(middlewareOrder).toEqual([
         'request-id',
@@ -307,7 +338,7 @@ describe('API Middleware Chain Integration Tests', () => {
         'rate-limiting',
         'validation',
         'versioning',
-        'context-enrichment'
+        'context-enrichment',
       ]);
     });
 
@@ -337,18 +368,14 @@ describe('API Middleware Chain Integration Tests', () => {
 
   describe('Request ID and Context', () => {
     it('should assign unique request IDs', async () => {
-      const response1 = await request(app)
-        .get('/api/health')
-        .expect(200);
+      const response1 = await request(app).get('/api/health').expect(200);
 
-      const response2 = await request(app)
-        .get('/api/health')
-        .expect(200);
+      const response2 = await request(app).get('/api/health').expect(200);
 
       expect(response1.body.requestId).toBeDefined();
       expect(response2.body.requestId).toBeDefined();
       expect(response1.body.requestId).not.toBe(response2.body.requestId);
-      
+
       expect(response1.headers['x-request-id']).toBe(response1.body.requestId);
       expect(response2.headers['x-request-id']).toBe(response2.body.requestId);
     });
@@ -362,7 +389,7 @@ describe('API Middleware Chain Integration Tests', () => {
 
       expect(response.body).toHaveProperty('context');
       const context = response.body.context;
-      
+
       expect(context).toHaveProperty('timestamp');
       expect(context).toHaveProperty('userAgent', 'Test/1.0');
       expect(context).toHaveProperty('method', 'GET');
@@ -374,9 +401,7 @@ describe('API Middleware Chain Integration Tests', () => {
 
   describe('Security Middleware', () => {
     it('should apply security headers', async () => {
-      const response = await request(app)
-        .get('/api/health')
-        .expect(200);
+      const response = await request(app).get('/api/health').expect(200);
 
       // Helmet security headers
       expect(response.headers).toHaveProperty('x-content-type-options');
@@ -386,29 +411,27 @@ describe('API Middleware Chain Integration Tests', () => {
     });
 
     it('should include Content Security Policy', async () => {
-      const response = await request(app)
-        .get('/api/health')
-        .expect(200);
+      const response = await request(app).get('/api/health').expect(200);
 
       expect(response.headers).toHaveProperty('content-security-policy');
-      expect(response.headers['content-security-policy']).toContain('default-src');
+      expect(response.headers['content-security-policy']).toContain(
+        'default-src',
+      );
     });
 
     it('should include HSTS headers', async () => {
-      const response = await request(app)
-        .get('/api/health')
-        .expect(200);
+      const response = await request(app).get('/api/health').expect(200);
 
       expect(response.headers).toHaveProperty('strict-transport-security');
-      expect(response.headers['strict-transport-security']).toContain('max-age=31536000');
+      expect(response.headers['strict-transport-security']).toContain(
+        'max-age=31536000',
+      );
     });
   });
 
   describe('Authentication Middleware', () => {
     it('should allow access to public endpoints without auth', async () => {
-      const response = await request(app)
-        .get('/api/public/info')
-        .expect(200);
+      const response = await request(app).get('/api/public/info').expect(200);
 
       expect(response.body).toHaveProperty('message', 'Public endpoint');
     });
@@ -436,9 +459,7 @@ describe('API Middleware Chain Integration Tests', () => {
 
   describe('Rate Limiting Middleware', () => {
     it('should include rate limit headers', async () => {
-      const response = await request(app)
-        .get('/api/health')
-        .expect(200);
+      const response = await request(app).get('/api/health').expect(200);
 
       expect(response.headers).toHaveProperty('x-ratelimit-limit', '100');
       expect(response.headers).toHaveProperty('x-ratelimit-remaining', '99');
@@ -452,7 +473,7 @@ describe('API Middleware Chain Integration Tests', () => {
 
       expect(response.body).toHaveProperty('rateLimitInfo');
       const rateLimitInfo = response.body.rateLimitInfo;
-      
+
       expect(rateLimitInfo).toHaveProperty('limit', 100);
       expect(rateLimitInfo).toHaveProperty('remaining', 99);
       expect(rateLimitInfo).toHaveProperty('reset');
@@ -524,9 +545,7 @@ describe('API Middleware Chain Integration Tests', () => {
 
   describe('API Versioning', () => {
     it('should default to version 1.0', async () => {
-      const response = await request(app)
-        .get('/api/public/info')
-        .expect(200);
+      const response = await request(app).get('/api/public/info').expect(200);
 
       expect(response.headers).toHaveProperty('api-version', '1.0');
       expect(response.body.context).toHaveProperty('apiVersion', '1.0');
@@ -545,11 +564,12 @@ describe('API Middleware Chain Integration Tests', () => {
 
   describe('Error Handling Middleware', () => {
     it('should handle errors with proper structure', async () => {
-      const response = await request(app)
-        .get('/api/error/test')
-        .expect(500);
+      const response = await request(app).get('/api/error/test').expect(500);
 
-      expect(response.body).toHaveProperty('error', 'Test error for middleware handling');
+      expect(response.body).toHaveProperty(
+        'error',
+        'Test error for middleware handling',
+      );
       expect(response.body).toHaveProperty('requestId');
       expect(response.body).toHaveProperty('timestamp');
       expect(response.body).toHaveProperty('path', '/api/error/test');
@@ -557,9 +577,7 @@ describe('API Middleware Chain Integration Tests', () => {
     });
 
     it('should handle 404 errors for non-existent endpoints', async () => {
-      const response = await request(app)
-        .get('/api/non-existent')
-        .expect(404);
+      const response = await request(app).get('/api/non-existent').expect(404);
 
       expect(response.body).toHaveProperty('error', 'Endpoint not found');
       expect(response.body).toHaveProperty('path', '/api/non-existent');
@@ -569,9 +587,7 @@ describe('API Middleware Chain Integration Tests', () => {
 
   describe('Session Management', () => {
     it('should create session ID if not provided', async () => {
-      const response = await request(app)
-        .get('/api/health')
-        .expect(200);
+      const response = await request(app).get('/api/health').expect(200);
 
       expect(response.headers).toHaveProperty('x-session-id');
       expect(response.headers['x-session-id']).toMatch(/^session-/);
@@ -579,7 +595,7 @@ describe('API Middleware Chain Integration Tests', () => {
 
     it('should use provided session ID', async () => {
       const customSessionId = 'custom-session-123';
-      
+
       const response = await request(app)
         .get('/api/health')
         .set('X-Session-ID', customSessionId)
@@ -592,31 +608,29 @@ describe('API Middleware Chain Integration Tests', () => {
   describe('Middleware Performance', () => {
     it('should complete middleware chain quickly', async () => {
       const start = Date.now();
-      
+
       const response = await request(app)
         .get('/api/middleware/test')
         .expect(200);
 
       const duration = Date.now() - start;
-      
+
       expect(duration).toBeLessThan(1000); // Should complete within 1 second
       expect(response.body).toHaveProperty('middlewareChain');
     });
 
     it('should handle concurrent requests efficiently', async () => {
       const requests = Array.from({ length: 10 }, () =>
-        request(app)
-          .get('/api/health')
-          .expect(200)
+        request(app).get('/api/health').expect(200),
       );
 
       const responses = await Promise.all(requests);
-      
+
       // All should succeed
       expect(responses).toHaveLength(10);
-      
+
       // All should have unique request IDs
-      const requestIds = responses.map(r => r.body.requestId);
+      const requestIds = responses.map((r) => r.body.requestId);
       const uniqueIds = new Set(requestIds);
       expect(uniqueIds.size).toBe(10);
     });

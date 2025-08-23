@@ -74,10 +74,7 @@ var webSearchApiTool = {
       }
       return { summary };
     } catch (error) {
-      ctx.log.error(
-        { err: error },
-        "Failed to perform web search with API."
-      );
+      ctx.log.error({ err: error }, "Failed to perform web search with API.");
       return {
         summary: `An unexpected error occurred: ${error instanceof Error ? error.message : String(error)}`
       };

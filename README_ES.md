@@ -1,14 +1,10 @@
 <p align="center">
-  <img src="assets/title.png" alt="G-Forge Logo" width="250">
+  <img src="assets/title.png" alt="AgenticForge Logo" width="250">
 </p>
 
-<h1 align="center">G-Forge</h1>
-
+<h1 align="center">AgenticForge</h1>
 <p align="center">
-  <img src="https://img.shields.io/badge/🔨-G_Forge-orange?style=for-the-badge" alt="G-Forge Logo">
-</p>
-<p align="center">
-  <strong>🌐 Langues disponibles</strong><br>
+  <strong>🌐 Idiomas disponibles</strong><br>
   <a href="README_EN.md">English</a> • 
   <a href="README.md">Français</a> • 
   <a href="README_CHS.md">中文</a> • 
@@ -18,19 +14,17 @@
   <a href="README_ES.md">Español</a>
 </p> 
 <h3 align="center">
-      Una alternativa privada y local a MANUS.
+      Su nuevo agente de IA 100% autónomo, gratuito y local
 </h3>
 
 <p align="center">
   <em>
-    Un agente de IA 100% autónomo, gratuito y local que forja sus propias herramientas, escribe código y ejecuta tareas complejas, manteniendo todos los datos en su dispositivo. Basado en el protocolo MCP (Model Context Protocol) con FastMCP como motor, está diseñado para modelos de razonamiento locales y es adaptable a la API de su LLM favorito, garantizando privacidad total y sin dependencias de la nube.
+    Su nuevo agente de IA 100% autónomo, gratuito y local, garantizando privacidad total. Diseñado completamente con el protocolo MCP, ejecuta tareas complejas, escribe código y forja sus propias herramientas, que se muestran directamente en la interfaz de usuario para total transparencia. Gracias a su enrutador de claves API inteligente que sigue una jerarquía configurable, cambia automáticamente para no quedarse sin solicitudes. ¿Listo para explorar el futuro de la IA privada?
   </em>
 </p>
 <br>
 <p align="center">
-    <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square&logo=opensource&logoColor=white" alt="MIT License"> <img src="https://img.shields.io/github/stars/Jboner-Corvus/AgenticForge?style=flat-square&logo=github&color=gold" alt="Stars"> <img src="https://img.shields.io/github/forks/Jboner-Corvus/AgenticForge?style=flat-square&logo=git&color=blue" alt="Forks"> <img src="https://img.shields.io/github/issues/Jboner-Corvus/AgenticForge?style=flat-square&logo=github" alt="Issues">
-</p>
-<p align="center">
+    <a href="https://discord.gg/VNtXQByKfg"><img src="https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
     <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
     <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
     <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
@@ -39,250 +33,476 @@
     <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm">
 </p>
 
-## ¿Por qué G-Forge?
+## ¿Por qué AgenticForge?
 
-🔒 **Completamente Local y Privado** - Todo funciona en su máquina — sin nube, sin compartir datos. Sus archivos, conversaciones y herramientas permanecen privados.
+🔒 **Totalmente Local y Privado** - Todo funciona en su máquina — sin nube, sin compartir datos. Sus archivos, conversaciones y herramientas permanecen privados.
 
-🛠️ **Auto-Forjado de Herramientas** - G-Forge puede crear sus propias herramientas — cuando le falta una capacidad, escribe el código para construirla.
+🛠️ **Auto-Forjado de Herramientas MCP** - AgenticForge codifica directamente herramientas MCP personalizadas en TypeScript con esquemas Zod, las integra al worker en tiempo real y las muestra en la interfaz con total transparencia.
+
+💰 **Funcionamiento Gratuito Prolongado** - Gracias a un truco de gestión de claves, especialmente con Qwen, AgenticForge puede funcionar continuamente durante varios días sin costo.
+
+🤖 **Control de Sub-Agentes** - Capaz de orquestar y controlar otros agentes de interfaz de línea de comandos (CLI) para delegar y paralelizar tareas complejas.
 
 💻 **Asistente de Codificación Autónomo** - ¿Necesita código? Puede escribir, depurar y ejecutar programas en Python, TypeScript, Bash y más — sin supervisión.
 
 🧠 **Selección Inteligente de Herramientas** - Usted pregunta, automáticamente encuentra la mejor herramienta para el trabajo. Como tener una forja de expertos listos para ayudar.
 
-📋 **Planifica y Ejecuta Tareas Complejas** - Desde gestión de archivos hasta web scraping — puede dividir grandes tareas en pasos y forjar las herramientas para realizar el trabajo.
+📋 **Planea y Ejecuta Tareas Complejas** - Desde gestión de archivos hasta scraping web — puede dividir tareas grandes en pasos y forjar las herramientas para realizar el trabajo.
 
-🌐 **Navegación Web Inteligente** - G-Forge puede navegar por internet de forma autónoma — buscar, leer, extraer información, automatizar tareas — todo sin intervención.
+🌐 **Navegación Web Inteligente** - AgenticForge puede navegar por internet de forma autónoma — buscar, leer, extraer información, automatizar tareas — todo sin intervención.
 
-🚀 **Impulsado por FastMCP** - Utiliza el protocolo MCP (Model Context Protocol) con FastMCP como framework ultra-performante — un verdadero cohete para interacciones LLM.
+🔄 **LlmKeyManager Inteligente** - Sistema avanzado de gestión de claves API con conmutación automática, monitoreo de rendimiento y desactivación temporal de claves defectuosas.
 
----
-
-## Demo
-
-> **"¿Puedes crear una herramienta para analizar mis archivos CSV y luego usarla para generar un informe de sales_data.csv?"**
+🚀 **Forja MCP Nativa** - Utiliza el protocolo MCP con FastMCP para crear, modificar y desplegar herramientas personalizadas en tiempo real. Cada herramienta se codifica, prueba e integra automáticamente al worker.
 
 ---
 
-## 🛠️ ⚠️ Trabajo Activo en Progreso
+## 🛠️ ⚠️ Trabajo Activo en Curso
 
-🙏 Este proyecto comenzó para demostrar que MCP era mejor que API y ha crecido más allá de las expectativas. Contribuciones, comentarios y paciencia son profundamente apreciados mientras forjamos hacia adelante.
-
----
-
-## Prerrequisitos
-
-Antes de comenzar, asegúrese de tener el siguiente software instalado:
-
-- **Git**: Para clonar el repositorio. [Descargar Git](https://git-scm.com/)
-- **Docker Engine & Docker Compose**: Para ejecutar los servicios agrupados.
-  - [Instalar Docker Desktop](https://www.docker.com/products/docker-desktop/) (incluye Docker Compose V2): Windows | Mac | Linux
-  - O instalar por separado: [Docker Engine](https://docs.docker.com/engine/install/) | [Docker Compose](https://docs.docker.com/compose/install/)
-- **Node.js 20+**: Para la interfaz web. [Descargar Node.js](https://nodejs.org/)
-- **pnpm**: Gestor de paquetes. Instalar con `npm install -g pnpm`
+🙏 Este proyecto comenzó para demostrar que MCP era mejor que API y ha crecido más allá de las expectativas. Las contribuciones, comentarios y paciencia son profundamente apreciadas mientras seguimos forjando.
 
 ---
 
-## 1. Clonar el repositorio
+## 📋 Requisitos Previos
 
+**Requeridos para la instalación:**
+
+- **Docker Engine & Docker Compose**: Para servicios principales
+  - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (recomendado): Windows | Mac | Linux
+  - O [Docker Engine](https://docs.docker.com/engine/install/) + [Docker Compose](https://docs.docker.com/compose/install/)
+- **Node.js 20+**: Para construcción y worker local
+  - [Descargar Node.js](https://nodejs.org/)
+- **pnpm**: Gestor de paquetes
+  ```bash
+  npm install -g pnpm
+  ```
+- **Git**: Para clonar el proyecto
+
+### 🖥️ Compatibilidad del Sistema
+
+> **AgenticForge** está diseñado para ser desplegado en **Linux** o **macOS**.  
+> **Windows no es oficialmente compatible**.
+
+---
+
+## 🚀 Instalación de Producción
+
+### 🤖 Instalación Ultra-Simple (100% Automática)
+
+**Opción 1: Instalación en una línea**
 ```bash
-git clone https://github.com/your-username/agentic-forge.git
-cd agentic-forge
+curl -fsSL https://raw.githubusercontent.com/Jboner-Corvus/AgenticForge/main/install.sh | bash
 ```
 
-## 2. Ejecutar el script de instalación
-
-Haga ejecutable el script de gestión y ejecútelo.
-
+**Opción 2: Instalación clásica**
 ```bash
-chmod +x run.sh
-./run.sh
+# 1. Clonar el proyecto
+git clone https://github.com/Jboner-Corvus/AgenticForge.git
+cd AgenticForge
+
+# 2. Instalación completamente automatizada
+chmod +x run-v2.sh
+./run-v2.sh install
 ```
 
-En la primera ejecución, el script verificará si existe un archivo `.env`. Si no existe, lo creará automáticamente para usted.
+**Opción 3: Instalación interactiva**
+```bash
+# 1. Clonar el proyecto
+git clone https://github.com/Jboner-Corvus/AgenticForge.git
+cd AgenticForge
 
-## 3. Configurar su entorno
+# 2. Iniciar la consola de gestión de AgenticForge
+chmod +x run-v2.sh
+./run-v2.sh
+```
 
-Una vez que se crea el archivo `.env`, ábralo y complete los valores con sus propias credenciales.
+**Consola de Gestión de Producción:**
+
+```
+    ╔══════════════════════════════════╗
+    ║        A G E N T I C F O R G E   ║
+    ╚══════════════════════════════════╝
+──────────────────────────────────────────
+    Docker & Servicios
+    1) 🟢 Iniciar Servicios            5) 📊 Registros del Worker
+    2) 🔄 Reiniciar Todo               6) 🐚 Shell del Contenedor
+    3) 🔴 Detener Servicios              7) 🔨 Reconstruir Todo
+    4) ⚡ Estado                    8) 🐳 Registros de Docker
+
+    Pruebas & Calidad
+    9) 🔬 Solo Pruebas Unitarias           12) 🔍 Lintear Código
+   10) 🔗 Pruebas de Integración         13) ✨ Formatear Código
+   11) 🧪 Todas las Pruebas                14) 📘 Verificación de Tipos
+
+   15) 🚪 Salir
+```
+
+**Elija "1) 🟢 Iniciar Servicios" para instalación automática**
+
+**🔧 En el primer inicio, el sistema:**
+- Crea automáticamente el archivo `.env` con valores predeterminados
+- Instala las dependencias pnpm necesarias  
+- Construye los paquetes core y UI
+- Lanza todos los servicios Docker
+- Configura el entorno de producción
+
+## ⚙️ Configuración Rápida
+
+### Configuración Inicial
+
+En el primer inicio, el archivo `.env` se crea con valores predeterminados. Puede establecer su primera clave API allí para un inicio rápido.
 
 ```env
-# Copie este archivo a .env y complete los valores.
-HOST_PORT=8080
-PORT=8080
-NODE_ENV=development
+# === CONFIGURACIÓN DE AGENTIC FORGE ===
+
+# Puertos de acceso
+PUBLIC_PORT=8080          # API y servidor principal
+WEB_PORT=3002            # Interfaz de usuario
+
+# Base de datos y caché
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=""        # Dejar vacío para uso local
+
+# Inteligencia Artificial - Clave de inicio
+LLM_API_KEY="su_clave_api_preferida"
+LLM_PROVIDER="gemini"          # o "openai", "anthropic", "grok", etc.
+LLM_MODEL_NAME="gemini-2.5-pro"   # Modelo correspondiente al proveedor
+LLM_API_BASE_URL=""            # Opcional, se detecta automáticamente si no se proporciona
+
+# Seguridad
+AUTH_TOKEN="$(openssl rand -hex 32)"     # Generado automáticamente
+
+# Entorno
+NODE_ENV=production
 LOG_LEVEL=info
-AUTH_TOKEN=""
-REDIS_HOST=redis
-REDIS_PORT=6378
-REDIS_HOST_PORT=6378
-REDIS_PASSWORD=""
-# La URL base ya no es necesaria para la API de Google, comente o elimínela.
-# LLM_API_BASE_URL=
-WEB_PORT=3000
-# Use su clave de API de Google Gemini
-LLM_API_KEY=""
-
-# Especifique un modelo Gemini, ej: "gemini-1.5-pro-latest"
-LLM_MODEL_NAME=gemini-2.5-flash
 ```
 
-**Importante**:
+### 🔑 Gestión de Claves API Múltiples mediante Interfaz Web
 
-- Establezca un `AUTH_TOKEN` fuerte (se recomiendan 32+ caracteres)
-- Las claves API son opcionales si usa modelos locales
+AgenticForge integra un poderoso **LlmKeyManager** para la gestión centralizada y dinámica de sus claves API, accesible directamente desde la interfaz web.
+
+1.  **Acceder a la interfaz**: Abra su navegador en [http://localhost:3002](http://localhost:3002).
+2.  **Ir a "Administrador de Claves LLM"**: Use el menú para navegar a la página de gestión de claves.
+
+#### Funciones de LlmKeyManager:
+
+-   **Adición/Eliminación de Claves en Tiempo Real**: Agregue o elimine claves API para diferentes proveedores (OpenAI, Gemini, Anthropic, etc.) sin reiniciar el sistema.
+-   **Activación/Desactivación**: Active o desactive claves sobre la marcha.
+-   **Conmutación Automática**: Si una clave API falla (límite de solicitudes alcanzado, error), el sistema cambia automáticamente a la siguiente clave válida para garantizar la continuidad del servicio.
+-   **Monitoreo y Estadísticas**: Seguimiento del uso de sus claves, número de claves activas y número de proveedores configurados.
+-   **Pruebas de Validez**: Pruebe la validez de cada clave directamente desde la interfaz.
+
+#### Agregar Claves Adicionales
+1. **Mediante Interfaz Web**: [localhost:3002](http://localhost:3002) → Pestaña "Claves API"
+2. **Funciones**:
+   - ✅ Adición/eliminación de claves en tiempo real
+   - ✅ Conmutación automática en caso de error
+   - ✅ Monitoreo de rendimiento por clave
+   - ✅ Desactivación temporal de claves defectuosas
+   - ✅ Soporte multi-proveedor simultáneo
+
+#### Jerarquía Automática
+El sistema prueba las claves en orden de confiabilidad y cambia automáticamente si una clave falla.
 
 ---
 
-## 4. Iniciar Docker
+## 🤖 Configuración de IA
 
-Asegúrese de que Docker esté ejecutándose antes de continuar.
+### Opción 1: API en la Nube (Recomendado para comenzar)
 
----
+| Proveedor | Modelos Recomendados (2025) | Obtener una Clave API |
+|-------------|---------------------|---------------------|
+| **Google AI** | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys) |
+| **OpenAI** | `gpt-5`, `gpt-4o`, `gpt-4.1` | [platform.openai.com](https://platform.openai.com/signup) |
+| **Anthropic** | `claude-4-opus`, `claude-4-sonnet` | [console.anthropic.com](https://console.anthropic.com/) |
+| **DeepSeek** | `deepseek-v3`, `deepseek-r1` | [platform.deepseek.com](https://platform.deepseek.com) |
 
-## Configuración LLM Local (Recomendado)
+### Opción 2: IA Local (Para privacidad)
 
-### Requisitos de Hardware
+#### Ollama
+1. **Instalar Ollama**: [ollama.ai](https://ollama.ai/)
+2. **Descargar un modelo**:
+   ```bash
+   ollama pull deepseek-r1:14b  # Recomendado para la mayoría de tareas
+   ollama serve
+   ```
 
-| Tamaño del Modelo | Memoria GPU | Rendimiento                            |
-| ----------------- | ----------- | -------------------------------------- |
-| 7B                | 8GB VRAM    | ⚠️ Solo tareas básicas                 |
-| 14B               | 12GB VRAM   | ✅ La mayoría de tareas funcionan bien |
-| 32B               | 24GB VRAM   | 🚀 Excelente rendimiento               |
-| 70B+              | 48GB+ VRAM  | 💪 Calidad profesional                 |
+#### LM Studio
+1. **Instalar LM Studio**: [lmstudio.ai](https://lmstudio.ai/)
+2. **Descargar un modelo** e iniciar el servidor local
+3. **Configuración**: 
+   ```env
+   LLM_PROVIDER="openai"
+   LLM_API_BASE_URL="http://localhost:1234/v1"
+   LLM_API_KEY="lm-studio"  # Cualquier valor
+   LLM_MODEL_NAME="su-modelo-local"
+   ```
 
-### Configuración con Ollama (Recomendado)
-
-1.  **Instalar Ollama**: [Descargar Ollama](https://ollama.ai/)
-2.  **Iniciar Ollama**:
-    ```bash
-    ollama serve
-    ```
-3.  **Descargar un modelo de razonamiento**:
-    ```bash
-    ollama pull deepseek-r1:14b
-    # o para más potencia: ollama pull deepseek-r1:32b
-    ```
-4.  **Actualizar configuración** en `.env`:
-    ```env
-    LLM_MODEL_NAME="deepseek-r1:14b"
-    LLM_API_BASE_URL="http://localhost:11434"
-    ```
-
-### Alternativa: LM Studio
-
-1.  Descargue e instale [LM Studio](https://lmstudio.ai/)
-2.  Cargue un modelo como `deepseek-r1-distill-qwen-14b`
-3.  Inicie el servidor local
-4.  Actualice `.env`:
-    ```env
-    LLM_API_BASE_URL="http://localhost:1234"
-    ```
+**Nota**: El sistema detecta automáticamente los servidores locales
 
 ---
 
-## Configuración para Uso de API
+## 🚀 Gestión del Sistema
 
-Si prefiere modelos en la nube o carece de hardware suficiente:
-
-### 1. Elegir un Proveedor de API
-
-| Proveedor | Ejemplos de Modelos                  | Enlace de Clave API                                       |
-| --------- | ------------------------------------ | --------------------------------------------------------- |
-| OpenAI    | `gpt-4`, `o1`                        | [platform.openai.com](https://platform.openai.com/signup) |
-| Google    | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)   |
-| Anthropic | `claude-4-sonnet`, `claude-4-opus`   | [console.anthropic.com](https://console.anthropic.com/)   |
-| DeepSeek  | `deepseek-chat`, `deepseek-coder`    | [platform.deepseek.com](https://platform.deepseek.com)    |
-
-### 2. Establecer su clave API
-
-**Linux/macOS:**
+### Consola de Gestión Interactiva
 
 ```bash
-export LLM_API_KEY="your_api_key_here"
-# Agregue a ~/.bashrc o ~/.zshrc para persistencia
+# Acceder a todas las funciones mediante consola
+./run-v2.sh
 ```
 
-**Windows:**
-
-```cmd
-set LLM_API_KEY=your_api_key_here
-```
-
-### 3. Actualizar `.env`:
-
-```env
-LLM_API_KEY="your_api_key_here"
-LLM_MODEL_NAME="gemini-1.5-pro"
-```
-
----
-
-## Iniciar Servicios y Ejecutar
-
-### Usando la Consola de Gestión (`run.sh`)
-
-Después de configurar su archivo `.env`, use la consola de gestión para iniciar la aplicación.
-
-Lance la consola interactiva:
+### Comandos de Producción Rápidos
 
 ```bash
-./run.sh
+# Inicio completo
+./run-v2.sh start
+
+# Verificar estado de servicios
+./run-v2.sh status
+
+# Ver registros del sistema
+./run-v2.sh logs
+
+# Reiniciar después de modificación de configuración
+./run-v2.sh restart
+
+# Apagado limpio del sistema
+./run-v2.sh stop
 ```
 
-Desde el menú de la consola:
+### 🧪 Pruebas API Completas
 
-1.  **Iniciar** - Lanzar todos los servicios
-2.  **Estado** - Verificar la salud de los servicios
-3.  **Logs** - Monitorear logs en tiempo real
-
-### Comandos Docker Manuales
-
-Iniciar todos los servicios:
+AgenticForge incluye un conjunto completo de pruebas para validar las capacidades del agente mediante API:
 
 ```bash
-docker-compose up -d
+# Interfaz de pruebas interactiva
+./run-tests.sh
+
+# Pruebas rápidas de lienzo y lista de tareas
+./run-tests.sh canvas
+
+# Pruebas completas de capacidades
+./run-tests.sh full
 ```
 
-Verificar estado:
+**Tipos de pruebas disponibles:**
+- ✅ **Lienzo y Lista de Tareas**: Creación y gestión de diagramas y listas de tareas
+- ✅ **Herramientas MCP**: Creación y ejecución de herramientas personalizadas
+- ✅ **Generación de Código**: TypeScript, Python y otros lenguajes
+- ✅ **Planificación**: Descomposición y ejecución de tareas complejas
+- ✅ **Gestión de Sesiones**: Historial y continuidad de conversaciones
+- ✅ **Seguridad**: Manejo de errores y comandos peligrosos
+
+**Todas las pruebas se guardan en `tests/agent-test-logs/` para análisis detallado.**
+
+### 🔧 Control de Calidad del Código
+
+Las herramientas de calidad de código (lint, TypeScript, formato) están integradas en la consola de gestión:
 
 ```bash
-docker-compose ps
-```
+# Consola de gestión completa
+./run-v2.sh
 
-Ver logs:
-
-```bash
-docker-compose logs -f
-```
-
-**⚠️ Advertencia**: El inicio inicial puede tomar 10-15 minutos ya que se descargan las imágenes Docker y se inicializan los servicios. Espere a ver `backend: "GET /health HTTP/1.1" 200 OK` en los logs.
-
----
-
-## Puntos de Acceso
-
-Una vez que los servicios están ejecutándose:
-
-| Servicio                  | URL                                       | Descripción                      |
-| ------------------------- | ----------------------------------------- | -------------------------------- |
-| **Interfaz Web**          | http://localhost:3000                     | Interfaz principal del usuario   |
-| **Endpoint de API**       | http://localhost:8080/api/v1/agent/stream | Acceso directo a la API          |
-| **Verificación de Salud** | http://localhost:8080/health              | Estado de salud de los servicios |
-
-### Prueba Rápida
-
-```bash
-# Verificación de salud
-curl http://localhost:8080/health
-
-# Prueba de API
-curl -X POST http://localhost:8080/api/v1/agent/stream \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_AUTH_TOKEN" \
-  -d '{"goal": "Crear un script Python hello world simple"}'
+# O directamente:
+pnpm run lint      # Verificación de calidad de código
+pnpm run typecheck # Verificación de tipos TypeScript
+pnpm run format    # Formateo automático
 ```
 
 ---
 
-## Ejemplos de Uso
+## 🌐 Acceso a AgenticForge
 
-Una vez que sus servicios están
+### Interfaces Principales
+
+| Interfaz | URL | Descripción |
+|-----------|-----|-------------|
+| **🎨 Interfaz Web** | [localhost:3002](http://localhost:3002) | Interfaz principal para interactuar con el agente |
+| **🛠️ Servidor API** | [localhost:8080](http://localhost:8080) | API backend y servidor principal |
+
+---
+
+## 🎯 Casos de Uso y Ejemplos
+
+### 🚀 Inicio Rápido
+
+1. **Acceder** a [localhost:3002](http://localhost:3002) 
+2. **Probar** la forja de herramientas MCP en tiempo real:
+   ```
+   "Crea una herramienta MCP personalizada para analizar registros del sistema, 
+   códifica en TypeScript, intégrala al worker y pruébala inmediatamente"
+   ```
+3. **O probar** la ejecución directa del sistema:
+   ```
+   "Analiza mi sistema, crea una API REST en una nueva carpeta, 
+   instala dependencias con npm, ejecuta pruebas e inicia el servidor"
+   ```
+
+### 🔧 Forja de Herramientas MCP Personalizadas
+
+#### ⚡ Herramientas Avanzadas del Sistema
+```bash
+"Forja una herramienta MCP que monitoree en tiempo real:
+- Codifica la herramienta en TypeScript con esquemas Zod  
+- Intégrala directamente al worker de AgenticForge
+- Interfaz para monitorear CPU/RAM/Procesos
+- Visualización en tiempo real en la interfaz web
+- Prueba inmediata de todas las funciones"
+```
+
+#### 🌐 Herramientas Web Inteligentes  
+```bash
+"Crea una herramienta de scraping MCP inteligente:
+- Genera código con gestión de sesiones
+- Interfaz Playwright integrada al worker
+- Esquemas de validación de datos scrapeados
+- Panel de resultados en tiempo real
+- Almacenamiento automático en base de datos local"
+```
+
+### 🌐 Aplicaciones Full-Stack
+
+#### ⚙️ Automatización y Supervisión del Sistema
+```bash
+"Lee este archivo de configuración YAML, crea un daemon Python que:
+- Monitoree procesos del sistema definidos
+- Ejecute automáticamente tareas cron  
+- Envíe registros a /var/log/automation.log
+- Reinicie servicios en caso de fallo
+- Inicie el daemon con systemctl --user"
+```
+
+### 📊 Herramientas de Rendimiento
+
+#### 🏃‍♂️ Benchmarking Completo del Sistema
+```bash
+"Ejecuta un benchmark completo de esta máquina:
+- Prueba CPU/RAM/Disco con stress-ng
+- Benchmark de red con iperf3 a 8.8.8.8
+- Mide el rendimiento de mis APIs locales
+- Genera informe HTML en ./benchmarks/
+- Compara con resultados anteriores almacenados localmente"
+```
+
+#### 📚 Documentación Auto-Generada
+```bash
+"Escanea recursivamente mi proyecto, analiza el código fuente, genera:
+- README.md detallado con diagramas de arquitectura
+- Documentación API con Swagger/OpenAPI
+- Diagramas de clases UML (con PlantUML)
+- Guía de instalación probada en esta máquina
+- Publica todo en un servidor local con docsify"
+```
+
+### 🔧 Gestión de Proyectos
+
+#### 🌳 Flujos de Trabajo Git con Despliegue Automático
+```bash
+"Configura un flujo de trabajo Git completo en este repositorio:
+- Instala y configura GitFlow con hooks
+- Crea scripts pre-commit con pruebas automáticas
+- Configura GitHub Actions o GitLab CI localmente  
+- Script de despliegue que construye, prueba y reinicia servicios
+- Prueba el flujo de trabajo completo con una rama de características"
+```
+
+### 🎯 Proyectos Especializados
+
+#### 🤖 Agente con Conjunto de Herramientas MCP Personalizado
+```bash
+"Clona AgenticForge, crea un agente especializado con sus propias herramientas MCP:
+- Forja 5 herramientas MCP: monitoreo, despliegue, copia de seguridad, alertas, análisis
+- Cada herramienta codificada en TypeScript con interfaces Zod completas
+- Interfaz web en el puerto 3001 mostrando todas las herramientas en acción
+- Base SQLite para persistencia + herramientas MCP para gestionarla
+- Prueba completa del conjunto de herramientas forjadas automáticamente"
+```
+
+#### 💻 Administración de Sistemas Inteligente  
+```bash
+"Analiza este servidor Linux y crea un panel de administración:
+- Monitor en tiempo real: CPU, RAM, disco, red
+- Gestión de servicios systemd con interfaz web
+- Copia de seguridad automática de configuraciones importantes
+- Alertas por correo/Slack en caso de problemas
+- Scripts de mantenimiento programados
+- Interfaz accesible mediante nginx en el puerto 8080"
+```
+
+**🔥 Poder Único**: 
+- **🛠️ Forja MCP**: Crea herramientas MCP personalizadas en TypeScript, las integra al worker y las prueba inmediatamente
+- **⚡ Ejecución Directa**: Acceso completo al sistema - instalación, configuración, pruebas, despliegue automatizado
+- **🎯 Transparencia Total**: Visualiza tus herramientas MCP forjadas en acción directamente en la interfaz web
+
+---
+
+### Gestión Avanzada del Sistema
+
+| Acción | Comando | Uso |
+|--------|----------|-----------|
+| **Consola Completa** | `./run-v2.sh` | Interfaz principal de gestión |
+| **Inicio Rápido** | `./run-v2.sh start` | Lanzamiento directo del sistema |
+| **Monitoreo** | `./run-v2.sh status` | Estado de servicios Docker |
+| **Registros en Vivo** | `./run-v2.sh logs` | Monitoreo en tiempo real |
+| **Reiniciar** | `./run-v2.sh restart` | Después de modificación de configuración |
+| **Mantenimiento** | `./run-v2.sh` → Opciones 7-14 | Pruebas, lint, formato, reconstrucción |
+
+---
+
+## ⚙️ Arquitectura de Producción
+
+### Pila Técnica
+
+- **🧠 Servidor Principal**: API REST, orquestación de IA, gestión de sesiones
+- **🌐 Interfaz Web**: Aplicación React con streaming en tiempo real
+- **💾 Redis**: Caché de alto rendimiento y broker de mensajes
+- **🗄️ PostgreSQL**: Almacenamiento persistente de sesiones y herramientas
+- **🐳 Docker Compose**: Orquestación completa de servicios
+- **📊 OpenTelemetry**: Observabilidad y monitoreo
+
+### Proceso de Forja de Herramientas
+
+1. **Análisis** → IA entiende las necesidades del usuario
+2. **Diseño** → Generación de código TypeScript/Python
+3. **Validación** → Pruebas automáticas y verificación
+4. **Integración** → Adición al catálogo de herramientas
+5. **Ejecución** → Disponible instantáneamente en la interfaz
+
+---
+
+## Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT. Consulte el archivo `LICENSE` para obtener detalles.
+
+---
+
+## Agradecimientos
+
+- **[FastMCP](https://github.com/punkpeye/fastmcp)**: Framework MCP de alto rendimiento - el cohete que impulsa AgenticForge 🚀
+- **[Model Context Protocol (MCP)](https://modelcontextprotocol.io/)**: Protocolo revolucionario para interacciones con LLMs
+- **[Docker](https://docker.com)**: Contenerización y aislamiento
+- **[Redis](https://redis.io)**: Estructuras de datos de alto rendimiento
+- **[Playwright](https://playwright.dev)**: Automatización web moderna
+- **Comunidad de Código Abierto**: Por la inspiración y colaboración
+
+---
+
+## Soporte
+
+- **🚨 Problemas**: [GitHub Issues](https://github.com/votre-username/g-forge/issues)
+- **💬 Discusiones**: [GitHub Discussions](https://github.com/votre-username/g-forge/discussions)
+- **📚 Documentación**: [Wiki del Proyecto](https://github.com/votre-username/g-forge/wiki)
+- **🎮 Discord**: [Únase a la comunidad](https://discord.gg/VNtXQByKfg) - *Comparta sus creaciones, obtenga ayuda en tiempo real y descubra las últimas novedades por adelantado*
+
+---
+
+<div align="center">
+
+**🔨 Un herrero forja sus martillos.** **🤖 AgenticForge forja sus propias capacidades.**
+
+_Forje su futuro tecnológico._
+
+[![Comenzar](https://img.shields.io/badge/🚀_Comenzar-brightgreen?style=for-the-badge)](./run-v2.sh)
+
+</div>

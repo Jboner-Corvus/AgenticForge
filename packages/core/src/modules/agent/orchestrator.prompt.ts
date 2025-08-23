@@ -24,22 +24,6 @@ const __dirname = path.dirname(__filename);
 // Corrige le chemin pour pointer vers le fichier source, que le code soit exécuté depuis /src ou /dist
 const promptFilePath = path.resolve(__dirname, 'system.prompt.md');
 
-// --- START DEBUG LOGS ---
-console.log('DEBUG: __dirname:', __dirname);
-console.log('DEBUG: promptFilePath:', promptFilePath);
-console.log('DEBUG: File exists:', existsSync(promptFilePath));
-try {
-  accessSync(promptFilePath, constants.R_OK);
-  console.log('DEBUG: File is readable.');
-} catch (e: unknown) {
-  if (e instanceof Error) {
-    console.log('DEBUG: File is NOT readable. Error:', e.message);
-  } else {
-    console.log('DEBUG: File is NOT readable. Unknown error:', e);
-  }
-}
-// --- END DEBUG LOGS ---
-
 const PREAMBLE_CONTENT = readFileSync(promptFilePath, 'utf-8').replace(
   /`/g,
   '`',
@@ -71,7 +55,14 @@ const zodToJsonSchema = (_schema: any): any => {
   switch (_schema._def.typeName) {
     case 'ZodAny':
       // ZodAny accepts any type of value
-      jsonSchema.type = ['string', 'number', 'boolean', 'object', 'array', 'null'];
+      jsonSchema.type = [
+        'string',
+        'number',
+        'boolean',
+        'object',
+        'array',
+        'null',
+      ];
       jsonSchema.description = 'Accepts any type of value';
       break;
     case 'ZodArray':
@@ -81,6 +72,20 @@ const zodToJsonSchema = (_schema: any): any => {
     case 'ZodBoolean':
       jsonSchema.type = 'boolean';
       break;
+    case 'ZodDefault': {
+      // For ZodDefault, we unwrap it and process the inner type
+      // The default value is not relevant for JSON schema conversion
+      const innerSchema = zodToJsonSchema(_schema._def.innerType);
+      // Add the default value to the JSON schema
+      innerSchema.default = _schema._def.defaultValue();
+      return innerSchema;
+    }
+    case 'ZodEffects': {
+      // Un ZodEffects enveloppe un autre schéma (ex: z.string().refine(...)).
+      // On le déballe pour accéder au schéma sous-jacent.
+      // Note: Cela ignore les effets (refine, transform) mais permet la conversion.
+      return zodToJsonSchema(_schema._def.schema);
+    }
     case 'ZodEnum':
       jsonSchema.type = 'string'; // Assuming string enums for simplicity
       jsonSchema.enum = _schema._def.values;
@@ -118,32 +123,33 @@ const zodToJsonSchema = (_schema: any): any => {
       }
       break;
     }
-    case 'ZodString':
-      jsonSchema.type = 'string';
-      break;
-    case 'ZodUnknown':
-      // ZodUnknown is similar to ZodAny but more explicit about accepting unknown values
-      jsonSchema.type = ['string', 'number', 'boolean', 'object', 'array', 'null'];
-      jsonSchema.description = 'Accepts unknown type of value';
-      break;
     case 'ZodRecord':
       // ZodRecord represents an object with string keys and typed values
       jsonSchema.type = 'object';
-      jsonSchema.additionalProperties = _schema._def.valueType ? 
-        zodToJsonSchema(_schema._def.valueType) : 
-        { type: ['string', 'number', 'boolean', 'object', 'array', 'null'] };
+      jsonSchema.additionalProperties = _schema._def.valueType
+        ? zodToJsonSchema(_schema._def.valueType)
+        : { type: ['string', 'number', 'boolean', 'object', 'array', 'null'] };
+      break;
+    case 'ZodString':
+      jsonSchema.type = 'string';
       break;
     case 'ZodUnion':
       jsonSchema.anyOf = _schema._def.options.map((option: any) =>
         zodToJsonSchema(option),
       );
       break;
-    case 'ZodEffects': {
-      // Un ZodEffects enveloppe un autre schéma (ex: z.string().refine(...)).
-      // On le déballe pour accéder au schéma sous-jacent.
-      // Note: Cela ignore les effets (refine, transform) mais permet la conversion.
-      return zodToJsonSchema(_schema._def.schema);
-    }
+    case 'ZodUnknown':
+      // ZodUnknown is similar to ZodAny but more explicit about accepting unknown values
+      jsonSchema.type = [
+        'string',
+        'number',
+        'boolean',
+        'object',
+        'array',
+        'null',
+      ];
+      jsonSchema.description = 'Accepts unknown type of value';
+      break;
     default:
       throw new Error(
         `Unsupported Zod type for JSON schema conversion: ${_schema._def.typeName}`,
@@ -154,21 +160,23 @@ const zodToJsonSchema = (_schema: any): any => {
 };
 
 const formatToolForPrompt = (tool: Tool): string => {
-  console.log('tool.parameters:', tool.parameters);
   if (!tool.parameters) {
     return `### ${tool.name}\nDescription: ${tool.description}\nParameters: None\n`;
   }
-  
+
   // Check if parameters is a valid Zod schema
   if (typeof tool.parameters !== 'object' || !('_def' in tool.parameters)) {
     throw new Error('Invalid Zod schema provided');
   }
-  
+
   // Check if it's an empty schema or has no shape
-  if (!('shape' in tool.parameters) || Object.keys(tool.parameters.shape).length === 0) {
+  if (
+    !('shape' in tool.parameters) ||
+    Object.keys(tool.parameters.shape).length === 0
+  ) {
     return `### ${tool.name}\nDescription: ${tool.description}\nParameters: None\n`;
   }
-  
+
   const params = JSON.stringify(zodToJsonSchema(tool.parameters), null, 2);
   return `### ${tool.name}\nDescription: ${tool.description}\nParameters (JSON Schema):\n${params}\n`;
 };

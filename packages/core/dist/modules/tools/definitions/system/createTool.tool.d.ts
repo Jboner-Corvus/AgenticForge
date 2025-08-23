@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { T as Tool } from '../../../../types-C2iGLYUf.js';
+import { T as Tool } from '../../../../types-X5iVOMgV.js';
 import 'fastmcp';
 import 'ioredis';
 import 'bullmq';
@@ -10,8 +10,8 @@ declare const parameters: z.ZodObject<{
     description: z.ZodString;
     execute_function: z.ZodString;
     parameters: z.ZodString;
-    tool_name: z.ZodString;
     run_checks: z.ZodOptional<z.ZodBoolean>;
+    tool_name: z.ZodString;
 }, "strip", z.ZodTypeAny, {
     description: string;
     execute_function: string;

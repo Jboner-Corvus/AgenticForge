@@ -19,7 +19,7 @@
 
 <p align="center">
   <em>
-    Votre nouvel agent IA 100% autonome, gratuit et local, garantissant une confidentialité totale. Conçu entièrement avec le protocole MCP, il exécute des tâches complexes, écrit du code et forge ses propres outils, qui sont directement affichés dans l'interface utilisateur pour une transparence totale. Grâce à son routeur de clés API intelligent qui suit une hiérarchie configurable, il bascule automatiquement pour ne jamais être à court de requêtes. Prêt à explorer le futur de l'IA privée ?
+     Votre IA privée qui ne vous trahit jamais. Orchestrez des sous-agents spécialisés, visualisez chaque outil MCP en temps réel dans le canvas, et regardez vos idées prendre vie instantanément. Basculement API intelligent, zéro interruption. L'IA souveraine est là - la maîtriserez-vous ?
   </em>
 </p>
 <br>
@@ -87,16 +87,33 @@
 
 ## 🚀 Installation Production
 
-### Installation Ultra-Simple
+### 🤖 Installation Ultra-Simple (100% Automatique)
 
+**Option 1: Installation en une ligne**
+```bash
+curl -fsSL https://raw.githubusercontent.com/Jboner-Corvus/AgenticForge/main/install.sh | bash
+```
+
+**Option 2: Installation classique**
+```bash
+# 1. Cloner le projet
+git clone https://github.com/Jboner-Corvus/AgenticForge.git
+cd AgenticForge
+
+# 2. Installation complètement automatisée
+chmod +x run-v2.sh
+./run-v2.sh install
+```
+
+**Option 3: Installation interactive**
 ```bash
 # 1. Cloner le projet
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
 cd AgenticForge
 
 # 2. Lancer la console de gestion AgenticForge
-chmod +x run.sh
-./run.sh
+chmod +x run-v2.sh
+./run-v2.sh
 ```
 
 **Console de Gestion Production :**
@@ -107,26 +124,20 @@ chmod +x run.sh
     ╚══════════════════════════════════╝
 ──────────────────────────────────────────
     Docker & Services
-    1) 🟢 Démarrer            5) 📊 Logs Worker
-    2) 🔄 Redémarrer tout     6) 🐚 Shell (Container)
-    3) 🔴 Arrêter            7) 🔨 Rebuild Docker
-    4) ⚡ Statut             8) 🧹 Nettoyer Docker
-    9) 🔄 Redémarrer worker   15) 🐳 Logs Docker
-   20) 🔨 Rebuild Worker
-   21) 🔨 Rebuild All
-   22) 🧹 Clean All Caches
+    1) 🟢 Start Services            5) 📊 Worker Logs
+    2) 🔄 Restart All               6) 🐚 Container Shell
+    3) 🔴 Stop Services              7) 🔨 Rebuild All
+    4) ⚡ Status                    8) 🐳 Docker Logs
 
-    Développement & Vérifications
-   10) 🔍 Lint               13) 📘 TypeCheck
-   11) ✨ Format             14) ✅ Checks Rapides
-   12) 🧪 Tests (Unitaires)   17) 🚀 TOUS les Checks
-   18) 🧪 Tests (Intégration)
-   19) 🧪 Lancer TOUS les tests
+    Testing & Quality
+    9) 🔬 Unit Tests Only           12) 🔍 Lint Code
+   10) 🔗 Integration Tests         13) ✨ Format Code
+   11) 🧪 All Tests                14) 📘 Type Check
 
-   16) 🚪 Quitter
+   15) 🚪 Exit
 ```
 
-**Choisissez "1) ⚡ Démarrer" pour l'installation automatique**
+**Choisissez "1) 🟢 Start Services" pour l'installation automatique**
 
 **🔧 Au premier démarrage, le système :**
 - Crée automatiquement le fichier `.env` avec des valeurs par défaut
@@ -155,9 +166,10 @@ REDIS_PASSWORD=""        # Laissez vide pour un usage local
 
 # Intelligence Artificielle - Clé de démarrage
 LLM_API_KEY="votre_cle_api_preferee"
-LLM_PROVIDER="gemini"          # ou "openai", "anthropic", "grok", etc.
+LLM_PROVIDER="gemini"          # ou "openai", "anthropic", "grok", "qwen", etc.
 LLM_MODEL_NAME="gemini-2.5-pro"   # Modèle correspondant au provider
 LLM_API_BASE_URL=""            # Optionnel, auto-détecté si non fourni
+QWEN_API_BASE_URL="https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"  # Pour le fournisseur Qwen
 
 # Sécurité
 AUTH_TOKEN="$(openssl rand -hex 32)"     # Généré automatiquement
@@ -187,12 +199,38 @@ AgenticForge intègre un **LlmKeyManager** puissant pour une gestion centralisé
 2. **Fonctionnalités** :
    - ✅ Ajout/suppression de clés en temps réel
    - ✅ Basculement automatique en cas d'erreur
-   - ✅ Monitoring des performances par clé
-   - ✅ Désactivation temporaire des clés défaillantes
-   - ✅ Support multi-providers simultané
 
-#### Hiérarchie Automatique
-Le système teste les clés dans l'ordre de fiabilité et bascule automatiquement si une clé échoue.
+#### Configuration du Fournisseur Qwen
+
+Pour utiliser le fournisseur Qwen, vous devez :
+
+1. Obtenir une clé API depuis [Qwen Portal](https://portal.qwen.ai/)
+2. Configurer les variables d'environnement suivantes :
+
+``env
+LLM_PROVIDER=qwen
+LLM_MODEL_NAME=qwen3-coder-plus
+LLM_API_KEY=votre_cle_api_qwen
+QWEN_API_BASE_URL=https://portal.qwen.ai/v1/chat/completions
+```
+
+Consultez le fichier [docs/QWEN_PROVIDER.md](docs/QWEN_PROVIDER.md) pour plus de détails sur la configuration et le dépannage du fournisseur Qwen.
+
+### 🔧 Outils de Dépannage Qwen
+
+Des scripts utilitaires sont disponibles pour diagnostiquer et résoudre les problèmes de connexion Qwen :
+
+- `scripts/diagnose-qwen-connection.ts` - Diagnostic complet des connexions
+- `scripts/validate-qwen-key.ts` - Validation des clés API
+- `scripts/test-qwen-provider.ts` - Test de base du fournisseur
+
+Pour exécuter ces scripts :
+```bash
+cd /chemin/vers/AgenticForge
+ts-node scripts/diagnose-qwen-connection.ts
+```
+
+Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un résumé complet des améliorations apportées au fournisseur Qwen.
 
 ---
 
@@ -238,26 +276,41 @@ Le système teste les clés dans l'ordre de fiabilité et bascule automatiquemen
 
 ```bash
 # Accéder à toutes les fonctionnalités via la console
-./run.sh
+./run-v2.sh
 ```
 
 ### Commandes Production Rapides
 
 ```bash
 # Démarrage complet
-./run.sh start
+./run-v2.sh start
 
 # Vérifier le statut des services
-./run.sh status
+./run-v2.sh status
 
 # Voir les logs système
-./run.sh logs
+./run-v2.sh logs
 
 # Redémarrer après modification config
-./run.sh restart
+./run-v2.sh restart
 
 # Arrêt propre du système
-./run.sh stop
+./run-v2.sh stop
+```
+
+
+### 🔧 Contrôle Qualité Code
+
+Les outils de qualité de code (lint, TypeScript, format) sont intégrés à la console de gestion :
+
+```bash
+# Console de gestion complète
+./run-v2.sh
+
+# Ou directement :
+pnpm run lint      # Vérification qualité code
+pnpm run typecheck # Vérification types TypeScript
+pnpm run format    # Formatage automatique
 ```
 
 ---
@@ -269,7 +322,7 @@ Le système teste les clés dans l'ordre de fiabilité et bascule automatiquemen
 | Interface | URL | Description |
 |-----------|-----|-------------|
 | **🎨 Interface Web** | [localhost:3002](http://localhost:3002) | Interface principale pour interagir avec l'agent |
-|-----------|-----|-------------|
+| **🛠️ API Server** | [localhost:8080](http://localhost:8080) | API backend et serveur principal |
 
 ---
 
@@ -391,12 +444,12 @@ Le système teste les clés dans l'ordre de fiabilité et bascule automatiquemen
 
 | Action | Commande | Utilisation |
 |--------|----------|-----------|
-| **Console Complète** | `./run.sh` | Interface de gestion principale |
-| **Démarrage Rapide** | `./run.sh start` | Lancement direct du système |
-| **Monitoring** | `./run.sh status` | État des services Docker |
-| **Logs Live** | `./run.sh logs` | Surveillance temps réel |
-| **Redémarrage** | `./run.sh restart` | Après modification config |
-| **Maintenance** | `./run.sh` → Option 7 | Nettoyage et optimisation |
+| **Console Complète** | `./run-v2.sh` | Interface de gestion principale |
+| **Démarrage Rapide** | `./run-v2.sh start` | Lancement direct du système |
+| **Monitoring** | `./run-v2.sh status` | État des services Docker |
+| **Logs Live** | `./run-v2.sh logs` | Surveillance temps réel |
+| **Redémarrage** | `./run-v2.sh restart` | Après modification config |
+| **Maintenance** | `./run-v2.sh` → Options 7-14 | Tests, lint, format, rebuild |
 
 ---
 
@@ -453,6 +506,6 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour les détails.
 
 _Forgez votre avenir technologique._
 
-[![Commencer](https://img.shields.io/badge/🚀_Commencer-brightgreen?style=for-the-badge)](./run.sh)
+[![Commencer](https://img.shields.io/badge/🚀_Commencer-brightgreen?style=for-the-badge)](./run-v2.sh)
 
 </div>

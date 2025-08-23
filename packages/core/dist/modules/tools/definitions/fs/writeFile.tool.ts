@@ -55,12 +55,15 @@ export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
         throw new Error('WORKSPACE_PATH non configuré dans la configuration');
       }
 
-      const absolutePath = path.resolve(path.join(config.WORKSPACE_PATH, args.path));
+      const absolutePath = path.resolve(
+        path.join(config.WORKSPACE_PATH, args.path),
+      );
 
       // Vérifications de sécurité multiples
       if (!absolutePath.startsWith(path.resolve(config.WORKSPACE_PATH))) {
         return {
-          erreur: 'Chemin de fichier en dehors du répertoire de travail autorisé.',
+          erreur:
+            'Chemin de fichier en dehors du répertoire de travail autorisé.',
         };
       }
 
@@ -68,7 +71,8 @@ export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
       const parentDir = path.dirname(absolutePath);
       if (!parentDir.startsWith(path.resolve(config.WORKSPACE_PATH))) {
         return {
-          erreur: 'Répertoire parent en dehors de l\'espace de travail autorisé.',
+          erreur:
+            "Répertoire parent en dehors de l'espace de travail autorisé.",
         };
       }
 
@@ -102,9 +106,9 @@ export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
       return { message: successMessage };
     } catch (error: unknown) {
       ctx.log.error({ err: error }, `Failed to write file: ${args.path}`);
-      
+
       // Gestion d'erreurs détaillée
-      let errorMessage = 'Erreur inconnue lors de l\'écriture du fichier';
+      let errorMessage = "Erreur inconnue lors de l'écriture du fichier";
       if (error instanceof Error) {
         const nodeError = error as NodeJS.ErrnoException;
         if (nodeError.code === 'EACCES') {
@@ -114,12 +118,12 @@ export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
         } else if (nodeError.code === 'EMFILE' || nodeError.code === 'ENFILE') {
           errorMessage = 'Trop de fichiers ouverts simultanément';
         } else if (nodeError.code === 'ENOTDIR') {
-          errorMessage = 'Un élément du chemin n\'est pas un répertoire';
+          errorMessage = "Un élément du chemin n'est pas un répertoire";
         } else {
           errorMessage = `Erreur d'écriture: ${nodeError.message}`;
         }
       }
-      
+
       return {
         erreur: errorMessage,
       };

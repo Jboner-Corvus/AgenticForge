@@ -206,6 +206,7 @@ install_node_dependencies() {
 
 # Build application with retry logic
 build_application() {
+    echo -e "${COLOR_CYAN}🔨 Building application...${NC}"
     local max_retries=2
     local retry_count=0
     
@@ -523,26 +524,28 @@ show_guided_menu() {
     echo -e "${NC}"
     echo -e "──────────────────────────────────────────"
     echo -e "    ${COLOR_CYAN}🐳 Docker & Services${NC}"
-    printf "    1) %s🟢 Start Services%s     - Launch all AgenticForge services\n" "${COLOR_GREEN}" "${NC}"
-    printf "    2) %s🔄 Restart All%s        - Stop and restart everything\n" "${COLOR_YELLOW}" "${NC}"
-    printf "    3) %s🔴 Stop Services%s       - Shutdown all services safely\n" "${COLOR_RED}" "${NC}"
-    printf "    4) %s⚡ Status%s             - Check service health\n" "${COLOR_CYAN}" "${NC}"
-    printf "    5) %s📊 Worker Logs%s        - View worker process logs\n" "${COLOR_BLUE}" "${NC}"
-    printf "    6) %s🐚 Container Shell%s    - Access server container\n" "${COLOR_BLUE}" "${NC}"
-    printf "    7) %s🔨 Rebuild All%s        - Full rebuild (use if issues)\n" "${COLOR_BLUE}" "${NC}"
-    printf "    8) %s🐳 Docker Logs%s        - View all container logs\n" "${COLOR_BLUE}" "${NC}"
+    printf "    1) \033[0;32m🟢 Start Services\033[0m     - Launch all AgenticForge services\n"
+    printf "    2) \033[1;33m🔄 Restart All\033[0m        - Stop and restart everything\n"
+    printf "    3) \033[0;31m🔴 Stop Services\033[0m       - Shutdown all services safely\n"
+    printf "    4) \033[0;36m⚡ Status\033[0m             - Check service health\n"
+    printf "    5) \033[0;34m📊 Worker Logs\033[0m        - View worker process logs\n"
+    printf "    6) \033[0;34m🐚 Container Shell\033[0m    - Access server container\n"
+    printf "    7) \033[0;34m🔨 Rebuild All\033[0m        - Full rebuild (use if issues)\n"
+    printf "    8) \033[0;34m🐳 Docker Logs\033[0m        - View all container logs\n"
+    printf "    9) \033[1;33m🔄 Restart Worker\033[0m     - Restart worker only\n"
     echo ""
     echo -e "    ${COLOR_CYAN}🧪 Testing & Quality${NC}"
-    printf "    9) %s🔬 Unit Tests%s          - Run unit tests only\n" "${COLOR_BLUE}" "${NC}"
-    printf "   10) %s🔗 Integration Tests%s   - Test service integration\n" "${COLOR_BLUE}" "${NC}"
-    printf "   11) %s🧪 All Tests%s          - Run complete test suite\n" "${COLOR_BLUE}" "${NC}"
-    printf "   12) %s🎯 Quality Check%s       - Lint + TypeCheck + Unit Tests\n" "${COLOR_BLUE}" "${NC}"
-    printf "   13) %s🔍 Lint Code%s          - Check code quality\n" "${COLOR_BLUE}" "${NC}"
-    printf "   14) %s✨ Format Code%s        - Auto-format source code\n" "${COLOR_BLUE}" "${NC}"
-    printf "   15) %s📘 Type Check%s         - Verify TypeScript types\n" "${COLOR_BLUE}" "${NC}"
+    printf "   10) \033[0;34m🔬 Unit Tests\033[0m          - Run unit tests only\n"
+    printf "   11) \033[0;34m🔗 Integration Tests\033[0m   - Test service integration\n"
+    printf "   12) \033[0;34m🧪 All Tests\033[0m          - Run complete test suite\n"
+    printf "   13) \033[0;34m🎯 Quality Check\033[0m       - Lint + TypeCheck + Unit Tests\n"
+    printf "   14) \033[0;34m🔍 Lint Code\033[0m          - Check code quality\n"
+    printf "   15) \033[0;34m✨ Format Code\033[0m        - Auto-format source code\n"
+    printf "   16) \033[0;34m📘 Type Check\033[0m         - Verify TypeScript types\n"
+    printf "   17) \033[0;34m🔄 Integration Test Runner\033[0m - Run comprehensive integration tests\n"
     echo ""
-    printf "   16) %s❓ Help%s               - Get help and troubleshooting\n" "${COLOR_CYAN}" "${NC}"
-    printf "   15) %s🚪 Exit%s               - Close this menu\n" "${COLOR_RED}" "${NC}"
+    printf "   18) \033[0;36m❓ Help\033[0m               - Get help and troubleshooting\n"
+    printf "   19) \033[0;31m🚪 Exit\033[0m               - Close this menu\n"
     echo ""
     echo -e "${COLOR_YELLOW}💡 Tip: First time? Try option 1 to start services!${NC}"
     echo ""
@@ -608,11 +611,13 @@ start_services() {
     echo -e "${COLOR_YELLOW}🚀 Building application (if needed)...${NC}"
     if [[ ! -d "packages/core/dist" ]] || [[ ! -d "packages/ui/dist" ]]; then
         echo -e "${COLOR_BLUE}🛠️ Building packages...${NC}"
-        if ! pnpm run build; then
+        if ! build_application; then
             echo -e "${COLOR_RED}❌ Build failed${NC}"
             echo -e "${COLOR_YELLOW}💡 Check error messages above for details${NC}"
             return 1
         fi
+    else
+        echo -e "${COLOR_GREEN}✅ Build already exists${NC}"
     fi
     
     # Start Docker services
@@ -709,6 +714,54 @@ start_worker() {
     echo $! > "$ROOT_DIR/worker.pid"
     
     echo -e "${COLOR_GREEN}✅ Worker started${NC}"
+}
+
+restart_worker() {
+    echo -e "${COLOR_YELLOW}🔄 Restarting worker...${NC}"
+    
+    # Kill all existing worker processes
+    echo -e "${COLOR_CYAN}🔍 Searching for existing worker processes...${NC}"
+    pkill -f "node dist/worker.js" || true
+    pkill -f "worker.js" || true
+    
+    # Remove old PID file
+    if [[ -f "$ROOT_DIR/worker.pid" ]]; then
+        rm -f "$ROOT_DIR/worker.pid"
+        echo -e "${COLOR_CYAN}📝 Removed old PID file${NC}"
+    fi
+    
+    # Clear old logs
+    if [[ -f "$ROOT_DIR/worker.log" ]]; then
+        > "$ROOT_DIR/worker.log"
+        echo -e "${COLOR_CYAN}🧹 Cleared old logs${NC}"
+    fi
+    
+    # Wait for processes to fully stop
+    sleep 2
+    
+    # Start new worker
+    cd "$ROOT_DIR/packages/core"
+    
+    # Build if needed
+    if [[ ! -d "dist" ]]; then
+        echo -e "${COLOR_BLUE}📦 Building core package...${NC}"
+        pnpm run build
+    fi
+    
+    # Start fresh worker
+    REDIS_HOST=localhost POSTGRES_HOST=localhost nohup node dist/worker.js > "$ROOT_DIR/worker.log" 2>&1 &
+    echo $! > "$ROOT_DIR/worker.pid"
+    
+    # Verify worker started
+    sleep 2
+    local pid
+    pid=$(cat "$ROOT_DIR/worker.pid")
+    if kill -0 "$pid" 2>/dev/null; then
+        echo -e "${COLOR_GREEN}✅ Worker restarted successfully (PID: $pid)${NC}"
+    else
+        echo -e "${COLOR_RED}❌ Worker failed to start${NC}"
+        return 1
+    fi
 }
 
 stop_services() {
@@ -1003,6 +1056,10 @@ main() {
                 echo -e "${COLOR_BLUE}🔨 Rebuilding everything...${NC}"
                 rebuild_all 
                 ;;
+            restart-worker) 
+                echo -e "${COLOR_YELLOW}🔄 Restarting worker...${NC}"
+                restart_worker 
+                ;;
             install|deploy)
                 echo -e "${COLOR_BLUE}🤖 Running automated installation...${NC}"
                 automated_install true
@@ -1026,13 +1083,14 @@ main() {
             *) 
                 echo -e "${COLOR_RED}Unknown command: $1${NC}"
                 echo ""
-                echo "Usage: $0 {start|stop|restart|status|rebuild-all|install|deploy|setup|test:unit|test:integration|test:all|quality-check|help|menu}"
+                echo "Usage: $0 {start|stop|restart|status|rebuild-all|restart-worker|install|deploy|setup|test:unit|test:integration|test:all|quality-check|help|menu}"
                 echo ""
                 echo -e "${COLOR_CYAN}Available commands:${NC}"
                 echo -e "  ${COLOR_GREEN}install/deploy${NC}   - Fully automated installation (no prompts)"
                 echo -e "  ${COLOR_GREEN}start${NC}            - Start all services"
                 echo -e "  ${COLOR_RED}stop${NC}             - Stop all services" 
                 echo -e "  ${COLOR_YELLOW}restart${NC}          - Restart all services"
+                echo -e "  ${COLOR_YELLOW}restart-worker${NC}   - Restart worker only"
                 echo -e "  ${COLOR_CYAN}status${NC}           - Show service status"
                 echo -e "  ${COLOR_BLUE}rebuild-all${NC}      - Complete rebuild"
                 echo -e "  ${COLOR_BLUE}setup${NC}            - Run interactive setup wizard"
@@ -1055,7 +1113,7 @@ main() {
     # Interactive menu loop
     while true; do
         show_guided_menu
-        echo -n "Choose an option (1-16): "
+        echo -n "Choose an option (1-19): "
         read -r choice
         echo ""
         
@@ -1093,47 +1151,55 @@ main() {
                 docker compose logs -f 
                 ;;
             9) 
+                echo -e "${COLOR_YELLOW}🔄 Restarting worker...${NC}"
+                restart_worker 
+                ;;
+            10) 
                 echo -e "${COLOR_BLUE}🔬 Running unit tests...${NC}"
                 run_unit_tests 
                 ;;
-            10) 
+            11) 
                 echo -e "${COLOR_BLUE}🔗 Running integration tests...${NC}"
                 run_integration_tests 
                 ;;
-            11) 
+            12) 
                 echo -e "${COLOR_BLUE}🧪 Running all tests...${NC}"
                 run_all_tests 
                 ;;
-            12) 
+            13) 
                 echo -e "${COLOR_BLUE}🎯 Running quality check...${NC}"
                 run_quality_check
                 ;;
-            13) 
+            14) 
                 echo -e "${COLOR_BLUE}🔍 Running code linting...${NC}"
                 cd "$ROOT_DIR" && pnpm run lint 
                 ;;
-            14) 
+            15) 
                 echo -e "${COLOR_BLUE}✨ Formatting code...${NC}"
                 cd "$ROOT_DIR" && pnpm run format 
                 ;;
-            15) 
+            16) 
                 echo -e "${COLOR_BLUE}📘 Checking TypeScript types...${NC}"
                 cd "$ROOT_DIR" && pnpm run typecheck 
                 ;;
-            15) 
-                echo -e "${COLOR_CYAN}👋 Thanks for using AgenticForge! Goodbye!${NC}"
-                exit 0 
+            17)
+                echo -e "${COLOR_BLUE}🔄 Running integration test runner...${NC}"
+                cd "$ROOT_DIR" && ./integration-test-runner.sh
                 ;;
-            16)
+            18)
                 echo -e "${COLOR_CYAN}❓ Help & Troubleshooting${NC}"
                 show_main_help
                 ;;
+            19) 
+                echo -e "${COLOR_CYAN}👋 Thanks for using AgenticForge! Goodbye!${NC}"
+                exit 0 
+                ;;
             *) 
-                echo -e "${COLOR_RED}❌ Invalid option '$choice'. Please choose 1-16.${NC}" 
+                echo -e "${COLOR_RED}❌ Invalid option '$choice'. Please choose 1-19.${NC}" 
                 ;;
         esac
         
-        if [[ "$choice" =~ ^[1-9]$|^1[0-5]$ ]]; then
+        if [[ "$choice" =~ ^[1-9]$|^1[0-8]$ ]]; then
             echo ""
             echo -e "${COLOR_YELLOW}🔙 Press Enter to return to menu...${NC}"
             read -r

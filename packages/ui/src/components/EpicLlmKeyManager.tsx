@@ -767,7 +767,8 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
     }
   };
 
-  const maskedKey = `${keyData.keyValue.slice(0, 8)}${'*'.repeat(20)}${keyData.keyValue.slice(-4)}`;
+  const keyValue = keyData.keyValue || '';
+  const maskedKey = keyValue ? `${keyValue.slice(0, 8)}${'*'.repeat(Math.max(0, keyValue.length - 12))}${keyValue.slice(-4)}` : 'No Key';
 
   return (
     <motion.div
@@ -820,7 +821,7 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
           </div>
           <div className="bg-gray-800/50 rounded-lg p-3 font-mono text-sm">
             <span className="text-gray-300">
-              {showKey ? keyData.keyValue : maskedKey}
+              {showKey ? (keyData.keyValue || 'No Key') : maskedKey}
             </span>
           </div>
         </div>

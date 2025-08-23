@@ -1,23 +1,29 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Agent } from './agent.ts';
-import { LlmError } from '../../utils/LlmError.ts';
-import { getMockQueue } from '../../test/mockQueue.ts';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import type { SessionData, Tool } from '../../types.ts';
+
+import { getMockQueue } from '../../test/mockQueue.ts';
+import { LlmError } from '../../utils/LlmError.ts';
+import { Agent } from './agent.ts';
 
 // Mock Qwen Provider
 const mockQwenProvider = {
-  getLlmResponse: vi.fn(),
-  name: 'qwen',
   available: true,
-  models: ['qwen2.5-72b-instruct', 'qwen2.5-14b-instruct', 'qwen2.5-7b-instruct'],
+  getLlmResponse: vi.fn(),
+  models: [
+    'qwen2.5-72b-instruct',
+    'qwen2.5-14b-instruct',
+    'qwen2.5-7b-instruct',
+  ],
+  name: 'qwen',
 };
 
 // Mock fallback providers
 const mockGeminiProvider = {
-  getLlmResponse: vi.fn(),
-  name: 'gemini',
   available: true,
+  getLlmResponse: vi.fn(),
   models: ['gemini-pro', 'gemini-pro-vision'],
+  name: 'gemini',
 };
 
 // Mocks globaux
@@ -36,34 +42,34 @@ vi.mock('../../config.ts', () => ({
 vi.mock('../../logger.ts', () => ({
   getLoggerInstance: () => ({
     child: () => ({
+      debug: vi.fn(),
+      error: vi.fn(),
       info: vi.fn(),
       warn: vi.fn(),
-      error: vi.fn(),
-      debug: vi.fn(),
     }),
+    debug: vi.fn(),
+    error: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
   }),
 }));
 
 vi.mock('../redis/redisClient.ts', () => ({
   getRedisClientInstance: () => ({
-    publish: vi.fn(),
     duplicate: () => ({
       on: vi.fn(),
+      quit: vi.fn(),
       subscribe: vi.fn(),
       unsubscribe: vi.fn(),
-      quit: vi.fn(),
     }),
+    publish: vi.fn(),
   }),
 }));
 
 vi.mock('../llm/LlmKeyManager.ts', () => ({
   LlmKeyManager: {
-    hasAvailableKeys: vi.fn().mockResolvedValue(true),
     getKey: vi.fn().mockResolvedValue('test-qwen-key'),
+    hasAvailableKeys: vi.fn().mockResolvedValue(true),
     invalidateKey: vi.fn(),
     rotateKey: vi.fn(),
   },
@@ -88,20 +94,20 @@ vi.mock('./responseSchema.ts', () => ({
 // Mock du provider manager avec focus sur Qwen
 let currentProvider = mockQwenProvider;
 vi.mock('../../utils/llmProvider.ts', () => ({
+  getAvailableProviders: vi.fn(() => ['qwen', 'gemini']),
   getLlmProvider: vi.fn(() => currentProvider),
+  getProviderHealth: vi.fn(() => ({ latency: 150, status: 'healthy' })),
   switchToProvider: vi.fn((providerName: string) => {
     switch (providerName) {
-      case 'qwen':
-        currentProvider = mockQwenProvider;
-        break;
       case 'gemini':
         currentProvider = mockGeminiProvider;
+        break;
+      case 'qwen':
+        currentProvider = mockQwenProvider;
         break;
     }
     return currentProvider;
   }),
-  getAvailableProviders: vi.fn(() => ['qwen', 'gemini']),
-  getProviderHealth: vi.fn(() => ({ status: 'healthy', latency: 150 })),
 }));
 
 describe('Qwen LLM Provider Integration Tests', () => {
@@ -116,18 +122,18 @@ describe('Qwen LLM Provider Integration Tests', () => {
     currentProvider = mockQwenProvider;
 
     mockJob = {
-      id: 'qwen-test-job',
       data: { prompt: 'Test Qwen integration' },
+      id: 'qwen-test-job',
       isFailed: vi.fn().mockResolvedValue(false),
       updateProgress: vi.fn(),
     };
 
     mockSessionData = {
+      activeLlmProvider: 'qwen',
       history: [],
       identities: [{ id: 'test-user', type: 'user' }],
       name: 'Qwen Test Session',
       timestamp: Date.now(),
-      activeLlmProvider: 'qwen',
     };
 
     mockSessionManager = {
@@ -142,7 +148,7 @@ describe('Qwen LLM Provider Integration Tests', () => {
       getMockQueue(),
       mockTools,
       'qwen',
-      mockSessionManager
+      mockSessionManager,
     );
   });
 
@@ -152,10 +158,15 @@ describe('Qwen LLM Provider Integration Tests', () => {
 
   describe('Qwen Basic Integration', () => {
     it('should successfully get response from Qwen provider', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
-      mockQwenProvider.getLlmResponse.mockResolvedValue('{"answer": "Qwen successful response"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Qwen successful response' });
+      mockQwenProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Qwen successful response"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Qwen successful response',
+      });
 
       const result = await agent.run();
 
@@ -165,13 +176,19 @@ describe('Qwen LLM Provider Integration Tests', () => {
     });
 
     it('should handle Qwen API key validation', async () => {
-      const mockLlmKeyManager = require('../llm/LlmKeyManager.ts').LlmKeyManager;
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockLlmKeyManager =
+        require('../llm/LlmKeyManager.ts').LlmKeyManager;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmKeyManager.hasAvailableKeys.mockResolvedValue(true);
       mockLlmKeyManager.getKey.mockResolvedValue('valid-qwen-key');
-      mockQwenProvider.getLlmResponse.mockResolvedValue('{"answer": "Qwen with valid key"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Qwen with valid key' });
+      mockQwenProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Qwen with valid key"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Qwen with valid key',
+      });
 
       await agent.run();
 
@@ -180,12 +197,18 @@ describe('Qwen LLM Provider Integration Tests', () => {
     });
 
     it('should handle missing Qwen API key gracefully', async () => {
-      const mockLlmKeyManager = require('../llm/LlmKeyManager.ts').LlmKeyManager;
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockLlmKeyManager =
+        require('../llm/LlmKeyManager.ts').LlmKeyManager;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       mockLlmKeyManager.hasAvailableKeys.mockResolvedValue(false);
-      mockGeminiProvider.getLlmResponse.mockResolvedValue('{"answer": "Fallback to Gemini"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Fallback to Gemini' });
+      mockGeminiProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Fallback to Gemini"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Fallback to Gemini',
+      });
 
       const result = await agent.run();
 
@@ -196,13 +219,18 @@ describe('Qwen LLM Provider Integration Tests', () => {
 
   describe('Qwen Error Handling', () => {
     it('should handle Qwen rate limiting errors', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       mockQwenProvider.getLlmResponse.mockRejectedValue(
-        new LlmError('Qwen API rate limit exceeded: 429')
+        new LlmError('Qwen API rate limit exceeded: 429'),
       );
-      mockGeminiProvider.getLlmResponse.mockResolvedValue('{"answer": "Gemini after rate limit"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Gemini after rate limit' });
+      mockGeminiProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Gemini after rate limit"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Gemini after rate limit',
+      });
 
       const result = await agent.run();
 
@@ -211,15 +239,20 @@ describe('Qwen LLM Provider Integration Tests', () => {
     });
 
     it('should handle Qwen timeout errors with retries', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
-      const qwenTimeoutError = new LlmError('Qwen API request failed with status 504 stream timeout');
-      
+      const qwenTimeoutError = new LlmError(
+        'Qwen API request failed with status 504 stream timeout',
+      );
+
       mockQwenProvider.getLlmResponse
         .mockRejectedValueOnce(qwenTimeoutError)
         .mockRejectedValueOnce(qwenTimeoutError)
         .mockResolvedValueOnce('{"answer": "Qwen timeout retry success"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Qwen timeout retry success' });
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Qwen timeout retry success',
+      });
 
       const result = await agent.run();
 
@@ -228,15 +261,21 @@ describe('Qwen LLM Provider Integration Tests', () => {
     });
 
     it('should handle Qwen API authentication errors', async () => {
-      const mockLlmKeyManager = require('../llm/LlmKeyManager.ts').LlmKeyManager;
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockLlmKeyManager =
+        require('../llm/LlmKeyManager.ts').LlmKeyManager;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       mockQwenProvider.getLlmResponse.mockRejectedValue(
-        new LlmError('Qwen authentication failed: Invalid API key')
+        new LlmError('Qwen authentication failed: Invalid API key'),
       );
       mockLlmKeyManager.rotateKey.mockResolvedValue('new-qwen-key');
-      mockGeminiProvider.getLlmResponse.mockResolvedValue('{"answer": "Gemini after auth error"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Gemini after auth error' });
+      mockGeminiProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Gemini after auth error"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Gemini after auth error',
+      });
 
       await agent.run();
 
@@ -245,13 +284,18 @@ describe('Qwen LLM Provider Integration Tests', () => {
     });
 
     it('should handle Qwen service unavailable errors', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       mockQwenProvider.getLlmResponse.mockRejectedValue(
-        new LlmError('Qwen service temporarily unavailable: 503')
+        new LlmError('Qwen service temporarily unavailable: 503'),
       );
-      mockGeminiProvider.getLlmResponse.mockResolvedValue('{"answer": "Gemini service backup"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Gemini service backup' });
+      mockGeminiProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Gemini service backup"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Gemini service backup',
+      });
 
       const result = await agent.run();
 
@@ -262,14 +306,23 @@ describe('Qwen LLM Provider Integration Tests', () => {
 
   describe('Qwen Model Selection and Configuration', () => {
     it('should work with different Qwen model variants', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
-      const models = ['qwen2.5-72b-instruct', 'qwen2.5-14b-instruct', 'qwen2.5-7b-instruct'];
-      
+      const models = [
+        'qwen2.5-72b-instruct',
+        'qwen2.5-14b-instruct',
+        'qwen2.5-7b-instruct',
+      ];
+
       for (const model of models) {
         vi.clearAllMocks();
-        mockQwenProvider.getLlmResponse.mockResolvedValue(`{"answer": "Response from ${model}"}`);
-        mockResponseSchema.parse.mockReturnValue({ answer: `Response from ${model}` });
+        mockQwenProvider.getLlmResponse.mockResolvedValue(
+          `{"answer": "Response from ${model}"}`,
+        );
+        mockResponseSchema.parse.mockReturnValue({
+          answer: `Response from ${model}`,
+        });
 
         const modelAgent = new Agent(
           { ...mockJob, data: { ...mockJob.data, model } },
@@ -277,7 +330,7 @@ describe('Qwen LLM Provider Integration Tests', () => {
           getMockQueue(),
           mockTools,
           'qwen',
-          mockSessionManager
+          mockSessionManager,
         );
 
         const result = await modelAgent.run();
@@ -285,46 +338,52 @@ describe('Qwen LLM Provider Integration Tests', () => {
         expect(result).toBe(`Response from ${model}`);
         expect(mockQwenProvider.getLlmResponse).toHaveBeenCalledWith(
           expect.objectContaining({
-            model: expect.stringContaining(model)
-          })
+            model: expect.stringContaining(model),
+          }),
         );
       }
     });
 
     it('should respect Qwen temperature and token limits', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
-      mockQwenProvider.getLlmResponse.mockResolvedValue('{"answer": "Configured Qwen response"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Configured Qwen response' });
+      mockQwenProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Configured Qwen response"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Configured Qwen response',
+      });
 
       const configuredAgent = new Agent(
         {
           ...mockJob,
           data: {
             ...mockJob.data,
+            maxTokens: 4096,
             temperature: 0.3,
-            maxTokens: 4096
-          }
+          },
         },
         mockSessionData,
         getMockQueue(),
         mockTools,
         'qwen',
-        mockSessionManager
+        mockSessionManager,
       );
 
       await configuredAgent.run();
 
       expect(mockQwenProvider.getLlmResponse).toHaveBeenCalledWith(
         expect.objectContaining({
+          max_tokens: 4096,
           temperature: 0.3,
-          max_tokens: 4096
-        })
+        }),
       );
     });
 
     it('should handle Qwen streaming responses', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       // Simuler une réponse en streaming
       const streamChunks = [
@@ -348,7 +407,9 @@ describe('Qwen LLM Provider Integration Tests', () => {
         });
       });
 
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Streaming response from Qwen' });
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Streaming response from Qwen',
+      });
 
       const result = await agent.run();
 
@@ -358,12 +419,14 @@ describe('Qwen LLM Provider Integration Tests', () => {
 
   describe('Qwen Performance and Monitoring', () => {
     it('should monitor Qwen response times', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
-      mockQwenProvider.getLlmResponse.mockImplementation(() => 
-        new Promise(resolve => 
-          setTimeout(() => resolve('{"answer": "Qwen timing test"}'), 200)
-        )
+      mockQwenProvider.getLlmResponse.mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve('{"answer": "Qwen timing test"}'), 200),
+          ),
       );
       mockResponseSchema.parse.mockReturnValue({ answer: 'Qwen timing test' });
 
@@ -375,37 +438,45 @@ describe('Qwen LLM Provider Integration Tests', () => {
       expect(endTime - startTime).toBeLessThan(400);
 
       // Vérifier que les métriques de performance sont publiées
-      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
+      const redisClient =
+        require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'metrics:qwen_performance',
-        expect.stringContaining('response_time')
+        expect.stringContaining('response_time'),
       );
     });
 
     it('should track Qwen token usage', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
-      mockQwenProvider.getLlmResponse.mockResolvedValue('{"answer": "Token usage tracking"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Token usage tracking' });
+      mockQwenProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Token usage tracking"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Token usage tracking',
+      });
 
       await agent.run();
 
       // Vérifier que l'usage des tokens est suivi
-      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
+      const redisClient =
+        require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'metrics:token_usage',
-        expect.stringContaining('qwen')
+        expect.stringContaining('qwen'),
       );
     });
 
     it('should implement Qwen health checks', async () => {
-      const mockGetProviderHealth = require('../../utils/llmProvider.ts').getProviderHealth;
-      
-      mockGetProviderHealth.mockResolvedValue({ 
-        status: 'healthy', 
+      const mockGetProviderHealth =
+        require('../../utils/llmProvider.ts').getProviderHealth;
+
+      mockGetProviderHealth.mockResolvedValue({
         latency: 150,
         model_availability: true,
-        rate_limit_remaining: 95 
+        rate_limit_remaining: 95,
+        status: 'healthy',
       });
 
       await agent.run();
@@ -416,14 +487,15 @@ describe('Qwen LLM Provider Integration Tests', () => {
 
   describe('Qwen Context and Memory Management', () => {
     it('should handle long conversation context with Qwen', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       // Créer un historique long
       const longHistory = Array.from({ length: 100 }, (_, i) => ({
-        type: 'user' as const,
         content: `Message ${i}`,
         id: `msg-${i}`,
         timestamp: Date.now() - (100 - i) * 1000,
+        type: 'user' as const,
       }));
 
       const sessionWithLongHistory = {
@@ -431,8 +503,12 @@ describe('Qwen LLM Provider Integration Tests', () => {
         history: longHistory,
       };
 
-      mockQwenProvider.getLlmResponse.mockResolvedValue('{"answer": "Qwen long context response"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Qwen long context response' });
+      mockQwenProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Qwen long context response"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Qwen long context response',
+      });
 
       const contextAgent = new Agent(
         mockJob,
@@ -440,7 +516,7 @@ describe('Qwen LLM Provider Integration Tests', () => {
         getMockQueue(),
         mockTools,
         'qwen',
-        mockSessionManager
+        mockSessionManager,
       );
 
       const result = await contextAgent.run();
@@ -449,20 +525,27 @@ describe('Qwen LLM Provider Integration Tests', () => {
       expect(mockQwenProvider.getLlmResponse).toHaveBeenCalledWith(
         expect.objectContaining({
           messages: expect.arrayContaining([
-            expect.objectContaining({ content: expect.stringContaining('Message') })
-          ])
-        })
+            expect.objectContaining({
+              content: expect.stringContaining('Message'),
+            }),
+          ]),
+        }),
       );
     });
 
     it('should optimize context window for Qwen models', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
       // Simuler un contexte qui dépasse la limite
       const oversizedContext = 'A'.repeat(10000); // Contexte très long
 
-      mockQwenProvider.getLlmResponse.mockResolvedValue('{"answer": "Qwen optimized context"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Qwen optimized context' });
+      mockQwenProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Qwen optimized context"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Qwen optimized context',
+      });
 
       const contextAgent = new Agent(
         { ...mockJob, data: { ...mockJob.data, context: oversizedContext } },
@@ -470,7 +553,7 @@ describe('Qwen LLM Provider Integration Tests', () => {
         getMockQueue(),
         mockTools,
         'qwen',
-        mockSessionManager
+        mockSessionManager,
       );
 
       await contextAgent.run();
@@ -478,42 +561,53 @@ describe('Qwen LLM Provider Integration Tests', () => {
       // Vérifier que le contexte a été optimisé/tronqué
       expect(mockQwenProvider.getLlmResponse).toHaveBeenCalledWith(
         expect.objectContaining({
-          messages: expect.any(Array)
-        })
+          messages: expect.any(Array),
+        }),
       );
     });
   });
 
   describe('Qwen Cost Optimization', () => {
     it('should track Qwen usage costs', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
-      mockQwenProvider.getLlmResponse.mockResolvedValue('{"answer": "Cost tracking test"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Cost tracking test' });
+      mockQwenProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Cost tracking test"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Cost tracking test',
+      });
 
       await agent.run();
 
       // Vérifier que les coûts sont suivis
-      const redisClient = require('../redis/redisClient.ts').getRedisClientInstance();
+      const redisClient =
+        require('../redis/redisClient.ts').getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'metrics:provider_costs',
-        expect.stringContaining('qwen')
+        expect.stringContaining('qwen'),
       );
     });
 
     it('should prefer Qwen for cost-effective operations', async () => {
-      const mockResponseSchema = require('./responseSchema.ts').llmResponseSchema;
+      const mockResponseSchema =
+        require('./responseSchema.ts').llmResponseSchema;
 
-      mockQwenProvider.getLlmResponse.mockResolvedValue('{"answer": "Qwen cost-effective"}');
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Qwen cost-effective' });
+      mockQwenProvider.getLlmResponse.mockResolvedValue(
+        '{"answer": "Qwen cost-effective"}',
+      );
+      mockResponseSchema.parse.mockReturnValue({
+        answer: 'Qwen cost-effective',
+      });
 
       const costOptimizedJob = {
         ...mockJob,
         data: {
           ...mockJob.data,
           costOptimization: true,
-          preferredProvider: 'qwen'
-        }
+          preferredProvider: 'qwen',
+        },
       };
 
       const costAgent = new Agent(
@@ -522,7 +616,7 @@ describe('Qwen LLM Provider Integration Tests', () => {
         getMockQueue(),
         mockTools,
         'qwen',
-        mockSessionManager
+        mockSessionManager,
       );
 
       const result = await costAgent.run();

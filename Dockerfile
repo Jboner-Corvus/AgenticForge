@@ -44,6 +44,8 @@ COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/packages/core/dist ./packages/core/dist
 COPY --from=builder /usr/src/app/packages/ui/dist ./packages/ui/dist
 COPY --from=builder /usr/src/app/packages/core/node_modules ./packages/core/node_modules
+COPY --from=builder /usr/src/app/packages/core/package.json ./packages/core/package.json
+COPY --from=builder /usr/src/app/packages/ui/package.json ./packages/ui/package.json
 COPY package.json ./
 COPY .env ./
 

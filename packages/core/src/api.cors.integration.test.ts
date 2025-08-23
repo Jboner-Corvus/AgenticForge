@@ -1,8 +1,9 @@
-import { describe, expect, it, beforeAll, afterAll } from 'vitest';
+import cors from 'cors';
 import express from 'express';
 import { Server } from 'http';
 import request from 'supertest';
-import cors from 'cors';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+
 import { getConfig } from './config.ts';
 
 describe('API CORS Integration Tests', () => {
@@ -17,25 +18,6 @@ describe('API CORS Integration Tests', () => {
 
     // Custom CORS configuration for different endpoints
     const corsOptions = {
-      origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        
-        // Define allowed origins
-        const allowedOrigins = [
-          'http://localhost:3000',
-          'http://localhost:5173',
-          'https://agenticforge.com',
-          'https://www.agenticforge.com'
-        ];
-        
-        if (allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'), false);
-        }
-      },
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
       allowedHeaders: [
         'Origin',
         'X-Requested-With',
@@ -44,11 +26,33 @@ describe('API CORS Integration Tests', () => {
         'Authorization',
         'X-Session-ID',
         'X-API-Key',
-        'Cache-Control'
+        'Cache-Control',
       ],
       credentials: true,
+      maxAge: 86400, // 24 hours
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
       optionsSuccessStatus: 200,
-      maxAge: 86400 // 24 hours
+      origin: function (
+        origin: string | undefined,
+        callback: (err: Error | null, allow?: boolean) => void,
+      ) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        // Define allowed origins
+        const allowedOrigins = [
+          'http://localhost:3000',
+          'http://localhost:5173',
+          'https://agenticforge.com',
+          'https://www.agenticforge.com',
+        ];
+
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'), false);
+        }
+      },
     };
 
     // Apply CORS middleware
@@ -59,9 +63,12 @@ describe('API CORS Integration Tests', () => {
       // More permissive CORS for public endpoints
       res.header('Access-Control-Allow-Origin', '*');
       res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+      res.header(
+        'Access-Control-Allow-Headers',
+        'Origin, X-Requested-With, Content-Type, Accept',
+      );
       res.header('Access-Control-Max-Age', '3600');
-      
+
       if (req.method === 'OPTIONS') {
         res.sendStatus(200);
       } else {
@@ -73,15 +80,15 @@ describe('API CORS Integration Tests', () => {
     app.use('/api/admin/*', (req, res, next) => {
       const origin = req.headers.origin;
       const allowedAdminOrigins = ['https://admin.agenticforge.com'];
-      
+
       if (allowedAdminOrigins.includes(origin || '')) {
         res.header('Access-Control-Allow-Origin', origin);
       }
-      
+
       res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
       res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
       res.header('Access-Control-Allow-Credentials', 'true');
-      
+
       if (req.method === 'OPTIONS') {
         if (allowedAdminOrigins.includes(origin || '')) {
           res.sendStatus(200);
@@ -100,57 +107,57 @@ describe('API CORS Integration Tests', () => {
 
     app.post('/api/chat', (req, res) => {
       const { message } = req.body;
-      res.json({ 
+      res.json({
         jobId: `job-${Date.now()}`,
         message: 'Chat request received',
-        originalMessage: message
+        originalMessage: message,
       });
     });
 
     app.get('/api/public/info', (req, res) => {
-      res.json({ 
+      res.json({
         message: 'Public endpoint with permissive CORS',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     });
 
     app.post('/api/public/feedback', (req, res) => {
       const { feedback, rating } = req.body;
-      res.json({ 
-        message: 'Feedback received',
-        id: Date.now(),
+      res.json({
         feedback,
-        rating
+        id: Date.now(),
+        message: 'Feedback received',
+        rating,
       });
     });
 
     app.get('/api/admin/stats', (req, res) => {
       res.json({
-        users: 1000,
         sessions: 5000,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        users: 1000,
       });
     });
 
     app.post('/api/admin/config', (req, res) => {
-      res.json({ 
+      res.json({
+        config: req.body,
         message: 'Configuration updated',
-        config: req.body
       });
     });
 
     // WebSocket simulation endpoint
     app.get('/api/stream/:id', (req, res) => {
       res.writeHead(200, {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        'Access-Control-Allow-Credentials': 'true',
         'Access-Control-Allow-Origin': req.headers.origin || '*',
-        'Access-Control-Allow-Credentials': 'true'
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'Content-Type': 'text/event-stream',
       });
 
       res.write('data: {"type":"connection","id":"' + req.params.id + '"}\n\n');
-      
+
       setTimeout(() => {
         res.write('data: {"type":"message","content":"Test message"}\n\n');
         res.end();
@@ -162,32 +169,32 @@ describe('API CORS Integration Tests', () => {
       res.json({
         data: [
           { id: 1, name: 'Resource 1' },
-          { id: 2, name: 'Resource 2' }
+          { id: 2, name: 'Resource 2' },
         ],
         meta: {
+          timestamp: Date.now(),
           total: 2,
-          timestamp: Date.now()
-        }
+        },
       });
     });
 
     // File upload endpoint
     app.post('/api/upload', (req, res) => {
       res.json({
-        message: 'File upload endpoint',
         contentType: req.headers['content-type'],
-        timestamp: Date.now()
+        message: 'File upload endpoint',
+        timestamp: Date.now(),
       });
     });
 
     // Authentication endpoint
     app.post('/api/auth/login', (req, res) => {
-      const { username, password } = req.body;
+      const { password, username } = req.body;
       if (username && password) {
         res.json({
+          timestamp: Date.now(),
           token: 'mock-jwt-token',
           user: { id: 1, username },
-          timestamp: Date.now()
         });
       } else {
         res.status(401).json({ error: 'Invalid credentials' });
@@ -198,7 +205,7 @@ describe('API CORS Integration Tests', () => {
     app.get('/api/jsonp/data', (req, res) => {
       const callback = req.query.callback;
       const data = { message: 'JSONP response', timestamp: Date.now() };
-      
+
       if (callback) {
         res.type('application/javascript');
         res.send(`${callback}(${JSON.stringify(data)});`);
@@ -208,17 +215,24 @@ describe('API CORS Integration Tests', () => {
     });
 
     // Error handling for CORS issues
-    app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-      if (error && error.message === 'Not allowed by CORS') {
-        res.status(403).json({
-          error: 'CORS policy violation',
-          message: 'Origin not allowed',
-          origin: req.headers.origin
-        });
-      } else {
-        next(error);
-      }
-    });
+    app.use(
+      (
+        error: any,
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        if (error && error.message === 'Not allowed by CORS') {
+          res.status(403).json({
+            error: 'CORS policy violation',
+            message: 'Origin not allowed',
+            origin: req.headers.origin,
+          });
+        } else {
+          next(error);
+        }
+      },
+    );
 
     // 404 handler
     app.use('*', (req, res) => {
@@ -244,15 +258,15 @@ describe('API CORS Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .expect(200);
 
-      expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'http://localhost:3000',
+      );
       expect(response.headers['access-control-allow-credentials']).toBe('true');
       expect(response.body).toHaveProperty('status', 'ok');
     });
 
     it('should handle requests without origin header', async () => {
-      const response = await request(app)
-        .get('/api/health')
-        .expect(200);
+      const response = await request(app).get('/api/health').expect(200);
 
       // Should still work for requests without origin (like curl, mobile apps)
       expect(response.body).toHaveProperty('status', 'ok');
@@ -265,7 +279,10 @@ describe('API CORS Integration Tests', () => {
         .expect(403);
 
       expect(response.body).toHaveProperty('error', 'CORS policy violation');
-      expect(response.body).toHaveProperty('origin', 'https://malicious-site.com');
+      expect(response.body).toHaveProperty(
+        'origin',
+        'https://malicious-site.com',
+      );
     });
 
     it('should allow requests from whitelisted origins', async () => {
@@ -273,7 +290,7 @@ describe('API CORS Integration Tests', () => {
         'http://localhost:3000',
         'http://localhost:5173',
         'https://agenticforge.com',
-        'https://www.agenticforge.com'
+        'https://www.agenticforge.com',
       ];
 
       for (const origin of allowedOrigins) {
@@ -296,10 +313,18 @@ describe('API CORS Integration Tests', () => {
         .set('Access-Control-Request-Headers', 'Content-Type,Authorization')
         .expect(200);
 
-      expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3000');
-      expect(response.headers['access-control-allow-methods']).toContain('POST');
-      expect(response.headers['access-control-allow-headers']).toContain('Content-Type');
-      expect(response.headers['access-control-allow-headers']).toContain('Authorization');
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'http://localhost:3000',
+      );
+      expect(response.headers['access-control-allow-methods']).toContain(
+        'POST',
+      );
+      expect(response.headers['access-control-allow-headers']).toContain(
+        'Content-Type',
+      );
+      expect(response.headers['access-control-allow-headers']).toContain(
+        'Authorization',
+      );
     });
 
     it('should include max-age header in preflight responses', async () => {
@@ -319,11 +344,18 @@ describe('API CORS Integration Tests', () => {
         .options('/api/auth/login')
         .set('Origin', 'https://agenticforge.com')
         .set('Access-Control-Request-Method', 'POST')
-        .set('Access-Control-Request-Headers', 'Content-Type,Authorization,X-Session-ID')
+        .set(
+          'Access-Control-Request-Headers',
+          'Content-Type,Authorization,X-Session-ID',
+        )
         .expect(200);
 
-      expect(response.headers['access-control-allow-methods']).toContain('POST');
-      expect(response.headers['access-control-allow-headers']).toContain('X-Session-ID');
+      expect(response.headers['access-control-allow-methods']).toContain(
+        'POST',
+      );
+      expect(response.headers['access-control-allow-headers']).toContain(
+        'X-Session-ID',
+      );
     });
 
     it('should reject preflight for disallowed methods', async () => {
@@ -333,7 +365,8 @@ describe('API CORS Integration Tests', () => {
         .set('Access-Control-Request-Method', 'TRACE')
         .expect(200); // CORS middleware typically still returns 200 but doesn't include the method
 
-      const allowedMethods = response.headers['access-control-allow-methods'] || '';
+      const allowedMethods =
+        response.headers['access-control-allow-methods'] || '';
       expect(allowedMethods).not.toContain('TRACE');
     });
   });
@@ -347,9 +380,14 @@ describe('API CORS Integration Tests', () => {
         .send({ message: 'Hello from cross-origin!' })
         .expect(200);
 
-      expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'http://localhost:3000',
+      );
       expect(response.body).toHaveProperty('jobId');
-      expect(response.body).toHaveProperty('originalMessage', 'Hello from cross-origin!');
+      expect(response.body).toHaveProperty(
+        'originalMessage',
+        'Hello from cross-origin!',
+      );
     });
 
     it('should handle requests with custom headers', async () => {
@@ -360,7 +398,9 @@ describe('API CORS Integration Tests', () => {
         .set('X-API-Key', 'test-api-key')
         .expect(200);
 
-      expect(response.headers['access-control-allow-origin']).toBe('https://agenticforge.com');
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'https://agenticforge.com',
+      );
       expect(response.body).toHaveProperty('status', 'ok');
     });
 
@@ -371,7 +411,9 @@ describe('API CORS Integration Tests', () => {
         .set('Content-Type', 'multipart/form-data')
         .expect(200);
 
-      expect(response.headers['access-control-allow-origin']).toBe('http://localhost:5173');
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'http://localhost:5173',
+      );
       expect(response.body).toHaveProperty('message');
     });
 
@@ -379,10 +421,12 @@ describe('API CORS Integration Tests', () => {
       const response = await request(app)
         .post('/api/auth/login')
         .set('Origin', 'https://www.agenticforge.com')
-        .send({ username: 'testuser', password: 'testpass' })
+        .send({ password: 'testpass', username: 'testuser' })
         .expect(200);
 
-      expect(response.headers['access-control-allow-origin']).toBe('https://www.agenticforge.com');
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'https://www.agenticforge.com',
+      );
       expect(response.headers['access-control-allow-credentials']).toBe('true');
       expect(response.body).toHaveProperty('token');
     });
@@ -429,7 +473,9 @@ describe('API CORS Integration Tests', () => {
         .set('Origin', 'https://admin.agenticforge.com')
         .expect(200);
 
-      expect(response.headers['access-control-allow-origin']).toBe('https://admin.agenticforge.com');
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'https://admin.agenticforge.com',
+      );
       expect(response.body).toHaveProperty('users');
     });
 
@@ -449,7 +495,9 @@ describe('API CORS Integration Tests', () => {
         .set('Access-Control-Request-Method', 'POST')
         .expect(200);
 
-      expect(response.headers['access-control-allow-origin']).toBe('https://admin.agenticforge.com');
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'https://admin.agenticforge.com',
+      );
       expect(response.headers['access-control-allow-credentials']).toBe('true');
     });
 
@@ -469,7 +517,9 @@ describe('API CORS Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .expect(200);
 
-      expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'http://localhost:3000',
+      );
       expect(response.headers['access-control-allow-credentials']).toBe('true');
       expect(response.headers['content-type']).toContain('text/event-stream');
     });
@@ -480,7 +530,9 @@ describe('API CORS Integration Tests', () => {
         .set('Origin', 'https://agenticforge.com')
         .expect(200);
 
-      expect(response.headers['access-control-allow-origin']).toBe('https://agenticforge.com');
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'https://agenticforge.com',
+      );
       expect(response.body).toHaveProperty('data');
       expect(Array.isArray(response.body.data)).toBe(true);
     });
@@ -490,7 +542,9 @@ describe('API CORS Integration Tests', () => {
         .get('/api/jsonp/data?callback=myCallback')
         .expect(200);
 
-      expect(response.headers['content-type']).toContain('application/javascript');
+      expect(response.headers['content-type']).toContain(
+        'application/javascript',
+      );
       expect(response.text).toContain('myCallback(');
       expect(response.text).toContain('{"message":"JSONP response"');
     });
@@ -514,12 +568,14 @@ describe('API CORS Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .expect(200);
 
-      expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'http://localhost:3000',
+      );
     });
 
     it('should handle very long origin headers', async () => {
       const longOrigin = 'https://' + 'a'.repeat(1000) + '.com';
-      
+
       const response = await request(app)
         .get('/api/health')
         .set('Origin', longOrigin)
@@ -546,7 +602,9 @@ describe('API CORS Integration Tests', () => {
         .expect(200);
 
       // Should still provide CORS headers
-      expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'http://localhost:3000',
+      );
     });
   });
 
@@ -556,11 +614,13 @@ describe('API CORS Integration Tests', () => {
         .post('/api/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', 'session=abc123')
-        .send({ username: 'test', password: 'test' })
+        .send({ password: 'test', username: 'test' })
         .expect(200);
 
       expect(response.headers['access-control-allow-credentials']).toBe('true');
-      expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'http://localhost:3000',
+      );
     });
 
     it('should not expose sensitive headers to unauthorized origins', async () => {
@@ -571,7 +631,9 @@ describe('API CORS Integration Tests', () => {
 
       // Should not include any access-control headers for rejected origins
       expect(response.headers['access-control-allow-origin']).toBeUndefined();
-      expect(response.headers['access-control-allow-credentials']).toBeUndefined();
+      expect(
+        response.headers['access-control-allow-credentials'],
+      ).toBeUndefined();
     });
 
     it('should handle authorization headers in CORS requests', async () => {
@@ -581,7 +643,9 @@ describe('API CORS Integration Tests', () => {
         .set('Authorization', 'Bearer jwt-token-here')
         .expect(200);
 
-      expect(response.headers['access-control-allow-origin']).toBe('https://agenticforge.com');
+      expect(response.headers['access-control-allow-origin']).toBe(
+        'https://agenticforge.com',
+      );
       expect(response.body).toHaveProperty('status', 'ok');
     });
   });

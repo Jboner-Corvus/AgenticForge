@@ -1,7 +1,7 @@
 {
   "name": "@gforge/ui",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.14",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,6 +11,7 @@
     "test:unit": "vitest --mode unit --run",
     "test:integration": "vitest --mode integration --run",
     "test:ui": "vitest --ui",
+    "test:integration:runner": "../../integration-test-runner.sh --ui-only",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "typecheck:test": "vitest run --typecheck.only",
     "preview": "vite preview",

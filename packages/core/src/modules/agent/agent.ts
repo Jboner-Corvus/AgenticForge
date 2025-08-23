@@ -49,25 +49,25 @@ interface Command {
 export class Agent {
   private activeLlmProvider: string; // New property
   private apiKey?: string; // New property
+  // Loop detection properties
+  private behaviorHistory: Array<{
+    command?: { name?: string; params?: Record<string, any>; };
+    thought?: string;
+    timestamp: number;
+  }> = [];
   private commandHistory: Command[] = [];
   private interrupted = false;
   private readonly job: Job<{ prompt: string }>;
   private readonly log: Logger;
   private loopCounter = 0;
+  private loopDetectionThreshold = 3; // Detect loops after 3 repetitions
   private malformedResponseCounter = 0;
+  private readonly maxBehaviorHistory = 10; // Keep track of last 10 behaviors
   private readonly session: SessionData;
+
   private readonly sessionManager: SessionManager; // New property
   private subscriber: any;
   private readonly taskQueue: Queue;
-
-  // Loop detection properties
-  private behaviorHistory: Array<{
-    thought?: string;
-    command?: Command;
-    timestamp: number;
-  }> = [];
-  private readonly maxBehaviorHistory = 10; // Keep track of last 10 behaviors
-  private loopDetectionThreshold = 3; // Detect loops after 3 repetitions
 
   private readonly tools: Tool<z.AnyZodObject, z.ZodTypeAny>[];
 
@@ -96,15 +96,11 @@ export class Agent {
     });
     this.taskQueue = taskQueue;
     this.tools = tools ?? [];
-    console.log(
-      'DEBUG: Agent constructor received tools:',
-      this.tools.map((t) => t.name),
-    );
     this.activeLlmProvider = activeLlmProvider;
     this.session.activeLlmProvider = activeLlmProvider; // Ensure session also has the active provider
     this.sessionManager = sessionManager;
     this.apiKey = apiKey;
-    
+
     // Initialize loop detection properties
     this.behaviorHistory = [];
     this.loopDetectionThreshold = 3; // Detect loops after 3 repetitions
@@ -142,7 +138,7 @@ export class Agent {
         iterations++;
         const iterationLog = this.log.child({ iteration: iterations });
         iterationLog.info(`Agent iteration starting`);
-        
+
         // Add "The agent is thinking..." message to session history and publish to channel
         const thinkingMessage = {
           content: `The agent is thinking... (iteration ${iterations})`,
@@ -248,15 +244,22 @@ export class Agent {
                 );
                 continue;
               }
-              
+
               // Ajout d'un délai progressif après les 4 premières tentatives
-              if (providerToTry === 'qwen' && qwenTimeoutRetries >= INITIAL_RETRIES_WITHOUT_DELAY) {
+              if (
+                providerToTry === 'qwen' &&
+                qwenTimeoutRetries >= INITIAL_RETRIES_WITHOUT_DELAY
+              ) {
                 // Calcul du délai : 2 secondes de base + 1 seconde supplémentaire par tentative au-delà de 4
-                const delayMs = 2000 + (qwenTimeoutRetries - INITIAL_RETRIES_WITHOUT_DELAY) * 1000;
-                this.log.info(`Adding delay of ${delayMs}ms before Qwen API call (retry ${qwenTimeoutRetries + 1})`);
-                await new Promise(resolve => setTimeout(resolve, delayMs));
+                const delayMs =
+                  2000 +
+                  (qwenTimeoutRetries - INITIAL_RETRIES_WITHOUT_DELAY) * 1000;
+                this.log.info(
+                  `Adding delay of ${delayMs}ms before Qwen API call (retry ${qwenTimeoutRetries + 1})`,
+                );
+                await new Promise((resolve) => setTimeout(resolve, delayMs));
               }
-              
+
               llmResponse = await getLlmProvider(providerToTry).getLlmResponse(
                 messagesForLlm,
                 orchestratorPrompt,
@@ -280,23 +283,34 @@ export class Agent {
               if (
                 llmError instanceof LlmError &&
                 providerToTry === 'qwen' &&
-                ((llmError.message.includes('Qwen API request failed with status 504') &&
-                llmError.message.includes('stream timeout')) ||
-                llmError.message.includes('Qwen API request failed with status 502'))
+                ((llmError.message.includes(
+                  'Qwen API request failed with status 504',
+                ) &&
+                  llmError.message.includes('stream timeout')) ||
+                  llmError.message.includes(
+                    'Qwen API request failed with status 502',
+                  ))
               ) {
                 qwenTimeoutRetries++;
                 this.log.warn(
                   `Qwen API error encountered (${qwenTimeoutRetries}/${MAX_QWEN_TIMEOUT_RETRIES}): ${llmError.message}`,
                 );
-                
+
                 // If we haven't reached the max retries, continue with the same provider
                 if (qwenTimeoutRetries < MAX_QWEN_TIMEOUT_RETRIES) {
                   // Add delay after the initial retries without delay
                   if (qwenTimeoutRetries >= INITIAL_RETRIES_WITHOUT_DELAY) {
                     // Calcul du délai : 2 secondes de base + 1 seconde supplémentaire par tentative au-delà de 4
-                    const delayMs = 2000 + (qwenTimeoutRetries - INITIAL_RETRIES_WITHOUT_DELAY) * 1000;
-                    this.log.info(`Adding delay of ${delayMs}ms before retrying Qwen API call (retry ${qwenTimeoutRetries + 1})`);
-                    await new Promise(resolve => setTimeout(resolve, delayMs));
+                    const delayMs =
+                      2000 +
+                      (qwenTimeoutRetries - INITIAL_RETRIES_WITHOUT_DELAY) *
+                        1000;
+                    this.log.info(
+                      `Adding delay of ${delayMs}ms before retrying Qwen API call (retry ${qwenTimeoutRetries + 1})`,
+                    );
+                    await new Promise((resolve) =>
+                      setTimeout(resolve, delayMs),
+                    );
                   }
                   i--; // Decrement i to retry the same provider
                   continue;
@@ -366,7 +380,7 @@ export class Agent {
             'Parsed LLM response before answer check',
           );
           const { answer, canvas, command, thought } = parsedResponse;
-          
+
           if (answer) {
             this.session.history.push({
               content: answer,
@@ -381,7 +395,9 @@ export class Agent {
 
           // Check for loops in agent behavior
           if (this.detectLoop(thought, command)) {
-            this.log.error('Loop detected in agent behavior. Stopping execution.');
+            this.log.error(
+              'Loop detected in agent behavior. Stopping execution.',
+            );
             return 'Agent stopped due to detected loop in behavior.';
           }
 
@@ -442,7 +458,10 @@ export class Agent {
 
           if (command && command.name === 'finish') {
             try {
-              const finishResult = await this.executeTool(command, iterationLog);
+              const finishResult = await this.executeTool(
+                command,
+                iterationLog,
+              );
               if (
                 typeof finishResult === 'object' &&
                 finishResult !== null &&
@@ -537,8 +556,7 @@ export class Agent {
               toolResult.startsWith('Error executing tool')
             ) {
               this.session.history.push({
-                content:
-                  `The tool execution failed with the following error: ${toolResult}. Please analyze the error and try a different approach. You can use another tool, or try to fix the problem with the previous tool.`,
+                content: `The tool execution failed with the following error: ${toolResult}. Please analyze the error and try a different approach. You can use another tool, or try to fix the problem with the previous tool.`,
                 id: crypto.randomUUID(),
                 timestamp: Date.now(),
                 type: 'error',
@@ -648,11 +666,26 @@ export class Agent {
         await redisClient.incr('leaderboard:successfulRuns');
         this.log.info('Successfully incremented successfulRuns counter');
       } catch (error) {
-        this.log.error({ err: error }, 'Failed to increment successfulRuns in Redis');
+        this.log.error(
+          { err: error },
+          'Failed to increment successfulRuns in Redis',
+        );
       }
-      
+
       await this.cleanup();
     }
+  }
+
+  private calculateTextSimilarity(text1: string, text2: string): number {
+    // Simple similarity calculation using character overlap
+    // In a real implementation, you might want to use more sophisticated algorithms
+    const set1 = new Set(text1.toLowerCase().split(/\s+/));
+    const set2 = new Set(text2.toLowerCase().split(/\s+/));
+
+    const intersection = new Set([...set1].filter((x) => set2.has(x)));
+    const union = new Set([...set1, ...set2]);
+
+    return union.size === 0 ? 1 : intersection.size / union.size;
   }
 
   private async cleanup() {
@@ -661,6 +694,244 @@ export class Agent {
       await this.subscriber.unsubscribe(channel);
       await this.subscriber.quit();
     }
+  }
+
+  /**
+   * Converts plain text responses to valid JSON format when the LLM doesn't follow the required format
+   * This handles cases where the LLM responds with plain text instead of JSON
+   */
+  private convertPlainTextToValidJson(text: string): string {
+    // Clean the text
+    const cleanText = text.trim();
+
+    // If it's already valid JSON, return as is
+    try {
+      JSON.parse(cleanText);
+      return cleanText;
+    } catch {
+      // Not valid JSON, proceed with conversion
+    }
+
+    // Analyze the content to determine appropriate tool
+    const lowerText = cleanText.toLowerCase();
+
+    // Check for canvas-related keywords
+    const canvasKeywords = [
+      'canvas',
+      'display',
+      'show',
+      'demo',
+      'afficher',
+      'montrer',
+      'visual',
+    ];
+    const isCanvasRequest = canvasKeywords.some((keyword) =>
+      lowerText.includes(keyword),
+    );
+
+    // Check for todo-related keywords
+    const todoKeywords = [
+      'todo',
+      'task',
+      'list',
+      'step',
+      'plan',
+      'workflow',
+      'tâche',
+      'étape',
+    ];
+    const isTodoRequest = todoKeywords.some((keyword) =>
+      lowerText.includes(keyword),
+    );
+
+    // Check for creation/building requests that should use todo lists
+    const creationKeywords = [
+      'create',
+      'build',
+      'make',
+      'generate',
+      'develop',
+      'implement',
+      'write',
+      'game',
+      'website',
+      'app',
+      'créer',
+      'construire',
+      'faire',
+      'générer',
+      'développer',
+      'implémenter',
+      'écrire',
+    ];
+
+    // Check if this looks like a creation request
+    const isCreationRequest = creationKeywords.some((keyword) =>
+      lowerText.includes(keyword),
+    );
+
+    let command;
+    let thought;
+
+    // Prioritize canvas requests over creation requests
+    if (isCanvasRequest) {
+      // Handle canvas display requests
+      thought = "L'utilisateur veut afficher quelque chose dans le canvas.";
+      command = {
+        name: 'display_canvas',
+        params: {
+          content: cleanText.includes('helloworld')
+            ? "<div style='display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 48px; font-weight: bold;'>helloworld</div>"
+            : `<div><h1>Canvas Display</h1><p>${cleanText}</p></div>`,
+          contentType: 'html',
+        },
+      };
+    } else if (isCreationRequest && isTodoRequest) {
+      // For creation requests that mention todos, create a todo list first
+      thought =
+        "L'utilisateur demande de créer quelque chose. Je dois d'abord créer une todo list pour organiser le travail.";
+      command = {
+        name: 'manage_todo_list',
+        params: {
+          action: 'create',
+          title: 'Projet de création',
+          todos: [
+            {
+              category: 'planning',
+              content: "Analyser la demande et planifier l'approche",
+              id: '1',
+              priority: 'high',
+              status: 'pending',
+            },
+            {
+              category: 'development',
+              content: "Commencer l'implémentation",
+              id: '2',
+              priority: 'high',
+              status: 'pending',
+            },
+          ],
+        },
+      };
+    } else if (isTodoRequest) {
+      // Pure todo list request
+      thought =
+        "L'utilisateur veut utiliser la todo list. Je vais afficher ou gérer la todo list.";
+      command = {
+        name: 'manage_todo_list',
+        params: {
+          action: 'display',
+        },
+      };
+    } else if (isCreationRequest) {
+      // Other creation requests
+      thought =
+        "L'utilisateur demande de créer quelque chose. Je dois d'abord créer une todo list pour organiser le travail.";
+      command = {
+        name: 'manage_todo_list',
+        params: {
+          action: 'create',
+          title: 'Projet de création',
+          todos: [
+            {
+              category: 'planning',
+              content: "Analyser la demande et planifier l'approche",
+              id: '1',
+              priority: 'high',
+              status: 'pending',
+            },
+            {
+              category: 'development',
+              content: "Commencer l'implémentation",
+              id: '2',
+              priority: 'high',
+              status: 'pending',
+            },
+          ],
+        },
+      };
+    } else {
+      // Default to finish tool for other requests
+      thought =
+        "L'utilisateur a répondu avec du texte brut. Je vais convertir cela en format JSON valide.";
+      command = {
+        name: 'finish',
+        params: {
+          response: cleanText,
+        },
+      };
+    }
+
+    const jsonObject = { command, thought };
+    return JSON.stringify(jsonObject);
+  }
+
+  private detectLoop(
+    thought?: string,
+    command?: { name?: string; params?: Record<string, any>; },
+  ): boolean {
+    const now = Date.now();
+
+    // Add current behavior to history
+    this.behaviorHistory.push({
+      command,
+      thought,
+      timestamp: now,
+    });
+
+    // Keep only the most recent behaviors
+    if (this.behaviorHistory.length > this.maxBehaviorHistory) {
+      this.behaviorHistory.shift();
+    }
+
+    // Check for repetitive patterns
+    if (this.behaviorHistory.length >= this.loopDetectionThreshold) {
+      // Check for command repetition
+      if (command) {
+        const recentCommands = this.behaviorHistory.slice(
+          -this.loopDetectionThreshold,
+        );
+        const allSameCommand = recentCommands.every(
+          (behavior) =>
+            behavior.command &&
+            behavior.command.name === command.name &&
+            JSON.stringify(behavior.command.params) ===
+              JSON.stringify(command.params),
+        );
+
+        if (allSameCommand) {
+          this.log.warn(
+            `Loop detected: Same command '${command.name}' repeated ${this.loopDetectionThreshold} times`,
+          );
+          return true;
+        }
+      }
+
+      // Check for thought repetition (if no command)
+      if (thought && !command) {
+        const recentThoughts = this.behaviorHistory.slice(
+          -this.loopDetectionThreshold,
+        );
+        const allSimilarThoughts = recentThoughts.every(
+          (
+            behavior: { thought?: string },
+            index: number,
+            arr: { thought?: string }[],
+          ) =>
+            behavior.thought &&
+            this.calculateTextSimilarity(behavior.thought, thought) > 0.8,
+        );
+
+        if (allSimilarThoughts) {
+          this.log.warn(
+            `Loop detected: Similar thoughts repeated ${this.loopDetectionThreshold} times`,
+          );
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   private async executeTool(command: Command, log: Logger): Promise<unknown> {
@@ -782,12 +1053,15 @@ export class Agent {
         { error, llmResponse: jsonText },
         'Failed to parse LLM response',
       );
-      
+
       // Try to convert plain text to valid JSON format
       try {
         const convertedResponse = this.convertPlainTextToValidJson(jsonText);
         const convertedParsed = JSON.parse(convertedResponse);
-        log.debug({ convertedParsed }, 'Successfully converted plain text to valid JSON');
+        log.debug(
+          { convertedParsed },
+          'Successfully converted plain text to valid JSON',
+        );
         return llmResponseSchema.parse(convertedParsed);
       } catch (conversionError) {
         log.error(
@@ -795,148 +1069,18 @@ export class Agent {
           'Failed to convert plain text to valid JSON',
         );
       }
-      
+
       throw new Error(`Failed to parse LLM response: ${jsonText}`);
     }
-  }
-
-  /**
-   * Converts plain text responses to valid JSON format when the LLM doesn't follow the required format
-   * This handles cases where the LLM responds with plain text instead of JSON
-   */
-  private convertPlainTextToValidJson(text: string): string {
-    // Clean the text
-    const cleanText = text.trim();
-    
-    // If it's already valid JSON, return as is
-    try {
-      JSON.parse(cleanText);
-      return cleanText;
-    } catch {
-      // Not valid JSON, proceed with conversion
-    }
-    
-    // Analyze the content to determine appropriate tool
-    const lowerText = cleanText.toLowerCase();
-    
-    // Check for canvas-related keywords
-    const canvasKeywords = ['canvas', 'display', 'show', 'demo', 'afficher', 'montrer', 'visual'];
-    const isCanvasRequest = canvasKeywords.some(keyword => 
-      lowerText.includes(keyword)
-    );
-    
-    // Check for todo-related keywords
-    const todoKeywords = ['todo', 'task', 'list', 'step', 'plan', 'workflow', 'tâche', 'étape'];
-    const isTodoRequest = todoKeywords.some(keyword => 
-      lowerText.includes(keyword)
-    );
-    
-    // Check for creation/building requests that should use todo lists
-    const creationKeywords = [
-      'create', 'build', 'make', 'generate', 'develop', 'implement', 'write',
-      'game', 'website', 'app',
-      'créer', 'construire', 'faire', 'générer', 'développer', 'implémenter', 'écrire'
-    ];
-    
-    // Check if this looks like a creation request
-    const isCreationRequest = creationKeywords.some(keyword => 
-      lowerText.includes(keyword)
-    );
-    
-    let command;
-    let thought;
-    
-    // Prioritize canvas requests over creation requests
-    if (isCanvasRequest) {
-      // Handle canvas display requests
-      thought = "L'utilisateur veut afficher quelque chose dans le canvas.";
-      command = {
-        name: "display_canvas",
-        params: {
-          content: cleanText.includes('helloworld') ? "<div style='display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 48px; font-weight: bold;'>helloworld</div>" : `<div><h1>Canvas Display</h1><p>${cleanText}</p></div>`,
-          contentType: "html"
-        }
-      };
-    } else if (isCreationRequest && isTodoRequest) {
-      // For creation requests that mention todos, create a todo list first
-      thought = "L'utilisateur demande de créer quelque chose. Je dois d'abord créer une todo list pour organiser le travail.";
-      command = {
-        name: "manage_todo_list",
-        params: {
-          action: "create",
-          title: "Projet de création",
-          todos: [
-            {
-              id: "1",
-              content: "Analyser la demande et planifier l'approche",
-              status: "pending",
-              priority: "high",
-              category: "planning"
-            },
-            {
-              id: "2", 
-              content: "Commencer l'implémentation",
-              status: "pending",
-              priority: "high",
-              category: "development"
-            }
-          ]
-        }
-      };
-    } else if (isTodoRequest) {
-      // Pure todo list request
-      thought = "L'utilisateur veut utiliser la todo list. Je vais afficher ou gérer la todo list.";
-      command = {
-        name: "manage_todo_list",
-        params: {
-          action: "display"
-        }
-      };
-    } else if (isCreationRequest) {
-      // Other creation requests
-      thought = "L'utilisateur demande de créer quelque chose. Je dois d'abord créer une todo list pour organiser le travail.";
-      command = {
-        name: "manage_todo_list",
-        params: {
-          action: "create",
-          title: "Projet de création",
-          todos: [
-            {
-              id: "1",
-              content: "Analyser la demande et planifier l'approche",
-              status: "pending",
-              priority: "high",
-              category: "planning"
-            },
-            {
-              id: "2", 
-              content: "Commencer l'implémentation",
-              status: "pending",
-              priority: "high",
-              category: "development"
-            }
-          ]
-        }
-      };
-    } else {
-      // Default to finish tool for other requests
-      thought = "L'utilisateur a répondu avec du texte brut. Je vais convertir cela en format JSON valide.";
-      command = {
-        name: "finish",
-        params: {
-          response: cleanText
-        }
-      };
-    }
-    
-    const jsonObject = { thought, command };
-    return JSON.stringify(jsonObject);
   }
 
   private publishToChannel(data: ChannelData) {
     const channel = `job:${this.job.id}:events`;
     const message = JSON.stringify(data);
-    this.log.info({ channel, message, dataType: data.type }, '[PUBLISH] Publishing message to Redis channel');
+    this.log.info(
+      { channel, dataType: data.type, message },
+      '[PUBLISH] Publishing message to Redis channel',
+    );
     getRedisClientInstance().publish(channel, message);
     this.log.info('[PUBLISH] Message published to Redis successfully');
     // Only send serializable and relevant data to updateProgress
@@ -948,74 +1092,6 @@ export class Agent {
     this.job.updateProgress(progressData);
   }
 
-  private detectLoop(thought?: string, command?: Command): boolean {
-    const now = Date.now();
-    
-    // Add current behavior to history
-    this.behaviorHistory.push({
-      thought,
-      command,
-      timestamp: now
-    });
-    
-    // Keep only the most recent behaviors
-    if (this.behaviorHistory.length > this.maxBehaviorHistory) {
-      this.behaviorHistory.shift();
-    }
-    
-    // Check for repetitive patterns
-    if (this.behaviorHistory.length >= this.loopDetectionThreshold) {
-      // Check for command repetition
-      if (command) {
-        const recentCommands = this.behaviorHistory.slice(-this.loopDetectionThreshold);
-        const allSameCommand = recentCommands.every(
-          (behavior: { command?: Command }, index: number, arr: { command?: Command }[]) => 
-            behavior.command && 
-            behavior.command.name === command.name &&
-            JSON.stringify(behavior.command.params) === JSON.stringify(command.params)
-        );
-        
-        if (allSameCommand) {
-          this.log.warn(
-            `Loop detected: Same command '${command.name}' repeated ${this.loopDetectionThreshold} times`
-          );
-          return true;
-        }
-      }
-      
-      // Check for thought repetition (if no command)
-      if (thought && !command) {
-        const recentThoughts = this.behaviorHistory.slice(-this.loopDetectionThreshold);
-        const allSimilarThoughts = recentThoughts.every(
-          (behavior: { thought?: string }, index: number, arr: { thought?: string }[]) => 
-            behavior.thought && 
-            this.calculateTextSimilarity(behavior.thought, thought) > 0.8
-        );
-        
-        if (allSimilarThoughts) {
-          this.log.warn(
-            `Loop detected: Similar thoughts repeated ${this.loopDetectionThreshold} times`
-          );
-          return true;
-        }
-      }
-    }
-    
-    return false;
-  }
-  
-  private calculateTextSimilarity(text1: string, text2: string): number {
-    // Simple similarity calculation using character overlap
-    // In a real implementation, you might want to use more sophisticated algorithms
-    const set1 = new Set(text1.toLowerCase().split(/\s+/));
-    const set2 = new Set(text2.toLowerCase().split(/\s+/));
-    
-    const intersection = new Set([...set1].filter(x => set2.has(x)));
-    const union = new Set([...set1, ...set2]);
-    
-    return union.size === 0 ? 1 : intersection.size / union.size;
-  }
-  
   private async setupInterruptListener(): Promise<void> {
     const channel = `job:${this.job.id}:interrupt`;
     this.subscriber = getRedisClientInstance().duplicate();

@@ -25,7 +25,8 @@ const loadedToolFiles = new Set<string>();
 const fileToToolNameMap = new Map<string, string>();
 let watcher: chokidar.FSWatcher | null = null;
 
-const runningInDist = process.env.NODE_ENV === 'production' || __dirname.includes('dist');
+const runningInDist =
+  process.env.NODE_ENV === 'production' || __dirname.includes('dist');
 export const fileExtension = runningInDist ? '.tool.js' : '.tool.ts';
 
 /**
@@ -42,7 +43,7 @@ export async function _internalLoadTools(): Promise<void> {
     toolFiles = await findToolFiles(toolsDir, fileExtension);
 
     console.log(
-      `[_internalLoadTools] Found tool files: ${toolFiles.join(', ')}`
+      `[_internalLoadTools] Found tool files: ${toolFiles.join(', ')}`,
     );
     getLogger().info(
       `[_internalLoadTools] Found tool files: ${toolFiles.join(', ')}`,
@@ -51,7 +52,7 @@ export async function _internalLoadTools(): Promise<void> {
       console.log(`[GEMINI-DEBUG] Loading tool file: ${file}`);
       await loadToolFile(file);
       console.log(
-        `[_internalLoadTools] Successfully loaded tool file: ${file}`
+        `[_internalLoadTools] Successfully loaded tool file: ${file}`,
       );
       getLogger().info(
         `[_internalLoadTools] Successfully loaded tool file: ${file}`,
@@ -71,7 +72,7 @@ export async function _internalLoadTools(): Promise<void> {
     throw error; // Re-throw to ensure the error is propagated
   }
   console.log(
-    `${toolRegistry.getAll().length} tools have been loaded dynamically.`
+    `${toolRegistry.getAll().length} tools have been loaded dynamically.`,
   );
   getLogger().info(
     `${toolRegistry.getAll().length} tools have been loaded dynamically.`,
@@ -122,7 +123,7 @@ export function getToolsDir(): string {
   // In production (dist), tools are in packages/core/dist/modules/tools/definitions
   // In development, they're in packages/core/src/modules/tools/definitions
   let toolsPath: string;
-  
+
   if (runningInDist) {
     // When running in Docker or as a worker, we need to construct the path correctly
     // The worker runs from /home/demon/agentforge/AgenticForge2/AgenticForge
@@ -131,14 +132,20 @@ export function getToolsDir(): string {
     if (process.cwd().endsWith('packages/core')) {
       toolsPath = path.resolve(process.cwd(), 'dist/modules/tools/definitions');
     } else {
-      toolsPath = path.resolve(process.cwd(), 'packages/core/dist/modules/tools/definitions');
+      toolsPath = path.resolve(
+        process.cwd(),
+        'packages/core/dist/modules/tools/definitions',
+      );
     }
   } else {
     // Check if we're already in the packages/core directory
     if (process.cwd().endsWith('packages/core')) {
       toolsPath = path.resolve(process.cwd(), 'src/modules/tools/definitions');
     } else {
-      toolsPath = path.resolve(process.cwd(), 'packages/core/src/modules/tools/definitions');
+      toolsPath = path.resolve(
+        process.cwd(),
+        'packages/core/src/modules/tools/definitions',
+      );
     }
   }
 
@@ -165,7 +172,9 @@ async function findToolFiles(
 
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
-      console.log(`[findToolFiles] Processing entry: ${entry.name}, isDirectory: ${entry.isDirectory()}, isFile: ${entry.isFile()}`);
+      console.log(
+        `[findToolFiles] Processing entry: ${entry.name}, isDirectory: ${entry.isDirectory()}, isFile: ${entry.isFile()}`,
+      );
 
       if (entry.isDirectory()) {
         files = files.concat(await findToolFiles(fullPath, extension));
@@ -193,7 +202,7 @@ async function findToolFiles(
 async function loadToolFile(file: string): Promise<void> {
   const logger = getLogger();
   logger.debug({ file }, `[loadToolFile] Attempting to load tool file.`);
-  
+
   try {
     const module = await import(`${path.resolve(file)}?v=${Date.now()}`); // Cache-busting
     logger.debug(
@@ -213,7 +222,7 @@ async function loadToolFile(file: string): Promise<void> {
           { exportName, file },
           `[loadToolFile] Found potential tool export.`,
         );
-        
+
         // Valider l'objet avec Zod mais ne pas afficher les détails verbeux
         const parsedTool = toolSchema.safeParse(exportedItem);
 
@@ -228,13 +237,13 @@ async function loadToolFile(file: string): Promise<void> {
           );
         } else {
           logger.warn(
-            { 
-              errors: parsedTool.error.issues.map(issue => ({
+            {
+              errors: parsedTool.error.issues.map((issue) => ({
                 message: issue.message,
-                path: issue.path.join('.')
-              })), 
-              exportName, 
-              file 
+                path: issue.path.join('.'),
+              })),
+              exportName,
+              file,
             },
             `[loadToolFile] Skipping invalid tool export due to Zod schema mismatch.`,
           );
@@ -256,7 +265,7 @@ async function loadToolFile(file: string): Promise<void> {
       });
       return; // Skip this tool but continue loading others
     }
-    
+
     logger.error({
       ...getErrDetails(error),
       file,
@@ -269,17 +278,21 @@ function watchTools() {
   const toolsDir = getToolsDir();
   const generatedToolsDir = path.join(
     process.cwd(),
-    runningInDist ? 'dist/tools/generated' : 'packages/core/src/tools/generated'
+    runningInDist
+      ? 'dist/tools/generated'
+      : 'packages/core/src/tools/generated',
   );
-  
+
   getLogger().info(`[watchTools] Watching for tool changes in: ${toolsDir}`);
-  getLogger().info(`[watchTools] Also watching generated tools in: ${generatedToolsDir}`);
+  getLogger().info(
+    `[watchTools] Also watching generated tools in: ${generatedToolsDir}`,
+  );
 
   // Watch both the main tools directory and the generated tools directory
   watcher = chokidar.watch(
     [
       `${toolsDir}/**/*.tool.${runningInDist ? 'js' : 'ts'}`,
-      `${generatedToolsDir}/**/*.tool.${runningInDist ? 'js' : 'ts'}`
+      `${generatedToolsDir}/**/*.tool.${runningInDist ? 'js' : 'ts'}`,
     ],
     {
       ignored: /(^|\/|\\)\./, // ignore dotfiles

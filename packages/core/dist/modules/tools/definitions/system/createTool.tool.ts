@@ -1,6 +1,6 @@
+import { exec } from 'child_process';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { exec } from 'child_process';
 import { promisify } from 'util';
 // src/tools/system/createTool.tool.ts
 import { z } from 'zod';
@@ -18,15 +18,23 @@ export const parameters = z.object({
     .string()
     .describe("Corps de la fonction 'execute' (ex: 'return someValue;')."),
   parameters: z.string().describe('Schéma Zod pour les paramètres.'),
+  run_checks: z
+    .boolean()
+    .optional()
+    .describe(
+      'Lancer automatiquement small-checks après création (défaut: false)',
+    ),
   tool_name: z
     .string()
     .regex(/^[a-z0-9-]+/)
     .describe("Nom de l'outil (kebab-case)."),
-  run_checks: z.boolean().optional().describe("Lancer automatiquement small-checks après création (défaut: false)"),
 });
 
 // Les outils générés vont TOUJOURS dans dist/ pour les distinguer des outils natifs
-const GENERATED_TOOLS_DIR = path.resolve(process.cwd(), 'packages/core/dist/tools/generated');
+const GENERATED_TOOLS_DIR = path.resolve(
+  process.cwd(),
+  'packages/core/dist/tools/generated',
+);
 
 const TOOL_TEMPLATE = `
 // 🤖 OUTIL GÉNÉRÉ AUTOMATIQUEMENT par l'agent AgenticForge
@@ -125,9 +133,16 @@ const toCamelCase = (str: string) =>
   str.replace(/[-_](.)/g, (_, c) => c.toUpperCase());
 
 export const createToolTool: Tool<typeof parameters> = {
-  description: "Crée un outil MCP généré dans dist/tools/generated/ (distingué des outils natifs dans src/). Génère du TypeScript + Zod + tests. Environnement: TypeScript/pnpm/MCP.",
+  description:
+    'Crée un outil MCP généré dans dist/tools/generated/ (distingué des outils natifs dans src/). Génère du TypeScript + Zod + tests. Environnement: TypeScript/pnpm/MCP.',
   execute: async (args: z.infer<typeof parameters>, ctx: Ctx) => {
-    const { description, execute_function, parameters, tool_name, run_checks = false } = args;
+    const {
+      description,
+      execute_function,
+      parameters,
+      run_checks = false,
+      tool_name,
+    } = args;
     const toolVarName = toCamelCase(tool_name);
     const toolFileName = `${toolVarName}.tool.ts`;
     const toolFilePath = path.join(GENERATED_TOOLS_DIR, toolFileName);
@@ -148,39 +163,44 @@ export const createToolTool: Tool<typeof parameters> = {
       // Ensure the directory exists before writing the file
       await fs.mkdir(GENERATED_TOOLS_DIR, { recursive: true });
       await fs.writeFile(toolFilePath, toolFileContent, 'utf-8');
-      
+
       // Générer automatiquement le fichier de test
       const testFileName = `${toolVarName}.tool.test.ts`;
       const testFilePath = path.join(GENERATED_TOOLS_DIR, testFileName);
-      
-      const testFileContent = TEST_TEMPLATE
-        .replace(/\{\{tool_name\}\}/g, tool_name)
+
+      const testFileContent = TEST_TEMPLATE.replace(
+        /\{\{tool_name\}\}/g,
+        tool_name,
+      )
         .replace(/\{\{toolVarName\}\}/g, toolVarName)
         .replace(/\{\{toolFileName\}\}/g, toolFileName.replace('.ts', ''))
         .replace(/\{\{description\}\}/g, description);
-      
+
       await fs.writeFile(testFilePath, testFileContent, 'utf-8');
-      
+
       // Générer aussi la version JavaScript pour l'exécution runtime
       const jsFilePath = toolFilePath.replace('.ts', '.ts');
-      const jsContent = toolFileContent
-        .replace(/import.*from.*\.ts';/g, '') // Supprimer les imports TS
-        .replace('export const', 'const')
-        .replace(/: Tool<.*>/g, '')
-        + '\nexport { ' + toolVarName + 'Tool };';
-      
+      const jsContent =
+        toolFileContent
+          .replace(/import.*from.*\.ts';/g, '') // Supprimer les imports TS
+          .replace('export const', 'const')
+          .replace(/: Tool<.*>/g, '') +
+        '\nexport { ' +
+        toolVarName +
+        'Tool };';
+
       await fs.writeFile(jsFilePath, jsContent, 'utf-8');
-      
+
       let output = `Outil MCP TypeScript '${toolFileName}' créé avec succès!\nTest unitaire '${testFileName}' généré automatiquement.\n`;
       let successMessage = `Outil '${tool_name}' généré avec schémas Zod + tests unitaires.`;
-      
+
       // Lancer automatiquement small-checks si demandé
       if (run_checks) {
         try {
           ctx.log.info('Lancement automatique des small-checks...');
-          const { stdout, stderr } = await execAsync('./run.sh small-checks', { 
+          const { stderr, stdout } = await execAsync('./run.sh small-checks', {
             cwd: process.cwd(),
-            timeout: 60000 // 1 minute timeout
+            timeout: 60000, // 1 minute timeout
           });
           output += '\n=== Résultat des small-checks ===\n' + stdout;
           if (stderr) {
@@ -188,14 +208,23 @@ export const createToolTool: Tool<typeof parameters> = {
           }
           successMessage += ' Small-checks exécutés automatiquement.';
         } catch (error) {
-          const err = error as { stdout?: string; stderr?: string; message: string };
-          output += '\n=== Erreur lors des small-checks ===\n' + (err.stdout || '') + (err.stderr || err.message);
-          successMessage += ' ATTENTION: Small-checks ont échoué - voir détails ci-dessus.';
+          const err = error as {
+            message: string;
+            stderr?: string;
+            stdout?: string;
+          };
+          output +=
+            '\n=== Erreur lors des small-checks ===\n' +
+            (err.stdout || '') +
+            (err.stderr || err.message);
+          successMessage +=
+            ' ATTENTION: Small-checks ont échoué - voir détails ci-dessus.';
         }
       } else {
-        successMessage += ' 🎯 Outil créé dans dist/tools/generated/ (outils générés vs natifs dans src/). Redémarrez le worker pour activation immédiate. Lancez \'./run.sh small-checks\' pour vérifier.';
+        successMessage +=
+          " 🎯 Outil créé dans dist/tools/generated/ (outils générés vs natifs dans src/). Redémarrez le worker pour activation immédiate. Lancez './run.sh small-checks' pour vérifier.";
       }
-      
+
       ctx.log.warn(successMessage);
       return `${output}\n\n${successMessage}`;
     } catch (error) {
