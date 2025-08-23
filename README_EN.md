@@ -339,6 +339,7 @@ The interactive console provides complete control over your G-Forge instance:
   Development
   10) 🔍 Lint            12) 🧪 Tests
   11) ✨ Format          13) 📘 TypeCheck
+  14) 🎯 Quality Check
 
   16) 🚪 Quit
 ```
@@ -352,6 +353,7 @@ The interactive console provides complete control over your G-Forge instance:
 | **4**  | Check status     | Health diagnostics             |
 | **5**  | Follow logs      | Real-time monitoring           |
 | **7**  | Rebuild images   | After major code changes       |
+| **14** | Quality check    | Run lint, typecheck, unit tests |
 
 ---
 
