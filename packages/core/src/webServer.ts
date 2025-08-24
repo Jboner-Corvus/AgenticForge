@@ -2897,18 +2897,15 @@ export async function initializeWebServer(
           // Get Redis info
           const info = await redisClient.info();
 
-          // Parse Redis info to get key count and memory usage
+          // Count only LLM-specific keys instead of all Redis keys
+          const llmKeys = await redisClient.keys('llm:keys:*');
+          const keyCount = llmKeys.length;
+          
+          // Parse Redis info to get memory usage only
           const lines = info.split('\n');
-          let keyCount = 0;
           let memory = '0K';
 
           for (const line of lines) {
-            if (line.startsWith('db0:')) {
-              const match = line.match(/keys=(\d+)/);
-              if (match) {
-                keyCount = parseInt(match[1], 10);
-              }
-            }
             if (line.startsWith('used_memory_human:')) {
               memory = line.split(':')[1].trim();
             }

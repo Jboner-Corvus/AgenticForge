@@ -800,8 +800,14 @@ rebuild_all() {
     
     stop_services
     
+    # Clean Docker cache to ensure fresh builds
+    echo -e "${COLOR_YELLOW}🧹 Cleaning Docker cache...${NC}"
+    docker system prune -f
+    
     # Clean builds
+    echo -e "${COLOR_YELLOW}🧹 Cleaning build directories...${NC}"
     rm -rf packages/*/dist
+    rm -rf packages/*/build
     
     # Build packages
     echo -e "${COLOR_YELLOW}📦 Building packages...${NC}"
@@ -812,16 +818,23 @@ rebuild_all() {
     cd "$ROOT_DIR/packages/ui"  
     pnpm install && NODE_ENV=production pnpm run build
     
-    # Build Docker
+    # Build Docker with no cache to ensure fresh images
     cd "$ROOT_DIR"
-    echo -e "${COLOR_YELLOW}🐳 Building Docker images...${NC}"
+    echo -e "${COLOR_YELLOW}🐳 Building Docker images (no cache)...${NC}"
     export DOCKER_BUILDKIT=1
     docker compose build --no-cache
     
-    start_services
+    # Restart services with proper delay to ensure system prompt reload
+    echo -e "${COLOR_YELLOW}🔄 Restarting services to load updated configuration...${NC}"
+    restart_all_services
+    
+    # Wait for services to fully initialize
+    echo -e "${COLOR_CYAN}⏳ Waiting for services to initialize...${NC}"
+    sleep 5
     
     end_timer "rebuild_all"
-    echo -e "${COLOR_GREEN}🎉 Rebuild complete!${NC}"
+    echo -e "${COLOR_GREEN}🎉 Complete rebuild finished!${NC}"
+    echo -e "${COLOR_CYAN}💡 System prompt and configuration changes have been applied.${NC}"
 }
 
 # =============================================================================

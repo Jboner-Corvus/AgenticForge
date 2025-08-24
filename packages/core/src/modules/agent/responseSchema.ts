@@ -38,7 +38,7 @@ export const llmResponseSchema = z.object({
     .string()
     .optional()
     .describe(
-      'Your internal monologue. Use it to reason about the task, process information, and plan your next steps. This is not shown to the user.',
+      'Your internal monologue and reasoning. Use it to think through problems, explain your approach, and communicate your thought process. This appears as a chat bubble in the conversation flow for the user to see your reasoning.',
     ),
 });
 

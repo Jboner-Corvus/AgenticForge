@@ -68,7 +68,7 @@ const todoStore = new Map<string, Array<z.infer<typeof todoItemSchema>>>();
 const generateId = () =>
   Date.now().toString(36) + Math.random().toString(36).substr(2);
 
-// Fonction pour créer les données JSON de la todo list (pour l'interface native)
+// Fonction pour créer les données JSON de la todo list (pour l'interface de chat)
 const createTodoData = (
   todos: Array<z.infer<typeof todoItemSchema>>,
   title?: string,
@@ -89,7 +89,7 @@ const createTodoData = (
       priority: todo.priority || 'medium',
       status: todo.status,
     })),
-    type: 'todo_list',
+    type: 'chat_header_todo',
   };
 };
 
@@ -146,15 +146,15 @@ export const manageTodoListTool: TodoListTool = {
           todoStore.set(sessionKey, newTodos);
           ctx.log.info(`Created ${newTodos.length} todos for native interface`);
 
-          // Create data for native interface
+          // Create data for chat header interface
           const todoData = createTodoData(newTodos, args.title);
 
-          // Send via WebSocket for native interface integration
+          // Send via WebSocket for chat header integration
           if (ctx.job?.id) {
             const channel = `job:${ctx.job.id}:events`;
             const wsMessage = JSON.stringify({
               data: todoData,
-              type: 'todo_list',
+              type: 'chat_header_todo',
             });
             getRedisClientInstance().publish(channel, wsMessage);
           }
@@ -167,19 +167,19 @@ export const manageTodoListTool: TodoListTool = {
 
         case 'display':
           ctx.log.info(
-            `Displaying ${currentTodos.length} todos via native interface`,
+            `Displaying ${currentTodos.length} todos via chat header interface`,
           );
 
-          // Display todos in native interface
+          // Display todos in chat header interface
           const displayData = createTodoData(currentTodos, args.title);
-          ctx.log.info('Todo list displayed via native interface');
+          ctx.log.info('Todo list displayed via chat header interface');
 
-          // Send via WebSocket for native interface integration
+          // Send via WebSocket for chat header integration
           if (ctx.job?.id) {
             const channel = `job:${ctx.job.id}:events`;
             const wsMessage = JSON.stringify({
               data: displayData,
-              type: 'todo_list',
+              type: 'chat_header_todo',
             });
             getRedisClientInstance().publish(channel, wsMessage);
           }
@@ -208,16 +208,16 @@ export const manageTodoListTool: TodoListTool = {
           todoStore.set(sessionKey, currentTodos);
           ctx.log.info(`Updated todo ${args.itemId} to status ${args.status}`);
 
-          // Update data for native interface
+          // Update data for chat header interface
           const updateData = createTodoData(currentTodos, args.title);
-          ctx.log.info('Todo data updated for native interface');
+          ctx.log.info('Todo data updated for chat header interface');
 
-          // Send via WebSocket for native interface integration
+          // Send via WebSocket for chat header integration
           if (ctx.job?.id) {
             const channel = `job:${ctx.job.id}:events`;
             const wsMessage = JSON.stringify({
               data: updateData,
-              type: 'todo_list',
+              type: 'chat_header_todo',
             });
             getRedisClientInstance().publish(channel, wsMessage);
           }

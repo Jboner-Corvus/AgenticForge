@@ -14,23 +14,24 @@ import { UserInput } from './components/UserInput';
 import { Suspense, useState, useEffect } from 'react';
 import { useResizablePanel } from './lib/hooks/useResizablePanel';
 import { HeaderContainer } from './components/HeaderContainer';
+import ChatHeaderTodoList from './components/ChatHeaderTodoList';
 import { SettingsModalContainer } from './components/SettingsModalContainer';
 import { ChatMessagesContainer } from './components/ChatMessagesContainer';
 import { usePinningStore } from './store/pinningStore';
-import { Eye } from 'lucide-react';
-import { VersionDisplay } from './components/VersionDisplay';
+import { useUIStore } from './store/uiStore';
 import TodoListHandler from './components/TodoListHandler';
+import { LoadingSpinner } from './components/LoadingSpinner';
 // Lazy imports pour optimiser le bundle
 import { 
   LazyLeaderboardPage, 
   LazyLlmKeyManager, 
   LazyOAuthPage,
   LazyLayoutManager,
-  LazyEnhancedTodoPanel,
   LazyCanvas,
   LazyAgentCanvas,
   LazyDebugLogContainer,
-  LazySubAgentCLIView
+  LazySubAgentCLIView,
+  LazyEnhancedTodoPanel
 } from './components/optimized/LazyComponents';
 // Import du store unifié
 import { useCombinedStore as useStore } from './store';
@@ -60,6 +61,7 @@ export default function App() {
   const canvasContent = useCanvasContent();
   const activeCliJobId = useActiveCliJobId();
   const isDarkMode = useIsDarkMode();
+  const isTodoListVisible = useUIStore((state) => state.isTodoListVisible);
   
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const { translations } = useLanguage();
@@ -133,6 +135,7 @@ export default function App() {
           <AppInitializer />
           <TodoListHandler />
         <HeaderContainer />
+        <ChatHeaderTodoList />
         <Suspense fallback={<div>Loading Settings...</div>}>
           <SettingsModalContainer />
         </Suspense>
@@ -151,8 +154,17 @@ export default function App() {
             </div>
           )}
 
-          {/* Todo List Panel - Version classique (masquée si pinnée) */}
-          {!components.todolist?.isPinned && <LazyEnhancedTodoPanel />}
+          {/* Todo List - Classic version when not pinned */}
+          {!components.todolist?.isPinned && isTodoListVisible && (
+            <Suspense fallback={
+              <div className="fixed left-4 top-4 w-96 h-64 bg-gray-900/80 rounded-2xl border border-gray-700 flex items-center justify-center">
+                <LoadingSpinner className="h-6 w-6" />
+                <span className="ml-2 text-gray-400 text-sm">Loading mission control...</span>
+              </div>
+            }>
+              <LazyEnhancedTodoPanel />
+            </Suspense>
+          )}
 
           {/* Conteneur principal pour la discussion et le canevas */}
           <main className="flex-1 flex flex-col overflow-hidden">
@@ -161,16 +173,6 @@ export default function App() {
                 {renderMainContent()}
               </div>
 
-              {/* Bouton flottant pour ouvrir le canevas */}
-              {currentPage === 'chat' && !isCanvasVisible && !isCanvasPinned && !components.canvas?.isPinned && (
-                <button
-                  onClick={() => useStore.getState().setIsCanvasVisible(true)}
-                  className="absolute right-4 bottom-24 bg-cyan-500 hover:bg-cyan-600 text-white rounded-full p-3 shadow-lg transition-all duration-300 z-10"
-                  aria-label="Ouvrir le canevas"
-                >
-                  <Eye className="h-5 w-5" />
-                </button>
-              )}
 
               {/* Section du Canvas CLASSIQUE - masquée si pinnée */}
               {(isCanvasVisible || isCanvasPinned) && currentPage === 'chat' && !isCanvasFullscreen && !components.canvas?.isPinned && (
@@ -234,7 +236,6 @@ export default function App() {
           indicatorPosition="bottom-right"
           onAuthError={() => console.log('🔐 Système d\'authentification activé')}
         />
-        <VersionDisplay />
         </div>
       </SessionIdProvider>
     </LanguageProvider>

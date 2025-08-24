@@ -53,7 +53,7 @@ var createTodoData = (todos, title) => {
       priority: todo.priority || "medium",
       status: todo.status
     })),
-    type: "todo_list"
+    type: "chat_header_todo"
   };
 };
 var manageTodoListTool = {
@@ -99,7 +99,7 @@ var manageTodoListTool = {
             const channel = `job:${ctx.job.id}:events`;
             const wsMessage = JSON.stringify({
               data: todoData,
-              type: "todo_list"
+              type: "chat_header_todo"
             });
             getRedisClientInstance().publish(channel, wsMessage);
           }
@@ -110,15 +110,15 @@ var manageTodoListTool = {
           };
         case "display":
           ctx.log.info(
-            `Displaying ${currentTodos.length} todos via native interface`
+            `Displaying ${currentTodos.length} todos via chat header interface`
           );
           const displayData = createTodoData(currentTodos, args.title);
-          ctx.log.info("Todo list displayed via native interface");
+          ctx.log.info("Todo list displayed via chat header interface");
           if (ctx.job?.id) {
             const channel = `job:${ctx.job.id}:events`;
             const wsMessage = JSON.stringify({
               data: displayData,
-              type: "todo_list"
+              type: "chat_header_todo"
             });
             getRedisClientInstance().publish(channel, wsMessage);
           }
@@ -143,12 +143,12 @@ var manageTodoListTool = {
           todoStore.set(sessionKey, currentTodos);
           ctx.log.info(`Updated todo ${args.itemId} to status ${args.status}`);
           const updateData = createTodoData(currentTodos, args.title);
-          ctx.log.info("Todo data updated for native interface");
+          ctx.log.info("Todo data updated for chat header interface");
           if (ctx.job?.id) {
             const channel = `job:${ctx.job.id}:events`;
             const wsMessage = JSON.stringify({
               data: updateData,
-              type: "todo_list"
+              type: "chat_header_todo"
             });
             getRedisClientInstance().publish(channel, wsMessage);
           }

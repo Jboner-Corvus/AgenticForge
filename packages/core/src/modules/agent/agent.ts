@@ -777,12 +777,31 @@ export class Agent {
     if (isCanvasRequest) {
       // Handle canvas display requests
       thought = "L'utilisateur veut afficher quelque chose dans le canvas.";
+      
+      // Filter out any JSON content or debugging information from canvas display
+      let filteredContent = cleanText;
+      
+      // Check if the content looks like debugging JSON with "thought" field
+      try {
+        const parsed = JSON.parse(cleanText);
+        if (parsed.thought || parsed.command) {
+          // This is debugging/internal agent information, don't display it in canvas
+          filteredContent = "<div style='padding: 20px; text-align: center;'><h2>Content filtered</h2><p>Internal agent debugging information was filtered out for security.</p></div>";
+        }
+      } catch {
+        // Not JSON, check for JSON-like patterns in text
+        if (cleanText.includes('"thought"') || cleanText.includes('```json')) {
+          // Contains debugging information, filter it out
+          filteredContent = "<div style='padding: 20px; text-align: center;'><h2>Content filtered</h2><p>Internal agent debugging information was filtered out for security.</p></div>";
+        }
+      }
+      
       command = {
         name: 'display_canvas',
         params: {
           content: cleanText.includes('helloworld')
             ? "<div style='display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 48px; font-weight: bold;'>helloworld</div>"
-            : `<div><h1>Canvas Display</h1><p>${cleanText}</p></div>`,
+            : `<div><h1>Canvas Display</h1><p>${filteredContent}</p></div>`,
           contentType: 'html',
         },
       };
@@ -987,6 +1006,20 @@ export class Agent {
         toolName: command.name,
         type: 'tool_result',
       });
+      
+      // Special handling for agent_thought tool
+      if (command.name === 'agent_thought' && result && typeof result === 'object') {
+        const thoughtResult = result as { thought?: string; success?: boolean };
+        if (thoughtResult.thought) {
+          // Publish the thought as an agent_thought message
+          this.publishToChannel({
+            content: thoughtResult.thought,
+            type: 'agent_thought',
+          });
+          log.info('Published agent thought to channel');
+        }
+      }
+      
       return result;
     } catch (_error) {
       if (_error instanceof FinishToolSignal) {

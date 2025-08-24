@@ -10,6 +10,9 @@ import {
   sendToCanvas
 } from "./chunk-3B2NS2K5.js";
 import {
+  getRedisClientInstance
+} from "./chunk-2TWFUMQU.js";
+import {
   init_esm_shims
 } from "./chunk-SB7UONON.js";
 
@@ -134,6 +137,56 @@ var createProjectData = (project, tasks, title) => {
     type: "enhanced_todo_list"
   };
 };
+var sendToChatHeader = async (ctx, project, tasks, title) => {
+  if (!ctx.job?.id) {
+    return;
+  }
+  try {
+    const channel = `job:${ctx.job.id}:events`;
+    const todoData = {
+      data: {
+        project,
+        stats: {
+          blocked: tasks.filter((t) => t.status === "blocked").length,
+          cancelled: tasks.filter((t) => t.status === "cancelled").length,
+          completed: tasks.filter((t) => t.status === "completed").length,
+          in_progress: tasks.filter((t) => t.status === "in_progress").length,
+          pending: tasks.filter((t) => t.status === "pending").length,
+          projectProgress: project ? project.progress : 0,
+          total: tasks.length
+        },
+        tasks: tasks.map((task) => ({
+          actualTime: task.actualTime,
+          assignedTo: task.assignedTo,
+          category: task.category,
+          content: task.content,
+          createdAt: task.createdAt,
+          dependencies: task.dependencies || [],
+          estimatedTime: task.estimatedTime,
+          id: task.id,
+          parentId: task.parentId,
+          priority: task.priority || "medium",
+          projectId: task.projectId,
+          status: task.status,
+          tags: task.tags || [],
+          updatedAt: task.updatedAt
+        })),
+        timestamp: Date.now(),
+        title: title || (project ? project.name : "Enhanced Todo List"),
+        type: "chat_header_todo"
+        // New type for chat header integration
+      },
+      type: "chat_header_todo"
+    };
+    await getRedisClientInstance().publish(channel, JSON.stringify(todoData));
+    ctx.log.info("Enhanced todo data sent to chat header via Redis");
+  } catch (error) {
+    ctx.log.error(
+      { err: error },
+      "Failed to send enhanced todo data to chat header"
+    );
+  }
+};
 var enhancedTodoListTool = {
   description: "Manages enhanced todo lists for complex projects with persistence and recovery capabilities. Supports project planning, task dependencies, time estimation, and real-time progress tracking.",
   execute: async (args, ctx) => {
@@ -210,6 +263,12 @@ var enhancedTodoListTool = {
             await sendToCanvas(ctx.job.id, JSON.stringify(projectData), "text");
             ctx.log.info("Project data sent to canvas for visualization");
           }
+          await sendToChatHeader(
+            ctx,
+            newProject,
+            currentTasks || [],
+            args.title
+          );
           return {
             message: 'Project "' + newProject.name + '" created successfully',
             project: newProject,
@@ -269,6 +328,12 @@ var enhancedTodoListTool = {
             await sendToCanvas(ctx.job.id, JSON.stringify(projectData), "text");
             ctx.log.info("Task data sent to canvas for visualization");
           }
+          await sendToChatHeader(
+            ctx,
+            updatedProjectWithTasks,
+            allTasks,
+            args.title
+          );
           return {
             message: "Created " + newTasks.length + " tasks successfully",
             project: updatedProjectWithTasks,
@@ -285,6 +350,12 @@ var enhancedTodoListTool = {
             await sendToCanvas(ctx.job.id, JSON.stringify(projectData), "text");
             ctx.log.info("Todo list data sent to canvas for visualization");
           }
+          await sendToChatHeader(
+            ctx,
+            currentProject,
+            currentTasks || [],
+            args.title
+          );
           return {
             message: "Todo list displayed successfully",
             project: currentProject,
@@ -337,6 +408,12 @@ var enhancedTodoListTool = {
               "Updated project data sent to canvas for visualization"
             );
           }
+          await sendToChatHeader(
+            ctx,
+            updatedProject,
+            currentTasks || [],
+            args.title
+          );
           return {
             message: 'Project "' + updatedProject.name + '" updated successfully',
             project: updatedProject,
@@ -407,6 +484,12 @@ var enhancedTodoListTool = {
             await sendToCanvas(ctx.job.id, JSON.stringify(projectData), "text");
             ctx.log.info("Updated task data sent to canvas for visualization");
           }
+          await sendToChatHeader(
+            ctx,
+            updatedProjectWithTask,
+            updatedTasks,
+            args.title
+          );
           return {
             message: 'Task "' + updatedTask.content + '" updated to ' + args.status,
             project: updatedProjectWithTask,
@@ -438,6 +521,12 @@ var enhancedTodoListTool = {
                     "Recovered state sent to canvas for visualization"
                   );
                 }
+                await sendToChatHeader(
+                  ctx,
+                  savedState.project,
+                  savedState.tasks,
+                  args.title
+                );
                 return {
                   message: "State recovered successfully",
                   project: savedState.project,

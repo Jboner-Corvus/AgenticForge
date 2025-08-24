@@ -4,21 +4,20 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 
 import { Logo } from './Logo';
 import { ConnectionStatus } from './ConnectionStatus';
+import { VersionDisplay } from './VersionDisplay';
 
-// import { Settings, PanelLeft, Sun, Moon, Bell, LayoutDashboard, BarChart, Key, MessageSquare, Bug, Square } from 'lucide-react'; // Supprimé: never used
-import { PanelLeft, Sun, Moon, LayoutDashboard, BarChart, Key, MessageSquare, Bug, Crown, Rocket } from 'lucide-react';
+// import { Settings, PanelLeft, Sun, Moon, LayoutDashboard, BarChart, Key, MessageSquare, Bug, Square, List } from 'lucide-react'; // Supprimé: never used
+import { PanelLeft, Sun, Moon, LayoutDashboard, BarChart, Key, MessageSquare, Bug, List } from 'lucide-react';
 import { useCanvasStore } from '../store/canvasStore';
+import { useUIStore } from '../store/uiStore';
 
 interface HeaderProps {
   setIsControlPanelVisible: (visible: boolean) => void;
-  // setIsSettingsModalOpen: (open: boolean) => void; // Supprimé
   isControlPanelVisible: boolean;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
   setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys' | 'oauth') => void;
   toggleDebugLogVisibility: () => void;
-  isTodoListVisible: boolean;
-  toggleTodoListVisibility: () => void;
 }
 
 export function Header({
@@ -28,26 +27,22 @@ export function Header({
   toggleDarkMode,
   setCurrentPage,
   toggleDebugLogVisibility,
-  isTodoListVisible,
-  toggleTodoListVisibility,
 }: HeaderProps) {
   const isCanvasVisible = useCanvasStore((state) => state.isCanvasVisible);
   const setIsCanvasVisible = useCanvasStore((state) => state.setIsCanvasVisible);
+  const isTodoListVisible = useUIStore((state) => state.isTodoListVisible);
+  const setIsTodoListVisible = useUIStore((state) => state.setIsTodoListVisible);
 
   const handleToggleCanvas = () => {
     setIsCanvasVisible(!isCanvasVisible);
   };
 
+  const handleToggleTodoList = () => {
+    setIsTodoListVisible(!isTodoListVisible);
+  };
+
   // Configuration des boutons avec des styles améliorés
   const buttonConfig = [
-    {
-      icon: isTodoListVisible ? Crown : Rocket,
-      onClick: toggleTodoListVisibility,
-      label: isTodoListVisible ? "🏆 Masquer Mission Control" : "🚀 Activer Mission Control",
-      ariaLabel: "Toggle Epic Todo List",
-      active: isTodoListVisible,
-      epic: true
-    },
     {
       icon: isDarkMode ? Sun : Moon,
       onClick: toggleDarkMode,
@@ -61,6 +56,13 @@ export function Header({
       label: "Afficher/Masquer le Canevas",
       ariaLabel: "Toggle Canvas",
       active: isCanvasVisible
+    },
+    {
+      icon: List,
+      onClick: handleToggleTodoList,
+      label: "Afficher/Masquer la TodoList",
+      ariaLabel: "Toggle TodoList",
+      active: isTodoListVisible
     },
     {
       icon: MessageSquare,
@@ -118,58 +120,49 @@ export function Header({
         <ConnectionStatus />
       </div>
 
-      <div className="flex items-center space-x-1">
-        <TooltipProvider delayDuration={0}>
-          {buttonConfig.map((button, index) => {
-            const Icon = button.icon;
-            return (
-              <Tooltip key={index}>
-                <TooltipTrigger asChild>
-                  <Button
-                    aria-label={button.ariaLabel}
-                    onClick={button.onClick}
-                    type="button"
-                    className={`
-                      relative transition-all duration-300 hover:scale-110 
-                      h-10 w-10 p-0 mx-1 rounded-xl
-                      ${(button as { epic?: boolean }).epic ? 
-                        (button.active ? 
-                          'bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-2 border-cyan-400/50 shadow-lg shadow-cyan-500/25 animate-pulse' :
-                          'bg-gradient-to-r from-gray-800 to-gray-700 text-cyan-400 border border-cyan-500/30 hover:from-cyan-500/20 hover:to-purple-600/20 hover:shadow-lg hover:shadow-cyan-500/20'
-                        ) :
-                        (button.active ? 
+      <div className="flex items-center space-x-2">
+        <VersionDisplay position="header" />
+        <div className="flex items-center space-x-1">
+          <TooltipProvider delayDuration={0}>
+            {buttonConfig.map((button, index) => {
+              const Icon = button.icon;
+              return (
+                <Tooltip key={index}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      aria-label={button.ariaLabel}
+                      onClick={button.onClick}
+                      type="button"
+                      className={`
+                        relative transition-all duration-300 hover:scale-110 
+                        h-10 w-10 p-0 mx-1 rounded-xl
+                        ${button.active ? 
                           'bg-purple-900/50 border-purple-700/50 text-purple-300 shadow-lg' : 
                           'bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 border border-gray-700'
-                        )
-                      }
-                    `}
+                        }
+                      `}
+                    >
+                      <Icon size={20} />
+                      {button.active && (
+                        <span className="absolute top-0 right-0 flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+                        </span>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent 
+                    className="bg-gray-800 text-gray-200 border border-gray-700 rounded-lg shadow-lg"
+                    side="bottom"
                   >
-                    <Icon size={20} />
-                    {button.active && (button as { epic?: boolean }).epic && (
-                      <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-4 w-4 bg-gradient-to-r from-cyan-400 to-purple-500"></span>
-                      </span>
-                    )}
-                    {button.active && !(button as { epic?: boolean }).epic && (
-                      <span className="absolute top-0 right-0 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
-                      </span>
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent 
-                  className="bg-gray-800 text-gray-200 border border-gray-700 rounded-lg shadow-lg"
-                  side="bottom"
-                >
-                  <p>{button.label}</p>
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
-          
-          </TooltipProvider>
+                    <p>{button.label}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+            
+            </TooltipProvider>
+        </div>
       </div>
     </header>
   );

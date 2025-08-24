@@ -2738,16 +2738,11 @@ async function initializeWebServer(pgClient, redisClient) {
       async (req, res, next) => {
         try {
           const info = await redisClient.info();
+          const llmKeys = await redisClient.keys("llm:keys:*");
+          const keyCount = llmKeys.length;
           const lines = info.split("\n");
-          let keyCount = 0;
           let memory = "0K";
           for (const line of lines) {
-            if (line.startsWith("db0:")) {
-              const match = line.match(/keys=(\d+)/);
-              if (match) {
-                keyCount = parseInt(match[1], 10);
-              }
-            }
             if (line.startsWith("used_memory_human:")) {
               memory = line.split(":")[1].trim();
             }

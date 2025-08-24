@@ -1416,7 +1416,7 @@ var llmResponseSchema = z.object({
     params: z.record(z.string(), z.any()).optional().describe("The parameters for the tool, as a JSON object.")
   }).optional().describe("The command to execute. Use this to call a tool."),
   thought: z.string().optional().describe(
-    "Your internal monologue. Use it to reason about the task, process information, and plan your next steps. This is not shown to the user."
+    "Your internal monologue and reasoning. Use it to think through problems, explain your approach, and communicate your thought process. This appears as a chat bubble in the conversation flow for the user to see your reasoning."
   )
 });
 function getResponseJsonSchema() {
@@ -2225,10 +2225,21 @@ var Agent = class {
     let thought;
     if (isCanvasRequest) {
       thought = "L'utilisateur veut afficher quelque chose dans le canvas.";
+      let filteredContent = cleanText;
+      try {
+        const parsed = JSON.parse(cleanText);
+        if (parsed.thought || parsed.command) {
+          filteredContent = "<div style='padding: 20px; text-align: center;'><h2>Content filtered</h2><p>Internal agent debugging information was filtered out for security.</p></div>";
+        }
+      } catch {
+        if (cleanText.includes('"thought"') || cleanText.includes("```json")) {
+          filteredContent = "<div style='padding: 20px; text-align: center;'><h2>Content filtered</h2><p>Internal agent debugging information was filtered out for security.</p></div>";
+        }
+      }
       command = {
         name: "display_canvas",
         params: {
-          content: cleanText.includes("helloworld") ? "<div style='display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 48px; font-weight: bold;'>helloworld</div>" : `<div><h1>Canvas Display</h1><p>${cleanText}</p></div>`,
+          content: cleanText.includes("helloworld") ? "<div style='display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 48px; font-weight: bold;'>helloworld</div>" : `<div><h1>Canvas Display</h1><p>${filteredContent}</p></div>`,
           contentType: "html"
         }
       };
@@ -2398,6 +2409,16 @@ var Agent = class {
         toolName: command.name,
         type: "tool_result"
       });
+      if (command.name === "agent_thought" && result && typeof result === "object") {
+        const thoughtResult = result;
+        if (thoughtResult.thought) {
+          this.publishToChannel({
+            content: thoughtResult.thought,
+            type: "agent_thought"
+          });
+          log.info("Published agent thought to channel");
+        }
+      }
       return result;
     } catch (_error) {
       if (_error instanceof FinishToolSignal) {

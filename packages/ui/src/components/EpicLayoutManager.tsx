@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePinningStore, useInitializePinning } from '../store/pinningStore';
 import { useCombinedStore } from '../store';
 import EpicCanvas from './EpicCanvas';
-import { EnhancedTodoListPanel } from './TodoList/EnhancedTodoListPanel';
 import { UserInput } from './UserInput';
 import { HeaderContainer } from './HeaderContainer';
 import { ChatMessagesContainer } from './ChatMessagesContainer';
@@ -90,7 +89,6 @@ export const EpicLayoutManager: React.FC = () => {
   // Store states
   const isCanvasVisible = useCombinedStore((state) => state.isCanvasVisible);
   const canvasContent = useCombinedStore((state) => state.canvasContent);
-  const isTodoListVisible = useCombinedStore((state) => state.isTodoListVisible);
   const currentPage = useCombinedStore((state) => state.currentPage);
   const updatingRef = useRef(false);
 
@@ -106,7 +104,6 @@ export const EpicLayoutManager: React.FC = () => {
     // Only update if values actually changed to prevent infinite loops
     const updates = [
       { id: 'canvas', isVisible: isCanvasVisible || !!canvasContent },
-      { id: 'todolist', isVisible: isTodoListVisible },
       { id: 'chat', isVisible: currentPage === 'chat' },
       { id: 'input', isVisible: currentPage === 'chat' },
       { id: 'controlpanel', isVisible: true } // Always visible in battlefield mode
@@ -120,7 +117,7 @@ export const EpicLayoutManager: React.FC = () => {
     });
     
     updatingRef.current = false;
-  }, [isCanvasVisible, canvasContent, isTodoListVisible, currentPage]);
+  }, [isCanvasVisible, canvasContent, currentPage]);
 
   // GRILLE ÉPIQUE
   const GridOverlay = () => {
@@ -208,14 +205,6 @@ export const EpicLayoutManager: React.FC = () => {
           className="backdrop-blur-sm rounded-2xl"
         >
           <DraggableControlPanel />
-        </PinnableComponent>
-
-        {/* TODOLIST PINNÉE */}
-        <PinnableComponent 
-          id="todolist"
-          className="backdrop-blur-sm rounded-2xl"
-        >
-          <EnhancedTodoListPanel />
         </PinnableComponent>
 
         {/* CANVAS PINNÉ */}

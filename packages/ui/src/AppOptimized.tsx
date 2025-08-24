@@ -10,8 +10,7 @@ import {
   MemoizedHeader,
   MemoizedControlPanel,
   MemoizedChatMessages,
-  MemoizedUserInput,
-  MemoizedVersionDisplay
+  MemoizedUserInput
 } from './components/optimized/MemoizedComponents';
 
 import { 
@@ -311,11 +310,6 @@ export default function AppOptimized() {
                 isOpen={false} 
                 onClose={() => {}} 
               />
-            </ErrorBoundary>
-
-            {/* Version Display */}
-            <ErrorBoundary componentName="VersionDisplay">
-              <MemoizedVersionDisplay />
             </ErrorBoundary>
           </div>
         </ErrorBoundary>
