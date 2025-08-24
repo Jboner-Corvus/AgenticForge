@@ -5,7 +5,7 @@ import { useCombinedStore } from '../store';
 import EpicCanvas from './EpicCanvas';
 import { UserInput } from './UserInput';
 import { HeaderContainer } from './HeaderContainer';
-import { ChatMessagesContainer } from './ChatMessagesContainer';
+import { ChatContainer } from './ChatContainer';
 import { DraggableControlPanel } from './DraggableControlPanel';
 
 // COMPOSANT WRAPPER ÉPIQUE POUR GÉRER LE PINNING
@@ -105,7 +105,7 @@ export const EpicLayoutManager: React.FC = () => {
     const updates = [
       { id: 'canvas', isVisible: isCanvasVisible || !!canvasContent },
       { id: 'chat', isVisible: currentPage === 'chat' },
-      { id: 'input', isVisible: currentPage === 'chat' },
+      { id: 'input', isVisible: currentPage !== 'chat' }, // Input séparé seulement si pas en mode chat
       { id: 'controlpanel', isVisible: true } // Always visible in battlefield mode
     ];
     
@@ -220,11 +220,7 @@ export const EpicLayoutManager: React.FC = () => {
           id="chat"
           className="backdrop-blur-sm bg-black/80 border border-cyan-500/30 rounded-2xl overflow-hidden"
         >
-          <div className="h-full flex flex-col">
-            <div className="flex-1 overflow-y-auto p-4">
-              <ChatMessagesContainer />
-            </div>
-          </div>
+          <ChatContainer variant="pinned" />
         </PinnableComponent>
 
         {/* INPUT PINNÉ */}

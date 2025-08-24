@@ -163,44 +163,113 @@ const initializeFromPersistence = async (sessionKey: string) => {
   return false;
 };
 
-// Function to create project data for the canvas
-const createProjectData = (
+// Function to create project data for the canvas (HTML/Markdown content only)
+const createProjectDataForCanvas = (
   project: undefined | z.infer<typeof projectSchema>,
   tasks: Array<z.infer<typeof projectItemSchema>>,
   title?: string,
 ) => {
-  return {
-    isAgentInternal: true, // Mark as agent-generated to prevent automatic canvas display
-    project,
-    stats: {
-      blocked: tasks.filter((t) => t.status === 'blocked').length,
-      cancelled: tasks.filter((t) => t.status === 'cancelled').length,
-      completed: tasks.filter((t) => t.status === 'completed').length,
-      in_progress: tasks.filter((t) => t.status === 'in_progress').length,
-      pending: tasks.filter((t) => t.status === 'pending').length,
-      projectProgress: project ? project.progress : 0,
-      total: tasks.length,
-    },
-    tasks: tasks.map((task) => ({
-      actualTime: task.actualTime,
-      assignedTo: task.assignedTo,
-      category: task.category,
-      content: task.content,
-      createdAt: task.createdAt,
-      dependencies: task.dependencies || [],
-      estimatedTime: task.estimatedTime,
-      id: task.id,
-      parentId: task.parentId,
-      priority: task.priority || 'medium',
-      projectId: task.projectId,
-      status: task.status,
-      tags: task.tags || [],
-      updatedAt: task.updatedAt,
-    })),
-    timestamp: Date.now(),
-    title: title || (project ? project.name : 'Enhanced Todo List'),
-    type: 'enhanced_todo_list',
+  // Create HTML content for canvas display
+  let htmlContent = `<h2>${title || (project ? project.name : 'Enhanced Todo List')}</h2>`;
+  
+  if (project) {
+    htmlContent += `
+      <div style="margin-bottom: 20px;">
+        <p><strong>Project:</strong> ${project.name}</p>
+        <p><strong>Status:</strong> ${project.status}</p>
+        <p><strong>Progress:</strong> ${project.progress}%</p>
+      </div>
+    `;
+  }
+  
+  htmlContent += `
+    <div>
+      <h3>Tasks (${tasks.length})</h3>
+      <ul>
+  `;
+  
+  // Group tasks by status for better organization
+  const tasksByStatus: Record<string, typeof tasks> = {
+    pending: [],
+    in_progress: [],
+    completed: [],
+    blocked: [],
+    cancelled: [],
   };
+  
+  tasks.forEach(task => {
+    tasksByStatus[task.status].push(task);
+  });
+  
+  // Add tasks to HTML
+  Object.entries(tasksByStatus).forEach(([status, statusTasks]) => {
+    if (statusTasks.length > 0) {
+      htmlContent += `<li><strong>${status.toUpperCase()} (${statusTasks.length})</strong><ul>`;
+      statusTasks.forEach(task => {
+        htmlContent += `<li>${task.content} (Priority: ${task.priority || 'medium'})</li>`;
+      });
+      htmlContent += '</ul></li>';
+    }
+  });
+  
+  htmlContent += `
+      </ul>
+    </div>
+  `;
+  
+  return htmlContent;
+};
+
+// Function to create formatted todo list for chat display
+const createTodoListForChat = (
+  project: undefined | z.infer<typeof projectSchema>,
+  tasks: Array<z.infer<typeof projectItemSchema>>,
+  title?: string,
+) => {
+  // Create formatted text content for chat display
+  let chatContent = `## ${title || (project ? project.name : 'Enhanced Todo List')}\n\n`;
+  
+  if (project) {
+    chatContent += `**Project:** ${project.name}\n`;
+    chatContent += `**Status:** ${project.status}\n`;
+    chatContent += `**Progress:** ${project.progress}%\n\n`;
+  }
+  
+  // Group tasks by status for better organization
+  const tasksByStatus: Record<string, typeof tasks> = {
+    pending: [],
+    in_progress: [],
+    completed: [],
+    blocked: [],
+    cancelled: [],
+  };
+  
+  tasks.forEach(task => {
+    tasksByStatus[task.status].push(task);
+  });
+  
+  // Add tasks to chat content
+  Object.entries(tasksByStatus).forEach(([status, statusTasks]) => {
+    if (statusTasks.length > 0) {
+      chatContent += `### ${status.toUpperCase()} (${statusTasks.length})\n`;
+      statusTasks.forEach(task => {
+        // Use emojis to represent status
+        let statusEmoji = '⚪';
+        switch (task.status) {
+          case 'pending': statusEmoji = '🟡'; break;
+          case 'in_progress': statusEmoji = '🔵'; break;
+          case 'completed': statusEmoji = '🟢'; break;
+          case 'blocked': statusEmoji = '🔴'; break;
+          case 'cancelled': statusEmoji = '⚫'; break;
+        }
+        
+        chatContent += `- ${statusEmoji} ${task.content} (Priority: ${task.priority || 'medium'})\n`;
+      });
+      chatContent += '\n';
+    }
+  });
+  
+  return chatContent;
 };
 
 // Function to send todo data to chat header
@@ -257,6 +326,44 @@ const sendToChatHeader = async (
     ctx.log.error(
       { err: error },
       'Failed to send enhanced todo data to chat header',
+    );
+  }
+};
+
+// Function to send formatted todo list to chat as a message
+const sendTodoListToChat = async (
+  ctx: Ctx,
+  project: undefined | z.infer<typeof projectSchema>,
+  tasks: Array<z.infer<typeof projectItemSchema>>,
+  title?: string,
+  action?: string,
+) => {
+  if (!ctx.job?.id) {
+    return;
+  }
+
+  try {
+    // Create formatted todo list for chat
+    const formattedTodoList = createTodoListForChat(project, tasks, title);
+    
+    // Send as a chat message
+    const channel = `job:${ctx.job.id}:events`;
+    const chatMessage = {
+      data: {
+        content: formattedTodoList,
+        timestamp: Date.now(),
+        title: title || (project ? project.name : 'Enhanced Todo List'),
+        type: 'todo_list_update',
+      },
+      type: 'agent_message',
+    };
+
+    await getRedisClientInstance().publish(channel, JSON.stringify(chatMessage));
+    ctx.log.info('Formatted todo list sent to chat');
+  } catch (error) {
+    ctx.log.error(
+      { err: error },
+      'Failed to send formatted todo list to chat',
     );
   }
 };
@@ -345,18 +452,6 @@ export const enhancedTodoListTool: EnhancedTodoListTool = {
           }
           ctx.log.info('Created project: ' + newProject.name);
 
-          // Send to canvas
-          if (ctx.job?.id) {
-            // Send project data to canvas
-            const projectData = createProjectData(
-              newProject,
-              currentTasks || [],
-              args.title,
-            );
-            await sendToCanvas(ctx.job.id, JSON.stringify(projectData), 'text');
-            ctx.log.info('Project data sent to canvas for visualization');
-          }
-
           // Send to chat header
           await sendToChatHeader(
             ctx,
@@ -364,6 +459,26 @@ export const enhancedTodoListTool: EnhancedTodoListTool = {
             currentTasks || [],
             args.title,
           );
+          
+          // Send formatted todo list to chat as a message
+          await sendTodoListToChat(
+            ctx,
+            newProject,
+            currentTasks || [],
+            args.title,
+            'create_project',
+          );
+          
+          // Send to canvas only if explicitly requested (for HTML/Markdown content)
+          if (ctx.job?.id && args.title?.includes('[CANVAS]')) {
+            const projectData = createProjectDataForCanvas(
+              newProject,
+              currentTasks || [],
+              args.title.replace('[CANVAS]', '').trim(),
+            );
+            await sendToCanvas(ctx.job.id, projectData, 'html');
+            ctx.log.info('Project data sent to canvas for visualization');
+          }
 
           return {
             message: 'Project "' + newProject.name + '" created successfully',
@@ -429,17 +544,6 @@ export const enhancedTodoListTool: EnhancedTodoListTool = {
           }
           ctx.log.info('Created ' + newTasks.length + ' tasks');
 
-          // Send to canvas
-          if (ctx.job?.id) {
-            const projectData = createProjectData(
-              updatedProjectWithTasks,
-              allTasks,
-              args.title,
-            );
-            await sendToCanvas(ctx.job.id, JSON.stringify(projectData), 'text');
-            ctx.log.info('Task data sent to canvas for visualization');
-          }
-
           // Send to chat header
           await sendToChatHeader(
             ctx,
@@ -447,6 +551,26 @@ export const enhancedTodoListTool: EnhancedTodoListTool = {
             allTasks,
             args.title,
           );
+          
+          // Send formatted todo list to chat as a message
+          await sendTodoListToChat(
+            ctx,
+            updatedProjectWithTasks,
+            allTasks,
+            args.title,
+            'create_task',
+          );
+          
+          // Send to canvas only if explicitly requested (for HTML/Markdown content)
+          if (ctx.job?.id && args.title?.includes('[CANVAS]')) {
+            const projectData = createProjectDataForCanvas(
+              updatedProjectWithTasks,
+              allTasks,
+              args.title.replace('[CANVAS]', '').trim(),
+            );
+            await sendToCanvas(ctx.job.id, projectData, 'html');
+            ctx.log.info('Task data sent to canvas for visualization');
+          }
 
           return {
             message: 'Created ' + newTasks.length + ' tasks successfully',
@@ -456,17 +580,6 @@ export const enhancedTodoListTool: EnhancedTodoListTool = {
           };
 
         case 'display':
-          // Send to canvas
-          if (ctx.job?.id) {
-            const projectData = createProjectData(
-              currentProject,
-              currentTasks || [],
-              args.title,
-            );
-            await sendToCanvas(ctx.job.id, JSON.stringify(projectData), 'text');
-            ctx.log.info('Todo list data sent to canvas for visualization');
-          }
-
           // Send to chat header
           await sendToChatHeader(
             ctx,
@@ -474,6 +587,26 @@ export const enhancedTodoListTool: EnhancedTodoListTool = {
             currentTasks || [],
             args.title,
           );
+          
+          // Send formatted todo list to chat as a message
+          await sendTodoListToChat(
+            ctx,
+            currentProject,
+            currentTasks || [],
+            args.title,
+            'display',
+          );
+          
+          // Send to canvas only if explicitly requested (for HTML/Markdown content)
+          if (ctx.job?.id && args.title?.includes('[CANVAS]')) {
+            const projectData = createProjectDataForCanvas(
+              currentProject,
+              currentTasks || [],
+              args.title.replace('[CANVAS]', '').trim(),
+            );
+            await sendToCanvas(ctx.job.id, projectData, 'html');
+            ctx.log.info('Todo list data sent to canvas for visualization');
+          }
 
           return {
             message: 'Todo list displayed successfully',
@@ -522,19 +655,6 @@ export const enhancedTodoListTool: EnhancedTodoListTool = {
           }
           ctx.log.info('Updated project: ' + updatedProject.name);
 
-          // Send to canvas
-          if (ctx.job?.id) {
-            const projectData = createProjectData(
-              updatedProject,
-              currentTasks || [],
-              args.title,
-            );
-            await sendToCanvas(ctx.job.id, JSON.stringify(projectData), 'text');
-            ctx.log.info(
-              'Updated project data sent to canvas for visualization',
-            );
-          }
-
           // Send to chat header
           await sendToChatHeader(
             ctx,
@@ -542,6 +662,26 @@ export const enhancedTodoListTool: EnhancedTodoListTool = {
             currentTasks || [],
             args.title,
           );
+          
+          // Send formatted todo list to chat as a message
+          await sendTodoListToChat(
+            ctx,
+            updatedProject,
+            currentTasks || [],
+            args.title,
+            'update_project',
+          );
+          
+          // Send to canvas only if explicitly requested (for HTML/Markdown content)
+          if (ctx.job?.id && args.title?.includes('[CANVAS]')) {
+            const projectData = createProjectDataForCanvas(
+              updatedProject,
+              currentTasks || [],
+              args.title.replace('[CANVAS]', '').trim(),
+            );
+            await sendToCanvas(ctx.job.id, projectData, 'html');
+            ctx.log.info('Updated project data sent to canvas for visualization');
+          }
 
           return {
             message:
@@ -621,17 +761,6 @@ export const enhancedTodoListTool: EnhancedTodoListTool = {
             'Updated task ' + args.taskId + ' to status ' + args.status,
           );
 
-          // Send to canvas
-          if (ctx.job?.id) {
-            const projectData = createProjectData(
-              updatedProjectWithTask,
-              updatedTasks,
-              args.title,
-            );
-            await sendToCanvas(ctx.job.id, JSON.stringify(projectData), 'text');
-            ctx.log.info('Updated task data sent to canvas for visualization');
-          }
-
           // Send to chat header
           await sendToChatHeader(
             ctx,
@@ -639,6 +768,26 @@ export const enhancedTodoListTool: EnhancedTodoListTool = {
             updatedTasks,
             args.title,
           );
+          
+          // Send formatted todo list to chat as a message
+          await sendTodoListToChat(
+            ctx,
+            updatedProjectWithTask,
+            updatedTasks,
+            args.title,
+            'update_task',
+          );
+          
+          // Send to canvas only if explicitly requested (for HTML/Markdown content)
+          if (ctx.job?.id && args.title?.includes('[CANVAS]')) {
+            const projectData = createProjectDataForCanvas(
+              updatedProjectWithTask,
+              updatedTasks,
+              args.title.replace('[CANVAS]', '').trim(),
+            );
+            await sendToCanvas(ctx.job.id, projectData, 'html');
+            ctx.log.info('Updated task data sent to canvas for visualization');
+          }
 
           return {
             message:
@@ -660,23 +809,6 @@ export const enhancedTodoListTool: EnhancedTodoListTool = {
                 taskStore.set(sessionKey, savedState.tasks);
                 ctx.log.info('Recovered state for session ' + sessionKey);
 
-                // Send to canvas
-                if (ctx.job?.id) {
-                  const projectData = createProjectData(
-                    savedState.project,
-                    savedState.tasks,
-                    args.title,
-                  );
-                  await sendToCanvas(
-                    ctx.job.id,
-                    JSON.stringify(projectData),
-                    'text',
-                  );
-                  ctx.log.info(
-                    'Recovered state sent to canvas for visualization',
-                  );
-                }
-
                 // Send to chat header
                 await sendToChatHeader(
                   ctx,
@@ -684,6 +816,26 @@ export const enhancedTodoListTool: EnhancedTodoListTool = {
                   savedState.tasks,
                   args.title,
                 );
+                
+                // Send formatted todo list to chat as a message
+                await sendTodoListToChat(
+                  ctx,
+                  savedState.project,
+                  savedState.tasks,
+                  args.title,
+                  'recover_state',
+                );
+                
+                // Send to canvas only if explicitly requested (for HTML/Markdown content)
+                if (ctx.job?.id && args.title?.includes('[CANVAS]')) {
+                  const projectData = createProjectDataForCanvas(
+                    savedState.project,
+                    savedState.tasks,
+                    args.title.replace('[CANVAS]', '').trim(),
+                  );
+                  await sendToCanvas(ctx.job.id, projectData, 'html');
+                  ctx.log.info('Recovered state sent to canvas for visualization');
+                }
 
                 return {
                   message: 'State recovered successfully',

@@ -30,15 +30,13 @@ export function Header({
 }: HeaderProps) {
   const isCanvasVisible = useCanvasStore((state) => state.isCanvasVisible);
   const setIsCanvasVisible = useCanvasStore((state) => state.setIsCanvasVisible);
-  const isTodoListVisible = useUIStore((state) => state.isTodoListVisible);
-  const setIsTodoListVisible = useUIStore((state) => state.setIsTodoListVisible);
+  
+  // Unified Todo List Panel visibility
+  const isUnifiedTodoListVisible = useUIStore((state) => state.isUnifiedTodoListVisible);
+  const setIsUnifiedTodoListVisible = useUIStore((state) => state.setIsUnifiedTodoListVisible);
 
   const handleToggleCanvas = () => {
     setIsCanvasVisible(!isCanvasVisible);
-  };
-
-  const handleToggleTodoList = () => {
-    setIsTodoListVisible(!isTodoListVisible);
   };
 
   // Configuration des boutons avec des styles améliorés
@@ -59,10 +57,13 @@ export function Header({
     },
     {
       icon: List,
-      onClick: handleToggleTodoList,
+      onClick: () => {
+        // Toggle the Unified Todo List Panel
+        setIsUnifiedTodoListVisible(!isUnifiedTodoListVisible);
+      },
       label: "Afficher/Masquer la TodoList",
       ariaLabel: "Toggle TodoList",
-      active: isTodoListVisible
+      active: isUnifiedTodoListVisible
     },
     {
       icon: MessageSquare,

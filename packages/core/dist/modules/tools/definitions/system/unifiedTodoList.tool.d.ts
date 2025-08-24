@@ -24,8 +24,8 @@ declare const unifiedTodoItemSchema: z.ZodObject<{
     updatedAt: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
     status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-    id: string;
     content: string;
+    id: string;
     createdAt: number;
     dependencies: string[];
     priority: "high" | "low" | "medium" | "critical";
@@ -40,8 +40,8 @@ declare const unifiedTodoItemSchema: z.ZodObject<{
     projectId?: string | undefined;
 }, {
     status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-    id: string;
     content: string;
+    id: string;
     createdAt: number;
     updatedAt: number;
     actualTime?: number | undefined;
@@ -169,8 +169,8 @@ declare const unifiedTodoParameters: z.ZodObject<{
         updatedAt: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         dependencies: string[];
         priority: "high" | "low" | "medium" | "critical";
@@ -185,8 +185,8 @@ declare const unifiedTodoParameters: z.ZodObject<{
         projectId?: string | undefined;
     }, {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         updatedAt: number;
         actualTime?: number | undefined;
@@ -219,8 +219,8 @@ declare const unifiedTodoParameters: z.ZodObject<{
         updatedAt: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         dependencies: string[];
         priority: "high" | "low" | "medium" | "critical";
@@ -235,8 +235,8 @@ declare const unifiedTodoParameters: z.ZodObject<{
         projectId?: string | undefined;
     }, {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         updatedAt: number;
         actualTime?: number | undefined;
@@ -275,8 +275,8 @@ declare const unifiedTodoParameters: z.ZodObject<{
     taskId?: string | undefined;
     tasks?: {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         dependencies: string[];
         priority: "high" | "low" | "medium" | "critical";
@@ -292,8 +292,8 @@ declare const unifiedTodoParameters: z.ZodObject<{
     }[] | undefined;
     task?: {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         dependencies: string[];
         priority: "high" | "low" | "medium" | "critical";
@@ -337,8 +337,8 @@ declare const unifiedTodoParameters: z.ZodObject<{
     taskId?: string | undefined;
     tasks?: {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         updatedAt: number;
         actualTime?: number | undefined;
@@ -354,8 +354,8 @@ declare const unifiedTodoParameters: z.ZodObject<{
     }[] | undefined;
     task?: {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         updatedAt: number;
         actualTime?: number | undefined;
@@ -461,8 +461,8 @@ declare const unifiedTodoOutput: z.ZodUnion<[z.ZodObject<{
         updatedAt: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         dependencies: string[];
         priority: "high" | "low" | "medium" | "critical";
@@ -477,8 +477,8 @@ declare const unifiedTodoOutput: z.ZodUnion<[z.ZodObject<{
         projectId?: string | undefined;
     }, {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         updatedAt: number;
         actualTime?: number | undefined;
@@ -510,8 +510,8 @@ declare const unifiedTodoOutput: z.ZodUnion<[z.ZodObject<{
     } | undefined;
     tasks?: {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         dependencies: string[];
         priority: "high" | "low" | "medium" | "critical";
@@ -553,8 +553,8 @@ declare const unifiedTodoOutput: z.ZodUnion<[z.ZodObject<{
     } | undefined;
     tasks?: {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         updatedAt: number;
         actualTime?: number | undefined;

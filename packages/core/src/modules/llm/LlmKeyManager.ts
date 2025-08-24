@@ -31,8 +31,8 @@ const DEFAULT_MASTER_KEY_MODEL = 'gemini-2.5-flash'; // Align with .env.example
 
 const LLM_API_KEYS_REDIS_KEY = 'llmApiKeys';
 const LLM_API_KEYS_HIERARCHY_REDIS_KEY = 'llmApiKeysHierarchy'; // New key for hierarchy
-const MAX_TEMPORARY_ERROR_COUNT = 8; // Max consecutive temporary errors before disabling key temporarily
-const TEMPORARY_DISABLE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_TEMPORARY_ERROR_COUNT = 999; // Augmenter considérablement le seuil avant de désactiver temporairement
+const TEMPORARY_DISABLE_DURATION_MS = 30 * 1000; // Réduire la durée de désactivation à 30 secondes
 
 export class LlmKeyManager {
   public static async addKey(

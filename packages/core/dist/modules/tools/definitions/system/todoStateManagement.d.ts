@@ -18,8 +18,8 @@ declare const unifiedTodoItemSchema: z.ZodObject<{
     updatedAt: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
     status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-    id: string;
     content: string;
+    id: string;
     createdAt: number;
     dependencies: string[];
     priority: "high" | "low" | "medium" | "critical";
@@ -34,8 +34,8 @@ declare const unifiedTodoItemSchema: z.ZodObject<{
     projectId?: string | undefined;
 }, {
     status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-    id: string;
     content: string;
+    id: string;
     createdAt: number;
     updatedAt: number;
     actualTime?: number | undefined;

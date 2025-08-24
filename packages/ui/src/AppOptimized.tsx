@@ -18,7 +18,6 @@ import {
   LazyLlmKeyManager, 
   LazyOAuthPage,
   LazyLayoutManager,
-  LazyEnhancedTodoPanel,
   LazyCanvas,
   LazyAgentCanvas,
   LazyWrapper
@@ -218,9 +217,11 @@ export default function AppOptimized() {
 
                 {/* Todo List - Classic version when not pinned */}
                 {!components.todolist?.isPinned && uiState.isTodoListVisible && (
-                  <ErrorBoundary componentName="TodoList">
-                    <LazyEnhancedTodoPanel />
-                  </ErrorBoundary>
+                  <div className="fixed left-4 top-20 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-20 flex flex-col max-h-[calc(100vh-5rem)]">
+                    <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                      Todo List (UnifiedTodoListPanel will be shown in header)
+                    </div>
+                  </div>
                 )}
 
                 {/* Main Content Area */}

@@ -19,14 +19,14 @@ declare const parameters: z.ZodObject<{
         status: z.ZodEnum<["pending", "in_progress", "completed"]>;
     }, "strip", z.ZodTypeAny, {
         status: "in_progress" | "pending" | "completed";
-        id: string;
         content: string;
+        id: string;
         category?: string | undefined;
         priority?: "high" | "low" | "medium" | undefined;
     }, {
         status: "in_progress" | "pending" | "completed";
-        id: string;
         content: string;
+        id: string;
         category?: string | undefined;
         priority?: "high" | "low" | "medium" | undefined;
     }>, "many">>;
@@ -37,8 +37,8 @@ declare const parameters: z.ZodObject<{
     itemId?: string | undefined;
     todos?: {
         status: "in_progress" | "pending" | "completed";
-        id: string;
         content: string;
+        id: string;
         category?: string | undefined;
         priority?: "high" | "low" | "medium" | undefined;
     }[] | undefined;
@@ -49,8 +49,8 @@ declare const parameters: z.ZodObject<{
     itemId?: string | undefined;
     todos?: {
         status: "in_progress" | "pending" | "completed";
-        id: string;
         content: string;
+        id: string;
         category?: string | undefined;
         priority?: "high" | "low" | "medium" | undefined;
     }[] | undefined;
@@ -66,14 +66,14 @@ declare const todoListOutput: z.ZodUnion<[z.ZodObject<{
         status: z.ZodEnum<["pending", "in_progress", "completed"]>;
     }, "strip", z.ZodTypeAny, {
         status: "in_progress" | "pending" | "completed";
-        id: string;
         content: string;
+        id: string;
         category?: string | undefined;
         priority?: "high" | "low" | "medium" | undefined;
     }, {
         status: "in_progress" | "pending" | "completed";
-        id: string;
         content: string;
+        id: string;
         category?: string | undefined;
         priority?: "high" | "low" | "medium" | undefined;
     }>, "many">>;
@@ -82,8 +82,8 @@ declare const todoListOutput: z.ZodUnion<[z.ZodObject<{
     success: boolean;
     todos?: {
         status: "in_progress" | "pending" | "completed";
-        id: string;
         content: string;
+        id: string;
         category?: string | undefined;
         priority?: "high" | "low" | "medium" | undefined;
     }[] | undefined;
@@ -92,8 +92,8 @@ declare const todoListOutput: z.ZodUnion<[z.ZodObject<{
     success: boolean;
     todos?: {
         status: "in_progress" | "pending" | "completed";
-        id: string;
         content: string;
+        id: string;
         category?: string | undefined;
         priority?: "high" | "low" | "medium" | undefined;
     }[] | undefined;

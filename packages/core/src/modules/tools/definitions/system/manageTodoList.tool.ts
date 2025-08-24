@@ -93,6 +93,46 @@ const createTodoData = (
   };
 };
 
+// Fonction pour créer une version formatée de la todo list pour le chat
+const createFormattedTodoList = (
+  todos: Array<z.infer<typeof todoItemSchema>>,
+  title?: string,
+) => {
+  let formattedContent = `## ${title || 'AgenticForge Todo List'}\n\n`;
+  
+  // Group tasks by status
+  const tasksByStatus: Record<string, typeof todos> = {
+    pending: [],
+    in_progress: [],
+    completed: [],
+  };
+  
+  todos.forEach(todo => {
+    tasksByStatus[todo.status].push(todo);
+  });
+  
+  // Add tasks to formatted content
+  Object.entries(tasksByStatus).forEach(([status, statusTasks]) => {
+    if (statusTasks.length > 0) {
+      formattedContent += `### ${status.toUpperCase()} (${statusTasks.length})\n`;
+      statusTasks.forEach(todo => {
+        // Use emojis to represent status
+        let statusEmoji = '⚪';
+        switch (todo.status) {
+          case 'pending': statusEmoji = '🟡'; break;
+          case 'in_progress': statusEmoji = '🔵'; break;
+          case 'completed': statusEmoji = '🟢'; break;
+        }
+        
+        formattedContent += `- ${statusEmoji} ${todo.content} (Priority: ${todo.priority || 'medium'})\n`;
+      });
+      formattedContent += '\n';
+    }
+  });
+  
+  return formattedContent;
+};
+
 export const manageTodoListTool: TodoListTool = {
   description:
     'Manages a todo list for tracking tasks and progress. Can create, update, display, and clear todos. Uses the native UI interface instead of canvas. Useful for complex multi-step tasks that require organization and progress tracking.',
@@ -119,7 +159,7 @@ export const manageTodoListTool: TodoListTool = {
             const channel = `job:${ctx.job.id}:events`;
             const wsMessage = JSON.stringify({
               data: createTodoData([], args.title),
-              type: 'todo_list',
+              type: 'chat_header_todo',
             });
             getRedisClientInstance().publish(channel, wsMessage);
           }
@@ -157,6 +197,19 @@ export const manageTodoListTool: TodoListTool = {
               type: 'chat_header_todo',
             });
             getRedisClientInstance().publish(channel, wsMessage);
+            
+            // Also send formatted todo list as a chat message
+            const formattedTodoList = createFormattedTodoList(newTodos, args.title);
+            const chatMessage = JSON.stringify({
+              data: {
+                content: formattedTodoList,
+                timestamp: Date.now(),
+                title: args.title || 'Todo List Update',
+                type: 'todo_list_update',
+              },
+              type: 'agent_message',
+            });
+            getRedisClientInstance().publish(channel, chatMessage);
           }
 
           return {
@@ -182,6 +235,19 @@ export const manageTodoListTool: TodoListTool = {
               type: 'chat_header_todo',
             });
             getRedisClientInstance().publish(channel, wsMessage);
+            
+            // Also send formatted todo list as a chat message
+            const formattedTodoList = createFormattedTodoList(currentTodos, args.title);
+            const chatMessage = JSON.stringify({
+              data: {
+                content: formattedTodoList,
+                timestamp: Date.now(),
+                title: args.title || 'Todo List Display',
+                type: 'todo_list_update',
+              },
+              type: 'agent_message',
+            });
+            getRedisClientInstance().publish(channel, chatMessage);
           }
 
           return {
@@ -220,6 +286,19 @@ export const manageTodoListTool: TodoListTool = {
               type: 'chat_header_todo',
             });
             getRedisClientInstance().publish(channel, wsMessage);
+            
+            // Also send formatted todo list as a chat message
+            const formattedTodoList = createFormattedTodoList(currentTodos, args.title);
+            const chatMessage = JSON.stringify({
+              data: {
+                content: formattedTodoList,
+                timestamp: Date.now(),
+                title: args.title || 'Todo List Update',
+                type: 'todo_list_update',
+              },
+              type: 'agent_message',
+            });
+            getRedisClientInstance().publish(channel, chatMessage);
           }
 
           return {

@@ -20,6 +20,9 @@ importers:
       '@typescript-eslint/parser':
         specifier: 8.39.0
         version: 8.39.0(eslint@9.33.0(jiti@2.4.2))(typescript@5.9.2)
+      dotenv:
+        specifier: ^16.6.1
+        version: 16.6.1
       eslint:
         specifier: 9.33.0
         version: 9.33.0(jiti@2.4.2)
@@ -48,6 +51,9 @@ importers:
       execa:
         specifier: 9.6.0
         version: 9.6.0
+      playwright:
+        specifier: ^1.54.1
+        version: 1.54.1
       semver:
         specifier: 7.7.2
         version: 7.7.2

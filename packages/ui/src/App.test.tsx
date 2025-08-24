@@ -186,7 +186,7 @@ describe('App Component Tests', () => {
     render(<App />);
     
     await waitFor(() => {
-      expect(screen.getByTestId('chat-messages')).toBeInTheDocument();
+      expect(screen.getAllByTestId('chat-messages')[0]).toBeInTheDocument();
       expect(screen.getByTestId('user-input')).toBeInTheDocument();
     });
   });

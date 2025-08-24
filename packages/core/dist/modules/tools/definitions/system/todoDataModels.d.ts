@@ -43,14 +43,14 @@ declare const enhancedTodoItemSchema: z.ZodObject<{
         id: z.ZodString;
         timestamp: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
-        id: string;
         content: string;
+        id: string;
         timestamp: number;
         author: string;
         editedAt?: number | undefined;
     }, {
-        id: string;
         content: string;
+        id: string;
         timestamp: number;
         author: string;
         editedAt?: number | undefined;
@@ -77,8 +77,8 @@ declare const enhancedTodoItemSchema: z.ZodObject<{
     watchers: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
 }, "strip", z.ZodTypeAny, {
     status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-    id: string;
     content: string;
+    id: string;
     createdAt: number;
     dependencies: string[];
     priority: "high" | "low" | "medium" | "critical";
@@ -98,8 +98,8 @@ declare const enhancedTodoItemSchema: z.ZodObject<{
         enabled: boolean;
     }[];
     comments: {
-        id: string;
         content: string;
+        id: string;
         timestamp: number;
         author: string;
         editedAt?: number | undefined;
@@ -119,8 +119,8 @@ declare const enhancedTodoItemSchema: z.ZodObject<{
     completedAt?: number | undefined;
     dueDate?: number | undefined;
 }, {
-    id: string;
     content: string;
+    id: string;
     createdAt: number;
     updatedAt: number;
     status?: "in_progress" | "pending" | "completed" | "blocked" | "cancelled" | undefined;
@@ -148,8 +148,8 @@ declare const enhancedTodoItemSchema: z.ZodObject<{
         enabled?: boolean | undefined;
     }[] | undefined;
     comments?: {
-        id: string;
         content: string;
+        id: string;
         timestamp: number;
         author: string;
         editedAt?: number | undefined;
@@ -445,8 +445,8 @@ declare const commentSchema: z.ZodObject<{
     }>, "many">>;
     timestamp: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
-    id: string;
     content: string;
+    id: string;
     timestamp: number;
     author: string;
     reactions: {
@@ -456,8 +456,8 @@ declare const commentSchema: z.ZodObject<{
     }[];
     editedAt?: number | undefined;
 }, {
-    id: string;
     content: string;
+    id: string;
     timestamp: number;
     author: string;
     editedAt?: number | undefined;

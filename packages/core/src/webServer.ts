@@ -719,8 +719,15 @@ export async function initializeWebServer(
                 return;
               }
 
-              // Send the event data
-              res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+              // Special handling for chat_header_todo messages - forward them to frontend
+              if (eventData.type === 'chat_header_todo') {
+                console.log(`[FORWARD] Forwarding chat_header_todo message for job ${jobId}`);
+                // Send the event data as-is for chat header todo messages
+                res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+              } else {
+                // Send the event data for other message types
+                res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+              }
 
               // If this is a completion event, end the stream
               if (

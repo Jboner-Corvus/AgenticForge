@@ -31,7 +31,7 @@ export const UserInput = () => {
   };
 
   return (
-    <div className="flex items-center gap-4 w-full">
+    <div data-testid="user-input" className="flex items-center gap-4 w-full">
       <div className="relative flex-grow">
         <Textarea
           name="user-input"

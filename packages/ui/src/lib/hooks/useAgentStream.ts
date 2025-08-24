@@ -423,22 +423,45 @@ export const useAgentStream = () => {
                 console.log('🎨 [useAgentStream] Canvas content type:', canvas.contentType);
                 console.log('🎨 [useAgentStream] Canvas content length:', canvas.content.length);
                 
-                addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas reçu ! Type: ${canvas.contentType}, Taille: ${canvas.content.length}`);
+                // Filter out agent thoughts from canvas content
+                let shouldAddToCanvas = true;
+                try {
+                  const parsed = JSON.parse(canvas.content);
+                  if (parsed.thought || parsed.command || parsed.interaction) {
+                    console.warn('🚫 [useAgentStream] Filtered out agent thought/interaction from canvas in tool.start');
+                    shouldAddToCanvas = false;
+                  }
+                } catch {
+                  // Check for agent thought patterns in text content
+                  if (canvas.content.includes('"thought"') || 
+                      canvas.content.includes('thinking:') ||
+                      canvas.content.includes('réflexion:') ||
+                      (canvas.content.includes('{') && canvas.content.includes('"command"'))) {
+                    console.warn('🚫 [useAgentStream] Filtered out agent thought/interaction from canvas in tool.start');
+                    shouldAddToCanvas = false;
+                  }
+                }
                 
-                // Add canvas to history instead of just setting content
-                const canvasTitle = `Canvas ${new Date().toLocaleTimeString()}`;
-                addCanvasToHistory(canvasTitle, canvas.content, canvas.contentType);
+                if (shouldAddToCanvas) {
+                  addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas reçu ! Type: ${canvas.contentType}, Taille: ${canvas.content.length}`);
                 
-                console.log('🎨 [useAgentStream] Canvas content updated in store!');
-                addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas mis à jour dans le store et rendu visible!`);
-                
-                // Send canvas output message
-                const canvasMessage: NewChatMessage = {
-                  type: 'agent_canvas_output',
-                  content: canvas.content,
-                  contentType: canvas.contentType,
-                };
-                addMessage(canvasMessage);
+                  // Add canvas to history instead of just setting content
+                  const canvasTitle = `Canvas ${new Date().toLocaleTimeString()}`;
+                  addCanvasToHistory(canvasTitle, canvas.content, canvas.contentType);
+                  
+                  console.log('🎨 [useAgentStream] Canvas content updated in store!');
+                  addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas mis à jour dans le store et rendu visible!`);
+                } else {
+                  // For agent thoughts/interactions, add them to chat instead of canvas
+                  console.log('💭 [useAgentStream] Agent thought/interaction from tool.start redirected to chat');
+                  addDebugLog(`[${new Date().toLocaleTimeString()}] [CHAT] 💭 Pensée/interaction agent de tool.start redirigée vers le chat`);
+                  
+                  const thoughtMessage: NewChatMessage = {
+                    type: 'agent_thought',
+                    content: canvas.content,
+                  };
+                  addMessage(thoughtMessage);
+                }
               }
               
               if (toolName && params) {
@@ -527,45 +550,47 @@ export const useAgentStream = () => {
             break;
           case 'agent_canvas_output':
             if (data.content && data.contentType) {
-              // Filter out debugging information before adding to canvas
+              // Filter out debugging information and agent thoughts from canvas
               const filteredContent = data.content;
               let shouldDisplay = true;
               
-              // Check if content contains debugging JSON with "thought" field
+              // Check if content contains debugging JSON with "thought" field or agent interactions
               try {
                 const parsed = JSON.parse(data.content);
-                if (parsed.thought || parsed.command) {
-                  console.warn('🚫 [useAgentStream] Filtered out debugging JSON from canvas display');
+                if (parsed.thought || parsed.command || parsed.interaction) {
+                  console.warn('🚫 [useAgentStream] Filtered out agent thought/interaction from canvas - keeping in chat only');
                   shouldDisplay = false;
                 }
               } catch {
-                // Not JSON, check for debugging patterns in text content
+                // Not JSON, check for debugging patterns and agent thought patterns in text content
                 if (data.content.includes('"thought"') || 
                     data.content.includes('```json') ||
+                    data.content.includes('thinking:') ||
+                    data.content.includes('réflexion:') ||
                     (data.content.includes('{') && data.content.includes('"command"'))) {
-                  console.warn('🚫 [useAgentStream] Filtered out debugging content from canvas display');
+                  console.warn('🚫 [useAgentStream] Filtered out agent thought/interaction from canvas - keeping in chat only');
                   shouldDisplay = false;
                 }
               }
               
               if (shouldDisplay) {
-                // Add canvas to history instead of just setting content
+                // Only add to canvas if it's actual canvas content, not agent thoughts
                 const canvasTitle = `Canvas ${new Date().toLocaleTimeString()}`;
                 addCanvasToHistory(canvasTitle, filteredContent, data.contentType);
                 
                 console.log('🎨 [useAgentStream] Canvas updated from agent_canvas_output!');
                 addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🎨 Canvas mis à jour! Type: ${data.contentType}, Taille: ${filteredContent.length}`);
-                
-                const canvasOutputMessage: NewChatMessage = {
-                  type: 'agent_canvas_output',
-                  content: filteredContent,
-                  contentType: data.contentType,
-                };
-                addMessage(canvasOutputMessage);
                 addDebugLog(`[DISPLAY_OUTPUT] Type: ${data.contentType}, Content length: ${filteredContent.length}`);
               } else {
-                console.log('🚫 [useAgentStream] Debugging content filtered from canvas display');
-                addDebugLog(`[${new Date().toLocaleTimeString()}] [CANVAS] 🚫 Contenu de débogage filtré du canvas`);
+                // For agent thoughts/interactions, add them to chat instead of canvas
+                console.log('💭 [useAgentStream] Agent thought/interaction redirected to chat');
+                addDebugLog(`[${new Date().toLocaleTimeString()}] [CHAT] 💭 Pensée/interaction agent redirigée vers le chat au lieu du canvas`);
+                
+                const thoughtMessage: NewChatMessage = {
+                  type: 'agent_thought',
+                  content: filteredContent,
+                };
+                addMessage(thoughtMessage);
               }
             }
             break;

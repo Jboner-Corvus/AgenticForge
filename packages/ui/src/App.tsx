@@ -10,17 +10,12 @@ import { AppInitializer } from './components/AppInitializer';
 import { AnimatePresence } from 'framer-motion';
 
 import { ControlPanel } from './components/ControlPanel';
-import { UserInput } from './components/UserInput';
 import { Suspense, useState, useEffect } from 'react';
 import { useResizablePanel } from './lib/hooks/useResizablePanel';
 import { HeaderContainer } from './components/HeaderContainer';
-import ChatHeaderTodoList from './components/ChatHeaderTodoList';
 import { SettingsModalContainer } from './components/SettingsModalContainer';
-import { ChatMessagesContainer } from './components/ChatMessagesContainer';
+import { ChatContainer } from './components/ChatContainer';
 import { usePinningStore } from './store/pinningStore';
-import { useUIStore } from './store/uiStore';
-import TodoListHandler from './components/TodoListHandler';
-import { LoadingSpinner } from './components/LoadingSpinner';
 // Lazy imports pour optimiser le bundle
 import { 
   LazyLeaderboardPage, 
@@ -30,8 +25,7 @@ import {
   LazyCanvas,
   LazyAgentCanvas,
   LazyDebugLogContainer,
-  LazySubAgentCLIView,
-  LazyEnhancedTodoPanel
+  LazySubAgentCLIView
 } from './components/optimized/LazyComponents';
 // Import du store unifié
 import { useCombinedStore as useStore } from './store';
@@ -47,6 +41,9 @@ import {
   useIsDarkMode
 } from './store/hooks';
 
+// Import du nouveau composant UnifiedTodoListPanel
+import { UnifiedTodoListPanel } from './components/UnifiedTodoListPanel';
+
 
 export default function App() {
   console.log('🔥🔥🔥 [DEBUG] App component loading!');
@@ -61,7 +58,6 @@ export default function App() {
   const canvasContent = useCanvasContent();
   const activeCliJobId = useActiveCliJobId();
   const isDarkMode = useIsDarkMode();
-  const isTodoListVisible = useUIStore((state) => state.isTodoListVisible);
   
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const { translations } = useLanguage();
@@ -107,16 +103,7 @@ export default function App() {
   const renderMainContent = () => {
     switch (currentPage) {
       case 'chat':
-        return (
-          <div className="flex flex-col h-full w-full min-w-0">
-            <div className="flex-grow overflow-y-auto min-h-0">
-              <ChatMessagesContainer />
-            </div>
-            <div className="p-spacious flex items-center sticky bottom-0 bg-background border-t border-border flex-shrink-0">
-                <UserInput />
-            </div>
-          </div>
-        );
+        return <ChatContainer variant="classic" showShadow={true} enhanced={true} />;
       case 'leaderboard':
         return <LazyLeaderboardPage />;
       case 'llm-api-keys':
@@ -133,9 +120,8 @@ export default function App() {
       <SessionIdProvider>
         <div className="min-h-screen flex flex-col bg-background text-foreground overflow-x-hidden relative">
           <AppInitializer />
-          <TodoListHandler />
         <HeaderContainer />
-        <ChatHeaderTodoList />
+        <UnifiedTodoListPanel />
         <Suspense fallback={<div>Loading Settings...</div>}>
           <SettingsModalContainer />
         </Suspense>
@@ -152,18 +138,6 @@ export default function App() {
             >
               <ControlPanel />
             </div>
-          )}
-
-          {/* Todo List - Classic version when not pinned */}
-          {!components.todolist?.isPinned && isTodoListVisible && (
-            <Suspense fallback={
-              <div className="fixed left-4 top-4 w-96 h-64 bg-gray-900/80 rounded-2xl border border-gray-700 flex items-center justify-center">
-                <LoadingSpinner className="h-6 w-6" />
-                <span className="ml-2 text-gray-400 text-sm">Loading mission control...</span>
-              </div>
-            }>
-              <LazyEnhancedTodoPanel />
-            </Suspense>
           )}
 
           {/* Conteneur principal pour la discussion et le canevas */}

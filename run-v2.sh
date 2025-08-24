@@ -531,26 +531,27 @@ show_guided_menu() {
     printf "    5) \033[0;34m📊 Worker Logs\033[0m        - View worker process logs\n"
     printf "    6) \033[0;34m🐚 Container Shell\033[0m    - Access server container\n"
     printf "    7) \033[0;34m🔨 Rebuild All\033[0m        - Full rebuild (use if issues)\n"
-    printf "    8) \033[0;34m🐳 Docker Logs\033[0m        - View all container logs\n"
-    printf "    9) \033[1;33m🔄 Restart Worker\033[0m     - Restart worker only\n"
+    printf "    8) \033[0;34m🌐 Rebuild Web\033[0m        - Rebuild frontend only (faster)\n"
+    printf "    9) \033[0;34m🐳 Docker Logs\033[0m        - View all container logs\n"
+    printf "   10) \033[1;33m🔄 Restart Worker\033[0m     - Restart worker only\n"
     echo ""
     echo -e "    ${COLOR_CYAN}🔧 Development${NC}"
-    printf "   10) \033[0;34m💻 Dev Server (3003)\033[0m  - Start development server on port 3003\n"
-    printf "   11) \033[0;31m🛑 Stop Dev Server\033[0m     - Stop development server\n"
-    printf "   12) \033[0;34m📋 Dev Server Logs\033[0m    - View development server logs\n"
+    printf "   11) \033[0;34m💻 Dev Server (3003)\033[0m  - Start development server on port 3003\n"
+    printf "   12) \033[0;31m🛑 Stop Dev Server\033[0m     - Stop development server\n"
+    printf "   13) \033[0;34m📋 Dev Server Logs\033[0m    - View development server logs\n"
     echo ""
     echo -e "    ${COLOR_CYAN}🧪 Testing & Quality${NC}"
-    printf "   13) \033[0;34m🔬 Unit Tests\033[0m          - Run unit tests only\n"
-    printf "   14) \033[0;34m🔗 Integration Tests\033[0m   - Test service integration\n"
-    printf "   15) \033[0;34m🧪 All Tests\033[0m          - Run complete test suite\n"
-    printf "   16) \033[0;34m🎯 Quality Check\033[0m       - Lint + TypeCheck + Unit Tests\n"
-    printf "   17) \033[0;34m🔍 Lint Code\033[0m          - Check code quality\n"
-    printf "   18) \033[0;34m✨ Format Code\033[0m        - Auto-format source code\n"
-    printf "   19) \033[0;34m📘 Type Check\033[0m         - Verify TypeScript types\n"
-    printf "   20) \033[0;34m🔄 Integration Test Runner\033[0m - Run comprehensive integration tests\n"
+    printf "   14) \033[0;34m🔬 Unit Tests\033[0m          - Run unit tests only\n"
+    printf "   15) \033[0;34m🔗 Integration Tests\033[0m   - Test service integration\n"
+    printf "   16) \033[0;34m🧪 All Tests\033[0m          - Run complete test suite\n"
+    printf "   17) \033[0;34m🎯 Quality Check\033[0m       - Lint + TypeCheck + Unit Tests\n"
+    printf "   18) \033[0;34m🔍 Lint Code\033[0m          - Check code quality\n"
+    printf "   19) \033[0;34m✨ Format Code\033[0m        - Auto-format source code\n"
+    printf "   20) \033[0;34m📘 Type Check\033[0m         - Verify TypeScript types\n"
+    printf "   21) \033[0;34m🔄 Integration Test Runner\033[0m - Run comprehensive integration tests\n"
     echo ""
-    printf "   21) \033[0;36m❓ Help\033[0m               - Get help and troubleshooting\n"
-    printf "   22) \033[0;31m🚪 Exit\033[0m               - Close this menu\n"
+    printf "   22) \033[0;36m❓ Help\033[0m               - Get help and troubleshooting\n"
+    printf "   23) \033[0;31m🚪 Exit\033[0m               - Close this menu\n"
     echo ""
     echo -e "${COLOR_YELLOW}💡 Tip: First time? Try option 1 to start services!${NC}"
     echo ""
@@ -792,6 +793,77 @@ stop_services() {
 # =============================================================================
 # Build Functions
 # =============================================================================
+
+rebuild_web() {
+    echo -e "${COLOR_BLUE}🌐 Rebuilding frontend (web) only...${NC}"
+    
+    start_timer "rebuild_web"
+    
+    # Clean frontend build directories
+    echo -e "${COLOR_YELLOW}🧹 Cleaning frontend build directories...${NC}"
+    rm -rf packages/ui/dist
+    rm -rf packages/ui/build
+    rm -rf packages/ui/.next
+    rm -rf packages/ui/.vite
+    
+    # Rebuild frontend package
+    echo -e "${COLOR_YELLOW}📦 Rebuilding frontend package...${NC}"
+    cd "$ROOT_DIR/packages/ui"
+    if ! pnpm install; then
+        echo -e "${COLOR_RED}❌ Failed to install frontend dependencies${NC}"
+        return 1
+    fi
+    
+    if ! NODE_ENV=production pnpm run build; then
+        echo -e "${COLOR_RED}❌ Failed to build frontend${NC}"
+        return 1
+    fi
+    
+    # Stop the web container
+    echo -e "${COLOR_YELLOW}🛑 Stopping web container...${NC}"
+    docker compose stop web || true
+    
+    # Remove web Docker image to force rebuild
+    echo -e "${COLOR_YELLOW}🗑️ Removing web Docker image...${NC}"
+    docker compose rm -f web || true
+    docker rmi agenticforge-web:latest 2>/dev/null || true
+    
+    # Build Docker web image with no cache
+    cd "$ROOT_DIR"
+    echo -e "${COLOR_YELLOW}🐳 Building web Docker image (no cache)...${NC}"
+    export DOCKER_BUILDKIT=1
+    if ! docker compose build --no-cache web; then
+        echo -e "${COLOR_RED}❌ Failed to build web Docker image${NC}"
+        return 1
+    fi
+    
+    # Start the web container
+    echo -e "${COLOR_YELLOW}🚀 Starting web container...${NC}"
+    if ! docker compose up -d web; then
+        echo -e "${COLOR_RED}❌ Failed to start web container${NC}"
+        return 1
+    fi
+    
+    # Wait for web to be ready
+    echo -e "${COLOR_YELLOW}🟡 Waiting for web to be ready...${NC}"
+    for i in {1..60}; do
+        if curl -s "http://localhost:${WEB_PORT:-3002}" >/dev/null 2>&1; then
+            echo -e "${COLOR_GREEN}✅ Web is ready${NC}"
+            break
+        fi
+        if [[ $i -eq 60 ]]; then
+            echo -e "${COLOR_RED}❌ Web failed to start (timeout)${NC}"
+            return 1
+        fi
+        echo -n "."
+        sleep 1
+    done
+    
+    end_timer "rebuild_web"
+    echo -e "${COLOR_GREEN}🎉 Frontend rebuild completed!${NC}"
+    echo -e "${COLOR_CYAN}🌐 Frontend changes have been applied and deployed.${NC}"
+    echo -e "${COLOR_BLUE}📱 Access your updated web interface at: http://localhost:${WEB_PORT:-3002}${NC}"
+}
 
 rebuild_all() {
     echo -e "${COLOR_BLUE}🔄 Complete rebuild...${NC}"
@@ -1143,6 +1215,10 @@ main() {
                 echo -e "${COLOR_BLUE}🔨 Rebuilding everything...${NC}"
                 rebuild_all 
                 ;;
+            rebuild-web) 
+                echo -e "${COLOR_BLUE}🌐 Rebuilding frontend only...${NC}"
+                rebuild_web 
+                ;;
             restart-worker) 
                 echo -e "${COLOR_YELLOW}🔄 Restarting worker...${NC}"
                 restart_worker 
@@ -1174,7 +1250,7 @@ main() {
             *) 
                 echo -e "${COLOR_RED}Unknown command: $1${NC}"
                 echo ""
-                echo "Usage: $0 {start|stop|restart|status|rebuild-all|restart-worker|install|deploy|setup|test:unit|test:integration|test:all|quality-check|help|menu|dev}"
+                echo "Usage: $0 {start|stop|restart|status|rebuild-all|rebuild-web|restart-worker|install|deploy|setup|test:unit|test:integration|test:all|quality-check|help|menu|dev}"
                 echo ""
                 echo -e "${COLOR_CYAN}Available commands:${NC}"
                 echo -e "  ${COLOR_GREEN}install/deploy${NC}   - Fully automated installation (no prompts)"
@@ -1183,7 +1259,8 @@ main() {
                 echo -e "  ${COLOR_YELLOW}restart${NC}          - Restart all services"
                 echo -e "  ${COLOR_YELLOW}restart-worker${NC}   - Restart worker only"
                 echo -e "  ${COLOR_CYAN}status${NC}           - Show service status"
-                echo -e "  ${COLOR_BLUE}rebuild-all${NC}      - Complete rebuild"
+                echo -e "  ${COLOR_BLUE}rebuild-all${NC}      - Complete rebuild (all services)"
+                echo -e "  ${COLOR_BLUE}rebuild-web${NC}      - Rebuild frontend only (faster)"
                 echo -e "  ${COLOR_BLUE}setup${NC}            - Run interactive setup wizard"
                 echo -e "  ${COLOR_BLUE}dev${NC}              - Start development server on port 3003"
                 echo -e "  ${COLOR_BLUE}test:unit${NC}        - Run unit tests only"
@@ -1205,7 +1282,7 @@ main() {
     # Interactive menu loop
     while true; do
         show_guided_menu
-        echo -n "Choose an option (1-22): "
+        echo -n "Choose an option (1-23): "
         read -r choice
         echo ""
         
@@ -1239,71 +1316,75 @@ main() {
                 rebuild_all 
                 ;;
             8) 
+                echo -e "${COLOR_BLUE}🌐 Starting frontend rebuild...${NC}"
+                rebuild_web 
+                ;;
+            9) 
                 echo -e "${COLOR_BLUE}🐳 Showing Docker logs (Ctrl+C to exit):${NC}"
                 docker compose logs -f 
                 ;;
-            9) 
+            10) 
                 echo -e "${COLOR_YELLOW}🔄 Restarting worker...${NC}"
                 restart_worker 
                 ;;
-            10) 
+            11) 
                 echo -e "${COLOR_BLUE}💻 Starting development server on port 3003...${NC}"
                 start_dev_server 
                 ;;
-            11) 
+            12) 
                 echo -e "${COLOR_RED}🛑 Stopping development server...${NC}"
                 stop_dev_server 
                 ;;
-            12) 
+            13) 
                 echo -e "${COLOR_BLUE}📋 Showing development server logs (Ctrl+C to exit):${NC}"
                 tail -f "$ROOT_DIR/dev-server.log" 2>/dev/null || echo "No development server log found" 
                 ;;
-            13) 
+            14) 
                 echo -e "${COLOR_BLUE}🔬 Running unit tests...${NC}"
                 run_unit_tests
                 ;;
-            14) 
+            15) 
                 echo -e "${COLOR_BLUE}🔗 Running integration tests...${NC}"
                 run_integration_tests 
                 ;;
-            15) 
+            16) 
                 echo -e "${COLOR_BLUE}🧪 Running all tests...${NC}"
                 run_all_tests 
                 ;;
-            16) 
+            17) 
                 echo -e "${COLOR_BLUE}🎯 Running quality check...${NC}"
                 run_quality_check
                 ;;
-            17) 
+            18) 
                 echo -e "${COLOR_BLUE}🔍 Running code linting...${NC}"
                 cd "$ROOT_DIR" && pnpm run lint 
                 ;;
-            18) 
+            19) 
                 echo -e "${COLOR_BLUE}✨ Formatting code...${NC}"
                 cd "$ROOT_DIR" && pnpm run format 
                 ;;
-            19) 
+            20) 
                 echo -e "${COLOR_BLUE}📘 Checking TypeScript types...${NC}"
                 cd "$ROOT_DIR" && pnpm run typecheck 
                 ;;
-            20)
+            21)
                 echo -e "${COLOR_BLUE}🔄 Running integration test runner...${NC}"
                 cd "$ROOT_DIR" && ./integration-test-runner.sh
                 ;;
-            21)
+            22)
                 echo -e "${COLOR_CYAN}❓ Help & Troubleshooting${NC}"
                 show_main_help
                 ;;
-            22) 
+            23) 
                 echo -e "${COLOR_CYAN}👋 Thanks for using AgenticForge! Goodbye!${NC}"
                 exit 0 
                 ;;
             *) 
-                echo -e "${COLOR_RED}❌ Invalid option '$choice'. Please choose 1-22.${NC}" 
+                echo -e "${COLOR_RED}❌ Invalid option '$choice'. Please choose 1-23.${NC}" 
                 ;;
         esac
         
-        if [[ "$choice" =~ ^[1-9]$|^1[0-9]$|^2[0-2]$ ]]; then
+        if [[ "$choice" =~ ^[1-9]$|^1[0-9]$|^2[0-3]$ ]]; then
             echo ""
             echo -e "${COLOR_YELLOW}🔙 Press Enter to return to menu...${NC}"
             read -r

@@ -5,38 +5,35 @@ import {
   getDeadLetterQueue,
   getJobQueue,
   initializeWebServer
-} from "./chunk-6HWJFP2W.js";
+} from "./chunk-3K5M3OQU.js";
 import {
   Agent,
   getMasterPrompt,
   initializeWorker,
   processJob
-} from "./chunk-AA4PRHQ4.js";
+} from "./chunk-R7OQDTLJ.js";
 import {
   getAllTools
-} from "./chunk-VW7SQC4G.js";
+} from "./chunk-5MMIU4FC.js";
 import {
   FinishToolSignal
 } from "./chunk-CZQPSXPM.js";
 import {
   SessionManager
-} from "./chunk-R6HWQ2WP.js";
-import "./chunk-JKB35YK2.js";
+} from "./chunk-VXD37PNH.js";
+import "./chunk-4LH7YAUH.js";
 import "./chunk-DE5MSL2E.js";
 import {
   LlmError2 as LlmError,
   LlmKeyErrorType
-} from "./chunk-BGGAYOXK.js";
+} from "./chunk-LMV4O5WI.js";
 import {
   _internalLoadTools,
   _resetTools,
   fileExtension,
   getTools,
   getToolsDir
-} from "./chunk-S6Z5ZD2I.js";
-import {
-  toolRegistry
-} from "./chunk-WG6XU6O4.js";
+} from "./chunk-IWE6TWGQ.js";
 import {
   AppError,
   EnqueueTaskError,
@@ -44,8 +41,9 @@ import {
   UserError,
   WebhookError,
   getErrDetails,
-  handleError
-} from "./chunk-E73UG3QD.js";
+  handleError,
+  toolRegistry
+} from "./chunk-SJT2WBJG.js";
 import "./chunk-AKPOKJ5Q.js";
 import {
   disconnectRedis,

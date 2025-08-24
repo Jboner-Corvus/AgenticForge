@@ -2,7 +2,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
   enhancedTodoListTool
-} from "../../../../chunk-O5NSANUP.js";
+} from "../../../../chunk-3F4GBMVJ.js";
 import "../../../../chunk-FG6D2ATS.js";
 import {
   sendToCanvas
@@ -108,7 +108,7 @@ describe("enhancedTodoListTool", () => {
     if ("project" in result && result.project) {
       globalExpect(result.project.name).toBe("Duke Nukem 2 Development");
     }
-    globalExpect(sendToCanvas).toHaveBeenCalled();
+    globalExpect(sendToCanvas).not.toHaveBeenCalled();
     globalExpect(mockCtx.log.info).toHaveBeenCalledWith(
       "Created project: Duke Nukem 2 Development"
     );
@@ -145,11 +145,7 @@ describe("enhancedTodoListTool", () => {
       globalExpect(result.tasks).toHaveLength(2);
       globalExpect(result.tasks[0].content).toBe("Design game levels");
     }
-    globalExpect(sendToCanvas).toHaveBeenCalledWith(
-      "test-job-id",
-      globalExpect.stringContaining('"type":"enhanced_todo_list"'),
-      "text"
-    );
+    globalExpect(sendToCanvas).not.toHaveBeenCalled();
     globalExpect(mockCtx.log.info).toHaveBeenCalledWith("Created 2 tasks");
   });
   it("should update task status successfully", async () => {
@@ -182,11 +178,7 @@ describe("enhancedTodoListTool", () => {
     if ("tasks" in result && result.tasks) {
       globalExpect(result.tasks[0].status).toBe("completed");
     }
-    globalExpect(sendToCanvas).toHaveBeenCalledWith(
-      "test-job-id",
-      globalExpect.stringContaining('"type":"enhanced_todo_list"'),
-      "text"
-    );
+    globalExpect(sendToCanvas).not.toHaveBeenCalled();
     globalExpect(mockCtx.log.info).toHaveBeenCalledWith(
       "Updated task 1 to status completed"
     );
@@ -218,11 +210,7 @@ describe("enhancedTodoListTool", () => {
     );
     globalExpect(result).toHaveProperty("success", true);
     globalExpect(result).toHaveProperty("message", "Created 2 tasks successfully");
-    globalExpect(sendToCanvas).toHaveBeenCalledWith(
-      "test-job-id",
-      globalExpect.stringContaining('"type":"enhanced_todo_list"'),
-      "text"
-    );
+    globalExpect(sendToCanvas).not.toHaveBeenCalled();
   });
   it("should clear tasks and project successfully", async () => {
     const mockCtx = createMockContext("test-job-id");
@@ -316,6 +304,31 @@ describe("enhancedTodoListTool", () => {
     );
     globalExpect(result).toHaveProperty("success", true);
     globalExpect(sendToCanvas).not.toHaveBeenCalled();
+  });
+  it("should send to canvas when title contains [CANVAS] tag", async () => {
+    const mockCtx = createMockContext("test-job-id");
+    const result = await enhancedTodoListTool.execute(
+      {
+        action: "create_task",
+        tasks: [
+          {
+            content: "Design game levels",
+            createdAt: Date.now(),
+            id: "1",
+            status: "pending",
+            updatedAt: Date.now()
+          }
+        ],
+        title: "[CANVAS] Game Development Tasks"
+      },
+      mockCtx
+    );
+    globalExpect(result).toHaveProperty("success", true);
+    globalExpect(sendToCanvas).toHaveBeenCalledWith(
+      "test-job-id",
+      globalExpect.stringContaining("<h2>Game Development Tasks</h2>"),
+      "html"
+    );
   });
   it("should handle state recovery", async () => {
     const mockCtx = createMockContext("test-job-id");
