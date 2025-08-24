@@ -573,9 +573,9 @@ export const unifiedTodoListTool: Tool<
                 timestamp: Date.now(),
                 title: args.title || 'Mission Control',
                 todos: tasks,
-                type: 'todo_list',
+                type: 'unified_todo',  // Changed from 'todo_list' to 'unified_todo'
               },
-              type: 'todo_list',
+              type: 'unified_todo',  // Changed from 'todo_list' to 'unified_todo'
             };
             window.postMessage(todoMessage, '*');
           }
@@ -603,9 +603,9 @@ export const unifiedTodoListTool: Tool<
                 timestamp: Date.now(),
                 title: args.title || 'Mission Control',
                 todos: tasks,
-                type: 'todo_list',
+                type: 'unified_todo',  // Changed from 'todo_list' to 'unified_todo'
               },
-              type: 'todo_list',
+              type: 'unified_todo',  // Changed from 'todo_list' to 'unified_todo'
             };
             window.postMessage(todoMessage, '*');
           }
@@ -667,9 +667,9 @@ export const unifiedTodoListTool: Tool<
                 timestamp: Date.now(),
                 title: args.title || 'Mission Control',
                 todos: tasks,
-                type: 'todo_list',
+                type: 'unified_todo',  // Changed from 'todo_list' to 'unified_todo'
               },
-              type: 'todo_list',
+              type: 'unified_todo',  // Changed from 'todo_list' to 'unified_todo'
             };
             window.postMessage(todoMessage, '*');
           }

@@ -1,0 +1,2163 @@
+
+> @gforge/core@1.0.383 test:integration /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core
+> vitest run --mode integration --run
+
+
+ RUN  v3.2.4 /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core
+
+ ❯ src/worker.concurrent.processing.integration.test.ts (9 tests | 3 failed) 1128ms
+   ✓ Worker Concurrent Processing Integration Tests > should create and manage worker pool 8ms
+   × Worker Concurrent Processing Integration Tests > should distribute jobs across workers concurrently 12ms
+     → No available workers
+   × Worker Concurrent Processing Integration Tests > should handle worker failures gracefully 58ms
+     → expected 'rejected' to be 'fulfilled' // Object.is equality
+   ✓ Worker Concurrent Processing Integration Tests > should implement job priority queue 54ms
+   ✓ Worker Concurrent Processing Integration Tests > should handle concurrent job processing with rate limiting 102ms
+   × Worker Concurrent Processing Integration Tests > should implement worker load balancing 3ms
+     → No available workers
+   ✓ Worker Concurrent Processing Integration Tests > should handle worker memory management 55ms
+   ✓ Worker Concurrent Processing Integration Tests > should implement job retry mechanism with exponential backoff  633ms
+   ✓ Worker Concurrent Processing Integration Tests > should monitor worker pool health and performance 200ms
+ ❯ src/modules/agent/monitoring.integration.test.ts (19 tests | 15 failed) 1039ms
+   × Monitoring and Observability Integration Tests > Metrics Collection > should collect agent execution metrics 38ms
+     → expected "spy" to be called at least once
+   × Monitoring and Observability Integration Tests > Metrics Collection > should track LLM provider performance metrics 684ms
+     → The requested module 'pino' does not provide an export named 'Logger'
+   × Monitoring and Observability Integration Tests > Metrics Collection > should monitor tool execution statistics 30ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/monitoring.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × Monitoring and Observability Integration Tests > Distributed Tracing > should create distributed traces for agent workflows 9ms
+     → expected "spy" to be called at least once
+   × Monitoring and Observability Integration Tests > Distributed Tracing > should trace cross-service communications 18ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/redis/redisClient.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/monitoring.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × Monitoring and Observability Integration Tests > Distributed Tracing > should correlate traces across agent instances 14ms
+     → expected "spy" to be called at least once
+   × Monitoring and Observability Integration Tests > Health Monitoring > should report agent health status 10ms
+     → expected "spy" to be called at least once
+   × Monitoring and Observability Integration Tests > Health Monitoring > should detect and report degraded performance 34ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/monitoring.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   ✓ Monitoring and Observability Integration Tests > Health Monitoring > should monitor resource utilization 11ms
+   × Monitoring and Observability Integration Tests > Error Tracking and Alerting > should track and categorize errors 57ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/monitoring.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × Monitoring and Observability Integration Tests > Error Tracking and Alerting > should generate alerts for critical failures 30ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/monitoring.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × Monitoring and Observability Integration Tests > Error Tracking and Alerting > should implement error rate monitoring 10ms
+     → expected "spy" to be called at least once
+   × Monitoring and Observability Integration Tests > Performance Analytics > should analyze conversation quality metrics 16ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/redis/redisClient.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/monitoring.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   ✓ Monitoring and Observability Integration Tests > Performance Analytics > should track usage patterns and trends 7ms
+   ✓ Monitoring and Observability Integration Tests > Performance Analytics > should generate performance insights and recommendations 8ms
+   × Monitoring and Observability Integration Tests > Real-time Dashboards and Visualization > should provide real-time metrics for dashboards 8ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/redis/redisClient.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/monitoring.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × Monitoring and Observability Integration Tests > Real-time Dashboards and Visualization > should stream metrics to visualization tools 8ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/redis/redisClient.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/monitoring.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × Monitoring and Observability Integration Tests > Compliance and Audit Logging > should maintain detailed audit trails 9ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/redis/redisClient.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/monitoring.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   ✓ Monitoring and Observability Integration Tests > Compliance and Audit Logging > should ensure data retention compliance 31ms
+ ❯ src/modules/agent/llmProvider.integration.test.ts (18 tests | 18 failed) 1269ms
+   × LLM Provider Fallback Integration Tests > Provider Failover Scenarios > should fallback from OpenAI to Anthropic on error 189ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × LLM Provider Fallback Integration Tests > Provider Failover Scenarios > should cascade through all providers on sequential failures 7ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × LLM Provider Fallback Integration Tests > Provider Failover Scenarios > should handle Qwen timeout errors with specific retry logic 8ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × LLM Provider Fallback Integration Tests > Provider Failover Scenarios > should handle all providers failing gracefully 36ms
+     → expected 'Agent run failed: this.log.child is n…' to contain 'All LLM providers failed'
+   × LLM Provider Fallback Integration Tests > Provider Health Monitoring > should monitor provider response times 7ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × LLM Provider Fallback Integration Tests > Provider Health Monitoring > should track provider error rates 10ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × LLM Provider Fallback Integration Tests > Provider Health Monitoring > should implement circuit breaker pattern for unhealthy providers 7ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × LLM Provider Fallback Integration Tests > Provider Load Balancing > should distribute load across healthy providers 8ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × LLM Provider Fallback Integration Tests > Provider Load Balancing > should respect provider priority in hierarchy 9ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × LLM Provider Fallback Integration Tests > Provider Load Balancing > should handle provider capacity limits 12ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × LLM Provider Fallback Integration Tests > Provider Recovery and Auto-healing > should automatically recover failed providers 22ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × LLM Provider Fallback Integration Tests > Provider Recovery and Auto-healing > should perform health checks on recovered providers 767ms
+     → The requested module 'pino' does not provide an export named 'Logger'
+   × LLM Provider Fallback Integration Tests > Provider Recovery and Auto-healing > should gradually increase traffic to recovered providers 17ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × LLM Provider Fallback Integration Tests > Provider-Specific Error Handling > should handle OpenAI-specific errors correctly 8ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × LLM Provider Fallback Integration Tests > Provider-Specific Error Handling > should handle Anthropic-specific errors correctly 7ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × LLM Provider Fallback Integration Tests > Provider-Specific Error Handling > should handle provider authentication failures 70ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/llm/LlmKeyManager.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/llmProvider.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × LLM Provider Fallback Integration Tests > Cost Optimization > should prefer cost-effective providers when possible 46ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × LLM Provider Fallback Integration Tests > Cost Optimization > should track token usage and costs per provider 34ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/jobQueue.integration.test.ts (25 tests | 12 failed) 1289ms
+   ✓ Job Queue BullMQ Integration Tests > Job Creation and Processing > should create and process a basic job 10ms
+   × Job Queue BullMQ Integration Tests > Job Creation and Processing > should process job with proper progress updates 33ms
+     → expected "spy" to be called at least once
+   × Job Queue BullMQ Integration Tests > Job Creation and Processing > should handle high-priority jobs first 14ms
+     → expected "spy" to be called with arguments: [ [ 'waiting', 'active' ], +0, 100 ][90m
+
+Number of calls: [1m0[22m
+[39m
+   ✓ Job Queue BullMQ Integration Tests > Job Creation and Processing > should handle delayed job execution 6ms
+   × Job Queue BullMQ Integration Tests > Job Retry and Error Handling > should retry failed jobs with exponential backoff 670ms
+     → The requested module 'pino' does not provide an export named 'Logger'
+   × Job Queue BullMQ Integration Tests > Job Retry and Error Handling > should move job to failed queue after max retries 41ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/jobQueue.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × Job Queue BullMQ Integration Tests > Job Retry and Error Handling > should handle job timeout gracefully 28ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/jobQueue.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × Job Queue BullMQ Integration Tests > Job Retry and Error Handling > should provide detailed error diagnostics for failed jobs 43ms
+     → TypeScript parameter property is not supported in strip-only mode
+   × Job Queue BullMQ Integration Tests > Job Queue Management > should monitor queue health and metrics 33ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/redis/redisClient.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/jobQueue.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   ✓ Job Queue BullMQ Integration Tests > Job Queue Management > should clean up completed and failed jobs 123ms
+   × Job Queue BullMQ Integration Tests > Job Queue Management > should handle queue overflow and backpressure 13ms
+     → expected "spy" to be called at least once
+   ✓ Job Queue BullMQ Integration Tests > Job Queue Management > should support job prioritization and scheduling 10ms
+   ✓ Job Queue BullMQ Integration Tests > Repeatable and Scheduled Jobs > should create repeatable jobs with cron patterns 15ms
+   × Job Queue BullMQ Integration Tests > Repeatable and Scheduled Jobs > should manage repeatable job lifecycle 23ms
+     → expected "spy" to be called at least once
+   ✓ Job Queue BullMQ Integration Tests > Repeatable and Scheduled Jobs > should handle timezone-aware scheduling 12ms
+   ✓ Job Queue BullMQ Integration Tests > Job Dependencies and Workflows > should handle job dependencies and chains 4ms
+   ✓ Job Queue BullMQ Integration Tests > Job Dependencies and Workflows > should handle parallel job execution within workflows 10ms
+   ✓ Job Queue BullMQ Integration Tests > Job Dependencies and Workflows > should handle workflow failure recovery 9ms
+   ✓ Job Queue BullMQ Integration Tests > Queue Events and Monitoring > should handle queue events properly 26ms
+   ✓ Job Queue BullMQ Integration Tests > Queue Events and Monitoring > should emit progress events during job execution 35ms
+   × Job Queue BullMQ Integration Tests > Queue Events and Monitoring > should monitor queue performance metrics 46ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/redis/redisClient.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/jobQueue.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × Job Queue BullMQ Integration Tests > Queue Events and Monitoring > should alert on queue anomalies 30ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/redis/redisClient.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/jobQueue.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × Job Queue BullMQ Integration Tests > Queue Scaling and Load Balancing > should scale workers based on queue load 32ms
+     → expected 1 to be greater than 3
+   ✓ Job Queue BullMQ Integration Tests > Queue Scaling and Load Balancing > should distribute jobs across multiple queues 10ms
+   ✓ Job Queue BullMQ Integration Tests > Queue Scaling and Load Balancing > should handle queue failover between Redis instances 5ms
+ ❯ src/modules/agent/llm.qwen.integration.test.ts (17 tests | 17 failed) 1320ms
+   × Qwen LLM Provider Integration Tests > Qwen Basic Integration > should successfully get response from Qwen provider 207ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × Qwen LLM Provider Integration Tests > Qwen Basic Integration > should handle Qwen API key validation 152ms
+     → The requested module 'pino' does not provide an export named 'Logger'
+   × Qwen LLM Provider Integration Tests > Qwen Basic Integration > should handle missing Qwen API key gracefully 58ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/llm/LlmKeyManager.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/llm.qwen.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × Qwen LLM Provider Integration Tests > Qwen Error Handling > should handle Qwen rate limiting errors 38ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × Qwen LLM Provider Integration Tests > Qwen Error Handling > should handle Qwen timeout errors with retries 43ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × Qwen LLM Provider Integration Tests > Qwen Error Handling > should handle Qwen API authentication errors 66ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/llm/LlmKeyManager.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/llm.qwen.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × Qwen LLM Provider Integration Tests > Qwen Error Handling > should handle Qwen service unavailable errors 28ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × Qwen LLM Provider Integration Tests > Qwen Model Selection and Configuration > should work with different Qwen model variants 24ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × Qwen LLM Provider Integration Tests > Qwen Model Selection and Configuration > should respect Qwen temperature and token limits 26ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × Qwen LLM Provider Integration Tests > Qwen Model Selection and Configuration > should handle Qwen streaming responses 50ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × Qwen LLM Provider Integration Tests > Qwen Performance and Monitoring > should monitor Qwen response times 28ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × Qwen LLM Provider Integration Tests > Qwen Performance and Monitoring > should track Qwen token usage 19ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × Qwen LLM Provider Integration Tests > Qwen Performance and Monitoring > should implement Qwen health checks 505ms
+     → request for '../../config.ts' is not in cache
+   × Qwen LLM Provider Integration Tests > Qwen Context and Memory Management > should handle long conversation context with Qwen 23ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × Qwen LLM Provider Integration Tests > Qwen Context and Memory Management > should optimize context window for Qwen models 8ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × Qwen LLM Provider Integration Tests > Qwen Cost Optimization > should track Qwen usage costs 14ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+   × Qwen LLM Provider Integration Tests > Qwen Cost Optimization > should prefer Qwen for cost-effective operations 19ms
+     → mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/session.integration.test.ts (46 tests | 44 failed) 1327ms
+   × Session Management Integration Tests > Session Creation and Initialization > should create a new session with proper defaults 46ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Creation and Initialization > should initialize session with user context 14ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Creation and Initialization > should handle session collision gracefully 18ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Persistence and Recovery > should automatically save session state during conversation 26ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Persistence and Recovery > should persist session to Redis with proper TTL 12ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Persistence and Recovery > should recover session from persistent storage 11ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Persistence and Recovery > should handle corrupted session data gracefully 11ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session History Management > should maintain conversation history within limits 18ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session History Management > should compress old conversation history 16ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session History Management > should handle concurrent session updates 16ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Sharing and Collaboration > should enable session sharing between users 21ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Sharing and Collaboration > should handle collaborative editing conflicts 23ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Sharing and Collaboration > should track session activity from multiple participants 19ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Analytics and Metrics > should track session usage metrics 22ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Analytics and Metrics > should monitor session performance 62ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Analytics and Metrics > should analyze conversation quality 31ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Cleanup and Archival > should clean up expired sessions 20ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Cleanup and Archival > should archive completed sessions 87ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Cleanup and Archival > should compress archived session data 53ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Security and Privacy > should sanitize sensitive data in session history 29ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Security and Privacy > should enforce session access controls 19ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Security and Privacy > should audit session access and modifications 27ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Migration and Versioning > should migrate sessions between schema versions 23ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Creation and Initialization > should create a new session with proper defaults 36ms
+     → expected "spy" to be called with arguments: [ ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × Session Management Integration Tests > Session Creation and Initialization > should initialize session with user context 19ms
+     → expected "spy" to be called with arguments: [ ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × Session Management Integration Tests > Session Creation and Initialization > should handle session collision gracefully 30ms
+     → expected "spy" to be called with arguments: [ 'session-test-123' ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × Session Management Integration Tests > Session Persistence and Recovery > should automatically save session state during conversation 50ms
+     → expected "spy" to be called with arguments: [ ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × Session Management Integration Tests > Session Persistence and Recovery > should persist session to Redis with proper TTL 18ms
+     → expected "spy" to be called with arguments: [ 'session:session-test-123', …(1) ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × Session Management Integration Tests > Session Persistence and Recovery > should recover session from persistent storage 33ms
+     → expected "spy" to be called with arguments: [ 'session-test-123' ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × Session Management Integration Tests > Session Persistence and Recovery > should handle corrupted session data gracefully 17ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session History Management > should maintain conversation history within limits 28ms
+     → Cannot read properties of undefined (reading '0')
+   × Session Management Integration Tests > Session History Management > should compress old conversation history 24ms
+     → expected "spy" to be called with arguments: [ ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × Session Management Integration Tests > Session History Management > should handle concurrent session updates 25ms
+     → expected "spy" to be called 2 times, but got 0 times
+   × Session Management Integration Tests > Session Sharing and Collaboration > should enable session sharing between users 22ms
+     → expected "spy" to be called with arguments: [ …(2) ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × Session Management Integration Tests > Session Sharing and Collaboration > should handle collaborative editing conflicts 24ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Sharing and Collaboration > should track session activity from multiple participants 69ms
+     → expected "spy" to be called with arguments: [ …(2) ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × Session Management Integration Tests > Session Analytics and Metrics > should track session usage metrics 19ms
+     → expected "spy" to be called with arguments: [ 'session-test-123' ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × Session Management Integration Tests > Session Analytics and Metrics > should monitor session performance 85ms
+     → expected "spy" to be called with arguments: [ 'metrics:session_performance', …(1) ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × Session Management Integration Tests > Session Analytics and Metrics > should analyze conversation quality 33ms
+     → expected "spy" to be called with arguments: [ …(2) ][90m
+
+Number of calls: [1m0[22m
+[39m
+   ✓ Session Management Integration Tests > Session Cleanup and Archival > should clean up expired sessions 23ms
+   × Session Management Integration Tests > Session Cleanup and Archival > should archive completed sessions 25ms
+     → expected "spy" to be called with arguments: [ 'session-test-123', …(1) ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × Session Management Integration Tests > Session Cleanup and Archival > should compress archived session data 23ms
+     → expected "spy" to be called at least once
+   × Session Management Integration Tests > Session Security and Privacy > should sanitize sensitive data in session history 21ms
+     → Cannot read properties of undefined (reading '0')
+   ✓ Session Management Integration Tests > Session Security and Privacy > should enforce session access controls 24ms
+   × Session Management Integration Tests > Session Security and Privacy > should audit session access and modifications 20ms
+     → expected "spy" to be called with arguments: [ …(2) ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × Session Management Integration Tests > Session Migration and Versioning > should migrate sessions between schema versions 21ms
+     → expected "spy" to be called with arguments: [ ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/auth.jwt.lifecycle.integration.test.ts (16 tests | 1 failed) 274ms
+   ✓ Auth JWT Lifecycle Integration Tests > should generate valid JWT access tokens 41ms
+   ✓ Auth JWT Lifecycle Integration Tests > should generate valid JWT refresh tokens 11ms
+   ✓ Auth JWT Lifecycle Integration Tests > should handle token expiration correctly 22ms
+   ✓ Auth JWT Lifecycle Integration Tests > should validate token signatures correctly 8ms
+   ✓ Auth JWT Lifecycle Integration Tests > should handle malformed tokens 17ms
+   ✓ Auth JWT Lifecycle Integration Tests > should implement token refresh workflow 13ms
+   ✓ Auth JWT Lifecycle Integration Tests > should validate JWT claims correctly 7ms
+   ✓ Auth JWT Lifecycle Integration Tests > should reject tokens with invalid audience 9ms
+   ✓ Auth JWT Lifecycle Integration Tests > should reject tokens with invalid issuer 6ms
+   ✓ Auth JWT Lifecycle Integration Tests > should handle token blacklisting scenario 3ms
+   ✓ Auth JWT Lifecycle Integration Tests > should handle concurrent token operations 27ms
+   ✓ Auth JWT Lifecycle Integration Tests > should handle different token algorithms 5ms
+   × Auth JWT Lifecycle Integration Tests > should validate token timing claims 71ms
+     → expected [Function] to not throw an error but 'NotBeforeError: jwt not active' was thrown
+   ✓ Auth JWT Lifecycle Integration Tests > should handle token payload size limits 8ms
+   ✓ Auth JWT Lifecycle Integration Tests > should implement secure token rotation 11ms
+   ✓ Auth JWT Lifecycle Integration Tests > should handle JWT header manipulation detection 2ms
+ ❯ src/postgres.advanced.integration.test.ts (10 tests | 10 failed) 396ms
+   × PostgreSQL Advanced Integration Tests > should establish connection to PostgreSQL 90ms
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+   × PostgreSQL Advanced Integration Tests > should handle concurrent connections properly 43ms
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+   × PostgreSQL Advanced Integration Tests > should handle transactions correctly 37ms
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+   × PostgreSQL Advanced Integration Tests > should handle JSONB operations efficiently 37ms
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+   × PostgreSQL Advanced Integration Tests > should handle connection pool exhaustion gracefully 30ms
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+   × PostgreSQL Advanced Integration Tests > should handle prepared statements efficiently 25ms
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+   × PostgreSQL Advanced Integration Tests > should handle large dataset operations 40ms
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+   × PostgreSQL Advanced Integration Tests > should handle connection recovery after network issues 23ms
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+   × PostgreSQL Advanced Integration Tests > should monitor pool statistics 33ms
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+   × PostgreSQL Advanced Integration Tests > should handle database schema migrations 29ms
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+     → SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+ ❯ src/security.input.validation.integration.test.ts (13 tests | 1 failed) 180ms
+   ✓ Security Input Validation Integration Tests > Schema Validation with Zod > should validate user input schemas correctly 40ms
+   ✓ Security Input Validation Integration Tests > Schema Validation with Zod > should validate agent configuration schemas 10ms
+   ✓ Security Input Validation Integration Tests > SQL Injection Prevention > should detect and prevent SQL injection attempts 10ms
+   ✓ Security Input Validation Integration Tests > SQL Injection Prevention > should validate database query parameters 4ms
+   ✓ Security Input Validation Integration Tests > XSS Prevention > should sanitize HTML content to prevent XSS 8ms
+   ✓ Security Input Validation Integration Tests > XSS Prevention > should validate and sanitize user-generated content 2ms
+   ✓ Security Input Validation Integration Tests > Input Length and Format Validation > should enforce input length limits 1ms
+   ✓ Security Input Validation Integration Tests > Input Length and Format Validation > should validate email and URL formats 3ms
+   × Security Input Validation Integration Tests > File Upload Validation > should validate file uploads securely 48ms
+     → expected true to be false // Object.is equality
+   ✓ Security Input Validation Integration Tests > File Upload Validation > should detect malicious file content patterns 3ms
+   ✓ Security Input Validation Integration Tests > API Rate Limiting Validation > should validate rate limiting parameters 3ms
+   ✓ Security Input Validation Integration Tests > Command Injection Prevention > should prevent command injection in system calls 14ms
+   ✓ Security Input Validation Integration Tests > Integer Overflow and Boundary Validation > should validate numeric boundaries correctly 17ms
+ ❯ src/modules/agent/security.integration.test.ts (10 tests | 8 failed) 879ms
+   × Security and Validation Integration Tests > Input Sanitization > should sanitize malicious input prompts 42ms
+     → expected "spy" to be called at least once
+   × Security and Validation Integration Tests > Input Sanitization > should validate tool parameters for security 478ms
+     → The requested module 'pino' does not provide an export named 'Logger'
+   × Security and Validation Integration Tests > Authentication and Authorization > should enforce session-based access control 10ms
+     → expected "spy" to be called at least once
+   × Security and Validation Integration Tests > Authentication and Authorization > should validate API key permissions 31ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/llm/LlmKeyManager.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/security.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   ✓ Security and Validation Integration Tests > Data Protection > should redact sensitive information from logs 23ms
+   × Security and Validation Integration Tests > Data Protection > should implement secure session storage 19ms
+     → expected "spy" to be called with arguments: [ ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[39m
+   ✓ Security and Validation Integration Tests > Rate Limiting and DOS Protection > should enforce rate limits per user 134ms
+   × Security and Validation Integration Tests > Rate Limiting and DOS Protection > should detect and prevent abuse patterns 80ms
+     → expected "spy" to be called 10 times, but got 0 times
+   × Security and Validation Integration Tests > Error Handling and Information Disclosure > should not leak sensitive information in error messages 29ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/security.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × Security and Validation Integration Tests > Error Handling and Information Disclosure > should implement secure error logging 26ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/security.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+ ❯ src/modules/agent/performance.integration.test.ts (7 tests | 3 failed) 610ms
+   ✓ Memory and Performance Integration Tests > Memory Management > should monitor memory usage during agent execution 18ms
+   × Memory and Performance Integration Tests > Memory Management > should handle memory pressure gracefully 399ms
+     → expected "spy" to be called at least once
+   × Memory and Performance Integration Tests > Memory Management > should implement memory cleanup after completion 11ms
+     → expected "spy" to be called at least once
+   ✓ Memory and Performance Integration Tests > Performance Benchmarks > should complete simple requests within performance thresholds 9ms
+   ✓ Memory and Performance Integration Tests > Performance Benchmarks > should handle concurrent agent instances efficiently 115ms
+   × Memory and Performance Integration Tests > Resource Optimization > should optimize conversation history storage 19ms
+     → expected "spy" to be called at least once
+   ✓ Memory and Performance Integration Tests > Resource Optimization > should implement efficient caching strategies 31ms
+ ❯ src/modules/agent/e2e.integration.test.ts (8 tests | 8 failed) 750ms
+   × End-to-End Workflow Integration Tests > Complete Data Analysis Workflow > should execute complete data analysis pipeline 551ms
+     → The requested module 'pino' does not provide an export named 'Logger'
+   × End-to-End Workflow Integration Tests > Complete Data Analysis Workflow > should handle research and synthesis workflow 41ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/e2e.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × End-to-End Workflow Integration Tests > Multi-step Problem Solving > should solve complex problems requiring multiple iterations 23ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/e2e.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × End-to-End Workflow Integration Tests > Multi-step Problem Solving > should handle error recovery and alternative approaches 20ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/e2e.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × End-to-End Workflow Integration Tests > Session Continuity and State Management > should maintain context across conversation turns 28ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/e2e.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × End-to-End Workflow Integration Tests > Session Continuity and State Management > should handle session persistence and recovery 39ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/e2e.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × End-to-End Workflow Integration Tests > Integration with External Systems > should integrate with multiple external APIs 22ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/e2e.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × End-to-End Workflow Integration Tests > Integration with External Systems > should handle workflow orchestration across services 21ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/e2e.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+ ❯ src/api.middleware.chain.integration.test.ts (27 tests | 27 skipped) 22ms
+ ❯ src/api.cors.integration.test.ts (30 tests | 30 skipped) 22ms
+ ❯ src/api.rate.limiting.integration.test.ts (19 tests | 19 skipped) 37ms
+ ❯ src/api.streaming.integration.test.ts (11 tests | 11 skipped) 58ms
+ ❯ src/api.integration.test.ts (15 tests | 15 skipped) 56ms
+ ✓ src/otel.tracing.integration.test.ts (12 tests) 338ms
+ ❯ src/llm.provider.failover.integration.test.ts (6 tests | 1 failed) 315ms
+   ✓ LLM Provider Failover Integration Tests > should implement provider hierarchy with failover 55ms
+   ✓ LLM Provider Failover Integration Tests > should handle circuit breaker pattern 2ms
+   × LLM Provider Failover Integration Tests > should implement load balancing with weighted distribution 66ms
+     → expected 23 to be greater than 27
+   ✓ LLM Provider Failover Integration Tests > should handle provider health monitoring and auto-recovery 2ms
+   ✓ LLM Provider Failover Integration Tests > should implement request routing based on model capabilities 83ms
+   ✓ LLM Provider Failover Integration Tests > should handle provider cost optimization 103ms
+ ✓ src/modules/tools/definitions/browser/tools.browser.integration.test.ts (15 tests) 143ms
+ ✓ src/modules/agent/agent.integration.test.ts (10 tests) 23ms
+ ✓ src/webServer.integration.test.ts (1 test) 6ms
+ ✓ src/modules/agent/redis.integration.test.ts (21 tests) 100ms
+ ✓ src/redis.cluster.integration.test.ts (13 tests) 2378ms
+   ✓ Redis Cluster Integration Tests > should handle Redis expiration and TTL  2107ms
+ ❯ src/modules/agent/websocket.integration.test.ts (21 tests | 12 failed) 6357ms
+   × WebSocket Real-time Communication Integration Tests > Real-time Agent Communication > should send real-time progress updates via WebSocket 89ms
+     → expected "spy" to be called 4 times, but got 0 times
+   × WebSocket Real-time Communication Integration Tests > Real-time Agent Communication > should stream agent thoughts in real-time 663ms
+     → The requested module 'pino' does not provide an export named 'Logger'
+   × WebSocket Real-time Communication Integration Tests > Real-time Agent Communication > should broadcast tool execution results in real-time 24ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/websocket.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × WebSocket Real-time Communication Integration Tests > Real-time Agent Communication > should handle real-time user interruptions 9ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/logger.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/websocket.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × WebSocket Real-time Communication Integration Tests > Multi-client Collaboration > should broadcast session updates to all connected clients 17ms
+     → expected "spy" to be called with arguments: [ 'session-room', ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[39m
+   × WebSocket Real-time Communication Integration Tests > Multi-client Collaboration > should handle collaborative session editing 13ms
+     → expected "spy" to be called with arguments: [ ObjectContaining{…}, …(1) ][90m
+
+Number of calls: [1m0[22m
+[39m
+   ✓ WebSocket Real-time Communication Integration Tests > Multi-client Collaboration > should manage presence and typing indicators 12ms
+   × WebSocket Real-time Communication Integration Tests > Multi-client Collaboration > should synchronize canvas updates across clients 36ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/websocket.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   ✓ WebSocket Real-time Communication Integration Tests > Connection Management and Reliability > should handle connection drops and reconnection 21ms
+   ✓ WebSocket Real-time Communication Integration Tests > Connection Management and Reliability > should implement heartbeat/ping-pong mechanism  371ms
+   × WebSocket Real-time Communication Integration Tests > Connection Management and Reliability > should handle connection timeouts gracefully 5015ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   ✓ WebSocket Real-time Communication Integration Tests > Connection Management and Reliability > should manage connection pooling and load balancing 7ms
+   × WebSocket Real-time Communication Integration Tests > Real-time Analytics and Monitoring > should track real-time connection metrics 9ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/redis/redisClient.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/websocket.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   ✓ WebSocket Real-time Communication Integration Tests > Real-time Analytics and Monitoring > should monitor message throughput and performance 7ms
+   × WebSocket Real-time Communication Integration Tests > Real-time Analytics and Monitoring > should detect and alert on connection anomalies 9ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/redis/redisClient.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/websocket.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   ✓ WebSocket Real-time Communication Integration Tests > Security and Authentication > should validate WebSocket authentication tokens 7ms
+   × WebSocket Real-time Communication Integration Tests > Security and Authentication > should enforce rate limiting on WebSocket connections 9ms
+     → Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/redis/redisClient.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/websocket.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+   × WebSocket Real-time Communication Integration Tests > Security and Authentication > should sanitize and validate incoming messages 10ms
+     → expected true to be false // Object.is equality
+   ✓ WebSocket Real-time Communication Integration Tests > Security and Authentication > should implement message encryption for sensitive data 8ms
+   ✓ WebSocket Real-time Communication Integration Tests > WebSocket vs HTTP Performance Comparison > should demonstrate WebSocket efficiency over HTTP polling 8ms
+   ✓ WebSocket Real-time Communication Integration Tests > WebSocket vs HTTP Performance Comparison > should measure real-time latency improvements 9ms
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/api.cors.integration.test.ts > API CORS Integration Tests
+TypeError: Missing parameter name at 13: https://git.new/pathToRegexpError
+ ❯ name ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:153:13
+ ❯ lexer ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:171:21
+ ❯ Iter.peek ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:188:32
+ ❯ Iter.tryConsume ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:195:24
+ ❯ Iter.text ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:213:26
+ ❯ consume ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:285:23
+ ❯ parse ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:320:18
+ ❯ ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:503:40
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/170]⎯
+
+ FAIL  src/api.integration.test.ts > API Integration Tests
+ FAIL  src/api.streaming.integration.test.ts > API Streaming Integration Tests
+error: password authentication failed for user "user"
+ ❯ Parser.parseErrorMessage ../../node_modules/.pnpm/pg-protocol@1.10.3/node_modules/pg-protocol/src/parser.ts:369:69
+ ❯ Parser.handlePacket ../../node_modules/.pnpm/pg-protocol@1.10.3/node_modules/pg-protocol/src/parser.ts:187:21
+ ❯ Parser.parse ../../node_modules/.pnpm/pg-protocol@1.10.3/node_modules/pg-protocol/src/parser.ts:102:30
+ ❯ Socket.<anonymous> ../../node_modules/.pnpm/pg-protocol@1.10.3/node_modules/pg-protocol/src/index.ts:7:48
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/170]⎯
+
+ FAIL  src/api.middleware.chain.integration.test.ts > API Middleware Chain Integration Tests
+ FAIL  src/api.rate.limiting.integration.test.ts > API Rate Limiting Integration Tests
+TypeError: Missing parameter name at 1: https://git.new/pathToRegexpError
+ ❯ name ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:153:13
+ ❯ lexer ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:171:21
+ ❯ Iter.peek ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:188:32
+ ❯ Iter.tryConsume ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:195:24
+ ❯ Iter.text ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:213:26
+ ❯ consume ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:285:23
+ ❯ parse ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:320:18
+ ❯ ../../node_modules/.pnpm/path-to-regexp@8.2.0/node_modules/path-to-regexp/src/index.ts:503:40
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/170]⎯
+
+ FAIL  src/modules/agent/agent.critical.integration.test.ts [ src/modules/agent/agent.critical.integration.test.ts ]
+Error: [vitest] No "getLogger" export is defined on the "../../logger.ts" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+vi[33m.[39m[34mmock[39m([35mimport[39m([32m"../../logger.ts"[39m)[33m,[39m [35masync[39m (importOriginal) [33m=>[39m {
+  [35mconst[39m actual [33m=[39m [35mawait[39m [34mimportOriginal[39m()
+  [35mreturn[39m {
+    [33m...[39mactual[33m,[39m
+    [90m// your mocked methods[39m
+  }
+})
+
+ ❯ src/modules/redis/redisClient.ts:5:16
+      3| import { getLogger } from '../../logger.ts';
+      4| 
+      5| const logger = getLogger();
+       |                ^
+      6| let redisClient: IORedis | null = null;
+      7| 
+ ❯ src/modules/llm/LlmKeyManager.ts:3:31
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/170]⎯
+
+ FAIL  src/modules/agent/toolRegistry.integration.test.ts [ src/modules/agent/toolRegistry.integration.test.ts ]
+Error: [vitest] There was an error when mocking a module. If you are using "vi.mock" factory, make sure there are no top level variables inside, since this call is hoisted to top of the file. Read more: https://vitest.dev/api/vi.html#vi-mock
+ ❯ src/utils/toolLoader.ts:7:31
+      5| import { z } from 'zod';
+      6| 
+      7| import { getLogger } from '../logger.ts';
+       |                               ^
+      8| import { toolRegistry } from '../modules/tools/toolRegistry.ts';
+      9| import { Tool } from '../types.ts';
+
+Caused by: ReferenceError: Cannot access 'mockToolRegistry' before initialization
+ ❯ src/modules/agent/toolRegistry.integration.test.ts:197:17
+ ❯ src/utils/toolLoader.ts:7:31
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/170]⎯
+
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 153 ⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/auth.jwt.lifecycle.integration.test.ts > Auth JWT Lifecycle Integration Tests > should validate token timing claims
+AssertionError: expected [Function] to not throw an error but 'NotBeforeError: jwt not active' was thrown
+
+[32m- Expected:[39m 
+undefined
+
+[31m+ Received:[39m 
+"NotBeforeError: jwt not active"
+
+ ❯ src/auth.jwt.lifecycle.integration.test.ts:314:12
+    312|     expect(() => {
+    313|       jwt.verify(immediateToken, jwtSecret);
+    314|     }).not.toThrow();
+       |            ^
+    315|   });
+    316| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/170]⎯
+
+ FAIL  src/llm.provider.failover.integration.test.ts > LLM Provider Failover Integration Tests > should implement load balancing with weighted distribution
+AssertionError: expected 23 to be greater than 27
+ ❯ src/llm.provider.failover.integration.test.ts:375:36
+    373| 
+    374|     expect(fastProviderRequests).toBeGreaterThan(mediumProviderRequest…
+    375|     expect(mediumProviderRequests).toBeGreaterThan(slowProviderRequest…
+       |                                    ^
+    376| 
+    377|     // Should roughly match 50:30:20 ratio
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/170]⎯
+
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should establish connection to PostgreSQL
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle concurrent connections properly
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle transactions correctly
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle JSONB operations efficiently
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle connection pool exhaustion gracefully
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle prepared statements efficiently
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle large dataset operations
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle connection recovery after network issues
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should monitor pool statistics
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle database schema migrations
+Error: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+ ❯ ../../node_modules/.pnpm/pg-pool@3.10.1_pg@8.16.3/node_modules/pg-pool/index.js:45:11
+ ❯ src/postgres.advanced.integration.test.ts:43:20
+     41|   beforeEach(async () => {
+     42|     // Setup test tables if needed
+     43|     const client = await pool.connect();
+       |                    ^
+     44|     try {
+     45|       await client.query(`
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/170]⎯
+
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should establish connection to PostgreSQL
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle concurrent connections properly
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle transactions correctly
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle JSONB operations efficiently
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle connection pool exhaustion gracefully
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle prepared statements efficiently
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle large dataset operations
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle connection recovery after network issues
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should monitor pool statistics
+ FAIL  src/postgres.advanced.integration.test.ts > PostgreSQL Advanced Integration Tests > should handle database schema migrations
+Error: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+ ❯ ../../node_modules/.pnpm/pg-pool@3.10.1_pg@8.16.3/node_modules/pg-pool/index.js:45:11
+ ❯ src/postgres.advanced.integration.test.ts:61:20
+     59|   afterEach(async () => {
+     60|     // Cleanup test data
+     61|     const client = await pool.connect();
+       |                    ^
+     62|     try {
+     63|       await client.query('DELETE FROM test_sessions');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/170]⎯
+
+ FAIL  src/security.input.validation.integration.test.ts > Security Input Validation Integration Tests > File Upload Validation > should validate file uploads securely
+AssertionError: expected true to be false // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+ ❯ src/security.input.validation.integration.test.ts:407:32
+    405|       maliciousFiles.forEach((file) => {
+    406|         const result = FileUploadSchema.safeParse(file);
+    407|         expect(result.success).toBe(false);
+       |                                ^
+    408|       });
+    409|     });
+ ❯ src/security.input.validation.integration.test.ts:405:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/170]⎯
+
+ FAIL  src/worker.concurrent.processing.integration.test.ts > Worker Concurrent Processing Integration Tests > should distribute jobs across workers concurrently
+Error: No available workers
+ ❯ assignJob src/worker.concurrent.processing.integration.test.ts:111:31
+    109|       const availableWorker = workers.find((w) => !w.busy);
+    110|       if (!availableWorker) {
+    111|         return Promise.reject(new Error('No available workers'));
+       |                               ^
+    112|       }
+    113| 
+ ❯ src/worker.concurrent.processing.integration.test.ts:130:57
+ ❯ src/worker.concurrent.processing.integration.test.ts:130:44
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/170]⎯
+
+ FAIL  src/worker.concurrent.processing.integration.test.ts > Worker Concurrent Processing Integration Tests > should handle worker failures gracefully
+AssertionError: expected 'rejected' to be 'fulfilled' // Object.is equality
+
+Expected: [32m"[7mfulfill[27med"[39m
+Received: [31m"[7mreject[27med"[39m
+
+ ❯ src/worker.concurrent.processing.integration.test.ts:201:31
+    199|     expect(results[0].status).toBe('fulfilled');
+    200|     expect(results[1].status).toBe('rejected');
+    201|     expect(results[2].status).toBe('fulfilled');
+       |                               ^
+    202| 
+    203|     // Check that one worker failed
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/170]⎯
+
+ FAIL  src/worker.concurrent.processing.integration.test.ts > Worker Concurrent Processing Integration Tests > should implement worker load balancing
+Error: No available workers
+ ❯ Object.assignJob src/worker.concurrent.processing.integration.test.ts:323:28
+    321|       async assignJob(job: any): Promise<any> {
+    322|         const worker = this.selectWorker();
+    323|         if (!worker) throw new Error('No available workers');
+       |                            ^
+    324| 
+    325|         worker.busy = true;
+ ❯ src/worker.concurrent.processing.integration.test.ts:358:38
+ ❯ src/worker.concurrent.processing.integration.test.ts:358:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/170]⎯
+
+ FAIL  src/modules/agent/e2e.integration.test.ts > End-to-End Workflow Integration Tests > Complete Data Analysis Workflow > should execute complete data analysis pipeline
+ FAIL  src/modules/agent/jobQueue.integration.test.ts > Job Queue BullMQ Integration Tests > Job Retry and Error Handling > should retry failed jobs with exponential backoff
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Basic Integration > should handle Qwen API key validation
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider Recovery and Auto-healing > should perform health checks on recovered providers
+ FAIL  src/modules/agent/monitoring.integration.test.ts > Monitoring and Observability Integration Tests > Metrics Collection > should track LLM provider performance metrics
+ FAIL  src/modules/agent/security.integration.test.ts > Security and Validation Integration Tests > Input Sanitization > should validate tool parameters for security
+ FAIL  src/modules/agent/websocket.integration.test.ts > WebSocket Real-time Communication Integration Tests > Real-time Agent Communication > should stream agent thoughts in real-time
+SyntaxError: The requested module 'pino' does not provide an export named 'Logger'
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/170]⎯
+
+ FAIL  src/modules/agent/e2e.integration.test.ts > End-to-End Workflow Integration Tests > Complete Data Analysis Workflow > should handle research and synthesis workflow
+ FAIL  src/modules/agent/e2e.integration.test.ts > End-to-End Workflow Integration Tests > Multi-step Problem Solving > should solve complex problems requiring multiple iterations
+ FAIL  src/modules/agent/e2e.integration.test.ts > End-to-End Workflow Integration Tests > Multi-step Problem Solving > should handle error recovery and alternative approaches
+ FAIL  src/modules/agent/e2e.integration.test.ts > End-to-End Workflow Integration Tests > Session Continuity and State Management > should maintain context across conversation turns
+ FAIL  src/modules/agent/e2e.integration.test.ts > End-to-End Workflow Integration Tests > Session Continuity and State Management > should handle session persistence and recovery
+ FAIL  src/modules/agent/e2e.integration.test.ts > End-to-End Workflow Integration Tests > Integration with External Systems > should integrate with multiple external APIs
+ FAIL  src/modules/agent/e2e.integration.test.ts > End-to-End Workflow Integration Tests > Integration with External Systems > should handle workflow orchestration across services
+Error: Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/e2e.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/170]⎯
+
+ FAIL  src/modules/agent/jobQueue.integration.test.ts > Job Queue BullMQ Integration Tests > Job Creation and Processing > should process job with proper progress updates
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/jobQueue.integration.test.ts:211:38
+    209|       const result = await agent.run();
+    210| 
+    211|       expect(mockJob.updateProgress).toHaveBeenCalled();
+       |                                      ^
+    212|       expect(result).toBe('Job queue test response');
+    213|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/170]⎯
+
+ FAIL  src/modules/agent/jobQueue.integration.test.ts > Job Queue BullMQ Integration Tests > Job Creation and Processing > should handle high-priority jobs first
+AssertionError: expected "spy" to be called with arguments: [ [ 'waiting', 'active' ], +0, 100 ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/jobQueue.integration.test.ts:236:33
+    234| 
+    235|       // Les jobs haute priorité devraient être traités en premier
+    236|       expect(mockQueue.getJobs).toHaveBeenCalledWith(
+       |                                 ^
+    237|         ['waiting', 'active'],
+    238|         0,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/170]⎯
+
+ FAIL  src/modules/agent/jobQueue.integration.test.ts > Job Queue BullMQ Integration Tests > Job Retry and Error Handling > should move job to failed queue after max retries
+ FAIL  src/modules/agent/jobQueue.integration.test.ts > Job Queue BullMQ Integration Tests > Job Retry and Error Handling > should handle job timeout gracefully
+Error: Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/jobQueue.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/170]⎯
+
+ FAIL  src/modules/agent/jobQueue.integration.test.ts > Job Queue BullMQ Integration Tests > Job Retry and Error Handling > should provide detailed error diagnostics for failed jobs
+SyntaxError: TypeScript parameter property is not supported in strip-only mode
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/170]⎯
+
+ FAIL  src/modules/agent/jobQueue.integration.test.ts > Job Queue BullMQ Integration Tests > Job Queue Management > should monitor queue health and metrics
+ FAIL  src/modules/agent/jobQueue.integration.test.ts > Job Queue BullMQ Integration Tests > Queue Events and Monitoring > should monitor queue performance metrics
+ FAIL  src/modules/agent/jobQueue.integration.test.ts > Job Queue BullMQ Integration Tests > Queue Events and Monitoring > should alert on queue anomalies
+Error: Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/redis/redisClient.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/jobQueue.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/170]⎯
+
+ FAIL  src/modules/agent/jobQueue.integration.test.ts > Job Queue BullMQ Integration Tests > Job Queue Management > should handle queue overflow and backpressure
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/jobQueue.integration.test.ts:529:38
+    527| 
+    528|       // Le système devrait implémenter une logique de backpressure
+    529|       expect(mockQueue.getJobCounts).toHaveBeenCalled();
+       |                                      ^
+    530|     });
+    531| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/170]⎯
+
+ FAIL  src/modules/agent/jobQueue.integration.test.ts > Job Queue BullMQ Integration Tests > Repeatable and Scheduled Jobs > should manage repeatable job lifecycle
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/jobQueue.integration.test.ts:600:43
+    598|       await agent.run();
+    599| 
+    600|       expect(mockQueue.getRepeatableJobs).toHaveBeenCalled();
+       |                                           ^
+    601| 
+    602|       // Test de suppression d'un job répétable
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/170]⎯
+
+ FAIL  src/modules/agent/jobQueue.integration.test.ts > Job Queue BullMQ Integration Tests > Queue Scaling and Load Balancing > should scale workers based on queue load
+AssertionError: expected 1 to be greater than 3
+ ❯ src/modules/agent/jobQueue.integration.test.ts:852:31
+    850|       );
+    851| 
+    852|       expect(requiredWorkers).toBeGreaterThan(currentLoad.activeWorker…
+       |                               ^
+    853| 
+    854|       // Simuler l'ajout de workers
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/170]⎯
+
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Basic Integration > should successfully get response from Qwen provider
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llm.qwen.integration.test.ts:167:32
+    165|         '{"answer": "Qwen successful response"}',
+    166|       );
+    167|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    168|         answer: 'Qwen successful response',
+    169|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/170]⎯
+
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Basic Integration > should handle missing Qwen API key gracefully
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Error Handling > should handle Qwen API authentication errors
+Error: Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/llm/LlmKeyManager.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/llm.qwen.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/170]⎯
+
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Error Handling > should handle Qwen rate limiting errors
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llm.qwen.integration.test.ts:231:32
+    229|         '{"answer": "Gemini after rate limit"}',
+    230|       );
+    231|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    232|         answer: 'Gemini after rate limit',
+    233|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/170]⎯
+
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Error Handling > should handle Qwen timeout errors with retries
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llm.qwen.integration.test.ts:253:32
+    251|         .mockRejectedValueOnce(qwenTimeoutError)
+    252|         .mockResolvedValueOnce('{"answer": "Qwen timeout retry success…
+    253|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    254|         answer: 'Qwen timeout retry success',
+    255|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/170]⎯
+
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Error Handling > should handle Qwen service unavailable errors
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llm.qwen.integration.test.ts:296:32
+    294|         '{"answer": "Gemini service backup"}',
+    295|       );
+    296|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    297|         answer: 'Gemini service backup',
+    298|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/170]⎯
+
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Model Selection and Configuration > should work with different Qwen model variants
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llm.qwen.integration.test.ts:323:34
+    321|           `{"answer": "Response from ${model}"}`,
+    322|         );
+    323|         mockResponseSchema.parse.mockReturnValue({
+       |                                  ^
+    324|           answer: `Response from ${model}`,
+    325|         });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/170]⎯
+
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Model Selection and Configuration > should respect Qwen temperature and token limits
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llm.qwen.integration.test.ts:354:32
+    352|         '{"answer": "Configured Qwen response"}',
+    353|       );
+    354|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    355|         answer: 'Configured Qwen response',
+    356|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/170]⎯
+
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Model Selection and Configuration > should handle Qwen streaming responses
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llm.qwen.integration.test.ts:410:32
+    408|       });
+    409| 
+    410|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    411|         answer: 'Streaming response from Qwen',
+    412|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/170]⎯
+
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Performance and Monitoring > should monitor Qwen response times
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llm.qwen.integration.test.ts:431:32
+    429|           ),
+    430|       );
+    431|       mockResponseSchema.parse.mockReturnValue({ answer: 'Qwen timing …
+       |                                ^
+    432| 
+    433|       const startTime = Date.now();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/170]⎯
+
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Performance and Monitoring > should track Qwen token usage
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llm.qwen.integration.test.ts:456:32
+    454|         '{"answer": "Token usage tracking"}',
+    455|       );
+    456|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    457|         answer: 'Token usage tracking',
+    458|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/170]⎯
+
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Performance and Monitoring > should implement Qwen health checks
+Error: request for '../../config.ts' is not in cache
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/170]⎯
+
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Context and Memory Management > should handle long conversation context with Qwen
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llm.qwen.integration.test.ts:509:32
+    507|         '{"answer": "Qwen long context response"}',
+    508|       );
+    509|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    510|         answer: 'Qwen long context response',
+    511|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/170]⎯
+
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Context and Memory Management > should optimize context window for Qwen models
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llm.qwen.integration.test.ts:546:32
+    544|         '{"answer": "Qwen optimized context"}',
+    545|       );
+    546|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    547|         answer: 'Qwen optimized context',
+    548|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/170]⎯
+
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Cost Optimization > should track Qwen usage costs
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llm.qwen.integration.test.ts:578:32
+    576|         '{"answer": "Cost tracking test"}',
+    577|       );
+    578|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    579|         answer: 'Cost tracking test',
+    580|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/170]⎯
+
+ FAIL  src/modules/agent/llm.qwen.integration.test.ts > Qwen LLM Provider Integration Tests > Qwen Cost Optimization > should prefer Qwen for cost-effective operations
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llm.qwen.integration.test.ts:600:32
+    598|         '{"answer": "Qwen cost-effective"}',
+    599|       );
+    600|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    601|         answer: 'Qwen cost-effective',
+    602|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider Failover Scenarios > should fallback from OpenAI to Anthropic on error
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llmProvider.integration.test.ts:181:32
+    179|         '{"answer": "Anthropic response"}',
+    180|       );
+    181|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    182|         answer: 'Anthropic response',
+    183|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider Failover Scenarios > should cascade through all providers on sequential failures
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llmProvider.integration.test.ts:210:32
+    208|         '{"answer": "GPT5 backup response"}',
+    209|       );
+    210|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    211|         answer: 'GPT5 backup response',
+    212|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider Failover Scenarios > should handle Qwen timeout errors with specific retry logic
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llmProvider.integration.test.ts:243:32
+    241|         .mockRejectedValueOnce(qwenTimeoutError)
+    242|         .mockResolvedValueOnce('{"answer": "Qwen retry success"}');
+    243|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    244|         answer: 'Qwen retry success',
+    245|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[41/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider Failover Scenarios > should handle all providers failing gracefully
+AssertionError: expected 'Agent run failed: this.log.child is n…' to contain 'All LLM providers failed'
+
+Expected: [32m"A[7mll LLM providers failed[27m"[39m
+Received: [31m"A[7mgent run failed: this.log.child is not a function[27m"[39m
+
+ ❯ src/modules/agent/llmProvider.integration.test.ts:270:22
+    268|       const result = await agent.run();
+    269| 
+    270|       expect(result).toContain('All LLM providers failed');
+       |                      ^
+    271|       expect(mockOpenAIProvider.getLlmResponse).toHaveBeenCalled();
+    272|       expect(mockAnthropicProvider.getLlmResponse).toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[42/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider Health Monitoring > should monitor provider response times
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llmProvider.integration.test.ts:290:32
+    288|           ),
+    289|       );
+    290|       mockResponseSchema.parse.mockReturnValue({ answer: 'Fast respons…
+       |                                ^
+    291| 
+    292|       const startTime = Date.now();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider Health Monitoring > should track provider error rates
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llmProvider.integration.test.ts:313:32
+    311|         return Promise.resolve('{"answer": "Eventually successful"}');
+    312|       });
+    313|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    314|         answer: 'Eventually successful',
+    315|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[44/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider Health Monitoring > should implement circuit breaker pattern for unhealthy providers
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llmProvider.integration.test.ts:333:32
+    331|         '{"answer": "Anthropic healthy"}',
+    332|       );
+    333|       mockResponseSchema.parse.mockReturnValue({ answer: 'Anthropic he…
+       |                                ^
+    334| 
+    335|       // Premier appel - devrait essayer OpenAI puis Anthropic
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[45/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider Load Balancing > should distribute load across healthy providers
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llmProvider.integration.test.ts:373:32
+    371|         '{"answer": "Qwen response"}',
+    372|       );
+    373|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    374|         answer: 'Load balanced response',
+    375|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[46/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider Load Balancing > should respect provider priority in hierarchy
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llmProvider.integration.test.ts:409:32
+    407|         '{"answer": "OpenAI priority"}',
+    408|       );
+    409|       mockResponseSchema.parse.mockReturnValue({ answer: 'OpenAI prior…
+       |                                ^
+    410| 
+    411|       const result = await agent.run();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[47/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider Load Balancing > should handle provider capacity limits
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llmProvider.integration.test.ts:429:32
+    427|         '{"answer": "Anthropic capacity available"}',
+    428|       );
+    429|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    430|         answer: 'Anthropic capacity available',
+    431|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[48/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider Recovery and Auto-healing > should automatically recover failed providers
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llmProvider.integration.test.ts:449:32
+    447|         .mockRejectedValueOnce(new LlmError('Temporary failure'))
+    448|         .mockResolvedValueOnce('{"answer": "OpenAI recovered"}');
+    449|       mockResponseSchema.parse.mockReturnValue({ answer: 'OpenAI recov…
+       |                                ^
+    450| 
+    451|       await agent.run();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[49/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider Recovery and Auto-healing > should gradually increase traffic to recovered providers
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llmProvider.integration.test.ts:486:32
+    484|         '{"answer": "Anthropic stable"}',
+    485|       );
+    486|       mockResponseSchema.parse.mockReturnValue({ answer: 'Recovery tes…
+       |                                ^
+    487| 
+    488|       // Plusieurs appels pour tester la récupération progressive
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[50/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider-Specific Error Handling > should handle OpenAI-specific errors correctly
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llmProvider.integration.test.ts:519:32
+    517|         '{"answer": "Anthropic fallback"}',
+    518|       );
+    519|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    520|         answer: 'Anthropic fallback',
+    521|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[51/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider-Specific Error Handling > should handle Anthropic-specific errors correctly
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llmProvider.integration.test.ts:542:32
+    540|         '{"answer": "Qwen alternative"}',
+    541|       );
+    542|       mockResponseSchema.parse.mockReturnValue({ answer: 'Qwen alterna…
+       |                                ^
+    543| 
+    544|       const result = await agent.run();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[52/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Provider-Specific Error Handling > should handle provider authentication failures
+Error: Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/llm/LlmKeyManager.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/llmProvider.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[53/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Cost Optimization > should prefer cost-effective providers when possible
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llmProvider.integration.test.ts:595:32
+    593|         '{"answer": "Qwen cost-effective"}',
+    594|       );
+    595|       mockResponseSchema.parse.mockReturnValue({ answer: 'Cost optimiz…
+       |                                ^
+    596| 
+    597|       // Simuler la sélection du provider le moins cher
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[54/170]⎯
+
+ FAIL  src/modules/agent/llmProvider.integration.test.ts > LLM Provider Fallback Integration Tests > Cost Optimization > should track token usage and costs per provider
+TypeError: mockResponseSchema.parse.mockReturnValue is not a function
+ ❯ src/modules/agent/llmProvider.integration.test.ts:619:32
+    617|         '{"answer": "Token usage tracking"}',
+    618|       );
+    619|       mockResponseSchema.parse.mockReturnValue({
+       |                                ^
+    620|         answer: 'Token usage tracking',
+    621|       });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[55/170]⎯
+
+ FAIL  src/modules/agent/monitoring.integration.test.ts > Monitoring and Observability Integration Tests > Metrics Collection > should collect agent execution metrics
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/monitoring.integration.test.ts:136:46
+    134|       // Verify metrics are collected
+    135|       expect(executionTime).toBeGreaterThan(0);
+    136|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    137|     });
+    138| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[56/170]⎯
+
+ FAIL  src/modules/agent/monitoring.integration.test.ts > Monitoring and Observability Integration Tests > Metrics Collection > should monitor tool execution statistics
+ FAIL  src/modules/agent/monitoring.integration.test.ts > Monitoring and Observability Integration Tests > Health Monitoring > should detect and report degraded performance
+ FAIL  src/modules/agent/monitoring.integration.test.ts > Monitoring and Observability Integration Tests > Error Tracking and Alerting > should track and categorize errors
+ FAIL  src/modules/agent/monitoring.integration.test.ts > Monitoring and Observability Integration Tests > Error Tracking and Alerting > should generate alerts for critical failures
+Error: Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/monitoring.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[57/170]⎯
+
+ FAIL  src/modules/agent/monitoring.integration.test.ts > Monitoring and Observability Integration Tests > Distributed Tracing > should create distributed traces for agent workflows
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/monitoring.integration.test.ts:180:39
+    178| 
+    179|       // Verify tracing calls
+    180|       expect(mockTelemetry.startSpan).toHaveBeenCalled();
+       |                                       ^
+    181|     });
+    182| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[58/170]⎯
+
+ FAIL  src/modules/agent/monitoring.integration.test.ts > Monitoring and Observability Integration Tests > Distributed Tracing > should trace cross-service communications
+ FAIL  src/modules/agent/monitoring.integration.test.ts > Monitoring and Observability Integration Tests > Performance Analytics > should analyze conversation quality metrics
+ FAIL  src/modules/agent/monitoring.integration.test.ts > Monitoring and Observability Integration Tests > Real-time Dashboards and Visualization > should provide real-time metrics for dashboards
+ FAIL  src/modules/agent/monitoring.integration.test.ts > Monitoring and Observability Integration Tests > Real-time Dashboards and Visualization > should stream metrics to visualization tools
+ FAIL  src/modules/agent/monitoring.integration.test.ts > Monitoring and Observability Integration Tests > Compliance and Audit Logging > should maintain detailed audit trails
+Error: Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/redis/redisClient.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/monitoring.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[59/170]⎯
+
+ FAIL  src/modules/agent/monitoring.integration.test.ts > Monitoring and Observability Integration Tests > Distributed Tracing > should correlate traces across agent instances
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/monitoring.integration.test.ts:205:46
+    203| 
+    204|       await tracedAgent.run();
+    205|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    206|     });
+    207|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[60/170]⎯
+
+ FAIL  src/modules/agent/monitoring.integration.test.ts > Monitoring and Observability Integration Tests > Health Monitoring > should report agent health status
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/monitoring.integration.test.ts:224:46
+    222|       await agent.run();
+    223| 
+    224|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    225|     });
+    226| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[61/170]⎯
+
+ FAIL  src/modules/agent/monitoring.integration.test.ts > Monitoring and Observability Integration Tests > Error Tracking and Alerting > should implement error rate monitoring
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/monitoring.integration.test.ts:299:46
+    297| 
+    298|       await agent.run();
+    299|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    300|     });
+    301|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[62/170]⎯
+
+ FAIL  src/modules/agent/performance.integration.test.ts > Memory and Performance Integration Tests > Memory Management > should handle memory pressure gracefully
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/performance.integration.test.ts:130:46
+    128| 
+    129|       await agent.run();
+    130|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    131|     });
+    132| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[63/170]⎯
+
+ FAIL  src/modules/agent/performance.integration.test.ts > Memory and Performance Integration Tests > Memory Management > should implement memory cleanup after completion
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/performance.integration.test.ts:136:46
+    134|       await agent.run();
+    135|       // Verify cleanup occurs (simplified mock verification)
+    136|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    137|     });
+    138|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[64/170]⎯
+
+ FAIL  src/modules/agent/performance.integration.test.ts > Memory and Performance Integration Tests > Resource Optimization > should optimize conversation history storage
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/performance.integration.test.ts:191:46
+    189| 
+    190|       // Verify optimization occurred
+    191|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    192|     });
+    193| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[65/170]⎯
+
+ FAIL  src/modules/agent/security.integration.test.ts > Security and Validation Integration Tests > Input Sanitization > should sanitize malicious input prompts
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/security.integration.test.ts:109:48
+    107| 
+    108|         await testAgent.run();
+    109|         expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                                ^
+    110|       }
+    111|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[66/170]⎯
+
+ FAIL  src/modules/agent/security.integration.test.ts > Security and Validation Integration Tests > Authentication and Authorization > should enforce session-based access control
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/security.integration.test.ts:159:46
+    157| 
+    158|       await restrictedAgent.run();
+    159|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    160|     });
+    161| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[67/170]⎯
+
+ FAIL  src/modules/agent/security.integration.test.ts > Security and Validation Integration Tests > Authentication and Authorization > should validate API key permissions
+Error: Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/llm/LlmKeyManager.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/security.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[68/170]⎯
+
+ FAIL  src/modules/agent/security.integration.test.ts > Security and Validation Integration Tests > Data Protection > should implement secure session storage
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/security.integration.test.ts:204:46
+    202|       await agent.run();
+    203| 
+    204|       expect(mockSessionManager.saveSession).toHaveBeenCalledWith(
+       |                                              ^
+    205|         expect.objectContaining({
+    206|           history: expect.any(Array),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[69/170]⎯
+
+ FAIL  src/modules/agent/security.integration.test.ts > Security and Validation Integration Tests > Rate Limiting and DOS Protection > should detect and prevent abuse patterns
+AssertionError: expected "spy" to be called 10 times, but got 0 times
+ ❯ src/modules/agent/security.integration.test.ts:252:46
+    250|       }
+    251| 
+    252|       expect(mockSessionManager.saveSession).toHaveBeenCalledTimes(10);
+       |                                              ^
+    253|     });
+    254|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[70/170]⎯
+
+ FAIL  src/modules/agent/security.integration.test.ts > Security and Validation Integration Tests > Error Handling and Information Disclosure > should not leak sensitive information in error messages
+ FAIL  src/modules/agent/security.integration.test.ts > Security and Validation Integration Tests > Error Handling and Information Disclosure > should implement secure error logging
+Error: Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/security.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[71/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Creation and Initialization > should create a new session with proper defaults
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:212:46
+    210|       console.log('saveSession call count:', mockSessionManager.saveSe…
+    211|       
+    212|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    213|     });
+    214| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[72/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Creation and Initialization > should initialize session with user context
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:231:46
+    229|       await testAgent.run();
+    230|       
+    231|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    232|     });
+    233| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[73/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Creation and Initialization > should handle session collision gracefully
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:251:45
+    249|       
+    250|       // Vérifier que getSession est appelé
+    251|       expect(mockSessionManager.getSession).toHaveBeenCalled();
+       |                                             ^
+    252|     });
+    253|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[74/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Persistence and Recovery > should automatically save session state during conversation
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:272:46
+    270|       await testAgent.run();
+    271|       
+    272|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    273|     });
+    274| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[75/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Persistence and Recovery > should persist session to Redis with proper TTL
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:291:36
+    289|       await testAgent.run();
+    290|       
+    291|       expect(mockRedisClient.hset).toHaveBeenCalled();
+       |                                    ^
+    292|     });
+    293| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[76/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Persistence and Recovery > should recover session from persistent storage
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:311:45
+    309|       
+    310|       // Vérifier que getSession est appelé
+    311|       expect(mockSessionManager.getSession).toHaveBeenCalled();
+       |                                             ^
+    312|     });
+    313| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[77/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Persistence and Recovery > should handle corrupted session data gracefully
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:330:48
+    328|       await testAgent.run();
+    329|       
+    330|       expect(mockSessionManager.createSession).toHaveBeenCalled();
+       |                                                ^
+    331|     });
+    332|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[78/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session History Management > should maintain conversation history within limits
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:351:46
+    349|       await testAgent.run();
+    350|       
+    351|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    352|     });
+    353| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[79/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session History Management > should compress old conversation history
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:370:46
+    368|       await testAgent.run();
+    369|       
+    370|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    371|     });
+    372| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[80/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session History Management > should handle concurrent session updates
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:391:46
+    389|       await testAgent.run();
+    390|       
+    391|       expect(mockSessionManager.lockSession).toHaveBeenCalled();
+       |                                              ^
+    392|     });
+    393|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[81/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Sharing and Collaboration > should enable session sharing between users
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:412:39
+    410|       await testAgent.run();
+    411|       
+    412|       expect(mockRedisClient.publish).toHaveBeenCalled();
+       |                                       ^
+    413|     });
+    414| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[82/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Sharing and Collaboration > should handle collaborative editing conflicts
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:431:47
+    429|       await testAgent.run();
+    430|       
+    431|       expect(mockSessionManager.mergeSession).toHaveBeenCalled();
+       |                                               ^
+    432|     });
+    433| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[83/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Sharing and Collaboration > should track session activity from multiple participants
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:450:36
+    448|       await testAgent.run();
+    449|       
+    450|       expect(mockRedisClient.hset).toHaveBeenCalled();
+       |                                    ^
+    451|     });
+    452|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[84/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Analytics and Metrics > should track session usage metrics
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:471:52
+    469|       await testAgent.run();
+    470|       
+    471|       expect(mockSessionManager.getSessionMetrics).toHaveBeenCalled();
+       |                                                    ^
+    472|     });
+    473| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[85/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Analytics and Metrics > should monitor session performance
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:490:39
+    488|       await testAgent.run();
+    489|       
+    490|       expect(mockRedisClient.publish).toHaveBeenCalled();
+       |                                       ^
+    491|     });
+    492| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[86/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Analytics and Metrics > should analyze conversation quality
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:509:36
+    507|       await testAgent.run();
+    508|       
+    509|       expect(mockRedisClient.hset).toHaveBeenCalled();
+       |                                    ^
+    510|     });
+    511|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[87/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Cleanup and Archival > should clean up expired sessions
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:530:57
+    528|       await testAgent.run();
+    529|       
+    530|       expect(mockSessionManager.cleanupExpiredSessions).toHaveBeenCall…
+       |                                                         ^
+    531|     });
+    532| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[88/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Cleanup and Archival > should archive completed sessions
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:549:49
+    547|       await testAgent.run();
+    548|       
+    549|       expect(mockSessionManager.archiveSession).toHaveBeenCalled();
+       |                                                 ^
+    550|     });
+    551| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[89/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Cleanup and Archival > should compress archived session data
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:568:49
+    566|       await testAgent.run();
+    567|       
+    568|       expect(mockSessionManager.archiveSession).toHaveBeenCalled();
+       |                                                 ^
+    569|     });
+    570|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[90/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Security and Privacy > should sanitize sensitive data in session history
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:589:46
+    587|       await testAgent.run();
+    588|       
+    589|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    590|     });
+    591| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[91/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Security and Privacy > should enforce session access controls
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:609:46
+    607|       
+    608|       // Vérifier que les contrôles d'accès sont appliqués (via saveSe…
+    609|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    610|     });
+    611| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[92/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Security and Privacy > should audit session access and modifications
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:628:36
+    626|       await testAgent.run();
+    627|       
+    628|       expect(mockRedisClient.hset).toHaveBeenCalled();
+       |                                    ^
+    629|     });
+    630|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[93/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Migration and Versioning > should migrate sessions between schema versions
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:649:46
+    647|       await testAgent.run();
+    648|       
+    649|       expect(mockSessionManager.saveSession).toHaveBeenCalled();
+       |                                              ^
+    650|     });
+    651|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[94/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Creation and Initialization > should create a new session with proper defaults
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/session.integration.test.ts:723:48
+    721|       await newAgent.run();
+    722| 
+    723|       expect(mockSessionManager.createSession).toHaveBeenCalledWith(
+       |                                                ^
+    724|         expect.objectContaining({
+    725|           createdAt: expect.any(Number),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[95/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Creation and Initialization > should initialize session with user context
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/session.integration.test.ts:751:46
+    749|       await contextualAgent.run();
+    750| 
+    751|       expect(mockSessionManager.saveSession).toHaveBeenCalledWith(
+       |                                              ^
+    752|         expect.objectContaining({
+    753|           userContext: contextData,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[96/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Creation and Initialization > should handle session collision gracefully
+AssertionError: expected "spy" to be called with arguments: [ 'session-test-123' ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/session.integration.test.ts:768:45
+    766|       await agent.run();
+    767| 
+    768|       expect(mockSessionManager.getSession).toHaveBeenCalledWith(
+       |                                             ^
+    769|         'session-test-123',
+    770|       );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[97/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Persistence and Recovery > should automatically save session state during conversation
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/session.integration.test.ts:778:46
+    776|       await agent.run();
+    777| 
+    778|       expect(mockSessionManager.saveSession).toHaveBeenCalledWith(
+       |                                              ^
+    779|         expect.objectContaining({
+    780|           history: expect.any(Array),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[98/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Persistence and Recovery > should persist session to Redis with proper TTL
+AssertionError: expected "spy" to be called with arguments: [ 'session:session-test-123', …(1) ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/session.integration.test.ts:790:36
+    788|       await agent.run();
+    789| 
+    790|       expect(mockRedisClient.hset).toHaveBeenCalledWith(
+       |                                    ^
+    791|         'session:session-test-123',
+    792|         expect.objectContaining({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[99/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Persistence and Recovery > should recover session from persistent storage
+AssertionError: expected "spy" to be called with arguments: [ 'session-test-123' ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/session.integration.test.ts:844:45
+    842|       await recoveredAgent.run();
+    843| 
+    844|       expect(mockSessionManager.getSession).toHaveBeenCalledWith(
+       |                                             ^
+    845|         'session-test-123',
+    846|       );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[100/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Persistence and Recovery > should handle corrupted session data gracefully
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:868:48
+    866|       await agent.run();
+    867| 
+    868|       expect(mockSessionManager.createSession).toHaveBeenCalled();
+       |                                                ^
+    869|     });
+    870|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[101/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session History Management > should maintain conversation history within limits
+TypeError: Cannot read properties of undefined (reading '0')
+ ❯ src/modules/agent/session.integration.test.ts:893:71
+    891|       await agentWithLargeHistory.run();
+    892| 
+    893|       const savedSession = mockSessionManager.saveSession.mock.calls[0…
+       |                                                                       ^
+    894|       expect(savedSession.history.length).toBeLessThanOrEqual(1000); /…
+    895|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[102/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session History Management > should compress old conversation history
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/session.integration.test.ts:916:46
+    914|       await agentWithOldHistory.run();
+    915| 
+    916|       expect(mockSessionManager.saveSession).toHaveBeenCalledWith(
+       |                                              ^
+    917|         expect.objectContaining({
+    918|           compressedHistory: expect.any(String),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[103/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session History Management > should handle concurrent session updates
+AssertionError: expected "spy" to be called 2 times, but got 0 times
+ ❯ src/modules/agent/session.integration.test.ts:951:46
+    949|       await Promise.all([agent1.run(), agent2.run()]);
+    950| 
+    951|       expect(mockSessionManager.lockSession).toHaveBeenCalledTimes(2);
+       |                                              ^
+    952|       expect(mockSessionManager.unlockSession).toHaveBeenCalledTimes(2…
+    953|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[104/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Sharing and Collaboration > should enable session sharing between users
+AssertionError: expected "spy" to be called with arguments: [ …(2) ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/session.integration.test.ts:978:39
+    976|       await sharedAgent.run();
+    977| 
+    978|       expect(mockRedisClient.publish).toHaveBeenCalledWith(
+       |                                       ^
+    979|         'session:shared:session-test-123',
+    980|         expect.stringContaining('conversation_update'),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[105/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Sharing and Collaboration > should handle collaborative editing conflicts
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:1005:47
+    1003|       await collaborativeAgent.run();
+    1004| 
+    1005|       expect(mockSessionManager.mergeSession).toHaveBeenCalled();
+       |                                               ^
+    1006|     });
+    1007| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[106/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Sharing and Collaboration > should track session activity from multiple participants
+AssertionError: expected "spy" to be called with arguments: [ …(2) ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/session.integration.test.ts:1028:36
+    1026|       await multiUserAgent.run();
+    1027| 
+    1028|       expect(mockRedisClient.hset).toHaveBeenCalledWith(
+       |                                    ^
+    1029|         'session_participants:session-test-123',
+    1030|         expect.any(Object),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[107/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Analytics and Metrics > should track session usage metrics
+AssertionError: expected "spy" to be called with arguments: [ 'session-test-123' ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/session.integration.test.ts:1039:52
+    1037|       await agent.run();
+    1038| 
+    1039|       expect(mockSessionManager.getSessionMetrics).toHaveBeenCalledWit…
+       |                                                    ^
+    1040|         'session-test-123',
+    1041|       );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[108/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Analytics and Metrics > should monitor session performance
+AssertionError: expected "spy" to be called with arguments: [ 'metrics:session_performance', …(1) ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/session.integration.test.ts:1055:39
+    1053|       const duration = endTime - startTime;
+    1054| 
+    1055|       expect(mockRedisClient.publish).toHaveBeenCalledWith(
+       |                                       ^
+    1056|         'metrics:session_performance',
+    1057|         expect.stringContaining(duration.toString()),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[109/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Analytics and Metrics > should analyze conversation quality
+AssertionError: expected "spy" to be called with arguments: [ …(2) ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/session.integration.test.ts:1071:36
+    1069|       await agent.run();
+    1070| 
+    1071|       expect(mockRedisClient.hset).toHaveBeenCalledWith(
+       |                                    ^
+    1072|         'session_quality:session-test-123',
+    1073|         expect.objectContaining({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[110/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Cleanup and Archival > should archive completed sessions
+AssertionError: expected "spy" to be called with arguments: [ 'session-test-123', …(1) ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/session.integration.test.ts:1118:49
+    1116|       await completedAgent.run();
+    1117| 
+    1118|       expect(mockSessionManager.archiveSession).toHaveBeenCalledWith(
+       |                                                 ^
+    1119|         'session-test-123',
+    1120|         expect.objectContaining({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[111/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Cleanup and Archival > should compress archived session data
+AssertionError: expected "spy" to be called at least once
+ ❯ src/modules/agent/session.integration.test.ts:1161:49
+    1159|       await largeAgent.run();
+    1160| 
+    1161|       expect(mockSessionManager.archiveSession).toHaveBeenCalled();
+       |                                                 ^
+    1162|     });
+    1163|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[112/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Security and Privacy > should sanitize sensitive data in session history
+TypeError: Cannot read properties of undefined (reading '0')
+ ❯ src/modules/agent/session.integration.test.ts:1193:71
+    1191|       await sensitiveAgent.run();
+    1192| 
+    1193|       const savedSession = mockSessionManager.saveSession.mock.calls[0…
+       |                                                                       ^
+    1194|       const savedContent = savedSession.history
+    1195|         .map((msg: Message) => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[113/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Security and Privacy > should audit session access and modifications
+AssertionError: expected "spy" to be called with arguments: [ …(2) ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/session.integration.test.ts:1237:36
+    1235|       await agent.run();
+    1236| 
+    1237|       expect(mockRedisClient.hset).toHaveBeenCalledWith(
+       |                                    ^
+    1238|         'session_audit:session-test-123',
+    1239|         expect.objectContaining({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[114/170]⎯
+
+ FAIL  src/modules/agent/session.integration.test.ts > Session Management Integration Tests > Session Migration and Versioning > should migrate sessions between schema versions
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/session.integration.test.ts:1294:46
+    1292|       await migrationAgent.run();
+    1293| 
+    1294|       expect(mockSessionManager.saveSession).toHaveBeenCalledWith(
+       |                                              ^
+    1295|         expect.objectContaining({
+    1296|           history: expect.any(Array),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[115/170]⎯
+
+ FAIL  src/modules/agent/websocket.integration.test.ts > WebSocket Real-time Communication Integration Tests > Real-time Agent Communication > should send real-time progress updates via WebSocket
+AssertionError: expected "spy" to be called 4 times, but got 0 times
+ ❯ src/modules/agent/websocket.integration.test.ts:273:34
+    271|       await agent.run();
+    272| 
+    273|       expect(mockWebSocket.send).toHaveBeenCalledTimes(4);
+       |                                  ^
+    274|       expect(mockWebSocket.send).toHaveBeenLastCalledWith(
+    275|         expect.stringContaining('agent_progress'),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[116/170]⎯
+
+ FAIL  src/modules/agent/websocket.integration.test.ts > WebSocket Real-time Communication Integration Tests > Real-time Agent Communication > should broadcast tool execution results in real-time
+ FAIL  src/modules/agent/websocket.integration.test.ts > WebSocket Real-time Communication Integration Tests > Multi-client Collaboration > should synchronize canvas updates across clients
+Error: Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/utils/llmProvider.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/websocket.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[117/170]⎯
+
+ FAIL  src/modules/agent/websocket.integration.test.ts > WebSocket Real-time Communication Integration Tests > Real-time Agent Communication > should handle real-time user interruptions
+Error: Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/logger.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/websocket.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[118/170]⎯
+
+ FAIL  src/modules/agent/websocket.integration.test.ts > WebSocket Real-time Communication Integration Tests > Multi-client Collaboration > should broadcast session updates to all connected clients
+AssertionError: expected "spy" to be called with arguments: [ 'session-room', ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/websocket.integration.test.ts:444:46
+    442| 
+    443|       // Vérifier que la mise à jour est diffusée à tous les clients
+    444|       expect(mockWebSocketServer.sendToRoom).toHaveBeenCalledWith(
+       |                                              ^
+    445|         'session-room',
+    446|         expect.objectContaining({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[119/170]⎯
+
+ FAIL  src/modules/agent/websocket.integration.test.ts > WebSocket Real-time Communication Integration Tests > Multi-client Collaboration > should handle collaborative session editing
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…}, …(1) ][90m
+
+Number of calls: [1m0[22m
+[39m
+ ❯ src/modules/agent/websocket.integration.test.ts:491:45
+    489| 
+    490|       // Vérifier que l'édition est diffusée aux autres clients
+    491|       expect(mockWebSocketServer.broadcast).toHaveBeenCalledWith(
+       |                                             ^
+    492|         expect.objectContaining({
+    493|           edit: collaborativeEdit.edit,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[120/170]⎯
+
+ FAIL  src/modules/agent/websocket.integration.test.ts > WebSocket Real-time Communication Integration Tests > Connection Management and Reliability > should handle connection timeouts gracefully
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ src/modules/agent/websocket.integration.test.ts:651:5
+    649|     });
+    650| 
+    651|     it('should handle connection timeouts gracefully', async () => {
+       |     ^
+    652|       const connectionTimeout = 5000; // 5 seconds
+    653|       let timeoutTriggered = false;
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[121/170]⎯
+
+ FAIL  src/modules/agent/websocket.integration.test.ts > WebSocket Real-time Communication Integration Tests > Real-time Analytics and Monitoring > should track real-time connection metrics
+ FAIL  src/modules/agent/websocket.integration.test.ts > WebSocket Real-time Communication Integration Tests > Real-time Analytics and Monitoring > should detect and alert on connection anomalies
+ FAIL  src/modules/agent/websocket.integration.test.ts > WebSocket Real-time Communication Integration Tests > Security and Authentication > should enforce rate limiting on WebSocket connections
+Error: Unexpected module status 0. Cannot require() ES Module /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/redis/redisClient.ts because it is not yet fully loaded. This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all(). Try await-ing the import() sequentially in a loop instead. (from /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/websocket.integration.test.ts)
+This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[122/170]⎯
+
+ FAIL  src/modules/agent/websocket.integration.test.ts > WebSocket Real-time Communication Integration Tests > Security and Authentication > should sanitize and validate incoming messages
+AssertionError: expected true to be false // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+ ❯ src/modules/agent/websocket.integration.test.ts:890:24
+    888|       incomingMessages.forEach((msg) => {
+    889|         const isSafe = sanitizeMessage(msg.content);
+    890|         expect(isSafe).toBe(msg.safe);
+       |                        ^
+    891|       });
+    892| 
+ ❯ src/modules/agent/websocket.integration.test.ts:888:24
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[123/170]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+AssertionError: expected "spy" to be called at least once
+ ❯ Proxy.<anonymous> ../../node_modules/.pnpm/@vitest+expect@3.2.4/node_modules/@vitest/expect/dist/index.js:1335:10
+ ❯ Proxy.<anonymous> ../../node_modules/.pnpm/@vitest+expect@3.2.4/node_modules/@vitest/expect/dist/index.js:1029:14
+ ❯ Proxy.methodWrapper ../../node_modules/.pnpm/chai@5.2.1/node_modules/chai/chai.js:1706:25
+ ❯ Timeout._onTimeout src/modules/agent/session.integration.test.ts:1093:59
+    1091|       // Simuler le nettoyage périodique
+    1092|       setTimeout(() => {
+    1093|         expect(mockSessionManager.cleanupExpiredSessions).toHaveBeenCa…
+       |                                                           ^
+    1094|       }, 100);
+    1095|     });
+ ❯ listOnTimeout node:internal/timers:608:17
+ ❯ processTimers node:internal/timers:543:7
+
+This error originated in "src/modules/agent/session.integration.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  21 failed | 6 passed (27)
+      Tests  153 failed | 144 passed | 102 skipped (399)
+     Errors  1 error
+   Start at  18:02:14
+   Duration  8.26s (transform 3.14s, setup 987ms, collect 10.46s, tests 20.31s, environment 14ms, prepare 6.27s)
+
+ ELIFECYCLE  Command failed with exit code 1.

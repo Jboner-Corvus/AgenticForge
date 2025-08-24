@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/title.png" alt="G-Forge Logo" width="250">
+  <img src="assets/title.png" alt="AgentMCP Logo" width="250">
 </p>
 
-<h1 align="center">AgenticForge</h1>
+<h1 align="center">AgentMCP</h1>
 <p align="center">
   <strong>🌐 Langues disponibles</strong><br>
   <a href="README_EN.md">English</a> • 
@@ -33,13 +33,13 @@
     <img src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" alt="pnpm">
 </p>
 
-## Pourquoi AgenticForge ?
+## Pourquoi AgentMCP ?
 
 🔒 **Entièrement Local et Privé** - Tout fonctionne sur votre machine — pas de cloud, pas de partage de données. Vos fichiers, conversations et outils restent privés.
 
-🛠️ **Auto-Forge d'Outils MCP** - AgenticForge code directement des outils MCP personnalisés en TypeScript avec schémas Zod, les intègre au worker en temps réel et les affiche dans l'interface avec transparence totale.
+🛠️ **Auto-Forge d'Outils MCP** - AgentMCP code directement des outils MCP personnalisés en TypeScript avec schémas Zod, les intègre au worker en temps réel et les affiche dans l'interface graphique avec transparence totale.
 
-💰 **Fonctionnement Gratuit Prolongé** - Grâce à une astuce de gestion de clés, notamment avec Qwen, AgenticForge peut fonctionner en continu pendant plusieurs jours sans frais.
+💰 **Fonctionnement Gratuit Prolongé** - Grâce à une astuce de gestion de clés, notamment avec Qwen, AgentMCP peut fonctionner en continu pendant plusieurs jours sans frais.
 
 🤖 **Contrôle de Sous-Agents** - Capable d'orchestrer et de contrôler d'autres agents en ligne de commande (CLI) pour déléguer et paralléliser des tâches complexes.
 
@@ -49,11 +49,11 @@
 
 📋 **Planifie et Exécute des Tâches Complexes** - De la gestion de fichiers au scraping web — il peut diviser les grandes tâches en étapes et forger les outils pour accomplir le travail.
 
-🌐 **Navigation Web Intelligente** - AgenticForge peut naviguer sur internet de manière autonome — rechercher, lire, extraire des infos, automatiser des tâches — le tout sans intervention.
+🌐 **Navigation Web Intelligente** - AgentMCP peut naviguer sur internet de manière autonome — rechercher, lire, extraire des infos, automatiser des tâches — le tout sans intervention.
 
 🔄 **LlmKeyManager Intelligent** - Système de gestion avancé des clés API avec basculement automatique, monitoring de performance et désactivation temporaire des clés défaillantes.
 
-🚀 **Forge MCP Native** - Utilise le protocole MCP avec FastMCP pour créer, modifier et déployer des outils personnalisés en temps réel. Chaque outil est codé, testé et intégré automatiquement au worker.
+🚀 **Forge MCP Native** - Utilise le protocole MCP avec FastMCP pour créer, modifier et déployer des outils personnalisés en temps réel. Chaque outil est codé, testé et intégré automatiquement au worker. Les outils créés avec MCP sont directement accessibles pour un agent n8n.
 
 ---
 
@@ -80,7 +80,7 @@
 
 ### 🖥️ Compatibilité Système
 
-> **AgenticForge** est conçu pour être déployé sur **Linux** ou **macOS**.  
+> **AgentMCP** est conçu pour être déployé sur **Linux** ou **macOS**.  
 > **Windows n'est pas officiellement supporté**.
 
 ---
@@ -111,7 +111,7 @@ chmod +x run-v2.sh
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
 cd AgenticForge
 
-# 2. Lancer la console de gestion AgenticForge
+# 2. Lancer la console de gestion AgentMCP
 chmod +x run-v2.sh
 ./run-v2.sh
 ```
@@ -120,7 +120,7 @@ chmod +x run-v2.sh
 
 ```
     ╔══════════════════════════════════╗
-    ║        A G E N T I C F O R G E   ║
+    ║           A G E N T M C P        ║
     ╚══════════════════════════════════╝
 ──────────────────────────────────────────
     Docker & Services
@@ -153,7 +153,7 @@ chmod +x run-v2.sh
 Au premier démarrage, le fichier `.env` est créé avec des valeurs par défaut. Vous pouvez y définir votre première clé API pour un démarrage rapide.
 
 ```env
-# === CONFIGURATION AGENTIC FORGE ===
+# === CONFIGURATION AgentMCP ===
 
 # Ports d'accès
 PUBLIC_PORT=8080          # API et serveur principal
@@ -181,7 +181,7 @@ LOG_LEVEL=info
 
 ### 🔑 Gestion Multi-Clés API via l'Interface Web
 
-AgenticForge intègre un **LlmKeyManager** puissant pour une gestion centralisée et dynamique de vos clés API, accessible directement depuis l'interface web.
+AgentMCP intègre un **LlmKeyManager** puissant pour une gestion centralisée et dynamique de vos clés API, accessible directement depuis l'interface web.
 
 1.  **Accédez à l'interface** : Ouvrez votre navigateur sur [http://localhost:3002](http://localhost:3002).
 2.  **Allez dans le "LLM Key Manager"** : Utilisez le menu pour naviguer vers la page de gestion des clés.
@@ -226,7 +226,7 @@ Des scripts utilitaires sont disponibles pour diagnostiquer et résoudre les pro
 
 Pour exécuter ces scripts :
 ```bash
-cd /chemin/vers/AgenticForge
+cd /chemin/vers/AgentMCP
 ts-node scripts/diagnose-qwen-connection.ts
 ```
 
@@ -238,12 +238,14 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
 
 ### Option 1 : API Cloud (Recommandée pour débuter)
 
-| Fournisseur | Modèles Recommandés (2025) | Obtenir une clé API |
-|-------------|---------------------|---------------------|
-| **Google AI** | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys) |
-| **OpenAI** | `gpt-5`, `gpt-4o`, `gpt-4.1` | [platform.openai.com](https://platform.openai.com/signup) |
-| **Anthropic** | `claude-4-opus`, `claude-4-sonnet` | [console.anthropic.com](https://console.anthropic.com/) |
-| **DeepSeek** | `deepseek-v3`, `deepseek-r1` | [platform.deepseek.com](https://platform.deepseek.com) |
+| Fournisseur | Modèles Recommandés (2025) | Point d'accès / Clé API |
+|:------------|:-----------------------------------|:----------------------------------------------------|
+| **Google AI** | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com/keys](https://aistudio.google.com/keys) |
+| **Qwen** | `qwen-coder-plus` | [portal.qwen.ai](https://portal.qwen.ai/) |
+| **OpenAI** | `gpt-5` | [platform.openai.com](https://platform.openai.com/signup) |
+| **X AI** | `grok-4` | [x.ai](https://x.ai/) |
+| **OpenRouter**| `z-ai/glm-4.5-air:free` | [openrouter.ai](https://openrouter.ai/keys) |
+
 
 ### Option 2 : IA Locale (Pour la confidentialité)
 
@@ -279,52 +281,6 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
 ./run-v2.sh
 ```
 
-### Commandes Production Rapides
-
-```bash
-# Démarrage complet
-./run-v2.sh start
-
-# Vérifier le statut des services
-./run-v2.sh status
-
-# Voir les logs système
-./run-v2.sh logs
-
-# Redémarrer après modification config
-./run-v2.sh restart
-
-# Arrêt propre du système
-./run-v2.sh stop
-```
-
-
-### 🔧 Contrôle Qualité Code
-
-Les outils de qualité de code (lint, TypeScript, format) sont intégrés à la console de gestion :
-
-```bash
-# Console de gestion complète
-./run-v2.sh
-
-# Ou directement :
-pnpm run lint      # Vérification qualité code
-pnpm run typecheck # Vérification types TypeScript
-pnpm run format    # Formatage automatique
-```
-
----
-
-## 🌐 Accès à AgenticForge
-
-### Interfaces Principales
-
-| Interface | URL | Description |
-|-----------|-----|-------------|
-| **🎨 Interface Web** | [localhost:3002](http://localhost:3002) | Interface principale pour interagir avec l'agent |
-| **🛠️ API Server** | [localhost:8080](http://localhost:8080) | API backend et serveur principal |
-
----
 
 ## 🎯 Cas d'Usage et Exemples
 
@@ -348,7 +304,7 @@ pnpm run format    # Formatage automatique
 ```bash
 "Forge un outil MCP qui monitor en temps réel :
 - Code l'outil en TypeScript avec Zod schemas  
-- Intègre-le directement au worker AgenticForge
+- Intègre-le directement au worker AgentMCP
 - Interface pour surveiller CPU/RAM/Processus
 - Affichage temps réel dans l'interface web
 - Test immédiat de toutes les fonctionnalités"
@@ -414,7 +370,7 @@ pnpm run format    # Formatage automatique
 
 #### 🤖 Agent avec Suite d'Outils MCP Custom
 ```bash
-"Clone AgenticForge, crée un agent spécialisé avec ses propres outils MCP :
+"Clone AgentMCP, crée un agent spécialisé avec ses propres outils MCP :
 - Forge 5 outils MCP : monitoring, déploiement, backup, alertes, analytics
 - Chaque outil codé en TypeScript avec interfaces Zod complètes
 - Interface web sur port 3001 montrant tous les outils en action
@@ -482,7 +438,7 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour les détails.
 
 ## Remerciements
 
-- **[FastMCP](https://github.com/punkpeye/fastmcp)** : Framework MCP ultra-performant - la fusée qui propulse G-Forge 🚀
+- **[FastMCP](https://github.com/punkpeye/fastmcp)** : Framework MCP ultra-performant - la fusée qui propulse AgentMCP 🚀
 - **[Model Context Protocol (MCP)](https://modelcontextprotocol.io/)** : Protocole révolutionnaire pour l'interaction avec les LLMs
 - **[Docker](https://docker.com)** : Conteneurisation et isolation
 - **[Redis](https://redis.io)** : Structures de données haute performance
@@ -493,16 +449,16 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour les détails.
 
 ## Support
 
-- **🚨 Issues** : [GitHub Issues](https://github.com/votre-username/g-forge/issues)
-- **💬 Discussions** : [GitHub Discussions](https://github.com/votre-username/g-forge/discussions)
-- **📚 Documentation** : [Wiki du Projet](https://github.com/votre-username/g-forge/wiki)
+- **🚨 Issues** : [GitHub Issues](https://github.com/votre-username/agentmcp/issues)
+- **💬 Discussions** : [GitHub Discussions](https://github.com/votre-username/agentmcp/discussions)
+- **📚 Documentation** : [Wiki du Projet](https://github.com/votre-username/agentmcp/wiki)
 - **🎮 Discord** : [Rejoignez la communauté](https://discord.gg/VNtXQByKfg) - *Partagez vos créations, obtenez de l'aide en temps réel et découvrez les dernières nouveautés en avant-première*
 
 ---
 
 <div align="center">
 
-**🔨 Un forgeron forge ses marteaux.** **🤖 G-Forge forge ses propres capacités.**
+**🔨 Un forgeron forge ses marteaux.** **🤖 AgentMCP forge ses propres capacités.**
 
 _Forgez votre avenir technologique._
 

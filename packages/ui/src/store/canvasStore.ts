@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { CanvasHistoryItem } from './types';
 
-export type CanvasType = 'html' | 'markdown' | 'url' | 'text' | 'json';
+export type CanvasType = 'html' | 'markdown' | 'url' | 'text' | 'json' | 'webapp' | 'game' | 'embed' | 'wasm';
 
 export interface CanvasState {
   // Canvas content

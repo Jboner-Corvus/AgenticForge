@@ -202,10 +202,14 @@ declare class Agent {
     private calculateTextSimilarity;
     private cleanup;
     /**
-     * Converts plain text responses to valid JSON format when the LLM doesn't follow the required format
+     * Converts plain text responses to valid JSON format
      * This handles cases where the LLM responds with plain text instead of JSON
      */
     private convertPlainTextToValidJson;
+    /**
+     * Check if a response appears to be truncated or incomplete
+     */
+    private isResponseTruncated;
     private detectLoop;
     private executeTool;
     private extractJsonFromMarkdown;

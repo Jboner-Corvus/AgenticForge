@@ -159,10 +159,6 @@ vi.mock('./components/SubAgentCLIView', () => ({
   default: () => <div data-testid="sub-agent-cli">Sub Agent CLI</div>,
 }));
 
-vi.mock('./components/VersionDisplay', () => ({
-  VersionDisplay: () => <div data-testid="version-display">Version</div>,
-}));
-
 vi.mock('./components/LoginModal', () => ({
   LoginModal: () => <div data-testid="login-modal">Login Modal</div>,
 }));
@@ -190,7 +186,7 @@ describe('App Component Tests', () => {
     render(<App />);
     
     await waitFor(() => {
-      expect(screen.getByTestId('chat-messages')).toBeInTheDocument();
+      expect(screen.getAllByTestId('chat-messages')[0]).toBeInTheDocument();
       expect(screen.getByTestId('user-input')).toBeInTheDocument();
     });
   });
@@ -216,7 +212,6 @@ describe('App Component Tests', () => {
       expect(screen.getByTestId('settings-modal')).toBeInTheDocument();
       expect(screen.getByTestId('debug-log-container')).toBeInTheDocument();
       expect(screen.getByTestId('login-modal')).toBeInTheDocument();
-      expect(screen.getByTestId('version-display')).toBeInTheDocument();
     });
   });
 

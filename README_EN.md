@@ -53,7 +53,7 @@
 
 🔄 **Intelligent LlmKeyManager** - Advanced API key management system with automatic failover, performance monitoring and temporary disabling of faulty keys.
 
-🚀 **Native MCP Forge** - Uses the MCP protocol with FastMCP to create, modify and deploy custom tools in real time. Each tool is coded, tested and automatically integrated to the worker.
+🚀 **Native MCP Forge** - Uses the MCP protocol with FastMCP to create, modify and deploy custom tools in real time. Each tool is coded, tested and automatically integrated to the worker. The tools created with MCP are directly accessible for an n8n agent.
 
 ---
 

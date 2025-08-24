@@ -719,8 +719,15 @@ export async function initializeWebServer(
                 return;
               }
 
-              // Send the event data
-              res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+              // Special handling for chat_header_todo messages - forward them to frontend
+              if (eventData.type === 'chat_header_todo') {
+                console.log(`[FORWARD] Forwarding chat_header_todo message for job ${jobId}`);
+                // Send the event data as-is for chat header todo messages
+                res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+              } else {
+                // Send the event data for other message types
+                res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+              }
 
               // If this is a completion event, end the stream
               if (
@@ -2897,18 +2904,15 @@ export async function initializeWebServer(
           // Get Redis info
           const info = await redisClient.info();
 
-          // Parse Redis info to get key count and memory usage
+          // Count only LLM-specific keys instead of all Redis keys
+          const llmKeys = await redisClient.keys('llm:keys:*');
+          const keyCount = llmKeys.length;
+          
+          // Parse Redis info to get memory usage only
           const lines = info.split('\n');
-          let keyCount = 0;
           let memory = '0K';
 
           for (const line of lines) {
-            if (line.startsWith('db0:')) {
-              const match = line.match(/keys=(\d+)/);
-              if (match) {
-                keyCount = parseInt(match[1], 10);
-              }
-            }
             if (line.startsWith('used_memory_human:')) {
               memory = line.split(':')[1].trim();
             }

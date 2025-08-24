@@ -100,8 +100,8 @@ describe('enhancedTodoListTool', () => {
     if ('project' in result && result.project) {
       expect(result.project.name).toBe('Duke Nukem 2 Development');
     }
-    // Vérifier que sendToCanvas a été appelé avec les bons arguments
-    expect(sendToCanvas).toHaveBeenCalled();
+    // Vérifier que sendToCanvas n'est pas appelé (canvas usage is now explicit with [CANVAS] tag)
+    expect(sendToCanvas).not.toHaveBeenCalled();
     expect(mockCtx.log.info).toHaveBeenCalledWith(
       'Created project: Duke Nukem 2 Development',
     );
@@ -141,11 +141,8 @@ describe('enhancedTodoListTool', () => {
       expect(result.tasks).toHaveLength(2);
       expect(result.tasks[0].content).toBe('Design game levels');
     }
-    expect(sendToCanvas).toHaveBeenCalledWith(
-      'test-job-id',
-      expect.stringContaining('"type":"enhanced_todo_list"'),
-      'text',
-    );
+    // Vérifier que sendToCanvas n'est pas appelé (canvas usage is now explicit with [CANVAS] tag)
+    expect(sendToCanvas).not.toHaveBeenCalled();
     expect(mockCtx.log.info).toHaveBeenCalledWith('Created 2 tasks');
   });
 
@@ -186,11 +183,8 @@ describe('enhancedTodoListTool', () => {
     if ('tasks' in result && result.tasks) {
       expect(result.tasks[0].status).toBe('completed');
     }
-    expect(sendToCanvas).toHaveBeenCalledWith(
-      'test-job-id',
-      expect.stringContaining('"type":"enhanced_todo_list"'),
-      'text',
-    );
+    // Vérifier que sendToCanvas n'est pas appelé (canvas usage is now explicit with [CANVAS] tag)
+    expect(sendToCanvas).not.toHaveBeenCalled();
     expect(mockCtx.log.info).toHaveBeenCalledWith(
       'Updated task 1 to status completed',
     );
@@ -226,11 +220,8 @@ describe('enhancedTodoListTool', () => {
 
     expect(result).toHaveProperty('success', true);
     expect(result).toHaveProperty('message', 'Created 2 tasks successfully');
-    expect(sendToCanvas).toHaveBeenCalledWith(
-      'test-job-id',
-      expect.stringContaining('"type":"enhanced_todo_list"'),
-      'text',
-    );
+    // Vérifier que sendToCanvas n'est pas appelé (canvas usage is now explicit with [CANVAS] tag)
+    expect(sendToCanvas).not.toHaveBeenCalled();
   });
 
   it('should clear tasks and project successfully', async () => {
@@ -342,6 +333,35 @@ describe('enhancedTodoListTool', () => {
 
     expect(result).toHaveProperty('success', true);
     expect(sendToCanvas).not.toHaveBeenCalled();
+  });
+
+  it('should send to canvas when title contains [CANVAS] tag', async () => {
+    const mockCtx = createMockContext('test-job-id');
+
+    const result = await enhancedTodoListTool.execute(
+      {
+        action: 'create_task',
+        tasks: [
+          {
+            content: 'Design game levels',
+            createdAt: Date.now(),
+            id: '1',
+            status: 'pending' as const,
+            updatedAt: Date.now(),
+          },
+        ],
+        title: '[CANVAS] Game Development Tasks',
+      },
+      mockCtx,
+    );
+
+    expect(result).toHaveProperty('success', true);
+    // Vérifier que sendToCanvas est appelé quand le tag [CANVAS] est présent
+    expect(sendToCanvas).toHaveBeenCalledWith(
+      'test-job-id',
+      expect.stringContaining('<h2>Game Development Tasks</h2>'),
+      'html',
+    );
   });
 
   it('should handle state recovery', async () => {

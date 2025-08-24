@@ -10,23 +10,18 @@ import { AppInitializer } from './components/AppInitializer';
 import { AnimatePresence } from 'framer-motion';
 
 import { ControlPanel } from './components/ControlPanel';
-import { UserInput } from './components/UserInput';
 import { Suspense, useState, useEffect } from 'react';
 import { useResizablePanel } from './lib/hooks/useResizablePanel';
 import { HeaderContainer } from './components/HeaderContainer';
 import { SettingsModalContainer } from './components/SettingsModalContainer';
-import { ChatMessagesContainer } from './components/ChatMessagesContainer';
+import { ChatContainer } from './components/ChatContainer';
 import { usePinningStore } from './store/pinningStore';
-import { Eye } from 'lucide-react';
-import { VersionDisplay } from './components/VersionDisplay';
-import TodoListHandler from './components/TodoListHandler';
 // Lazy imports pour optimiser le bundle
 import { 
   LazyLeaderboardPage, 
   LazyLlmKeyManager, 
   LazyOAuthPage,
   LazyLayoutManager,
-  LazyEnhancedTodoPanel,
   LazyCanvas,
   LazyAgentCanvas,
   LazyDebugLogContainer,
@@ -45,6 +40,9 @@ import {
   useActiveCliJobId,
   useIsDarkMode
 } from './store/hooks';
+
+// Import du nouveau composant UnifiedTodoListPanel
+import { UnifiedTodoListPanel } from './components/UnifiedTodoListPanel';
 
 
 export default function App() {
@@ -105,16 +103,7 @@ export default function App() {
   const renderMainContent = () => {
     switch (currentPage) {
       case 'chat':
-        return (
-          <div className="flex flex-col h-full w-full min-w-0">
-            <div className="flex-grow overflow-y-auto min-h-0">
-              <ChatMessagesContainer />
-            </div>
-            <div className="p-spacious flex items-center sticky bottom-0 bg-background border-t border-border flex-shrink-0">
-                <UserInput />
-            </div>
-          </div>
-        );
+        return <ChatContainer variant="classic" showShadow={true} enhanced={true} />;
       case 'leaderboard':
         return <LazyLeaderboardPage />;
       case 'llm-api-keys':
@@ -131,8 +120,8 @@ export default function App() {
       <SessionIdProvider>
         <div className="min-h-screen flex flex-col bg-background text-foreground overflow-x-hidden relative">
           <AppInitializer />
-          <TodoListHandler />
         <HeaderContainer />
+        <UnifiedTodoListPanel />
         <Suspense fallback={<div>Loading Settings...</div>}>
           <SettingsModalContainer />
         </Suspense>
@@ -151,9 +140,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Todo List Panel - Version classique (masquée si pinnée) */}
-          {!components.todolist?.isPinned && <LazyEnhancedTodoPanel />}
-
           {/* Conteneur principal pour la discussion et le canevas */}
           <main className="flex-1 flex flex-col overflow-hidden">
             <div className="flex-1 flex overflow-hidden min-w-0">
@@ -161,16 +147,6 @@ export default function App() {
                 {renderMainContent()}
               </div>
 
-              {/* Bouton flottant pour ouvrir le canevas */}
-              {currentPage === 'chat' && !isCanvasVisible && !isCanvasPinned && !components.canvas?.isPinned && (
-                <button
-                  onClick={() => useStore.getState().setIsCanvasVisible(true)}
-                  className="absolute right-4 bottom-24 bg-cyan-500 hover:bg-cyan-600 text-white rounded-full p-3 shadow-lg transition-all duration-300 z-10"
-                  aria-label="Ouvrir le canevas"
-                >
-                  <Eye className="h-5 w-5" />
-                </button>
-              )}
 
               {/* Section du Canvas CLASSIQUE - masquée si pinnée */}
               {(isCanvasVisible || isCanvasPinned) && currentPage === 'chat' && !isCanvasFullscreen && !components.canvas?.isPinned && (
@@ -234,7 +210,6 @@ export default function App() {
           indicatorPosition="bottom-right"
           onAuthError={() => console.log('🔐 Système d\'authentification activé')}
         />
-        <VersionDisplay />
         </div>
       </SessionIdProvider>
     </LanguageProvider>

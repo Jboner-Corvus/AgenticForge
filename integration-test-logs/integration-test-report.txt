@@ -1,0 +1,9 @@
+AgenticForge Integration Test Report
+====================================
+Date: dim. 24 août 2025 18:02:12 UTC
+Runner Version: 1.0.0
+
+Test: Core API Integration Tests
+Command: pnpm test:integration --run
+❌ Core API Integration Tests (FAIL) - 10s
+   Details: Exit code 1

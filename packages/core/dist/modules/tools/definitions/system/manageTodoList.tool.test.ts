@@ -92,7 +92,7 @@ describe('manageTodoListTool', () => {
     expect(getRedisClientInstance).toHaveBeenCalled();
     expect(mockPublish).toHaveBeenCalledWith(
       'job:test-job-id:events',
-      expect.stringContaining('"type":"todo_list"'),
+      expect.stringContaining('"type":"chat_header_todo"'),
     );
     expect(mockCtx.log.info).toHaveBeenCalledWith(
       'Created 2 todos for native interface',
@@ -133,7 +133,7 @@ describe('manageTodoListTool', () => {
     expect(getRedisClientInstance).toHaveBeenCalled();
     expect(mockPublish).toHaveBeenCalledWith(
       'job:test-job-id:events',
-      expect.stringContaining('"type":"todo_list"'),
+      expect.stringContaining('"type":"chat_header_todo"'),
     );
     expect(mockCtx.log.info).toHaveBeenCalledWith(
       'Updated todo 1 to status completed',
@@ -163,7 +163,7 @@ describe('manageTodoListTool', () => {
     expect(getRedisClientInstance).toHaveBeenCalled();
     expect(mockPublish).toHaveBeenCalledWith(
       'job:test-job-id:events',
-      expect.stringContaining('"type":"todo_list"'),
+      expect.stringContaining('"type":"chat_header_todo"'),
     );
   });
 

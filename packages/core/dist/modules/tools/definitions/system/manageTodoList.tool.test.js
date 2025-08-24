@@ -2,7 +2,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
   manageTodoListTool
-} from "../../../../chunk-MIA7NFWY.js";
+} from "../../../../chunk-P4LGSB2Q.js";
 import {
   beforeEach,
   describe,
@@ -99,7 +99,7 @@ describe("manageTodoListTool", () => {
     globalExpect(getRedisClientInstance).toHaveBeenCalled();
     globalExpect(mockPublish).toHaveBeenCalledWith(
       "job:test-job-id:events",
-      globalExpect.stringContaining('"type":"todo_list"')
+      globalExpect.stringContaining('"type":"chat_header_todo"')
     );
     globalExpect(mockCtx.log.info).toHaveBeenCalledWith(
       "Created 2 todos for native interface"
@@ -130,7 +130,7 @@ describe("manageTodoListTool", () => {
     globalExpect(getRedisClientInstance).toHaveBeenCalled();
     globalExpect(mockPublish).toHaveBeenCalledWith(
       "job:test-job-id:events",
-      globalExpect.stringContaining('"type":"todo_list"')
+      globalExpect.stringContaining('"type":"chat_header_todo"')
     );
     globalExpect(mockCtx.log.info).toHaveBeenCalledWith(
       "Updated todo 1 to status completed"
@@ -154,7 +154,7 @@ describe("manageTodoListTool", () => {
     globalExpect(getRedisClientInstance).toHaveBeenCalled();
     globalExpect(mockPublish).toHaveBeenCalledWith(
       "job:test-job-id:events",
-      globalExpect.stringContaining('"type":"todo_list"')
+      globalExpect.stringContaining('"type":"chat_header_todo"')
     );
   });
   it("should clear todos successfully", async () => {

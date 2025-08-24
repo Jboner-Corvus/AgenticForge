@@ -697,7 +697,7 @@ export class Agent {
   }
 
   /**
-   * Converts plain text responses to valid JSON format when the LLM doesn't follow the required format
+   * Converts plain text responses to valid JSON format
    * This handles cases where the LLM responds with plain text instead of JSON
    */
   private convertPlainTextToValidJson(text: string): string {
@@ -710,6 +710,61 @@ export class Agent {
       return cleanText;
     } catch {
       // Not valid JSON, proceed with conversion
+    }
+
+    // FIRST: Try to extract actual tool calls from the text
+    const toolCallMatch = cleanText.match(/Tool Call:\s*(\w+)\s*with\s*params\s*(\{.*?\}(?:\s*$|\n|Tool Result:))/is);
+    if (toolCallMatch) {
+      const toolName = toolCallMatch[1];
+      let params = {};
+      
+      // Extract the JSON part more carefully
+      let jsonStr = toolCallMatch[2].trim();
+      // Remove everything after the JSON object (like "Tool Result:")
+      const jsonEndMatch = jsonStr.match(/^(\{.*?\})(?:\s*(?:Tool Result:|$|\n))/s);
+      if (jsonEndMatch) {
+        jsonStr = jsonEndMatch[1];
+      }
+      
+      try {
+        params = JSON.parse(jsonStr);
+      } catch (e) {
+        // If direct parsing fails, try to extract by counting braces
+        let braceCount = 0;
+        let jsonEnd = 0;
+        for (let i = 0; i < jsonStr.length; i++) {
+          if (jsonStr[i] === '{') braceCount++;
+          if (jsonStr[i] === '}') braceCount--;
+          if (braceCount === 0 && jsonStr[i] === '}') {
+            jsonEnd = i + 1;
+            break;
+          }
+        }
+        
+        if (jsonEnd > 0) {
+          try {
+            params = JSON.parse(jsonStr.substring(0, jsonEnd));
+          } catch (e2) {
+            // Last fallback: extract specific fields manually
+            const responseMatch = cleanText.match(/"response":\s*"([^"]+)"/);
+            if (responseMatch && toolName.toLowerCase() === 'finish') {
+              params = { response: responseMatch[1] };
+            }
+          }
+        }
+      }
+      
+      // Extract thought from the text (everything before Tool Call)
+      const thoughtMatch = cleanText.match(/^(.*?)Tool Call:/s);
+      const thought = thoughtMatch ? thoughtMatch[1].trim() : `Appel de l'outil ${toolName}`;
+      
+      return JSON.stringify({
+        thought: thought,
+        command: {
+          name: toolName.toLowerCase(),
+          params: params
+        }
+      });
     }
 
     // Analyze the content to determine appropriate tool
@@ -726,6 +781,25 @@ export class Agent {
       'visual',
     ];
     const isCanvasRequest = canvasKeywords.some((keyword) =>
+      lowerText.includes(keyword),
+    );
+
+    // Check for thought-related keywords (to avoid sending thoughts to canvas)
+    const thoughtKeywords = [
+      'think',
+      'thought',
+      'reason',
+      'plan',
+      'approach',
+      'next step',
+      'réflexion',
+      'pensée',
+      'raisonnement',
+      'prochaine étape',
+      'je vais',
+      'l\'utilisateur souhaite',
+    ];
+    const isThoughtContent = thoughtKeywords.some((keyword) =>
       lowerText.includes(keyword),
     );
 
@@ -773,16 +847,57 @@ export class Agent {
     let command;
     let thought;
 
-    // Prioritize canvas requests over creation requests
-    if (isCanvasRequest) {
-      // Handle canvas display requests
+    // Check if the response appears to be truncated (incomplete)
+    const isTruncated = this.isResponseTruncated(cleanText);
+    
+    // If response is truncated, try to get a better response instead of processing
+    if (isTruncated) {
+      thought = "La réponse de l'IA semble incomplète. Je vais demander une réponse plus claire.";
+      command = {
+        name: 'agent_thought',
+        params: {
+          thought: "La réponse précédente de l'IA était incomplète. Je vais reformuler ma demande pour obtenir une réponse plus claire et complète.",
+        },
+      };
+    }
+    // Prioritize proper thought handling - if it looks like a thought, use agent_thought tool
+    else if (isThoughtContent && !isCanvasRequest) {
+      // This is clearly thought content, use agent_thought tool
+      thought = cleanText;
+      command = {
+        name: 'agent_thought',
+        params: {
+          thought: cleanText,
+        },
+      };
+    } else if (isCanvasRequest && !isThoughtContent) {
+      // Handle canvas display requests (but not if it's clearly thought content)
       thought = "L'utilisateur veut afficher quelque chose dans le canvas.";
+      
+      // Filter out any JSON content or debugging information from canvas display
+      let filteredContent = cleanText;
+      
+      // Check if the content looks like debugging JSON with "thought" field
+      try {
+        const parsed = JSON.parse(cleanText);
+        if (parsed.thought || parsed.command) {
+          // This is debugging/internal agent information, don't display it in canvas
+          filteredContent = "<div style='padding: 20px; text-align: center;'><h2>Content filtered</h2><p>Internal agent debugging information was filtered out for security.</p></div>";
+        }
+      } catch {
+        // Not JSON, check for JSON-like patterns in text
+        if (cleanText.includes('"thought"') || cleanText.includes('```json')) {
+          // Contains debugging information, filter it out
+          filteredContent = "<div style='padding: 20px; text-align: center;'><h2>Content filtered</h2><p>Internal agent debugging information was filtered out for security.</p></div>";
+        }
+      }
+      
       command = {
         name: 'display_canvas',
         params: {
           content: cleanText.includes('helloworld')
             ? "<div style='display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 48px; font-weight: bold;'>helloworld</div>"
-            : `<div><h1>Canvas Display</h1><p>${cleanText}</p></div>`,
+            : filteredContent, // Use filteredContent directly instead of wrapping it
           contentType: 'html',
         },
       };
@@ -824,32 +939,52 @@ export class Agent {
         },
       };
     } else if (isCreationRequest) {
-      // Other creation requests
-      thought =
-        "L'utilisateur demande de créer quelque chose. Je dois d'abord créer une todo list pour organiser le travail.";
-      command = {
-        name: 'manage_todo_list',
-        params: {
-          action: 'create',
-          title: 'Projet de création',
-          todos: [
-            {
-              category: 'planning',
-              content: "Analyser la demande et planifier l'approche",
-              id: '1',
-              priority: 'high',
-              status: 'pending',
-            },
-            {
-              category: 'development',
-              content: "Commencer l'implémentation",
-              id: '2',
-              priority: 'high',
-              status: 'pending',
-            },
-          ],
-        },
-      };
+      // Other creation requests - but prevent repetitive behavior
+      // Check if we've recently created a todo list to avoid loops
+      const recentCommands = this.commandHistory.slice(-3);
+      const hasRecentTodoList = recentCommands.some(cmd => 
+        cmd.name === 'manage_todo_list' && 
+        cmd.params && 
+        (cmd.params.action === 'create' || cmd.params.action === 'display')
+      );
+      
+      if (hasRecentTodoList) {
+        // If we've recently created a todo list, use a different approach
+        thought = "J'ai déjà créé une todo list récemment. Je vais utiliser une approche différente pour répondre à la demande de création.";
+        command = {
+          name: 'agent_thought',
+          params: {
+            thought: "L'utilisateur demande de créer quelque chose, mais j'ai déjà créé une todo list récemment. Je vais formuler une réponse directe plutôt que de créer une autre liste.",
+          },
+        };
+      } else {
+        // Normal creation request
+        thought =
+          "L'utilisateur demande de créer quelque chose. Je dois d'abord créer une todo list pour organiser le travail.";
+        command = {
+          name: 'manage_todo_list',
+          params: {
+            action: 'create',
+            title: 'Projet de création',
+            todos: [
+              {
+                category: 'planning',
+                content: "Analyser la demande et planifier l'approche",
+                id: '1',
+                priority: 'high',
+                status: 'pending',
+              },
+              {
+                category: 'development',
+                content: "Commencer l'implémentation",
+                id: '2',
+                priority: 'high',
+                status: 'pending',
+              },
+            ],
+          },
+        };
+      }
     } else {
       // Default to finish tool for other requests
       thought =
@@ -864,6 +999,67 @@ export class Agent {
 
     const jsonObject = { command, thought };
     return JSON.stringify(jsonObject);
+  }
+
+  /**
+   * Check if a response appears to be truncated or incomplete
+   */
+  private isResponseTruncated(text: string): boolean {
+    // Check for common truncation patterns
+    const truncationIndicators = [
+      '\\', // Escaped characters at end
+      '{',  // Unclosed object
+      '[',  // Unclosed array
+      '"',  // Unclosed string
+      ':',  // Incomplete key-value pair
+      ',',  // Trailing comma
+    ];
+    
+    const trimmed = text.trim();
+    
+    // Check if text ends with a truncation indicator
+    if (truncationIndicators.some(indicator => trimmed.endsWith(indicator))) {
+      return true;
+    }
+    
+    // Check for incomplete code blocks
+    const codeBlockPatterns = [
+      '```javascript',
+      '```html',
+      '```json',
+      'function',
+      'const ',
+      'let ',
+      'var ',
+      'if (',
+      'for (',
+      'while (',
+    ];
+    
+    if (codeBlockPatterns.some(pattern => 
+      trimmed.includes(pattern) && 
+      !trimmed.includes('```') && 
+      trimmed.length > 100)) {
+      return true;
+    }
+    
+    // Check if response is unusually short for the context
+    if (trimmed.length < 50 && 
+        (trimmed.includes('Tool Call:') || trimmed.includes('Tool Result:'))) {
+      return true;
+    }
+    
+    // Additional check for truncated responses that end mid-sentence
+    if (trimmed.length > 100 && 
+        (trimmed.endsWith('.') || trimmed.endsWith('}') || trimmed.endsWith(']')) &&
+        !trimmed.includes('"command"') && 
+        !trimmed.includes('"thought"') && 
+        !trimmed.includes('"answer"')) {
+      // If it's a long response but doesn't contain expected JSON fields, it might be truncated
+      return true;
+    }
+    
+    return false;
   }
 
   private detectLoop(
@@ -987,6 +1183,20 @@ export class Agent {
         toolName: command.name,
         type: 'tool_result',
       });
+      
+      // Special handling for agent_thought tool
+      if (command.name === 'agent_thought' && result && typeof result === 'object') {
+        const thoughtResult = result as { thought?: string; success?: boolean };
+        if (thoughtResult.thought) {
+          // Publish the thought as an agent_thought message
+          this.publishToChannel({
+            content: thoughtResult.thought,
+            type: 'agent_thought',
+          });
+          log.info('Published agent thought to channel');
+        }
+      }
+      
       return result;
     } catch (_error) {
       if (_error instanceof FinishToolSignal) {

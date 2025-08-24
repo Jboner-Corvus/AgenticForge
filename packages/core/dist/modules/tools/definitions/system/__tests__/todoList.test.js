@@ -1,6 +1,9 @@
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
+  todoEventOptimizer
+} from "../../../../../chunk-HPYHZBYX.js";
+import {
   todoPerformanceMonitor
 } from "../../../../../chunk-UKGNW2IP.js";
 import {
@@ -9,13 +12,10 @@ import {
 import {
   todoManager,
   unifiedTodoListTool
-} from "../../../../../chunk-AFPFEDDW.js";
+} from "../../../../../chunk-DKYEA7TO.js";
 import {
   ProjectManagementService
 } from "../../../../../chunk-LWNQEFSJ.js";
-import {
-  todoEventOptimizer
-} from "../../../../../chunk-HPYHZBYX.js";
 import "../../../../../chunk-FG6D2ATS.js";
 import {
   afterEach,

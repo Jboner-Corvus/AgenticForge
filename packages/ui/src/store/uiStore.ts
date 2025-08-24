@@ -14,6 +14,7 @@ export interface UIState {
   isControlPanelVisible: boolean;
   isDebugLogVisible: boolean;
   isTodoListVisible: boolean;
+  isUnifiedTodoListVisible: boolean;
   
   // Theme
   isDarkMode: boolean;
@@ -58,6 +59,7 @@ export interface UIState {
   setIsSettingsModalOpen: (isOpen: boolean) => void;
   setIsControlPanelVisible: (isVisible: boolean) => void;
   setIsTodoListVisible: (isVisible: boolean) => void;
+  setIsUnifiedTodoListVisible: (isVisible: boolean) => void;
   toggleDebugLogVisibility: () => void;
   toggleDarkMode: () => void;
   
@@ -108,6 +110,7 @@ export const useUIStore = create<UIState>()(
       isControlPanelVisible: false,
       isDebugLogVisible: false,
       isTodoListVisible: false,
+      isUnifiedTodoListVisible: false,
       isDarkMode: false,
       isProcessing: false,
       agentProgress: 0,
@@ -259,6 +262,7 @@ export const useUIStore = create<UIState>()(
       setIsSettingsModalOpen: (isSettingsModalOpen) => set({ isSettingsModalOpen }),
       setIsControlPanelVisible: (isControlPanelVisible) => set({ isControlPanelVisible }),
       setIsTodoListVisible: (isTodoListVisible) => set({ isTodoListVisible }),
+      setIsUnifiedTodoListVisible: (isUnifiedTodoListVisible) => set({ isUnifiedTodoListVisible }),
       
       toggleDebugLogVisibility: () => set((state) => ({ 
         isDebugLogVisible: !state.isDebugLogVisible 

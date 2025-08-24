@@ -1,4 +1,3 @@
-
 import React from 'react'; 
 import { ConversationFlow } from './ConversationFlow';
 import { useSessionStore } from '../store/sessionStore';
@@ -39,6 +38,7 @@ export const ChatMessagesContainer = React.memo(() => {
   return (
     <div 
       ref={containerRef}
+      data-testid="chat-messages"
       className="flex-1 overflow-y-auto bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 chat-container"
     >
       {messages.length === 0 ? (

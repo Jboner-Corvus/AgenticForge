@@ -29,7 +29,6 @@ import {
 import { useCanvasStore } from '../store/canvasStore';
 import { useLanguage } from '../lib/contexts/LanguageContext';
 import { useToast } from '../lib/hooks/useToast';
-import TodoListView from './TodoListView';
 
 const AgentOutputCanvas: React.FC = () => {
   const { translations } = useLanguage();
@@ -135,17 +134,14 @@ const AgentOutputCanvas: React.FC = () => {
   };
 
   const renderContent = () => {
-    console.log('🎨 [AgentOutputCanvas] renderContent appelé - canvasContent:', !!canvasContent, 'longueur:', canvasContent?.length || 0);
     if (!canvasContent) {
-      console.log('🎨 [AgentOutputCanvas] Pas de contenu - affichage du placeholder');
       return (
-        <motion.div 
-          className="flex flex-col items-center justify-center h-full text-muted-foreground"
-          variants={contentVariants}
-        >
-          <Bot size={48} className="mb-4 text-cyan-500" />
-          <p className="text-lg">{translations.agentContentWillAppearHere}</p>
-        </motion.div>
+        <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+          <div className="text-center">
+            <Bot className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <p>No content available</p>
+          </div>
+        </div>
       );
     }
     switch (canvasType) {
@@ -219,13 +215,15 @@ const AgentOutputCanvas: React.FC = () => {
           const jsonData = JSON.parse(canvasContent);
           if (jsonData.type === 'todo_list') {
             return (
-              <motion.div 
+                            <motion.div 
                 className="p-4 h-full overflow-y-auto bg-gradient-to-br from-cyan-900/5 to-blue-900/5 rounded-lg"
                 variants={contentVariants}
                 initial="hidden"
                 animate="visible"
               >
-                <TodoListView data={jsonData} />
+                <div className="text-center text-gray-500 dark:text-gray-400">
+                  <p>Todo List content will be displayed in the unified todo list panel</p>
+                </div>
               </motion.div>
             );
           }

@@ -3,8 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Key, Plus, Trash2, Eye, EyeOff, TestTube, RefreshCw, Database, 
   Upload, Download, AlertTriangle, CheckCircle, 
-  Search, Globe, Lock, Unlock, Target, GripVertical, Shield,
-  Edit3, Save, Copy, ExternalLink
+  Search, Globe, Lock, Unlock, Target, GripVertical, Shield
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -12,8 +11,7 @@ import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Switch } from './ui/switch';
-import { Textarea } from './ui/textarea';
-import { useLLMKeysStore, LLMKey, LLMProvider } from '../store/llmKeysStore';
+import { useLLMKeysStore, LLMKey } from '../store/llmKeysStore';
 import { llmKeysApi } from '../lib/api/llmKeysApi';
 import { LoadingSpinner } from './LoadingSpinner';
 import { OpenAILogo, GeminiLogo } from './icons/LlmLogos';
@@ -22,12 +20,15 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEn
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+// Key masking utilities
+import { maskKeyByType } from './keyMaskingUtils';
+
 // PROVIDER LOGOS MAPPING
 const PROVIDER_LOGOS: Record<string, React.ComponentType<{ className?: string }>> = {
   openai: OpenAILogo,
   anthropic: () => <div className="text-orange-400 font-bold">A</div>, // Fallback
   'google-flash': GeminiLogo,
-  'gemini': GeminiLogo,
+  'google-pro': GeminiLogo,
   google: GeminiLogo, // Fallback for legacy
   xai: () => <div className="text-green-400 font-bold text-lg">𝕏</div>, // xAI/X logo
   qwen: () => <div className="text-blue-400 font-bold">Q</div>, // Qwen logo
@@ -44,18 +45,6 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   xai: 'xAI Grok',
   qwen: 'Qwen3 Coder',
   openrouter: 'OpenRouter'
-};
-
-// PROVIDER WEBSITES
-const PROVIDER_WEBSITES: Record<string, string> = {
-  openai: 'https://platform.openai.com/api-keys',
-  anthropic: 'https://console.anthropic.com/settings/keys',
-  'google-flash': 'https://aistudio.google.com/app/apikey',
-  'gemini': 'https://aistudio.google.com/app/apikey',
-  google: 'https://aistudio.google.com/app/apikey',
-  xai: 'https://grok.x.ai/',
-  qwen: 'https://portal.qwen.ai/',
-  openrouter: 'https://openrouter.ai/settings/keys'
 };
 
 // KEY PERFORMANCE STATS COMPONENT
@@ -353,26 +342,24 @@ const HierarchyManager: React.FC = () => {
         
         if (response.ok) {
           const masterKeyData = await response.json();
-          if (masterKeyData) {
-            setMasterKey({
-              id: 'master-key',
-              providerId: 'master',
-              providerName: 'Master',
-              keyName: 'Master Key (.env)',
-              keyValue: masterKeyData.apiKey,
-              isEncrypted: false,
-              isActive: true,
-              priority: 0, // Highest priority for master key
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              usageCount: 0,
-              metadata: { 
-                environment: 'universal', 
-                tags: [], 
-                description: 'Master key loaded from .env file' 
-              }
-            });
-          }
+          setMasterKey({
+            id: 'master-key',
+            providerId: 'master',
+            providerName: 'Master',
+            keyName: 'Master Key (.env)',
+            keyValue: masterKeyData.apiKey,
+            isEncrypted: false,
+            isActive: true,
+            priority: 0, // Highest priority for master key
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            usageCount: 0,
+            metadata: { 
+              environment: 'universal', 
+              tags: [], 
+              description: 'Master key loaded from .env file' 
+            }
+          });
         }
       } catch (error) {
         console.warn('Failed to fetch master key:', error);
@@ -540,257 +527,6 @@ const HierarchyManager: React.FC = () => {
   );
 };
 
-// EDIT KEY MODAL
-const EditKeyModal: React.FC<{ 
-  keyData: LLMKey; 
-  isOpen: boolean; 
-  onClose: () => void;
-  onSave: (id: string, updates: Partial<LLMKey>) => Promise<void>;
-  providers: LLMProvider[];
-}> = ({ keyData, isOpen, onClose, onSave, providers }) => {
-  const [formData, setFormData] = useState({
-    providerId: keyData.providerId,
-    keyName: keyData.keyName,
-    keyValue: keyData.keyValue,
-    isActive: keyData.isActive,
-    priority: keyData.priority,
-    metadata: {
-      description: keyData.metadata.description || '',
-      tags: keyData.metadata.tags.join(', ')
-    }
-  });
-  const [isSaving, setIsSaving] = useState(false);
-
-  const selectedProvider = providers.find(p => p.id === formData.providerId);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSaving) return;
-
-    setIsSaving(true);
-    try {
-      await onSave(keyData.id, {
-        providerId: formData.providerId,
-        providerName: PROVIDER_DISPLAY_NAMES[formData.providerId] || selectedProvider?.displayName || formData.providerId,
-        keyName: formData.keyName,
-        keyValue: formData.keyValue,
-        isActive: formData.isActive,
-        priority: formData.priority,
-        metadata: {
-          ...keyData.metadata,
-          description: formData.metadata.description,
-          tags: formData.metadata.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
-        }
-      });
-      onClose();
-    } catch (error) {
-      console.error('Failed to update key:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-lg z-50 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl rounded-3xl border border-cyan-500/20 shadow-2xl shadow-cyan-500/10 p-8 w-full max-w-lg"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 rounded-xl">
-              <Edit3 className="h-6 w-6 text-cyan-400" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                Edit API Key
-              </h3>
-              <p className="text-gray-400 text-sm">Modify your AI provider key</p>
-            </div>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={onClose}
-            className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-full"
-          >
-            ×
-          </Button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Provider Selection */}
-          <div className="space-y-3">
-            <label htmlFor="provider-select" className="block text-sm font-semibold text-gray-300">
-              AI Provider
-            </label>
-            <Select value={formData.providerId} onValueChange={(value) => setFormData({...formData, providerId: value})}>
-              <SelectTrigger id="provider-select" className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 transition-colors h-12 text-base">
-                <SelectValue placeholder="Choose your AI provider">
-                  {selectedProvider && (
-                    <div className="flex items-center gap-3">
-                      {PROVIDER_LOGOS[selectedProvider.id] && (
-                        <div className="h-5 w-5">
-                          {React.createElement(PROVIDER_LOGOS[selectedProvider.id], { className: "h-5 w-5" })}
-                        </div>
-                      )}
-                      <span>{PROVIDER_DISPLAY_NAMES[selectedProvider.id] || selectedProvider.displayName}</span>
-                    </div>
-                  )}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-600">
-                {providers.map(provider => (
-                  <SelectItem key={provider.id} value={provider.id} className="hover:bg-gray-700">
-                    <div className="flex items-center gap-3">
-                      {PROVIDER_LOGOS[provider.id] && (
-                        <div className="h-4 w-4">
-                          {React.createElement(PROVIDER_LOGOS[provider.id], { className: "h-4 w-4" })}
-                        </div>
-                      )}
-                      <span>{PROVIDER_DISPLAY_NAMES[provider.id] || provider.displayName}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Key Name */}
-          <div className="space-y-3">
-            <label htmlFor="key-name-input" className="block text-sm font-semibold text-gray-300">
-              Key Name
-            </label>
-            <Input
-              id="key-name-input"
-              value={formData.keyName}
-              onChange={(e) => setFormData({...formData, keyName: e.target.value})}
-              placeholder={selectedProvider ? `My ${PROVIDER_DISPLAY_NAMES[selectedProvider.id] || selectedProvider.displayName} Key` : "Give your key a name"}
-              className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 focus:border-cyan-500 transition-colors h-12 text-base"
-              required
-            />
-          </div>
-
-          {/* API Key */}
-          <div className="space-y-3">
-            <label htmlFor="api-key-input" className="block text-sm font-semibold text-gray-300">
-              API Key
-            </label>
-            <div className="relative">
-              <Input
-                id="api-key-input"
-                type="password"
-                value={formData.keyValue}
-                onChange={(e) => setFormData({...formData, keyValue: e.target.value})}
-                placeholder="sk-..."
-                className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 focus:border-cyan-500 transition-colors h-12 text-base pr-12"
-                required
-              />
-              <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="space-y-3">
-            <label htmlFor="description-input" className="block text-sm font-semibold text-gray-300">
-              Description
-            </label>
-            <Textarea
-              id="description-input"
-              value={formData.metadata.description}
-              onChange={(e) => setFormData({...formData, metadata: {...formData.metadata, description: e.target.value}})}
-              placeholder="Add a description for this key..."
-              className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 focus:border-cyan-500 transition-colors min-h-[80px]"
-            />
-          </div>
-
-          {/* Tags */}
-          <div className="space-y-3">
-            <label htmlFor="tags-input" className="block text-sm font-semibold text-gray-300">
-              Tags (comma separated)
-            </label>
-            <Input
-              id="tags-input"
-              value={formData.metadata.tags}
-              onChange={(e) => setFormData({...formData, metadata: {...formData.metadata, tags: e.target.value}})}
-              placeholder="tag1, tag2, tag3"
-              className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 focus:border-cyan-500 transition-colors h-12 text-base"
-            />
-          </div>
-
-          {/* Active Toggle */}
-          <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
-            <div>
-              <label htmlFor="activate-key-switch" className="text-sm font-semibold text-gray-300">Activate Key</label>
-              <p className="text-xs text-gray-400">Enable this key immediately after adding</p>
-            </div>
-            <Switch
-              id="activate-key-switch"
-              checked={formData.isActive}
-              onCheckedChange={(checked) => setFormData({...formData, isActive: checked})}
-              className="data-[state=checked]:bg-cyan-500"
-            />
-          </div>
-
-          {/* Priority Slider */}
-          <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
-            <div>
-              <label htmlFor="priority-slider" className="text-sm font-semibold text-gray-300">Priority Level</label>
-              <p className="text-xs text-gray-400">Lower numbers = higher priority (1-10)</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-400 w-6">{formData.priority}</span>
-              <input
-                id="priority-slider"
-                type="range"
-                min="1"
-                max="10"
-                value={formData.priority}
-                onChange={(e) => setFormData({...formData, priority: parseInt(e.target.value)})}
-                className="w-24 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-              />
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-6">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onClose} 
-              className="flex-1 h-12 border-gray-600 hover:border-gray-500 hover:bg-gray-800/50"
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={isSaving}
-              className="flex-1 h-12 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-semibold"
-            >
-              {isSaving ? (
-                <>
-                  <LoadingSpinner className="h-4 w-4 mr-2" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
-      </motion.div>
-    </div>
-  );
-};
-
 // ADD KEY MODAL - BEAUTIFIED VERSION
 const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { providers, addKey, isLoading } = useLLMKeysStore();
@@ -799,11 +535,7 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
     keyName: '',
     keyValue: '',
     isActive: true,
-    priority: 5,
-    metadata: {
-      description: '',
-      tags: ''
-    }
+    priority: 5
   });
 
   const selectedProvider = providers.find(p => p.id === formData.providerId);
@@ -815,7 +547,7 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
     try {
       await addKey({
         providerId: formData.providerId,
-        providerName: PROVIDER_DISPLAY_NAMES[formData.providerId] || selectedProvider.displayName,
+        providerName: PROVIDER_DISPLAY_NAMES[formData.providerId] || selectedProvider.name,
         keyName: formData.keyName,
         keyValue: formData.keyValue,
         isEncrypted: false,
@@ -823,8 +555,8 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
         priority: formData.priority,
         metadata: {
           environment: 'universal', // Toutes les clés fonctionnent partout
-          tags: formData.metadata.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-          description: formData.metadata.description
+          tags: [],
+          description: '' // Removed description field as requested
         }
       });
       onClose();
@@ -833,11 +565,7 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
         keyName: '',
         keyValue: '',
         isActive: true,
-        priority: 5,
-        metadata: {
-          description: '',
-          tags: ''
-        }
+        priority: 5
       });
     } catch (error) {
       console.error('Failed to add key:', error);
@@ -913,18 +641,6 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
                 ))}
               </SelectContent>
             </Select>
-            {selectedProvider && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(PROVIDER_WEBSITES[selectedProvider.id], '_blank')}
-                className="mt-2 text-xs border-gray-600 hover:border-cyan-500/50"
-              >
-                <ExternalLink className="h-3 w-3 mr-1" />
-                Get API Key
-              </Button>
-            )}
           </div>
 
           {/* Key Name */}
@@ -959,34 +675,6 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
               />
               <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             </div>
-          </div>
-
-          {/* Description */}
-          <div className="space-y-3">
-            <label htmlFor="description-input" className="block text-sm font-semibold text-gray-300">
-              Description
-            </label>
-            <Textarea
-              id="description-input"
-              value={formData.metadata.description}
-              onChange={(e) => setFormData({...formData, metadata: {...formData.metadata, description: e.target.value}})}
-              placeholder="Add a description for this key..."
-              className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 focus:border-cyan-500 transition-colors min-h-[80px]"
-            />
-          </div>
-
-          {/* Tags */}
-          <div className="space-y-3">
-            <label htmlFor="tags-input" className="block text-sm font-semibold text-gray-300">
-              Tags (comma separated)
-            </label>
-            <Input
-              id="tags-input"
-              value={formData.metadata.tags}
-              onChange={(e) => setFormData({...formData, metadata: {...formData.metadata, tags: e.target.value}})}
-              placeholder="tag1, tag2, tag3"
-              className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 focus:border-cyan-500 transition-colors h-12 text-base"
-            />
           </div>
 
           {/* Active Toggle */}
@@ -1063,8 +751,6 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<boolean | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const Logo = PROVIDER_LOGOS[keyData.providerId] || (() => <Key className="h-6 w-6" />);
 
@@ -1082,32 +768,19 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
     }
   };
 
-  const handleCopyKey = () => {
-    const keyValue = keyData.keyValue || '';
-    if (keyValue) {
-      navigator.clipboard.writeText(keyValue);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  // Show partial key for masking - ensure keyValue is never undefined
-  const keyValue = keyData.keyValue || '';
-  const maskedKey = keyValue && keyValue.length > 0 ? 
-    `${keyValue.slice(0, Math.min(8, keyValue.length))}${'*'.repeat(Math.max(0, keyValue.length - 12))}${keyValue.slice(-Math.min(4, keyValue.length))}` : 
-    'No Key';
+  // Use enhanced masking
+  const maskedKey = maskKeyByType(keyData.keyValue || '', keyData.providerId);
 
   return (
-    <>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`bg-gradient-to-br from-gray-900/90 to-gray-800/90 rounded-xl border transition-all duration-300 ${
-          keyData.isActive ? 'border-cyan-500/50' : 'border-gray-700'
-        }`}
-      >
-        <div className="p-6">
-          <div className="flex items-start justify-between mb-4">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`bg-gradient-to-br from-gray-900/90 to-gray-800/90 rounded-xl border transition-all duration-300 ${
+        keyData.isActive ? 'border-cyan-500/50' : 'border-gray-700'
+      }`}
+    >
+      <div className="p-6">
+        <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${keyData.isActive ? 'bg-cyan-900/50' : 'bg-gray-800'}`}>
                 <Logo className={`h-6 w-6 ${keyData.isActive ? 'text-cyan-400' : 'text-gray-400'}`} />
@@ -1134,164 +807,136 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
             </div>
           </div>
 
-          {/* Key Display */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-gray-400 uppercase tracking-wider">API Key</div>
-              <div className="flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopyKey}
-                  className="h-6 w-6 p-0"
-                >
-                  {copied ? <CheckCircle className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowKey(!showKey)}
-                  className="h-6 w-6 p-0"
-                >
-                  {showKey ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                </Button>
-              </div>
+        {/* Key Display */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-gray-400 uppercase tracking-wider">API Key</div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowKey(!showKey)}
+              className="h-6 w-6 p-0"
+            >
+              {showKey ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+            </Button>
+          </div>
+          <div className="bg-gray-800/50 rounded-lg p-3 font-mono text-sm">
+            <span className="text-gray-300">
+              {showKey ? (keyData.keyValue || 'No Key') : maskedKey}
+            </span>
+          </div>
+        </div>
+
+        {/* Metadata */}
+        <div className="mb-4">
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <div className="text-gray-400 uppercase tracking-wider">Usage</div>
+              <div className="text-gray-300">{keyData.usageCount.toLocaleString()}</div>
             </div>
-            <div className="bg-gray-800/50 rounded-lg p-3 font-mono text-sm">
-              <span className="text-gray-300">
-                {showKey ? (keyData.keyValue || 'No Key') : maskedKey}
-              </span>
+            <div>
+              <div className="text-gray-400 uppercase tracking-wider">Priority</div>
+              <div className="text-gray-300">{keyData.priority}</div>
+            </div>
+            {keyData.usageStats && (
+              <>
+                <div>
+                  <div className="text-gray-400 uppercase tracking-wider">Success Rate</div>
+                  <div className="text-gray-300">
+                    {keyData.usageStats.totalRequests > 0 
+                      ? `${Math.round(((keyData.usageStats.successfulRequests / keyData.usageStats.totalRequests) * 100))}%`
+                      : '0%'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-gray-400 uppercase tracking-wider">Error Rate</div>
+                  <div className="text-gray-300">
+                    {Math.round(keyData.usageStats.errorRate * 100)}%
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Description */}
+        {keyData.metadata.description && (
+          <div className="mb-4">
+            <div className="text-xs text-gray-400 uppercase tracking-wider">Description</div>
+            <p className="mt-1 text-sm text-gray-300">{keyData.metadata.description}</p>
+          </div>
+        )}
+
+        {/* Last Used */}
+        {keyData.lastUsed && (
+          <div className="mb-4">
+            <div className="text-xs text-gray-400 uppercase tracking-wider">Last Used</div>
+            <p className="mt-1 text-sm text-gray-300">
+              {new Date(keyData.lastUsed).toLocaleString()}
+            </p>
+          </div>
+        )}
+
+        {/* Tags */}
+        {keyData.metadata.tags.length > 0 && (
+          <div className="mb-4">
+            <div className="text-xs text-gray-400 uppercase tracking-wider mb-2 block">Tags</div>
+            <div className="flex flex-wrap gap-1">
+              {keyData.metadata.tags.map(tag => (
+                <Badge key={tag} variant="outline" className="text-xs border-gray-600 text-gray-400">
+                  {tag}
+                </Badge>
+              ))}
             </div>
           </div>
+        )}
 
-          {/* Metadata */}
-          <div className="mb-4">
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <div className="text-gray-400 uppercase tracking-wider">Usage</div>
-                <div className="text-gray-300">{keyData.usageCount.toLocaleString()}</div>
-              </div>
-              <div>
-                <div className="text-gray-400 uppercase tracking-wider">Priority</div>
-                <div className="text-gray-300">{keyData.priority}</div>
-              </div>
-              {keyData.usageStats && (
-                <>
-                  <div>
-                    <div className="text-gray-400 uppercase tracking-wider">Success Rate</div>
-                    <div className="text-gray-300">
-                      {keyData.usageStats.totalRequests > 0 
-                        ? `${Math.round(((keyData.usageStats.successfulRequests / keyData.usageStats.totalRequests) * 100))}%`
-                        : '0%'}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-gray-400 uppercase tracking-wider">Error Rate</div>
-                    <div className="text-gray-300">
-                      {Math.round(keyData.usageStats.errorRate * 100)}%
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Description */}
-          {keyData.metadata.description && (
-            <div className="mb-4">
-              <div className="text-xs text-gray-400 uppercase tracking-wider">Description</div>
-              <p className="mt-1 text-sm text-gray-300">{keyData.metadata.description}</p>
-            </div>
-          )}
-
-          {/* Last Used */}
-          {keyData.lastUsed && (
-            <div className="mb-4">
-              <div className="text-xs text-gray-400 uppercase tracking-wider">Last Used</div>
-              <p className="mt-1 text-sm text-gray-300">
-                {new Date(keyData.lastUsed).toLocaleString()}
-              </p>
-            </div>
-          )}
-
-          {/* Tags */}
-          {keyData.metadata.tags.length > 0 && (
-            <div className="mb-4">
-              <div className="text-xs text-gray-400 uppercase tracking-wider mb-2 block">Tags</div>
-              <div className="flex flex-wrap gap-1">
-                {keyData.metadata.tags.map(tag => (
-                  <Badge key={tag} variant="outline" className="text-xs border-gray-600 text-gray-400">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-700">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleTest}
-                disabled={testing}
-                className={`border-blue-500/50 text-blue-400 hover:bg-blue-500/10 ${
-                  testResult === true ? 'border-green-500/50 text-green-400' :
-                  testResult === false ? 'border-red-500/50 text-red-400' : ''
-                }`}
-              >
-                {testing ? (
-                  <LoadingSpinner className="h-4 w-4" />
-                ) : testResult === true ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : testResult === false ? (
-                  <AlertTriangle className="h-4 w-4" />
-                ) : (
-                  <TestTube className="h-4 w-4" />
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toggleKeyStatus(keyData.id)}
-                className={keyData.isActive ? 
-                  'border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10' :
-                  'border-green-500/50 text-green-400 hover:bg-green-500/10'
-                }
-              >
-                {keyData.isActive ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowEditModal(true)}
-                className="border-gray-500/50 text-gray-400 hover:bg-gray-500/10"
-              >
-                <Edit3 className="h-4 w-4" />
-              </Button>
-            </div>
+        {/* Actions */}
+        <div className="flex items-center justify-between pt-4 border-t border-gray-700">
+          <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => deleteKey(keyData.id)}
-              className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+              onClick={handleTest}
+              disabled={testing}
+              className={`border-blue-500/50 text-blue-400 hover:bg-blue-500/10 ${
+                testResult === true ? 'border-green-500/50 text-green-400' :
+                testResult === false ? 'border-red-500/50 text-red-400' : ''
+              }`}
             >
-              <Trash2 className="h-4 w-4" />
+              {testing ? (
+                <LoadingSpinner className="h-4 w-4" />
+              ) : testResult === true ? (
+                <CheckCircle className="h-4 w-4" />
+              ) : testResult === false ? (
+                <AlertTriangle className="h-4 w-4" />
+              ) : (
+                <TestTube className="h-4 w-4" />
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toggleKeyStatus(keyData.id)}
+              className={keyData.isActive ? 
+                'border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10' :
+                'border-green-500/50 text-green-400 hover:bg-green-500/10'
+              }
+            >
+              {keyData.isActive ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
             </Button>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => deleteKey(keyData.id)}
+            className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
-      </motion.div>
-
-      {/* Edit Modal */}
-      <EditKeyModal 
-        keyData={keyData} 
-        isOpen={showEditModal} 
-        onClose={() => setShowEditModal(false)} 
-        onSave={useLLMKeysStore.getState().updateKey}
-        providers={useLLMKeysStore.getState().providers}
-      />
-    </>
+      </div>
+    </motion.div>
   );
 };
 
@@ -1301,8 +946,7 @@ export const EnhancedLlmKeyManager: React.FC = () => {
     providers, fetchKeys, fetchProviders, getFilteredKeys, 
     selectedProvider, setSelectedProvider,
     showInactiveKeys, 
-    toggleShowInactiveKeys, isLoading, forceDeduplication,
-    searchTerm, setSearchTerm
+    toggleShowInactiveKeys, isLoading, forceDeduplication 
   } = useLLMKeysStore();
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -1325,7 +969,7 @@ export const EnhancedLlmKeyManager: React.FC = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
-                🔐 Enhanced LLM Key Manager
+                🔐 LLM Key Manager
               </h1>
               <p className="text-gray-400 mt-2">Manage your AI provider keys with Redis integration</p>
             </div>
@@ -1407,15 +1051,6 @@ export const EnhancedLlmKeyManager: React.FC = () => {
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border-gray-700 mb-6">
           <CardContent className="p-6">
             <div className="flex flex-wrap gap-4 items-center">
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search keys..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-gray-800 border-gray-600 focus:border-cyan-500"
-                />
-              </div>
               <Select value={selectedProvider || 'all'} onValueChange={(value) => setSelectedProvider(value === 'all' ? null : value)}>
                 <SelectTrigger className="w-48 bg-gray-800 border-gray-600">
                   <SelectValue placeholder="All Providers" />

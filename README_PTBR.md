@@ -53,7 +53,7 @@
 
 🔄 **LlmKeyManager Inteligente** - Sistema avançado de gerenciamento de chaves API com failover automático, monitoramento de desempenho e desativação temporária de chaves com falha.
 
-🚀 **Forja MCP Nativa** - Usa o protocolo MCP com FastMCP para criar, modificar e implantar ferramentas personalizadas em tempo real. Cada ferramenta é codificada, testada e integrada automaticamente ao worker.
+🚀 **Forja MCP Nativa** - Usa o protocolo MCP com FastMCP para criar, modificar e implantar ferramentas personalizadas em tempo real. Cada ferramenta é codificada, testada e integrada automaticamente ao worker. As ferramentas criadas com MCP são diretamente acessíveis para um agente n8n.
 
 ---
 

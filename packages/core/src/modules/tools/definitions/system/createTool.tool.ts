@@ -9,6 +9,7 @@ import type { Ctx, Tool } from '../../../../types.ts';
 
 import { getErrDetails } from '../../../../utils/errorUtils.ts';
 import { runQualityGate } from '../../../../utils/qualityGate.ts';
+import { toolRegistry } from '../../toolRegistry.ts';
 
 const execAsync = promisify(exec);
 
@@ -198,7 +199,8 @@ export const createToolTool: Tool<typeof parameters> = {
       if (run_checks) {
         try {
           ctx.log.info('Lancement automatique des small-checks...');
-          const { stderr, stdout } = await execAsync('./run.sh small-checks', {
+          const runScriptPath = path.resolve(process.cwd(), 'run.sh');
+          const { stderr, stdout } = await execAsync(`${runScriptPath} small-checks`, {
             cwd: process.cwd(),
             timeout: 60000, // 1 minute timeout
           });
@@ -222,7 +224,29 @@ export const createToolTool: Tool<typeof parameters> = {
         }
       } else {
         successMessage +=
-          " 🎯 Outil créé dans dist/tools/generated/ (outils générés vs natifs dans src/). Redémarrez le worker pour activation immédiate. Lancez './run.sh small-checks' pour vérifier.";
+          " 🎯 Outil créé dans dist/tools/generated/ (outils générés vs natifs dans src/).";
+      }
+
+      // Enregistrer automatiquement l'outil dans le registre
+      try {
+        const toolModule = await import(`${toolFilePath}?t=${Date.now()}`);
+        const tool = toolModule[`${toolVarName}Tool`];
+        if (tool) {
+          // Vérifier si l'outil est déjà enregistré
+          const existingTool = toolRegistry.get(tool.name);
+          if (!existingTool) {
+            toolRegistry.register(tool);
+            successMessage += ` Outil '${tool_name}' automatiquement enregistré et prêt à l'emploi.`;
+          } else {
+            successMessage += ` Outil '${tool_name}' déjà enregistré dans le système.`;
+          }
+        } else {
+          successMessage += ` ⚠️  Impossible de charger automatiquement l'outil '${tool_name}'. Redémarrage requis.`;
+        }
+      } catch (error) {
+        const err = error as Error;
+        ctx.log.error(`Erreur lors de l'enregistrement automatique de l'outil '${tool_name}': ${err.message}`);
+        successMessage += ` ⚠️  Erreur lors de l'enregistrement automatique. Redémarrage requis.`;
       }
 
       ctx.log.warn(successMessage);

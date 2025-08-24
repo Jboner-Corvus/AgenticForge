@@ -2,7 +2,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
   displayCanvasTool
-} from "../../../../chunk-UN6Q5SXR.js";
+} from "../../../../chunk-67FLVU3Q.js";
 import {
   sendToCanvas
 } from "../../../../chunk-3B2NS2K5.js";

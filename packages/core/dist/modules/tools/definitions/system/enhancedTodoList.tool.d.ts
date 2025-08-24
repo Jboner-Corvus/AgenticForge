@@ -72,8 +72,8 @@ declare const parameters: z.ZodObject<{
         updatedAt: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         updatedAt: number;
         actualTime?: number | undefined;
@@ -87,8 +87,8 @@ declare const parameters: z.ZodObject<{
         tags?: string[] | undefined;
     }, {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         updatedAt: number;
         actualTime?: number | undefined;
@@ -126,8 +126,8 @@ declare const parameters: z.ZodObject<{
     taskId?: string | undefined;
     tasks?: {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         updatedAt: number;
         actualTime?: number | undefined;
@@ -164,8 +164,8 @@ declare const parameters: z.ZodObject<{
     taskId?: string | undefined;
     tasks?: {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         updatedAt: number;
         actualTime?: number | undefined;
@@ -243,8 +243,8 @@ declare const enhancedTodoListOutput: z.ZodUnion<[z.ZodObject<{
         updatedAt: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         updatedAt: number;
         actualTime?: number | undefined;
@@ -258,8 +258,8 @@ declare const enhancedTodoListOutput: z.ZodUnion<[z.ZodObject<{
         tags?: string[] | undefined;
     }, {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         updatedAt: number;
         actualTime?: number | undefined;
@@ -292,8 +292,8 @@ declare const enhancedTodoListOutput: z.ZodUnion<[z.ZodObject<{
     } | undefined;
     tasks?: {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         updatedAt: number;
         actualTime?: number | undefined;
@@ -327,8 +327,8 @@ declare const enhancedTodoListOutput: z.ZodUnion<[z.ZodObject<{
     } | undefined;
     tasks?: {
         status: "in_progress" | "pending" | "completed" | "blocked" | "cancelled";
-        id: string;
         content: string;
+        id: string;
         createdAt: number;
         updatedAt: number;
         actualTime?: number | undefined;
