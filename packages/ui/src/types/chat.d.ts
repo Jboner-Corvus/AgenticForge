@@ -68,7 +68,15 @@ export type NewChatMessage =
   | { type: 'agent'; content: string }
   | { type: 'agent_response'; content: string }
   | { type: 'tool_call'; toolName: string; params: Record<string, unknown> }
-  | { type: 'tool_result'; toolName: string; result: { output: string | Record<string, unknown> } }
+  | {
+      type: 'tool_result';
+      toolName: string;
+      result: { output: string | Record<string, unknown> };
+    }
   | { type: 'agent_thought'; content: string }
   | { type: 'error'; content: string }
-  | { type: 'agent_canvas_output'; content: string; contentType: 'html' | 'markdown' | 'url' | 'text' };
+  | {
+      type: 'agent_canvas_output';
+      content: string;
+      contentType: 'html' | 'markdown' | 'url' | 'text';
+    };

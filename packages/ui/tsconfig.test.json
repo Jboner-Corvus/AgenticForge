@@ -4,5 +4,10 @@
     "noEmit": true,
     "types": ["vite/client", "vitest/globals", "vitest"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.test.ts", "src/**/*.test.tsx"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx"
+  ]
 }

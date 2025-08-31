@@ -1,238 +1,390 @@
 #!/bin/bash
 
 # =============================================================================
-# AgenticForge Canvas & Todo List Tests
+# Canvas & Todo List Tests
 # =============================================================================
-# Focused tests for the core canvas and todo list capabilities
+# Tests canvas diagram creation and todo list management capabilities
 # =============================================================================
 
 set -euo pipefail
 
 # Colors
 readonly COLOR_GREEN='\033[0;32m'
-readonly COLOR_BLUE='\033[0;34m'
-readonly COLOR_CYAN='\033[0;36m'
-readonly COLOR_ORANGE='\033[0;33m'
 readonly COLOR_RED='\033[0;31m'
 readonly COLOR_YELLOW='\033[1;33m'
+readonly COLOR_BLUE='\033[0;34m'
+readonly COLOR_CYAN='\033[0;36m'
 readonly NC='\033[0m'
 
-# Configuration
-readonly API_BASE_URL="http://localhost:8080"
+# Test configuration
 readonly SESSION_ID="canvas-todo-test-$(date +%s)"
-readonly MAX_WAIT_TIME=60  # Maximum time to wait for job completion (seconds)
-readonly POLL_INTERVAL=2   # Polling interval (seconds)
+readonly TIMEOUT=60
+readonly POLL_INTERVAL=2
 
-# Global variables for test results
-TESTS_TOTAL=0
-TESTS_PASSED=0
-TESTS_FAILED=0
+# Test results tracking
+TOTAL_TESTS=0
+PASSED_TESTS=0
+FAILED_TESTS=0
 
-# Get auth token
+# API configuration
+API_BASE="http://localhost:8080"
+AUTH_TOKEN=""
 if [[ -f "../.env" ]]; then
-    AUTH_TOKEN=$(grep "^AUTH_TOKEN=" ../.env | cut -d'=' -f2 | tr -d '"')
-else
-    echo "❌ .env file not found"
-    exit 1
+    AUTH_TOKEN=$(grep "^AUTH_TOKEN=" ../.env | cut -d'=' -f2 | tr -d '"' || echo "")
 fi
 
-# Test result tracking
+if [[ -z "$AUTH_TOKEN" ]]; then
+    echo -e "${COLOR_YELLOW}⚠️  Warning: AUTH_TOKEN not found in .env file${NC}"
+fi
+
+# Test utilities
+log_test_start() {
+    local test_name="$1"
+    echo -e "\n🤖 ${test_name}"
+    echo "Message: $2"
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+}
+
 log_test_result() {
     local test_name="$1"
     local status="$2"
     local details="${3:-}"
     
-    TESTS_TOTAL=$((TESTS_TOTAL + 1))
-    
     if [[ "$status" == "PASS" ]]; then
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-        echo -e "${COLOR_GREEN}✅ $test_name${NC}"
+        echo -e "✅ ${test_name}"
+        PASSED_TESTS=$((PASSED_TESTS + 1))
     else
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-        echo -e "${COLOR_RED}❌ $test_name${NC}"
+        echo -e "❌ ${test_name}"
         if [[ -n "$details" ]]; then
-            echo -e "${COLOR_YELLOW}   Details: $details${NC}"
+            echo -e "   Details: ${details}"
         fi
+        FAILED_TESTS=$((FAILED_TESTS + 1))
     fi
-}
-
-# Intelligent polling function
-wait_for_job_completion() {
-    local job_id="$1"
-    local max_wait="${2:-$MAX_WAIT_TIME}"
-    local wait_time=0
-    
-    echo -e "${COLOR_CYAN}⏳ Waiting for job $job_id to complete...${NC}"
-    
-    while [[ $wait_time -lt $max_wait ]]; do
-        # Check job status
-        local status_response
-        status_response=$(curl -s -X GET \
-            -H "Authorization: Bearer $AUTH_TOKEN" \
-            "$API_BASE_URL/api/job/$job_id")
-        
-        # Try to parse job status
-        local job_status
-        job_status=$(echo "$status_response" | jq -r '.status // "unknown"' 2>/dev/null)
-        
-        case "$job_status" in
-            "completed")
-                echo -e "${COLOR_GREEN}✅ Job $job_id completed successfully${NC}"
-                return 0
-                ;;
-            "failed")
-                echo -e "${COLOR_RED}❌ Job $job_id failed${NC}"
-                echo "Error details: $(echo "$status_response" | jq -r '.error // "Unknown error"' 2>/dev/null)"
-                return 1
-                ;;
-            "unknown")
-                # If we can't parse the status, check if we got a valid response
-                if [[ "$status_response" == *"jobId"* ]]; then
-                    echo -e "${COLOR_GREEN}✅ Job $job_id accepted (streaming response)${NC}"
-                    return 0
-                fi
-                ;;
-        esac
-        
-        sleep $POLL_INTERVAL
-        wait_time=$((wait_time + POLL_INTERVAL))
-        echo -n "."
-    done
-    
-    echo -e "\n${COLOR_YELLOW}⚠️  Job $job_id timed out after $max_wait seconds${NC}"
-    return 2
-}
-
-# API helper with result validation
-send_message() {
-    local message="$1"
-    local description="$2"
-    local expected_result="${3:-}"  # Optional expected result for validation
-    
-    echo -e "${COLOR_BLUE}🤖 $description${NC}"
-    echo "Message: $message"
-    echo ""
-    
-    local payload="{\"prompt\": \"$message\", \"sessionId\": \"$SESSION_ID\"}"
-    
-    local response
-    response=$(curl -s -X POST \
-        -H "Authorization: Bearer $AUTH_TOKEN" \
-        -H "Content-Type: application/json" \
-        -d "$payload" \
-        "$API_BASE_URL/api/chat")
-    
-    # Try to parse the response
-    local job_id
-    job_id=$(echo "$response" | jq -r '.jobId // "none"' 2>/dev/null)
-    
-    if [[ "$job_id" != "none" ]]; then
-        echo "Job ID: $job_id"
-        echo "$response" | jq . 2>/dev/null || echo "$response"
-        
-        # Wait for job completion with intelligent polling
-        if wait_for_job_completion "$job_id"; then
-            log_test_result "$description" "PASS"
-        else
-            log_test_result "$description" "FAIL" "Job failed or timed out"
-        fi
-    else
-        # Handle direct responses (like health checks)
-        echo "$response" | jq . 2>/dev/null || echo "$response"
-        log_test_result "$description" "PASS" "Direct response received"
-    fi
-    
     echo "================================================="
 }
 
-# Cleanup function
-cleanup_session() {
-    echo -e "${COLOR_CYAN}🧹 Cleaning up test session...${NC}"
+api_call() {
+    local endpoint="$1"
+    local method="${2:-GET}"
+    local data="${3:-}"
     
-    # Try to delete the session
-    local cleanup_response
-    cleanup_response=$(curl -s -X DELETE \
-        -H "Authorization: Bearer $AUTH_TOKEN" \
-        "$API_BASE_URL/api/sessions/$SESSION_ID" \
-        -w "HTTPSTATUS:%{http_code}")
+    local headers=(
+        "-H" "Authorization: Bearer $AUTH_TOKEN"
+        "-H" "Content-Type: application/json"
+    )
     
-    local http_status
-    http_status=$(echo "$cleanup_response" | grep -o "HTTPSTATUS:[0-9]*$" | cut -d: -f2)
+    local curl_args=(
+        "-s" "-w" "%{http_code}" "-o" "/tmp/agenticforge_test_response.json"
+    )
     
-    if [[ "$http_status" == "200" ]] || [[ "$http_status" == "204" ]]; then
-        echo -e "${COLOR_GREEN}✅ Session cleanup completed${NC}"
+    if [[ "$method" == "POST" ]] && [[ -n "$data" ]]; then
+        curl_args+=("-X" "$method" "${headers[@]}" "-d" "$data" "$API_BASE$endpoint")
     else
-        echo -e "${COLOR_YELLOW}⚠️  Session cleanup response: $http_status${NC}"
+        curl_args+=("-X" "$method" "${headers[@]}" "$API_BASE$endpoint")
+    fi
+    
+    local response
+    response=$(curl "${curl_args[@]}")
+    local http_code="${response: -3}"
+    
+    if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then
+        cat /tmp/agenticforge_test_response.json
+        return 0
+    else
+        echo "HTTP $http_code" >&2
+        if [[ -f /tmp/agenticforge_test_response.json ]]; then
+            cat /tmp/agenticforge_test_response.json >&2
+        fi
+        return 1
     fi
 }
 
-# Trap to ensure cleanup happens
-trap cleanup_session EXIT
+wait_for_job() {
+    local job_id="$1"
+    local timeout="${2:-$TIMEOUT}"
+    local elapsed=0
+    
+    echo "Job ID: $job_id"
+    
+    # Show initial response
+    if [[ -f /tmp/agenticforge_test_response.json ]]; then
+        jq . /tmp/agenticforge_test_response.json 2>/dev/null || cat /tmp/agenticforge_test_response.json
+    fi
+    
+    echo -n "⏳ Waiting for job $job_id to complete..."
+    
+    while [[ $elapsed -lt $timeout ]]; do
+        # Check job status
+        if api_call "/api/job/$job_id" "GET" > /tmp/agenticforge_job_status.json 2>/dev/null; then
+            local status
+            status=$(jq -r '.status' /tmp/agenticforge_job_status.json 2>/dev/null || echo "unknown")
+            
+            if [[ "$status" == "completed" ]]; then
+                echo -e "\n✅ Job $job_id completed successfully"
+                jq . /tmp/agenticforge_job_status.json 2>/dev/null || cat /tmp/agenticforge_job_status.json
+                return 0
+            elif [[ "$status" == "failed" ]]; then
+                echo -e "\n❌ Job $job_id failed"
+                jq . /tmp/agenticforge_job_status.json 2>/dev/null || cat /tmp/agenticforge_job_status.json
+                return 1
+            fi
+        fi
+        
+        echo -n "."
+        sleep $POLL_INTERVAL
+        elapsed=$((elapsed + POLL_INTERVAL))
+    done
+    
+    echo -e "\n⚠️  Job $job_id timed out after $timeout seconds"
+    return 1
+}
 
-echo -e "${COLOR_ORANGE}🎨📋 Testing Canvas & Todo List Capabilities${NC}"
-echo -e "${COLOR_CYAN}Session: $SESSION_ID${NC}"
-echo ""
+check_worker_status() {
+    echo -e "${COLOR_CYAN}🔍 Checking AgenticForge worker status...${NC}"
+    
+    # Check if main services are running
+    if ! curl -s "$API_BASE/api/health" >/dev/null; then
+        echo -e "${COLOR_RED}❌ AgenticForge API not responding${NC}"
+        echo -e "${COLOR_YELLOW}💡 Start services with: ../run-v2.sh start${NC}"
+        return 1
+    fi
+    
+    # Check if worker process is running
+    if ! pgrep -f "node dist/worker.js" >/dev/null; then
+        echo -e "${COLOR_RED}❌ AgenticForge worker not running${NC}"
+        echo -e "${COLOR_YELLOW}💡 Start worker with: ../run-v2.sh restart-worker${NC}"
+        return 1
+    fi
+    
+    echo -e "${COLOR_GREEN}✅ AgenticForge services and worker are running${NC}"
+    return 0
+}
 
-echo -e "${COLOR_CYAN}Starting Canvas & Todo List Tests...${NC}\n"
+# Test functions
+test_create_todo_list() {
+    log_test_start "Creating project todo list" "Create a todo list for a web development project with these tasks: 1. Design database schema, 2. Set up API endpoints, 3. Create frontend components, 4. Write tests, 5. Deploy to production. Please use the todo list management system."
+    
+    local message="{\"prompt\": \"Create a todo list for a web development project with these tasks: 1. Design database schema, 2. Set up API endpoints, 3. Create frontend components, 4. Write tests, 5. Deploy to production. Please use the todo list management system.\", \"sessionId\": \"$SESSION_ID\"}"
+    
+    if api_call "/api/chat" "POST" "$message"; then
+        local job_id
+        job_id=$(jq -r '.jobId' /tmp/agenticforge_test_response.json 2>/dev/null || echo "")
+        
+        if [[ -n "$job_id" ]] && [[ "$job_id" != "null" ]]; then
+            if wait_for_job "$job_id"; then
+                log_test_result "Creating project todo list" "PASS"
+            else
+                log_test_result "Creating project todo list" "FAIL" "Job failed or timed out"
+            fi
+        else
+            log_test_result "Creating project todo list" "FAIL" "No job ID returned"
+        fi
+    else
+        log_test_result "Creating project todo list" "FAIL" "API call failed"
+    fi
+}
 
-# Test 1: Create a project todo list
-send_message \
-    "Create a todo list for a web development project with these tasks: 1. Design database schema, 2. Set up API endpoints, 3. Create frontend components, 4. Write tests, 5. Deploy to production. Please use the todo list management system." \
-    "Creating project todo list"
+test_create_canvas() {
+    log_test_start "Creating architecture canvas diagram" "Create a canvas diagram showing a typical web application architecture with these components: Frontend (React), Backend API (Node.js), Database (PostgreSQL), Cache (Redis), and Load Balancer. Show the connections and data flow between them."
+    
+    local message="{\"prompt\": \"Create a canvas diagram showing a typical web application architecture with these components: Frontend (React), Backend API (Node.js), Database (PostgreSQL), Cache (Redis), and Load Balancer. Show the connections and data flow between them.\", \"sessionId\": \"$SESSION_ID\"}"
+    
+    if api_call "/api/chat" "POST" "$message"; then
+        local job_id
+        job_id=$(jq -r '.jobId' /tmp/agenticforge_test_response.json 2>/dev/null || echo "")
+        
+        if [[ -n "$job_id" ]] && [[ "$job_id" != "null" ]]; then
+            if wait_for_job "$job_id"; then
+                log_test_result "Creating architecture canvas diagram" "PASS"
+            else
+                log_test_result "Creating architecture canvas diagram" "FAIL" "Job failed or timed out"
+            fi
+        else
+            log_test_result "Creating architecture canvas diagram" "FAIL" "No job ID returned"
+        fi
+    else
+        log_test_result "Creating architecture canvas diagram" "FAIL" "API call failed"
+    fi
+}
 
-# Test 2: Canvas architecture diagram
-send_message \
-    "Create a canvas diagram showing a typical web application architecture with these components: Frontend (React), Backend API (Node.js), Database (PostgreSQL), Cache (Redis), and Load Balancer. Show the connections and data flow between them." \
-    "Creating architecture canvas diagram"
+test_update_todo() {
+    log_test_start "Updating todo list" "Add two more tasks to the todo list: 6. Set up monitoring, 7. Create documentation. Then mark the first task 'Design database schema' as completed."
+    
+    local message="{\"prompt\": \"Add two more tasks to the todo list: 6. Set up monitoring, 7. Create documentation. Then mark the first task 'Design database schema' as completed.\", \"sessionId\": \"$SESSION_ID\"}"
+    
+    if api_call "/api/chat" "POST" "$message"; then
+        local job_id
+        job_id=$(jq -r '.jobId' /tmp/agenticforge_test_response.json 2>/dev/null || echo "")
+        
+        if [[ -n "$job_id" ]] && [[ "$job_id" != "null" ]]; then
+            if wait_for_job "$job_id"; then
+                log_test_result "Updating todo list" "PASS"
+            else
+                log_test_result "Updating todo list" "FAIL" "Job failed or timed out"
+            fi
+        else
+            log_test_result "Updating todo list" "FAIL" "No job ID returned"
+        fi
+    else
+        log_test_result "Updating todo list" "FAIL" "API call failed"
+    fi
+}
 
-# Test 3: Update todo list
-send_message \
-    "Add two more tasks to the todo list: 6. Set up monitoring, 7. Create documentation. Then mark the first task 'Design database schema' as completed." \
-    "Updating todo list"
+test_update_canvas() {
+    log_test_start "Updating canvas diagram" "Update the canvas diagram by adding a new component: Message Queue (RabbitMQ) that connects the Backend API to background worker processes. Also add the worker processes component."
+    
+    local message="{\"prompt\": \"Update the canvas diagram by adding a new component: Message Queue (RabbitMQ) that connects the Backend API to background worker processes. Also add the worker processes component.\", \"sessionId\": \"$SESSION_ID\"}"
+    
+    if api_call "/api/chat" "POST" "$message"; then
+        local job_id
+        job_id=$(jq -r '.jobId' /tmp/agenticforge_test_response.json 2>/dev/null || echo "")
+        
+        if [[ -n "$job_id" ]] && [[ "$job_id" != "null" ]]; then
+            if wait_for_job "$job_id"; then
+                log_test_result "Updating canvas diagram" "PASS"
+            else
+                log_test_result "Updating canvas diagram" "FAIL" "Job failed or timed out"
+            fi
+        else
+            log_test_result "Updating canvas diagram" "FAIL" "No job ID returned"
+        fi
+    else
+        log_test_result "Updating canvas diagram" "FAIL" "API call failed"
+    fi
+}
 
-# Test 4: Update canvas
-send_message \
-    "Update the canvas diagram by adding a new component: Message Queue (RabbitMQ) that connects the Backend API to background worker processes. Also add the worker processes component." \
-    "Updating canvas diagram"
+test_create_workflow_canvas() {
+    log_test_start "Creating workflow canvas" "Create a new canvas showing the AgenticForge tool creation workflow: 1. User Request → 2. Agent Analysis → 3. Tool Design → 4. Code Generation → 5. Tool Testing → 6. Tool Integration → 7. Tool Execution. Make it a flowchart style."
+    
+    local message="{\"prompt\": \"Create a new canvas showing the AgenticForge tool creation workflow: 1. User Request → 2. Agent Analysis → 3. Tool Design → 4. Code Generation → 5. Tool Testing → 6. Tool Integration → 7. Tool Execution. Make it a flowchart style.\", \"sessionId\": \"$SESSION_ID\"}"
+    
+    if api_call "/api/chat" "POST" "$message"; then
+        local job_id
+        job_id=$(jq -r '.jobId' /tmp/agenticforge_test_response.json 2>/dev/null || echo "")
+        
+        if [[ -n "$job_id" ]] && [[ "$job_id" != "null" ]]; then
+            if wait_for_job "$job_id"; then
+                log_test_result "Creating workflow canvas" "PASS"
+            else
+                log_test_result "Creating workflow canvas" "FAIL" "Job failed or timed out"
+            fi
+        else
+            log_test_result "Creating workflow canvas" "FAIL" "No job ID returned"
+        fi
+    else
+        log_test_result "Creating workflow canvas" "FAIL" "API call failed"
+    fi
+}
 
-# Test 5: Canvas with workflow
-send_message \
-    "Create a new canvas showing the AgenticForge tool creation workflow: 1. User Request → 2. Agent Analysis → 3. Tool Design → 4. Code Generation → 5. Tool Testing → 6. Tool Integration → 7. Tool Execution. Make it a flowchart style." \
-    "Creating workflow canvas"
+test_create_prioritized_todo() {
+    log_test_start "Creating prioritized todo list" "Create a new todo list for AgenticForge testing with priorities: HIGH: Test basic functionality, HIGH: Test tool creation, MEDIUM: Test canvas features, MEDIUM: Test todo management, LOW: Performance testing, LOW: Documentation updates."
+    
+    local message="{\"prompt\": \"Create a new todo list for AgenticForge testing with priorities: HIGH: Test basic functionality, HIGH: Test tool creation, MEDIUM: Test canvas features, MEDIUM: Test todo management, LOW: Performance testing, LOW: Documentation updates.\", \"sessionId\": \"$SESSION_ID\"}"
+    
+    if api_call "/api/chat" "POST" "$message"; then
+        local job_id
+        job_id=$(jq -r '.jobId' /tmp/agenticforge_test_response.json 2>/dev/null || echo "")
+        
+        if [[ -n "$job_id" ]] && [[ "$job_id" != "null" ]]; then
+            if wait_for_job "$job_id"; then
+                log_test_result "Creating prioritized todo list" "PASS"
+            else
+                log_test_result "Creating prioritized todo list" "FAIL" "Job failed or timed out"
+            fi
+        else
+            log_test_result "Creating prioritized todo list" "FAIL" "No job ID returned"
+        fi
+    else
+        log_test_result "Creating prioritized todo list" "FAIL" "API call failed"
+    fi
+}
 
-# Test 6: Todo with priorities
-send_message \
-    "Create a new todo list for AgenticForge testing with priorities: HIGH: Test basic functionality, HIGH: Test tool creation, MEDIUM: Test canvas features, MEDIUM: Test todo management, LOW: Performance testing, LOW: Documentation updates." \
-    "Creating prioritized todo list"
+test_review_canvas_state() {
+    log_test_start "Reviewing canvas state" "Show me the current state of all canvases we've created in this session. List them and describe what each one contains."
+    
+    local message="{\"prompt\": \"Show me the current state of all canvases we've created in this session. List them and describe what each one contains.\", \"sessionId\": \"$SESSION_ID\"}"
+    
+    if api_call "/api/chat" "POST" "$message"; then
+        local job_id
+        job_id=$(jq -r '.jobId' /tmp/agenticforge_test_response.json 2>/dev/null || echo "")
+        
+        if [[ -n "$job_id" ]] && [[ "$job_id" != "null" ]]; then
+            if wait_for_job "$job_id"; then
+                log_test_result "Reviewing canvas state" "PASS"
+            else
+                log_test_result "Reviewing canvas state" "FAIL" "Job failed or timed out"
+            fi
+        else
+            log_test_result "Reviewing canvas state" "FAIL" "No job ID returned"
+        fi
+    else
+        log_test_result "Reviewing canvas state" "FAIL" "API call failed"
+    fi
+}
 
-# Test 7: Interactive canvas
-send_message \
-    "Show me the current state of all canvases we've created in this session. List them and describe what each one contains." \
-    "Reviewing canvas state"
+test_review_todo_state() {
+    log_test_start "Reviewing todo lists state" "Show me the current state of all todo lists in this session. How many tasks are completed vs pending?"
+    
+    local message="{\"prompt\": \"Show me the current state of all todo lists in this session. How many tasks are completed vs pending?\", \"sessionId\": \"$SESSION_ID\"}"
+    
+    if api_call "/api/chat" "POST" "$message"; then
+        local job_id
+        job_id=$(jq -r '.jobId' /tmp/agenticforge_test_response.json 2>/dev/null || echo "")
+        
+        if [[ -n "$job_id" ]] && [[ "$job_id" != "null" ]]; then
+            if wait_for_job "$job_id"; then
+                log_test_result "Reviewing todo lists state" "PASS"
+            else
+                log_test_result "Reviewing todo lists state" "FAIL" "Job failed or timed out"
+            fi
+        else
+            log_test_result "Reviewing todo lists state" "FAIL" "No job ID returned"
+        fi
+    else
+        log_test_result "Reviewing todo lists state" "FAIL" "API call failed"
+    fi
+}
 
-# Test 8: Interactive todo
-send_message \
-    "Show me the current state of all todo lists in this session. How many tasks are completed vs pending?" \
-    "Reviewing todo lists state"
+show_summary() {
+    echo -e "\n${COLOR_CYAN}=== Test Summary ===${NC}"
+    echo -e "Total Tests:  ${COLOR_BLUE}$TOTAL_TESTS${NC}"
+    echo -e "Passed:       ${COLOR_GREEN}$PASSED_TESTS${NC}"
+    echo -e "Failed:       ${COLOR_RED}$FAILED_TESTS${NC}"
+    
+    if [[ $FAILED_TESTS -eq 0 ]]; then
+        echo -e "\n${COLOR_GREEN}🎉 All tests completed successfully!${NC}"
+        return 0
+    else
+        echo -e "\n${COLOR_YELLOW}⚠️  Some tests failed. Check the output above for details.${NC}"
+        return 1
+    fi
+}
 
-# Test summary
-echo -e "\n${COLOR_CYAN}📊 Test Summary${NC}"
-echo "=================="
-echo -e "Total Tests: ${COLOR_BLUE}$TESTS_TOTAL${NC}"
-echo -e "Passed: ${COLOR_GREEN}$TESTS_PASSED${NC}"
-echo -e "Failed: ${COLOR_RED}$TESTS_FAILED${NC}"
+main() {
+    echo -e "${COLOR_BLUE}🎨📋 Testing Canvas & Todo List Capabilities${NC}"
+    echo "Session: $SESSION_ID"
+    echo ""
+    
+    # Check if services are running
+    if ! check_worker_status; then
+        exit 1
+    fi
+    
+    echo -e "\n${COLOR_CYAN}Starting Canvas & Todo List Tests...${NC}"
+    
+    # Run tests
+    test_create_todo_list
+    test_create_canvas
+    test_update_todo
+    test_update_canvas
+    test_create_workflow_canvas
+    test_create_prioritized_todo
+    test_review_canvas_state
+    test_review_todo_state
+    
+    # Show summary
+    show_summary
+}
 
-local success_rate=0
-if [[ $TESTS_TOTAL -gt 0 ]]; then
-    success_rate=$((TESTS_PASSED * 100 / TESTS_TOTAL))
-fi
-echo -e "Success Rate: ${COLOR_YELLOW}$success_rate%${NC}"
-
-if [[ $TESTS_FAILED -gt 0 ]]; then
-    echo -e "\n${COLOR_RED}⚠️  Some tests failed. Check the output above for details.${NC}"
-    exit 1
-else
-    echo -e "\n${COLOR_GREEN}🎉 All tests passed!${NC}"
-fi
-
-echo -e "${COLOR_CYAN}Check the AgenticForge web interface at http://localhost:3002 to see the results.${NC}"
+# Run main function
+main "$@"

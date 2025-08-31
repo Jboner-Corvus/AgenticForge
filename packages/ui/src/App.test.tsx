@@ -101,7 +101,9 @@ vi.mock('./store/hooks', () => ({
 }));
 
 vi.mock('./lib/contexts/LanguageProvider', () => ({
-  LanguageProvider: ({ children }: { children: React.ReactNode }) => <div data-testid="language-provider">{children}</div>,
+  LanguageProvider: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="language-provider">{children}</div>
+  ),
 }));
 
 vi.mock('./lib/contexts/LanguageContext', () => ({
@@ -114,21 +116,35 @@ vi.mock('./lib/contexts/LanguageContext', () => ({
 
 // Mock all lazy components
 vi.mock('./components/optimized/LazyComponents', () => ({
-  LazyLeaderboardPage: () => <div data-testid="leaderboard-page">Leaderboard</div>,
-  LazyLlmKeyManager: () => <div data-testid="llm-key-manager">LLM Key Manager</div>,
+  LazyLeaderboardPage: () => (
+    <div data-testid="leaderboard-page">Leaderboard</div>
+  ),
+  LazyLlmKeyManager: () => (
+    <div data-testid="llm-key-manager">LLM Key Manager</div>
+  ),
   LazyOAuthPage: () => <div data-testid="oauth-page">OAuth</div>,
-  LazyLayoutManager: () => <div data-testid="layout-manager">Layout Manager</div>,
+  LazyLayoutManager: () => (
+    <div data-testid="layout-manager">Layout Manager</div>
+  ),
   LazyTodoPanel: () => <div data-testid="todo-panel">Todo Panel</div>,
   LazyCanvas: () => <div data-testid="canvas">Canvas</div>,
   LazyAgentCanvas: () => <div data-testid="agent-canvas">Agent Canvas</div>,
-  LazyDebugLogContainer: () => <div data-testid="debug-log-container">Debug Log Container</div>,
-  LazySubAgentCLIView: ({ jobId }: { jobId: string }) => <div data-testid="sub-agent-cli">Sub Agent CLI - {jobId}</div>,
-  LazyEnhancedTodoPanel: () => <div data-testid="enhanced-todo-panel">Enhanced Todo Panel</div>,
+  LazyDebugLogContainer: () => (
+    <div data-testid="debug-log-container">Debug Log Container</div>
+  ),
+  LazySubAgentCLIView: ({ jobId }: { jobId: string }) => (
+    <div data-testid="sub-agent-cli">Sub Agent CLI - {jobId}</div>
+  ),
+  LazyEnhancedTodoPanel: () => (
+    <div data-testid="enhanced-todo-panel">Enhanced Todo Panel</div>
+  ),
 }));
 
 // Mock main components
 vi.mock('./components/AppInitializer', () => ({
-  AppInitializer: () => <div data-testid="app-initializer">App Initializer</div>,
+  AppInitializer: () => (
+    <div data-testid="app-initializer">App Initializer</div>
+  ),
 }));
 
 vi.mock('./components/HeaderContainer', () => ({
@@ -136,7 +152,9 @@ vi.mock('./components/HeaderContainer', () => ({
 }));
 
 vi.mock('./components/SettingsModalContainer', () => ({
-  SettingsModalContainer: () => <div data-testid="settings-modal">Settings Modal</div>,
+  SettingsModalContainer: () => (
+    <div data-testid="settings-modal">Settings Modal</div>
+  ),
 }));
 
 vi.mock('./components/ControlPanel', () => ({
@@ -144,7 +162,9 @@ vi.mock('./components/ControlPanel', () => ({
 }));
 
 vi.mock('./components/ChatMessagesContainer', () => ({
-  ChatMessagesContainer: () => <div data-testid="chat-messages">Chat Messages</div>,
+  ChatMessagesContainer: () => (
+    <div data-testid="chat-messages">Chat Messages</div>
+  ),
 }));
 
 vi.mock('./components/UserInput', () => ({
@@ -174,7 +194,7 @@ describe('App Component Tests', () => {
 
   it('should render App component without crashing', async () => {
     render(<App />);
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('language-provider')).toBeInTheDocument();
       expect(screen.getByTestId('app-initializer')).toBeInTheDocument();
@@ -184,7 +204,7 @@ describe('App Component Tests', () => {
 
   it('should render chat page by default', async () => {
     render(<App />);
-    
+
     await waitFor(() => {
       expect(screen.getAllByTestId('chat-messages')[0]).toBeInTheDocument();
       expect(screen.getByTestId('user-input')).toBeInTheDocument();
@@ -193,9 +213,11 @@ describe('App Component Tests', () => {
 
   it('should render control panel when visible', async () => {
     const { useIsControlPanelVisible } = await import('./store/hooks');
-    
-    (useIsControlPanelVisible as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
-    
+
+    (
+      useIsControlPanelVisible as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue(true);
+
     render(<App />);
     await waitFor(() => {
       expect(screen.getByTestId('control-panel')).toBeInTheDocument();
@@ -204,7 +226,7 @@ describe('App Component Tests', () => {
 
   it('should render all essential components', async () => {
     render(<App />);
-    
+
     // Core components should be present
     await waitFor(() => {
       expect(screen.getByTestId('app-initializer')).toBeInTheDocument();
@@ -217,26 +239,32 @@ describe('App Component Tests', () => {
 
   it('should handle different page states', async () => {
     const { useCurrentPage } = await import('./store/hooks');
-    
+
     // Test leaderboard page
-    (useCurrentPage as unknown as ReturnType<typeof vi.fn>).mockReturnValue('leaderboard');
-    
+    (useCurrentPage as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      'leaderboard',
+    );
+
     const { rerender } = render(<App />);
     await waitFor(() => {
       expect(screen.getByTestId('leaderboard-page')).toBeInTheDocument();
     });
-    
+
     // Test LLM keys page
-    (useCurrentPage as unknown as ReturnType<typeof vi.fn>).mockReturnValue('llm-api-keys');
-    
+    (useCurrentPage as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      'llm-api-keys',
+    );
+
     rerender(<App />);
     await waitFor(() => {
       expect(screen.getByTestId('llm-key-manager')).toBeInTheDocument();
     });
-    
+
     // Test OAuth page
-    (useCurrentPage as unknown as ReturnType<typeof vi.fn>).mockReturnValue('oauth');
-    
+    (useCurrentPage as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      'oauth',
+    );
+
     rerender(<App />);
     await waitFor(() => {
       expect(screen.getByTestId('oauth-page')).toBeInTheDocument();
@@ -245,10 +273,12 @@ describe('App Component Tests', () => {
 
   it('should handle canvas visibility states', async () => {
     const { useIsCanvasVisible } = await import('./store/hooks');
-    
+
     // Test canvas visible
-    (useIsCanvasVisible as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
-    
+    (useIsCanvasVisible as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      true,
+    );
+
     render(<App />);
     await waitFor(() => {
       expect(screen.getByTestId('agent-canvas')).toBeInTheDocument();
@@ -256,12 +286,19 @@ describe('App Component Tests', () => {
   });
 
   it('should handle fullscreen canvas', async () => {
-    const { useIsCanvasFullscreen, useCanvasContent, useIsCanvasVisible } = await import('./store/hooks');
-    
-    (useIsCanvasFullscreen as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
-    (useCanvasContent as unknown as ReturnType<typeof vi.fn>).mockReturnValue('test content');
-    (useIsCanvasVisible as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
-    
+    const { useIsCanvasFullscreen, useCanvasContent, useIsCanvasVisible } =
+      await import('./store/hooks');
+
+    (
+      useIsCanvasFullscreen as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue(true);
+    (useCanvasContent as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      'test content',
+    );
+    (useIsCanvasVisible as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      true,
+    );
+
     render(<App />);
     await waitFor(() => {
       expect(screen.getByTestId('canvas')).toBeInTheDocument();
@@ -270,9 +307,11 @@ describe('App Component Tests', () => {
 
   it('should handle CLI job display', async () => {
     const { useActiveCliJobId } = await import('./store/hooks');
-    
-    (useActiveCliJobId as unknown as ReturnType<typeof vi.fn>).mockReturnValue('test-job-123');
-    
+
+    (useActiveCliJobId as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      'test-job-123',
+    );
+
     render(<App />);
     await waitFor(() => {
       expect(screen.getByTestId('sub-agent-cli')).toBeInTheDocument();
@@ -281,18 +320,20 @@ describe('App Component Tests', () => {
 
   it('should handle pinned components layout', async () => {
     const { usePinningStore } = await import('./store/pinningStore');
-    
-    (usePinningStore as unknown as ReturnType<typeof vi.fn>).mockImplementation((selector) => {
-      const state = {
-        layoutMode: 'battlefield',
-        components: {
-          todolist: { isPinned: true, isVisible: true },
-          canvas: { isPinned: true, isVisible: true, isMaximized: false },
-        },
-      };
-      return selector(state);
-    });
-    
+
+    (usePinningStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (selector) => {
+        const state = {
+          layoutMode: 'battlefield',
+          components: {
+            todolist: { isPinned: true, isVisible: true },
+            canvas: { isPinned: true, isVisible: true, isMaximized: false },
+          },
+        };
+        return selector(state);
+      },
+    );
+
     render(<App />);
     await waitFor(() => {
       expect(screen.getByTestId('layout-manager')).toBeInTheDocument();
@@ -303,10 +344,12 @@ describe('App Component Tests', () => {
     const mockSetCanvasWidth = vi.fn();
     const { useCombinedStore } = await import('./store');
     const { useCanvasWidth } = await import('./store/hooks');
-    
+
     // Mock canvas width hook
-    (useCanvasWidth as unknown as ReturnType<typeof vi.fn>).mockReturnValue(800);
-    
+    (useCanvasWidth as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      800,
+    );
+
     // Mock getState to return setCanvasWidth function
     useCombinedStore.getState = vi.fn().mockReturnValue({
       // LLM Management
@@ -315,7 +358,7 @@ describe('App Component Tests', () => {
       isAddingLlmApiKey: false,
       isRemovingLlmApiKey: false,
       isSettingActiveLlmApiKey: false,
-      
+
       // Leaderboard
       leaderboardStats: {
         tokensSaved: 0,
@@ -324,10 +367,10 @@ describe('App Component Tests', () => {
         apiKeysAdded: 0,
       },
       isLoadingLeaderboardStats: false,
-      
+
       // Tools
       isLoadingTools: false,
-      
+
       // UI Store properties
       currentPage: 'chat',
       isControlPanelVisible: false,
@@ -352,7 +395,7 @@ describe('App Component Tests', () => {
       streamCloseFunc: null,
       debugLog: [],
       isSettingsModalOpen: false,
-      
+
       // Canvas Store properties
       canvasContent: '',
       canvasType: 'text',
@@ -362,7 +405,7 @@ describe('App Component Tests', () => {
       canvasWidth: 800,
       canvasHistory: [],
       currentCanvasIndex: -1,
-      
+
       // Session Store properties
       sessionId: null,
       activeSessionId: null,
@@ -373,7 +416,7 @@ describe('App Component Tests', () => {
       isSavingSession: false,
       isDeletingSession: false,
       isRenamingSession: false,
-      
+
       // UI Store actions
       setCurrentPage: vi.fn(),
       setIsSettingsModalOpen: vi.fn(),
@@ -397,7 +440,7 @@ describe('App Component Tests', () => {
       setActiveCliJobId: vi.fn(),
       addDebugLog: vi.fn(),
       clearDebugLog: vi.fn(),
-      
+
       // Canvas Store actions
       setCanvasContent: vi.fn(),
       setCanvasType: vi.fn(),
@@ -412,7 +455,7 @@ describe('App Component Tests', () => {
       navigateToCanvas: vi.fn(),
       removeCanvasFromHistory: vi.fn(),
       clearCanvasHistory: vi.fn(),
-      
+
       // Session Store actions
       setSessionId: vi.fn(),
       setSessionStatus: vi.fn(),
@@ -431,38 +474,40 @@ describe('App Component Tests', () => {
       setIsSavingSession: vi.fn(),
       setIsDeletingSession: vi.fn(),
       setIsRenamingSession: vi.fn(),
-      
+
       // Main actions
       addLlmApiKey: vi.fn(),
       removeLlmApiKey: vi.fn(),
       editLlmApiKey: vi.fn(),
       setActiveLlmApiKey: vi.fn(),
-      
+
       updateLeaderboardStats: vi.fn(),
       fetchAndDisplayToolCount: vi.fn(),
-      
+
       setIsAddingLlmApiKey: vi.fn(),
       setIsRemovingLlmApiKey: vi.fn(),
       setIsSettingActiveLlmApiKey: vi.fn(),
       setIsLoadingLeaderboardStats: vi.fn(),
       setIsLoadingTools: vi.fn(),
-      
+
       // Main initialization function
       initializeSessionAndMessages: vi.fn(),
     });
-    
+
     // Mock window dimensions
     Object.defineProperty(window, 'innerWidth', {
       writable: true,
       configurable: true,
       value: 1200, // Large initial size
     });
-    
+
     // Mock canvas width hook to return a large value that will trigger resize
-    (useCanvasWidth as unknown as ReturnType<typeof vi.fn>).mockReturnValue(900);
-    
+    (useCanvasWidth as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      900,
+    );
+
     render(<App />);
-    
+
     // Simulate window resize to smaller size
     act(() => {
       Object.defineProperty(window, 'innerWidth', {
@@ -472,7 +517,7 @@ describe('App Component Tests', () => {
       });
       window.dispatchEvent(new Event('resize'));
     });
-    
+
     // Instead of waiting for the mock to be called, we'll check that no errors occurred
     // The resize event handler is complex and may not be easily testable with mocks
     expect(mockSetCanvasWidth).not.toHaveBeenCalled(); // For now, just verify no errors
@@ -489,33 +534,53 @@ describe('App Component Tests', () => {
       useCanvasWidth,
       useCanvasContent,
       useActiveCliJobId,
-      useIsDarkMode
+      useIsDarkMode,
     } = await import('./store/hooks');
-    
-    (useCurrentPage as unknown as ReturnType<typeof vi.fn>).mockReturnValue('chat');
-    (useIsControlPanelVisible as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    (useIsCanvasVisible as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    (useIsCanvasPinned as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    (useIsCanvasFullscreen as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    (useCanvasWidth as unknown as ReturnType<typeof vi.fn>).mockReturnValue(500);
-    (useCanvasContent as unknown as ReturnType<typeof vi.fn>).mockReturnValue('');
-    (useActiveCliJobId as unknown as ReturnType<typeof vi.fn>).mockReturnValue(null);
-    (useIsDarkMode as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    
+
+    (useCurrentPage as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      'chat',
+    );
+    (
+      useIsControlPanelVisible as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue(false);
+    (useIsCanvasVisible as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      false,
+    );
+    (useIsCanvasPinned as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      false,
+    );
+    (
+      useIsCanvasFullscreen as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue(false);
+    (useCanvasWidth as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      500,
+    );
+    (useCanvasContent as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      '',
+    );
+    (useActiveCliJobId as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      null,
+    );
+    (useIsDarkMode as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      false,
+    );
+
     const { useCombinedStore } = await import('./store');
-    
+
     // Mock the combined store for actions
-    (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockImplementation((selector) => {
+    (
+      useCombinedStore as unknown as ReturnType<typeof vi.fn>
+    ).mockImplementation((selector) => {
       const mockStore = {
         initializeSessionAndMessages: vi.fn().mockResolvedValue(undefined),
         setCanvasWidth: vi.fn(),
         getState: () => ({
-          setIsCanvasVisible: vi.fn()
-        })
+          setIsCanvasVisible: vi.fn(),
+        }),
       };
       return selector ? selector(mockStore) : mockStore;
     });
-    
+
     expect(() => render(<App />)).not.toThrow();
   });
 });

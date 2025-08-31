@@ -200,10 +200,13 @@ export const createToolTool: Tool<typeof parameters> = {
         try {
           ctx.log.info('Lancement automatique des small-checks...');
           const runScriptPath = path.resolve(process.cwd(), 'run.sh');
-          const { stderr, stdout } = await execAsync(`${runScriptPath} small-checks`, {
-            cwd: process.cwd(),
-            timeout: 60000, // 1 minute timeout
-          });
+          const { stderr, stdout } = await execAsync(
+            `${runScriptPath} small-checks`,
+            {
+              cwd: process.cwd(),
+              timeout: 60000, // 1 minute timeout
+            },
+          );
           output += '\n=== Résultat des small-checks ===\n' + stdout;
           if (stderr) {
             output += '\nErreurs détectées:\n' + stderr;
@@ -224,7 +227,7 @@ export const createToolTool: Tool<typeof parameters> = {
         }
       } else {
         successMessage +=
-          " 🎯 Outil créé dans dist/tools/generated/ (outils générés vs natifs dans src/).";
+          ' 🎯 Outil créé dans dist/tools/generated/ (outils générés vs natifs dans src/).';
       }
 
       // Enregistrer automatiquement l'outil dans le registre
@@ -245,7 +248,9 @@ export const createToolTool: Tool<typeof parameters> = {
         }
       } catch (error) {
         const err = error as Error;
-        ctx.log.error(`Erreur lors de l'enregistrement automatique de l'outil '${tool_name}': ${err.message}`);
+        ctx.log.error(
+          `Erreur lors de l'enregistrement automatique de l'outil '${tool_name}': ${err.message}`,
+        );
         successMessage += ` ⚠️  Erreur lors de l'enregistrement automatique. Redémarrage requis.`;
       }
 

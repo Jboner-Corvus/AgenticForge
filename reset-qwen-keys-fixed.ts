@@ -2,32 +2,32 @@ import { createClient } from 'redis';
 
 async function resetQwenKeys() {
   let redisClient: any = null;
-  
+
   try {
     // Create Redis client
     redisClient = createClient({
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD || undefined
+      password: process.env.REDIS_PASSWORD || undefined,
     });
-    
+
     // Connect to Redis
     await redisClient.connect();
     console.log('Connected to Redis');
-    
+
     // Get all LLM API keys
     const keysJson = await redisClient.lRange('llmApiKeys', 0, -1);
     const keys = keysJson.map((key: string) => JSON.parse(key));
-    
+
     console.log(`Found ${keys.length} API keys in Redis`);
-    
+
     // Filter for Qwen keys that are permanently disabled
     const disabledQwenKeys = keys.filter(
-      (key: any) => key.apiProvider === 'qwen' && key.isPermanentlyDisabled
+      (key: any) => key.apiProvider === 'qwen' && key.isPermanentlyDisabled,
     );
-    
+
     console.log(`Found ${disabledQwenKeys.length} disabled Qwen keys`);
-    
+
     // Reset the disabled status for all Qwen keys
     let updatedCount = 0;
     for (const key of keys) {
@@ -39,7 +39,7 @@ async function resetQwenKeys() {
         updatedCount++;
       }
     }
-    
+
     if (updatedCount > 0) {
       // Save the updated keys back to Redis
       await redisClient.del('llmApiKeys');
@@ -51,7 +51,7 @@ async function resetQwenKeys() {
     } else {
       console.log('No disabled Qwen keys found to reset');
     }
-    
+
     // Close Redis connection
     await redisClient.quit();
     process.exit(0);

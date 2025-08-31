@@ -7,7 +7,12 @@ interface ModalProps {
   title: string;
 }
 
-export const Modal: React.FC<ModalProps> = ({ children, isOpen, onClose, title }) => {
+export const Modal: React.FC<ModalProps> = ({
+  children,
+  isOpen,
+  onClose,
+  title,
+}) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -15,7 +20,8 @@ export const Modal: React.FC<ModalProps> = ({ children, isOpen, onClose, title }
     if (modalElement) {
       // Add mock functions to avoid errors
       if (!(modalElement as unknown as Record<string, unknown>).showModal) {
-        (modalElement as unknown as Record<string, unknown>).showModal = () => {};
+        (modalElement as unknown as Record<string, unknown>).showModal =
+          () => {};
       }
       if (!(modalElement as unknown as Record<string, unknown>).close) {
         (modalElement as unknown as Record<string, unknown>).close = () => {};
@@ -38,14 +44,15 @@ export const Modal: React.FC<ModalProps> = ({ children, isOpen, onClose, title }
     >
       <div className="bg-card text-card-foreground rounded-lg shadow-xl p-6 w-full max-w-md relative">
         <div className="flex justify-between items-center border-b border-border pb-3 mb-4">
-          <h3 id="modal-title" className="text-lg font-semibold">{title}</h3>
+          <h3 id="modal-title" className="text-lg font-semibold">
+            {title}
+          </h3>
           <button
             className="text-muted-foreground hover:text-card-foreground absolute top-2 right-2 p-2"
             onClick={onClose}
             aria-label="Close modal"
           >
-            <span className="sr-only">Close</span>
-            ×
+            <span className="sr-only">Close</span>×
           </button>
         </div>
         <div>{children}</div>

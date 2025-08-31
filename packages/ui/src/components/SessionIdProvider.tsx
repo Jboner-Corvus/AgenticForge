@@ -6,10 +6,14 @@ interface SessionIdProviderProps {
   children: React.ReactNode;
 }
 
-export const SessionIdProvider: React.FC<SessionIdProviderProps> = ({ children }) => {
-  const sessionId = useSessionStore(state => state.sessionId);
-  const setSessionId = useSessionStore(state => state.setSessionId);
-  const setActiveSessionId = useSessionStore(state => state.setActiveSessionId);
+export const SessionIdProvider: React.FC<SessionIdProviderProps> = ({
+  children,
+}) => {
+  const sessionId = useSessionStore((state) => state.sessionId);
+  const setSessionId = useSessionStore((state) => state.setSessionId);
+  const setActiveSessionId = useSessionStore(
+    (state) => state.setActiveSessionId,
+  );
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -17,14 +21,20 @@ export const SessionIdProvider: React.FC<SessionIdProviderProps> = ({ children }
     // Use a ref to prevent double initialization
     if (!initialized.current) {
       initialized.current = true;
-      
+
       if (!sessionId) {
         const newSessionId = generateUUID();
-        console.log('🔐 [SessionIdProvider] Initializing sessionId at app startup:', newSessionId);
+        console.log(
+          '🔐 [SessionIdProvider] Initializing sessionId at app startup:',
+          newSessionId,
+        );
         setSessionId(newSessionId);
         setActiveSessionId(newSessionId);
       } else {
-        console.log('🔐 [SessionIdProvider] SessionId already exists:', sessionId);
+        console.log(
+          '🔐 [SessionIdProvider] SessionId already exists:',
+          sessionId,
+        );
         // Ensure activeSessionId is also set if it's not
         const activeSessionId = useSessionStore.getState().activeSessionId;
         if (!activeSessionId) {

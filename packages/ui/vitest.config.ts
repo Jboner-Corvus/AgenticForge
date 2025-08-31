@@ -7,10 +7,7 @@ const integrationTestPaths = [
   'src/**/__tests__/**/*.integration.tsx',
 ];
 
-const unitTestPaths = [
-  'src/**/*.test.tsx',
-  'src/**/__tests__/**/*.tsx',
-];
+const unitTestPaths = ['src/**/*.test.tsx', 'src/**/__tests__/**/*.tsx'];
 
 export default defineConfig(({ mode }) => {
   const isIntegration = mode === 'integration';
@@ -23,9 +20,9 @@ export default defineConfig(({ mode }) => {
       setupFiles: ['./vitest.setup.ts'],
       include: isIntegration ? integrationTestPaths : unitTestPaths,
       exclude: [
-        'node_modules', 
-        'dist', 
-        ...(isIntegration ? [] : integrationTestPaths) // Exclude integration tests from unit runs
+        'node_modules',
+        'dist',
+        ...(isIntegration ? [] : integrationTestPaths), // Exclude integration tests from unit runs
       ],
       typecheck: {
         enabled: false,

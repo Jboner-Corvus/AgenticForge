@@ -56,6 +56,13 @@ vi.mock('../../config.ts', () => ({
     SESSION_CLEANUP_INTERVAL: 300, // 5 minutes
     SESSION_TTL: 3600, // 1 heure
   },
+  getConfig: () => ({
+    AGENT_MAX_ITERATIONS: 5,
+    LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
+    MAX_SESSION_HISTORY: 1000,
+    SESSION_CLEANUP_INTERVAL: 300, // 5 minutes
+    SESSION_TTL: 3600, // 1 heure
+  }),
 }));
 
 // Correction du mock du logger
@@ -190,7 +197,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger session creation
       mockSessionManager.saveSession = vi.fn();
       (mockSessionManager.saveSession as any).mockResolvedValue(undefined);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -199,16 +206,19 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       try {
         const result = await testAgent.run();
         console.log('Agent run completed successfully, result:', result);
       } catch (error) {
         console.log('Agent run failed with error:', error);
       }
-      
-      console.log('saveSession call count:', mockSessionManager.saveSession.mock.calls.length);
-      
+
+      console.log(
+        'saveSession call count:',
+        mockSessionManager.saveSession.mock.calls.length,
+      );
+
       expect(mockSessionManager.saveSession).toHaveBeenCalled();
     });
 
@@ -216,7 +226,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger session save
       mockSessionManager.saveSession = vi.fn();
       (mockSessionManager.saveSession as any).mockResolvedValue(undefined);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -225,9 +235,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockSessionManager.saveSession).toHaveBeenCalled();
     });
 
@@ -235,7 +245,7 @@ describe('Session Management Integration Tests', () => {
       // Mock session manager to simulate collision
       mockSessionManager.getSession = vi.fn();
       (mockSessionManager.getSession as any).mockResolvedValue(mockSessionData);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -244,9 +254,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       // Vérifier que getSession est appelé
       expect(mockSessionManager.getSession).toHaveBeenCalled();
     });
@@ -257,7 +267,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger session save
       mockSessionManager.saveSession = vi.fn();
       (mockSessionManager.saveSession as any).mockResolvedValue(undefined);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -266,9 +276,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockSessionManager.saveSession).toHaveBeenCalled();
     });
 
@@ -276,7 +286,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger Redis operations
       mockRedisClient.hset = vi.fn();
       (mockRedisClient.hset as any).mockResolvedValue(undefined);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -285,9 +295,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockRedisClient.hset).toHaveBeenCalled();
     });
 
@@ -295,7 +305,7 @@ describe('Session Management Integration Tests', () => {
       // Mock session manager to simulate recovery
       mockSessionManager.getSession = vi.fn();
       (mockSessionManager.getSession as any).mockResolvedValue(mockSessionData);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -304,9 +314,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       // Vérifier que getSession est appelé
       expect(mockSessionManager.getSession).toHaveBeenCalled();
     });
@@ -314,8 +324,10 @@ describe('Session Management Integration Tests', () => {
     it('should handle corrupted session data gracefully', async () => {
       // Mock session manager to simulate corruption
       mockSessionManager.createSession = vi.fn();
-      (mockSessionManager.createSession as any).mockResolvedValue(mockSessionData);
-      
+      (mockSessionManager.createSession as any).mockResolvedValue(
+        mockSessionData,
+      );
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -324,9 +336,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockSessionManager.createSession).toHaveBeenCalled();
     });
   });
@@ -336,7 +348,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger session save
       mockSessionManager.saveSession = vi.fn();
       (mockSessionManager.saveSession as any).mockResolvedValue(undefined);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -345,9 +357,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockSessionManager.saveSession).toHaveBeenCalled();
     });
 
@@ -355,7 +367,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger session save
       mockSessionManager.saveSession = vi.fn();
       (mockSessionManager.saveSession as any).mockResolvedValue(undefined);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -364,9 +376,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockSessionManager.saveSession).toHaveBeenCalled();
     });
 
@@ -376,7 +388,7 @@ describe('Session Management Integration Tests', () => {
       (mockSessionManager.lockSession as any).mockResolvedValue(true);
       mockSessionManager.unlockSession = vi.fn();
       (mockSessionManager.unlockSession as any).mockResolvedValue(undefined);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -385,9 +397,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockSessionManager.lockSession).toHaveBeenCalled();
     });
   });
@@ -397,7 +409,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger Redis publish
       mockRedisClient.publish = vi.fn();
       (mockRedisClient.publish as any).mockResolvedValue(undefined);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -406,17 +418,19 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockRedisClient.publish).toHaveBeenCalled();
     });
 
     it('should handle collaborative editing conflicts', async () => {
       // Create a new agent with proper configuration to trigger mergeSession
       mockSessionManager.mergeSession = vi.fn();
-      (mockSessionManager.mergeSession as any).mockResolvedValue(mockSessionData);
-      
+      (mockSessionManager.mergeSession as any).mockResolvedValue(
+        mockSessionData,
+      );
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -425,9 +439,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockSessionManager.mergeSession).toHaveBeenCalled();
     });
 
@@ -435,7 +449,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger Redis hset
       mockRedisClient.hset = vi.fn();
       (mockRedisClient.hset as any).mockResolvedValue(undefined);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -444,9 +458,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockRedisClient.hset).toHaveBeenCalled();
     });
   });
@@ -456,7 +470,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger getSessionMetrics
       mockSessionManager.getSessionMetrics = vi.fn();
       (mockSessionManager.getSessionMetrics as any).mockResolvedValue({});
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -465,9 +479,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockSessionManager.getSessionMetrics).toHaveBeenCalled();
     });
 
@@ -475,7 +489,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger Redis publish
       mockRedisClient.publish = vi.fn();
       (mockRedisClient.publish as any).mockResolvedValue(undefined);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -484,9 +498,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockRedisClient.publish).toHaveBeenCalled();
     });
 
@@ -494,7 +508,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger Redis hset
       mockRedisClient.hset = vi.fn();
       (mockRedisClient.hset as any).mockResolvedValue(undefined);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -503,9 +517,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockRedisClient.hset).toHaveBeenCalled();
     });
   });
@@ -515,7 +529,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger cleanup
       mockSessionManager.cleanupExpiredSessions = vi.fn();
       (mockSessionManager.cleanupExpiredSessions as any).mockResolvedValue([]);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -524,9 +538,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockSessionManager.cleanupExpiredSessions).toHaveBeenCalled();
     });
 
@@ -534,7 +548,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger archiveSession
       mockSessionManager.archiveSession = vi.fn();
       (mockSessionManager.archiveSession as any).mockResolvedValue(true);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -543,9 +557,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockSessionManager.archiveSession).toHaveBeenCalled();
     });
 
@@ -553,7 +567,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger archiveSession
       mockSessionManager.archiveSession = vi.fn();
       (mockSessionManager.archiveSession as any).mockResolvedValue(true);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -562,9 +576,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockSessionManager.archiveSession).toHaveBeenCalled();
     });
   });
@@ -574,7 +588,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger session save
       mockSessionManager.saveSession = vi.fn();
       (mockSessionManager.saveSession as any).mockResolvedValue(undefined);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -583,9 +597,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockSessionManager.saveSession).toHaveBeenCalled();
     });
 
@@ -593,7 +607,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger session save
       mockSessionManager.saveSession = vi.fn();
       (mockSessionManager.saveSession as any).mockResolvedValue(undefined);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -602,9 +616,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       // Vérifier que les contrôles d'accès sont appliqués (via saveSession)
       expect(mockSessionManager.saveSession).toHaveBeenCalled();
     });
@@ -613,7 +627,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger Redis hset
       mockRedisClient.hset = vi.fn();
       (mockRedisClient.hset as any).mockResolvedValue(undefined);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -622,9 +636,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockRedisClient.hset).toHaveBeenCalled();
     });
   });
@@ -634,7 +648,7 @@ describe('Session Management Integration Tests', () => {
       // Create a new agent with proper configuration to trigger session save
       mockSessionManager.saveSession = vi.fn();
       (mockSessionManager.saveSession as any).mockResolvedValue(undefined);
-      
+
       const testAgent = new Agent(
         mockJob,
         mockSessionData,
@@ -643,9 +657,9 @@ describe('Session Management Integration Tests', () => {
         'openai',
         mockSessionManager,
       );
-      
+
       await testAgent.run();
-      
+
       expect(mockSessionManager.saveSession).toHaveBeenCalled();
     });
   });

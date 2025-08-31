@@ -13,7 +13,13 @@ function incrementVersion(version) {
 }
 
 // Update core package.json
-const corePackagePath = path.join(__dirname, '..', 'packages', 'core', 'package.json');
+const corePackagePath = path.join(
+  __dirname,
+  '..',
+  'packages',
+  'core',
+  'package.json',
+);
 if (fs.existsSync(corePackagePath)) {
   const corePackage = JSON.parse(fs.readFileSync(corePackagePath, 'utf8'));
   corePackage.version = incrementVersion(corePackage.version);
@@ -22,7 +28,13 @@ if (fs.existsSync(corePackagePath)) {
 }
 
 // Update UI package.json
-const uiPackagePath = path.join(__dirname, '..', 'packages', 'ui', 'package.json');
+const uiPackagePath = path.join(
+  __dirname,
+  '..',
+  'packages',
+  'ui',
+  'package.json',
+);
 if (fs.existsSync(uiPackagePath)) {
   const uiPackage = JSON.parse(fs.readFileSync(uiPackagePath, 'utf8'));
   uiPackage.version = incrementVersion(uiPackage.version);

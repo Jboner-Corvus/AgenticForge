@@ -90,11 +90,13 @@
 ### 🤖 超簡單安裝（100% 自動）
 
 **選項 1：一行安裝**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Jboner-Corvus/AgenticForge/main/install.sh | bash
 ```
 
 **選項 2：經典安裝**
+
 ```bash
 # 1. 複製專案
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
@@ -106,6 +108,7 @@ chmod +x run-v2.sh
 ```
 
 **選項 3：互動式安裝**
+
 ```bash
 # 1. 複製專案
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
@@ -140,8 +143,9 @@ chmod +x run-v2.sh
 **選擇 "1) 🟢 啟動服務" 進行自動安裝**
 
 **🔧 首次啟動時，系統：**
+
 - 自動建立帶有預設值的 `.env` 檔案
-- 安裝必要的 pnpm 相依項目  
+- 安裝必要的 pnpm 相依項目
 - 建置核心和UI套件
 - 啟動所有 Docker 服務
 - 設定生產環境
@@ -187,13 +191,14 @@ AgenticForge整合了強大的 **LlmKeyManager**，用於集中和動態管理�
 
 #### LlmKeyManager 功能：
 
--   **即時新增/刪除金鑰**：新增或刪除不同提供者（OpenAI、Gemini、Anthropic等）的API金鑰，無需重啟系統。
--   **啟用/停用**：即時啟用或停用金鑰。
--   **自動故障轉移**：如果API金鑰失敗（達到請求限制、錯誤），系統會自動切換到下一個有效金鑰以確保服務連續性。
--   **監控和統計**：追蹤您的金鑰使用情況、活動金鑰數量和設定的提供者數量。
--   **有效性測試**：直接從介面測試每個金鑰的有效性。
+- **即時新增/刪除金鑰**：新增或刪除不同提供者（OpenAI、Gemini、Anthropic等）的API金鑰，無需重啟系統。
+- **啟用/停用**：即時啟用或停用金鑰。
+- **自動故障轉移**：如果API金鑰失敗（達到請求限制、錯誤），系統會自動切換到下一個有效金鑰以確保服務連續性。
+- **監控和統計**：追蹤您的金鑰使用情況、活動金鑰數量和設定的提供者數量。
+- **有效性測試**：直接從介面測試每個金鑰的有效性。
 
 #### 新增額外金鑰
+
 1. **透過Web介面**：[localhost:3002](http://localhost:3002) → "API金鑰"分頁
 2. **功能**：
    - ✅ 即時新增/刪除金鑰
@@ -203,6 +208,7 @@ AgenticForge整合了強大的 **LlmKeyManager**，用於集中和動態管理�
    - ✅ 同時支援多提供者
 
 #### 自動階層結構
+
 系統按可靠性順序測試金鑰，並在金鑰失敗時自動切換。
 
 ---
@@ -211,16 +217,17 @@ AgenticForge整合了強大的 **LlmKeyManager**，用於集中和動態管理�
 
 ### 選項 1：雲端API（推薦用於入門）
 
-| 提供者 | 推薦模型 (2025) | 取得API金鑰 |
-|-------------|---------------------|---------------------|
-| **Google AI** | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys) |
-| **OpenAI** | `gpt-5`, `gpt-4o`, `gpt-4.1` | [platform.openai.com](https://platform.openai.com/signup) |
-| **Anthropic** | `claude-4-opus`, `claude-4-sonnet` | [console.anthropic.com](https://console.anthropic.com/) |
-| **DeepSeek** | `deepseek-v3`, `deepseek-r1` | [platform.deepseek.com](https://platform.deepseek.com) |
+| 提供者        | 推薦模型 (2025)                      | 取得API金鑰                                               |
+| ------------- | ------------------------------------ | --------------------------------------------------------- |
+| **Google AI** | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)   |
+| **OpenAI**    | `gpt-5`, `gpt-4o`, `gpt-4.1`         | [platform.openai.com](https://platform.openai.com/signup) |
+| **Anthropic** | `claude-4-opus`, `claude-4-sonnet`   | [console.anthropic.com](https://console.anthropic.com/)   |
+| **DeepSeek**  | `deepseek-v3`, `deepseek-r1`         | [platform.deepseek.com](https://platform.deepseek.com)    |
 
 ### 選項 2：本地AI（用於隱私）
 
 #### Ollama
+
 1. **安裝 Ollama**：[ollama.ai](https://ollama.ai/)
 2. **下載模型**：
    ```bash
@@ -229,9 +236,10 @@ AgenticForge整合了強大的 **LlmKeyManager**，用於集中和動態管理�
    ```
 
 #### LM Studio
+
 1. **安裝 LM Studio**：[lmstudio.ai](https://lmstudio.ai/)
 2. **下載模型**並啟動本地伺服器
-3. **設定**： 
+3. **設定**：
    ```env
    LLM_PROVIDER="openai"
    LLM_API_BASE_URL="http://localhost:1234/v1"
@@ -287,6 +295,7 @@ AgenticForge包含完整的測試套件，透過API驗證代理功能：
 ```
 
 **可用測試類型：**
+
 - ✅ **畫布和待辦事項清單**：圖表和任務清單的建立和管理
 - ✅ **MCP工具**：自訂工具的建立和執行
 - ✅ **程式碼產生**：TypeScript、Python和其他語言
@@ -316,10 +325,10 @@ pnpm run format    # 自動格式化
 
 ### 主要介面
 
-| 介面 | URL | 描述 |
-|-----------|-----|-------------|
-| **🎨 Web介面** | [localhost:3002](http://localhost:3002) | 與代理互動的主介面 |
-| **🛠️ API伺服器** | [localhost:8080](http://localhost:8080) | 後端API和主伺服器 |
+| 介面             | URL                                     | 描述               |
+| ---------------- | --------------------------------------- | ------------------ |
+| **🎨 Web介面**   | [localhost:3002](http://localhost:3002) | 與代理互動的主介面 |
+| **🛠️ API伺服器** | [localhost:8080](http://localhost:8080) | 後端API和主伺服器  |
 
 ---
 
@@ -327,7 +336,7 @@ pnpm run format    # 自動格式化
 
 ### 🚀 快速開始
 
-1. **存取** [localhost:3002](http://localhost:3002) 
+1. **存取** [localhost:3002](http://localhost:3002)
 2. **測試** 即時MCP工具鍛造：
    ```
    "建立一個自訂MCP工具來分析系統日誌，
@@ -342,16 +351,18 @@ pnpm run format    # 自動格式化
 ### 🔧 自訂MCP工具鍛造
 
 #### ⚡ 高級系統工具
+
 ```bash
 "鍛造一個即時監控的MCP工具：
-- 用TypeScript和Zod模式編碼工具  
+- 用TypeScript和Zod模式編碼工具
 - 直接整合到AgenticForge工作器
 - 監控CPU/RAM/程序的介面
 - Web介面中的即時顯示
 - 所有功能的即時測試"
 ```
 
-#### 🌐 智慧Web工具  
+#### 🌐 智慧Web工具
+
 ```bash
 "建立一個智慧MCP抓取工具：
 - 產生帶會話管理的程式碼
@@ -364,10 +375,11 @@ pnpm run format    # 自動格式化
 ### 🌐 全端應用程式
 
 #### ⚙️ 系統自動化和監控
+
 ```bash
 "讀取此YAML設定檔案，建立一個Python守護程序：
 - 監控定義的系統程序
-- 自動執行cron任務  
+- 自動執行cron任務
 - 將日誌傳送到/var/log/automation.log
 - 故障時重啟服務
 - 使用systemctl --user啟動守護程序"
@@ -376,6 +388,7 @@ pnpm run format    # 自動格式化
 ### 📊 效能工具
 
 #### 🏃‍♂️ 完整系統基準測試
+
 ```bash
 "執行此機器的完整基準測試：
 - 使用stress-ng測試CPU/RAM/磁碟
@@ -386,6 +399,7 @@ pnpm run format    # 自動格式化
 ```
 
 #### 📚 自動產生文件
+
 ```bash
 "遞迴掃描我的專案，分析原始碼，產生：
 - 帶架構圖的詳細README.md
@@ -398,11 +412,12 @@ pnpm run format    # 自動格式化
 ### 🔧 專案管理
 
 #### 🌳 Git工作流和自動部署
+
 ```bash
 "在此儲存庫中設定完整的Git工作流：
 - 安裝和設定帶鉤子的GitFlow
 - 建立帶自動測試的預提交腳本
-- 在本地設定GitHub Actions或GitLab CI  
+- 在本地設定GitHub Actions或GitLab CI
 - 部署腳本，建置、測試和重啟服務
 - 使用功能分支測試完整工作流"
 ```
@@ -410,6 +425,7 @@ pnpm run format    # 自動格式化
 ### 🎯 專業化專案
 
 #### 🤖 帶自訂MCP工具套件的代理
+
 ```bash
 "複製AgenticForge，建立一個具有自己MCP工具的專業化代理：
 - 鍛造5個MCP工具：監控、部署、備份、警報、分析
@@ -419,7 +435,8 @@ pnpm run format    # 自動格式化
 - 自動鍛造工具套件的完整測試"
 ```
 
-#### 💻 智慧系統管理  
+#### 💻 智慧系統管理
+
 ```bash
 "分析此Linux伺服器並建立管理儀表板：
 - 即時監控：CPU、RAM、磁碟、網路
@@ -430,7 +447,8 @@ pnpm run format    # 自動格式化
 - 可透過埠口8080上的nginx存取的介面"
 ```
 
-**🔥 獨特功能**: 
+**🔥 獨特功能**:
+
 - **🛠️ MCP鍛造**：在TypeScript中建立自訂MCP工具，整合到工作器並立即測試
 - **⚡ 直接執行**：完整的系統存取 - 安裝、設定、測試、自動部署
 - **🎯 完全透明**：直接在Web介面中查看鍛造的MCP工具的實際操作
@@ -439,14 +457,14 @@ pnpm run format    # 自動格式化
 
 ### 高級系統管理
 
-| 操作 | 命令 | 用途 |
-|--------|----------|-----------|
-| **完整控制台** | `./run-v2.sh` | 主管理介面 |
-| **快速啟動** | `./run-v2.sh start` | 直接系統啟動 |
-| **監控** | `./run-v2.sh status` | Docker服務狀態 |
-| **即時日誌** | `./run-v2.sh logs` | 即時監控 |
-| **重啟** | `./run-v2.sh restart` | 設定修改後 |
-| **維護** | `./run-v2.sh` → 選項 7-14 | 測試、lint、格式化、重建 |
+| 操作           | 命令                      | 用途                     |
+| -------------- | ------------------------- | ------------------------ |
+| **完整控制台** | `./run-v2.sh`             | 主管理介面               |
+| **快速啟動**   | `./run-v2.sh start`       | 直接系統啟動             |
+| **監控**       | `./run-v2.sh status`      | Docker服務狀態           |
+| **即時日誌**   | `./run-v2.sh logs`        | 即時監控                 |
+| **重啟**       | `./run-v2.sh restart`     | 設定修改後               |
+| **維護**       | `./run-v2.sh` → 選項 7-14 | 測試、lint、格式化、重建 |
 
 ---
 
@@ -493,7 +511,7 @@ pnpm run format    # 自動格式化
 - **🚨 問題**：[GitHub Issues](https://github.com/votre-username/g-forge/issues)
 - **💬 討論**：[GitHub Discussions](https://github.com/votre-username/g-forge/discussions)
 - **📚 文件**：[專案Wiki](https://github.com/votre-username/g-forge/wiki)
-- **🎮 Discord**：[加入社群](https://discord.gg/VNtXQByKfg) - *分享您的創作，獲得即時幫助並提前了解最新消息*
+- **🎮 Discord**：[加入社群](https://discord.gg/VNtXQByKfg) - _分享您的創作，獲得即時幫助並提前了解最新消息_
 
 ---
 

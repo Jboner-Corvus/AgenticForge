@@ -26,7 +26,7 @@ describe('PostgreSQL Advanced Integration Tests', () => {
       host: config.POSTGRES_HOST,
       idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
       max: 20, // Maximum number of clients in the pool
-      password: config.POSTGRES_PASSWORD,
+      password: config.POSTGRES_PASSWORD || 'secure_password', // Default to secure_password if not set
       port: config.POSTGRES_PORT,
       user: config.POSTGRES_USER,
     });

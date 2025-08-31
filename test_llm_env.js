@@ -20,14 +20,15 @@ if (!LLM_API_KEY) {
 const testMessages = [
   {
     role: 'user',
-    content: 'Hello, this is a test message. Please respond with a short greeting.'
-  }
+    content:
+      'Hello, this is a test message. Please respond with a short greeting.',
+  },
 ];
 
 const requestBody = {
   model: LLM_MODEL_NAME,
   messages: testMessages,
-  max_tokens: 100
+  max_tokens: 100,
 };
 
 const body = JSON.stringify(requestBody);
@@ -40,27 +41,29 @@ const options = {
   path: '/v1/chat/completions',
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${LLM_API_KEY}`,
-    'Content-Type': 'application/json'
-  }
+    Authorization: `Bearer ${LLM_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
 };
 
 const req = https.request(options, (res) => {
   let data = '';
-  
+
   res.on('data', (chunk) => {
     data += chunk;
   });
-  
+
   res.on('end', () => {
     console.log(`Status Code: ${res.statusCode}`);
-    
+
     if (res.statusCode === 200) {
       try {
         const response = JSON.parse(data);
         const content = response.choices?.[0]?.message?.content;
         console.log('✅ LLM Connection: SUCCESS');
-        console.log(`Response: ${content ? content.substring(0, 100) : 'No content'}...`);
+        console.log(
+          `Response: ${content ? content.substring(0, 100) : 'No content'}...`,
+        );
       } catch (error) {
         console.error('❌ Failed to parse response:', error.message);
         console.error('Raw response:', data.substring(0, 200));
@@ -69,7 +72,7 @@ const req = https.request(options, (res) => {
       console.error('❌ LLM Connection: FAILED');
       console.error(`Status: ${res.statusCode}`);
       console.error(`Response: ${data.substring(0, 200)}`);
-      
+
       // Check for common issues
       if (res.statusCode === 401 || res.statusCode === 403) {
         console.log('\n🔧 Troubleshooting tips:');

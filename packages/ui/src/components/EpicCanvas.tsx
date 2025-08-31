@@ -2,27 +2,44 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence, Variants, useAnimation } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { 
-  X, Pin, RefreshCw, 
-  Maximize2, Minimize2, Settings2, 
-  MonitorPlay, Target, Zap, Crown, Shield, ChevronDown, ArrowDown,
-  Volume2, VolumeX, Headphones
+import {
+  X,
+  Pin,
+  RefreshCw,
+  Maximize2,
+  Minimize2,
+  Settings2,
+  MonitorPlay,
+  Target,
+  Zap,
+  Crown,
+  Shield,
+  ChevronDown,
+  ArrowDown,
+  Volume2,
+  VolumeX,
+  Headphones,
 } from 'lucide-react';
 import { Button } from './ui/button';
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-  DropdownMenuLabel
+  DropdownMenuLabel,
 } from './ui/dropdown-menu';
 import { Slider } from './ui/slider';
 import { useCanvasStore } from '../store/canvasStore';
 // import { useToast } from '../lib/hooks/useToast';
 
 // MODES D'AFFICHAGE ÉPIQUES
-export type DisplayMode = 'minimal' | 'windowed' | 'theater' | 'immersive' | 'battlefield';
+export type DisplayMode =
+  | 'minimal'
+  | 'windowed'
+  | 'theater'
+  | 'immersive'
+  | 'battlefield';
 
 const DISPLAY_MODES = {
   minimal: {
@@ -30,36 +47,36 @@ const DISPLAY_MODES = {
     description: 'Compact interface',
     canvasSize: 'small',
     showPanels: false,
-    headerHeight: '3rem'
+    headerHeight: '3rem',
   },
   windowed: {
-    label: 'WINDOWED', 
+    label: 'WINDOWED',
     description: 'Standard windowed mode',
     canvasSize: 'medium',
     showPanels: true,
-    headerHeight: '4rem'
+    headerHeight: '4rem',
   },
   theater: {
     label: 'THEATER',
-    description: 'Large screen view', 
+    description: 'Large screen view',
     canvasSize: 'large',
     showPanels: true,
-    headerHeight: '3rem'
+    headerHeight: '3rem',
   },
   immersive: {
     label: 'IMMERSIVE',
     description: 'Full screen mode',
     canvasSize: 'fullscreen',
     showPanels: false,
-    headerHeight: '2rem'
+    headerHeight: '2rem',
   },
   battlefield: {
     label: 'EXPANDED',
     description: 'All panels + full screen',
     canvasSize: 'fullscreen',
     showPanels: true,
-    headerHeight: '3rem'
-  }
+    headerHeight: '3rem',
+  },
 };
 
 const EpicCanvas: React.FC = () => {
@@ -75,13 +92,12 @@ const EpicCanvas: React.FC = () => {
   const [canvasAudioMuted, setCanvasAudioMuted] = useState(false);
   const [canvasVolume, setCanvasVolume] = useState(50);
 
-  
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const contentContainerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const canvasControls = useAnimation();
   // const { toast } = useToast(); // Unused
-  
+
   // STORE STATE
   const clearCanvas = useCanvasStore((state) => state.clearCanvas);
   const canvasWidth = useCanvasStore((state) => state.canvasWidth);
@@ -89,22 +105,36 @@ const EpicCanvas: React.FC = () => {
   const canvasType = useCanvasStore((state) => state.canvasType);
   const isCanvasPinned = useCanvasStore((state) => state.isCanvasPinned);
   const setCanvasPinned = useCanvasStore((state) => state.setCanvasPinned);
-  const setCanvasFullscreen = useCanvasStore((state) => state.setCanvasFullscreen);
-  
-  const setIsCanvasVisible = useCanvasStore((state) => state.setIsCanvasVisible);
+  const setCanvasFullscreen = useCanvasStore(
+    (state) => state.setCanvasFullscreen,
+  );
 
-  console.log('🎨 [EpicCanvas] Mode:', displayMode, 'Content:', canvasContent?.length || 0);
-  
+  const setIsCanvasVisible = useCanvasStore(
+    (state) => state.setIsCanvasVisible,
+  );
+
+  console.log(
+    '🎨 [EpicCanvas] Mode:',
+    displayMode,
+    'Content:',
+    canvasContent?.length || 0,
+  );
+
   // DÉTECTION DE SCROLL UTILISATEUR
   const handleUserScroll = useCallback(() => {
     if (contentContainerRef.current) {
       const container = contentContainerRef.current;
-      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
-      
+      const isNearBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight <
+        50;
+
       // Si l'utilisateur scroll loin du bas, considérer qu'il contrôle manuellement
       setIsUserScrolling(!isNearBottom);
-      
-      console.log('👤 [EpicCanvas] User scroll detected, near bottom:', isNearBottom);
+
+      console.log(
+        '👤 [EpicCanvas] User scroll detected, near bottom:',
+        isNearBottom,
+      );
     }
   }, []);
 
@@ -113,17 +143,19 @@ const EpicCanvas: React.FC = () => {
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
     }
-    
+
     scrollTimeoutRef.current = setTimeout(() => {
       if (contentContainerRef.current && autoScrollEnabled) {
         const container = contentContainerRef.current;
-        
+
         // Log pour débug
         console.log('🔄 [EpicCanvas] Auto-scrolling canvas, type:', canvasType);
-        
+
         // Calculer si l'utilisateur était déjà proche du bas (tolérance de 100px)
-        const isNearBottom = container.scrollTop >= (container.scrollHeight - container.clientHeight - 100);
-        
+        const isNearBottom =
+          container.scrollTop >=
+          container.scrollHeight - container.clientHeight - 100;
+
         // Ne faire le scroll automatique que si :
         // 1. L'utilisateur était déjà en bas
         // 2. C'est du nouveau contenu (première fois)
@@ -138,12 +170,16 @@ const EpicCanvas: React.FC = () => {
             // Pour markdown/text, on scroll vers le bas du contenu
             container.scrollTo({
               top: container.scrollHeight,
-              behavior: 'smooth'
+              behavior: 'smooth',
             });
-            console.log('🎯 [EpicCanvas] Scrolled text/markdown content to bottom');
+            console.log(
+              '🎯 [EpicCanvas] Scrolled text/markdown content to bottom',
+            );
           }
         } else {
-          console.log('📍 [EpicCanvas] User scrolling manually or not at bottom, skipping auto-scroll');
+          console.log(
+            '📍 [EpicCanvas] User scrolling manually or not at bottom, skipping auto-scroll',
+          );
         }
       }
     }, 150); // Débonce de 150ms pour éviter les scrolls trop fréquents
@@ -173,25 +209,30 @@ const EpicCanvas: React.FC = () => {
       }
     };
   }, []);
-  
+
   // EFFETS SONORES ÉPIQUES
-  const playCanvasSound = (type: 'maximize' | 'minimize' | 'switch' | 'refresh') => {
+  const playCanvasSound = (
+    type: 'maximize' | 'minimize' | 'switch' | 'refresh',
+  ) => {
     if (!audioEnabled) return;
-    const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as typeof window & { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext;
     const context = new AudioContextClass();
     const oscillator = context.createOscillator();
     const gainNode = context.createGain();
-    
+
     oscillator.connect(gainNode);
     gainNode.connect(context.destination);
-    
+
     const frequencies = {
       maximize: [523, 659, 784], // C5 E5 G5
-      minimize: [784, 659, 523], // G5 E5 C5  
-      switch: [440, 523, 659],   // A4 C5 E5
-      refresh: [659, 523, 659, 784] // E5 C5 E5 G5
+      minimize: [784, 659, 523], // G5 E5 C5
+      switch: [440, 523, 659], // A4 C5 E5
+      refresh: [659, 523, 659, 784], // E5 C5 E5 G5
     };
-    
+
     frequencies[type].forEach((freq, i) => {
       setTimeout(() => {
         const osc = context.createOscillator();
@@ -211,7 +252,7 @@ const EpicCanvas: React.FC = () => {
   const switchDisplayMode = (mode: DisplayMode) => {
     setDisplayMode(mode);
     playCanvasSound('switch');
-    
+
     // Configuration automatique selon le mode
     const config = DISPLAY_MODES[mode];
     if (config.canvasSize === 'fullscreen') {
@@ -221,12 +262,12 @@ const EpicCanvas: React.FC = () => {
       setCanvasFullscreen(false);
       setIsCanvasMaximized(false);
     }
-    
+
     // Animation de transition
     canvasControls.start({
       scale: [0.95, 1.05, 1],
       rotateY: [0, 10, 0],
-      transition: { duration: 0.6, ease: "easeInOut" }
+      transition: { duration: 0.6, ease: 'easeInOut' },
     });
   };
 
@@ -235,7 +276,7 @@ const EpicCanvas: React.FC = () => {
     setIsCanvasMaximized(newState);
     setCanvasFullscreen(newState);
     playCanvasSound(newState ? 'maximize' : 'minimize');
-    
+
     if (newState) {
       setDisplayMode('immersive');
     } else {
@@ -248,14 +289,23 @@ const EpicCanvas: React.FC = () => {
     const mode = DISPLAY_MODES[displayMode];
     const baseWidth = window.innerWidth;
     const baseHeight = window.innerHeight;
-    
+
     switch (mode.canvasSize) {
       case 'small':
-        return { width: Math.min(600, baseWidth * 0.7), height: Math.min(400, baseHeight * 0.5) };
+        return {
+          width: Math.min(600, baseWidth * 0.7),
+          height: Math.min(400, baseHeight * 0.5),
+        };
       case 'medium':
-        return { width: Math.min(900, baseWidth * 0.8), height: Math.min(600, baseHeight * 0.7) };
+        return {
+          width: Math.min(900, baseWidth * 0.8),
+          height: Math.min(600, baseHeight * 0.7),
+        };
       case 'large':
-        return { width: Math.min(1200, baseWidth * 0.9), height: Math.min(800, baseHeight * 0.8) };
+        return {
+          width: Math.min(1200, baseWidth * 0.9),
+          height: Math.min(800, baseHeight * 0.8),
+        };
       case 'fullscreen':
         return { width: baseWidth * 0.95, height: baseHeight * 0.9 };
       default:
@@ -263,34 +313,43 @@ const EpicCanvas: React.FC = () => {
     }
   };
 
-  const { width: canvasWidthCalc, height: canvasHeightCalc } = getCanvasDimensions();
+  const { width: canvasWidthCalc, height: canvasHeightCalc } =
+    getCanvasDimensions();
 
   // FONCTION POUR CONTRÔLER L'AUDIO DE L'IFRAME
-  const controlCanvasAudio = useCallback((action: 'mute' | 'unmute' | 'volume', value?: number) => {
-    if (iframeRef.current) {
-      try {
-        const iframe = iframeRef.current;
-        const iframeWindow = iframe.contentWindow;
-        
-        if (iframeWindow) {
-          // Essayer de contrôler l'audio via postMessage
-          iframeWindow.postMessage({
-            type: 'audio_control',
-            action,
-            value
-          }, '*');
+  const controlCanvasAudio = useCallback(
+    (action: 'mute' | 'unmute' | 'volume', value?: number) => {
+      if (iframeRef.current) {
+        try {
+          const iframe = iframeRef.current;
+          const iframeWindow = iframe.contentWindow;
+
+          if (iframeWindow) {
+            // Essayer de contrôler l'audio via postMessage
+            iframeWindow.postMessage(
+              {
+                type: 'audio_control',
+                action,
+                value,
+              },
+              '*',
+            );
+          }
+        } catch (error) {
+          console.log(
+            '🔊 [EpicCanvas] Audio control not available for this content',
+          );
         }
-      } catch (error) {
-        console.log('🔊 [EpicCanvas] Audio control not available for this content');
       }
-    }
-  }, []);
+    },
+    [],
+  );
 
   // RESET IFRAME ON CONTENT CHANGE
   useEffect(() => {
     setHasIframeError(false);
-    setIframeKey(prev => prev + 1);
-    
+    setIframeKey((prev) => prev + 1);
+
     // Appliquer les paramètres audio après le chargement
     setTimeout(() => {
       if (canvasAudioMuted) {
@@ -303,35 +362,35 @@ const EpicCanvas: React.FC = () => {
 
   // VARIANTS D'ANIMATION PROFESSIONNELLES
   const canvasVariants: Variants = {
-    hidden: { 
-      opacity: 0, 
-      scale: 0.95
-    },
-    visible: { 
-      opacity: 1, 
-      scale: 1,
-      transition: { 
-        duration: 0.3,
-        ease: "easeOut"
-      }
-    },
-    exit: { 
-      opacity: 0, 
+    hidden: {
+      opacity: 0,
       scale: 0.95,
-      transition: { duration: 0.2 }
-    }
+    },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.3,
+        ease: 'easeOut',
+      },
+    },
+    exit: {
+      opacity: 0,
+      scale: 0.95,
+      transition: { duration: 0.2 },
+    },
   };
 
   const controlsVariants: Variants = {
     hidden: { opacity: 0, y: -10 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
-      transition: { 
+      transition: {
         duration: 0.2,
-        ease: "easeOut"
-      }
-    }
+        ease: 'easeOut',
+      },
+    },
   };
 
   // RENDERING FUNCTIONS
@@ -346,20 +405,18 @@ const EpicCanvas: React.FC = () => {
             <h3 className="text-2xl font-bold text-gray-300 mb-4">
               Canvas Ready
             </h3>
-            <p className="text-lg opacity-70">
-              Waiting for content...
-            </p>
+            <p className="text-lg opacity-70">Waiting for content...</p>
             <div className="mt-6 flex justify-center gap-4">
               {['•', '•', '•', '•'].map((dot, i) => (
                 <motion.div
                   key={i}
-                  animate={{ 
-                    opacity: [0.3, 1, 0.3]
+                  animate={{
+                    opacity: [0.3, 1, 0.3],
                   }}
-                  transition={{ 
+                  transition={{
                     duration: 2,
                     delay: i * 0.3,
-                    repeat: Infinity 
+                    repeat: Infinity,
                   }}
                   className="text-2xl text-gray-500"
                 >
@@ -373,7 +430,13 @@ const EpicCanvas: React.FC = () => {
     }
 
     // Support étendu pour les jeux et applications
-    if ((canvasType === 'html' || canvasType === 'webapp' || canvasType === 'game' || canvasType === 'wasm') && !hasIframeError) {
+    if (
+      (canvasType === 'html' ||
+        canvasType === 'webapp' ||
+        canvasType === 'game' ||
+        canvasType === 'wasm') &&
+      !hasIframeError
+    ) {
       return (
         <iframe
           key={iframeKey}
@@ -381,12 +444,12 @@ const EpicCanvas: React.FC = () => {
           srcDoc={canvasContent}
           className="w-full h-full border-0 bg-white rounded-lg"
           title="Agent Output"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+          sandbox="allow-scripts allow-forms allow-popups allow-modals"
           allow="autoplay; microphone; camera; midi; encrypted-media; fullscreen"
           onError={() => setHasIframeError(true)}
-          style={{ 
+          style={{
             transform: `scale(${canvasScale / 100})`,
-            transformOrigin: 'top left'
+            transformOrigin: 'top left',
           }}
         />
       );
@@ -398,12 +461,16 @@ const EpicCanvas: React.FC = () => {
           key={iframeKey}
           src={canvasContent}
           className="w-full h-full border-0 rounded-lg"
-          title={canvasType === 'embed' ? "Embedded Game" : "External Content"}
+          title={canvasType === 'embed' ? 'Embedded Game' : 'External Content'}
           allow="autoplay; microphone; camera; midi; encrypted-media; fullscreen"
-          sandbox={canvasType === 'embed' ? "allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads" : undefined}
-          style={{ 
+          sandbox={
+            canvasType === 'embed'
+              ? 'allow-scripts allow-forms allow-popups allow-modals allow-downloads'
+              : undefined
+          }
+          style={{
             transform: `scale(${canvasScale / 100})`,
-            transformOrigin: 'top left'
+            transformOrigin: 'top left',
           }}
         />
       );
@@ -439,20 +506,27 @@ const EpicCanvas: React.FC = () => {
         className={`
           fixed top-0 left-0 z-30 bg-gradient-to-br from-gray-900/95 to-gray-800/95 
           backdrop-blur-sm rounded-2xl border border-gray-600/30 shadow-2xl
-          ${displayMode === 'immersive' || displayMode === 'battlefield' ? 
-            'inset-4' : 
-            'top-20 left-1/2 transform -translate-x-1/2'
+          ${
+            displayMode === 'immersive' || displayMode === 'battlefield'
+              ? 'inset-4'
+              : 'top-20 left-1/2 transform -translate-x-1/2'
           }
         `}
         style={{
-          width: displayMode === 'immersive' || displayMode === 'battlefield' ? 'calc(100vw - 2rem)' : canvasWidthCalc,
-          height: displayMode === 'immersive' || displayMode === 'battlefield' ? 'calc(100vh - 2rem)' : canvasHeightCalc
+          width:
+            displayMode === 'immersive' || displayMode === 'battlefield'
+              ? 'calc(100vw - 2rem)'
+              : canvasWidthCalc,
+          height:
+            displayMode === 'immersive' || displayMode === 'battlefield'
+              ? 'calc(100vh - 2rem)'
+              : canvasHeightCalc,
         }}
       >
         {/* HEADER ÉPIQUE */}
         <AnimatePresence>
           {showControls && (
-            <motion.div 
+            <motion.div
               variants={controlsVariants}
               initial="hidden"
               animate="visible"
@@ -464,10 +538,12 @@ const EpicCanvas: React.FC = () => {
                 <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
                   <MonitorPlay className="h-4 w-4 text-gray-300" />
                 </div>
-                
+
                 <div>
                   <h3 className="font-bold text-gray-200 text-sm">Canvas</h3>
-                  <p className="text-xs text-gray-400">{currentModeConfig.description}</p>
+                  <p className="text-xs text-gray-400">
+                    {currentModeConfig.description}
+                  </p>
                 </div>
               </div>
 
@@ -475,8 +551,8 @@ const EpicCanvas: React.FC = () => {
               <div className="flex items-center gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="sm"
                       className="text-gray-300 border border-gray-600/30 hover:bg-gray-700/50"
                     >
@@ -485,7 +561,9 @@ const EpicCanvas: React.FC = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="bg-gray-800 border-gray-600/30">
-                    <DropdownMenuLabel className="text-gray-300">Display Modes</DropdownMenuLabel>
+                    <DropdownMenuLabel className="text-gray-300">
+                      Display Modes
+                    </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {Object.entries(DISPLAY_MODES).map(([mode, config]) => (
                       <DropdownMenuItem
@@ -521,9 +599,15 @@ const EpicCanvas: React.FC = () => {
                   size="icon"
                   onClick={() => setAutoScrollEnabled(!autoScrollEnabled)}
                   className={`${autoScrollEnabled ? 'text-blue-400' : 'text-gray-500'} hover:bg-blue-500/10`}
-                  title={autoScrollEnabled ? 'Désactiver le défilement automatique' : 'Activer le défilement automatique'}
+                  title={
+                    autoScrollEnabled
+                      ? 'Désactiver le défilement automatique'
+                      : 'Activer le défilement automatique'
+                  }
                 >
-                  <ArrowDown className={`h-4 w-4 ${autoScrollEnabled ? 'animate-bounce' : ''}`} />
+                  <ArrowDown
+                    className={`h-4 w-4 ${autoScrollEnabled ? 'animate-bounce' : ''}`}
+                  />
                 </Button>
 
                 {/* Audio Toggle */}
@@ -532,13 +616,26 @@ const EpicCanvas: React.FC = () => {
                   size="icon"
                   onClick={() => setAudioEnabled(!audioEnabled)}
                   className={`${audioEnabled ? 'text-cyan-400' : 'text-gray-500'} hover:bg-cyan-500/10`}
-                  title={audioEnabled ? 'Désactiver les effets sonores' : 'Activer les effets sonores'}
+                  title={
+                    audioEnabled
+                      ? 'Désactiver les effets sonores'
+                      : 'Activer les effets sonores'
+                  }
                 >
-                  {audioEnabled ? <Zap className="h-4 w-4" /> : <Target className="h-4 w-4" />}
+                  {audioEnabled ? (
+                    <Zap className="h-4 w-4" />
+                  ) : (
+                    <Target className="h-4 w-4" />
+                  )}
                 </Button>
 
                 {/* Canvas Audio Controls - Show for interactive content */}
-                {(canvasType === 'html' || canvasType === 'webapp' || canvasType === 'game' || canvasType === 'wasm' || canvasType === 'embed' || canvasType === 'url') && (
+                {(canvasType === 'html' ||
+                  canvasType === 'webapp' ||
+                  canvasType === 'game' ||
+                  canvasType === 'wasm' ||
+                  canvasType === 'embed' ||
+                  canvasType === 'url') && (
                   <>
                     {/* Canvas Audio Mute */}
                     <Button
@@ -550,9 +647,17 @@ const EpicCanvas: React.FC = () => {
                         controlCanvasAudio(newMuted ? 'mute' : 'unmute');
                       }}
                       className={`${!canvasAudioMuted ? 'text-green-400' : 'text-red-400'} hover:bg-green-500/10`}
-                      title={canvasAudioMuted ? 'Réactiver le son du canvas' : 'Couper le son du canvas'}
+                      title={
+                        canvasAudioMuted
+                          ? 'Réactiver le son du canvas'
+                          : 'Couper le son du canvas'
+                      }
                     >
-                      {canvasAudioMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                      {canvasAudioMuted ? (
+                        <VolumeX className="h-4 w-4" />
+                      ) : (
+                        <Volume2 className="h-4 w-4" />
+                      )}
                     </Button>
 
                     {/* Volume Control */}
@@ -582,7 +687,11 @@ const EpicCanvas: React.FC = () => {
                   onClick={() => setCanvasPinned(!isCanvasPinned)}
                   className={`${isCanvasPinned ? 'text-yellow-400' : 'text-gray-400'} hover:bg-yellow-500/10`}
                 >
-                  {isCanvasPinned ? <Crown className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                  {isCanvasPinned ? (
+                    <Crown className="h-4 w-4" />
+                  ) : (
+                    <Pin className="h-4 w-4" />
+                  )}
                 </Button>
 
                 {/* Maximize Toggle */}
@@ -592,7 +701,11 @@ const EpicCanvas: React.FC = () => {
                   onClick={toggleMaximize}
                   className="text-purple-400 hover:bg-purple-500/10"
                 >
-                  {isCanvasMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  {isCanvasMaximized ? (
+                    <Minimize2 className="h-4 w-4" />
+                  ) : (
+                    <Maximize2 className="h-4 w-4" />
+                  )}
                 </Button>
 
                 {/* Refresh */}
@@ -600,7 +713,7 @@ const EpicCanvas: React.FC = () => {
                   variant="ghost"
                   size="icon"
                   onClick={() => {
-                    setIframeKey(prev => prev + 1);
+                    setIframeKey((prev) => prev + 1);
                     playCanvasSound('refresh');
                   }}
                   className="text-green-400 hover:bg-green-500/10"
@@ -626,22 +739,27 @@ const EpicCanvas: React.FC = () => {
         </AnimatePresence>
 
         {/* CANVAS CONTENT AREA */}
-        <motion.div 
+        <motion.div
           ref={contentContainerRef}
           className="flex-1 p-4 overflow-auto relative"
-          style={{ 
-            height: showControls ? 'calc(100% - 4rem)' : '100%'
+          style={{
+            height: showControls ? 'calc(100% - 4rem)' : '100%',
           }}
           onMouseEnter={() => setShowControls(true)}
-          onMouseLeave={() => displayMode === 'immersive' && setShowControls(false)}
+          onMouseLeave={() =>
+            displayMode === 'immersive' && setShowControls(false)
+          }
         >
           {renderContent()}
-          
+
           {/* FLOATING ACTION BUTTONS */}
           <div className="absolute bottom-4 right-4 flex flex-col gap-2">
             {/* Manual Scroll Button - Only show when auto-scroll is disabled or when there's scrollable content */}
             <AnimatePresence>
-              {(!autoScrollEnabled || (contentContainerRef.current && contentContainerRef.current.scrollHeight > contentContainerRef.current.clientHeight)) && (
+              {(!autoScrollEnabled ||
+                (contentContainerRef.current &&
+                  contentContainerRef.current.scrollHeight >
+                    contentContainerRef.current.clientHeight)) && (
                 <motion.button
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 0.7, scale: 1 }}
@@ -653,7 +771,7 @@ const EpicCanvas: React.FC = () => {
                     if (contentContainerRef.current) {
                       contentContainerRef.current.scrollTo({
                         top: contentContainerRef.current.scrollHeight,
-                        behavior: 'smooth'
+                        behavior: 'smooth',
                       });
                     }
                   }}
@@ -663,7 +781,7 @@ const EpicCanvas: React.FC = () => {
                 </motion.button>
               )}
             </AnimatePresence>
-            
+
             {/* Settings Button */}
             <motion.button
               className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg hover:shadow-cyan-500/25"
@@ -699,18 +817,28 @@ const EpicCanvas: React.FC = () => {
               MODE: {currentModeConfig.label}
             </div>
             <div className="text-gray-400">
-              {(canvasType as string)?.toUpperCase() || 'EMPTY'} • {canvasWidthCalc}×{canvasHeightCalc}
+              {(canvasType as string)?.toUpperCase() || 'EMPTY'} •{' '}
+              {canvasWidthCalc}×{canvasHeightCalc}
             </div>
-            <div className={`${autoScrollEnabled ? 'text-blue-400' : 'text-gray-500'}`}>
+            <div
+              className={`${autoScrollEnabled ? 'text-blue-400' : 'text-gray-500'}`}
+            >
               AUTO-SCROLL: {autoScrollEnabled ? 'ON' : 'OFF'}
             </div>
-            {(canvasType === 'html' || canvasType === 'webapp' || canvasType === 'game' || canvasType === 'wasm' || canvasType === 'embed' || canvasType === 'url') && (
-              <div className={`${!canvasAudioMuted ? 'text-green-400' : 'text-red-400'}`}>
+            {(canvasType === 'html' ||
+              canvasType === 'webapp' ||
+              canvasType === 'game' ||
+              canvasType === 'wasm' ||
+              canvasType === 'embed' ||
+              canvasType === 'url') && (
+              <div
+                className={`${!canvasAudioMuted ? 'text-green-400' : 'text-red-400'}`}
+              >
                 AUDIO: {canvasAudioMuted ? 'MUTED' : `${canvasVolume}%`}
               </div>
             )}
           </div>
-          
+
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <Shield className="h-3 w-3" />
             <span>SECURE RENDERING</span>

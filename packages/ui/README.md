@@ -106,6 +106,7 @@ src/
 ## Configuration
 
 Le projet utilise :
+
 - ESLint pour le linting
 - Prettier pour le formatage
 - TypeScript pour le typage

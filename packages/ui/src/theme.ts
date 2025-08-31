@@ -1,4 +1,3 @@
-
 export const theme = {
   colors: {
     primary: 'hsl(217, 91%, 60%)', // Vibrant blue

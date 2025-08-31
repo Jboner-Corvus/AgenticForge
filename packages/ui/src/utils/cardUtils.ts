@@ -11,31 +11,31 @@ export function formatRelativeTime(timestamp: string): string {
   const now = new Date();
   const time = new Date(timestamp);
   const diffInSeconds = Math.floor((now.getTime() - time.getTime()) / 1000);
-  
+
   if (diffInSeconds < 60) {
     return `${diffInSeconds} seconds ago`;
   }
-  
+
   const diffInMinutes = Math.floor(diffInSeconds / 60);
   if (diffInMinutes < 60) {
     return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
   }
-  
+
   const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) {
     return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
   }
-  
+
   const diffInDays = Math.floor(diffInHours / 24);
   if (diffInDays < 30) {
     return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
   }
-  
+
   const diffInMonths = Math.floor(diffInDays / 30);
   if (diffInMonths < 12) {
     return `${diffInMonths} month${diffInMonths !== 1 ? 's' : ''} ago`;
   }
-  
+
   const diffInYears = Math.floor(diffInMonths / 12);
   return `${diffInYears} year${diffInYears !== 1 ? 's' : ''} ago`;
 }
@@ -49,15 +49,15 @@ export function formatUsageCount(count: number): string {
   if (count < 1000) {
     return count.toString();
   }
-  
+
   if (count < 1000000) {
     return `${(count / 1000).toFixed(1)}K`;
   }
-  
+
   if (count < 1000000000) {
     return `${(count / 1000000).toFixed(1)}M`;
   }
-  
+
   return `${(count / 1000000000).toFixed(1)}B`;
 }
 
@@ -93,7 +93,10 @@ export function getPriorityColor(priority: number): string {
  * @param total - Total number of requests
  * @returns Success rate percentage
  */
-export function calculateSuccessRate(successful: number, total: number): number {
+export function calculateSuccessRate(
+  successful: number,
+  total: number,
+): number {
   if (total === 0) return 0;
   return Math.round((successful / total) * 100);
 }
@@ -135,9 +138,9 @@ export function generateTagColor(seed?: string): string {
     'text-indigo-400',
     'text-teal-400',
     'text-orange-400',
-    'text-cyan-400'
+    'text-cyan-400',
   ];
-  
+
   if (seed) {
     // Generate consistent color based on seed
     let hash = 0;
@@ -146,6 +149,6 @@ export function generateTagColor(seed?: string): string {
     }
     return colors[Math.abs(hash) % colors.length];
   }
-  
+
   return colors[Math.floor(Math.random() * colors.length)];
 }

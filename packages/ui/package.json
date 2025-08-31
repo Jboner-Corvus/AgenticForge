@@ -1,7 +1,7 @@
 {
   "name": "@gforge/ui",
   "private": true,
-  "version": "0.0.57",
+  "version": "0.0.161",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "typecheck:test": "vitest run --typecheck.only",
     "preview": "vite preview",
-    "start:web": "vite preview --host 0.0.0.0 --port ${WEB_PORT}"
+    "start:web": "vite preview --host 0.0.0.0 --port ${WEB_PORT}",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

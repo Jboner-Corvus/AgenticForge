@@ -1,5 +1,5 @@
-import { Toast } from "@/components/ui/toast";
-import { useToast } from "@/lib/hooks/useToast";
+import { Toast } from '@/components/ui/toast';
+import { useToast } from '@/lib/hooks/useToast';
 
 export function Toaster() {
   const { toasts } = useToast();
@@ -11,9 +11,7 @@ export function Toaster() {
           <Toast key={id} id={id} {...props}>
             <div className="grid gap-1">
               {title && <p>{title}</p>}
-              {description && (
-                <p>{description}</p>
-              )}
+              {description && <p>{description}</p>}
             </div>
             {action}
           </Toast>

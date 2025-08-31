@@ -16,6 +16,7 @@ import { getLoggerInstance } from './logger.ts';
 import { getJobQueue } from './modules/queue/queue.ts';
 const config = getConfig();
 import clientConsoleRouter from './modules/api/clientConsole.api.ts';
+import { initializeWebSocketManager } from './modules/websocket/websocketServer.ts';
 import { LlmKeyManager as _LlmKeyManager } from './modules/llm/LlmKeyManager.ts';
 import { SessionManager } from './modules/session/sessionManager.ts';
 import VersionService from './modules/version/VersionService.ts';
@@ -461,6 +462,37 @@ export async function initializeWebServer(
       res.status(200).send('OK');
     });
 
+    // Route pour servir les assets des projets canvas
+    app.get('/api/canvas/assets/:jobId/:filename', async (req: express.Request, res: express.Response) => {
+      try {
+        const { jobId, filename } = req.params;
+        
+        // Importer dynamiquement l'asset manager
+        const { getProjectAssets, getMimeType } = await import('./utils/assetManager.ts');
+        
+        // Récupérer le projet
+        const project = await getProjectAssets(jobId);
+        if (!project) {
+          return res.status(404).json({ error: 'Project not found' });
+        }
+        
+        // Trouver l'asset demandé
+        const asset = project.assets.find(a => a.filename === filename);
+        if (!asset) {
+          return res.status(404).json({ error: 'Asset not found' });
+        }
+        
+        // Définir le type de contenu et envoyer l'asset
+        res.setHeader('Content-Type', asset.mimeType);
+        res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache 1 heure
+        res.send(asset.content);
+        
+      } catch (error) {
+        console.error('[CANVAS ASSETS] Error serving asset:', error);
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    });
+
     app.get(
       '/api/tools',
       async (
@@ -690,8 +722,42 @@ export async function initializeWebServer(
           'Content-Type': 'text/event-stream',
         });
 
+        // Variable to track if the response has been ended
+        let responseEnded = false;
+
+        // Helper function to safely write to the response
+        const safeWrite = (data: string) => {
+          if (!responseEnded && !res.writableEnded) {
+            try {
+              res.write(data);
+              return true;
+            } catch (err) {
+              console.error('Error writing to response:', err);
+              responseEnded = true;
+              return false;
+            }
+          }
+          return false;
+        };
+
+        // Helper function to safely end the response
+        const safeEnd = () => {
+          if (!responseEnded && !res.writableEnded) {
+            try {
+              res.end();
+              responseEnded = true;
+              return true;
+            } catch (err) {
+              console.error('Error ending response:', err);
+              responseEnded = true;
+              return false;
+            }
+          }
+          return false;
+        };
+
         // Send initial connection message
-        res.write(
+        safeWrite(
           'data: {"type":"connection","message":"Connected to stream"}\n\n',
         );
 
@@ -710,6 +776,11 @@ export async function initializeWebServer(
 
           subscriber.on('message', (channel, message) => {
             try {
+              // Check if response is already ended
+              if (responseEnded || res.writableEnded) {
+                return;
+              }
+
               // Parse the message
               const eventData = JSON.parse(message);
 
@@ -723,10 +794,10 @@ export async function initializeWebServer(
               if (eventData.type === 'chat_header_todo') {
                 console.log(`[FORWARD] Forwarding chat_header_todo message for job ${jobId}`);
                 // Send the event data as-is for chat header todo messages
-                res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+                safeWrite(`data: ${JSON.stringify(eventData)}\n\n`);
               } else {
                 // Send the event data for other message types
-                res.write(`data: ${JSON.stringify(eventData)}\n\n`);
+                safeWrite(`data: ${JSON.stringify(eventData)}\n\n`);
               }
 
               // If this is a completion event, end the stream
@@ -734,17 +805,19 @@ export async function initializeWebServer(
                 eventData.type === 'completed' ||
                 eventData.type === 'error'
               ) {
-                res.write(
+                safeWrite(
                   'data: {"type":"stream_end","message":"Stream closed"}\n\n',
                 );
-                res.end();
+                safeEnd();
                 subscriber.quit();
               }
             } catch (err) {
               console.error('Error processing stream message:', err);
-              res.write(
-                `data: {"type":"error","message":"Error processing message"}\n\n`,
-              );
+              if (!responseEnded && !res.writableEnded) {
+                safeWrite(
+                  `data: {"type":"error","message":"Error processing message"}\n\n`,
+                );
+              }
             }
           });
 
@@ -754,30 +827,39 @@ export async function initializeWebServer(
 
           subscriber.on('message', (channel, message) => {
             if (channel === jobCompletionChannel) {
+              // Check if response is already ended
+              if (responseEnded || res.writableEnded) {
+                return;
+              }
+
               try {
                 const completionData = JSON.parse(message);
-                res.write(`data: ${JSON.stringify(completionData)}\n\n`);
-                res.write(
+                safeWrite(`data: ${JSON.stringify(completionData)}\n\n`);
+                safeWrite(
                   'data: {"type":"stream_end","message":"Stream closed"}\n\n',
                 );
-                res.end();
+                safeEnd();
                 subscriber.quit();
               } catch (err) {
                 console.error('Error processing completion message:', err);
-                res.write(
-                  `data: {"type":"error","message":"Error processing completion"}\n\n`,
-                );
-                res.end();
-                subscriber.quit();
+                if (!responseEnded && !res.writableEnded) {
+                  safeWrite(
+                    `data: {"type":"error","message":"Error processing completion"}\n\n`,
+                  );
+                  safeEnd();
+                  subscriber.quit();
+                }
               }
             }
           });
         } catch (error) {
           console.error('Error in SSE stream:', error);
-          res.write(
-            `data: {"type":"error","message":"Stream error: ${error}"}\n\n`,
-          );
-          res.end();
+          if (!responseEnded && !res.writableEnded) {
+            safeWrite(
+              `data: {"type":"error","message":"Stream error: ${error}"}\n\n`,
+            );
+            safeEnd();
+          }
         }
       },
     );
@@ -907,8 +989,36 @@ export async function initializeWebServer(
           // Get the actual API keys from the key manager
           const apiKeys = await _LlmKeyManager.getKeysForApi();
 
+          // Check if master key from environment is missing from Redis keys
+          const masterApiKey = process.env.MASTER_LLM_API_KEY || config.LLM_API_KEY;
+          const masterProvider = config.LLM_PROVIDER || 'gemini';
+          const masterModel = config.LLM_MODEL_NAME || 'gemini-2.5-pro';
+
+          let enrichedKeys = [...apiKeys];
+
+          // If master key exists in environment but not in Redis keys, add it
+          if (masterApiKey && masterApiKey.trim() !== '') {
+            const masterKeyExists = apiKeys.some(key =>
+              key.apiProvider === masterProvider &&
+              key.apiKey === masterApiKey.trim() &&
+              key.apiModel === masterModel
+            );
+
+            if (!masterKeyExists) {
+              // Add master key to the list
+              enrichedKeys.unshift({
+                apiKey: masterApiKey.trim(),
+                apiModel: masterModel,
+                apiProvider: masterProvider,
+                errorCount: 0,
+                isPermanentlyDisabled: false,
+                lastUsed: Date.now(),
+              });
+            }
+          }
+
           // Generate mock usage data for each key
-          const leaderboardData = apiKeys.map((key, index) => {
+          const leaderboardData = enrichedKeys.map((key, index) => {
             // Generate mock usage stats
             const requestsLimit = Math.floor(Math.random() * 10000) + 1000;
             const requestsCount = Math.floor(Math.random() * requestsLimit);
@@ -4053,6 +4163,10 @@ export async function initializeWebServer(
     app.use(handleError);
 
     const server = new Server(app);
+
+    // Initialize WebSocket server
+    const websocketManager = initializeWebSocketManager(server, redisClient);
+    console.log('📡 WebSocket server initialized with app server.');
 
     if (process.env.NODE_ENV !== 'test') {
       process.on('uncaughtException', (error: Error) => {

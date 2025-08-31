@@ -37,27 +37,48 @@ describe('UserInput', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStartAgent = vi.fn(() => Promise.resolve()); 
-    
+    mockStartAgent = vi.fn(() => Promise.resolve());
+
     // Mock the hooks
-    (useIsProcessing as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    (useMessageInputValue as unknown as ReturnType<typeof vi.fn>).mockReturnValue('');
-    (useUIStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSetMessageInputValue);
+    (useIsProcessing as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      false,
+    );
+    (
+      useMessageInputValue as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue('');
+    (useUIStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      mockSetMessageInputValue,
+    );
   });
 
   it('should render the input field and send button', async () => {
-    render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
-    
+    render(
+      <TestLanguageProvider>
+        <UserInput />
+      </TestLanguageProvider>,
+    );
+
     // Wait for the component to render
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('Type your message...')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /send message/i })).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText('Type your message...'),
+      ).toBeInTheDocument();
+      // Look for the send button by its title attribute which contains "Send" or "Envoyer"
+      expect(
+        screen.getByRole('button', {
+          name: /(send message|envoyer le message)/i,
+        }),
+      ).toBeInTheDocument();
     });
   });
 
   it('should update the input value on change', async () => {
-    render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
-    
+    render(
+      <TestLanguageProvider>
+        <UserInput />
+      </TestLanguageProvider>,
+    );
+
     // Wait for the component to render
     await waitFor(() => {
       const textarea = screen.getByPlaceholderText('Type your message...');
@@ -69,14 +90,23 @@ describe('UserInput', () => {
 
   it('should call startAgent and clear input on send button click', async () => {
     // Set up store to have a message
-    (useMessageInputValue as unknown as ReturnType<typeof vi.fn>).mockReturnValue('Test message');
-    
-    render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
-    
+    (
+      useMessageInputValue as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue('Test message');
+
+    render(
+      <TestLanguageProvider>
+        <UserInput />
+      </TestLanguageProvider>,
+    );
+
     // Wait for the component to render
     await waitFor(() => {
-      const sendButton = screen.getByRole('button', { name: /send message/i });
-      
+      // Look for the send button by its title attribute which contains "Send" or "Envoyer"
+      const sendButton = screen.getByRole('button', {
+        name: /(send message|envoyer le message)/i,
+      });
+
       // Click send button
       fireEvent.click(sendButton);
 
@@ -87,20 +117,26 @@ describe('UserInput', () => {
 
   it('should call startAgent and clear input on Enter key press (without Shift)', async () => {
     // Set up store to have a message
-    (useMessageInputValue as unknown as ReturnType<typeof vi.fn>).mockReturnValue('Test message');
-    
-    render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
-    
+    (
+      useMessageInputValue as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue('Test message');
+
+    render(
+      <TestLanguageProvider>
+        <UserInput />
+      </TestLanguageProvider>,
+    );
+
     // Wait for the component to render
     await waitFor(() => {
       const textarea = screen.getByPlaceholderText('Type your message...');
-      
+
       // Press Enter (without Shift)
       fireEvent.keyDown(textarea, { key: 'Enter', code: 'Enter' });
-      
+
       // Verify startAgent was called
       expect(mockStartAgent).toHaveBeenCalledWith('Test message');
-      
+
       // Verify input was cleared
       expect(mockSetMessageInputValue).toHaveBeenCalledWith('');
     });
@@ -108,16 +144,26 @@ describe('UserInput', () => {
 
   it('should not call startAgent or clear input on Shift+Enter key press', async () => {
     // Set up store to have a message
-    (useMessageInputValue as unknown as ReturnType<typeof vi.fn>).mockReturnValue('Test message via Shift+Enter');
-    
-    render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
-    
+    (
+      useMessageInputValue as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue('Test message via Shift+Enter');
+
+    render(
+      <TestLanguageProvider>
+        <UserInput />
+      </TestLanguageProvider>,
+    );
+
     // Wait for the component to render
     await waitFor(() => {
       const textarea = screen.getByPlaceholderText('Type your message...');
-      
+
       // Press Shift+Enter
-      fireEvent.keyDown(textarea, { key: 'Enter', code: 'Enter', shiftKey: true });
+      fireEvent.keyDown(textarea, {
+        key: 'Enter',
+        code: 'Enter',
+        shiftKey: true,
+      });
 
       expect(mockStartAgent).not.toHaveBeenCalled();
       // Note: Since we're using a store for the input value, we can't directly check the textarea value
@@ -126,11 +172,20 @@ describe('UserInput', () => {
   });
 
   it('should not send empty messages', async () => {
-    render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
-    
+    render(
+      <TestLanguageProvider>
+        <UserInput />
+      </TestLanguageProvider>,
+    );
+
     // Wait for the component to render
     await waitFor(() => {
-      const sendButton = screen.getByRole('button', { name: /send message/i });
+      // Look for the send button by its title attribute which contains "Send" or "Envoyer"
+      const sendButton = screen.getByRole('button', {
+        name: /(send message|envoyer le message)/i,
+      });
+
+      // Click send button
       fireEvent.click(sendButton);
 
       expect(mockStartAgent).not.toHaveBeenCalled();
@@ -138,9 +193,15 @@ describe('UserInput', () => {
   });
 
   it('should show loading spinner when processing', async () => {
-    (useIsProcessing as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
-    render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
-    
+    (useIsProcessing as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      true,
+    );
+    render(
+      <TestLanguageProvider>
+        <UserInput />
+      </TestLanguageProvider>,
+    );
+
     // Wait for the component to render
     await waitFor(() => {
       expect(screen.getByLabelText('Loading')).toBeInTheDocument(); // Check for the LoadingSpinner

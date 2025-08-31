@@ -1,12 +1,16 @@
 import { Job, Queue, Worker } from 'bullmq';
 import { spawn as _spawn } from 'child_process';
 import { Redis } from 'ioredis';
-import { Client as PgClient } from 'pg';
 
 import { config, loadConfig } from './config.ts';
+
+// Add debug log at the very beginning
+getLoggerInstance().info('🚀 [WORKER] Worker file loaded and starting...');
 import { getLoggerInstance } from './logger.ts';
 import { Agent } from './modules/agent/agent.ts';
+import { LlmKeyManager } from './modules/llm/LlmKeyManager.ts';
 import { getRedisClientInstance } from './modules/redis/redisClient.ts';
+import { getPostgresPool, DatabaseCircuitBreaker } from './modules/database/index.ts';
 import { SessionManager } from './modules/session/sessionManager.ts';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.ts';
 import { AppError, getErrDetails, UserError } from './utils/errorUtils.ts';
@@ -18,27 +22,97 @@ getLoggerInstance().debug(
   process.env.PATH,
 );
 
+// Add memory monitoring function
+function logMemoryUsage(label: string, log: any) {
+  if (global.gc) {
+    global.gc(); // Force garbage collection if exposed
+  }
+  const usage = process.memoryUsage();
+  log.debug(
+    `[MEMORY] ${label} - RSS: ${Math.round(usage.rss / 1024 / 1024)} MB, ` +
+      `Heap Used: ${Math.round(usage.heapUsed / 1024 / 1024)} MB, ` +
+      `Heap Total: ${Math.round(usage.heapTotal / 1024 / 1024)} MB`,
+  );
+}
+
+// Start periodic key cleanup to maintain healthy key pool
+function startPeriodicKeyCleanup() {
+  const log = getLoggerInstance().child({ module: 'KeyCleanup' });
+  
+  // Run initial cleanup after 30 seconds
+  setTimeout(async () => {
+    try {
+      const result = await LlmKeyManager.cleanupFailedKeys();
+      if (result.cleaned > 0) {
+        log.info(result, 'Initial key cleanup completed');
+      }
+    } catch (error) {
+      log.error({ error }, 'Failed to run initial key cleanup');
+    }
+  }, 30000);
+  
+  // Run periodic cleanup every 15 minutes
+  const cleanupInterval = setInterval(async () => {
+    try {
+      const result = await LlmKeyManager.cleanupFailedKeys();
+      if (result.cleaned > 0) {
+        log.info(result, 'Periodic key cleanup completed');
+      } else {
+        log.debug({ total: result.total }, 'No keys needed cleanup');
+      }
+    } catch (error) {
+      log.error({ error }, 'Failed to run periodic key cleanup');
+    }
+  }, 15 * 60 * 1000); // 15 minutes
+  
+  // Cleanup on process exit
+  process.on('SIGTERM', () => {
+    clearInterval(cleanupInterval);
+    log.info('Key cleanup task stopped');
+  });
+  
+  process.on('SIGINT', () => {
+    clearInterval(cleanupInterval);
+    log.info('Key cleanup task stopped');
+  });
+  
+  log.info('Periodic key cleanup task started (every 15 minutes)');
+}
+
 export async function initializeWorker(
   redisConnection: Redis,
-  pgClient: PgClient,
 ) {
   getLoggerInstance().info(
     { path: process.env.PATH },
     'Worker process.env.PATH at startup:',
   );
 
+  // Initialize PostgreSQL pool and circuit breaker
+  const poolManager = getPostgresPool();
+  const circuitBreaker = new DatabaseCircuitBreaker();
+
   // Afficher les outils détectés au démarrage
   const tools = await getTools();
   getLoggerInstance().info(`${tools.length} tools detected at startup`);
 
   const _jobQueue = new Queue('tasks', { connection: redisConnection });
-  const sessionManager = await SessionManager.create(pgClient);
+
+  // Create session manager with pool manager (temporary wrapper)
+  const sessionManager = await SessionManager.create(poolManager as any);
+
+  // Start periodic key cleanup task
+  startPeriodicKeyCleanup();
 
   const worker = new Worker(
     'tasks',
     async (_job) => {
       if (_job.name === 'process-message') {
-        return processJob(_job, _jobQueue, sessionManager, redisConnection);
+        try {
+          return await processJob(_job, _jobQueue, sessionManager, redisConnection);
+        } catch (error) {
+          getLoggerInstance().error({ err: error, jobId: _job.id }, 'Error processing job');
+          throw error;
+        }
       }
 
       if (_job.name === 'execute-shell-command-detached') {
@@ -116,11 +190,14 @@ export async function initializeWorker(
           });
 
           child.on('close', (code: null | number) => {
-            const finalMessage = `--- DETACHED COMMAND FINISHED ---\nCommand: ${command}\nExit Code: ${code}`;
+            const finalMessage = `--- DETACHED COMMAND FINISHED ---
+Command: ${command}
+Exit Code: ${code}`;
             log.info(finalMessage);
             streamToFrontend(
               'stdout',
-              `\n${finalMessage}`,
+              `
+${finalMessage}`,
               'executeShellCommand',
             );
             resolve(`Detached command finished with code ${code}`);
@@ -130,7 +207,7 @@ export async function initializeWorker(
     },
     {
       autorun: true,
-      concurrency: config.WORKER_CONCURRENCY,
+      concurrency: config.WORKER_CONCURRENCY, // Now optimized for memory usage
       connection: redisConnection,
       maxStalledCount: config.WORKER_MAX_STALLED_COUNT,
       stalledInterval: config.WORKER_STALLED_INTERVAL_MS,
@@ -164,6 +241,9 @@ export async function processJob(
     jobId: _job.id,
     sessionId: _job.data.sessionId,
   });
+
+  // Log initial memory usage
+  logMemoryUsage('Job Start', log);
   log.info(`Traitement du job ${_job.id}`);
 
   const channel = `job:${_job.id}:events`;
@@ -174,20 +254,30 @@ export async function processJob(
 
   try {
     const tools = await getTools();
-    const session = await _sessionManager.getSession(_job.data.sessionId);
-    const activeLlmProvider = session.activeLlmProvider || config.LLM_PROVIDER; // Use configured provider as default
-    const { llmApiKey, llmModelName, llmProvider } = _job.data;
-    log.info(`Agent starting with ${tools.length} tools available`);
-    const agent = new Agent(
-      _job,
-      session,
-      _jobQueue,
-      tools,
-      llmProvider || activeLlmProvider,
-      _sessionManager,
-      llmApiKey,
-      llmModelName,
-    );
+      const session = await _sessionManager.getSession(_job.data.sessionId);
+      const activeLlmProvider = session.activeLlmProvider || config.LLM_PROVIDER; // Use configured provider as default
+      const { llmApiKey, llmModelName, llmProvider } = _job.data;
+ 
+      // Debug provider selection
+      log.info('🔍 PROVIDER DEBUG:', {
+        session_active_provider: session.activeLlmProvider,
+        config_default_provider: config.LLM_PROVIDER,
+        job_llm_provider: llmProvider,
+        final_provider: llmProvider || activeLlmProvider,
+        config_hierarchy: config.LLM_PROVIDER_HIERARCHY
+      });
+ 
+      log.info(`Agent starting with ${tools.length} tools available`);
+      const agent = new Agent(
+        _job,
+        session,
+        _jobQueue,
+        tools,
+        llmProvider || activeLlmProvider,
+        _sessionManager,
+        llmApiKey,
+        llmModelName,
+      );
     log.info(`Agent execution starting...`);
     const finalResponse = await agent.run();
     log.info(`Agent execution completed successfully`);
@@ -199,52 +289,66 @@ export async function processJob(
       type: 'agent_response',
     });
 
-    if (session.history.length > config.HISTORY_MAX_LENGTH) {
-      const summarizedHistory = await summarizeTool.execute(
-        {
-          text: session.history
-            .map((m) => ('content' in m ? m.content : ''))
-            .join('\n'),
-        },
-        {
-          job: _job,
-          llm: null as any,
-          log: log,
-          reportProgress: async () => {},
-          session: session,
-          streamContent: async (data: { content: string; type: string }) => {
-            if (data.type === 'tool_code_image') {
-              redisConnection.publish(
-                channel,
-                JSON.stringify({
-                  content: data.content,
-                  type: 'tool_code_image',
-                }),
-              );
-            } else {
-              redisConnection.publish(
-                channel,
-                JSON.stringify({
-                  content: data.content,
-                  type: 'tool_code',
-                }),
-              );
-            }
+    // Use Gemini-optimized history length if using Gemini
+    const maxHistoryLength =
+      activeLlmProvider === 'gemini'
+        ? config.GEMINI_MAX_HISTORY_LENGTH
+        : config.HISTORY_MAX_LENGTH;
+
+    if (session.history.length > maxHistoryLength) {
+      try {
+        const summarizedHistory = await summarizeTool.execute(
+          {
+            text: session.history
+              .map((m) => ('content' in m ? m.content : ''))
+              .join('\n'),
           },
-          taskQueue: _jobQueue,
-        },
-      );
-      session.history = [
-        {
-          content: summarizedHistory as string,
-          id: crypto.randomUUID(),
-          timestamp: Date.now(),
-          type: 'agent_response',
-        },
-      ];
+          {
+            job: _job,
+            llm: null as any,
+            log: log,
+            reportProgress: async () => {},
+            session: session,
+            streamContent: async (data: { content: string; type: string }) => {
+              if (data.type === 'tool_code_image') {
+                redisConnection.publish(
+                  channel,
+                  JSON.stringify({
+                    content: data.content,
+                    type: 'tool_code_image',
+                  }),
+                );
+              } else {
+                redisConnection.publish(
+                  channel,
+                  JSON.stringify({
+                    content: data.content,
+                    type: 'tool_code',
+                  }),
+                );
+              }
+            },
+            taskQueue: _jobQueue,
+          },
+        );
+        session.history = [
+          {
+            content: summarizedHistory as string,
+            id: crypto.randomUUID(),
+            timestamp: Date.now(),
+            type: 'agent_response',
+          },
+        ];
+      } catch (summarizeError) {
+        log.error({ err: summarizeError }, "Erreur dans la summarization de l'historique");
+        // Continue without summarizing if it fails
+      }
     }
 
     await _sessionManager.saveSession(session, _job, _jobQueue);
+
+    // Log final memory usage
+    logMemoryUsage('Job End', log);
     return finalResponse;
   } catch (error: unknown) {
     const errDetails = getErrDetails(error);
@@ -268,27 +372,108 @@ export async function processJob(
       }
     }
 
-    redisConnection.publish(
-      channel,
-      JSON.stringify({ message: errorMessage, type: eventType }),
-    );
+    try {
+      redisConnection.publish(
+        channel,
+        JSON.stringify({ message: errorMessage, type: eventType }),
+      );
+    } catch (publishError) {
+      log.error({ err: publishError }, "Erreur dans la publication du message d'erreur");
+    }
+    
     throw error;
   } finally {
-    redisConnection.publish(
-      channel,
-      JSON.stringify({ content: 'Stream terminé.', type: 'close' }),
-    );
+    try {
+      redisConnection.publish(
+        channel,
+        JSON.stringify({ content: 'Stream terminé.', type: 'close' }),
+      );
+    } catch (publishError) {
+      log.error({ err: publishError }, "Erreur dans la publication du message de fermeture");
+    }
     log.info(`Traitement du job ${_job.id} terminé`);
     // Attendre un peu pour s'assurer que le message 'close' est envoyé
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }
 
-import { LlmKeyManager } from './modules/llm/LlmKeyManager.ts';
+async function checkWorkerLock(redisClient: Redis): Promise<boolean> {
+  const lockKey = 'worker:singleton:lock';
+  const lockTimeout = 60; // 60 seconds
+  const processId = `${process.pid}:${Date.now()}`;
+  
+  try {
+    // Try to set lock with expiration
+    const result = await redisClient.set(lockKey, processId, 'EX', lockTimeout, 'NX');
+    
+    if (result === 'OK') {
+      getLoggerInstance().info(`✅ Worker lock acquired by process ${process.pid}`);
+      
+      // Refresh lock periodically
+      const refreshInterval = setInterval(async () => {
+        try {
+          const currentLock = await redisClient.get(lockKey);
+          if (currentLock === processId) {
+            await redisClient.expire(lockKey, lockTimeout);
+            getLoggerInstance().debug(`🔄 Worker lock refreshed by process ${process.pid}`);
+          } else {
+            clearInterval(refreshInterval);
+            getLoggerInstance().warn(`⚠️ Worker lock lost by process ${process.pid}, shutting down`);
+            process.exit(0);
+          }
+        } catch (error) {
+          getLoggerInstance().error({ error }, 'Error refreshing worker lock');
+        }
+      }, (lockTimeout / 2) * 1000);
+      
+      // Clean up on exit
+      process.on('SIGTERM', async () => {
+        clearInterval(refreshInterval);
+        await redisClient.del(lockKey);
+        getLoggerInstance().info(`🧹 Worker lock released by process ${process.pid}`);
+      });
+      
+      process.on('SIGINT', async () => {
+        clearInterval(refreshInterval);
+        await redisClient.del(lockKey);
+        getLoggerInstance().info(`🧹 Worker lock released by process ${process.pid}`);
+      });
+      
+      return true;
+    } else {
+      const existingLock = await redisClient.get(lockKey);
+      getLoggerInstance().warn(`❌ Worker already running with lock: ${existingLock}, process ${process.pid} will exit`);
+      return false;
+    }
+  } catch (error) {
+    getLoggerInstance().error({ error }, 'Error checking worker lock');
+    return false;
+  }
+}
 
 if (process.env.NODE_ENV !== 'test') {
   // Load configuration for the worker process
+  getLoggerInstance().info('🔧 [WORKER] Starting configuration load...');
   await loadConfig();
+  getLoggerInstance().info('✅ [WORKER] Configuration loaded successfully');
+  
+  // Check worker singleton lock before proceeding
+  const redisConnection = getRedisClientInstance();
+  const canProceed = await checkWorkerLock(redisConnection);
+  
+  if (!canProceed) {
+    getLoggerInstance().info('🚫 [WORKER] Another worker is already running, exiting...');
+    process.exit(0);
+  }
+
+  getLoggerInstance().info('🔍 DEBUG WORKER CONFIG:', {
+    LLM_PROVIDER: config.LLM_PROVIDER,
+    LLM_API_KEY_exists: !!config.LLM_API_KEY,
+    LLM_MODEL_NAME: config.LLM_MODEL_NAME,
+    LLM_API_KEY_first_20: config.LLM_API_KEY?.substring(0, 20),
+    current_working_directory: process.cwd(),
+    NODE_ENV: process.env.NODE_ENV
+  });
 
   if (config.LLM_API_KEY && config.LLM_PROVIDER && config.LLM_MODEL_NAME) {
     await LlmKeyManager.addKey(
@@ -312,54 +497,34 @@ if (process.env.NODE_ENV !== 'test') {
   getLoggerInstance().info(
     `PostgreSQL Host for Worker: ${config.POSTGRES_HOST}`,
   );
-  const connectionString = `postgresql://${config.POSTGRES_USER}:${config.POSTGRES_PASSWORD}@${config.POSTGRES_HOST}:${config.POSTGRES_PORT}/${config.POSTGRES_DB}`;
-  const redisConnection = getRedisClientInstance();
-  const pgClient = new PgClient({
-    connectionString: connectionString,
-  });
+  getLoggerInstance().info(
+    `PostgreSQL Connection Details: host=${config.POSTGRES_HOST}, user=${config.POSTGRES_USER}, db=${config.POSTGRES_DB}, password_length=${config.POSTGRES_PASSWORD?.length || 0}`,
+  );
 
-  // Gestion d'erreur PostgreSQL avec reconnexion
-  pgClient.on('error', (err) => {
-    getLoggerInstance().error(
-      { err },
-      'PostgreSQL connection error, attempting to reconnect...',
-    );
-    setTimeout(() => {
-      pgClient.connect().catch((connectErr) => {
-        getLoggerInstance().error(
-          { err: connectErr },
-          'Failed to reconnect to PostgreSQL',
-        );
-      });
-    }, 5000);
-  });
+  // Initialize PostgreSQL pool for worker
+  const poolManager = getPostgresPool();
+  const circuitBreaker = new DatabaseCircuitBreaker();
 
-  pgClient.on('end', () => {
-    getLoggerInstance().info(
-      'PostgreSQL connection ended, attempting to reconnect...',
-    );
-    setTimeout(() => {
-      pgClient.connect().catch((connectErr) => {
-        getLoggerInstance().error(
-          { err: connectErr },
-          'Failed to reconnect to PostgreSQL',
-        );
-      });
-    }, 2000);
-  });
-
+  // Test pool connection
   try {
-    await pgClient.connect();
-    getLoggerInstance().info('PostgreSQL connected successfully');
+    await circuitBreaker.execute(async () => {
+      const client = await poolManager.getClient();
+      await client.query('SELECT 1 as worker_health_check');
+      client.release();
+    });
+    getLoggerInstance().info('PostgreSQL pool initialized successfully for worker');
   } catch (err) {
     getLoggerInstance().error(
       { err },
-      'Failed to connect to PostgreSQL initially',
+      'Failed to initialize PostgreSQL pool for worker',
     );
     process.exit(1);
   }
 
-  initializeWorker(redisConnection, pgClient).catch((err) => {
+  // Add a small delay between worker initializations to prevent rapid startup
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  initializeWorker(redisConnection).catch((err) => {
     getLoggerInstance().error({ err }, "Échec de l'initialisation du worker");
     process.exit(1);
   });

@@ -65,8 +65,20 @@ export const mockState: AppState = {
   },
   updateLeaderboardStats: vi.fn(),
   sessions: [
-    { id: 'session-1', name: 'Session One', timestamp: Date.now(), status: 'active', messages: [] },
-    { id: 'session-2', name: 'Session Two', timestamp: Date.now() - 1000 * 60 * 60, status: 'completed', messages: [] },
+    {
+      id: 'session-1',
+      name: 'Session One',
+      timestamp: Date.now(),
+      status: 'active',
+      messages: [],
+    },
+    {
+      id: 'session-2',
+      name: 'Session Two',
+      timestamp: Date.now() - 1000 * 60 * 60,
+      status: 'completed',
+      messages: [],
+    },
   ],
   activeSessionId: 'session-1', // Set an active session for the test
   sessionStatus: 'unknown',
@@ -145,8 +157,20 @@ export const resetMockStore = () => {
   mockState.isProcessing = false;
   mockState.messageInputValue = '';
   mockState.sessions = [
-    { id: 'session-1', name: 'Session One', timestamp: Date.now(), status: 'active', messages: [] },
-    { id: 'session-2', name: 'Session Two', timestamp: Date.now() - 1000 * 60 * 60, status: 'completed', messages: [] },
+    {
+      id: 'session-1',
+      name: 'Session One',
+      timestamp: Date.now(),
+      status: 'active',
+      messages: [],
+    },
+    {
+      id: 'session-2',
+      name: 'Session Two',
+      timestamp: Date.now() - 1000 * 60 * 60,
+      status: 'completed',
+      messages: [],
+    },
   ];
   mockState.activeSessionId = 'session-1';
   mockState.sessionId = 'session-1';

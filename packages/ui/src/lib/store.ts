@@ -6,12 +6,29 @@
 
 import { create } from 'zustand';
 
-import { getTools, saveSessionApi, loadSessionApi, deleteSessionApi, renameSessionApi, addLlmApiKeyApi, removeLlmApiKeyApi, editLlmApiKeyApi, getLeaderboardStats, getLlmApiKeysApi, loadAllSessionsApi, setActiveLlmProviderApi, getMasterLlmApiKeyApi } from './api';
+import {
+  getTools,
+  saveSessionApi,
+  loadSessionApi,
+  deleteSessionApi,
+  renameSessionApi,
+  addLlmApiKeyApi,
+  removeLlmApiKeyApi,
+  editLlmApiKeyApi,
+  getLeaderboardStats,
+  getLlmApiKeysApi,
+  loadAllSessionsApi,
+  setActiveLlmProviderApi,
+  getMasterLlmApiKeyApi,
+} from './api';
 import type { SessionData } from './api';
 import type { LlmApiKey as ExternalLlmApiKey, LlmApiKey } from '../store/types';
 import { getTranslations } from './translations';
 import { generateUUID } from './utils/uuid';
-import { type ChatMessage as ExternalChatMessage, type NewChatMessage } from '../types/chat.d';
+import {
+  type ChatMessage as ExternalChatMessage,
+  type NewChatMessage,
+} from '../types/chat.d';
 
 // Re-define local interfaces for messages, compatible with the backend stream
 // Local ChatMessage union type (for internal store use)
@@ -45,7 +62,12 @@ interface PartialLlmApiKey {
   metadata?: { environment: 'universal'; tags: string[]; description?: string };
 }
 
-const createLlmApiKey = (provider: string, key: string, baseUrl?: string, model?: string): ExternalLlmApiKey => ({
+const createLlmApiKey = (
+  provider: string,
+  key: string,
+  baseUrl?: string,
+  model?: string,
+): ExternalLlmApiKey => ({
   id: Math.random().toString(36).substring(2, 15),
   providerId: provider,
   providerName: provider,
@@ -70,7 +92,7 @@ const createLlmApiKey = (provider: string, key: string, baseUrl?: string, model?
 interface ToastOptions {
   title?: string;
   description?: string;
-  variant?: "default" | "destructive";
+  variant?: 'default' | 'destructive';
 }
 
 export interface AppState {
@@ -114,11 +136,11 @@ export interface AppState {
   isCanvasPinned: boolean;
   isCanvasFullscreen: boolean;
   canvasWidth: number;
-  
+
   // Todo List state
   isTodoListVisible: boolean;
   setIsTodoListVisible: (isVisible: boolean) => void;
-  
+
   // Canvas history for navigation
   canvasHistory: Array<{
     id: string;
@@ -137,9 +159,20 @@ export interface AppState {
   // LLM API Key Management
   llmApiKeys: ExternalLlmApiKey[];
   activeLlmApiKeyIndex: number;
-  addLlmApiKey: (provider: string, key: string, baseUrl?: string, model?: string) => Promise<void>;
+  addLlmApiKey: (
+    provider: string,
+    key: string,
+    baseUrl?: string,
+    model?: string,
+  ) => Promise<void>;
   removeLlmApiKey: (index: number) => Promise<void>;
-  editLlmApiKey: (index: number, provider: string, key: string, baseUrl?: string, model?: string) => Promise<void>;
+  editLlmApiKey: (
+    index: number,
+    provider: string,
+    key: string,
+    baseUrl?: string,
+    model?: string,
+  ) => Promise<void>;
   setActiveLlmApiKey: (index: number) => Promise<void>;
 
   // Caching
@@ -154,12 +187,14 @@ export interface AppState {
     sessionsCreated: number;
     apiKeysAdded: number;
   };
-  updateLeaderboardStats: (stats: Partial<{
-    tokensSaved: number;
-    successfulRuns: number;
-    sessionsCreated: number;
-    apiKeysAdded: number;
-  }>) => void;
+  updateLeaderboardStats: (
+    stats: Partial<{
+      tokensSaved: number;
+      successfulRuns: number;
+      sessionsCreated: number;
+      apiKeysAdded: number;
+    }>,
+  ) => void;
 
   // Session history
   sessions: Session[];
@@ -171,7 +206,7 @@ export interface AppState {
   setAuthToken: (authToken: null | string) => void; // Pour l'auth backend seulement
   setBrowserStatus: (status: string) => void;
   setCodeExecutionEnabled: (codeExecutionEnabled: boolean) => void;
-  
+
   setIsProcessing: (isProcessing: boolean) => void;
   setJobId: (jobId: null | string) => void;
   setMessageInputValue: (messageInputValue: string) => void;
@@ -191,7 +226,7 @@ export interface AppState {
   setIsRemovingLlmApiKey: (isRemoving: boolean) => void;
   setIsSettingActiveLlmApiKey: (isSetting: boolean) => void;
   setIsLoadingLeaderboardStats: (isLoading: boolean) => void;
-  
+
   setTokenStatus: (tokenStatus: boolean) => void;
   setToolCount: (toolCount: number | string) => void;
   setToolCreationEnabled: (toolCreationEnabled: boolean) => void;
@@ -213,12 +248,18 @@ export interface AppState {
   toggleIsCanvasVisible: () => void;
   clearCanvas: () => void;
   resetCanvas: () => void;
-  addCanvasToHistory: (title: string, content: string, type: 'html' | 'markdown' | 'url' | 'text') => void;
+  addCanvasToHistory: (
+    title: string,
+    content: string,
+    type: 'html' | 'markdown' | 'url' | 'text',
+  ) => void;
   navigateToCanvas: (index: number) => void;
   removeCanvasFromHistory: (index: number) => void;
   clearCanvasHistory: () => void;
   currentPage: 'chat' | 'leaderboard' | 'llm-api-keys' | 'oauth';
-  setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys' | 'oauth') => void;
+  setCurrentPage: (
+    page: 'chat' | 'leaderboard' | 'llm-api-keys' | 'oauth',
+  ) => void;
 
   // Session history actions
   saveSession: (name: string) => void;
@@ -227,7 +268,6 @@ export interface AppState {
   deleteAllSessions: () => void;
   renameSession: (id: string, newName: string) => void;
 
-  
   tokenStatus: boolean;
   toolCount: number | string;
   toolCreationEnabled: boolean;
@@ -247,7 +287,10 @@ export const useStore = create<AppState>((set, get) => ({
   addMessage: (message) =>
     set((state) => {
       const baseProps = { id: generateUUID(), timestamp: Date.now() };
-      const newMessage: ExternalChatMessage = { ...baseProps, ...message } as ExternalChatMessage;
+      const newMessage: ExternalChatMessage = {
+        ...baseProps,
+        ...message,
+      } as ExternalChatMessage;
       return { messages: [...state.messages, newMessage] };
     }),
   agentStatus: null,
@@ -260,12 +303,25 @@ export const useStore = create<AppState>((set, get) => ({
   debugLog: [],
   messages: [],
   fetchAndDisplayToolCount: async () => {
-    const { addDebugLog, authToken, sessionId, setToolCount, updateSessionStatus, cache, setCache, setIsLoadingTools } = get();
-    addDebugLog(`[${new Date().toLocaleTimeString()}] [DEBUG] fetchAndDisplayToolCount called. authToken: ${authToken ? 'set' : 'null'}, sessionId: ${sessionId ? 'set' : 'null'}`);
-    
+    const {
+      addDebugLog,
+      authToken,
+      sessionId,
+      setToolCount,
+      updateSessionStatus,
+      cache,
+      setCache,
+      setIsLoadingTools,
+    } = get();
+    addDebugLog(
+      `[${new Date().toLocaleTimeString()}] [DEBUG] fetchAndDisplayToolCount called. authToken: ${authToken ? 'set' : 'null'}, sessionId: ${sessionId ? 'set' : 'null'}`,
+    );
+
     // Type guard: ensure authToken and sessionId are not null
     if (!authToken || !sessionId) {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [DEBUG] authToken or sessionId is null, returning early.`);
+      addDebugLog(
+        `[${new Date().toLocaleTimeString()}] [DEBUG] authToken or sessionId is null, returning early.`,
+      );
       return;
     }
     // After this point, TypeScript knows authToken and sessionId are strings
@@ -276,8 +332,10 @@ export const useStore = create<AppState>((set, get) => ({
     const cachedData = cache[cacheKey];
     const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-    if (cachedData && (Date.now() - cachedData.timestamp < CACHE_DURATION)) {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [CACHE] Using cached tools data.`);
+    if (cachedData && Date.now() - cachedData.timestamp < CACHE_DURATION) {
+      addDebugLog(
+        `[${new Date().toLocaleTimeString()}] [CACHE] Using cached tools data.`,
+      );
       setToolCount((cachedData.data as { name: string }[]).length);
       updateSessionStatus('valid');
       return;
@@ -285,16 +343,22 @@ export const useStore = create<AppState>((set, get) => ({
 
     setIsLoadingTools(true);
     const translations = getTranslations();
-    addDebugLog(`[${new Date().toLocaleTimeString()}] [REQUEST] ${translations.fetchingToolsList}`);
+    addDebugLog(
+      `[${new Date().toLocaleTimeString()}] [REQUEST] ${translations.fetchingToolsList}`,
+    );
     try {
       const tools = (await getTools(token, id)) as { name: string }[];
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [SUCCESS] ${tools.length} ${translations.toolsFound}.`);
+      addDebugLog(
+        `[${new Date().toLocaleTimeString()}] [SUCCESS] ${tools.length} ${translations.toolsFound}.`,
+      );
       setToolCount(tools.length);
       updateSessionStatus('valid');
       setCache(cacheKey, tools);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] ${translations.getToolsError}: ${message}`);
+      addDebugLog(
+        `[${new Date().toLocaleTimeString()}] [ERROR] ${translations.getToolsError}: ${message}`,
+      );
       setToolCount(translations.error);
       updateSessionStatus('error');
     } finally {
@@ -320,7 +384,8 @@ export const useStore = create<AppState>((set, get) => ({
   canvasHistory: [],
   currentCanvasIndex: -1,
   isTodoListVisible: false,
-  setIsTodoListVisible: (isVisible: boolean) => set({ isTodoListVisible: isVisible }),
+  setIsTodoListVisible: (isVisible: boolean) =>
+    set({ isTodoListVisible: isVisible }),
   isControlPanelVisible: false,
   isSettingsModalOpen: false,
   isDarkMode: false,
@@ -358,21 +423,33 @@ export const useStore = create<AppState>((set, get) => ({
       if (saved) {
         const keys = JSON.parse(saved);
         // Remove duplicates based on provider and key combination, but preserve master key
-        const uniqueKeys = keys.filter((key: ExternalLlmApiKey, index: number, arr: ExternalLlmApiKey[]) => {
-          // Always keep master keys
-          if (key.id === 'master-key' || key.keyName === 'Master Key (.env)') {
-            return true;
-          }
-          // For other keys, remove duplicates based on provider and key combination
-          return arr.findIndex(k => 
-            (k.id === 'master-key' || k.keyName === 'Master Key (.env)') || 
-            (k.provider === key.provider && k.key === key.key)
-          ) === index;
-        });
+        const uniqueKeys = keys.filter(
+          (key: ExternalLlmApiKey, index: number, arr: ExternalLlmApiKey[]) => {
+            // Always keep master keys
+            if (
+              key.id === 'master-key' ||
+              key.keyName === 'Master Key (.env)'
+            ) {
+              return true;
+            }
+            // For other keys, remove duplicates based on provider and key combination
+            return (
+              arr.findIndex(
+                (k) =>
+                  k.id === 'master-key' ||
+                  k.keyName === 'Master Key (.env)' ||
+                  (k.provider === key.provider && k.key === key.key),
+              ) === index
+            );
+          },
+        );
         // If duplicates were found, save the cleaned version
         if (uniqueKeys.length !== keys.length) {
           console.log('🔑 [CLEANUP] Removed duplicate LLM API keys');
-          localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(uniqueKeys));
+          localStorage.setItem(
+            'agenticForgeLlmApiKeys',
+            JSON.stringify(uniqueKeys),
+          );
         }
         return uniqueKeys;
       }
@@ -394,26 +471,36 @@ export const useStore = create<AppState>((set, get) => ({
   setAgentStatus: (agentStatus) => set({ agentStatus }),
   setToolStatus: (toolStatus) => set({ toolStatus }),
   setAuthToken: (authToken) => {
-    console.log('🔐 [Store] Setting backend auth token (not LLM key):', authToken?.substring(0, 30) + '...');
+    console.log(
+      '🔐 [Store] Setting backend auth token (not LLM key):',
+      authToken?.substring(0, 30) + '...',
+    );
     set({ authToken });
   },
   setBrowserStatus: (status) => set({ browserStatus: status }),
-  setCodeExecutionEnabled: (codeExecutionEnabled) => set({ codeExecutionEnabled }),
-  
-  setIsProcessing: (isProcessing) => set((state) => {
-    if (state.isProcessing && !isProcessing && state.agentStatus !== 'error') {
-      setTimeout(() => {
-        get().updateLeaderboardStats({ successfulRuns: 1 });
-      }, 0);
-    }
-    return { isProcessing };
-  }),
+  setCodeExecutionEnabled: (codeExecutionEnabled) =>
+    set({ codeExecutionEnabled }),
+
+  setIsProcessing: (isProcessing) =>
+    set((state) => {
+      if (
+        state.isProcessing &&
+        !isProcessing &&
+        state.agentStatus !== 'error'
+      ) {
+        setTimeout(() => {
+          get().updateLeaderboardStats({ successfulRuns: 1 });
+        }, 0);
+      }
+      return { isProcessing };
+    }),
   setJobId: (jobId) => set({ jobId }),
   setMessageInputValue: (messageInputValue) => set({ messageInputValue }),
   setServerHealthy: (serverHealthy) => set({ serverHealthy }),
   setSessionId: (sessionId) => set({ sessionId }),
   setSessionStatus: (sessionStatus) => set({ sessionStatus }),
-  setStreamCloseFunc: (func: (() => void) | null) => set({ streamCloseFunc: func }),
+  setStreamCloseFunc: (func: (() => void) | null) =>
+    set({ streamCloseFunc: func }),
   setActiveCliJobId: (jobId) => set({ activeCliJobId: jobId }),
 
   // Loading state setters
@@ -424,8 +511,10 @@ export const useStore = create<AppState>((set, get) => ({
   setIsRenamingSession: (isRenamingSession) => set({ isRenamingSession }),
   setIsAddingLlmApiKey: (isAddingLlmApiKey) => set({ isAddingLlmApiKey }),
   setIsRemovingLlmApiKey: (isRemovingLlmApiKey) => set({ isRemovingLlmApiKey }),
-  setIsSettingActiveLlmApiKey: (isSettingActiveLlmApiKey) => set({ isSettingActiveLlmApiKey }),
-  setIsLoadingLeaderboardStats: (isLoadingLeaderboardStats) => set({ isLoadingLeaderboardStats }),
+  setIsSettingActiveLlmApiKey: (isSettingActiveLlmApiKey) =>
+    set({ isSettingActiveLlmApiKey }),
+  setIsLoadingLeaderboardStats: (isLoadingLeaderboardStats) =>
+    set({ isLoadingLeaderboardStats }),
   setTokenStatus: (tokenStatus) => set({ tokenStatus }),
   setToolCount: (toolCount) => set({ toolCount }),
   setAgentProgress: (agentProgress) => set({ agentProgress }),
@@ -436,7 +525,11 @@ export const useStore = create<AppState>((set, get) => ({
 
   // Canvas setters
   setCanvasContent: (content) => {
-    console.log('🎨 [Store] setCanvasContent appelé avec:', content.length, 'caractères');
+    console.log(
+      '🎨 [Store] setCanvasContent appelé avec:',
+      content.length,
+      'caractères',
+    );
     set({ canvasContent: content });
   },
   setCanvasType: (type) => {
@@ -448,35 +541,48 @@ export const useStore = create<AppState>((set, get) => ({
     set({ isCanvasVisible: isVisible });
   },
   setCanvasPinned: (isPinned: boolean) => set({ isCanvasPinned: isPinned }),
-  setCanvasFullscreen: (isFullscreen: boolean) => set({ isCanvasFullscreen: isFullscreen }),
+  setCanvasFullscreen: (isFullscreen: boolean) =>
+    set({ isCanvasFullscreen: isFullscreen }),
   setCanvasWidth: (width: number) => set({ canvasWidth: width }),
-  setIsControlPanelVisible: (isVisible: boolean) => set({ isControlPanelVisible: isVisible }),
-  setIsSettingsModalOpen: (isOpen: boolean) => set({ isSettingsModalOpen: isOpen }),
-  toggleDarkMode: () => set((state) => {
-    const newDarkMode = !state.isDarkMode;
-    localStorage.setItem('agenticForgeDarkMode', String(newDarkMode));
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    return { isDarkMode: newDarkMode };
-  }),
-  toggleDebugLogVisibility: () => set((state) => ({ isDebugLogVisible: !state.isDebugLogVisible })),
+  setIsControlPanelVisible: (isVisible: boolean) =>
+    set({ isControlPanelVisible: isVisible }),
+  setIsSettingsModalOpen: (isOpen: boolean) =>
+    set({ isSettingsModalOpen: isOpen }),
+  toggleDarkMode: () =>
+    set((state) => {
+      const newDarkMode = !state.isDarkMode;
+      localStorage.setItem('agenticForgeDarkMode', String(newDarkMode));
+      if (newDarkMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      return { isDarkMode: newDarkMode };
+    }),
+  toggleDebugLogVisibility: () =>
+    set((state) => ({ isDebugLogVisible: !state.isDebugLogVisible })),
 
   // LLM API Key Management actions
-  addLlmApiKey: async (provider: string, key: string, baseUrl?: string, model?: string) => {
+  addLlmApiKey: async (
+    provider: string,
+    key: string,
+    baseUrl?: string,
+    model?: string,
+  ) => {
     const { setIsAddingLlmApiKey, updateLeaderboardStats } = get();
     setIsAddingLlmApiKey(true);
     try {
       await addLlmApiKeyApi(provider, key, baseUrl, model);
       const llmApiKeys = get().llmApiKeys; // Get current keys
-      const newKeys = [...llmApiKeys, createLlmApiKey(provider, key, baseUrl, model)];
+      const newKeys = [
+        ...llmApiKeys,
+        createLlmApiKey(provider, key, baseUrl, model),
+      ];
       set({ llmApiKeys: newKeys });
       localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(newKeys));
       updateLeaderboardStats({ apiKeysAdded: 1 });
     } catch (error) {
-      console.error("Failed to add LLM API key to backend:", error);
+      console.error('Failed to add LLM API key to backend:', error);
     } finally {
       setIsAddingLlmApiKey(false);
     }
@@ -491,48 +597,73 @@ export const useStore = create<AppState>((set, get) => ({
       localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(newKeys));
       localStorage.setItem('agenticForgeActiveLlmKeyIndex', '-1');
     } catch (error) {
-      console.error("Failed to remove LLM API key from backend:", error);
+      console.error('Failed to remove LLM API key from backend:', error);
     } finally {
       setIsRemovingLlmApiKey(false);
     }
   },
-  editLlmApiKey: async (index: number, provider: string, key: string, baseUrl?: string, model?: string) => {
+  editLlmApiKey: async (
+    index: number,
+    provider: string,
+    key: string,
+    baseUrl?: string,
+    model?: string,
+  ) => {
     const { setIsRemovingLlmApiKey, setIsAddingLlmApiKey } = get();
     setIsRemovingLlmApiKey(true);
     try {
       // Edit the key using the API
       await editLlmApiKeyApi(index, provider, key, baseUrl, model);
-      
+
       // Update the state
       const llmApiKeys = get().llmApiKeys;
       const newKeys = [...llmApiKeys];
       newKeys[index] = createLlmApiKey(provider, key, baseUrl, model);
       set({ llmApiKeys: newKeys });
     } catch (error) {
-      console.error("Failed to edit LLM API key:", error);
+      console.error('Failed to edit LLM API key:', error);
     } finally {
       setIsRemovingLlmApiKey(false);
       setIsAddingLlmApiKey(false);
     }
   },
   setActiveLlmApiKey: async (index: number) => {
-    const { llmApiKeys, authToken, sessionId, addDebugLog, toast, setIsSettingActiveLlmApiKey } = get();
+    const {
+      llmApiKeys,
+      authToken,
+      sessionId,
+      addDebugLog,
+      toast,
+      setIsSettingActiveLlmApiKey,
+    } = get();
     if (index < 0 || index >= llmApiKeys.length) {
-      console.error("Invalid LLM API key index.");
+      console.error('Invalid LLM API key index.');
       return;
     }
-    const selectedProvider = llmApiKeys[index].provider || llmApiKeys[index].providerId;
+    const selectedProvider =
+      llmApiKeys[index].provider || llmApiKeys[index].providerId;
     setIsSettingActiveLlmApiKey(true);
     try {
       await setActiveLlmProviderApi(selectedProvider, authToken, sessionId);
       set({ activeLlmApiKeyIndex: index });
       localStorage.setItem('agenticForgeActiveLlmKeyIndex', index.toString());
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Active LLM provider set to: ${selectedProvider}`);
-      toast({ title: "LLM Provider Changed", description: `Active LLM provider set to ${selectedProvider}.` });
+      addDebugLog(
+        `[${new Date().toLocaleTimeString()}] [INFO] Active LLM provider set to: ${selectedProvider}`,
+      );
+      toast({
+        title: 'LLM Provider Changed',
+        description: `Active LLM provider set to ${selectedProvider}.`,
+      });
     } catch (error) {
-      console.error("Failed to set active LLM provider:", error);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Failed to set active LLM provider: ${error instanceof Error ? error.message : String(error)}`);
-      toast({ title: "Error", description: "Failed to set active LLM provider.", variant: "destructive" });
+      console.error('Failed to set active LLM provider:', error);
+      addDebugLog(
+        `[${new Date().toLocaleTimeString()}] [ERROR] Failed to set active LLM provider: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      toast({
+        title: 'Error',
+        description: 'Failed to set active LLM provider.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSettingActiveLlmApiKey(false);
     }
@@ -540,28 +671,32 @@ export const useStore = create<AppState>((set, get) => ({
 
   clearCanvas: () => {
     console.log('🎨 [Store] clearCanvas appelé');
-    set((state) => ({ 
-      canvasContent: '', 
+    set((state) => ({
+      canvasContent: '',
       canvasType: 'text',
       isCanvasVisible: state.isCanvasPinned ? true : false,
-      isCanvasFullscreen: false
+      isCanvasFullscreen: false,
     }));
   },
   resetCanvas: () => {
     console.log('🎨 [Store] resetCanvas appelé - réinitialisation complète');
-    set({ 
-      canvasContent: '', 
+    set({
+      canvasContent: '',
       canvasType: 'text',
       isCanvasVisible: false,
       isCanvasPinned: false,
       isCanvasFullscreen: false,
       canvasWidth: 500,
       canvasHistory: [],
-      currentCanvasIndex: -1
+      currentCanvasIndex: -1,
     });
   },
-  
-  addCanvasToHistory: (title: string, content: string, type: 'html' | 'markdown' | 'url' | 'text') => {
+
+  addCanvasToHistory: (
+    title: string,
+    content: string,
+    type: 'html' | 'markdown' | 'url' | 'text',
+  ) => {
     console.log('🎨 [Store] addCanvasToHistory appelé avec:', title);
     set((state) => {
       const newCanvas = {
@@ -569,28 +704,28 @@ export const useStore = create<AppState>((set, get) => ({
         title,
         content,
         type,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
-      
+
       const newHistory = [...state.canvasHistory, newCanvas];
       const newIndex = newHistory.length - 1;
-      
+
       // Ajuster la largeur du canvas si nécessaire
       const currentCanvasWidth = state.canvasWidth;
       const maxCanvasWidth = Math.min(800, window.innerWidth * 0.6);
       const adjustedCanvasWidth = Math.min(currentCanvasWidth, maxCanvasWidth);
-      
+
       return {
         canvasHistory: newHistory,
         currentCanvasIndex: newIndex,
         canvasContent: content,
         canvasType: type,
         isCanvasVisible: true,
-        canvasWidth: adjustedCanvasWidth
+        canvasWidth: adjustedCanvasWidth,
       };
     });
   },
-  
+
   navigateToCanvas: (index: number) => {
     console.log('🎨 [Store] navigateToCanvas appelé avec index:', index);
     set((state) => {
@@ -599,19 +734,19 @@ export const useStore = create<AppState>((set, get) => ({
         return {
           currentCanvasIndex: index,
           canvasContent: canvas.content,
-          canvasType: canvas.type
+          canvasType: canvas.type,
         };
       }
       return state;
     });
   },
-  
+
   removeCanvasFromHistory: (index: number) => {
     console.log('🎨 [Store] removeCanvasFromHistory appelé avec index:', index);
     set((state) => {
       const newHistory = state.canvasHistory.filter((_, i) => i !== index);
       let newIndex = state.currentCanvasIndex;
-      
+
       // Ajuster l'index si nécessaire
       if (index === state.currentCanvasIndex) {
         // Si on supprime l'élément actuel, aller au précédent ou suivant
@@ -620,65 +755,82 @@ export const useStore = create<AppState>((set, get) => ({
         // Si on supprime un élément avant l'actuel, décrémenter l'index
         newIndex = state.currentCanvasIndex - 1;
       }
-      
+
       // Si plus d'historique, vider le canvas
       if (newHistory.length === 0) {
         return {
           canvasHistory: [],
           currentCanvasIndex: -1,
           canvasContent: '',
-          canvasType: 'text'
+          canvasType: 'text',
         };
       }
-      
+
       const currentCanvas = newHistory[newIndex];
       return {
         canvasHistory: newHistory,
         currentCanvasIndex: newIndex,
         canvasContent: currentCanvas?.content || '',
-        canvasType: currentCanvas?.type || 'text'
+        canvasType: currentCanvas?.type || 'text',
       };
     });
   },
-  
+
   clearCanvasHistory: () => {
     console.log('🎨 [Store] clearCanvasHistory appelé');
-    set({ 
+    set({
       canvasHistory: [],
       currentCanvasIndex: -1,
       canvasContent: '',
       canvasType: 'text',
-      isCanvasFullscreen: false
+      isCanvasFullscreen: false,
     });
   },
 
   // Caching actions
-  setCache: (key: string, data: unknown) => set((state) => ({
-    cache: { ...state.cache, [key]: { data, timestamp: Date.now() } },
-  })),
+  setCache: (key: string, data: unknown) =>
+    set((state) => ({
+      cache: { ...state.cache, [key]: { data, timestamp: Date.now() } },
+    })),
   clearCache: () => set({ cache: {} }),
 
   // Leaderboard actions
-  updateLeaderboardStats: (stats: Partial<{
-    tokensSaved: number;
-    successfulRuns: number;
-    sessionsCreated: number;
-    apiKeysAdded: number;
-  }>) => set((state) => {
-    const updatedStats = {
-      tokensSaved: state.leaderboardStats.tokensSaved + (stats.tokensSaved || 0),
-      successfulRuns: state.leaderboardStats.successfulRuns + (stats.successfulRuns || 0),
-      sessionsCreated: state.leaderboardStats.sessionsCreated + (stats.sessionsCreated || 0),
-      apiKeysAdded: state.leaderboardStats.apiKeysAdded + (stats.apiKeysAdded || 0),
-    };
-    localStorage.setItem('agenticForgeLeaderboardStats', JSON.stringify(updatedStats));
-    return { leaderboardStats: updatedStats };
-  }),
+  updateLeaderboardStats: (
+    stats: Partial<{
+      tokensSaved: number;
+      successfulRuns: number;
+      sessionsCreated: number;
+      apiKeysAdded: number;
+    }>,
+  ) =>
+    set((state) => {
+      const updatedStats = {
+        tokensSaved:
+          state.leaderboardStats.tokensSaved + (stats.tokensSaved || 0),
+        successfulRuns:
+          state.leaderboardStats.successfulRuns + (stats.successfulRuns || 0),
+        sessionsCreated:
+          state.leaderboardStats.sessionsCreated + (stats.sessionsCreated || 0),
+        apiKeysAdded:
+          state.leaderboardStats.apiKeysAdded + (stats.apiKeysAdded || 0),
+      };
+      localStorage.setItem(
+        'agenticForgeLeaderboardStats',
+        JSON.stringify(updatedStats),
+      );
+      return { leaderboardStats: updatedStats };
+    }),
 
   // Session history actions
   // Session history actions
   saveSession: (name: string) => async () => {
-    const { sessionId, messages, sessions, setIsSavingSession, updateLeaderboardStats } = get();
+    const {
+      sessionId,
+      messages,
+      sessions,
+      setIsSavingSession,
+      updateLeaderboardStats,
+    } = get();
     if (!sessionId) return;
 
     const sessionToSave: Session = {
@@ -698,12 +850,18 @@ export const useStore = create<AppState>((set, get) => ({
     setIsSavingSession(true);
     try {
       await saveSessionApi(sessionDataToSend);
-      const updatedSessions = [...sessions.filter(s => s.id !== sessionId), sessionToSave];
-      localStorage.setItem('agenticForgeSessions', JSON.stringify(updatedSessions));
+      const updatedSessions = [
+        ...sessions.filter((s) => s.id !== sessionId),
+        sessionToSave,
+      ];
+      localStorage.setItem(
+        'agenticForgeSessions',
+        JSON.stringify(updatedSessions),
+      );
       set({ sessions: updatedSessions });
       updateLeaderboardStats({ sessionsCreated: 1 });
     } catch (error) {
-      console.error("Failed to save session to backend:", error);
+      console.error('Failed to save session to backend:', error);
     } finally {
       setIsSavingSession(false);
     }
@@ -720,7 +878,7 @@ export const useStore = create<AppState>((set, get) => ({
         activeSessionId: sessionToLoad.id,
       });
     } catch (error) {
-      console.error("Failed to load session from backend:", error);
+      console.error('Failed to load session from backend:', error);
     } finally {
       setIsLoadingSessions(false);
     }
@@ -731,14 +889,15 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       await deleteSessionApi(id);
       const { sessions, activeSessionId } = get();
-      const updatedSessions = sessions.filter(s => s.id !== id);
+      const updatedSessions = sessions.filter((s) => s.id !== id);
       let newActiveSessionId = activeSessionId;
       if (newActiveSessionId === id) {
-        newActiveSessionId = updatedSessions.length > 0 ? updatedSessions[0].id : null;
+        newActiveSessionId =
+          updatedSessions.length > 0 ? updatedSessions[0].id : null;
       }
       set({ sessions: updatedSessions, activeSessionId: newActiveSessionId });
     } catch (error) {
-      console.error("Failed to delete session from backend:", error);
+      console.error('Failed to delete session from backend:', error);
     } finally {
       setIsDeletingSession(false);
     }
@@ -756,7 +915,7 @@ export const useStore = create<AppState>((set, get) => ({
       // Update state
       set({ sessions: [], activeSessionId: null });
     } catch (error) {
-      console.error("Failed to delete all sessions from backend:", error);
+      console.error('Failed to delete all sessions from backend:', error);
     } finally {
       setIsDeletingSession(false);
     }
@@ -767,12 +926,12 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       await renameSessionApi(id, newName);
       const { sessions } = get();
-      const updatedSessions = sessions.map(s =>
-        s.id === id ? { ...s, name: newName } : s
+      const updatedSessions = sessions.map((s) =>
+        s.id === id ? { ...s, name: newName } : s,
       );
       set({ sessions: updatedSessions });
     } catch (error) {
-      console.error("Failed to rename session on backend:", error);
+      console.error('Failed to rename session on backend:', error);
     } finally {
       setIsRenamingSession(false);
     }
@@ -783,7 +942,8 @@ export const useStore = create<AppState>((set, get) => ({
   toolCount: 0,
   toolCreationEnabled: true,
   updateSessionStatus: (status) => set({ sessionStatus: status }),
-  toggleIsCanvasVisible: () => set((state) => ({ isCanvasVisible: !state.isCanvasVisible })),
+  toggleIsCanvasVisible: () =>
+    set((state) => ({ isCanvasVisible: !state.isCanvasVisible })),
   currentPage: 'chat',
   setCurrentPage: (page) => set({ currentPage: page }),
   toast: (options) => {
@@ -791,18 +951,31 @@ export const useStore = create<AppState>((set, get) => ({
     console.log('Toast called with options:', options);
   },
   initializeSessionAndMessages: async () => {
-    const { setSessions, setActiveSessionId, setMessages, setSessionId, addDebugLog, updateLeaderboardStats, setIsLoadingLeaderboardStats, setIsLoadingSessions } = get();
+    const {
+      setSessions,
+      setActiveSessionId,
+      setMessages,
+      setSessionId,
+      addDebugLog,
+      updateLeaderboardStats,
+      setIsLoadingLeaderboardStats,
+      setIsLoadingSessions,
+    } = get();
 
     // Check if user is authenticated FIRST before any API calls
     const authToken = localStorage.getItem('backendAuthToken');
     if (!authToken) {
-      console.log('🔐 [INIT] No auth token found, skipping all backend loading. User needs to authenticate first.');
+      console.log(
+        '🔐 [INIT] No auth token found, skipping all backend loading. User needs to authenticate first.',
+      );
       setIsLoadingLeaderboardStats(false);
       setIsLoadingSessions(false);
       return;
     }
 
-    console.log('🔐 [INIT] Auth token found, proceeding with backend data loading...');
+    console.log(
+      '🔐 [INIT] Auth token found, proceeding with backend data loading...',
+    );
 
     // Load leaderboard stats from backend
     setIsLoadingLeaderboardStats(true);
@@ -810,7 +983,7 @@ export const useStore = create<AppState>((set, get) => ({
       const stats = await getLeaderboardStats(authToken, null);
       updateLeaderboardStats(stats);
     } catch (error) {
-      console.error("Failed to fetch leaderboard stats:", error);
+      console.error('Failed to fetch leaderboard stats:', error);
     } finally {
       setIsLoadingLeaderboardStats(false);
     }
@@ -819,75 +992,94 @@ export const useStore = create<AppState>((set, get) => ({
     console.log('🔑 [INIT] Starting to load LLM API keys from backend...');
     try {
       const currentKeys = get().llmApiKeys;
-      
+
       // Only load from backend if no keys in localStorage
       if (currentKeys.length === 0) {
         // Fetch regular LLM API keys
         const keys = await getLlmApiKeysApi(authToken, null);
         console.log('🔑 [INIT] Fetched keys from backend:', keys);
-        
+
         // Fetch master key
         let masterKey: ExternalLlmApiKey | null = null;
         try {
           masterKey = await getMasterLlmApiKeyApi(authToken, null);
           console.log('🔑 [INIT] Fetched master key from backend:', masterKey);
         } catch (error) {
-          console.warn("Failed to fetch master key:", error);
+          console.warn('Failed to fetch master key:', error);
         }
-        
+
         // Combine master key with regular keys
         const allKeys = masterKey ? [masterKey, ...keys] : keys;
-        
+
         const validKeys = allKeys
-          .filter(key => key.provider && key.key)
-          .map((key: PartialLlmApiKey, index: number, arr: PartialLlmApiKey[]) => {
-            // Check if this is a master key or if it's a duplicate
-            const isMasterKey = key.id === 'master-key' || key.keyName === 'Master Key (.env)';
-            const isDuplicate = !isMasterKey && arr.findIndex((k, i) => 
-              i < index && k.provider === key.provider && k.key === key.key
-            ) !== -1;
-            
-            // Skip duplicates that are not master keys
-            if (isDuplicate && !isMasterKey) {
-              return null;
-            }
-            
-            return {
-              ...key,
-              id: key.id || (isMasterKey ? 'master-key' : Math.random().toString(36).substring(2, 15)),
-              providerId: key.provider!,
-              providerName: key.provider!,
-              keyName: key.nickname || key.keyName || key.key!,
-              keyValue: key.keyValue || key.key!,
-              isEncrypted: key.isEncrypted || false,
-              isActive: key.isActive !== undefined ? key.isActive : true,
-              priority: key.priority || 5,
-              createdAt: key.createdAt || new Date().toISOString(),
-              updatedAt: key.updatedAt || new Date().toISOString(),
-              usageCount: key.usageCount || 0,
-              metadata: key.metadata || {
-                environment: 'universal',
-                tags: isMasterKey ? ['master'] : [],
-              },
-              provider: key.provider!,
-              key: key.key!
-            } as LlmApiKey;
-          })
+          .filter((key) => key.provider && key.key)
+          .map(
+            (key: PartialLlmApiKey, index: number, arr: PartialLlmApiKey[]) => {
+              // Check if this is a master key or if it's a duplicate
+              const isMasterKey =
+                key.id === 'master-key' || key.keyName === 'Master Key (.env)';
+              const isDuplicate =
+                !isMasterKey &&
+                arr.findIndex(
+                  (k, i) =>
+                    i < index &&
+                    k.provider === key.provider &&
+                    k.key === key.key,
+                ) !== -1;
+
+              // Skip duplicates that are not master keys
+              if (isDuplicate && !isMasterKey) {
+                return null;
+              }
+
+              return {
+                ...key,
+                id:
+                  key.id ||
+                  (isMasterKey
+                    ? 'master-key'
+                    : Math.random().toString(36).substring(2, 15)),
+                providerId: key.provider!,
+                providerName: key.provider!,
+                keyName: key.nickname || key.keyName || key.key!,
+                keyValue: key.keyValue || key.key!,
+                isEncrypted: key.isEncrypted || false,
+                isActive: key.isActive !== undefined ? key.isActive : true,
+                priority: key.priority || 5,
+                createdAt: key.createdAt || new Date().toISOString(),
+                updatedAt: key.updatedAt || new Date().toISOString(),
+                usageCount: key.usageCount || 0,
+                metadata: key.metadata || {
+                  environment: 'universal',
+                  tags: isMasterKey ? ['master'] : [],
+                },
+                provider: key.provider!,
+                key: key.key!,
+              } as LlmApiKey;
+            },
+          )
           .filter((key): key is LlmApiKey => key !== null); // Remove null values
         console.log('🔑 [INIT] Valid keys after filtering:', validKeys);
-        
+
         if (validKeys.length > 0) {
           // Set all keys at once instead of one by one to avoid multiple re-renders
           set({ llmApiKeys: validKeys, activeLlmApiKeyIndex: 0 });
-          localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(validKeys));
+          localStorage.setItem(
+            'agenticForgeLlmApiKeys',
+            JSON.stringify(validKeys),
+          );
           localStorage.setItem('agenticForgeActiveLlmKeyIndex', '0');
-          console.log('🔑 [INIT] Keys loaded successfully, active index set to 0');
+          console.log(
+            '🔑 [INIT] Keys loaded successfully, active index set to 0',
+          );
         }
       } else {
-        console.log('🔑 [INIT] Keys already loaded from localStorage, skipping backend fetch');
+        console.log(
+          '🔑 [INIT] Keys already loaded from localStorage, skipping backend fetch',
+        );
       }
     } catch (error) {
-      console.error("🔑 [INIT] Failed to fetch LLM API keys:", error);
+      console.error('🔑 [INIT] Failed to fetch LLM API keys:', error);
     }
 
     // Load sessions from backend first
@@ -897,20 +1089,30 @@ export const useStore = create<AppState>((set, get) => ({
       if (backendSessions && backendSessions.length > 0) {
         setSessions(backendSessions);
         const currentSessionId = localStorage.getItem('agenticForgeSessionId');
-        let activeSession = backendSessions.find((s: SessionData) => s.id === currentSessionId);
+        let activeSession = backendSessions.find(
+          (s: SessionData) => s.id === currentSessionId,
+        );
 
         if (!activeSession) {
           // If the stored session ID doesn't exist in backend sessions, try to find a session with matching messages
-          const storedMessages = localStorage.getItem(`agenticForgeSession_${currentSessionId}_messages`);
+          const storedMessages = localStorage.getItem(
+            `agenticForgeSession_${currentSessionId}_messages`,
+          );
           if (storedMessages) {
             const parsedStoredMessages = JSON.parse(storedMessages);
-            activeSession = backendSessions.find((s: SessionData) => JSON.stringify(s.messages) === JSON.stringify(parsedStoredMessages));
+            activeSession = backendSessions.find(
+              (s: SessionData) =>
+                JSON.stringify(s.messages) ===
+                JSON.stringify(parsedStoredMessages),
+            );
           }
         }
 
         if (!activeSession) {
           // If still no active session, default to the most recent session from backend
-          activeSession = backendSessions.sort((a: SessionData, b: SessionData) => b.timestamp - a.timestamp)[0];
+          activeSession = backendSessions.sort(
+            (a: SessionData, b: SessionData) => b.timestamp - a.timestamp,
+          )[0];
         }
 
         setSessionId(activeSession.id);
@@ -919,20 +1121,30 @@ export const useStore = create<AppState>((set, get) => ({
         // Set active LLM API key based on loaded session's activeLlmProvider
         if (activeSession.activeLlmProvider) {
           const llmApiKeys = get().llmApiKeys;
-          const providerIndex = llmApiKeys.findIndex(key => key.provider === activeSession.activeLlmProvider);
+          const providerIndex = llmApiKeys.findIndex(
+            (key) => key.provider === activeSession.activeLlmProvider,
+          );
           if (providerIndex !== -1) {
             set({ activeLlmApiKeyIndex: providerIndex });
-            addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Active LLM provider synchronized from session: ${activeSession.activeLlmProvider}`);
+            addDebugLog(
+              `[${new Date().toLocaleTimeString()}] [INFO] Active LLM provider synchronized from session: ${activeSession.activeLlmProvider}`,
+            );
           } else {
-            addDebugLog(`[${new Date().toLocaleTimeString()}] [WARN] Session's active LLM provider '${activeSession.activeLlmProvider}' not found in available keys.`);
+            addDebugLog(
+              `[${new Date().toLocaleTimeString()}] [WARN] Session's active LLM provider '${activeSession.activeLlmProvider}' not found in available keys.`,
+            );
           }
         }
-        addDebugLog(`[${new Date().toLocaleTimeString()}] [INFO] Sessions and messages loaded from backend.`);
+        addDebugLog(
+          `[${new Date().toLocaleTimeString()}] [INFO] Sessions and messages loaded from backend.`,
+        );
         return;
       }
     } catch (error) {
-      console.error("Failed to fetch sessions from backend:", error);
-      addDebugLog(`[${new Date().toLocaleTimeString()}] [ERROR] Failed to load sessions from backend. Falling back to localStorage.`);
+      console.error('Failed to fetch sessions from backend:', error);
+      addDebugLog(
+        `[${new Date().toLocaleTimeString()}] [ERROR] Failed to load sessions from backend. Falling back to localStorage.`,
+      );
     } finally {
       setIsLoadingSessions(false);
     }

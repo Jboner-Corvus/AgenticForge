@@ -17,7 +17,7 @@ describe('displayCanvasTool', () => {
   it('should have correct name and description', () => {
     expect(displayCanvasTool.name).toBe('display_canvas');
     expect(displayCanvasTool.description).toBe(
-      "Affiche du contenu dans le canvas de l'interface utilisateur. Peut afficher du HTML, Markdown, du texte brut ou une URL. Très utile pour montrer des visualisations, des rapports, des graphiques, des animations, des jeux simples, etc.",
+      "🚀 CANVAS ÉPIQUE - Affiche TOUT dans le canvas ! HTML, Markdown, texte, URLs, jeux complets, apps React, projets multi-fichiers avec JS/CSS/images/sons. Détection automatique des assets externes et gestion intelligente des projets complexes. Support automatique des références de fichiers.",
     );
   });
 
@@ -31,6 +31,7 @@ describe('displayCanvasTool', () => {
       'markdown',
       'text',
       'url',
+      'project',
     ]);
     expect(shape.title._def.typeName).toBe('ZodOptional');
     expect(shape.title._def.innerType._def.typeName).toBe('ZodString');
@@ -78,10 +79,18 @@ describe('displayCanvasTool', () => {
 
     expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', content, 'html');
     expect(mockLog.info).toHaveBeenCalledWith(
-      'Content sent to canvas for job test-job-id with type html',
+      '🚀 ÉPIQUE CANVAS - Analyse du contenu...',
+    );
+    expect(mockLog.info).toHaveBeenCalledWith(
+      '🔧 Fragment HTML extrait',
+    );
+    expect(mockLog.info).toHaveBeenCalledWith(
+      '🎨 ✅ Contenu affiché dans le canvas (type: html)',
     );
     expect(result).toEqual({
       success: true,
+      message: '✅ Contenu affiché dans le canvas',
+      assetsDetected: 0,
     });
   });
 
@@ -131,10 +140,15 @@ describe('displayCanvasTool', () => {
       'markdown',
     );
     expect(mockLog.info).toHaveBeenCalledWith(
-      'Content sent to canvas for job test-job-id with type markdown',
+      '🚀 ÉPIQUE CANVAS - Analyse du contenu...',
+    );
+    expect(mockLog.info).toHaveBeenCalledWith(
+      '🎨 ✅ Contenu affiché dans le canvas (type: markdown)',
     );
     expect(result).toEqual({
       success: true,
+      message: '✅ Contenu affiché dans le canvas',
+      assetsDetected: 0,
     });
   });
 
@@ -180,13 +194,21 @@ describe('displayCanvasTool', () => {
 
     expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', content, 'html');
     expect(mockLog.info).toHaveBeenCalledWith(
-      'Displaying content with title: Test Title',
+      '🚀 ÉPIQUE CANVAS - Analyse du contenu...',
     );
     expect(mockLog.info).toHaveBeenCalledWith(
-      'Content sent to canvas for job test-job-id with type html',
+      '🔧 Fragment HTML extrait',
+    );
+    expect(mockLog.info).toHaveBeenCalledWith(
+      '🏷️  Titre: Test Title',
+    );
+    expect(mockLog.info).toHaveBeenCalledWith(
+      '🎨 ✅ Contenu affiché dans le canvas (type: html)',
     );
     expect(result).toEqual({
       success: true,
+      message: '✅ Contenu affiché dans le canvas',
+      assetsDetected: 0,
     });
   });
 
@@ -234,7 +256,7 @@ describe('displayCanvasTool', () => {
           taskQueue: {} as any,
         },
       ),
-    ).rejects.toThrow('Failed to display content in canvas: Canvas error');
+    ).rejects.toThrow('Canvas épique failed: Canvas error');
 
     expect(mockLog.error).toHaveBeenCalled();
   });

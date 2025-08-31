@@ -7,13 +7,14 @@ interface TypingIndicatorProps {
   message?: string;
 }
 
-export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ 
+export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
   variant = 'classic',
-  message = "L'assistant réfléchit..."
+  message = "L'assistant réfléchit...",
 }) => {
-  const containerStyles = variant === 'pinned'
-    ? 'bg-black/60 border border-cyan-500/30'
-    : 'bg-background/95 border border-border';
+  const containerStyles =
+    variant === 'pinned'
+      ? 'bg-black/60 border border-cyan-500/30'
+      : 'bg-background/95 border border-border';
 
   const accentColor = variant === 'pinned' ? 'text-cyan-400' : 'text-primary';
 
@@ -26,10 +27,12 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
     >
       <div className="flex items-center gap-3">
         {/* Avatar de l'assistant */}
-        <div className={`p-2 rounded-full ${variant === 'pinned' ? 'bg-cyan-500/20' : 'bg-primary/20'}`}>
+        <div
+          className={`p-2 rounded-full ${variant === 'pinned' ? 'bg-cyan-500/20' : 'bg-primary/20'}`}
+        >
           <motion.div
             animate={{ rotate: [0, 360] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
           >
             <Sparkles className={`h-4 w-4 ${accentColor}`} />
           </motion.div>
@@ -46,10 +49,10 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
               <Zap className={`h-3 w-3 ${accentColor}`} />
             </motion.div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">{message}</span>
-            
+
             {/* Animation des points */}
             <div className="flex gap-1">
               {[0, 1, 2].map((i) => (
@@ -57,12 +60,12 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
                   key={i}
                   animate={{
                     scale: [1, 1.5, 1],
-                    opacity: [0.5, 1, 0.5]
+                    opacity: [0.5, 1, 0.5],
                   }}
                   transition={{
                     duration: 1,
                     repeat: Infinity,
-                    delay: i * 0.2
+                    delay: i * 0.2,
                   }}
                   className={`w-1 h-1 rounded-full ${
                     variant === 'pinned' ? 'bg-cyan-400' : 'bg-primary'

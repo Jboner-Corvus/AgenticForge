@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import type { ToolCallMessage, ToolResultMessage } from '../types/chat';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { 
-  Code, 
-  Terminal, 
-  FileText, 
-  Search, 
-  Globe, 
+import {
+  Code,
+  Terminal,
+  FileText,
+  Search,
+  Globe,
   Settings,
   ChevronDown,
   ChevronRight,
   Clock,
   CheckCircle,
   AlertCircle,
-  Loader
+  Loader,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -23,20 +23,27 @@ type ToolMessageProps =
   | { message: ToolResultMessage };
 
 const getToolIcon = (toolName: string) => {
-  const iconMap: { [key: string]: React.ComponentType<{ className?: string }> } = {
-    'executeShellCommand': Terminal,
-    'readFile': FileText,
-    'writeFile': FileText,
-    'browser': Globe,
-    'listFiles': Search,
-    'manage_todo_list': CheckCircle,
-    'displayCanvas': Settings,
+  const iconMap: {
+    [key: string]: React.ComponentType<{ className?: string }>;
+  } = {
+    executeShellCommand: Terminal,
+    readFile: FileText,
+    writeFile: FileText,
+    browser: Globe,
+    listFiles: Search,
+    manage_todo_list: CheckCircle,
+    displayCanvas: Settings,
   };
-  
+
   return iconMap[toolName] || Code;
 };
 
-const formatToolDescription = (toolName: string, isCall: boolean, params?: unknown, result?: unknown) => {
+const formatToolDescription = (
+  toolName: string,
+  isCall: boolean,
+  params?: unknown,
+  result?: unknown,
+) => {
   if (isCall) {
     switch (toolName) {
       case 'executeShellCommand':
@@ -61,7 +68,11 @@ const formatToolDescription = (toolName: string, isCall: boolean, params?: unkno
   } else {
     // Tool result - Special handling for finish tool with FinishToolSignal
     const error = (result as Record<string, unknown>)?.error;
-    if (error && typeof error === 'object' && (error as Record<string, unknown>)?.name === 'FinishToolSignal') {
+    if (
+      error &&
+      typeof error === 'object' &&
+      (error as Record<string, unknown>)?.name === 'FinishToolSignal'
+    ) {
       return `Réponse finalisée avec succès`;
     }
     if (error || (result as Record<string, unknown>)?.erreur) {
@@ -73,62 +84,129 @@ const formatToolDescription = (toolName: string, isCall: boolean, params?: unkno
 
 const getStatusInfo = (isCall: boolean, result?: unknown) => {
   if (isCall) {
-    return { icon: Loader, color: 'text-blue-500', bgColor: 'bg-blue-50 dark:bg-blue-900/20', status: 'En cours...' };
+    return {
+      icon: Loader,
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+      status: 'En cours...',
+    };
+  }
+
+  if (
+    (result as Record<string, unknown>)?.error ||
+    (result as Record<string, unknown>)?.erreur
+  ) {
+    return {
+      icon: AlertCircle,
+      color: 'text-red-500',
+      bgColor: 'bg-red-50 dark:bg-red-900/20',
+      status: 'Erreur',
+    };
+  }
+
+  return {
+    icon: CheckCircle,
+    color: 'text-green-500',
+    bgColor: 'bg-green-50 dark:bg-green-900/20',
+    status: 'Terminé',
+  };
+};
+
+// Fonction pour tronquer les résultats longs
+const truncateResult = (result: unknown, maxLength: number = 500): string => {
+  if (result === null || result === undefined) {
+    return '';
   }
   
-  if ((result as Record<string, unknown>)?.error || (result as Record<string, unknown>)?.erreur) {
-    return { icon: AlertCircle, color: 'text-red-500', bgColor: 'bg-red-50 dark:bg-red-900/20', status: 'Erreur' };
+  let resultString: string;
+  if (typeof result === 'string') {
+    resultString = result;
+  } else {
+    try {
+      resultString = JSON.stringify(result, null, 2);
+    } catch (error) {
+      resultString = String(result);
+    }
   }
   
-  return { icon: CheckCircle, color: 'text-green-500', bgColor: 'bg-green-50 dark:bg-green-900/20', status: 'Terminé' };
+  if (resultString.length <= maxLength) {
+    return resultString;
+  }
+  
+  return resultString.substring(0, maxLength) + '...';
 };
 
 export const ToolMessage: React.FC<ToolMessageProps> = ({ message }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showFullResult, setShowFullResult] = useState(false);
   const isToolCall = message.type === 'tool_call';
   const toolName = message.toolName;
-  const details = isToolCall ? message.params : message.result;
-  const description = formatToolDescription(toolName, isToolCall, isToolCall ? message.params : undefined, isToolCall ? undefined : message.result);
-  const { icon: StatusIcon, color: statusColor, bgColor, status } = getStatusInfo(isToolCall, isToolCall ? undefined : message.result);
+  const description = formatToolDescription(
+    toolName,
+    isToolCall,
+    isToolCall ? message.params : undefined,
+    isToolCall ? undefined : message.result,
+  );
+  const {
+    icon: StatusIcon,
+    color: statusColor,
+    bgColor,
+    status,
+  } = getStatusInfo(isToolCall, isToolCall ? undefined : message.result);
   const ToolIcon = getToolIcon(toolName);
+  
+  // Tronquer le résultat si trop long
+  const resultString = !isToolCall && message.result ? 
+    JSON.stringify(message.result, null, 2) : 
+    '';
+  const isLongResult = resultString.length > 500;
+  const displayResult = showFullResult 
+    ? resultString 
+    : truncateResult(!isToolCall && message.result ? message.result : ''); // Fix the type error
 
   return (
-    <motion.div 
+    <motion.div
       className="animate-fade-in"
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      whileHover={{ y: -2 }}
+      transition={{ duration: 0.2 }}
     >
-      <Card className={`${bgColor} border-border/50 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden`}>
-        <CardHeader className="p-4 pb-3">
+      <Card
+        className={`${bgColor} border border-border/50 rounded-lg shadow-sm overflow-hidden`}
+      >
+        <CardHeader className="p-3 pb-2">
           <CardTitle className="text-sm font-medium flex items-center justify-between">
             <div className="flex items-center space-x-2 min-w-0">
-              <div className="bg-background/50 rounded-full p-1.5 flex-shrink-0">
-                <ToolIcon className="h-4 w-4 text-foreground/70" />
+              <div className="bg-background/50 rounded-md p-1 flex-shrink-0">
+                <ToolIcon className="h-3 w-3 text-foreground/70" />
               </div>
-              <span className="text-foreground/90 truncate">{description}</span>
+              <span className="text-foreground/90 truncate text-sm">{description}</span>
               <StatusIcon className={`h-3 w-3 ${statusColor} flex-shrink-0`} />
-              <span className={`text-xs ${statusColor} font-medium flex-shrink-0`}>{status}</span>
+              <span
+                className={`text-xs ${statusColor} font-medium flex-shrink-0`}
+              >
+                {status}
+              </span>
             </div>
-            <button 
+            <button
               onClick={() => setIsExpanded(!isExpanded)}
               className="text-foreground/60 hover:text-foreground/90 transition-colors flex-shrink-0"
             >
-              {isExpanded ? 
-                <ChevronDown className="h-4 w-4" /> : 
-                <ChevronRight className="h-4 w-4" />
-              }
+              {isExpanded ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : (
+                <ChevronRight className="h-3 w-3" />
+              )}
             </button>
           </CardTitle>
-          <div className="flex items-center text-xs text-foreground/60 mt-2">
+          <div className="flex items-center text-xs text-foreground/60 mt-1">
             <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
             <span>{new Date().toLocaleTimeString()}</span>
-            <span className="mx-2">•</span>
-            <span className="font-mono truncate">{toolName}</span>
+            <span className="mx-1">•</span>
+            <span className="font-mono truncate text-xs">{toolName}</span>
           </div>
         </CardHeader>
-        
+
         {isExpanded && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
@@ -136,13 +214,35 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({ message }) => {
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <CardContent className="p-4 pt-0">
-              <div className="text-xs text-foreground/70 mb-2">
+            <CardContent className="p-3 pt-0">
+              <div className="text-xs text-foreground/70 mb-1">
                 Détails techniques:
               </div>
-              <div className="max-h-60 overflow-y-auto pr-2">
-                <pre className="text-xs bg-background/50 p-3 rounded-lg overflow-x-auto border border-border/30 font-mono text-foreground/80 whitespace-pre-wrap break-words">
-                  {JSON.stringify(details, null, 2)}
+              <div className="max-h-40 overflow-y-auto pr-1">
+                <pre className="text-xs bg-background/50 p-2 rounded-md overflow-x-auto border border-border/30 font-mono text-foreground/80 whitespace-pre-wrap break-words">
+                  {isLongResult && !showFullResult ? (
+                    <>
+                      {displayResult}
+                      <button
+                        onClick={() => setShowFullResult(true)}
+                        className="text-blue-500 hover:text-blue-700 ml-2"
+                      >
+                        Voir plus
+                      </button>
+                    </>
+                  ) : isLongResult && showFullResult ? (
+                    <>
+                      {displayResult}
+                      <button
+                        onClick={() => setShowFullResult(false)}
+                        className="text-blue-500 hover:text-blue-700 ml-2"
+                      >
+                        Voir moins
+                      </button>
+                    </>
+                  ) : (
+                    displayResult
+                  )}
                 </pre>
               </div>
             </CardContent>

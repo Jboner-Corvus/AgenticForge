@@ -25,7 +25,7 @@ export function closeCanvas(jobId: string) {
 export function sendToCanvas(
   jobId: string,
   content: string,
-  contentType: 'html' | 'json' | 'markdown' | 'text' | 'url' = 'html',
+  contentType: 'html' | 'json' | 'markdown' | 'project' | 'text' | 'url' = 'html',
 ) {
   // Vérifier si le contenu est une todo list générée par l'agent interne
   try {

@@ -7,33 +7,43 @@ The core package is the backbone of the AgenticForge platform, providing the ess
 ## Key Components
 
 ### 🤖 Agent Orchestration
+
 The core package implements the main AI agent logic that:
+
 - Processes user requests and goals
 - Orchestrates tool execution
 - Manages conversation flow and context
 - Handles complex task decomposition
 
 ### 🛠️ Tool System
+
 The package includes a comprehensive tool management system:
+
 - Dynamic tool loading and registration
 - MCP (Model Context Protocol) tool integration
 - Custom tool execution environment
 - Real-time tool streaming to frontend
 
 ### 📝 Session Management
+
 Handles user sessions and conversation history:
+
 - Persistent session storage using PostgreSQL
 - Conversation history management
 - Session state tracking
 
 ### 🔧 Queue Processing
+
 Implements background job processing:
+
 - Redis-based job queue using BullMQ
 - Concurrent task execution
 - Worker process management
 
 ### 🔌 API Layer
+
 Provides RESTful API endpoints:
+
 - Session management endpoints
 - Message submission and streaming
 - Tool execution interfaces
@@ -122,23 +132,70 @@ pnpm typecheck
 pnpm format
 ```
 
+### Quality Gates
+
+Before committing code, ensure all quality gates pass:
+
+```bash
+# Run all quality gates
+./quality-gate.sh
+
+# Or run individual checks
+./run.sh typecheck
+./run.sh lint
+./run.sh test
+./run.sh format
+```
+
+### Project Management Scripts
+
+The package includes management scripts for common tasks:
+
+```bash
+# Start all services
+./run.sh start
+
+# Stop all services
+./run.sh stop
+
+# Restart all services
+./run.sh restart
+
+# Check service status
+./run.sh status
+
+# View logs
+./run.sh logs server
+./run.sh logs worker
+
+# Run all tests
+./run.sh alltest
+
+# Interactive menu
+./run.sh
+```
+
 ## API Endpoints
 
 ### Session Management
+
 - `POST /api/v1/session` - Create a new session
 - `GET /api/v1/session/:id` - Get session information
 - `DELETE /api/v1/session/:id` - Delete a session
 
 ### Message Processing
+
 - `POST /api/v1/agent/stream` - Submit a message and stream the response
 - `GET /api/v1/agent/stream/:jobId/events` - Event stream for a specific job
 
 ### Tool Management
+
 - `GET /api/v1/tools` - List available tools
 - `POST /api/v1/tools` - Register a new tool
 - `DELETE /api/v1/tools/:name` - Remove a tool
 
 ### System Information
+
 - `GET /api/version/current` - Get current version information
 - `GET /api/version/check` - Check for updates
 - `GET /health` - Health check endpoint
@@ -147,15 +204,15 @@ pnpm format
 
 The core package is configured through environment variables:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PUBLIC_PORT` | Port for the main API server | 8080 |
-| `REDIS_HOST` | Redis server hostname | localhost |
-| `REDIS_PORT` | Redis server port | 6379 |
-| `DATABASE_URL` | PostgreSQL connection string | postgresql://localhost/agenticforge |
-| `LLM_API_KEY` | Default LLM API key | - |
-| `LLM_PROVIDER` | Default LLM provider | gemini |
-| `LLM_MODEL_NAME` | Default LLM model | gemini-2.5-pro |
+| Variable         | Description                  | Default                             |
+| ---------------- | ---------------------------- | ----------------------------------- |
+| `PUBLIC_PORT`    | Port for the main API server | 8080                                |
+| `REDIS_HOST`     | Redis server hostname        | localhost                           |
+| `REDIS_PORT`     | Redis server port            | 6379                                |
+| `DATABASE_URL`   | PostgreSQL connection string | postgresql://localhost/agenticforge |
+| `LLM_API_KEY`    | Default LLM API key          | -                                   |
+| `LLM_PROVIDER`   | Default LLM provider         | gemini                              |
+| `LLM_MODEL_NAME` | Default LLM model            | gemini-2.5-pro                      |
 
 ## Logging
 
@@ -164,6 +221,7 @@ The package uses Pino for structured logging. Logs are output in JSON format for
 ## Error Handling
 
 The core package implements comprehensive error handling:
+
 - Custom error classes for different error types
 - Graceful degradation for non-critical failures
 - Detailed error reporting for debugging

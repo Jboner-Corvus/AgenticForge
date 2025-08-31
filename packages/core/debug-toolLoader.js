@@ -31,7 +31,9 @@ process.env.TOOLS_PATH = tempToolsDir;
 console.log('Set TOOLS_PATH to:', process.env.TOOLS_PATH);
 
 // Import and test the toolLoader
-const { getTools, _resetTools, getToolsDir, fileExtension } = await import('./src/utils/toolLoader.js');
+const { getTools, _resetTools, getToolsDir, fileExtension } = await import(
+  './src/utils/toolLoader.js'
+);
 
 console.log('File extension used:', fileExtension);
 console.log('Tools directory:', getToolsDir());

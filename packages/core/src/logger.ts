@@ -1,4 +1,5 @@
-import { Logger, pino } from 'pino';
+import pino from 'pino';
+import type { Logger } from 'pino';
 export type { Logger };
 
 import { getConfig } from './config.ts';

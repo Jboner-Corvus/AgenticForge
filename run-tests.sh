@@ -42,7 +42,9 @@ main() {
     
     # Navigate to tests directory and run the test runner
     cd tests
-    chmod +x test-runner.sh
+    if [[ ! -x "test-runner.sh" ]]; then
+        chmod +x test-runner.sh
+    fi
     ./test-runner.sh
 }
 
@@ -51,15 +53,25 @@ if [[ $# -gt 0 ]]; then
     case "$1" in
         "canvas"|"canvas-todo")
             echo -e "${COLOR_BLUE}🎨📋 Running Canvas & Todo List Tests...${NC}"
-            cd tests
-            chmod +x test-canvas-todo.sh
-            ./test-canvas-todo.sh
+            if [[ ! -f "tests/test-canvas-todo.sh" ]]; then
+                echo "❌ Canvas & Todo test script not found"
+                exit 1
+            fi
+            if [[ ! -x "tests/test-canvas-todo.sh" ]]; then
+                chmod +x tests/test-canvas-todo.sh
+            fi
+            tests/test-canvas-todo.sh
             ;;
         "full"|"all"|"comprehensive")
             echo -e "${COLOR_BLUE}🚀 Running Full Agent Capability Tests...${NC}"
-            cd tests
-            chmod +x test-agent-capabilities.sh
-            ./test-agent-capabilities.sh
+            if [[ ! -f "tests/test-agent-capabilities.sh" ]]; then
+                echo "❌ Full capability test script not found"
+                exit 1
+            fi
+            if [[ ! -x "tests/test-agent-capabilities.sh" ]]; then
+                chmod +x tests/test-agent-capabilities.sh
+            fi
+            tests/test-agent-capabilities.sh
             ;;
         "help"|"-h"|"--help")
             echo "AgenticForge Test Launcher"

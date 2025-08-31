@@ -5,7 +5,9 @@ import { DebugLog } from './DebugLog';
 export const DebugLogContainer: React.FC = () => {
   const isDebugLogVisible = useUIStore((state) => state.isDebugLogVisible);
   const logs = useUIStore((state) => state.debugLog);
-  const toggleDebugLogVisibility = useUIStore((state) => state.toggleDebugLogVisibility);
+  const toggleDebugLogVisibility = useUIStore(
+    (state) => state.toggleDebugLogVisibility,
+  );
 
   if (!isDebugLogVisible) {
     return null;

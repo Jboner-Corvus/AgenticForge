@@ -22,7 +22,9 @@ export const agentThoughtTool: Tool<typeof AgentThoughtParams> = {
 
     try {
       // Log pour debugging
-      log.info(`Agent thought: ${thought.substring(0, 100)}${thought.length > 100 ? '...' : ''}`);
+      log.info(
+        `Agent thought: ${thought.substring(0, 100)}${thought.length > 100 ? '...' : ''}`,
+      );
 
       // Ajouter la pensée à l'historique de session
       if (context.session) {

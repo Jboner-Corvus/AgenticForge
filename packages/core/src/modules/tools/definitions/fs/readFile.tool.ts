@@ -16,17 +16,8 @@ export const readFileParams = z.object({
   path: z
     .string()
     .min(1, 'Le chemin ne peut pas être vide')
-    .max(500, 'Le chemin ne peut pas dépasser 500 caractères')
-    .refine(
-      (path) => !path.includes('..'),
-      'Le chemin ne peut pas contenir ".." pour des raisons de sécurité',
-    )
-    .refine(
-      (path) => !/[<>:"|?*\x00-\x1f]/.test(path),
-      'Le chemin contient des caractères invalides',
-    )
     .describe(
-      'The path to the file inside the workspace or AgenticForge directory.',
+      'The path to the file (FULL SYSTEM ACCESS - any path allowed).',
     ),
   start_line: z
     .number()
@@ -57,42 +48,11 @@ export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> =
         };
       }
 
-      // Try to resolve the path in the workspace first
-      let resolvedPath = path.resolve(
-        path.join(config.WORKSPACE_PATH, args.path),
-      );
-      let pathFound = false;
+      // FULL SYSTEM ACCESS - Resolve any path as-is
+      let resolvedPath = path.resolve(args.path);
 
-      // If not found in workspace, try in the AgenticForge directory
-      try {
-        await fs.access(resolvedPath);
-        pathFound = true;
-      } catch {
-        const agenticForgePath = path.resolve(
-          path.join(config.HOST_PROJECT_PATH, args.path),
-        );
-        try {
-          await fs.access(agenticForgePath);
-          resolvedPath = agenticForgePath;
-          pathFound = true;
-        } catch {
-          // File not found in either location, will be handled later
-        }
-      }
-
-      // Final security check - ensure the path is within allowed directories
-      const workspaceResolved = path.resolve(config.WORKSPACE_PATH);
-      const hostProjectResolved = path.resolve(config.HOST_PROJECT_PATH);
-      const isAllowedPath =
-        resolvedPath.startsWith(workspaceResolved) ||
-        resolvedPath.startsWith(hostProjectResolved);
-
-      if (!isAllowedPath) {
-        return {
-          erreur:
-            'Chemin de fichier en dehors des répertoires autorisés (workspace ou AgenticForge).',
-        };
-      }
+      // FULL SYSTEM ACCESS - No path restrictions
+      // The worker can access ANY file on the system
 
       try {
         // Vérifier la taille du fichier avant la lecture

@@ -1,6 +1,8 @@
 import { Job, Queue } from 'bullmq';
-import { Logger } from 'pino';
+import { Logger } from '../../logger.ts';
 import { z } from 'zod';
+
+import { getConfig } from '../../config.ts';
 
 import type {
   AgentResponseMessage,
@@ -60,10 +62,17 @@ export class Agent {
   private readonly job: Job<{ prompt: string }>;
   private readonly log: Logger;
   private loopCounter = 0;
-  private loopDetectionThreshold = 3; // Detect loops after 3 repetitions
+  private loopDetectionThreshold = 2; // Detect loops after 2 repetitions (reduced)
   private malformedResponseCounter = 0;
+  private readonly MAX_MALFORMED_RESPONSES = getConfig().AGENT_MAX_MALFORMED_RESPONSES;
+  private readonly MAX_LLM_FAILURES = getConfig().AGENT_MAX_LLM_FAILURES;
+  private llmFailureCounter = 0;
   private readonly maxBehaviorHistory = 10; // Keep track of last 10 behaviors
   private readonly session: SessionData;
+  
+  // 🚨 AMÉLIORATION: Tracking des actions réalisées
+  private executedActions: Map<string, { count: number; lastExecution: number; successful: boolean }> = new Map();
+  private lastDisplayCanvasCall = 0;
 
   private readonly sessionManager: SessionManager; // New property
   private subscriber: any;
@@ -122,7 +131,7 @@ export class Agent {
       (this.session.history as Message[]).push(newUserMessage);
 
       let iterations = 0;
-      const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS ?? 10;
+      const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS ?? 50;
 
       while (iterations < MAX_ITERATIONS) {
         if (this.interrupted) {
@@ -150,8 +159,24 @@ export class Agent {
         this.publishToChannel(thinkingMessage);
 
         try {
+          // 🚨 AMÉLIORATION: Ajouter le contexte des actions exécutées
+          const sessionWithContext = {
+            data: {
+              ...this.session,
+              workingContext: {
+                ...this.session.workingContext,
+                executedActions: this.getActionExecutionSummary(),
+                lastDisplayCanvas: this.hasExecutedActionRecently('display_canvas') ? 
+                  `✅ display_canvas executed ${Math.floor((Date.now() - this.lastDisplayCanvasCall) / 1000)}s ago` : 
+                  '❌ display_canvas not executed recently',
+                iterationCount: iterations
+              }
+            },
+            id: String(this.session.id)
+          };
+          
           const orchestratorPrompt = getMasterPrompt(
-            { data: this.session, id: String(this.session.id) },
+            sessionWithContext,
             this.tools,
           );
 
@@ -237,6 +262,16 @@ export class Agent {
             this.log.info(
               `Attempting LLM call with provider: ${providerToTry}`,
             );
+
+            // 🚨 DEBUG: Log provider selection details
+            this.log.info({
+              providerToTry,
+              configDefaultProvider: config.LLM_PROVIDER,
+              hierarchy: config.LLM_PROVIDER_HIERARCHY,
+              currentIndex: currentProviderIndex,
+              iteration: i
+            }, '🔍 PROVIDER DEBUG: Provider selection details');
+
             try {
               if (!(await LlmKeyManager.hasAvailableKeys(providerToTry))) {
                 this.log.warn(
@@ -600,17 +635,45 @@ export class Agent {
           );
 
           if (errorMessage.includes('Failed to parse LLM response')) {
+            this.malformedResponseCounter++;
             this.session.history.push({
               content:
-                'I was unable to parse your last response. Please ensure your response is a valid JSON object with the expected properties (`thought`, `command`, `canvas`, or `answer`). Check for syntax errors, missing commas, or unclosed brackets.',
+                `I was unable to parse your last response (attempt ${this.malformedResponseCounter}/${this.MAX_MALFORMED_RESPONSES}). Please ensure your response is a valid JSON object with the expected properties ('thought', 'command', 'canvas', or 'answer'). Check for syntax errors, missing commas, or unclosed brackets. If you need to provide a simple response, use the 'finish' tool with a 'response' parameter.`,
               id: crypto.randomUUID(),
               timestamp: Date.now(),
               type: 'error',
             });
-            // Add the error message to history and continue the loop
+            
+            // If we've had too many malformed responses, try fallback approach
+            if (this.malformedResponseCounter >= this.MAX_MALFORMED_RESPONSES) {
+              this.log.error('Too many malformed responses. Attempting fallback approach.');
+              try {
+                const fallbackResponse = await this.attemptFallbackResponse();
+                return fallbackResponse;
+              } catch (fallbackError) {
+                this.log.error({ fallbackError }, 'Fallback approach also failed');
+                return 'Agent stopped due to persistent parsing issues and fallback failure.';
+              }
+            }
             continue;
           } else if (errorMessage.includes('Error executing tool')) {
             // This error is already handled by the logic above, so we just continue
+            continue;
+          } else if (errorMessage.includes('Failed to communicate with the LLM') || 
+                    errorMessage.includes('LLM API') || 
+                    errorMessage.includes('network') ||
+                    errorMessage.includes('timeout')) {
+            // Handle LLM communication failures with retry logic
+            this.llmFailureCounter++;
+            this.log.error(`LLM communication failure (attempt ${this.llmFailureCounter}/${this.MAX_LLM_FAILURES}): ${errorMessage}`);
+            
+            if (this.llmFailureCounter >= this.MAX_LLM_FAILURES) {
+              this.log.error('Max LLM failures reached. Stopping agent.');
+              return 'Agent stopped due to persistent LLM communication issues. Please check your API keys and network connection.';
+            }
+            
+            // Add delay before retry and continue
+            await new Promise(resolve => setTimeout(resolve, 2000 * this.llmFailureCounter));
             continue;
           } else {
             this.session.history.push({
@@ -688,6 +751,23 @@ export class Agent {
     return union.size === 0 ? 1 : intersection.size / union.size;
   }
 
+  private detectRepetitiveResponse(response: string): boolean {
+    // Check if this response is similar to recent responses
+    const recentResponses = this.behaviorHistory.slice(-3);
+    const similarityThreshold = 0.8; // 80% similarity threshold
+
+    for (const behavior of recentResponses) {
+      if (behavior.thought) {
+        const similarity = this.calculateTextSimilarity(response, behavior.thought);
+        if (similarity > similarityThreshold) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
   private async cleanup() {
     if (this.subscriber) {
       const channel = `job:${this.job.id}:interrupt`;
@@ -704,6 +784,18 @@ export class Agent {
     // Clean the text
     const cleanText = text.trim();
 
+    // Declare variables at the beginning
+    let command: Command | undefined;
+    let thought: string | undefined;
+
+    // Check for Gemini API error messages that should be thrown as errors
+    if (cleanText.includes('currently unable to process your request') || 
+        cleanText.includes('quota') && cleanText.includes('exceeded') ||
+        cleanText.includes('free-tier quota') ||
+        cleanText.includes('Please try again once the quota has reset')) {
+      throw new Error(`Gemini API Error: ${cleanText}`);
+    }
+
     // If it's already valid JSON, return as is
     try {
       JSON.parse(cleanText);
@@ -713,43 +805,113 @@ export class Agent {
     }
 
     // FIRST: Try to extract actual tool calls from the text
-    const toolCallMatch = cleanText.match(/Tool Call:\s*(\w+)\s*with\s*params\s*(\{.*?\}(?:\s*$|\n|Tool Result:))/is);
+    // Support multiple formats:
+    // 1. "Tool Call: toolName with params {...}"
+    // 2. "Tool Call: toolName({...})"
+    // 3. "Tool Call: toolName({...})" (without parentheses)
+    // 4. Plain "Tool Call: toolName(...)" when it's the only content
+    let toolCallMatch = cleanText.match(/Tool Call:\s*(\w+)\s*with\s*params\s*(\{.*?\}(?:\s*$|\n|Tool Result:))/is);
+    
+    // If first pattern doesn't match, try the second format: "Tool Call: toolName({...})"
+    if (!toolCallMatch) {
+      toolCallMatch = cleanText.match(/Tool Call:\s*(\w+)\s*\(\s*(\{[\s\S]*?\})\s*\)(?:\s*$|\n|Tool Result:)/is);
+    }
+    
+    // If still no match, try even more flexible pattern without parentheses
+    if (!toolCallMatch) {
+      toolCallMatch = cleanText.match(/Tool Call:\s*(\w+)\s*(\{[\s\S]*?\})(?:\s*$|\n|Tool Result:)/is);
+    }
+    
+    // Special case: if the text starts directly with "Tool Call:" and nothing else, try to extract it
+    if (!toolCallMatch && cleanText.trim().startsWith('Tool Call:')) {
+      toolCallMatch = cleanText.match(/^Tool Call:\s*(\w+)\s*\(\s*(\{[\s\S]*?\})\s*\)(?:\s*$|\n)/is);
+    }
     if (toolCallMatch) {
       const toolName = toolCallMatch[1];
       let params = {};
       
       // Extract the JSON part more carefully
       let jsonStr = toolCallMatch[2].trim();
-      // Remove everything after the JSON object (like "Tool Result:")
-      const jsonEndMatch = jsonStr.match(/^(\{.*?\})(?:\s*(?:Tool Result:|$|\n))/s);
-      if (jsonEndMatch) {
-        jsonStr = jsonEndMatch[1];
+      
+      // For multiline JSON, find the complete JSON object by counting braces
+      let braceCount = 0;
+      let jsonEnd = 0;
+      let inString = false;
+      let escapeNext = false;
+      
+      for (let i = 0; i < jsonStr.length; i++) {
+        const char = jsonStr[i];
+        
+        if (escapeNext) {
+          escapeNext = false;
+          continue;
+        }
+        
+        if (char === '\\') {
+          escapeNext = true;
+          continue;
+        }
+        
+        if (char === '"' && !escapeNext) {
+          inString = !inString;
+          continue;
+        }
+        
+        if (!inString) {
+          if (char === '{') braceCount++;
+          if (char === '}') braceCount--;
+          
+          if (braceCount === 0 && char === '}') {
+            jsonEnd = i + 1;
+            break;
+          }
+        }
+      }
+      
+      if (jsonEnd > 0) {
+        jsonStr = jsonStr.substring(0, jsonEnd);
+      } else {
+        // Fallback: remove everything after the JSON object (like "Tool Result:")
+        const jsonEndMatch = jsonStr.match(/^(\{.*?\})(?:\s*(?:Tool Result:|$|\n))/s);
+        if (jsonEndMatch) {
+          jsonStr = jsonEndMatch[1];
+        }
       }
       
       try {
         params = JSON.parse(jsonStr);
       } catch (e) {
-        // If direct parsing fails, try to extract by counting braces
-        let braceCount = 0;
-        let jsonEnd = 0;
-        for (let i = 0; i < jsonStr.length; i++) {
-          if (jsonStr[i] === '{') braceCount++;
-          if (jsonStr[i] === '}') braceCount--;
-          if (braceCount === 0 && jsonStr[i] === '}') {
-            jsonEnd = i + 1;
-            break;
-          }
-        }
-        
-        if (jsonEnd > 0) {
-          try {
-            params = JSON.parse(jsonStr.substring(0, jsonEnd));
-          } catch (e2) {
-            // Last fallback: extract specific fields manually
-            const responseMatch = cleanText.match(/"response":\s*"([^"]+)"/);
-            if (responseMatch && toolName.toLowerCase() === 'finish') {
-              params = { response: responseMatch[1] };
+        this.log.warn(`Failed to parse JSON params for tool ${toolName}: ${jsonStr}`);
+        // Last fallback: extract specific fields manually
+        const responseMatch = cleanText.match(/"response":\s*"([^"]+)"/);
+        if (responseMatch && toolName.toLowerCase() === 'finish') {
+          params = { response: responseMatch[1] };
+        } else if (toolName.toLowerCase() === 'todowrite') {
+          // Special handling for todoWrite - try to extract the todos array
+          const todosMatch = jsonStr.match(/"todos":\s*\[[\s\S]*?\]/);
+          if (todosMatch) {
+            try {
+              const todosObj = JSON.parse(`{${todosMatch[0]}}`);
+              params = todosObj;
+            } catch (e3) {
+              // If that fails too, just set empty params to avoid undefined error
+              params = { todos: [] };
             }
+          } else {
+            params = { todos: [] };
+          }
+        } else {
+          // Try to find quoted strings for parameters
+          const quotedValues = jsonStr.match(/"([^"]+)":\s*"([^"]+)"/g);
+          if (quotedValues) {
+            const extracted: Record<string, any> = {};
+            quotedValues.forEach(match => {
+              const keyValue = match.match(/"([^"]+)":\s*"([^"]+)"/);
+              if (keyValue) {
+                extracted[keyValue[1]] = keyValue[2];
+              }
+            });
+            params = extracted;
           }
         }
       }
@@ -761,7 +923,7 @@ export class Agent {
       return JSON.stringify({
         thought: thought,
         command: {
-          name: toolName.toLowerCase(),
+          name: toolName,
           params: params
         }
       });
@@ -769,6 +931,45 @@ export class Agent {
 
     // Analyze the content to determine appropriate tool
     const lowerText = cleanText.toLowerCase();
+
+    // Check for direct action requests (like "continue le jeu defender")
+    const directActionKeywords = [
+      'continue',
+      'continuer',
+      'reprendre',
+      'recommencer',
+      'lancer',
+      'start',
+      'run',
+      'execute',
+      'executer',
+    ];
+    const isDirectAction = directActionKeywords.some((keyword) =>
+      lowerText.includes(keyword),
+    );
+
+    // Check for game/project related keywords
+    const gameKeywords = [
+      'jeu',
+      'game',
+      'defender',
+      'projet',
+      'project',
+      'application',
+      'app',
+    ];
+    const isGameRequest = gameKeywords.some((keyword) =>
+      lowerText.includes(keyword),
+    );
+
+    // If it's a direct action on a game/project, go straight to file operations
+    if (isDirectAction && isGameRequest) {
+      thought = "L'utilisateur demande de continuer/reprendre un projet. Je vais d'abord explorer les fichiers disponibles.";
+      command = {
+        name: 'listFiles',
+        params: {},
+      };
+    }
 
     // Check for canvas-related keywords
     const canvasKeywords = [
@@ -797,7 +998,6 @@ export class Agent {
       'raisonnement',
       'prochaine étape',
       'je vais',
-      'l\'utilisateur souhaite',
     ];
     const isThoughtContent = thoughtKeywords.some((keyword) =>
       lowerText.includes(keyword),
@@ -844,8 +1044,6 @@ export class Agent {
       lowerText.includes(keyword),
     );
 
-    let command;
-    let thought;
 
     // Check if the response appears to be truncated (incomplete)
     const isTruncated = this.isResponseTruncated(cleanText);
@@ -861,15 +1059,31 @@ export class Agent {
       };
     }
     // Prioritize proper thought handling - if it looks like a thought, use agent_thought tool
+    // But avoid repetitive agent_thought calls
     else if (isThoughtContent && !isCanvasRequest) {
-      // This is clearly thought content, use agent_thought tool
-      thought = cleanText;
-      command = {
-        name: 'agent_thought',
-        params: {
-          thought: cleanText,
-        },
-      };
+      // Check if we've recently used agent_thought to avoid loops
+      const recentCommands = this.commandHistory.slice(-2);
+      const hasRecentAgentThought = recentCommands.some(cmd => cmd.name === 'agent_thought');
+
+      if (hasRecentAgentThought) {
+        // If we've recently used agent_thought, finish instead to avoid loops
+        thought = "Réponse de l'IA traitée.";
+        command = {
+          name: 'finish',
+          params: {
+            response: cleanText,
+          },
+        };
+      } else {
+        // This is clearly thought content, use agent_thought tool
+        thought = cleanText;
+        command = {
+          name: 'agent_thought',
+          params: {
+            thought: cleanText,
+          },
+        };
+      }
     } else if (isCanvasRequest && !isThoughtContent) {
       // Handle canvas display requests (but not if it's clearly thought content)
       thought = "L'utilisateur veut afficher quelque chose dans le canvas.";
@@ -902,30 +1116,13 @@ export class Agent {
         },
       };
     } else if (isCreationRequest && isTodoRequest) {
-      // For creation requests that mention todos, create a todo list first
-      thought =
-        "L'utilisateur demande de créer quelque chose. Je dois d'abord créer une todo list pour organiser le travail.";
+      // For creation requests that mention todos, create a smart todo list
+      const smartTodos = this.createSmartTodoList(cleanText);
+      thought = "Je vais créer une todo list spécifique et utile pour organiser le travail demandé.";
       command = {
-        name: 'manage_todo_list',
+        name: 'todoWrite',
         params: {
-          action: 'create',
-          title: 'Projet de création',
-          todos: [
-            {
-              category: 'planning',
-              content: "Analyser la demande et planifier l'approche",
-              id: '1',
-              priority: 'high',
-              status: 'pending',
-            },
-            {
-              category: 'development',
-              content: "Commencer l'implémentation",
-              id: '2',
-              priority: 'high',
-              status: 'pending',
-            },
-          ],
+          todos: smartTodos,
         },
       };
     } else if (isTodoRequest) {
@@ -933,7 +1130,7 @@ export class Agent {
       thought =
         "L'utilisateur veut utiliser la todo list. Je vais afficher ou gérer la todo list.";
       command = {
-        name: 'manage_todo_list',
+        name: 'todoWrite',
         params: {
           action: 'display',
         },
@@ -941,54 +1138,36 @@ export class Agent {
     } else if (isCreationRequest) {
       // Other creation requests - but prevent repetitive behavior
       // Check if we've recently created a todo list to avoid loops
-      const recentCommands = this.commandHistory.slice(-3);
-      const hasRecentTodoList = recentCommands.some(cmd => 
-        cmd.name === 'manage_todo_list' && 
-        cmd.params && 
+      const recentCommands = this.commandHistory.slice(-2); // Reduced from -3 to -2
+      const hasRecentTodoList = recentCommands.some(cmd =>
+        cmd.name === 'todoWrite' &&
+        cmd.params &&
         (cmd.params.action === 'create' || cmd.params.action === 'display')
       );
-      
+
       if (hasRecentTodoList) {
-        // If we've recently created a todo list, use a different approach
-        thought = "J'ai déjà créé une todo list récemment. Je vais utiliser une approche différente pour répondre à la demande de création.";
+        // If we've recently created a todo list, finish instead of creating another
+        thought = "J'ai déjà créé une todo list récemment.";
         command = {
-          name: 'agent_thought',
+          name: 'finish',
           params: {
-            thought: "L'utilisateur demande de créer quelque chose, mais j'ai déjà créé une todo list récemment. Je vais formuler une réponse directe plutôt que de créer une autre liste.",
+            response: "J'ai déjà créé une liste de tâches pour ce projet. Si vous souhaitez modifier ou consulter la liste existante, faites-le moi savoir.",
           },
         };
       } else {
-        // Normal creation request
-        thought =
-          "L'utilisateur demande de créer quelque chose. Je dois d'abord créer une todo list pour organiser le travail.";
+        // Create a smart, specific todo list based on the user's request
+        const smartTodos = this.createSmartTodoList(cleanText);
+        thought = "Je vais créer une todo list spécifique et utile pour organiser le travail demandé.";
         command = {
-          name: 'manage_todo_list',
+          name: 'todoWrite',
           params: {
-            action: 'create',
-            title: 'Projet de création',
-            todos: [
-              {
-                category: 'planning',
-                content: "Analyser la demande et planifier l'approche",
-                id: '1',
-                priority: 'high',
-                status: 'pending',
-              },
-              {
-                category: 'development',
-                content: "Commencer l'implémentation",
-                id: '2',
-                priority: 'high',
-                status: 'pending',
-              },
-            ],
+            todos: smartTodos,
           },
         };
       }
     } else {
       // Default to finish tool for other requests
-      thought =
-        "L'utilisateur a répondu avec du texte brut. Je vais convertir cela en format JSON valide.";
+      thought = "Traitement de la réponse de l'utilisateur.";
       command = {
         name: 'finish',
         params: {
@@ -1138,10 +1317,42 @@ export class Agent {
       });
       let result;
       if (command.name === 'ls -la') {
-        result = await toolRegistry.execute(
-          'simpleList',
-          { detailed: true },
-          {
+        try {
+          result = await toolRegistry.execute(
+            'simpleList',
+            { detailed: true },
+            {
+              job: this.job,
+              llm: getLlmProvider(this.activeLlmProvider),
+              log,
+              reportProgress: async (data: any) => {
+                this.job.updateProgress(data);
+              },
+              session: this.session,
+              streamContent: async (data: any) => {
+                this.publishToChannel({
+                  content: data,
+                  toolName: command.name,
+                  type: 'tool_stream',
+                });
+              },
+              taskQueue: this.taskQueue,
+            },
+          );
+        } catch (toolError) {
+          log.error(
+            {
+              error: toolError instanceof Error ? toolError : new Error(String(toolError)),
+              params: command.params,
+              tool: command.name,
+            },
+            `Error executing tool ${command.name}`
+          );
+          throw toolError;
+        }
+      } else {
+        try {
+          result = await toolRegistry.execute(command.name, command.params, {
             job: this.job,
             llm: getLlmProvider(this.activeLlmProvider),
             log,
@@ -1157,32 +1368,34 @@ export class Agent {
               });
             },
             taskQueue: this.taskQueue,
-          },
-        );
-      } else {
-        result = await toolRegistry.execute(command.name, command.params, {
-          job: this.job,
-          llm: getLlmProvider(this.activeLlmProvider),
-          log,
-          reportProgress: async (data: any) => {
-            this.job.updateProgress(data);
-          },
-          session: this.session,
-          streamContent: async (data: any) => {
-            this.publishToChannel({
-              content: data,
-              toolName: command.name,
-              type: 'tool_stream',
-            });
-          },
-          taskQueue: this.taskQueue,
-        });
+          });
+        } catch (toolError) {
+          // 🚨 AMÉLIORATION: Tracker les échecs d'exécution
+          this.trackExecutedAction(command.name, false);
+          
+          log.error(
+            {
+              error: toolError instanceof Error ? toolError : new Error(String(toolError)),
+              params: command.params,
+              tool: command.name,
+            },
+            `Error executing tool ${command.name}`
+          );
+          throw toolError;
+        }
       }
       this.publishToChannel({
         result: result, // Removed 'as unknown'
         toolName: command.name,
         type: 'tool_result',
       });
+      
+      // 🚨 AMÉLIORATION: Tracker les actions exécutées avec succès
+      this.trackExecutedAction(command.name, true);
+      if (command.name === 'display_canvas') {
+        this.lastDisplayCanvasCall = Date.now();
+        log.info('✅ display_canvas tracked as executed successfully');
+      }
       
       // Special handling for agent_thought tool
       if (command.name === 'agent_thought' && result && typeof result === 'object') {
@@ -1251,36 +1464,103 @@ export class Agent {
     return text.trim();
   }
 
+  private async attemptFallbackResponse(): Promise<string> {
+    this.log.info('Attempting fallback response generation');
+    
+    // Create a simplified prompt asking for just a basic response
+    const fallbackPrompt = `
+    I need you to provide a simple, direct response to complete this task. 
+    Please respond with only:
+    {"thought": "Completing the task with a fallback response", "command": {"name": "finish", "params": {"response": "I encountered some technical difficulties but have completed what I can. Please let me know if you need any specific assistance."}}}
+    
+    Do not include any other text outside the JSON object.`;
+    
+    try {
+      // Use the default LLM provider for fallback
+      const response = await getLlmProvider('gemini').getLlmResponse(
+        [{ role: 'user', parts: [{ text: fallbackPrompt }] }],
+        'You are a helpful assistant. Always respond with valid JSON format exactly as requested.',
+        this.llmApiKey || this.apiKey,
+        this.llmModelName
+      );
+      
+      if (response) {
+        const parsed = this.parseLlmResponse(response, this.log);
+        if (parsed.command?.name === 'finish' && parsed.command.params?.response) {
+          return parsed.command.params.response as string;
+        }
+      }
+    } catch (error) {
+      this.log.error({ error }, 'Fallback LLM call also failed');
+    }
+    
+    // If all else fails, return a static fallback response
+    return 'I apologize, but I encountered technical difficulties completing your request. Please try rephrasing your request or contact support if the issue persists.';
+  }
+
   private parseLlmResponse(llmResponse: string, log: Logger) {
+    log.info('🧠 PARSING LLM Response...');
+    
+    // 🚨 AMÉLIORATION 1: Détecter les réponses tronquées ou incomplètes
+    const isIncomplete =
+      llmResponse.trim().endsWith('...') ||
+      llmResponse.includes('ASSISTANT:') ||
+      llmResponse.includes('La réponse de l\'IA semble incomplète') ||
+      (llmResponse.includes('The agent is thinking...') && !llmResponse.includes('Tool Call:') && !llmResponse.includes('{'));
+
+    // 🚨 AMÉLIORATION: Détecter les réponses répétitives pour éviter les boucles
+    const isRepetitive = this.detectRepetitiveResponse(llmResponse);
+
+    if (isIncomplete) {
+      log.warn('🚨 Réponse LLM incomplète détectée, forçage fallback');
+      throw new Error('LLM response appears incomplete or truncated');
+    }
+
+    if (isRepetitive) {
+      log.warn('🚨 Réponse LLM répétitive détectée, forçage fallback');
+      throw new Error('LLM response appears repetitive, avoiding loop');
+    }
+    
     const jsonText = this.extractJsonFromMarkdown(llmResponse);
-    log.debug({ jsonText }, 'Attempting to parse LLM response');
+    log.debug({ jsonText: jsonText.substring(0, 200) + '...' }, 'Attempting to parse LLM response');
+    
     try {
       const parsed = JSON.parse(jsonText);
       log.debug({ parsed }, 'Successfully parsed LLM response');
       return llmResponseSchema.parse(parsed);
     } catch (error) {
-      log.error(
-        { error, llmResponse: jsonText },
-        'Failed to parse LLM response',
-      );
+      log.warn('⚠️ Initial parsing failed, trying conversion...');
 
-      // Try to convert plain text to valid JSON format
+      // 🚨 AMÉLIORATION 2: Meilleure conversion des réponses Tool Call:
       try {
         const convertedResponse = this.convertPlainTextToValidJson(jsonText);
         const convertedParsed = JSON.parse(convertedResponse);
-        log.debug(
-          { convertedParsed },
-          'Successfully converted plain text to valid JSON',
-        );
-        return llmResponseSchema.parse(convertedParsed);
+        log.info('✅ Successfully converted plain text to valid JSON');
+        const validated = llmResponseSchema.parse(convertedParsed);
+        
+        // 🚨 AMÉLIORATION 3: Vérifier que les outils critiques sont présents
+        if (validated.command) {
+          log.info(`🔧 Tool detected: ${validated.command.name}`);
+        }
+        
+        return validated;
       } catch (conversionError) {
         log.error(
-          { conversionError, originalError: error },
-          'Failed to convert plain text to valid JSON',
+          { conversionError, originalError: error, responseLength: llmResponse.length },
+          '💥 Failed to convert plain text to valid JSON',
         );
       }
 
-      throw new Error(`Failed to parse LLM response: ${jsonText}`);
+      // 🚨 AMÉLIORATION 4: Informations de debug détaillées
+      log.error({
+        responseStart: llmResponse.substring(0, 100),
+        responseEnd: llmResponse.substring(Math.max(0, llmResponse.length - 100)),
+        jsonTextStart: jsonText.substring(0, 100),
+        hasToolCall: jsonText.includes('Tool Call:'),
+        hasJson: jsonText.includes('{'),
+      }, '🔍 Detailed parsing failure analysis');
+
+      throw new Error(`Failed to parse LLM response: ${jsonText.substring(0, 200)}...`);
     }
   }
 
@@ -1327,5 +1607,240 @@ export class Agent {
         );
       },
     );
+  }
+  
+  // 🚨 AMÉLIORATION: Méthodes de tracking des actions
+  private trackExecutedAction(actionName: string, successful: boolean): void {
+    const current = this.executedActions.get(actionName);
+    this.executedActions.set(actionName, {
+      count: (current?.count || 0) + 1,
+      lastExecution: Date.now(),
+      successful: successful
+    });
+    
+    this.log.info(`📊 Action tracked: ${actionName} (success: ${successful}, total: ${(current?.count || 0) + 1})`);
+  }
+  
+  private hasExecutedActionRecently(actionName: string, withinMs: number = 30000): boolean {
+    const action = this.executedActions.get(actionName);
+    if (!action || !action.successful) return false;
+    
+    const timeSince = Date.now() - action.lastExecution;
+    return timeSince <= withinMs;
+  }
+  
+  private getActionExecutionSummary(): string {
+    const summary: string[] = [];
+    for (const [action, info] of this.executedActions.entries()) {
+      if (info.successful) {
+        const timeAgo = Math.floor((Date.now() - info.lastExecution) / 1000);
+        summary.push(`✅ ${action} (${timeAgo}s ago, ${info.count}x)`);
+      } else {
+        summary.push(`❌ ${action} (failed ${info.count}x)`);
+      }
+    }
+    return summary.length > 0 ? summary.join(', ') : 'No actions executed yet';
+  }
+
+  /**
+   * Crée une todo list intelligente basée sur le contenu de la demande utilisateur
+   */
+  private createSmartTodoList(userRequest: string): Array<{
+    id: string;
+    content: string;
+    status: 'pending' | 'in_progress' | 'completed';
+    priority: 'low' | 'medium' | 'high';
+    category: string;
+  }> {
+    const lowerRequest = userRequest.toLowerCase();
+    const todos: Array<{
+      id: string;
+      content: string;
+      status: 'pending' | 'in_progress' | 'completed';
+      priority: 'low' | 'medium' | 'high';
+      category: string;
+    }> = [];
+
+    // Détection de type de projet
+    if (lowerRequest.includes('game') || lowerRequest.includes('jeu') || lowerRequest.includes('defender')) {
+      // Projet de jeu
+      todos.push(
+        {
+          id: '1',
+          content: 'Analyser les spécifications du jeu Defender et ses mécaniques',
+          status: 'pending',
+          priority: 'high',
+          category: 'analysis'
+        },
+        {
+          id: '2',
+          content: 'Concevoir l\'architecture du jeu (classes, composants)',
+          status: 'pending',
+          priority: 'high',
+          category: 'design'
+        },
+        {
+          id: '3',
+          content: 'Implémenter le joueur et ses contrôles',
+          status: 'pending',
+          priority: 'high',
+          category: 'development'
+        },
+        {
+          id: '4',
+          content: 'Créer le système d\'ennemis et d\'obstacles',
+          status: 'pending',
+          priority: 'high',
+          category: 'development'
+        },
+        {
+          id: '5',
+          content: 'Ajouter le système de score et de vies',
+          status: 'pending',
+          priority: 'medium',
+          category: 'development'
+        },
+        {
+          id: '6',
+          content: 'Implémenter les effets visuels et sons',
+          status: 'pending',
+          priority: 'medium',
+          category: 'development'
+        },
+        {
+          id: '7',
+          content: 'Tester et déboguer le jeu',
+          status: 'pending',
+          priority: 'high',
+          category: 'testing'
+        }
+      );
+    } else if (lowerRequest.includes('website') || lowerRequest.includes('site web') || lowerRequest.includes('web')) {
+      // Projet web
+      todos.push(
+        {
+          id: '1',
+          content: 'Définir les spécifications fonctionnelles du site web',
+          status: 'pending',
+          priority: 'high',
+          category: 'planning'
+        },
+        {
+          id: '2',
+          content: 'Créer la maquette et le design de l\'interface',
+          status: 'pending',
+          priority: 'high',
+          category: 'design'
+        },
+        {
+          id: '3',
+          content: 'Développer la structure HTML et CSS',
+          status: 'pending',
+          priority: 'high',
+          category: 'development'
+        },
+        {
+          id: '4',
+          content: 'Implémenter les fonctionnalités JavaScript',
+          status: 'pending',
+          priority: 'high',
+          category: 'development'
+        },
+        {
+          id: '5',
+          content: 'Optimiser pour les appareils mobiles',
+          status: 'pending',
+          priority: 'medium',
+          category: 'development'
+        },
+        {
+          id: '6',
+          content: 'Tester la compatibilité cross-browser',
+          status: 'pending',
+          priority: 'medium',
+          category: 'testing'
+        }
+      );
+    } else if (lowerRequest.includes('app') || lowerRequest.includes('application') || lowerRequest.includes('mobile')) {
+      // Projet d'application
+      todos.push(
+        {
+          id: '1',
+          content: 'Analyser les besoins utilisateurs et spécifications',
+          status: 'pending',
+          priority: 'high',
+          category: 'analysis'
+        },
+        {
+          id: '2',
+          content: 'Concevoir l\'architecture et l\'interface utilisateur',
+          status: 'pending',
+          priority: 'high',
+          category: 'design'
+        },
+        {
+          id: '3',
+          content: 'Développer les fonctionnalités principales',
+          status: 'pending',
+          priority: 'high',
+          category: 'development'
+        },
+        {
+          id: '4',
+          content: 'Implémenter la gestion des données',
+          status: 'pending',
+          priority: 'high',
+          category: 'development'
+        },
+        {
+          id: '5',
+          content: 'Ajouter les tests unitaires et d\'intégration',
+          status: 'pending',
+          priority: 'medium',
+          category: 'testing'
+        },
+        {
+          id: '6',
+          content: 'Préparer le déploiement et la distribution',
+          status: 'pending',
+          priority: 'medium',
+          category: 'deployment'
+        }
+      );
+    } else {
+      // Projet générique
+      todos.push(
+        {
+          id: '1',
+          content: 'Analyser la demande et définir les objectifs',
+          status: 'pending',
+          priority: 'high',
+          category: 'analysis'
+        },
+        {
+          id: '2',
+          content: 'Planifier l\'approche et les étapes',
+          status: 'pending',
+          priority: 'high',
+          category: 'planning'
+        },
+        {
+          id: '3',
+          content: 'Commencer l\'implémentation',
+          status: 'pending',
+          priority: 'high',
+          category: 'development'
+        },
+        {
+          id: '4',
+          content: 'Tester et valider les résultats',
+          status: 'pending',
+          priority: 'medium',
+          category: 'testing'
+        }
+      );
+    }
+
+    return todos;
   }
 }

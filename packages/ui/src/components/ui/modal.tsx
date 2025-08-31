@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useCallback } from 'react';
 
 interface ModalProps {
@@ -8,7 +7,12 @@ interface ModalProps {
   title: string;
 }
 
-export const Modal: React.FC<ModalProps> = ({ children, isOpen, onClose, title }) => {
+export const Modal: React.FC<ModalProps> = ({
+  children,
+  isOpen,
+  onClose,
+  title,
+}) => {
   const modalRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -26,11 +30,14 @@ export const Modal: React.FC<ModalProps> = ({ children, isOpen, onClose, title }
     }
   }, [isOpen]);
 
-  const handleBackdropClick = useCallback((event: React.MouseEvent<HTMLDialogElement>) => {
-    if (event.target === modalRef.current) {
-      onClose();
-    }
-  }, [onClose]);
+  const handleBackdropClick = useCallback(
+    (event: React.MouseEvent<HTMLDialogElement>) => {
+      if (event.target === modalRef.current) {
+        onClose();
+      }
+    },
+    [onClose],
+  );
 
   return (
     <dialog
@@ -42,7 +49,9 @@ export const Modal: React.FC<ModalProps> = ({ children, isOpen, onClose, title }
       aria-modal="true"
     >
       <div className="flex justify-between items-center border-b border-border pb-3 mb-4">
-        <h3 id="modal-title" className="text-lg font-semibold">{title}</h3>
+        <h3 id="modal-title" className="text-lg font-semibold">
+          {title}
+        </h3>
         <button
           className="text-muted-foreground hover:text-card-foreground absolute top-2 right-2 p-2"
           onClick={onClose}

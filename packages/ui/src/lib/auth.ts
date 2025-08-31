@@ -1,28 +1,28 @@
-import type { OAuthClientProvider } from "@modelcontextprotocol/sdk/client/auth.js";
+import type { OAuthClientProvider } from '@modelcontextprotocol/sdk/client/auth.js';
 import type {
   OAuthClientInformation,
   OAuthClientMetadata,
   OAuthMetadata,
   OAuthTokens,
-} from "@modelcontextprotocol/sdk/shared/auth.js";
+} from '@modelcontextprotocol/sdk/shared/auth.js';
 
 import {
   OAuthClientInformationSchema,
   OAuthTokensSchema,
-} from "@modelcontextprotocol/sdk/shared/auth.js";
+} from '@modelcontextprotocol/sdk/shared/auth.js';
 
-import { getServerSpecificKey, SESSION_KEYS } from "./constants";
+import { getServerSpecificKey, SESSION_KEYS } from './constants';
 
 export class InspectorOAuthClientProvider implements OAuthClientProvider {
   public readonly redirectUrl: string = `${window.location.origin}/oauth/callback`;
 
   clientMetadata: OAuthClientMetadata = {
-    client_name: "MCP Inspector",
-    client_uri: "https://github.com/modelcontextprotocol/inspector",
-    grant_types: ["authorization_code", "refresh_token"],
+    client_name: 'MCP Inspector',
+    client_uri: 'https://github.com/modelcontextprotocol/inspector',
+    grant_types: ['authorization_code', 'refresh_token'],
     redirect_uris: [this.redirectUrl],
-    response_types: ["code"],
-    token_endpoint_auth_method: "none",
+    response_types: ['code'],
+    token_endpoint_auth_method: 'none',
   };
 
   constructor(public serverUrl: string) {
@@ -62,7 +62,7 @@ export class InspectorOAuthClientProvider implements OAuthClientProvider {
     );
     const verifier = sessionStorage.getItem(key);
     if (!verifier) {
-      throw new Error("No code verifier saved for session");
+      throw new Error('No code verifier saved for session');
     }
 
     return verifier;

@@ -35,48 +35,48 @@ export const REDIS_KEY_PATTERNS: Record<string, RedisKeyPattern> = {
   openai: {
     pattern: 'llm:keys:openai:*',
     description: 'OpenAI API keys stored in Redis',
-    example: 'llm:keys:openai:key_123'
+    example: 'llm:keys:openai:key_123',
   },
   anthropic: {
-    pattern: 'llm:keys:anthropic:*', 
+    pattern: 'llm:keys:anthropic:*',
     description: 'Anthropic Claude API keys',
-    example: 'llm:keys:anthropic:key_456'
+    example: 'llm:keys:anthropic:key_456',
   },
   'google-flash': {
     pattern: 'llm:keys:google-flash:*',
     description: 'Google Gemini Flash API keys',
-    example: 'llm:keys:google-flash:key_789'
+    example: 'llm:keys:google-flash:key_789',
   },
   'google-pro': {
     pattern: 'llm:keys:google-pro:*',
     description: 'Google Gemini Pro API keys',
-    example: 'llm:keys:google-pro:key_789'
+    example: 'llm:keys:google-pro:key_789',
   },
   google: {
     pattern: 'llm:keys:google:*',
     description: 'Google Gemini API keys (legacy)',
-    example: 'llm:keys:google:key_789'
+    example: 'llm:keys:google:key_789',
   },
   xai: {
     pattern: 'llm:keys:xai:*',
     description: 'xAI Grok API keys',
-    example: 'llm:keys:xai:key_abc'
+    example: 'llm:keys:xai:key_abc',
   },
   qwen: {
     pattern: 'llm:keys:qwen:*',
     description: 'Qwen3 Coder API keys',
-    example: 'llm:keys:qwen:key_def'
+    example: 'llm:keys:qwen:key_def',
   },
   openrouter: {
     pattern: 'llm:keys:openrouter:*',
     description: 'OpenRouter API keys',
-    example: 'llm:keys:openrouter:key_ghi'
+    example: 'llm:keys:openrouter:key_ghi',
   },
   global: {
     pattern: 'llm:keys:*',
     description: 'All LLM API keys',
-    example: 'llm:keys:*:*'
-  }
+    example: 'llm:keys:*:*',
+  },
 };
 
 export class LLMKeysApi {
@@ -94,7 +94,8 @@ export class LLMKeysApi {
 
     // Use unified auth from UI store (same as llmKeysStore)
     try {
-      const uiStore = (window as unknown as { __UI_STORE__: UIStore }).__UI_STORE__;
+      const uiStore = (window as unknown as { __UI_STORE__: UIStore })
+        .__UI_STORE__;
       if (uiStore) {
         const token = uiStore.getState().getValidAuthToken();
         if (token) {
@@ -119,11 +120,13 @@ export class LLMKeysApi {
   async fetchKeysFromRedis(): Promise<RedisLLMKey[]> {
     const response = await fetch(`${this.baseUrl}/redis/keys`, {
       method: 'GET',
-      headers: this.getAuthHeaders()
+      headers: this.getAuthHeaders(),
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch keys from Redis: ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch keys from Redis: ${response.statusText}`,
+      );
     }
 
     return response.json();
@@ -134,7 +137,7 @@ export class LLMKeysApi {
     const response = await fetch(`${this.baseUrl}/redis/scan`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
-      body: JSON.stringify({ pattern })
+      body: JSON.stringify({ pattern }),
     });
 
     if (!response.ok) {
@@ -147,9 +150,12 @@ export class LLMKeysApi {
 
   // Get specific key from Redis
   async getRedisKey(keyPath: string): Promise<RedisLLMKey | null> {
-    const response = await fetch(`${this.baseUrl}/redis/key/${encodeURIComponent(keyPath)}`, {
-      method: 'GET'
-    });
+    const response = await fetch(
+      `${this.baseUrl}/redis/key/${encodeURIComponent(keyPath)}`,
+      {
+        method: 'GET',
+      },
+    );
 
     if (!response.ok) {
       if (response.status === 404) return null;
@@ -161,13 +167,16 @@ export class LLMKeysApi {
 
   // Set key in Redis
   async setRedisKey(keyPath: string, keyData: RedisLLMKey): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/redis/key/${encodeURIComponent(keyPath)}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
+    const response = await fetch(
+      `${this.baseUrl}/redis/key/${encodeURIComponent(keyPath)}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(keyData),
       },
-      body: JSON.stringify(keyData)
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`Failed to set Redis key: ${response.statusText}`);
@@ -176,9 +185,12 @@ export class LLMKeysApi {
 
   // Delete key from Redis
   async deleteRedisKey(keyPath: string): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/redis/key/${encodeURIComponent(keyPath)}`, {
-      method: 'DELETE'
-    });
+    const response = await fetch(
+      `${this.baseUrl}/redis/key/${encodeURIComponent(keyPath)}`,
+      {
+        method: 'DELETE',
+      },
+    );
 
     if (!response.ok) {
       throw new Error(`Failed to delete Redis key: ${response.statusText}`);
@@ -186,13 +198,16 @@ export class LLMKeysApi {
   }
 
   // Test key validity
-  async testKey(provider: string, keyValue: string): Promise<{ valid: boolean; error?: string }> {
+  async testKey(
+    provider: string,
+    keyValue: string,
+  ): Promise<{ valid: boolean; error?: string }> {
     const response = await fetch(`${this.baseUrl}/test`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ provider, keyValue })
+      body: JSON.stringify({ provider, keyValue }),
     });
 
     if (!response.ok) {
@@ -203,11 +218,15 @@ export class LLMKeysApi {
   }
 
   // Get Redis info
-  async getRedisInfo(): Promise<{ connected: boolean; keyCount: number; memory: string }> {
+  async getRedisInfo(): Promise<{
+    connected: boolean;
+    keyCount: number;
+    memory: string;
+  }> {
     try {
       const response = await fetch(`${this.baseUrl}/redis/info`, {
         method: 'GET',
-        headers: this.getAuthHeaders()
+        headers: this.getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -220,19 +239,21 @@ export class LLMKeysApi {
       return {
         connected: false,
         keyCount: 0,
-        memory: '0K'
+        memory: '0K',
       };
     }
   }
 
   // Bulk operations
-  async bulkImportFromRedis(patterns: string[]): Promise<{ imported: number; errors: string[] }> {
+  async bulkImportFromRedis(
+    patterns: string[],
+  ): Promise<{ imported: number; errors: string[] }> {
     const response = await fetch(`${this.baseUrl}/redis/bulk-import`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ patterns })
+      body: JSON.stringify({ patterns }),
     });
 
     if (!response.ok) {
@@ -242,13 +263,15 @@ export class LLMKeysApi {
     return response.json();
   }
 
-  async bulkExportToRedis(keys: RedisLLMKey[]): Promise<{ exported: number; errors: string[] }> {
+  async bulkExportToRedis(
+    keys: RedisLLMKey[],
+  ): Promise<{ exported: number; errors: string[] }> {
     const response = await fetch(`${this.baseUrl}/redis/bulk-export`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ keys })
+      body: JSON.stringify({ keys }),
     });
 
     if (!response.ok) {
@@ -259,10 +282,10 @@ export class LLMKeysApi {
   }
 
   // Key hierarchy operations
-  async getKeyHierarchy(): Promise<{[key: string]: number}> {
+  async getKeyHierarchy(): Promise<{ [key: string]: number }> {
     const response = await fetch(`${this.baseUrl}/hierarchy`, {
       method: 'GET',
-      headers: this.getAuthHeaders()
+      headers: this.getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -272,14 +295,14 @@ export class LLMKeysApi {
     return response.json();
   }
 
-  async setKeyHierarchy(hierarchy: {[key: string]: number}): Promise<void> {
+  async setKeyHierarchy(hierarchy: { [key: string]: number }): Promise<void> {
     const response = await fetch(`${this.baseUrl}/hierarchy`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...this.getAuthHeaders()
+        ...this.getAuthHeaders(),
       },
-      body: JSON.stringify(hierarchy)
+      body: JSON.stringify(hierarchy),
     });
 
     if (!response.ok) {
@@ -292,13 +315,15 @@ export class LLMKeysApi {
     return `llm:keys:${provider}:${keyId}`;
   }
 
-  static parseKeyPath(keyPath: string): { provider: string; keyId: string } | null {
+  static parseKeyPath(
+    keyPath: string,
+  ): { provider: string; keyId: string } | null {
     const match = keyPath.match(/^llm:keys:([^:]+):(.+)$/);
     if (!match) return null;
-    
+
     return {
       provider: match[1],
-      keyId: match[2]
+      keyId: match[2],
     };
   }
 
@@ -311,7 +336,7 @@ export class LLMKeysApi {
       google: /^AI[a-zA-Z0-9\-_]{35,}$/,
       xai: /^xai-[a-zA-Z0-9\-_]{20,}$/,
       qwen: /^[a-zA-Z0-9\-_]{20,}$/,
-      openrouter: /^sk-or-[a-zA-Z0-9\-_]{10,}$/
+      openrouter: /^sk-or-[a-zA-Z0-9\-_]{10,}$/,
     };
 
     const pattern = patterns[provider];

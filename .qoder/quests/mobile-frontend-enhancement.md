@@ -3,22 +3,27 @@
 ## 1. Overview
 
 ### 1.1 Purpose
+
 This document outlines the design and implementation plan for enhancing the AgenticForge frontend to provide an optimized mobile user experience. The current UI is primarily designed for desktop use, and this enhancement will make the application fully responsive and mobile-friendly.
 
 ### 1.2 Current State Analysis
+
 The existing frontend is built with React, TypeScript, and Tailwind CSS, featuring:
+
 - A complex layout with control panel, chat area, and canvas
 - Responsive design with some mobile considerations (limited @media queries)
 - Desktop-focused interaction patterns
 - Complex component hierarchy with multiple side panels
 
 Analysis of the current codebase shows:
+
 - Limited responsive design with only basic @media queries in CSS files
 - No dedicated mobile navigation system
 - Desktop-oriented component layouts that don't adapt well to small screens
 - Touch interactions not optimized for mobile devices
 
 ### 1.3 Goals
+
 - Implement a mobile-first responsive design
 - Create an adaptive layout that works well on all screen sizes
 - Optimize touch interactions for mobile devices
@@ -29,7 +34,9 @@ Analysis of the current codebase shows:
 ## 2. Architecture
 
 ### 2.1 Current Frontend Architecture
+
 The current architecture follows a component-based structure with:
+
 - Main App component orchestrating the layout
 - Zustand for state management
 - Tailwind CSS for styling
@@ -37,6 +44,7 @@ The current architecture follows a component-based structure with:
 - Responsive breakpoints at 768px
 
 Current layout structure:
+
 - Fixed width control panel (250px-400px)
 - Main chat area
 - Resizable canvas panel (300px-800px)
@@ -44,12 +52,14 @@ Current layout structure:
 - Horizontal header with multiple action buttons
 
 Limitations:
+
 - Layout does not adapt well to small screens
 - No mobile navigation pattern
 - Fixed panel widths not suitable for mobile
 - Touch interactions not optimized
 
 ### 2.2 Proposed Mobile Enhancement Architecture
+
 ```mermaid
 graph TD
 A[App Component] --> B[Mobile Detection Hook]
@@ -69,6 +79,7 @@ K --> |< 768px| N[Mobile Layout]
 ```
 
 ### 2.3 Component Hierarchy Changes
+
 ```mermaid
 graph TD
 A[App] --> B[ResponsiveLayout]
@@ -91,8 +102,11 @@ F --> P[MobileHeader]
 ## 3. Component Architecture
 
 ### 3.1 Mobile Navigation System
+
 #### 3.1.1 Hamburger Menu Component
+
 A new hamburger menu component will be implemented for mobile navigation:
+
 - Replaces the horizontal button bar on mobile
 - Provides access to all main application sections
 - Uses Radix UI dropdown menu primitives for accessibility
@@ -100,20 +114,21 @@ A new hamburger menu component will be implemented for mobile navigation:
 - Responsive visibility (hidden on desktop, visible on mobile)
 
 Implementation details:
+
 ```typescript
 const HamburgerMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   return (
     <div className="md:hidden">
-      <button 
+      <button
         onClick={() => setIsOpen(true)}
         className="p-2 rounded-md text-foreground"
         aria-label="Open menu"
       >
         <Menu className="h-6 w-6" />
       </button>
-      
+
       <MobileDrawer isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </div>
   );
@@ -121,7 +136,9 @@ const HamburgerMenu: React.FC = () => {
 ```
 
 #### 3.1.2 Mobile Navigation Drawer
+
 A slide-in navigation drawer for mobile:
+
 - Contains all main navigation options
 - Includes user profile and settings
 - Smooth animation using Framer Motion
@@ -130,6 +147,7 @@ A slide-in navigation drawer for mobile:
 - Keyboard navigation support
 
 Implementation with Framer Motion:
+
 ```typescript
 const MobileDrawer: React.FC<{isOpen: boolean, onClose: () => void}> = ({isOpen, onClose}) => {
   return (
@@ -160,8 +178,11 @@ const MobileDrawer: React.FC<{isOpen: boolean, onClose: () => void}> = ({isOpen,
 ```
 
 ### 3.2 Responsive Layout Components
+
 #### 3.2.1 Layout Manager
+
 A new layout manager component that:
+
 - Detects screen size and orientation
 - Switches between desktop, tablet, and mobile layouts
 - Manages component visibility based on screen size
@@ -169,6 +190,7 @@ A new layout manager component that:
 - Implements a context provider for screen size information
 
 Implementation approach:
+
 ```typescript
 // ScreenSizeContext.tsx
 export const ScreenSizeContext = createContext<{
@@ -212,7 +234,9 @@ export const ScreenSizeProvider: React.FC<{children: ReactNode}> = ({ children }
 ```
 
 #### 3.2.2 Collapsible Panels
+
 Enhanced panel components that:
+
 - Collapse into expandable sections on mobile
 - Use accordion patterns for space efficiency
 - Maintain state across device rotations
@@ -220,13 +244,14 @@ Enhanced panel components that:
 - Preserve content state when collapsed/expanded
 
 Implementation with Framer Motion:
+
 ```typescript
 const CollapsiblePanel: React.FC<{title: string, children: ReactNode}> = ({ title, children }) => {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   return (
     <div className="border rounded-lg mb-2">
-      <button 
+      <button
         className="w-full p-4 text-left flex justify-between items-center"
         onClick={() => setIsOpen(!isOpen)}
       >
@@ -238,7 +263,7 @@ const CollapsiblePanel: React.FC<{title: string, children: ReactNode}> = ({ titl
           <ChevronDown className="h-5 w-5" />
         </motion.div>
       </button>
-      
+
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -260,7 +285,9 @@ const CollapsiblePanel: React.FC<{title: string, children: ReactNode}> = ({ titl
 ```
 
 ### 3.3 Touch-Optimized Components
+
 #### 3.3.1 Touch-Friendly Buttons
+
 - Increased touch target size (minimum 44px)
 - Improved spacing between interactive elements
 - Visual feedback for touch interactions
@@ -268,8 +295,13 @@ const CollapsiblePanel: React.FC<{title: string, children: ReactNode}> = ({ titl
 - Proper focus states for accessibility
 
 Implementation example:
+
 ```tsx
-const TouchButton: React.FC<ButtonProps> = ({ children, className, ...props }) => {
+const TouchButton: React.FC<ButtonProps> = ({
+  children,
+  className,
+  ...props
+}) => {
   return (
     <button
       className={`min-h-[44px] min-w-[44px] flex items-center justify-center ${className}`}
@@ -282,6 +314,7 @@ const TouchButton: React.FC<ButtonProps> = ({ children, className, ...props }) =
 ```
 
 #### 3.3.2 Gesture Support
+
 - Swipe gestures for panel navigation
 - Long press for contextual actions
 - Pinch-to-zoom for canvas content
@@ -290,33 +323,34 @@ const TouchButton: React.FC<ButtonProps> = ({ children, className, ...props }) =
 - Pull-to-refresh for content updates
 
 Gesture implementation using React hooks:
+
 ```tsx
 const useSwipe = (onSwipeLeft: () => void, onSwipeRight: () => void) => {
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
-  
+
   const minSwipeDistance = 50;
-  
+
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(0);
     setTouchStart(e.targetTouches[0].clientX);
   };
-  
+
   const onTouchMove = (e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
   };
-  
+
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-    
+
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
-    
+
     if (isLeftSwipe) onSwipeLeft();
     if (isRightSwipe) onSwipeRight();
   };
-  
+
   return { onTouchStart, onTouchMove, onTouchEnd };
 };
 ```
@@ -324,7 +358,9 @@ const useSwipe = (onSwipeLeft: () => void, onSwipeRight: () => void) => {
 ## 4. State Management
 
 ### 4.1 Mobile State Considerations
+
 The existing Zustand state management will be extended to handle mobile-specific states:
+
 - Screen size and orientation
 - Navigation drawer open/closed state
 - Panel visibility states for mobile
@@ -332,11 +368,13 @@ The existing Zustand state management will be extended to handle mobile-specific
 - Mobile-specific UI preferences
 
 New hooks to implement:
+
 - `useScreenSize()` - Detects and provides screen size information
 - `useMobileNavigation()` - Manages mobile navigation drawer state
 - `useCollapsiblePanels()` - Handles panel collapse/expand states
 
 ### 4.2 Responsive State Patterns
+
 ```mermaid
 stateDiagram-v2
 [*] --> Desktop
@@ -347,7 +385,9 @@ Tablet --> Desktop : ScreenWidth >= 1024px
 ```
 
 ### 4.3 Screen Size Context
+
 A new React context will be created to provide screen size information throughout the application:
+
 - Uses window.matchMedia for efficient screen size detection
 - Debounced resize event handling for performance
 - Provides screen size categories (mobile, tablet, desktop)
@@ -356,6 +396,7 @@ A new React context will be created to provide screen size information throughou
 ## 5. UI/UX Design
 
 ### 5.1 Mobile-First Design Principles
+
 - Progressive disclosure of features
 - Vertical stacking of components
 - Minimalist interface with essential elements
@@ -363,6 +404,7 @@ A new React context will be created to provide screen size information throughou
 - Optimized information hierarchy for small screens
 
 ### 5.2 Touch Interaction Design
+
 - Larger touch targets for all interactive elements (minimum 44px)
 - Gestural navigation patterns
 - Visual feedback for all interactions
@@ -371,6 +413,7 @@ A new React context will be created to provide screen size information throughou
 - Haptic feedback where appropriate
 
 ### 5.3 Adaptive Layout System
+
 ```mermaid
 flowchart TD
 Viewport[Viewport Size] --> Detection{Screen Width}
@@ -385,21 +428,25 @@ Mobile --> Components[Stacked panels with drawer]
 ### 5.4 Component-Specific Mobile Adaptations
 
 #### Header Component
+
 - Replace button bar with hamburger menu on mobile
 - Simplified logo and title for small screens
 - Contextual action buttons based on current view
 
 #### Control Panel
+
 - Collapsible drawer on mobile
 - Tab-based navigation for sections
 - Search functionality optimized for touch
 
 #### Chat Area
+
 - Full-width message bubbles
 - Simplified input area with integrated actions
 - Attachment options in contextual menu
 
 #### Canvas
+
 - Full-screen mode as default on mobile
 - Simplified toolbar with essential actions
 - Gesture-based navigation (pinch, swipe)
@@ -407,6 +454,7 @@ Mobile --> Components[Stacked panels with drawer]
 ## 6. Performance Optimization
 
 ### 6.1 Mobile Performance Considerations
+
 - Lazy loading of non-essential components
 - Optimized bundle size for mobile networks
 - Reduced animations on low-end devices
@@ -418,6 +466,7 @@ Mobile --> Components[Stacked panels with drawer]
 - Efficient state updates to prevent unnecessary re-renders
 
 ### 6.2 Code Splitting Strategy
+
 - Separate mobile-specific components into lazy-loaded bundles
 - Conditional loading based on screen size
 - Preloading critical mobile components
@@ -425,18 +474,20 @@ Mobile --> Components[Stacked panels with drawer]
 - Route-based code splitting for mobile views
 
 Implementation with React.lazy:
+
 ```tsx
-const MobileNavigationDrawer = React.lazy(() => 
-  import('./components/MobileNavigationDrawer')
+const MobileNavigationDrawer = React.lazy(
+  () => import('./components/MobileNavigationDrawer'),
 );
 
 // In component
 <Suspense fallback={<div>Loading...</div>}>
   <MobileNavigationDrawer />
-</Suspense>
+</Suspense>;
 ```
 
 ### 6.3 Network Optimization
+
 - Implement service worker for offline capability
 - Cache static assets for faster loading
 - Optimize API calls for mobile network conditions
@@ -446,6 +497,7 @@ const MobileNavigationDrawer = React.lazy(() =>
 - Use efficient data formats (Protocol Buffers, etc.)
 
 ### 6.4 Battery and Resource Optimization
+
 - Reduce CPU-intensive operations on mobile
 - Optimize animations for battery efficiency
 - Implement smart polling for real-time updates
@@ -455,6 +507,7 @@ const MobileNavigationDrawer = React.lazy(() =>
 ## 7. Testing Strategy
 
 ### 7.1 Mobile Testing Approach
+
 - Device simulation across various screen sizes
 - Touch interaction testing
 - Performance testing on mobile networks
@@ -464,12 +517,14 @@ const MobileNavigationDrawer = React.lazy(() =>
 - Real device testing on popular models
 
 ### 7.2 Browser Compatibility
+
 - Mobile Safari (iOS)
 - Chrome for Android
 - Samsung Internet
 - Firefox for Android
 
 ### 7.3 Testing Tools and Frameworks
+
 - Jest and React Testing Library for unit tests
 - Cypress for end-to-end testing
 - BrowserStack or similar for cross-device testing
@@ -479,6 +534,7 @@ const MobileNavigationDrawer = React.lazy(() =>
 - Percy for visual regression testing
 
 ### 7.4 Automated Testing
+
 - Visual regression testing for UI changes
 - Performance benchmarking
 - Accessibility scanning
@@ -486,14 +542,15 @@ const MobileNavigationDrawer = React.lazy(() =>
 
 ### 7.5 Testing Matrix
 
-| Device Category | Screen Sizes | Test Scenarios | Priority |
-|----------------|--------------|----------------|----------|
-| Small Mobile | 320px - 480px | Basic functionality, touch interactions | High |
-| Large Mobile | 481px - 768px | All features, orientation changes | High |
-| Tablet | 769px - 1024px | Multi-panel layouts, responsive behavior | Medium |
-| Desktop | 1025px+ | Full feature set, edge cases | Low |
+| Device Category | Screen Sizes   | Test Scenarios                           | Priority |
+| --------------- | -------------- | ---------------------------------------- | -------- |
+| Small Mobile    | 320px - 480px  | Basic functionality, touch interactions  | High     |
+| Large Mobile    | 481px - 768px  | All features, orientation changes        | High     |
+| Tablet          | 769px - 1024px | Multi-panel layouts, responsive behavior | Medium   |
+| Desktop         | 1025px+        | Full feature set, edge cases             | Low      |
 
 ### 7.6 Performance Testing Metrics
+
 - First Contentful Paint (FCP) < 2.0 seconds
 - Largest Contentful Paint (LCP) < 2.5 seconds
 - Cumulative Layout Shift (CLS) < 0.1
@@ -501,6 +558,7 @@ const MobileNavigationDrawer = React.lazy(() =>
 - Bundle size < 200KB for critical path
 
 ### 7.7 Accessibility Testing
+
 - Screen reader compatibility
 - Keyboard navigation on mobile (external keyboards)
 - Color contrast ratios
@@ -510,6 +568,7 @@ const MobileNavigationDrawer = React.lazy(() =>
 ## 8. Implementation Roadmap
 
 ### 8.1 Phase 1: Foundation (Week 1-2)
+
 - Implement mobile detection hook (`useScreenSize`)
 - Create responsive layout manager
 - Develop mobile navigation drawer
@@ -517,6 +576,7 @@ const MobileNavigationDrawer = React.lazy(() =>
 - Create ScreenSizeContext provider
 
 ### 8.2 Phase 2: Component Optimization (Week 3-4)
+
 - Optimize touch interactions
 - Implement collapsible panels
 - Create mobile-friendly forms
@@ -525,6 +585,7 @@ const MobileNavigationDrawer = React.lazy(() =>
 - Modify Control Panel for mobile
 
 ### 8.3 Phase 3: Advanced Features (Week 5-6)
+
 - Add gesture support
 - Implement adaptive layouts
 - Optimize performance for mobile
@@ -533,6 +594,7 @@ const MobileNavigationDrawer = React.lazy(() =>
 - Add progressive web app capabilities
 
 ### 8.4 Phase 4: Polish and Release (Week 7)
+
 - Final UI/UX refinements
 - Performance optimization
 - Cross-device testing
@@ -543,6 +605,7 @@ const MobileNavigationDrawer = React.lazy(() =>
 ## 9. Implementation Checklist
 
 ### Core Components
+
 - [ ] Screen size detection hook
 - [ ] Responsive layout manager
 - [ ] Mobile navigation drawer
@@ -551,6 +614,7 @@ const MobileNavigationDrawer = React.lazy(() =>
 - [ ] Touch-optimized buttons
 
 ### Layout Adaptations
+
 - [ ] Header component mobile adaptation
 - [ ] Control panel mobile layout
 - [ ] Chat area mobile optimization
@@ -558,18 +622,21 @@ const MobileNavigationDrawer = React.lazy(() =>
 - [ ] Todo list mobile view
 
 ### Interaction Enhancements
+
 - [ ] Touch gesture support
 - [ ] Visual feedback improvements
 - [ ] Keyboard navigation
 - [ ] Focus management
 
 ### Performance Optimizations
+
 - [ ] Code splitting for mobile
 - [ ] Lazy loading implementation
 - [ ] Bundle size optimization
 - [ ] Service worker integration
 
 ### Testing and Quality Assurance
+
 - [ ] Unit tests for mobile components
 - [ ] Cross-browser testing
 - [ ] Performance benchmarking
@@ -587,11 +654,13 @@ const MobileNavigationDrawer = React.lazy(() =>
 ## 11. Risks and Mitigations
 
 ### Technical Risks
+
 - **Complex state management**: Mitigate by extending existing Zustand patterns
 - **Performance on low-end devices**: Address through code splitting and optimization
 - **Browser compatibility issues**: Test across target browsers and versions
 
 ### Timeline Risks
+
 - **Feature scope creep**: Maintain focus on core mobile experience
 - **Testing delays**: Allocate buffer time for cross-device testing
 - **Integration challenges**: Implement in phases with thorough testing

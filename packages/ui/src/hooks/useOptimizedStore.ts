@@ -35,20 +35,25 @@ export const useCanvasData = () => {
 export const useStableActions = () => {
   const uiStore = useUIStore();
   const canvasStore = useCanvasStore();
-  
-  return useMemo(() => ({
-    canvas: {
-      toggleCanvasVisible: canvasStore.toggleIsCanvasVisible,
-      setCanvasWidth: canvasStore.setCanvasWidth,
-    },
-    ui: {
-      setCurrentPage: uiStore.setCurrentPage,
-      toggleControlPanel: () => uiStore.setIsControlPanelVisible(!uiStore.isControlPanelVisible),
-      toggleDarkMode: uiStore.toggleDarkMode,
-      toggleTodoList: () => uiStore.setIsTodoListVisible(!uiStore.isTodoListVisible),
-      toggleDebugLog: uiStore.toggleDebugLogVisibility,
-    },
-  }), [uiStore, canvasStore]);
+
+  return useMemo(
+    () => ({
+      canvas: {
+        toggleCanvasVisible: canvasStore.toggleIsCanvasVisible,
+        setCanvasWidth: canvasStore.setCanvasWidth,
+      },
+      ui: {
+        setCurrentPage: uiStore.setCurrentPage,
+        toggleControlPanel: () =>
+          uiStore.setIsControlPanelVisible(!uiStore.isControlPanelVisible),
+        toggleDarkMode: uiStore.toggleDarkMode,
+        toggleTodoList: () =>
+          uiStore.setIsTodoListVisible(!uiStore.isTodoListVisible),
+        toggleDebugLog: uiStore.toggleDebugLogVisibility,
+      },
+    }),
+    [uiStore, canvasStore],
+  );
 };
 
 export const useConditionalRender = (condition: boolean) => {

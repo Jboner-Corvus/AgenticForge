@@ -1,8 +1,19 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Settings, Pin, Layout, Grid, Eye, EyeOff, Maximize2, 
-  RotateCcw, Sword, Shield, Crown, MonitorPlay, Target 
+import {
+  Settings,
+  Pin,
+  Layout,
+  Grid,
+  Eye,
+  EyeOff,
+  Maximize2,
+  RotateCcw,
+  Sword,
+  Shield,
+  Crown,
+  MonitorPlay,
+  Target,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
@@ -10,10 +21,10 @@ import { usePinningStore, useInitializePinning } from '../store/pinningStore';
 
 export const EpicPinningControls: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   // Initialize pinning store
   useInitializePinning();
-  
+
   const {
     components,
     layoutMode,
@@ -29,38 +40,42 @@ export const EpicPinningControls: React.FC = () => {
     toggleShowGrid,
     togglePin,
     toggleVisibility,
-    resetComponent
+    resetComponent,
   } = usePinningStore();
 
-  const pinnedCount = Object.values(components).filter(c => c.isPinned).length;
-  const visibleCount = Object.values(components).filter(c => c.isVisible).length;
+  const pinnedCount = Object.values(components).filter(
+    (c) => c.isPinned,
+  ).length;
+  const visibleCount = Object.values(components).filter(
+    (c) => c.isVisible,
+  ).length;
 
   const layoutModes = {
     freeform: { icon: Layout, label: 'FREEFORM', color: 'text-cyan-400' },
     grid: { icon: Grid, label: 'GRID', color: 'text-purple-400' },
     cascade: { icon: Maximize2, label: 'CASCADE', color: 'text-green-400' },
-    battlefield: { icon: Sword, label: 'BATTLEFIELD', color: 'text-red-400' }
+    battlefield: { icon: Sword, label: 'BATTLEFIELD', color: 'text-red-400' },
   };
 
   const presetModes = {
-    battlefield: { 
-      fn: activateBattlefieldMode, 
-      icon: Sword, 
+    battlefield: {
+      fn: activateBattlefieldMode,
+      icon: Sword,
       label: '⚔️ BATTLEFIELD',
-      description: 'All components pinned and visible'
+      description: 'All components pinned and visible',
     },
-    theater: { 
-      fn: activateTheaterMode, 
-      icon: MonitorPlay, 
+    theater: {
+      fn: activateTheaterMode,
+      icon: MonitorPlay,
       label: '🎬 THEATER',
-      description: 'Focus on canvas with minimal UI'
+      description: 'Focus on canvas with minimal UI',
     },
-    minimal: { 
-      fn: activateMinimalMode, 
-      icon: Shield, 
+    minimal: {
+      fn: activateMinimalMode,
+      icon: Shield,
       label: '🛡️ MINIMAL',
-      description: 'Essential components only'
-    }
+      description: 'Essential components only',
+    },
   };
 
   const currentMode = layoutModes[layoutMode];
@@ -81,7 +96,7 @@ export const EpicPinningControls: React.FC = () => {
           >
             <Settings className="h-4 w-4" />
           </motion.div>
-          
+
           {/* BADGE DE STATUS */}
           {pinnedCount > 0 && (
             <motion.div
@@ -102,7 +117,7 @@ export const EpicPinningControls: React.FC = () => {
             initial={{ opacity: 0, scale: 0.8, y: -10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: -10 }}
-            transition={{ type: "spring", damping: 20, stiffness: 400 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 400 }}
             className="absolute right-0 top-12 w-80 bg-black/90 backdrop-blur-xl border border-cyan-500/30 rounded-2xl shadow-2xl shadow-cyan-500/20 p-6 z-[9999]"
           >
             {/* HEADER */}
@@ -113,7 +128,7 @@ export const EpicPinningControls: React.FC = () => {
               <div className="flex items-center gap-2 text-xs text-gray-400">
                 <motion.div
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
                 >
                   <Crown className="h-4 w-4" />
                 </motion.div>
@@ -123,17 +138,22 @@ export const EpicPinningControls: React.FC = () => {
 
             {/* LAYOUT MODE SELECTOR */}
             <div className="mb-6">
-              <div className="block text-sm font-medium text-cyan-400 mb-3">LAYOUT MODE</div>
+              <div className="block text-sm font-medium text-cyan-400 mb-3">
+                LAYOUT MODE
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(layoutModes).map(([mode, config]) => (
                   <motion.button
                     key={mode}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setLayoutMode(mode as keyof typeof layoutModes)}
+                    onClick={() =>
+                      setLayoutMode(mode as keyof typeof layoutModes)
+                    }
                     className={`p-3 rounded-lg border transition-all duration-200 ${
-                      layoutMode === mode 
-                        ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border-cyan-500/50 ' + config.color
+                      layoutMode === mode
+                        ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border-cyan-500/50 ' +
+                          config.color
                         : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
                     }`}
                   >
@@ -148,7 +168,9 @@ export const EpicPinningControls: React.FC = () => {
 
             {/* PRESET MODES ÉPIQUES */}
             <div className="mb-6">
-              <div className="block text-sm font-medium text-cyan-400 mb-3">EPIC PRESETS</div>
+              <div className="block text-sm font-medium text-cyan-400 mb-3">
+                EPIC PRESETS
+              </div>
               <div className="space-y-2">
                 {Object.entries(presetModes).map(([key, preset]) => (
                   <motion.button
@@ -161,8 +183,12 @@ export const EpicPinningControls: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <preset.icon className="h-5 w-5 text-cyan-400" />
                       <div>
-                        <div className="font-bold text-white text-sm">{preset.label}</div>
-                        <div className="text-xs text-gray-400">{preset.description}</div>
+                        <div className="font-bold text-white text-sm">
+                          {preset.label}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {preset.description}
+                        </div>
                       </div>
                     </div>
                   </motion.button>
@@ -172,15 +198,24 @@ export const EpicPinningControls: React.FC = () => {
 
             {/* COMPONENT TOGGLES */}
             <div className="mb-6">
-              <div className="block text-sm font-medium text-cyan-400 mb-3">COMPONENTS</div>
+              <div className="block text-sm font-medium text-cyan-400 mb-3">
+                COMPONENTS
+              </div>
               <div className="space-y-2">
                 {Object.entries(components).map(([id, component]) => (
-                  <div key={id} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
+                  <div
+                    key={id}
+                    className="flex items-center justify-between p-2 rounded-lg bg-white/5"
+                  >
                     <div className="flex items-center gap-2">
-                      <div className="text-sm font-medium text-white">{component.name}</div>
-                      <div className={`w-2 h-2 rounded-full ${
-                        component.isVisible ? 'bg-green-400' : 'bg-red-400'
-                      }`} />
+                      <div className="text-sm font-medium text-white">
+                        {component.name}
+                      </div>
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          component.isVisible ? 'bg-green-400' : 'bg-red-400'
+                        }`}
+                      />
                     </div>
                     <div className="flex gap-1">
                       <Button
@@ -189,10 +224,11 @@ export const EpicPinningControls: React.FC = () => {
                         onClick={() => toggleVisibility(id)}
                         className="h-6 w-6 hover:bg-white/10"
                       >
-                        {component.isVisible ? 
-                          <Eye className="h-3 w-3 text-green-400" /> : 
+                        {component.isVisible ? (
+                          <Eye className="h-3 w-3 text-green-400" />
+                        ) : (
                           <EyeOff className="h-3 w-3 text-red-400" />
-                        }
+                        )}
                       </Button>
                       <Button
                         variant="ghost"
@@ -200,7 +236,9 @@ export const EpicPinningControls: React.FC = () => {
                         onClick={() => togglePin(id)}
                         className="h-6 w-6 hover:bg-white/10"
                       >
-                        <Pin className={`h-3 w-3 ${component.isPinned ? 'text-yellow-400' : 'text-gray-400'}`} />
+                        <Pin
+                          className={`h-3 w-3 ${component.isPinned ? 'text-yellow-400' : 'text-gray-400'}`}
+                        />
                       </Button>
                       <Button
                         variant="ghost"
@@ -220,8 +258,12 @@ export const EpicPinningControls: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-medium text-cyan-400">OPACITY</div>
-                  <span className="text-sm text-white font-mono">{Math.round(globalOpacity * 100)}%</span>
+                  <div className="text-sm font-medium text-cyan-400">
+                    OPACITY
+                  </div>
+                  <span className="text-sm text-white font-mono">
+                    {Math.round(globalOpacity * 100)}%
+                  </span>
                 </div>
                 <Slider
                   value={[globalOpacity * 100]}

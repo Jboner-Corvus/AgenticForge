@@ -1,9 +1,9 @@
 /**
  * Enhanced Chat Components - Modern AI Assistant Interface
- * 
+ *
  * Composants de chat améliorés inspirés de Claude Code avec des fonctionnalités avancées :
  * - Interface élégante et moderne
- * - Auto-scroll intelligent  
+ * - Auto-scroll intelligent
  * - Historique des messages
  * - Suggestions contextuelles
  * - Affichage de code optimisé
@@ -72,16 +72,16 @@ export const CHAT_THEMES: Record<string, EnhancedChatTheme> = {
       secondary: 'hsl(var(--secondary))',
       accent: 'hsl(var(--accent))',
       background: 'hsl(var(--background))',
-      border: 'hsl(var(--border))'
+      border: 'hsl(var(--border))',
     },
     typography: {
       fontFamily: 'Inter, sans-serif',
       sizes: {
         sm: '0.875rem',
         base: '1rem',
-        lg: '1.125rem'
-      }
-    }
+        lg: '1.125rem',
+      },
+    },
   },
   pinned: {
     variant: 'pinned',
@@ -90,15 +90,15 @@ export const CHAT_THEMES: Record<string, EnhancedChatTheme> = {
       secondary: '#0891b2',
       accent: '#22d3ee',
       background: 'rgba(0, 0, 0, 0.8)',
-      border: 'rgba(6, 182, 212, 0.3)'
+      border: 'rgba(6, 182, 212, 0.3)',
     },
     typography: {
       fontFamily: 'JetBrains Mono, monospace',
       sizes: {
         sm: '0.875rem',
         base: '1rem',
-        lg: '1.125rem'
-      }
-    }
-  }
+        lg: '1.125rem',
+      },
+    },
+  },
 };

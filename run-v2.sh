@@ -157,7 +157,7 @@ auto_install_dependencies() {
 # Ensure all necessary directories exist
 ensure_directory_structure() {
     echo -e "${COLOR_CYAN}📁 Ensuring directory structure...${NC}"
-    
+
     local dirs=(
         "workspace"
         "logs"
@@ -165,14 +165,94 @@ ensure_directory_structure() {
         "packages/core/dist"
         "packages/ui/dist"
     )
-    
+
     for dir in "${dirs[@]}"; do
         if [[ ! -d "$ROOT_DIR/$dir" ]]; then
             mkdir -p "$ROOT_DIR/$dir"
         fi
     done
-    
+
+    # Set up workspace structure for production
+    setup_workspace_structure
+
     echo -e "${COLOR_GREEN}✅ Directory structure ready${NC}"
+}
+
+# Set up production workspace structure
+setup_workspace_structure() {
+    echo -e "${COLOR_CYAN}🔧 Setting up system workspace structure...${NC}"
+
+    # Use system workspace path from environment
+    local workspace_dir="$HOME/agenticforge-workspace"
+
+    # Create workspace directory if it doesn't exist
+    if [[ ! -d "$workspace_dir" ]]; then
+        mkdir -p "$workspace_dir"
+        echo -e "${COLOR_GREEN}✅ Created system workspace: $workspace_dir${NC}"
+    else
+        echo -e "${COLOR_BLUE}ℹ️ System workspace already exists: $workspace_dir${NC}"
+    fi
+
+    # Create workspace subdirectories
+    local subdirs=("projects" "temp" "logs" "data" "backups")
+    for subdir in "${subdirs[@]}"; do
+        if [[ ! -d "$workspace_dir/$subdir" ]]; then
+            mkdir -p "$workspace_dir/$subdir"
+            echo -e "${COLOR_GREEN}✅ Created $workspace_dir/$subdir${NC}"
+        fi
+    done
+
+    # Create README if it doesn't exist
+    if [[ ! -f "$workspace_dir/README.md" ]]; then
+        cat > "$workspace_dir/README.md" << 'EOF'
+# AgenticForge System Workspace
+
+Ce workspace système est utilisé par AgenticForge pour stocker les fichiers et données de l'agent en production.
+
+## Structure des dossiers
+
+- `projects/` - Projets utilisateur et code généré par l'agent
+- `temp/` - Fichiers temporaires et cache
+- `logs/` - Logs de l'agent et historique des opérations
+- `data/` - Données persistantes et configurations
+- `backups/` - Sauvegardes automatiques
+
+## Configuration
+
+- **Chemin:** `/home/demon/agenticforge-workspace`
+- **Propriétaire:** Utilisateur système (pas Docker)
+- **Accès:** Lecture/écriture pour l'utilisateur demon
+
+## Utilisation
+
+L'agent peut :
+- Créer et modifier des fichiers dans ce workspace
+- Accéder aux fichiers en dehors du workspace si demandé explicitement
+- Utiliser ce dossier comme espace de travail par défaut
+
+## Sécurité
+
+- Fichiers en dehors du workspace nécessitent une approbation explicite
+- Toutes les opérations sont tracées dans les logs
+- Accès restreint aux utilisateurs autorisés
+
+## Maintenance
+
+Ce workspace est créé automatiquement lors de l'installation ou du rebuild du système.
+EOF
+        echo -e "${COLOR_GREEN}✅ Created workspace README${NC}"
+    fi
+
+    # Create .gitkeep files to ensure directories are tracked
+    local keep_files=("temp/.gitkeep" "logs/.gitkeep" "data/.gitkeep" "projects/.gitkeep" "backups/.gitkeep")
+    for keep_file in "${keep_files[@]}"; do
+        if [[ ! -f "$workspace_dir/$keep_file" ]]; then
+            touch "$workspace_dir/$keep_file"
+        fi
+    done
+
+    echo -e "${COLOR_GREEN}✅ System workspace structure configured${NC}"
+    echo -e "${COLOR_CYAN}📍 Workspace location: $workspace_dir${NC}"
 }
 
 # Install Node.js dependencies with retry logic
@@ -234,12 +314,14 @@ build_application() {
 # Silent service startup (no interactive prompts)
 start_services_silent() {
     echo -e "${COLOR_CYAN}🐳 Starting Docker services...${NC}"
-    
+
+    cd "$ROOT_DIR"
+
     # Pull images if needed
     if ! docker compose pull --quiet; then
         echo -e "${COLOR_YELLOW}⚠️ Could not pull latest images, using local versions${NC}"
     fi
-    
+
     # Start services
     if ! docker compose up -d; then
         echo -e "${COLOR_RED}❌ Failed to start Docker services${NC}"
@@ -257,7 +339,7 @@ start_services_silent() {
         echo -e "${COLOR_RED}❌ Failed to start worker${NC}"
         return 1
     fi
-    
+
     return 0
 }
 
@@ -333,31 +415,43 @@ wait_for_server() {
     return 1
 }
 
-# Silent worker startup
+# Silent worker startup with duplicate prevention
 start_worker_silent() {
     cd "$ROOT_DIR/packages/core"
-    
-    # Stop existing worker if running
+
+    # Check if worker is already running
     if [[ -f "$ROOT_DIR/worker.pid" ]]; then
-        local pid
-        pid=$(cat "$ROOT_DIR/worker.pid")
-        if kill -0 "$pid" 2>/dev/null; then
-            kill "$pid" 2>/dev/null || true
-            sleep 2
+        local existing_pid
+        existing_pid=$(cat "$ROOT_DIR/worker.pid")
+        if kill -0 "$existing_pid" 2>/dev/null; then
+            echo -e "${COLOR_YELLOW}⚠️ Worker already running (PID: $existing_pid)${NC}"
+            echo -e "${COLOR_YELLOW}💡 Use './run-v2.sh restart-worker' to restart or './run-v2.sh stop' to stop${NC}"
+            return 1
+        else
+            # Clean up stale PID file
+            rm -f "$ROOT_DIR/worker.pid"
         fi
-        rm -f "$ROOT_DIR/worker.pid"
     fi
-    
-    # Start new worker
-    REDIS_HOST=localhost POSTGRES_HOST=localhost nohup node dist/worker.js > "$ROOT_DIR/worker.log" 2>&1 &
+
+    # Check for other worker processes
+    local worker_count
+    worker_count=$(pgrep -f "node dist/worker.js" | wc -l)
+    if [[ $worker_count -gt 0 ]]; then
+        echo -e "${COLOR_YELLOW}⚠️ Another worker process is already running${NC}"
+        echo -e "${COLOR_YELLOW}💡 Use './run-v2.sh restart-worker' to restart or stop all workers first${NC}"
+        return 1
+    fi
+
+    # Start worker with FULL system access (no restrictions)
+    nohup node dist/worker.js > "$ROOT_DIR/worker.log" 2>&1 &
     echo $! > "$ROOT_DIR/worker.pid"
-    
+
     # Verify worker started
     sleep 2
     local pid
     pid=$(cat "$ROOT_DIR/worker.pid")
     if kill -0 "$pid" 2>/dev/null; then
-        echo -e "${COLOR_GREEN}✅ Worker started successfully${NC}"
+        echo -e "${COLOR_GREEN}✅ Worker started (PID: $pid)${NC}"
         return 0
     else
         echo -e "${COLOR_RED}❌ Worker failed to start${NC}"
@@ -601,9 +695,19 @@ EOF
 
 start_services() {
     echo -e "${COLOR_BLUE}🚀 Starting AgenticForge services...${NC}"
-    
+
     setup_environment
-    
+
+    # Check if ports are already in use
+    local ports_to_check=("8080" "3002" "6379" "5432")
+    for port in "${ports_to_check[@]}"; do
+        if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
+            echo -e "${COLOR_YELLOW}⚠️ Port $port is already in use${NC}"
+            echo -e "${COLOR_YELLOW}💡 Stop existing services first with './run-v2.sh stop'${NC}"
+            return 1
+        fi
+    done
+
     echo -e "${COLOR_YELLOW}📝 Checking if dependencies are installed...${NC}"
     if [[ ! -d "node_modules" ]] || [[ ! -d "packages/core/node_modules" ]]; then
         echo -e "${COLOR_YELLOW}📦 Installing dependencies (this may take a few minutes)...${NC}"
@@ -613,22 +717,15 @@ start_services() {
             return 1
         fi
     fi
-    
-    echo -e "${COLOR_YELLOW}🚀 Building application (if needed)...${NC}"
-    if [[ ! -d "packages/core/dist" ]] || [[ ! -d "packages/ui/dist" ]]; then
-        echo -e "${COLOR_BLUE}🛠️ Building packages...${NC}"
-        if ! build_application; then
-            echo -e "${COLOR_RED}❌ Build failed${NC}"
-            echo -e "${COLOR_YELLOW}💡 Check error messages above for details${NC}"
-            return 1
-        fi
-    else
-        echo -e "${COLOR_GREEN}✅ Build already exists${NC}"
-    fi
-    
+
+    echo -e "${COLOR_YELLOW}🚀 Application will be built inside Docker container...${NC}"
+    echo -e "${COLOR_CYAN}ℹ️ Skipping local build - Docker will handle the build process${NC}"
+    echo -e "${COLOR_CYAN}💡 This ensures consistency between development and production${NC}"
+
     # Start Docker services
     echo -e "${COLOR_YELLOW}🐳 Starting Docker containers...${NC}"
     echo -e "${COLOR_CYAN}   • This might take a few minutes on first run${NC}"
+    cd "$ROOT_DIR"
     if ! docker compose up -d; then
         echo -e "${COLOR_RED}❌ Failed to start Docker services${NC}"
         echo -e "${COLOR_YELLOW}💡 Check if Docker is running: docker --version${NC}"
@@ -706,58 +803,80 @@ start_services() {
 
 start_worker() {
     echo -e "${COLOR_YELLOW}👷 Starting worker...${NC}"
-    
+
     cd "$ROOT_DIR/packages/core"
-    
+
+    # Check if worker is already running
+    if [[ -f "$ROOT_DIR/worker.pid" ]]; then
+        local existing_pid
+        existing_pid=$(cat "$ROOT_DIR/worker.pid")
+        if kill -0 "$existing_pid" 2>/dev/null; then
+            echo -e "${COLOR_YELLOW}⚠️ Worker already running (PID: $existing_pid)${NC}"
+            echo -e "${COLOR_YELLOW}💡 Use './run-v2.sh restart-worker' to restart${NC}"
+            return 1
+        else
+            rm -f "$ROOT_DIR/worker.pid"
+        fi
+    fi
+
+    # Check for other worker processes
+    local worker_count
+    worker_count=$(pgrep -f "node dist/worker.js" | wc -l)
+    if [[ $worker_count -gt 0 ]]; then
+        echo -e "${COLOR_YELLOW}⚠️ Another worker process is already running${NC}"
+        echo -e "${COLOR_YELLOW}💡 Use './run-v2.sh restart-worker' to restart${NC}"
+        return 1
+    fi
+
     # Build if needed
     if [[ ! -d "dist" ]]; then
         echo -e "${COLOR_BLUE}📦 Building core package...${NC}"
         pnpm run build
     fi
-    
-    # Start worker
-    REDIS_HOST=localhost POSTGRES_HOST=localhost nohup node dist/worker.js > "$ROOT_DIR/worker.log" 2>&1 &
+
+    # Start worker with FULL system access (no restrictions)
+    nohup node dist/worker.js > "$ROOT_DIR/worker.log" 2>&1 &
     echo $! > "$ROOT_DIR/worker.pid"
-    
+
     echo -e "${COLOR_GREEN}✅ Worker started${NC}"
 }
 
 restart_worker() {
     echo -e "${COLOR_YELLOW}🔄 Restarting worker...${NC}"
-    
+
     # Kill all existing worker processes
     echo -e "${COLOR_CYAN}🔍 Searching for existing worker processes...${NC}"
     pkill -f "node dist/worker.js" || true
     pkill -f "worker.js" || true
-    
+
     # Remove old PID file
     if [[ -f "$ROOT_DIR/worker.pid" ]]; then
         rm -f "$ROOT_DIR/worker.pid"
         echo -e "${COLOR_CYAN}📝 Removed old PID file${NC}"
     fi
-    
+
     # Clear old logs
     if [[ -f "$ROOT_DIR/worker.log" ]]; then
         > "$ROOT_DIR/worker.log"
         echo -e "${COLOR_CYAN}🧹 Cleared old logs${NC}"
     fi
-    
+
     # Wait for processes to fully stop
     sleep 2
-    
+
     # Start new worker
     cd "$ROOT_DIR/packages/core"
-    
+
     # Build if needed
     if [[ ! -d "dist" ]]; then
         echo -e "${COLOR_BLUE}📦 Building core package...${NC}"
         pnpm run build
     fi
-    
-    # Start fresh worker
-    REDIS_HOST=localhost POSTGRES_HOST=localhost nohup node dist/worker.js > "$ROOT_DIR/worker.log" 2>&1 &
+
+    # Start fresh worker with FULL system access (no restrictions)
+    nohup node dist/worker.js > "$ROOT_DIR/worker.log" 2>&1 &
     echo $! > "$ROOT_DIR/worker.pid"
-    
+
     # Verify worker started
     sleep 2
     local pid
@@ -772,7 +891,7 @@ restart_worker() {
 
 stop_services() {
     echo -e "${COLOR_YELLOW}🛑 Stopping services...${NC}"
-    
+
     # Stop worker
     if [[ -f "$ROOT_DIR/worker.pid" ]]; then
         local pid
@@ -782,11 +901,11 @@ stop_services() {
             rm -f "$ROOT_DIR/worker.pid"
         fi
     fi
-    
+
     # Stop Docker
     cd "$ROOT_DIR"
     docker compose down
-    
+
     echo -e "${COLOR_GREEN}✅ Services stopped${NC}"
 }
 
@@ -796,54 +915,58 @@ stop_services() {
 
 rebuild_web() {
     echo -e "${COLOR_BLUE}🌐 Rebuilding frontend (web) only...${NC}"
-    
+
     start_timer "rebuild_web"
-    
+
     # Clean frontend build directories
     echo -e "${COLOR_YELLOW}🧹 Cleaning frontend build directories...${NC}"
     rm -rf packages/ui/dist
     rm -rf packages/ui/build
     rm -rf packages/ui/.next
     rm -rf packages/ui/.vite
-    
-    # Rebuild frontend package
-    echo -e "${COLOR_YELLOW}📦 Rebuilding frontend package...${NC}"
+
+    # Build frontend locally (required for Docker COPY)
+    echo -e "${COLOR_YELLOW}📦 Building frontend locally for Docker...${NC}"
     cd "$ROOT_DIR/packages/ui"
     if ! pnpm install; then
         echo -e "${COLOR_RED}❌ Failed to install frontend dependencies${NC}"
         return 1
     fi
-    
+
     if ! NODE_ENV=production pnpm run build; then
         echo -e "${COLOR_RED}❌ Failed to build frontend${NC}"
         return 1
     fi
-    
+
+    echo -e "${COLOR_GREEN}✅ Frontend built successfully${NC}"
+
     # Stop the web container
+    cd "$ROOT_DIR"
     echo -e "${COLOR_YELLOW}🛑 Stopping web container...${NC}"
     docker compose stop web || true
-    
-    # Remove web Docker image to force rebuild
-    echo -e "${COLOR_YELLOW}🗑️ Removing web Docker image...${NC}"
+
+    # Remove web Docker image to force complete rebuild
+    echo -e "${COLOR_YELLOW}🗑️ Removing old web Docker image...${NC}"
     docker compose rm -f web || true
     docker rmi agenticforge-web:latest 2>/dev/null || true
-    
-    # Build Docker web image with no cache
-    cd "$ROOT_DIR"
+
+    # Build Docker web image with no cache (fresh build)
     echo -e "${COLOR_YELLOW}🐳 Building web Docker image (no cache)...${NC}"
+    echo -e "${COLOR_CYAN}   📦 Using pre-built frontend from local build${NC}"
+    echo -e "${COLOR_CYAN}   🔄 This ensures clean application of modifications${NC}"
     export DOCKER_BUILDKIT=1
     if ! docker compose build --no-cache web; then
         echo -e "${COLOR_RED}❌ Failed to build web Docker image${NC}"
         return 1
     fi
-    
+
     # Start the web container
     echo -e "${COLOR_YELLOW}🚀 Starting web container...${NC}"
     if ! docker compose up -d web; then
         echo -e "${COLOR_RED}❌ Failed to start web container${NC}"
         return 1
     fi
-    
+
     # Wait for web to be ready
     echo -e "${COLOR_YELLOW}🟡 Waiting for web to be ready...${NC}"
     for i in {1..60}; do
@@ -858,7 +981,7 @@ rebuild_web() {
         echo -n "."
         sleep 1
     done
-    
+
     end_timer "rebuild_web"
     echo -e "${COLOR_GREEN}🎉 Frontend rebuild completed!${NC}"
     echo -e "${COLOR_CYAN}🌐 Frontend changes have been applied and deployed.${NC}"
@@ -880,29 +1003,66 @@ rebuild_all() {
     echo -e "${COLOR_YELLOW}🧹 Cleaning build directories...${NC}"
     rm -rf packages/*/dist
     rm -rf packages/*/build
-    
-    # Build packages
-    echo -e "${COLOR_YELLOW}📦 Building packages...${NC}"
-    
+
+    # Build core package locally (required for worker that runs outside Docker)
+    echo -e "${COLOR_YELLOW}📦 Building core package locally (for worker)...${NC}"
     cd "$ROOT_DIR/packages/core"
-    pnpm install && pnpm run build
-    
-    cd "$ROOT_DIR/packages/ui"  
-    pnpm install && NODE_ENV=production pnpm run build
-    
+    if pnpm install && pnpm run build; then
+        echo -e "${COLOR_GREEN}✅ Core package built successfully${NC}"
+    else
+        echo -e "${COLOR_RED}❌ Core package build failed${NC}"
+        return 1
+    fi
+
+    # Build UI package locally (required for Docker COPY)
+    echo -e "${COLOR_YELLOW}🌐 Building UI package locally (for Docker)...${NC}"
+    cd "$ROOT_DIR/packages/ui"
+    if pnpm install && NODE_ENV=production pnpm run build; then
+        echo -e "${COLOR_GREEN}✅ UI package built successfully${NC}"
+    else
+        echo -e "${COLOR_RED}❌ UI package build failed${NC}"
+        return 1
+    fi
+
+    echo -e "${COLOR_CYAN}ℹ️ Worker will run outside Docker as configured${NC}"
+    echo -e "${COLOR_CYAN}💡 Core and UI packages built locally for Docker compatibility${NC}"
+
     # Build Docker with no cache to ensure fresh images
     cd "$ROOT_DIR"
     echo -e "${COLOR_YELLOW}🐳 Building Docker images (no cache)...${NC}"
+    echo -e "${COLOR_CYAN}   📦 This may take several minutes on first run${NC}"
+    echo -e "${COLOR_CYAN}   ☕ Please be patient - we're building fresh images!${NC}"
+    echo -e "${COLOR_CYAN}   💡 You can follow the build progress below...${NC}"
+    echo ""
+
     export DOCKER_BUILDKIT=1
-    docker compose build --no-cache
+
+    # Show a progress indicator while building
+    echo -e "${COLOR_BLUE}🔨 Starting Docker build process...${NC}"
+    if docker compose build --no-cache; then
+        echo ""
+        echo -e "${COLOR_GREEN}✅ Docker images built successfully!${NC}"
+    else
+        echo ""
+        echo -e "${COLOR_RED}❌ Docker build failed${NC}"
+        return 1
+    fi
     
     # Restart services with proper delay to ensure system prompt reload
     echo -e "${COLOR_YELLOW}🔄 Restarting services to load updated configuration...${NC}"
-    restart_all_services
-    
+    echo -e "${COLOR_CYAN}   🚀 Starting all services...${NC}"
+    if restart_all_services; then
+        echo -e "${COLOR_GREEN}   ✅ Services restarted successfully${NC}"
+    else
+        echo -e "${COLOR_RED}   ❌ Service restart failed${NC}"
+        return 1
+    fi
+
     # Wait for services to fully initialize
     echo -e "${COLOR_CYAN}⏳ Waiting for services to initialize...${NC}"
+    echo -e "${COLOR_CYAN}   📡 This may take up to 2 minutes...${NC}"
     sleep 5
+    echo -e "${COLOR_GREEN}   ✅ Initialization complete!${NC}"
     
     end_timer "rebuild_all"
     echo -e "${COLOR_GREEN}🎉 Complete rebuild finished!${NC}"
@@ -1112,34 +1272,41 @@ show_menu() {
 # Start development server on port 3003
 start_dev_server() {
     echo -e "${COLOR_BLUE}🚀 Starting development server on port 3003...${NC}"
-    
+
+    # Check if port 3003 is already in use
+    if lsof -Pi :3003 -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo -e "${COLOR_YELLOW}⚠️ Port 3003 is already in use${NC}"
+        echo -e "${COLOR_YELLOW}💡 Use './run-v2.sh stop-dev' to stop the existing server${NC}"
+        return 1
+    fi
+
     # Stop any existing dev server
     stop_dev_server
-    
+
     # Navigate to the UI package
     cd "$ROOT_DIR/packages/ui"
-    
+
     # Install dependencies if needed
     if [[ ! -d "node_modules" ]]; then
         echo -e "${COLOR_YELLOW}📦 Installing UI dependencies...${NC}"
         pnpm install
     fi
-    
+
     # Set the port and start the development server in the background
     echo -e "${COLOR_GREEN}✅ Starting development server in background...${NC}"
     echo -e "${COLOR_CYAN}   🌐 Access at: http://localhost:3003${NC}"
     echo -e "${COLOR_CYAN}   📋 Logs will be available in: $ROOT_DIR/dev-server.log${NC}"
-    
+
     # Start server in background and redirect output to log file
     PORT=3003 nohup pnpm run dev > "$ROOT_DIR/dev-server.log" 2>&1 &
     local dev_pid=$!
-    
+
     # Save PID to file
     echo $dev_pid > "$ROOT_DIR/dev-server.pid"
-    
+
     # Wait a moment for server to start
     sleep 3
-    
+
     # Check if server is still running
     if kill -0 $dev_pid 2>/dev/null; then
         echo -e "${COLOR_GREEN}✅ Development server started successfully (PID: $dev_pid)${NC}"
@@ -1223,9 +1390,22 @@ main() {
                 echo -e "${COLOR_YELLOW}🔄 Restarting worker...${NC}"
                 restart_worker 
                 ;;
-            dev) 
+            dev)
                 echo -e "${COLOR_BLUE}🚀 Starting development server on port 3003...${NC}"
-                start_dev_server 
+                start_dev_server
+                ;;
+            stop-dev)
+                echo -e "${COLOR_RED}🛑 Stopping development server...${NC}"
+                stop_dev_server
+                ;;
+            dev-logs)
+                echo -e "${COLOR_BLUE}📋 Showing development server logs...${NC}"
+                if [[ -f "$ROOT_DIR/dev-server.log" ]]; then
+                    tail -f "$ROOT_DIR/dev-server.log"
+                else
+                    echo -e "${COLOR_YELLOW}⚠️ No development server log found${NC}"
+                    echo -e "${COLOR_CYAN}💡 Start the dev server first with: ./run-v2.sh dev${NC}"
+                fi
                 ;;
             install|deploy)
                 echo -e "${COLOR_BLUE}🤖 Running automated installation...${NC}"
@@ -1250,12 +1430,12 @@ main() {
             *) 
                 echo -e "${COLOR_RED}Unknown command: $1${NC}"
                 echo ""
-                echo "Usage: $0 {start|stop|restart|status|rebuild-all|rebuild-web|restart-worker|install|deploy|setup|test:unit|test:integration|test:all|quality-check|help|menu|dev}"
+                echo "Usage: $0 {start|stop|restart|status|rebuild-all|rebuild-web|restart-worker|install|deploy|setup|test:unit|test:integration|test:all|quality-check|help|menu|dev|stop-dev|dev-logs}"
                 echo ""
                 echo -e "${COLOR_CYAN}Available commands:${NC}"
                 echo -e "  ${COLOR_GREEN}install/deploy${NC}   - Fully automated installation (no prompts)"
                 echo -e "  ${COLOR_GREEN}start${NC}            - Start all services"
-                echo -e "  ${COLOR_RED}stop${NC}             - Stop all services" 
+                echo -e "  ${COLOR_RED}stop${NC}             - Stop all services"
                 echo -e "  ${COLOR_YELLOW}restart${NC}          - Restart all services"
                 echo -e "  ${COLOR_YELLOW}restart-worker${NC}   - Restart worker only"
                 echo -e "  ${COLOR_CYAN}status${NC}           - Show service status"
@@ -1263,6 +1443,8 @@ main() {
                 echo -e "  ${COLOR_BLUE}rebuild-web${NC}      - Rebuild frontend only (faster)"
                 echo -e "  ${COLOR_BLUE}setup${NC}            - Run interactive setup wizard"
                 echo -e "  ${COLOR_BLUE}dev${NC}              - Start development server on port 3003"
+                echo -e "  ${COLOR_RED}stop-dev${NC}         - Stop development server"
+                echo -e "  ${COLOR_BLUE}dev-logs${NC}         - View development server logs"
                 echo -e "  ${COLOR_BLUE}test:unit${NC}        - Run unit tests only"
                 echo -e "  ${COLOR_BLUE}test:integration${NC} - Run integration tests"
                 echo -e "  ${COLOR_BLUE}test:all${NC}         - Run all tests"

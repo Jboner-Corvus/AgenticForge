@@ -1,4 +1,4 @@
-import type { OAuthProtectedResourceMetadata } from "@modelcontextprotocol/sdk/shared/auth.js";
+import type { OAuthProtectedResourceMetadata } from '@modelcontextprotocol/sdk/shared/auth.js';
 
 import {
   discoverOAuthMetadata,
@@ -7,12 +7,12 @@ import {
   registerClient,
   selectResourceURL,
   startAuthorization,
-} from "@modelcontextprotocol/sdk/client/auth.js";
-import { OAuthMetadataSchema } from "@modelcontextprotocol/sdk/shared/auth.js";
+} from '@modelcontextprotocol/sdk/client/auth.js';
+import { OAuthMetadataSchema } from '@modelcontextprotocol/sdk/shared/auth.js';
 
-import type { AuthDebuggerState, OAuthStep } from "./auth-types";
+import type { AuthDebuggerState, OAuthStep } from './auth-types';
 
-import { DebugInspectorOAuthClientProvider } from "./auth";
+import { DebugInspectorOAuthClientProvider } from './auth';
 
 export interface StateMachineContext {
   provider: DebugInspectorOAuthClientProvider;
@@ -33,16 +33,16 @@ export const oauthTransitions: Record<OAuthStep, StateTransition> = {
     execute: async (context) => {
       if (
         !context.state.authorizationCode ||
-        context.state.authorizationCode.trim() === ""
+        context.state.authorizationCode.trim() === ''
       ) {
         context.updateState({
-          validationError: "You need to provide an authorization code",
+          validationError: 'You need to provide an authorization code',
         });
         // Don't advance if no code
-        throw new Error("Authorization code required");
+        throw new Error('Authorization code required');
       }
       context.updateState({
-        oauthStep: "token_request",
+        oauthStep: 'token_request',
         validationError: null,
       });
     },
@@ -54,16 +54,16 @@ export const oauthTransitions: Record<OAuthStep, StateTransition> = {
     execute: async (context) => {
       const metadata = context.state.oauthMetadata;
       if (!metadata) {
-        throw new Error("OAuth metadata is missing");
+        throw new Error('OAuth metadata is missing');
       }
       const clientInformation = context.state.oauthClientInfo;
       if (!clientInformation) {
-        throw new Error("OAuth client information is missing");
+        throw new Error('OAuth client information is missing');
       }
 
       let scope: string | undefined = undefined;
       if (metadata.scopes_supported) {
-        scope = metadata.scopes_supported.join(" ");
+        scope = metadata.scopes_supported.join(' ');
       }
 
       const { authorizationUrl, codeVerifier } = await startAuthorization(
@@ -80,7 +80,7 @@ export const oauthTransitions: Record<OAuthStep, StateTransition> = {
       context.provider.saveCodeVerifier(codeVerifier);
       context.updateState({
         authorizationUrl: authorizationUrl.toString(),
-        oauthStep: "authorization_code",
+        oauthStep: 'authorization_code',
       });
     },
   },
@@ -90,7 +90,7 @@ export const oauthTransitions: Record<OAuthStep, StateTransition> = {
     execute: async (context) => {
       const metadata = context.state.oauthMetadata;
       if (!metadata) {
-        throw new Error("OAuth metadata is missing");
+        throw new Error('OAuth metadata is missing');
       }
       const clientMetadata = context.provider.clientMetadata;
 
@@ -100,7 +100,8 @@ export const oauthTransitions: Record<OAuthStep, StateTransition> = {
         metadata.scopes_supported;
       // Add all supported scopes to client registration
       if (scopesSupported) {
-        (clientMetadata as { scope?: string }).scope = scopesSupported.join(" ");
+        (clientMetadata as { scope?: string }).scope =
+          scopesSupported.join(' ');
       }
 
       const fullInformation = await registerClient(context.serverUrl, {
@@ -111,7 +112,7 @@ export const oauthTransitions: Record<OAuthStep, StateTransition> = {
       context.provider.saveClientInformation(fullInformation);
       context.updateState({
         oauthClientInfo: fullInformation,
-        oauthStep: "authorization_redirect",
+        oauthStep: 'authorization_redirect',
       });
     },
   },
@@ -127,7 +128,7 @@ export const oauthTransitions: Record<OAuthStep, StateTransition> = {
     canTransition: async () => true,
     execute: async (context) => {
       // Default to discovering from the server's URL
-      let authServerUrl = new URL("/", context.serverUrl);
+      let authServerUrl = new URL('/', context.serverUrl);
       let resourceMetadata: null | OAuthProtectedResourceMetadata = null;
       let resourceMetadataError: Error | null = null;
       try {
@@ -154,14 +155,14 @@ export const oauthTransitions: Record<OAuthStep, StateTransition> = {
 
       const metadata = await discoverOAuthMetadata(authServerUrl);
       if (!metadata) {
-        throw new Error("Failed to discover OAuth metadata");
+        throw new Error('Failed to discover OAuth metadata');
       }
       const parsedMetadata = await OAuthMetadataSchema.parseAsync(metadata);
       context.provider.saveServerMetadata(parsedMetadata);
       context.updateState({
         authServerUrl,
         oauthMetadata: parsedMetadata,
-        oauthStep: "client_registration",
+        oauthStep: 'client_registration',
         resource,
         resourceMetadata,
         resourceMetadataError,
@@ -181,11 +182,11 @@ export const oauthTransitions: Record<OAuthStep, StateTransition> = {
       const codeVerifier = context.provider.codeVerifier();
       const metadata = context.state.oauthMetadata;
       if (!metadata) {
-        throw new Error("OAuth metadata is missing");
+        throw new Error('OAuth metadata is missing');
       }
       const clientInformation = await context.provider.clientInformation();
       if (!clientInformation) {
-        throw new Error("OAuth client information is missing");
+        throw new Error('OAuth client information is missing');
       }
 
       const tokens = await exchangeAuthorization(context.serverUrl, {
@@ -199,7 +200,7 @@ export const oauthTransitions: Record<OAuthStep, StateTransition> = {
 
       context.provider.saveTokens(tokens);
       context.updateState({
-        oauthStep: "complete",
+        oauthStep: 'complete',
         oauthTokens: tokens,
       });
     },

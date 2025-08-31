@@ -35,8 +35,6 @@ The current system has several architectural flaws:
 3. **Fragmented Event Handling**: Multiple event types with different processing paths
 4. **UI Coupling Issues**: Direct dependency on message events instead of proper state management
 
-
-
 ## Performance Optimization Issues
 
 ### 1. Inefficient Template Generation
@@ -48,7 +46,7 @@ sequenceDiagram
     participant Canvas as Canvas Utils
     participant Redis as Redis
     participant Frontend as Frontend
-    
+
     Agent->>Tool: Create Todo
     Tool->>Canvas: Send HTML Template (500+ lines)
     Canvas->>Redis: Publish Large Payload
@@ -60,6 +58,7 @@ sequenceDiagram
 ```
 
 **Problems:**
+
 - 500+ line HTML template sent for every todo operation
 - Redundant template transmission
 - No compression or caching strategy
@@ -92,11 +91,13 @@ switch (args.action) {
 ### 1. Basic Task Management
 
 Current tools only support:
+
 - Simple CRUD operations
 - Basic status tracking (pending, in_progress, completed)
 - Minimal metadata (priority, category)
 
 **Missing Features:**
+
 - Task dependencies and hierarchies
 - Time tracking and estimation
 - Collaborative features
@@ -116,6 +117,7 @@ interface Project {
 ```
 
 **Missing Capabilities:**
+
 - Resource allocation
 - Timeline management
 - Risk assessment
@@ -131,8 +133,6 @@ interface Project {
 
 ## Proposed Improvements
 
-
-
 ### 2. Architecture Redesign
 
 #### Unified Todo Management System
@@ -146,27 +146,27 @@ classDiagram
         +getTodos(filters: TodoFilters): Promise<TodoItem[]>
         +bulkOperations(operations: BulkOperation[]): Promise<void>
     }
-    
+
     class ProjectManager {
         +createProject(project: Project): Promise<Project>
         +addTaskToProject(projectId: string, taskId: string): Promise<void>
         +getProjectProgress(projectId: string): Promise<ProjectProgress>
         +generateProjectTimeline(projectId: string): Promise<Timeline>
     }
-    
+
     class StateManager {
         +persistState(sessionId: string, state: State): Promise<void>
         +loadState(sessionId: string): Promise<State>
         +createSnapshot(sessionId: string): Promise<string>
         +restoreFromSnapshot(snapshotId: string): Promise<State>
     }
-    
+
     class EventBus {
         +publish(event: TodoEvent): Promise<void>
         +subscribe(eventType: string, callback: Function): Subscription
         +unsubscribe(subscription: Subscription): void
     }
-    
+
     TodoManager --> StateManager : uses
     ProjectManager --> StateManager : uses
     TodoManager --> EventBus : publishes
@@ -180,11 +180,11 @@ interface TodoWebSocketManager {
   // Real-time updates
   onTodoUpdate: (callback: (todo: TodoItem) => void) => void;
   onProjectUpdate: (callback: (project: Project) => void) => void;
-  
+
   // Collaborative features
   onUserJoined: (callback: (user: User) => void) => void;
   onUserLeft: (callback: (userId: string) => void) => void;
-  
+
   // Optimistic updates
   optimisticUpdate: (todo: Partial<TodoItem>) => void;
   rollbackUpdate: (todoId: string) => void;
@@ -202,34 +202,34 @@ interface EnhancedTodoItem {
   description?: string;
   status: 'pending' | 'in_progress' | 'completed' | 'blocked' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'critical';
-  
+
   // Metadata
   createdAt: number;
   updatedAt: number;
   dueDate?: number;
   completedAt?: number;
-  
+
   // Relationships
   projectId?: string;
   parentId?: string;
   dependencies: string[];
   subtasks: string[];
-  
+
   // Tracking
   estimatedTime?: number;
   actualTime?: number;
   timeSpent: number;
-  
+
   // Collaboration
   assignedTo?: string[];
   watchers: string[];
   comments: Comment[];
-  
+
   // Organization
   tags: string[];
   labels: Label[];
   category?: string;
-  
+
   // Automation
   automationRules: AutomationRule[];
   triggers: Trigger[];
@@ -244,27 +244,27 @@ interface EnhancedProject {
   name: string;
   description: string;
   status: 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
-  
+
   // Timeline
   startDate?: number;
   endDate?: number;
   actualStartDate?: number;
   actualEndDate?: number;
-  
+
   // Progress tracking
   progress: number;
   milestones: Milestone[];
   phases: ProjectPhase[];
-  
+
   // Resources
   budget?: number;
   resources: Resource[];
   team: TeamMember[];
-  
+
   // Risk management
   risks: Risk[];
   dependencies: ProjectDependency[];
-  
+
   // Analytics
   velocity: number;
   burndownData: BurndownPoint[];
@@ -279,23 +279,23 @@ interface EnhancedProject {
 ```typescript
 class TemplateManager {
   private cache = new Map<string, CachedTemplate>();
-  
+
   async getTemplate(type: string, version: string): Promise<string> {
     const cacheKey = `${type}:${version}`;
-    
+
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey)!.content;
     }
-    
+
     const template = await this.generateTemplate(type);
     const compressed = await this.compressTemplate(template);
-    
+
     this.cache.set(cacheKey, {
       content: compressed,
       lastModified: Date.now(),
-      accessCount: 1
+      accessCount: 1,
     });
-    
+
     return compressed;
   }
 }
@@ -307,23 +307,23 @@ class TemplateManager {
 class OptimizedEventStream {
   private batch: Event[] = [];
   private batchTimer?: NodeJS.Timeout;
-  
+
   publish(event: Event) {
     this.batch.push(event);
-    
+
     if (this.batch.length >= BATCH_SIZE) {
       this.flushBatch();
     } else if (!this.batchTimer) {
       this.batchTimer = setTimeout(() => this.flushBatch(), BATCH_TIMEOUT);
     }
   }
-  
+
   private flushBatch() {
     if (this.batch.length > 0) {
       redis.publish(EVENTS_CHANNEL, JSON.stringify(this.batch));
       this.batch = [];
     }
-    
+
     if (this.batchTimer) {
       clearTimeout(this.batchTimer);
       this.batchTimer = undefined;
@@ -352,7 +352,7 @@ const ModernTodoList: React.FC<TodoListProps> = ({
 }) => {
   const { todos, loading, error } = useTodos(sessionId, filters);
   const { optimisticUpdate, rollback } = useOptimisticUpdates();
-  
+
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <VirtualizedList
@@ -377,18 +377,18 @@ const ModernTodoList: React.FC<TodoListProps> = ({
 class OfflineTodoManager {
   private indexedDB: IDBDatabase;
   private syncQueue: SyncOperation[] = [];
-  
+
   async createTodoOffline(todo: TodoItem): Promise<void> {
     // Store locally
     await this.storeInIndexedDB(todo);
-    
+
     // Queue for sync
     this.syncQueue.push({
       type: 'CREATE',
       data: todo,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
-    
+
     // Attempt immediate sync if online
     if (navigator.onLine) {
       await this.processSyncQueue();
@@ -400,18 +400,21 @@ class OfflineTodoManager {
 ## Implementation Roadmap
 
 ### Phase 1: Architecture Refactoring (Priority 1)
+
 1. Consolidate todo tools into unified system
 2. Implement proper state management
 3. Add event bus architecture
 4. Optimize template system
 
 ### Phase 2: Feature Enhancement (Priority 2)
+
 1. Advanced task management features
 2. Project management capabilities
 3. Real-time collaboration
 4. Advanced analytics
 
 ### Phase 3: User Experience (Priority 3)
+
 1. Modern React components
 2. Offline support
 3. Mobile optimization
@@ -420,12 +423,14 @@ class OfflineTodoManager {
 ## Testing Strategy
 
 ### Functional Testing
+
 - Unit tests for all todo operations
 - Integration tests for state management
 - End-to-end workflow testing
 - Real-time synchronization testing
 
 ### Performance Testing
+
 - Template caching efficiency
 - Event streaming latency
 - Memory usage monitoring

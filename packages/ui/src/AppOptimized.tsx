@@ -6,21 +6,21 @@ import { LanguageProvider } from './lib/contexts/LanguageProvider';
 import { AppInitializer } from './components/AppInitializer';
 
 // Optimized imports
-import { 
+import {
   MemoizedHeader,
   MemoizedControlPanel,
   MemoizedChatMessages,
-  MemoizedUserInput
+  MemoizedUserInput,
 } from './components/optimized/MemoizedComponents';
 
-import { 
-  LazyLeaderboardPage, 
-  LazyLlmKeyManager, 
+import {
+  LazyLeaderboardPage,
+  LazyLlmKeyManager,
   LazyOAuthPage,
   LazyLayoutManager,
   LazyCanvas,
   LazyAgentCanvas,
-  LazyWrapper
+  LazyWrapper,
 } from './components/optimized/LazyComponents';
 
 // Store hooks
@@ -29,7 +29,7 @@ import {
   useSessionData,
   useCanvasData,
   useStableActions,
-  useConditionalRender
+  useConditionalRender,
 } from './hooks/useOptimizedStore';
 
 // Additional imports
@@ -43,17 +43,19 @@ import { usePinningStore } from './store/pinningStore';
 import { measurePerformance, logMemoryUsage } from './utils/codeCleanup';
 
 // Performance monitoring component
-const PerformanceMonitor: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const PerformanceMonitor: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   useEffect(() => {
     // Log initial memory usage
     logMemoryUsage('App Mount');
-    
+
     // Monitor memory usage every 30 seconds in development
     if (process.env.NODE_ENV === 'development') {
       const interval = setInterval(() => {
         logMemoryUsage('Runtime');
       }, 30000);
-      
+
       return () => clearInterval(interval);
     }
   }, []);
@@ -74,8 +76,8 @@ const MainContentRenderer: React.FC = React.memo(() => {
             <div className="flex flex-col h-full w-full min-w-0">
               <div className="flex-grow overflow-y-auto min-h-0">
                 <ErrorBoundary componentName="ChatMessages">
-                  <MemoizedChatMessages 
-                    messages={messages} 
+                  <MemoizedChatMessages
+                    messages={messages}
                     isProcessing={isLoading}
                     className="h-full"
                   />
@@ -120,9 +122,9 @@ export default function AppOptimized() {
   // Pinning store
   const layoutMode = usePinningStore((state) => state.layoutMode);
   const components = usePinningStore((state) => state.components);
-  const hasPinnedComponents = useMemo(() => 
-    Object.values(components).some(c => c.isPinned && c.isVisible),
-    [components]
+  const hasPinnedComponents = useMemo(
+    () => Object.values(components).some((c) => c.isPinned && c.isVisible),
+    [components],
   );
 
   // Panel management
@@ -131,14 +133,14 @@ export default function AppOptimized() {
   // Conditional rendering flags
   const showClassicLayout = useConditionalRender(layoutMode !== 'battlefield');
   const showCanvas = useConditionalRender(
-    (canvasState.isCanvasVisible || canvasState.isCanvasPinned) && 
-    uiState.currentPage === 'chat' && 
-    !canvasState.isCanvasFullscreen && 
-    !components.canvas?.isPinned
+    (canvasState.isCanvasVisible || canvasState.isCanvasPinned) &&
+      uiState.currentPage === 'chat' &&
+      !canvasState.isCanvasFullscreen &&
+      !components.canvas?.isPinned,
   );
   const showEpicCanvas = useConditionalRender(
-    (canvasState.isCanvasFullscreen || components.canvas?.isMaximized) && 
-    (!!canvasState.canvasContent || canvasState.isCanvasVisible)
+    (canvasState.isCanvasFullscreen || components.canvas?.isMaximized) &&
+      (!!canvasState.canvasContent || canvasState.isCanvasVisible),
   );
 
   // Window resize handler with optimization
@@ -164,9 +166,12 @@ export default function AppOptimized() {
   return (
     <PerformanceMonitor>
       <LanguageProvider>
-        <ErrorBoundary componentName="App" onError={(error, info) => {
-          console.error('App-level error:', error, info);
-        }}>
+        <ErrorBoundary
+          componentName="App"
+          onError={(error, info) => {
+            console.error('App-level error:', error, info);
+          }}
+        >
           <div className="min-h-screen flex flex-col bg-background text-foreground overflow-x-hidden relative">
             {/* App Initializer */}
             <ErrorBoundary componentName="AppInitializer">
@@ -203,7 +208,9 @@ export default function AppOptimized() {
 
             {/* Classic Layout */}
             {showClassicLayout && (
-              <div className={`flex flex-1 overflow-hidden min-w-0 ${layoutMode === 'battlefield' ? 'opacity-20 pointer-events-none' : ''}`}>
+              <div
+                className={`flex flex-1 overflow-hidden min-w-0 ${layoutMode === 'battlefield' ? 'opacity-20 pointer-events-none' : ''}`}
+              >
                 {/* Control Panel */}
                 {uiState.isControlPanelVisible && (
                   <ErrorBoundary componentName="ControlPanel">
@@ -216,13 +223,14 @@ export default function AppOptimized() {
                 )}
 
                 {/* Todo List - Classic version when not pinned */}
-                {!components.todolist?.isPinned && uiState.isTodoListVisible && (
-                  <div className="fixed left-4 top-20 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-20 flex flex-col max-h-[calc(100vh-5rem)]">
-                    <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                      Todo List (UnifiedTodoListPanel will be shown in header)
+                {!components.todolist?.isPinned &&
+                  uiState.isTodoListVisible && (
+                    <div className="fixed left-4 top-20 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-20 flex flex-col max-h-[calc(100vh-5rem)]">
+                      <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                        Todo List (UnifiedTodoListPanel will be shown in header)
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Main Content Area */}
                 <main className="flex-1 flex flex-col overflow-hidden">
@@ -234,18 +242,18 @@ export default function AppOptimized() {
                     </div>
 
                     {/* Canvas Toggle Button */}
-                    {uiState.currentPage === 'chat' && 
-                     !canvasState.isCanvasVisible && 
-                     !canvasState.isCanvasPinned && 
-                     !components.canvas?.isPinned && (
-                      <button
-                        onClick={() => actions.canvas.toggleCanvasVisible?.()}
-                        className="absolute right-4 bottom-24 bg-cyan-500 hover:bg-cyan-600 text-white rounded-full p-3 shadow-lg transition-all duration-300 z-10"
-                        aria-label="Open Canvas"
-                      >
-                        <Eye className="h-5 w-5" />
-                      </button>
-                    )}
+                    {uiState.currentPage === 'chat' &&
+                      !canvasState.isCanvasVisible &&
+                      !canvasState.isCanvasPinned &&
+                      !components.canvas?.isPinned && (
+                        <button
+                          onClick={() => actions.canvas.toggleCanvasVisible?.()}
+                          className="absolute right-4 bottom-24 bg-cyan-500 hover:bg-cyan-600 text-white rounded-full p-3 shadow-lg transition-all duration-300 z-10"
+                          aria-label="Open Canvas"
+                        >
+                          <Eye className="h-5 w-5" />
+                        </button>
+                      )}
 
                     {/* Classic Canvas */}
                     {showCanvas && (
@@ -254,13 +262,13 @@ export default function AppOptimized() {
                         style={{
                           width: canvasState.canvasWidth,
                           minWidth: '300px',
-                          maxWidth: `${Math.min(800, typeof window !== 'undefined' ? window.innerWidth * 0.6 : 600)}px`
+                          maxWidth: `${Math.min(800, typeof window !== 'undefined' ? window.innerWidth * 0.6 : 600)}px`,
                         }}
                       >
                         <ErrorBoundary componentName="AgentCanvas">
                           <LazyAgentCanvas />
                         </ErrorBoundary>
-                        
+
                         {/* Canvas Resize Handle */}
                         <div
                           id="canvas-divider"
@@ -278,7 +286,9 @@ export default function AppOptimized() {
                     <div className="mt-4">
                       <ErrorBoundary componentName="SubAgentCLI">
                         <LazyWrapper>
-                          <SubAgentCLIView jobId={sessionState.activeCliJobId} />
+                          <SubAgentCLIView
+                            jobId={sessionState.activeCliJobId}
+                          />
                         </LazyWrapper>
                       </ErrorBoundary>
                     </div>
@@ -307,10 +317,7 @@ export default function AppOptimized() {
 
             {/* Login Modal */}
             <ErrorBoundary componentName="LoginModal">
-              <LoginModal 
-                isOpen={false} 
-                onClose={() => {}} 
-              />
+              <LoginModal isOpen={false} onClose={() => {}} />
             </ErrorBoundary>
           </div>
         </ErrorBoundary>

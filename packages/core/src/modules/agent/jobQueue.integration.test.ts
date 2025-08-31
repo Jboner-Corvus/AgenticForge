@@ -65,6 +65,15 @@ vi.mock('../../config.ts', () => ({
     QUEUE_MAX_RETRIES: 3,
     REDIS_URL: 'redis://localhost:6379',
   },
+  getConfig: () => ({
+    AGENT_MAX_ITERATIONS: 5,
+    JOB_TIMEOUT: 300000, // 5 minutes
+    LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
+    QUEUE_CLEANUP_INTERVAL: 300000,
+    QUEUE_CONCURRENCY: 5,
+    QUEUE_MAX_RETRIES: 3,
+    REDIS_URL: 'redis://localhost:6379',
+  }),
 }));
 
 vi.mock('../../logger.ts', () => ({
@@ -103,15 +112,20 @@ vi.mock('../redis/redisClient.ts', () => ({
 
 vi.mock('../../utils/llmProvider.ts', () => ({
   getLlmProvider: () => ({
-    getLlmResponse: vi
-      .fn()
-      .mockResolvedValue('{"answer": "Job queue test response"}'),
+    getLlmResponse: vi.fn(() => Promise.resolve('{"answer": "Job queue test response"}')).mockResolvedValue('{"answer": "Job queue test response"}'),
+    getErrorType: vi.fn()
   }),
 }));
 
 vi.mock('../llm/LlmKeyManager.ts', () => ({
   LlmKeyManager: {
+    getNextAvailableKey: vi.fn(),
+    getKey: vi.fn(),
     hasAvailableKeys: vi.fn().mockResolvedValue(true),
+    invalidateKey: vi.fn(),
+    markKeyAsBad: vi.fn(),
+    resetKeyStatus: vi.fn(),
+    rotateKey: vi.fn(),
   },
 }));
 
@@ -275,16 +289,15 @@ describe('Job Queue BullMQ Integration Tests', () => {
         failedReason: 'LLM provider timeout',
       };
 
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      mockLlmProvider.getLlmResponse = vi.fn();
-      (mockLlmProvider.getLlmResponse as any)
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      vi.mocked(mockLlmProvider.getLlmResponse)
         .mockRejectedValueOnce(new Error('LLM provider timeout'))
         .mockResolvedValueOnce('{"answer": "Retry successful"}');
 
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
-      mockResponseSchema.parse.mockReturnValue({ answer: 'Retry successful' });
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({ answer: 'Retry successful' });
 
       const failingAgent = new Agent(
         failingJob as any,
@@ -298,7 +311,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
       const result = await failingAgent.run();
 
       expect(result).toBe('Retry successful');
-      expect(mockLlmProvider.getLlmResponse).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(mockLlmProvider.getLlmResponse)).toHaveBeenCalledTimes(2);
     });
 
     it('should move job to failed queue after max retries', async () => {
@@ -308,10 +321,9 @@ describe('Job Queue BullMQ Integration Tests', () => {
         opts: { ...mockJob.opts, attempts: 3 },
       };
 
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      mockLlmProvider.getLlmResponse = vi.fn();
-      (mockLlmProvider.getLlmResponse as any).mockRejectedValue(
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      vi.mocked(mockLlmProvider.getLlmResponse).mockRejectedValue(
         new Error('Persistent failure'),
       );
 
@@ -342,10 +354,9 @@ describe('Job Queue BullMQ Integration Tests', () => {
         opts: { ...mockJob.opts, timeout: 1000 }, // 1 second timeout
       };
 
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      mockLlmProvider.getLlmResponse = vi.fn();
-      (mockLlmProvider.getLlmResponse as any).mockImplementation(
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      vi.mocked(mockLlmProvider.getLlmResponse).mockImplementation(
         () =>
           new Promise((resolve) =>
             setTimeout(() => resolve('{"answer": "Too late"}'), 2000),
@@ -374,23 +385,23 @@ describe('Job Queue BullMQ Integration Tests', () => {
 
       const complexError = new Error('Tool execution failed');
       complexError.stack =
-        'Error: Tool execution failed\n    at Agent.run (agent.js:123:45)';
+        'Error: Tool execution failed\\n    at Agent.run (agent.js:123:45)';
       (complexError as any).code = 'TOOL_EXECUTION_ERROR';
 
-      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
-      mockToolRegistry.execute = vi.fn();
-      (mockToolRegistry.execute as any).mockRejectedValue(complexError);
+      const toolRegistryModule = await import('../tools/toolRegistry.ts');
+      const mockToolRegistry = toolRegistryModule.toolRegistry;
+      vi.mocked(mockToolRegistry.execute).mockRejectedValue(complexError);
 
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
-      mockLlmProvider.getLlmResponse = vi.fn();
-      (mockLlmProvider.getLlmResponse as any).mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"command": {"name": "testTool", "params": {}}}',
       );
-      mockResponseSchema.parse.mockReturnValue({
+      
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: { name: 'testTool', params: {} },
       });
 
@@ -438,8 +449,9 @@ describe('Job Queue BullMQ Integration Tests', () => {
       await agent.run();
 
       // Vérifier que les métriques sont collectées
+      const redisClientModule = await import('../redis/redisClient.ts');
       const redisClient =
-        require('../redis/redisClient.ts').getRedisClientInstance();
+        redisClientModule.getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         'queue_metrics',
         expect.objectContaining({
@@ -792,8 +804,9 @@ describe('Job Queue BullMQ Integration Tests', () => {
 
       await agent.run();
 
+      const redisClientModule = await import('../redis/redisClient.ts');
       const redisClient =
-        require('../redis/redisClient.ts').getRedisClientInstance();
+        redisClientModule.getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         'queue_performance',
         expect.objectContaining({
@@ -825,8 +838,9 @@ describe('Job Queue BullMQ Integration Tests', () => {
 
       await agent.run();
 
+      const redisClientModule = await import('../redis/redisClient.ts');
       const redisClient =
-        require('../redis/redisClient.ts').getRedisClientInstance();
+        redisClientModule.getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'alerts:queue_anomaly',
         expect.stringContaining('high_failure_rate'),

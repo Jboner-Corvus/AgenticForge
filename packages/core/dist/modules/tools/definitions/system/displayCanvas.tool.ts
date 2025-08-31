@@ -2,6 +2,13 @@ import { z } from 'zod';
 
 import { Tool } from '../../../../types.ts';
 import { sendToCanvas } from '../../../../utils/canvasUtils.ts';
+import { 
+  storeProjectAssets, 
+  processHtmlWithAssets, 
+  getMimeType,
+  type Asset,
+  type MultiFileProject 
+} from '../../../../utils/assetManager.ts';
 
 const DisplayCanvasParams = z.object({
   /**
@@ -9,13 +16,13 @@ const DisplayCanvasParams = z.object({
    */
   content: z.string({
     description:
-      "Le contenu à afficher dans le canvas. Pour HTML, inclure le code HTML complet avec styles. Pour Markdown, le texte formaté en Markdown. Pour du texte brut, du texte simple. Pour une URL, l'URL complète à afficher dans une iframe.",
+      "Le contenu à afficher dans le canvas. Pour HTML, inclure le code HTML complet avec styles. Pour Markdown, le texte formaté en Markdown. Pour du texte brut, du texte simple. Pour une URL, l'URL complète à afficher dans une iframe. Pour des projets multi-fichiers, passer un JSON avec mainFile et assets.",
   }),
 
   /**
-   * Le type de contenu (html, markdown, text, url)
+   * Le type de contenu (html, markdown, text, url, project)
    */
-  contentType: z.enum(['html', 'markdown', 'text', 'url']).optional(),
+  contentType: z.enum(['html', 'markdown', 'text', 'url', 'project']).optional(),
 
   /**
    * Titre optionnel pour le canvas
@@ -25,77 +32,136 @@ const DisplayCanvasParams = z.object({
 
 export const displayCanvasTool: Tool<typeof DisplayCanvasParams> = {
   description:
-    "Affiche du contenu dans le canvas de l'interface utilisateur. Peut afficher du HTML, Markdown, du texte brut ou une URL. Très utile pour montrer des visualisations, des rapports, des graphiques, des animations, des jeux simples, etc.",
+    "🚀 CANVAS ÉPIQUE - Affiche TOUT dans le canvas ! HTML, Markdown, texte, URLs, jeux complets, apps React, projets multi-fichiers avec JS/CSS/images/sons. Détection automatique des assets externes et gestion intelligente des projets complexes. Support automatique des références de fichiers.",
   execute: async (params, context) => {
     const { job, log } = context;
     const parsedParams = DisplayCanvasParams.parse(params);
     const { content, title } = parsedParams;
-    const contentType = parsedParams.contentType || 'html';
+    let contentType = parsedParams.contentType || 'html';
+
+    if (!job?.id) {
+      throw new Error('No job ID available for canvas display');
+    }
 
     try {
-      // Content validation - prevent debugging information from reaching canvas
-      let validatedContent = content;
-      let shouldDisplay = true;
+      log.info('🚀 ÉPIQUE CANVAS - Analyse du contenu...');
       
-      // Check if content contains debugging JSON or internal agent information
+      // 🎯 DÉTECTION AUTOMATIQUE DU TYPE ET DES ASSETS
+      let finalContent = content;
+      let detectedAssets: Asset[] = [];
+
+      // 1. Vérifier si c'est un projet multi-fichiers (JSON)
       try {
         const parsed = JSON.parse(content);
-        if (parsed.thought || parsed.command) {
-          log.warn('Blocked debugging JSON from canvas display');
-          validatedContent = "<div style='padding: 20px; text-align: center; background: #f3f4f6; border-radius: 8px;'><h2 style='color: #ef4444;'>Content Filtered</h2><p style='color: #6b7280;'>Internal debugging information was filtered out for security.</p></div>";
+        
+        // Filtrer le debug JSON
+        if (parsed.thought || parsed.command || parsed.action) {
+          log.warn('🚫 Contenu de debug filtré');
+          finalContent = "<div style='padding: 20px; text-align: center; background: #f3f4f6; border-radius: 8px;'><h2 style='color: #ef4444;'>Contenu Filtré</h2><p style='color: #6b7280;'>Contenu de debug filtré pour sécurité.</p></div>";
+        }
+        // Détecter un projet multi-fichiers
+        else if (parsed.mainFile && parsed.assets) {
+          log.info('🎮 Projet multi-fichiers détecté !');
+          contentType = 'project';
+          
+          // Traiter les assets
+          detectedAssets = parsed.assets.map((asset: any) => ({
+            filename: asset.filename,
+            content: asset.content,
+            mimeType: getMimeType(asset.filename)
+          }));
+
+          // Stocker le projet
+          const project: MultiFileProject = {
+            mainFile: parsed.mainFile,
+            assets: detectedAssets,
+            projectType: 'html'
+          };
+          
+          await storeProjectAssets(job.id, project);
+          
+          // Traiter le HTML principal
+          finalContent = processHtmlWithAssets(parsed.mainFile, job.id, detectedAssets);
+          
+          log.info(`✅ Projet stocké avec ${detectedAssets.length} assets`);
         }
       } catch {
-        // Not JSON, check for debugging patterns in text
-        const debuggingPatterns = [
-          '"thought"',
-          '```json',
-          'Tool Call:',
-          'Tool Result:',
-          'manage_todo_list',
-          'finish with params',
-          'L\'utilisateur souhaite',
-          'Je vais vérifier',
-          'Il n\'y a pas de todo',
-          'The agent is thinking',
-          'iteration',
-          '{"action"',
-          '{"response"'
-        ];
+        // 2. Si pas JSON, analyser le HTML pour détecter les références externes
+        if (contentType === 'html' || !contentType) {
+          
+          // Extraire HTML propre depuis du contenu conversationnel
+          const fullHtmlMatch = content.match(/<!DOCTYPE[\s\S]*?<\/html>|<html[\s\S]*?<\/html>/i);
+          if (fullHtmlMatch) {
+            finalContent = fullHtmlMatch[0];
+            log.info('📄 HTML complet extrait');
+          } else {
+            const htmlMatch = content.match(/(<[^>]+(?:\/>|[\s\S]*?<\/[^>]+>))+/);
+            if (htmlMatch) {
+              finalContent = htmlMatch[0];
+              log.info('🔧 Fragment HTML extrait');
+            }
+          }
+
+          // 🔍 DÉTECTION INTELLIGENTE DES ASSETS MANQUANTS
+          const externalRefs = [
+            ...finalContent.matchAll(/src=["']([^"']+\.(js|css|png|jpg|jpeg|gif|svg|mp3|wav|ogg))["']/g),
+            ...finalContent.matchAll(/href=["']([^"']+\.css)["']/g)
+          ];
+
+          if (externalRefs.length > 0) {
+            log.warn(`⚠️  ${externalRefs.length} référence(s) externe(s) détectée(s):`);
+            externalRefs.forEach(([_, filename]) => {
+              log.warn(`   - ${filename}`);
+            });
+            
+            // Ajouter un message d'aide dans le HTML
+            const warningMessage = `
+              <div style="position: fixed; top: 10px; right: 10px; background: rgba(255,165,0,0.9); color: white; padding: 10px; border-radius: 5px; font-size: 12px; z-index: 9999;">
+                ⚠️ ${externalRefs.length} fichier(s) externe(s) détecté(s)<br>
+                Pour un jeu complet, utilisez display_canvas avec un JSON:<br>
+                {"mainFile": "html", "assets": [{"filename": "game.js", "content": "..."}]}
+              </div>
+            `;
+            finalContent = finalContent.replace('</body>', warningMessage + '</body>');
+          }
+        }
         
-        const hasDebuggingContent = debuggingPatterns.some(pattern => 
-          content.toLowerCase().includes(pattern.toLowerCase())
-        );
-        
-        if (hasDebuggingContent || 
-            content.match(/^\s*{\s*"(thought|command)":/) ||
-            content.includes('<div><h1>Canvas Display</h1><p>')) {
-          log.warn('Blocked agent thoughts/debugging content from canvas display');
-          validatedContent = "<div style='padding: 20px; text-align: center; background: #f3f4f6; border-radius: 8px;'><h2 style='color: #ef4444;'>Content Filtered</h2><p style='color: #6b7280;'>Agent thoughts and debugging content are not displayed in canvas. Use the thought field instead for internal reasoning that appears as chat bubbles.</p></div>";
+        // Filtrer le contenu de debug évident
+        const isDebugContent = 
+          content.includes('```json') ||
+          content.includes('Tool Call:') ||
+          content.includes('Tool Result:') ||
+          (content.includes('The agent is thinking') && content.length < 100);
+
+        if (isDebugContent) {
+          log.warn('🚫 Contenu de debug évident filtré');
+          finalContent = "<div style='padding: 20px; text-align: center; background: #f3f4f6; border-radius: 8px;'><h2 style='color: #ef4444;'>Contenu Filtré</h2><p style='color: #6b7280;'>Contenu de debug filtré. Utilisez du HTML valide.</p></div>";
         }
       }
 
-      // Si un titre est fourni, l'ajouter au contenu (côté frontend)
+      // 🚀 ENVOYER AU CANVAS
       if (title) {
-        log.info(`Displaying content with title: ${title}`);
+        log.info(`🏷️  Titre: ${title}`);
       }
 
-      // Envoyer le contenu au canvas
-      if (job?.id) {
-        sendToCanvas(job.id, validatedContent, contentType);
-        log.info(
-          `Content sent to canvas for job ${job.id} with type ${contentType}`,
-        );
-      } else {
-        log.warn('No job ID available, cannot send content to canvas');
-      }
+      sendToCanvas(job.id, finalContent, contentType);
+      
+      const message = detectedAssets.length > 0 
+        ? `✅ ÉPIQUE ! Projet affiché avec ${detectedAssets.length} assets`
+        : '✅ Contenu affiché dans le canvas';
+        
+      log.info(`🎨 ${message} (type: ${contentType})`);
 
       return {
         success: true,
+        message,
+        assetsDetected: detectedAssets.length
       };
+
     } catch (error) {
-      log.error({ err: error }, 'Error sending content to canvas');
+      log.error({ err: error }, '💥 Erreur canvas épique');
       throw new Error(
-        `Failed to display content in canvas: ${error instanceof Error ? error.message : String(error)}`,
+        `Canvas épique failed: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   },

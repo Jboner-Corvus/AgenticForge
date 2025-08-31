@@ -27,6 +27,8 @@ readonly API_BASE_URL="http://localhost:8080"
 readonly WEB_BASE_URL="http://localhost:3002"
 readonly TEST_LOG_DIR="$SCRIPT_DIR/agent-test-logs"
 readonly SESSION_ID="test-session-$(date +%s)"
+readonly TIMEOUT=60
+readonly POLL_INTERVAL=2
 
 # Get auth token from .env
 if [[ -f "../.env" ]]; then
@@ -108,21 +110,66 @@ api_call() {
     fi
 }
 
-# Wait for response completion
-wait_for_completion() {
-    local max_wait=60
-    local wait_count=0
+# Wait for job completion
+wait_for_job() {
+    local job_id="$1"
+    local timeout="${2:-$TIMEOUT}"
+    local elapsed=0
     
-    while [[ $wait_count -lt $max_wait ]]; do
-        sleep 2
-        wait_count=$((wait_count + 2))
-        # In a real implementation, you'd check the session status
-        # For now, we'll just wait a reasonable amount of time
-        if [[ $wait_count -gt 10 ]]; then
-            return 0
+    echo "Job ID: $job_id"
+    
+    # Show initial response
+    if [[ -f /tmp/agenticforge_test_response.json ]]; then
+        jq . /tmp/agenticforge_test_response.json 2>/dev/null || cat /tmp/agenticforge_test_response.json
+    fi
+    
+    echo -n "⏳ Waiting for job $job_id to complete..."
+    
+    while [[ $elapsed -lt $timeout ]]; do
+        # Check job status
+        if api_call "/api/job/$job_id" "GET" > /tmp/agenticforge_job_status.json 2>/dev/null; then
+            local status
+            status=$(jq -r '.status' /tmp/agenticforge_job_status.json 2>/dev/null || echo "unknown")
+            
+            if [[ "$status" == "completed" ]]; then
+                echo -e "\n✅ Job $job_id completed successfully"
+                jq . /tmp/agenticforge_job_status.json 2>/dev/null || cat /tmp/agenticforge_job_status.json
+                return 0
+            elif [[ "$status" == "failed" ]]; then
+                echo -e "\n❌ Job $job_id failed"
+                jq . /tmp/agenticforge_job_status.json 2>/dev/null || cat /tmp/agenticforge_job_status.json
+                return 1
+            fi
         fi
+        
+        echo -n "."
+        sleep $POLL_INTERVAL
+        elapsed=$((elapsed + POLL_INTERVAL))
     done
+    
+    echo -e "\n⚠️  Job $job_id timed out after $timeout seconds"
     return 1
+}
+
+check_worker_status() {
+    echo -e "${COLOR_CYAN}🔍 Checking AgenticForge worker status...${NC}"
+    
+    # Check if main services are running
+    if ! curl -s "$API_BASE_URL/api/health" >/dev/null; then
+        echo -e "${COLOR_RED}❌ AgenticForge API not responding${NC}"
+        echo -e "${COLOR_YELLOW}💡 Start services with: ../run-v2.sh start${NC}"
+        return 1
+    fi
+    
+    # Check if worker process is running
+    if ! pgrep -f "node dist/worker.js" >/dev/null; then
+        echo -e "${COLOR_RED}❌ AgenticForge worker not running${NC}"
+        echo -e "${COLOR_YELLOW}💡 Start worker with: ../run-v2.sh restart-worker${NC}"
+        return 1
+    fi
+    
+    echo -e "${COLOR_GREEN}✅ AgenticForge services and worker are running${NC}"
+    return 0
 }
 
 # Test 1: Basic Agent Communication
@@ -394,10 +441,7 @@ main() {
     show_banner
     
     # Check if services are running
-    echo -e "${COLOR_BLUE}🔍 Checking if AgenticForge is running...${NC}"
-    if ! curl -s "$API_BASE_URL/api/health" >/dev/null; then
-        echo -e "${COLOR_RED}❌ AgenticForge API is not accessible at $API_BASE_URL${NC}"
-        echo -e "${COLOR_YELLOW}💡 Please start AgenticForge first: ./run-v2.sh start${NC}"
+    if ! check_worker_status; then
         exit 1
     fi
     

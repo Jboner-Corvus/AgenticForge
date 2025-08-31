@@ -6,7 +6,7 @@ on:
   # Se déclenche lors d'une nouvelle pull request ou d'une mise à jour
   pull_request:
     branches:
-      - main  # Adaptez si votre branche principale a un autre nom
+      - main # Adaptez si votre branche principale a un autre nom
 
   # Se déclenche également lors d'un push sur la branche principale
   push:

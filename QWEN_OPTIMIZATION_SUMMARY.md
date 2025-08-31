@@ -11,6 +11,7 @@ This document summarizes all the improvements made to optimize the Qwen provider
 ## Files Modified
 
 ### 1. Core Provider Implementation
+
 - **File**: `packages/core/src/modules/llm/qwenProvider.ts`
 - **Improvements**:
   - Enhanced error detection for Qwen-specific errors ("invalid access token", "token expired")
@@ -19,18 +20,21 @@ This document summarizes all the improvements made to optimize the Qwen provider
   - Added proper connection timeout management
 
 ### 2. LLM Key Manager
+
 - **File**: `packages/core/src/modules/llm/LlmKeyManager.ts`
 - **Improvements**:
   - Enhanced logging with API key prefixes
   - Better key status management
 
 ### 3. Configuration
+
 - **File**: `packages/core/src/config.ts`
 - **Improvements**:
   - Added QWEN_API_BASE_URL configuration option
   - Reduced LLM_REQUEST_DELAY_MS from 2000ms to 1000ms
 
 ### 4. Environment Configuration
+
 - **File**: `.env`
 - **Improvements**:
   - Added QWEN_API_BASE_URL setting with correct Qwen Portal endpoint
@@ -38,6 +42,7 @@ This document summarizes all the improvements made to optimize the Qwen provider
 ## New Files Created
 
 ### Documentation
+
 1. **File**: `docs/QWEN_PROVIDER.md`
    - Complete configuration guide for Qwen provider
    - Troubleshooting instructions
@@ -50,6 +55,7 @@ This document summarizes all the improvements made to optimize the Qwen provider
    - High-level summary of optimizations
 
 ### Utility Scripts
+
 1. **File**: `scripts/test-qwen-provider.ts`
    - Simple test script to verify Qwen provider functionality
 
@@ -62,37 +68,44 @@ This document summarizes all the improvements made to optimize the Qwen provider
 ## Key Technical Improvements
 
 ### 1. Enhanced Error Handling
+
 - Specific detection for Qwen authentication errors
 - Better categorization of permanent vs temporary errors
 - Improved logging with key prefixes for debugging
 
 ### 2. Multiple Endpoint Support
+
 - Primary endpoint: `https://portal.qwen.ai/v1/chat/completions` (Qwen Portal)
 - Fallback endpoints for redundancy
 - Automatic failover between endpoints
 
 ### 3. Optimized Retry Strategy
+
 - Exponential backoff with jitter (1s, 2s, 4s, 8s, capped at 10s)
 - Reduced maximum retries from 8 to 5 for better performance
 - Progressive delay implementation
 
 ### 4. Improved Connection Management
+
 - Shorter timeout (30 seconds)
 - AbortController for request cancellation
 - Proper resource cleanup
 
 ### 5. Better Key Management
+
 - Enhanced LLM key manager with improved logging
 - Better handling of key status resets
 
 ## Configuration Changes
 
 ### New Environment Variables
+
 ```env
 QWEN_API_BASE_URL=https://portal.qwen.ai/v1/chat/completions  # Correct Qwen Portal API endpoint
 ```
 
 ### Updated Default Values
+
 ```env
 LLM_REQUEST_DELAY_MS=1000  # Reduced from 2000ms
 ```
@@ -107,7 +120,9 @@ LLM_REQUEST_DELAY_MS=1000  # Reduced from 2000ms
 ## Usage Instructions
 
 ### 1. Configuration
+
 Ensure your `.env` file includes:
+
 ```env
 LLM_PROVIDER=qwen
 LLM_MODEL_NAME=qwen3-coder-plus
@@ -116,14 +131,18 @@ QWEN_API_BASE_URL=https://portal.qwen.ai/v1/chat/completions  # Correct Qwen Por
 ```
 
 ### 2. Testing
+
 Run the diagnostic script:
+
 ```bash
 cd /path/to/AgenticForge
 ts-node scripts/diagnose-qwen-connection.ts
 ```
 
 ### 3. Validation
+
 Validate your API key:
+
 ```bash
 ts-node scripts/validate-qwen-key.ts
 ```
@@ -161,6 +180,7 @@ This document summarizes all the improvements made to optimize the Qwen provider
 ## Files Modified
 
 ### 1. Core Provider Implementation
+
 - **File**: `packages/core/src/modules/llm/qwenProvider.ts`
 - **Improvements**:
   - Enhanced error detection for Qwen-specific errors ("invalid access token", "token expired")
@@ -170,6 +190,7 @@ This document summarizes all the improvements made to optimize the Qwen provider
   - Improved request/response handling
 
 ### 2. LLM Key Manager
+
 - **File**: `packages/core/src/modules/llm/LlmKeyManager.ts`
 - **Improvements**:
   - Enhanced logging with API key prefixes
@@ -177,12 +198,14 @@ This document summarizes all the improvements made to optimize the Qwen provider
   - Improved error reporting
 
 ### 3. Configuration
+
 - **File**: `packages/core/src/config.ts`
 - **Improvements**:
   - Added QWEN_API_BASE_URL configuration option
   - Reduced LLM_REQUEST_DELAY_MS from 2000ms to 1000ms
 
 ### 4. Environment Configuration
+
 - **File**: `.env`
 - **Improvements**:
   - Added QWEN_API_BASE_URL setting
@@ -190,6 +213,7 @@ This document summarizes all the improvements made to optimize the Qwen provider
 ## New Files Created
 
 ### Documentation
+
 1. **File**: `docs/QWEN_PROVIDER.md`
    - Complete configuration guide for Qwen provider
    - Troubleshooting instructions
@@ -202,6 +226,7 @@ This document summarizes all the improvements made to optimize the Qwen provider
    - High-level summary of optimizations
 
 ### Utility Scripts
+
 1. **File**: `scripts/test-qwen-provider.ts`
    - Simple test script to verify Qwen provider functionality
 
@@ -214,26 +239,31 @@ This document summarizes all the improvements made to optimize the Qwen provider
 ## Key Technical Improvements
 
 ### 1. Enhanced Error Handling
+
 - Specific detection for Qwen authentication errors
 - Better categorization of permanent vs temporary errors
 - Improved logging with key prefixes for debugging
 
 ### 2. Multiple Endpoint Support
+
 - Primary endpoint: `https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation`
 - Fallback endpoints for redundancy
 - Automatic failover between endpoints
 
 ### 3. Optimized Retry Strategy
+
 - Exponential backoff with jitter (1s, 2s, 4s, 8s, capped at 10s)
 - Reduced maximum retries from 8 to 5 for better performance
 - Progressive delay implementation
 
 ### 4. Improved Connection Management
+
 - Shorter timeout (30 seconds)
 - AbortController for request cancellation
 - Proper resource cleanup
 
 ### 5. Better Key Management
+
 - Enhanced LLM key manager with improved logging
 - Better handling of key status resets
 - LastUsed timestamp updates
@@ -241,11 +271,13 @@ This document summarizes all the improvements made to optimize the Qwen provider
 ## Configuration Changes
 
 ### New Environment Variables
+
 ```env
 QWEN_API_BASE_URL=https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation
 ```
 
 ### Updated Default Values
+
 ```env
 LLM_REQUEST_DELAY_MS=1000  # Reduced from 2000ms
 ```
@@ -260,7 +292,9 @@ LLM_REQUEST_DELAY_MS=1000  # Reduced from 2000ms
 ## Usage Instructions
 
 ### 1. Configuration
+
 Ensure your `.env` file includes:
+
 ```env
 LLM_PROVIDER=qwen
 LLM_MODEL_NAME=qwen3-coder-plus
@@ -269,14 +303,18 @@ QWEN_API_BASE_URL=https://dashscope.aliyuncs.com/api/v1/services/aigc/text-gener
 ```
 
 ### 2. Testing
+
 Run the diagnostic script:
+
 ```bash
 cd /path/to/AgenticForge
 ts-node scripts/diagnose-qwen-connection.ts
 ```
 
 ### 3. Validation
+
 Validate your API key:
+
 ```bash
 ts-node scripts/validate-qwen-key.ts
 ```

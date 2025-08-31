@@ -13,7 +13,14 @@ export interface PinPosition {
 export interface PinnedComponent {
   id: string;
   name: string;
-  type: 'todolist' | 'canvas' | 'chat' | 'header' | 'input' | 'debug' | 'controlpanel';
+  type:
+    | 'todolist'
+    | 'canvas'
+    | 'chat'
+    | 'header'
+    | 'input'
+    | 'debug'
+    | 'controlpanel';
   isPinned: boolean;
   isVisible: boolean;
   position: PinPosition;
@@ -29,17 +36,17 @@ export interface PinnedComponent {
 export interface PinningState {
   // Components registry
   components: Record<string, PinnedComponent>;
-  
+
   // Layout modes
   layoutMode: 'freeform' | 'grid' | 'cascade' | 'battlefield';
-  
+
   // Global settings
   globalOpacity: number;
   snapToGrid: boolean;
   gridSize: number;
   showGrid: boolean;
   autoHide: boolean;
-  
+
   // Actions
   registerComponent: (component: Omit<PinnedComponent, 'lastActive'>) => void;
   updateComponent: (id: string, updates: Partial<PinnedComponent>) => void;
@@ -51,18 +58,20 @@ export interface PinningState {
   minimizeComponent: (id: string) => void;
   maximizeComponent: (id: string) => void;
   resetComponent: (id: string) => void;
-  
+
   // Layout management
-  setLayoutMode: (mode: 'freeform' | 'grid' | 'cascade' | 'battlefield') => void;
+  setLayoutMode: (
+    mode: 'freeform' | 'grid' | 'cascade' | 'battlefield',
+  ) => void;
   arrangeComponents: () => void;
   saveLayout: (name: string) => void;
   loadLayout: (name: string) => void;
-  
+
   // Presets
   activateBattlefieldMode: () => void;
   activateMinimalMode: () => void;
   activateTheaterMode: () => void;
-  
+
   // Global settings
   setGlobalOpacity: (opacity: number) => void;
   toggleSnapToGrid: () => void;
@@ -78,10 +87,13 @@ const DEFAULT_POSITIONS: Record<string, PinPosition> = {
   canvas: { x: 35, y: 8, width: 60, height: 70 },
   chat: { x: 30, y: 80, width: 40, height: 15 },
   input: { x: 30, y: 95, width: 40, height: 4 },
-  debug: { x: 75, y: 80, width: 23, height: 18 }
+  debug: { x: 75, y: 80, width: 23, height: 18 },
 };
 
-const DEFAULT_COMPONENTS: Record<string, Omit<PinnedComponent, 'lastActive'>> = {
+const DEFAULT_COMPONENTS: Record<
+  string,
+  Omit<PinnedComponent, 'lastActive'>
+> = {
   header: {
     id: 'header',
     name: '🚀 Header Control',
@@ -94,7 +106,7 @@ const DEFAULT_COMPONENTS: Record<string, Omit<PinnedComponent, 'lastActive'>> = 
     scale: 1,
     isMinimized: false,
     isMaximized: false,
-    theme: 'cyberpunk'
+    theme: 'cyberpunk',
   },
   controlpanel: {
     id: 'controlpanel',
@@ -108,7 +120,7 @@ const DEFAULT_COMPONENTS: Record<string, Omit<PinnedComponent, 'lastActive'>> = 
     scale: 1,
     isMinimized: false,
     isMaximized: false,
-    theme: 'cyberpunk'
+    theme: 'cyberpunk',
   },
   todolist: {
     id: 'todolist',
@@ -122,7 +134,7 @@ const DEFAULT_COMPONENTS: Record<string, Omit<PinnedComponent, 'lastActive'>> = 
     scale: 1,
     isMinimized: false,
     isMaximized: false,
-    theme: 'cyberpunk'
+    theme: 'cyberpunk',
   },
   canvas: {
     id: 'canvas',
@@ -136,7 +148,7 @@ const DEFAULT_COMPONENTS: Record<string, Omit<PinnedComponent, 'lastActive'>> = 
     scale: 1,
     isMinimized: false,
     isMaximized: false,
-    theme: 'cyberpunk'
+    theme: 'cyberpunk',
   },
   chat: {
     id: 'chat',
@@ -150,7 +162,7 @@ const DEFAULT_COMPONENTS: Record<string, Omit<PinnedComponent, 'lastActive'>> = 
     scale: 1,
     isMinimized: false,
     isMaximized: false,
-    theme: 'cyberpunk'
+    theme: 'cyberpunk',
   },
   input: {
     id: 'input',
@@ -164,7 +176,7 @@ const DEFAULT_COMPONENTS: Record<string, Omit<PinnedComponent, 'lastActive'>> = 
     scale: 1,
     isMinimized: false,
     isMaximized: false,
-    theme: 'cyberpunk'
+    theme: 'cyberpunk',
   },
   debug: {
     id: 'debug',
@@ -178,8 +190,8 @@ const DEFAULT_COMPONENTS: Record<string, Omit<PinnedComponent, 'lastActive'>> = 
     scale: 1,
     isMinimized: false,
     isMaximized: false,
-    theme: 'matrix'
-  }
+    theme: 'matrix',
+  },
 };
 
 export const usePinningStore = create<PinningState>()(
@@ -193,17 +205,17 @@ export const usePinningStore = create<PinningState>()(
       gridSize: 20,
       showGrid: false,
       autoHide: false,
-      
+
       // Component management
       registerComponent: (component) => {
         set((state) => ({
           components: {
             ...state.components,
-            [component.id]: { ...component, lastActive: Date.now() }
-          }
+            [component.id]: { ...component, lastActive: Date.now() },
+          },
         }));
       },
-      
+
       updateComponent: (id, updates) => {
         set((state) => {
           if (!state.components[id]) return state;
@@ -213,78 +225,84 @@ export const usePinningStore = create<PinningState>()(
               [id]: {
                 ...state.components[id],
                 ...updates,
-                lastActive: Date.now()
-              }
-            }
+                lastActive: Date.now(),
+              },
+            },
           };
         });
       },
-      
+
       togglePin: (id) => {
         const component = get().components[id];
         if (!component) return;
-        
-        get().updateComponent(id, { 
+
+        get().updateComponent(id, {
           isPinned: !component.isPinned,
           // Quand on pin, on force la visibilité
-          isVisible: !component.isPinned ? true : component.isVisible
+          isVisible: !component.isPinned ? true : component.isVisible,
         });
       },
-      
+
       toggleVisibility: (id) => {
         const component = get().components[id];
         if (!component) return;
-        
-        get().updateComponent(id, { 
+
+        get().updateComponent(id, {
           isVisible: !component.isVisible,
           // Si on cache, on unpin automatiquement
-          isPinned: !component.isVisible ? component.isPinned : false
+          isPinned: !component.isVisible ? component.isPinned : false,
         });
       },
-      
+
       setPosition: (id, position) => {
         const { snapToGrid, gridSize } = get();
-        
+
         // Snap to grid if enabled
-        const finalPosition = snapToGrid ? {
-          x: Math.round(position.x / gridSize) * gridSize,
-          y: Math.round(position.y / gridSize) * gridSize,
-          width: Math.round(position.width / gridSize) * gridSize,
-          height: Math.round(position.height / gridSize) * gridSize,
-        } : position;
-        
+        const finalPosition = snapToGrid
+          ? {
+              x: Math.round(position.x / gridSize) * gridSize,
+              y: Math.round(position.y / gridSize) * gridSize,
+              width: Math.round(position.width / gridSize) * gridSize,
+              height: Math.round(position.height / gridSize) * gridSize,
+            }
+          : position;
+
         get().updateComponent(id, { position: finalPosition });
       },
-      
+
       bringToFront: (id) => {
-        const maxZ = Math.max(...Object.values(get().components).map(c => c.zIndex));
+        const maxZ = Math.max(
+          ...Object.values(get().components).map((c) => c.zIndex),
+        );
         get().updateComponent(id, { zIndex: maxZ + 1 });
       },
-      
+
       sendToBack: (id) => {
-        const minZ = Math.min(...Object.values(get().components).map(c => c.zIndex));
+        const minZ = Math.min(
+          ...Object.values(get().components).map((c) => c.zIndex),
+        );
         get().updateComponent(id, { zIndex: Math.max(1, minZ - 1) });
       },
-      
+
       minimizeComponent: (id) => {
-        get().updateComponent(id, { 
-          isMinimized: true, 
+        get().updateComponent(id, {
+          isMinimized: true,
           isMaximized: false,
           scale: 0.3,
-          opacity: 0.7
+          opacity: 0.7,
         });
       },
-      
+
       maximizeComponent: (id) => {
-        get().updateComponent(id, { 
-          isMinimized: false, 
+        get().updateComponent(id, {
+          isMinimized: false,
           isMaximized: true,
           scale: 1,
           opacity: 1,
-          position: { x: 5, y: 10, width: 90, height: 85 }
+          position: { x: 5, y: 10, width: 90, height: 85 },
         });
       },
-      
+
       resetComponent: (id) => {
         const defaultComponent = DEFAULT_COMPONENTS[id];
         if (defaultComponent) {
@@ -293,21 +311,23 @@ export const usePinningStore = create<PinningState>()(
             scale: 1,
             opacity: defaultComponent.opacity,
             isMinimized: false,
-            isMaximized: false
+            isMaximized: false,
           });
         }
       },
-      
+
       // Layout management
       setLayoutMode: (mode) => {
         set({ layoutMode: mode });
         get().arrangeComponents();
       },
-      
+
       arrangeComponents: () => {
         const { layoutMode, components } = get();
-        const visibleComponents = Object.values(components).filter(c => c.isVisible);
-        
+        const visibleComponents = Object.values(components).filter(
+          (c) => c.isVisible,
+        );
+
         switch (layoutMode) {
           case 'grid':
             // Arrange in grid pattern
@@ -317,28 +337,28 @@ export const usePinningStore = create<PinningState>()(
               const col = index % cols;
               const width = 90 / cols;
               const height = 80 / Math.ceil(visibleComponents.length / cols);
-              
+
               get().setPosition(component.id, {
-                x: 5 + (col * width),
-                y: 10 + (row * height),
+                x: 5 + col * width,
+                y: 10 + row * height,
                 width: width - 2,
-                height: height - 2
+                height: height - 2,
               });
             });
             break;
-            
+
           case 'cascade':
             // Cascade windows
             visibleComponents.forEach((component, index) => {
               get().setPosition(component.id, {
-                x: 10 + (index * 5),
-                y: 15 + (index * 5),
+                x: 10 + index * 5,
+                y: 15 + index * 5,
                 width: 60,
-                height: 50
+                height: 50,
               });
             });
             break;
-            
+
           case 'battlefield':
             // Strategic positioning for all-visible mode
             Object.keys(DEFAULT_POSITIONS).forEach((id) => {
@@ -346,39 +366,39 @@ export const usePinningStore = create<PinningState>()(
                 get().updateComponent(id, {
                   isVisible: true,
                   isPinned: true,
-                  position: DEFAULT_POSITIONS[id]
+                  position: DEFAULT_POSITIONS[id],
                 });
               }
             });
             break;
         }
       },
-      
+
       saveLayout: (name) => {
         const layout = {
           name,
           components: get().components,
           layoutMode: get().layoutMode,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
         localStorage.setItem(`pinning_layout_${name}`, JSON.stringify(layout));
       },
-      
+
       loadLayout: (name) => {
         try {
           const saved = localStorage.getItem(`pinning_layout_${name}`);
           if (saved) {
             const layout = JSON.parse(saved);
-            set({ 
+            set({
               components: layout.components,
-              layoutMode: layout.layoutMode
+              layoutMode: layout.layoutMode,
             });
           }
         } catch (error) {
           console.error('Failed to load layout:', error);
         }
       },
-      
+
       // Presets épiques
       activateBattlefieldMode: () => {
         // Mode combat : tout visible et pinned
@@ -390,12 +410,12 @@ export const usePinningStore = create<PinningState>()(
             opacity: 0.9,
             scale: 1,
             isMinimized: false,
-            isMaximized: false
+            isMaximized: false,
           });
         });
         set({ layoutMode: 'battlefield' });
       },
-      
+
       activateMinimalMode: () => {
         // Mode minimal : que l'essentiel
         Object.keys(DEFAULT_COMPONENTS).forEach((id) => {
@@ -404,12 +424,12 @@ export const usePinningStore = create<PinningState>()(
             isVisible: isEssential,
             isPinned: false,
             opacity: isEssential ? 0.95 : 0.7,
-            scale: isEssential ? 1 : 0.8
+            scale: isEssential ? 1 : 0.8,
           });
         });
         set({ layoutMode: 'freeform' });
       },
-      
+
       activateTheaterMode: () => {
         // Mode théâtre : canvas + controls essentiels
         Object.keys(DEFAULT_COMPONENTS).forEach((id) => {
@@ -418,25 +438,26 @@ export const usePinningStore = create<PinningState>()(
             isVisible: isTheater,
             isPinned: isTheater,
             opacity: isTheater ? 1 : 0.5,
-            scale: id === 'canvas' ? 1.1 : 0.9
+            scale: id === 'canvas' ? 1.1 : 0.9,
           });
         });
-        
+
         // Maximize canvas for theater
         get().updateComponent('canvas', {
           isMaximized: true,
-          position: { x: 10, y: 8, width: 80, height: 80 }
+          position: { x: 10, y: 8, width: 80, height: 80 },
         });
-        
+
         set({ layoutMode: 'freeform' });
       },
-      
+
       // Global settings
       setGlobalOpacity: (opacity) => set({ globalOpacity: opacity }),
-      toggleSnapToGrid: () => set((state) => ({ snapToGrid: !state.snapToGrid })),
+      toggleSnapToGrid: () =>
+        set((state) => ({ snapToGrid: !state.snapToGrid })),
       setGridSize: (size) => set({ gridSize: size }),
       toggleShowGrid: () => set((state) => ({ showGrid: !state.showGrid })),
-      toggleAutoHide: () => set((state) => ({ autoHide: !state.autoHide }))
+      toggleAutoHide: () => set((state) => ({ autoHide: !state.autoHide })),
     }),
     {
       name: 'agenticforge-pinning-store',
@@ -447,17 +468,17 @@ export const usePinningStore = create<PinningState>()(
         snapToGrid: state.snapToGrid,
         gridSize: state.gridSize,
         showGrid: state.showGrid,
-        autoHide: state.autoHide
-      })
-    }
-  )
+        autoHide: state.autoHide,
+      }),
+    },
+  ),
 );
 
 // HOOK D'INITIALISATION
 export const useInitializePinning = () => {
   const registerComponent = usePinningStore((state) => state.registerComponent);
   const components = usePinningStore((state) => state.components);
-  
+
   React.useEffect(() => {
     // Register default components if not already registered
     Object.entries(DEFAULT_COMPONENTS).forEach(([id, component]) => {

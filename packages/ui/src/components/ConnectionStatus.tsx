@@ -15,7 +15,7 @@ export const ConnectionStatus = () => {
   // Determine connection status
   // let connectionStatus: 'connected' | 'processing' | 'disconnected' | 'error'; // Supprimé: never used
   let icon;
-  let variant: "default" | "secondary" | "destructive" | "outline";
+  let variant: 'default' | 'secondary' | 'destructive' | 'outline';
   let statusText: string;
 
   if (!authToken) {
@@ -53,7 +53,8 @@ export const ConnectionStatus = () => {
       </Badge>
       {process.env.NODE_ENV === 'development' && (
         <Badge variant="outline" className="text-xs">
-          Debug: {authToken ? '🔐' : '❌'} {sessionId ? '🆔' : '❌'} {serverHealthy ? '🌐' : '❌'}
+          Debug: {authToken ? '🔐' : '❌'} {sessionId ? '🆔' : '❌'}{' '}
+          {serverHealthy ? '🌐' : '❌'}
         </Badge>
       )}
     </div>

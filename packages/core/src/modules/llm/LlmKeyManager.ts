@@ -21,20 +21,39 @@ export interface LlmApiKey {
   isPermanentlyDisabled?: boolean;
   lastUsed?: number;
   priority?: number; // Add priority field
+  lastError?: string; // Add lastError field
+  temporaryDisabledUntil?: number; // Add temporaryDisabledUntil field for backward compatibility
 }
 
 // Constants for the master key from environment
 // Using a specific env var allows overriding the default LLM_API_KEY if needed
 const MASTER_LLM_API_KEY_ENV_VAR = 'MASTER_LLM_API_KEY';
-const DEFAULT_MASTER_KEY_PROVIDER = 'google-flash'; // Align with .env.example LLM_MODEL_NAME=gemini-2.5-flash
-const DEFAULT_MASTER_KEY_MODEL = 'gemini-2.5-flash'; // Align with .env.example
+const DEFAULT_MASTER_KEY_PROVIDER = 'gemini'; // Align with .env LLM_PROVIDER=gemini
+const DEFAULT_MASTER_KEY_MODEL = 'gemini-2.5-pro'; // Align with .env LLM_MODEL_NAME=gemini-2.5-pro
 
 const LLM_API_KEYS_REDIS_KEY = 'llmApiKeys';
 const LLM_API_KEYS_HIERARCHY_REDIS_KEY = 'llmApiKeysHierarchy'; // New key for hierarchy
-const MAX_TEMPORARY_ERROR_COUNT = 999; // Augmenter considérablement le seuil avant de désactiver temporairement
+const MAX_TEMPORARY_ERROR_COUNT = 999; // Augmenter considérément le seuil avant de désactiver temporairement
 const TEMPORARY_DISABLE_DURATION_MS = 30 * 1000; // Réduire la durée de désactivation à 30 secondes
 
 export class LlmKeyManager {
+  private static apiKeys: Map<string, LlmApiKey[]> = new Map();
+  private static lastUsedIndex: Map<string, number> = new Map();
+
+  // Helper method to populate the apiKeys map from Redis data
+  private static populateApiKeysMap(keys: LlmApiKey[]): void {
+    // Clear the existing map
+    this.apiKeys.clear();
+    
+    // Group keys by provider
+    keys.forEach(key => {
+      if (!this.apiKeys.has(key.apiProvider)) {
+        this.apiKeys.set(key.apiProvider, []);
+      }
+      this.apiKeys.get(key.apiProvider)!.push(key);
+    });
+  }
+
   public static async addKey(
     apiProvider: string,
     apiKey: string,
@@ -73,6 +92,8 @@ export class LlmKeyManager {
       existingKey.isDisabledUntil = undefined;
 
       await this.saveKeys(keys);
+      // Update the apiKeys map
+      this.populateApiKeysMap(keys);
       getLogger().info(
         {
           apiKey: apiKey.substring(0, 10) + '...',
@@ -88,6 +109,8 @@ export class LlmKeyManager {
     // If no duplicate, add new key
     keys.push({ apiKey, apiModel, apiProvider, baseUrl, errorCount: 0 });
     await this.saveKeys(keys);
+    // Update the apiKeys map
+    this.populateApiKeysMap(keys);
 
     // Increment the apiKeysAdded stat in Redis
     try {
@@ -203,124 +226,305 @@ export class LlmKeyManager {
     return await this.getKeys();
   }
 
+  /**
+   * Gets the next available API key for a provider.
+   * @param provider The LLM provider.
+   * @returns A promise that resolves to the next available API key, or null if none are available.
+   */
   public static async getNextAvailableKey(
-    providerName?: string,
-    modelName?: string,
+    provider: string,
   ): Promise<LlmApiKey | null> {
-    // Get keys with hierarchy priority
-    const keys = await this.getKeysWithHierarchy();
-    const now = Date.now();
+    const log = getLogger().child({ module: 'LlmKeyManager' });
+    
+    try {
+      // First, ensure we have the latest keys from Redis with fallback
+      const keys = await this.getKeysWithFallback(provider);
+      this.populateApiKeysMap(keys);
+      
+      const providerKeys = this.apiKeys.get(provider) || [];
 
-    // Filter out temporarily and permanently disabled keys and sort by priority
-    const availableKeys = keys
-      .filter(
-        (key) =>
-          (!providerName || key.apiProvider === providerName) && // Filter by providerName
-          (!modelName || key.apiModel === modelName) && // Filter by modelName
-          !key.isPermanentlyDisabled &&
-          (!key.isDisabledUntil || key.isDisabledUntil <= now),
-      )
-      .sort((a, b) => {
-        // Sort by priority first (lower number = higher priority)
-        const priorityA = a.priority ?? Number.MAX_SAFE_INTEGER;
-        const priorityB = b.priority ?? Number.MAX_SAFE_INTEGER;
+      if (providerKeys.length === 0) {
+        log.warn(`No API keys configured for provider: ${provider}`);
+        // Try fallback to environment variable
+        return this.getEnvironmentFallbackKey(provider);
+      }
+    } catch (error) {
+      log.error({ error, provider }, 'Error getting keys from Redis, trying fallback');
+      return this.getEnvironmentFallbackKey(provider);
+    }
 
-        if (priorityA !== priorityB) {
-          return priorityA - priorityB;
+    // Auto-cleanup if all keys are failing
+    const providerKeys = this.apiKeys.get(provider) || [];
+    const workingKeys = providerKeys.filter((key) => {
+      if (key.isPermanentlyDisabled) return false;
+      if (key.temporaryDisabledUntil && Date.now() < key.temporaryDisabledUntil) return false;
+      return key.errorCount < MAX_TEMPORARY_ERROR_COUNT;
+    });
+
+    // If no working keys, try cleanup and retry once
+    if (workingKeys.length === 0 && providerKeys.length > 0) {
+      log.warn({ provider }, 'No working keys found, attempting cleanup');
+      const cleanupResult = await this.cleanupFailedKeys(provider);
+      
+      if (cleanupResult.cleaned > 0) {
+        // Refresh keys after cleanup
+        const refreshedKeys = await this.getKeys();
+        this.populateApiKeysMap(refreshedKeys);
+        const refreshedProviderKeys = this.apiKeys.get(provider) || [];
+        
+        const newWorkingKeys = refreshedProviderKeys.filter((key) => {
+          if (key.isPermanentlyDisabled) return false;
+          if (key.temporaryDisabledUntil && Date.now() < key.temporaryDisabledUntil) return false;
+          return key.errorCount < MAX_TEMPORARY_ERROR_COUNT;
+        });
+        
+        if (newWorkingKeys.length > 0) {
+          log.info({ provider, cleanedCount: cleanupResult.cleaned }, 'Keys recovered after cleanup');
+          // Continue with the cleaned keys - simple round-robin selection
+          const selectedIndex = this.lastUsedIndex?.get(provider) ?? -1;
+          const nextIndex = (selectedIndex + 1) % newWorkingKeys.length;
+          this.lastUsedIndex?.set(provider, nextIndex);
+          const selectedKey = newWorkingKeys[nextIndex];
+          log.info(`Selected API key ${selectedKey.apiKey.substring(0, 8)}... for provider ${provider}`);
+          return selectedKey;
+        }
+      }
+      
+      // Still no working keys, try environment fallback
+      log.warn({ provider }, 'No working keys after cleanup, using environment fallback');
+      return this.getEnvironmentFallbackKey(provider);
+    }
+
+    // Use the working keys we calculated above, or filter normally if we have working keys
+    let availableKeys = workingKeys;
+    
+    if (availableKeys.length === 0) {
+      // Filter out permanently disabled keys and temporarily disabled keys
+      availableKeys = providerKeys.filter((key) => {
+        // If permanently disabled, exclude
+        if (key.isPermanentlyDisabled) {
+          return false;
         }
 
-        // If priority is the same, sort by lastUsed (oldest first)
-        return (a.lastUsed || 0) - (b.lastUsed || 0);
+        // If temporarily disabled, check if the disable period has expired
+        if (key.isDisabledUntil && Date.now() < key.isDisabledUntil) {
+          log.debug(
+            `Key ${key.apiKey.substring(0, 8)}... is temporarily disabled until ${new Date(key.isDisabledUntil).toISOString()}`,
+          );
+          return false;
+        }
+        
+        // Check for temporary disable based on temporaryDisabledUntil
+        if (key.temporaryDisabledUntil && Date.now() < key.temporaryDisabledUntil) {
+          log.debug(
+            `Key ${key.apiKey.substring(0, 8)}... is temporarily disabled until ${new Date(key.temporaryDisabledUntil).toISOString()}`,
+          );
+          return false;
+        }
+
+        // Key is available
+        return true;
       });
+    }
 
     if (availableKeys.length === 0) {
-      getLogger().warn('No available LLM API keys.');
+      log.warn(`No available API keys for provider: ${provider}`);
+      // Check if any keys are temporarily disabled and will be available soon
+      const soonestAvailable = providerKeys
+        .filter((key) => key.isDisabledUntil && !key.isPermanentlyDisabled)
+        .sort((a, b) => (a.isDisabledUntil || 0) - (b.isDisabledUntil || 0))[0];
+
+      if (soonestAvailable) {
+        const timeUntilAvailable =
+          (soonestAvailable.isDisabledUntil || 0) - Date.now();
+        log.info(
+          `Next key will be available in ${Math.ceil(timeUntilAvailable / 1000)} seconds`,
+        );
+      }
+
       return null;
     }
 
-    const nextKey = availableKeys[0];
-    // Update lastUsed timestamp for the selected key
-    nextKey.lastUsed = now;
-    await this.saveKeys(keys); // Save all keys to persist lastUsed update
+    // Simple round-robin selection
+    const selectedIndex = this.lastUsedIndex?.get(provider) ?? -1;
+    const nextIndex = (selectedIndex + 1) % availableKeys.length;
+    this.lastUsedIndex?.set(provider, nextIndex);
 
-    getLogger().debug(
-      {
-        baseUrl: nextKey.baseUrl,
-        model: nextKey.apiModel,
-        provider: nextKey.apiProvider,
-      },
-      'Returning next available LLM API key.',
+    const selectedKey = availableKeys[nextIndex];
+    log.info(
+      `Selected API key ${selectedKey.apiKey.substring(0, 8)}... for provider ${provider}`,
     );
-    return nextKey;
+
+    return selectedKey;
   }
 
   public static async hasAvailableKeys(providerName: string): Promise<boolean> {
-    const keys = await this.getKeys();
-    const now = Date.now();
+    try {
+      const keys = await this.getKeysWithFallback(providerName);
+      const now = Date.now();
 
-    const availableKeysForProvider = keys.filter(
-      (key) =>
-        key.apiProvider === providerName &&
-        !key.isPermanentlyDisabled &&
-        (!key.isDisabledUntil || key.isDisabledUntil <= now),
-    );
-    return availableKeysForProvider.length > 0;
+      const availableKeysForProvider = keys.filter(
+        (key) =>
+          key.apiProvider === providerName &&
+          !key.isPermanentlyDisabled &&
+          (!key.isDisabledUntil || key.isDisabledUntil <= now) &&
+          (!key.temporaryDisabledUntil || key.temporaryDisabledUntil <= now),
+      );
+      
+      // If no keys in Redis, try environment fallback
+      if (availableKeysForProvider.length === 0) {
+        const envKey = this.getEnvironmentFallbackKey(providerName);
+        return envKey !== null;
+      }
+      
+      return availableKeysForProvider.length > 0;
+    } catch (error) {
+      // Fallback to environment key if Redis fails
+      const envKey = this.getEnvironmentFallbackKey(providerName);
+      return envKey !== null;
+    }
   }
 
+  /**
+   * Cleans up and resets failed keys that might be recoverable
+   */
+  public static async cleanupFailedKeys(provider?: string): Promise<{
+    cleaned: number;
+    total: number;
+  }> {
+    const log = getLogger().child({ module: 'LlmKeyManager' });
+    
+    try {
+      const keys = await this.getKeys();
+      let cleanedCount = 0;
+      const currentTime = Date.now();
+      
+      const cleanedKeys = keys.map(key => {
+        // Clean keys for specific provider or all providers
+        if (provider && key.apiProvider !== provider) {
+          return key;
+        }
+        
+        // Reset temporarily disabled keys after cooldown period
+        if (key.temporaryDisabledUntil && currentTime > key.temporaryDisabledUntil) {
+          log.info({ 
+            provider: key.apiProvider, 
+            keyPreview: key.apiKey.substring(0, 12) + '...' 
+          }, 'Re-enabling temporarily disabled key');
+          cleanedCount++;
+          return {
+            ...key,
+            errorCount: 0,
+            temporaryDisabledUntil: undefined,
+            lastError: undefined,
+            isPermanentlyDisabled: false
+          };
+        }
+        
+        // Reset keys with high error count but not permanently disabled
+        if (key.errorCount >= MAX_TEMPORARY_ERROR_COUNT && !key.isPermanentlyDisabled) {
+          // Only reset if it's been a while since last error
+          const lastUsed = key.lastUsed || 0;
+          const timeSinceLastUse = currentTime - lastUsed;
+          
+          if (timeSinceLastUse > TEMPORARY_DISABLE_DURATION_MS * 2) {
+            log.info({ 
+              provider: key.apiProvider, 
+              keyPreview: key.apiKey.substring(0, 12) + '...',
+              oldErrorCount: key.errorCount
+            }, 'Resetting high-error-count key after cooldown');
+            cleanedCount++;
+            return {
+              ...key,
+              errorCount: 0,
+              temporaryDisabledUntil: undefined,
+              lastError: undefined
+            };
+          }
+        }
+        
+        return key;
+      });
+      
+      if (cleanedCount > 0) {
+        await this.saveKeys(cleanedKeys);
+        log.info({ cleanedCount, total: keys.length }, 'Cleaned up failed keys');
+      }
+      
+      return { cleaned: cleanedCount, total: keys.length };
+    } catch (error) {
+      log.error({ error, provider }, 'Failed to cleanup keys');
+      return { cleaned: 0, total: 0 };
+    }
+  }
+
+  /**
+   * Marks an API key as bad based on the error type.
+   * @param provider The LLM provider.
+   * @param apiKey The API key to mark.
+   * @param errorType The type of error encountered.
+   */
   public static async markKeyAsBad(
     provider: string,
-    key: string,
+    apiKey: string,
     errorType: LlmKeyErrorType,
   ): Promise<void> {
+    const log = getLogger().child({ module: 'LlmKeyManager' });
+    
+    // First, ensure we have the latest keys from Redis
     const keys = await this.getKeys();
-    const keyIndex = keys.findIndex(
-      (k) => k.apiProvider === provider && k.apiKey === key,
+    this.populateApiKeysMap(keys);
+    
+    const keysForProvider = this.apiKeys.get(provider) || [];
+    const keyObj = keysForProvider.find((k) => k.apiKey === apiKey);
+
+    if (!keyObj) {
+      log.warn(
+        `Attempted to mark non-existent key as bad: ${apiKey} for provider ${provider}`,
+      );
+      return;
+    }
+
+    keyObj.errorCount++;
+    log.info(
+      `Key ${apiKey.substring(0, 8)}... error count incremented to ${keyObj.errorCount}`,
     );
 
-    if (keyIndex !== -1) {
-      const badKey = keys[keyIndex];
-
-      if (errorType === LlmKeyErrorType.PERMANENT) {
-        badKey.isPermanentlyDisabled = true;
-        badKey.errorCount = 0; // Reset error count for permanent disable
-        badKey.isDisabledUntil = undefined; // Clear temporary disable
-        getLogger().error(
-          {
-            apiKey: key.substring(0, 10) + '...',
-            provider: badKey.apiProvider,
-          },
-          'LLM API key permanently disabled.',
-        );
-      } else {
-        // LlmKeyErrorType.TEMPORARY
-        badKey.errorCount = (badKey.errorCount || 0) + 1;
-        badKey.lastUsed = Date.now(); // Mark as recently used to push it to the end of the queue
-
-        if (badKey.errorCount >= MAX_TEMPORARY_ERROR_COUNT) {
-          badKey.isDisabledUntil = Date.now() + TEMPORARY_DISABLE_DURATION_MS;
-          badKey.errorCount = 0; // Reset error count after temporary disabling
-          getLogger().warn(
-            {
-              apiKey: key.substring(0, 10) + '...',
-              provider: badKey.apiProvider,
-            },
-            `LLM API key temporarily disabled for ${
-              TEMPORARY_DISABLE_DURATION_MS / 1000
-            } seconds due to multiple temporary errors.`,
-          );
-        } else {
-          getLogger().warn(
-            {
-              apiKey: key.substring(0, 10) + '...',
-              errorCount: badKey.errorCount,
-              provider: badKey.apiProvider,
-            },
-            'LLM API key temporary error count incremented.',
-          );
-        }
-      }
-      await this.saveKeys(keys);
+    // For permanent errors, disable permanently
+    if (errorType === LlmKeyErrorType.PERMANENT) {
+      log.warn(
+        `Permanently disabling key ${apiKey.substring(0, 8)}... due to permanent error`,
+      );
+      keyObj.isPermanentlyDisabled = true;
     }
+    // For temporary errors (including quota exceeded), implement exponential backoff
+    else {
+      // For quota exceeded errors, use a longer backoff time
+      let backoffTime: number;
+      if (
+        keyObj.lastError?.includes('quota') ||
+        keyObj.lastError?.includes('limit') ||
+        keyObj.lastError?.includes('exceeded')
+      ) {
+        log.warn(
+          `Quota exceeded for key ${apiKey.substring(0, 8)}..., temporarily disabling for 2 minutes`,
+        );
+        backoffTime = 2 * 60 * 1000; // 2 minutes for quota errors
+      } else {
+        backoffTime = Math.min(1000 * Math.pow(2, keyObj.errorCount), 60000); // Max 1 minute for other temporary errors
+      }
+      keyObj.isDisabledUntil = Date.now() + backoffTime;
+      log.info(
+        `Temporarily disabling key ${apiKey.substring(0, 8)}... for ${backoffTime}ms due to temporary error`,
+      );
+    }
+
+    // Update the last error
+    keyObj.lastError = `Error count: ${keyObj.errorCount}, Type: ${errorType}`;
+
+    // Save the updated keys and repopulate the map
+    await this.saveKeys(keys);
+    this.populateApiKeysMap(keys);
   }
 
   public static async removeKey(index: number): Promise<void> {
@@ -330,6 +534,8 @@ export class LlmKeyManager {
     }
     const removedKey = keys.splice(index, 1);
     await this.saveKeys(keys);
+    // Update the apiKeys map
+    this.populateApiKeysMap(keys);
     getLogger().info(
       { provider: removedKey[0].apiProvider },
       'LLM API key removed.',
@@ -340,13 +546,15 @@ export class LlmKeyManager {
     provider: string,
     key: string,
   ): Promise<void> {
+    // First, ensure we have the latest keys from Redis
     const keys = await this.getKeys();
-    const keyIndex = keys.findIndex(
-      (k) => k.apiProvider === provider && k.apiKey === key,
-    );
+    this.populateApiKeysMap(keys);
+    
+    const keysForProvider = this.apiKeys.get(provider) || [];
+    const keyIndex = keysForProvider.findIndex((k) => k.apiKey === key);
 
     if (keyIndex !== -1) {
-      const goodKey = keys[keyIndex];
+      const goodKey = keysForProvider[keyIndex];
       goodKey.errorCount = 0;
       goodKey.isDisabledUntil = undefined;
       goodKey.isPermanentlyDisabled = false; // Clear permanent disable flag
@@ -356,6 +564,8 @@ export class LlmKeyManager {
         'LLM API key status reset.',
       );
       await this.saveKeys(keys);
+      // Update the apiKeys map
+      this.populateApiKeysMap(keys);
     }
   }
 
@@ -464,6 +674,8 @@ export class LlmKeyManager {
         existingKeys.unshift(updatedMasterKey);
 
         await this.saveKeys(existingKeys);
+        // Update the apiKeys map
+        this.populateApiKeysMap(existingKeys);
         const msg = `Clé maîtresse déjà présente. Statut mis à jour et placée en tête de liste.`;
         logger.info(
           {
@@ -482,6 +694,8 @@ export class LlmKeyManager {
 
         existingKeys.unshift(masterKeyData);
         await this.saveKeys(existingKeys);
+        // Update the apiKeys map
+        this.populateApiKeysMap(existingKeys);
 
         const msg = `Nouvelle clé maîtresse ajoutée en tête de liste.`;
         logger.info(
@@ -651,6 +865,121 @@ export class LlmKeyManager {
       -1,
     );
     return keysJson.map((key: string) => JSON.parse(key));
+  }
+
+  /**
+   * Gets keys with robust fallback mechanisms
+   */
+  private static async getKeysWithFallback(provider: string): Promise<LlmApiKey[]> {
+    const log = getLogger().child({ module: 'LlmKeyManager' });
+    
+    try {
+      // Try Redis first
+      const keys = await this.getKeys();
+      
+      // If Redis is empty, try to sync from environment
+      if (keys.length === 0) {
+        log.warn('Redis is empty, trying to sync from environment variables');
+        await this.ensureMasterKeySync();
+        return await this.getKeys();
+      }
+      
+      return keys;
+    } catch (redisError) {
+      log.error({ redisError, provider }, 'Redis failed, using environment fallback');
+      
+      // If Redis completely fails, create temporary key from env
+      const envKey = this.createEnvironmentKey(provider);
+      return envKey ? [envKey] : [];
+    }
+  }
+
+  /**
+   * Creates a temporary key from environment variables
+   */
+  private static createEnvironmentKey(provider: string): LlmApiKey | null {
+    let apiKey: string | undefined;
+    let modelName: string | undefined;
+
+    // Try specific provider keys first, then fallback to generic LLM_API_KEY only if provider matches
+    switch (provider.toLowerCase()) {
+      case 'gemini':
+        apiKey = process.env.GEMINI_API_KEY || (config.LLM_PROVIDER === 'gemini' ? config.LLM_API_KEY : undefined);
+        modelName = config.LLM_MODEL_NAME || 'gemini-2.5-flash';
+        break;
+      case 'openai':
+        apiKey = process.env.OPENAI_API_KEY || (config.LLM_PROVIDER === 'openai' ? config.LLM_API_KEY : undefined);
+        modelName = 'gpt-4';
+        break;
+      case 'qwen':
+        apiKey = process.env.QWEN_API_KEY || (config.LLM_PROVIDER === 'qwen' ? config.LLM_API_KEY : undefined);
+        modelName = 'qwen-plus';
+        break;
+      default:
+        // Only use generic LLM_API_KEY if the provider matches the configured provider
+        if (config.LLM_PROVIDER === provider) {
+          apiKey = config.LLM_API_KEY;
+          modelName = config.LLM_MODEL_NAME;
+        }
+    }
+
+    if (!apiKey) {
+      return null;
+    }
+
+    return {
+      apiKey: apiKey,
+      apiModel: modelName || 'default',
+      apiProvider: provider,
+      errorCount: 0,
+      isPermanentlyDisabled: false,
+      lastUsed: Date.now(),
+    };
+  }
+
+  /**
+   * Fallback method for getting environment key
+   */
+  private static getEnvironmentFallbackKey(provider: string): LlmApiKey | null {
+    const log = getLogger().child({ module: 'LlmKeyManager' });
+    
+    const envKey = this.createEnvironmentKey(provider);
+    if (envKey) {
+      log.info({ provider, hasKey: !!envKey.apiKey }, 'Using environment fallback key');
+      return envKey;
+    }
+    
+    log.warn({ provider }, 'No environment fallback key available');
+    return null;
+  }
+
+  /**
+   * Ensures master key is synced from environment to Redis
+   */
+  private static async ensureMasterKeySync(): Promise<void> {
+    const log = getLogger().child({ module: 'LlmKeyManager' });
+
+    if (config.LLM_API_KEY && config.LLM_PROVIDER && config.LLM_MODEL_NAME) {
+      log.info({
+        provider: config.LLM_PROVIDER,
+        model: config.LLM_MODEL_NAME,
+        hasKey: !!config.LLM_API_KEY
+      }, 'Syncing master key from environment to Redis');
+
+      await this.addKey(
+        config.LLM_PROVIDER,
+        config.LLM_API_KEY,
+        config.LLM_MODEL_NAME
+      );
+
+      log.info('Master key synced successfully');
+    } else {
+      log.warn({
+        hasApiKey: !!config.LLM_API_KEY,
+        hasProvider: !!config.LLM_PROVIDER,
+        hasModel: !!config.LLM_MODEL_NAME
+      }, 'Cannot sync master key - missing configuration');
+    }
   }
 
   private static async getKeysWithHierarchy(): Promise<LlmApiKey[]> {

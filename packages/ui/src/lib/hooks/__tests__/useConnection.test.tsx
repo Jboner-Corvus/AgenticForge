@@ -1,11 +1,17 @@
 /// <reference types="vitest-dom/extend-expect" />
 /// <reference types="vitest/globals" />
-import { SSEClientTransport, type SSEClientTransportOptions } from "@modelcontextprotocol/sdk/client/sse.js";
-import { StreamableHTTPClientTransport, type StreamableHTTPClientTransportOptions } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import {
+  SSEClientTransport,
+  type SSEClientTransportOptions,
+} from '@modelcontextprotocol/sdk/client/sse.js';
+import {
+  StreamableHTTPClientTransport,
+  type StreamableHTTPClientTransportOptions,
+} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 // Mock fetch
 const mockFetch = vi.fn().mockResolvedValue({
-  json: () => Promise.resolve({ status: "ok" }),
+  json: () => Promise.resolve({ status: 'ok' }),
   ok: true,
   status: 200,
   text: () => Promise.resolve('{"status":"ok"}'),
@@ -17,15 +23,17 @@ beforeAll(() => {
 
 import { vi, expect, describe, beforeEach, beforeAll, test } from 'vitest';
 
-import { useConnection } from "../useConnection";
+import { useConnection } from '../useConnection';
 
 // Mock transport instances
-interface MockSSEClientTransport extends InstanceType<typeof SSEClientTransport> {
+interface MockSSEClientTransport
+  extends InstanceType<typeof SSEClientTransport> {
   url?: URL;
   options?: SSEClientTransportOptions;
 }
 
-interface MockStreamableHTTPClientTransport extends InstanceType<typeof StreamableHTTPClientTransport> {
+interface MockStreamableHTTPClientTransport
+  extends InstanceType<typeof StreamableHTTPClientTransport> {
   url?: URL;
   options?: StreamableHTTPClientTransportOptions;
 }
@@ -36,13 +44,15 @@ let mockStreamableHTTPTransportInstance:
   | undefined;
 
 // Mock the SDK dependencies
-const mockRequest = vi.fn().mockResolvedValue({ test: "response" });
+const mockRequest = vi.fn().mockResolvedValue({ test: 'response' });
 const mockClient = {
   close: vi.fn(),
   connect: vi.fn().mockResolvedValue(undefined),
-  getInstructions: vi.fn().mockReturnValue("Test instructions"),
-  getServerCapabilities: vi.fn().mockReturnValue({ test: "capabilities" }),
-  getServerVersion: vi.fn().mockReturnValue({ name: "test-server", version: "1.0.0" }),
+  getInstructions: vi.fn().mockReturnValue('Test instructions'),
+  getServerCapabilities: vi.fn().mockReturnValue({ test: 'capabilities' }),
+  getServerVersion: vi
+    .fn()
+    .mockReturnValue({ name: 'test-server', version: '1.0.0' }),
   notification: vi.fn(),
   request: mockRequest,
   setNotificationHandler: vi.fn(),
@@ -51,11 +61,11 @@ const mockClient = {
 };
 
 // Mock the MCP SDK modules
-vi.mock("@modelcontextprotocol/sdk/client/index.js", () => ({
+vi.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
   Client: vi.fn().mockImplementation(() => mockClient),
 }));
 
-vi.mock("@modelcontextprotocol/sdk/client/sse.js", () => ({
+vi.mock('@modelcontextprotocol/sdk/client/sse.js', () => ({
   SSEClientTransport: vi.fn().mockImplementation((url, options) => {
     mockSSETransportInstance = {
       url: new URL(url),
@@ -64,13 +74,16 @@ vi.mock("@modelcontextprotocol/sdk/client/sse.js", () => ({
     return mockSSETransportInstance;
   }),
   SseError: class extends Error {
-    constructor(message: string, public code?: number) {
+    constructor(
+      message: string,
+      public code?: number,
+    ) {
       super(message);
     }
   },
 }));
 
-vi.mock("@modelcontextprotocol/sdk/client/streamableHttp.js", () => ({
+vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
   StreamableHTTPClientTransport: vi.fn().mockImplementation((url, options) => {
     mockStreamableHTTPTransportInstance = {
       url: new URL(url),
@@ -82,10 +95,10 @@ vi.mock("@modelcontextprotocol/sdk/client/streamableHttp.js", () => ({
 }));
 
 // Mock mcpUtils
-vi.mock("../../mcpUtils", () => ({
-  getMCPProxyAddress: vi.fn().mockReturnValue("http://localhost:8080"),
+vi.mock('../../mcpUtils', () => ({
+  getMCPProxyAddress: vi.fn().mockReturnValue('http://localhost:8080'),
   getMCPProxyAuthToken: vi.fn().mockReturnValue({
-    header: "X-MCP-Proxy-Auth",
+    header: 'X-MCP-Proxy-Auth',
     token: process.env.VITE_MCP_PROXY_AUTH_TOKEN || null,
   }),
   getMCPServerRequestMaxTotalTimeout: vi.fn().mockReturnValue(10000),
@@ -94,66 +107,68 @@ vi.mock("../../mcpUtils", () => ({
 }));
 
 // Mock package.json
-vi.mock("../../../package.json", () => ({
+vi.mock('../../../package.json', () => ({
   default: {
-    version: "1.0.0-test",
+    version: '1.0.0-test',
   },
 }));
 
 // Mock the toast hook
-vi.mock("@/lib/hooks/useToast", () => ({
+vi.mock('@/lib/hooks/useToast', () => ({
   useToast: () => ({
     toast: vi.fn(),
   }),
 }));
 
 // Mock the auth provider
-vi.mock("../../auth", () => ({
+vi.mock('../../auth', () => ({
   InspectorOAuthClientProvider: vi.fn().mockImplementation(() => ({
-    tokens: vi.fn().mockResolvedValue({ access_token: "mock-token" }),
+    tokens: vi.fn().mockResolvedValue({ access_token: 'mock-token' }),
   })),
 }));
 
-describe("useConnection", () => {
+describe('useConnection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset transport instances before each test
     mockSSETransportInstance = undefined;
     mockStreamableHTTPTransportInstance = undefined;
-    
+
     // Reset fetch mock
     mockFetch.mockResolvedValue({
-      json: () => Promise.resolve({ status: "ok" }),
+      json: () => Promise.resolve({ status: 'ok' }),
       ok: true,
       status: 200,
       text: () => Promise.resolve('{"status":"ok"}'),
     });
-    
+
     // Reset client mock methods
     mockClient.connect.mockResolvedValue(undefined);
-    mockClient.getServerCapabilities.mockReturnValue({ test: "capabilities" });
-    mockClient.getInstructions.mockReturnValue("Test instructions");
-    mockClient.getServerVersion.mockReturnValue({ name: "test-server", version: "1.0.0" });
-    mockRequest.mockResolvedValue({ test: "response" });
+    mockClient.getServerCapabilities.mockReturnValue({ test: 'capabilities' });
+    mockClient.getInstructions.mockReturnValue('Test instructions');
+    mockClient.getServerVersion.mockReturnValue({
+      name: 'test-server',
+      version: '1.0.0',
+    });
+    mockRequest.mockResolvedValue({ test: 'response' });
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
-  
 
-  test("should initialize with correct default state", () => {
+  test('should initialize with correct default state', () => {
     // Check that the hook function exists
-    expect(typeof useConnection).toBe("function");
+    expect(typeof useConnection).toBe('function');
   });
 
-  test("should provide all required hook methods", () => {
+  test('should provide all required hook methods', () => {
     // Check that the hook function exists
-    expect(typeof useConnection).toBe("function");
+    expect(typeof useConnection).toBe('function');
   });
 
-  test("should handle request configuration", async () => {
+  test('should handle request configuration', async () => {
     // Check that the hook function exists
-    expect(typeof useConnection).toBe("function");
+    expect(typeof useConnection).toBe('function');
   });
 });

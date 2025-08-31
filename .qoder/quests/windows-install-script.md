@@ -7,6 +7,7 @@ This design addresses making AgenticForge compatible with Windows by creating a 
 ## Current State Analysis
 
 ### Existing Unix Script Features
+
 - Interactive menu system with 15+ options
 - Service management (start/stop/restart)
 - Docker container orchestration
@@ -17,6 +18,7 @@ This design addresses making AgenticForge compatible with Windows by creating a 
 - Worker process management
 
 ### Windows Compatibility Challenges
+
 - Different shell environments (PowerShell vs Bash)
 - Path separator differences (`\` vs `/`)
 - Docker Desktop for Windows requirements
@@ -31,21 +33,21 @@ graph TD
     A[Windows Installation Entry Point] --> B{User Environment}
     B -->|PowerShell Available| C[run.ps1]
     B -->|Command Prompt Only| D[run.bat]
-    
+
     C --> E[PowerShell Management System]
     D --> F[Batch Script Bridge]
     F --> E
-    
+
     E --> G[Environment Detection]
     G --> H[Dependency Verification]
     H --> I[Docker Desktop Check]
     I --> J[Node.js & pnpm Validation]
     J --> K[Service Management]
-    
+
     K --> L[Docker Compose Services]
     K --> M[Local Worker Process]
     K --> N[Health Monitoring]
-    
+
     L --> O[Redis Container]
     L --> P[PostgreSQL Container]
     L --> Q[Main Server Container]
@@ -55,9 +57,11 @@ graph TD
 ## Windows Script Implementation Strategy
 
 ### Option 1: Executable File `AgenticForge.exe` (RECOMMENDED)
+
 **Single executable - No scripting knowledge required**
 
 #### Why .exe is Better for Windows Users
+
 - **Just double-click** - no command line needed
 - **No PowerShell execution policy issues**
 - **Works on any Windows** (7, 10, 11)
@@ -66,6 +70,7 @@ graph TD
 - **Familiar Windows installation process**
 
 #### How Users Will Use the Executable
+
 ```
 1. Download AgenticForge.exe (one file)
 2. Double-click to run
@@ -75,18 +80,21 @@ graph TD
 ```
 
 #### Executable Implementation Technologies
-| Technology | Pros | Cons | File Size | Best For |
-|------------|------|------|-----------|----------|
-| **Electron + Node.js** | Easy GUI, reuse web code | Large size | ~100MB | Rich interface |
-| **Go Executable** | Small, fast, native | New codebase | ~10MB | Performance |
-| **C# WinForms** | Native Windows, .NET | Windows-only | ~20MB | Native feel |
-| **PowerShell to EXE** | Reuse PS1 logic | Still needs PowerShell | ~5MB | Quick conversion |
-| **Python + PyInstaller** | Familiar language | Moderate size | ~30MB | Rapid development |
+
+| Technology               | Pros                     | Cons                   | File Size | Best For          |
+| ------------------------ | ------------------------ | ---------------------- | --------- | ----------------- |
+| **Electron + Node.js**   | Easy GUI, reuse web code | Large size             | ~100MB    | Rich interface    |
+| **Go Executable**        | Small, fast, native      | New codebase           | ~10MB     | Performance       |
+| **C# WinForms**          | Native Windows, .NET     | Windows-only           | ~20MB     | Native feel       |
+| **PowerShell to EXE**    | Reuse PS1 logic          | Still needs PowerShell | ~5MB      | Quick conversion  |
+| **Python + PyInstaller** | Familiar language        | Moderate size          | ~30MB     | Rapid development |
 
 #### Recommended: Go Executable Implementation
+
 **Complete Windows installer for AgenticForge**
 
 ##### Go Project Structure
+
 ```
 agenticforge-windows/
 ├── main.go                    # Entry point
@@ -115,6 +123,7 @@ agenticforge-windows/
 ```
 
 ##### Core Go Implementation
+
 ```go
 // main.go - Entry point with AgenticForge integration
 package main
@@ -124,7 +133,7 @@ import (
     "fmt"
     "log"
     "os"
-    
+
     "github.com/charmbracelet/bubbletea"
     "github.com/charmbracelet/lipgloss"
 )
@@ -143,7 +152,7 @@ func main() {
         fmt.Println("Please run as administrator.")
         os.Exit(1)
     }
-    
+
     // Initialize terminal UI
     p := tea.NewProgram(initialModel())
     if err := p.Start(); err != nil {
@@ -160,6 +169,7 @@ func (m Model) Init() tea.Cmd {
 ```
 
 ##### Docker Desktop Integration
+
 ```go
 // internal/installer/docker.go
 package installer
@@ -192,14 +202,14 @@ func (d *DockerInstaller) CheckDockerDesktop() (bool, error) {
     if err != nil {
         return false, nil // Not installed
     }
-    
+
     // Test docker connectivity
     cmd := exec.Command("docker", "version", "--format", "{{.Server.Version}}")
     output, err := cmd.Output()
     if err != nil {
         return false, fmt.Errorf("docker installed but not running: %w", err)
     }
-    
+
     return len(output) > 0, nil
 }
 
@@ -207,21 +217,21 @@ func (d *DockerInstaller) CheckDockerDesktop() (bool, error) {
 func (d *DockerInstaller) InstallDockerDesktop(progressCallback func(float64)) error {
     // Download Docker Desktop installer
     url := "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
-    
+
     if err := downloadWithProgress(url, d.downloadPath, progressCallback); err != nil {
         return fmt.Errorf("failed to download Docker Desktop: %w", err)
     }
-    
+
     // Run installer silently
     cmd := exec.Command(d.downloadPath, "install", "--quiet")
     cmd.SysProcAttr = &syscall.SysProcAttr{
         HideWindow: true,
     }
-    
+
     if err := cmd.Run(); err != nil {
         return fmt.Errorf("Docker Desktop installation failed: %w", err)
     }
-    
+
     // Wait for Docker Desktop to start
     return d.waitForDocker()
 }
@@ -231,7 +241,7 @@ func (d *DockerInstaller) waitForDocker() error {
     timeout := time.After(5 * time.Minute)
     ticker := time.NewTicker(10 * time.Second)
     defer ticker.Stop()
-    
+
     for {
         select {
         case <-timeout:
@@ -246,6 +256,7 @@ func (d *DockerInstaller) waitForDocker() error {
 ```
 
 ##### AgenticForge Setup Integration
+
 ```go
 // internal/installer/agenticforge.go
 package installer
@@ -283,37 +294,37 @@ func (a *AgenticForgeInstaller) InstallAgenticForge() error {
     if err := os.MkdirAll(a.installPath, 0755); err != nil {
         return fmt.Errorf("failed to create install directory: %w", err)
     }
-    
+
     // Extract embedded AgenticForge source
     if err := a.extractSource(); err != nil {
         return fmt.Errorf("failed to extract source: %w", err)
     }
-    
+
     // Generate .env file with Windows-specific configuration
     if err := a.generateEnvFile(); err != nil {
         return fmt.Errorf("failed to generate .env: %w", err)
     }
-    
+
     // Install Node.js dependencies
     if err := a.installDependencies(); err != nil {
         return fmt.Errorf("failed to install dependencies: %w", err)
     }
-    
+
     // Build packages
     if err := a.buildPackages(); err != nil {
         return fmt.Errorf("failed to build packages: %w", err)
     }
-    
+
     // Start Docker services
     if err := a.startServices(); err != nil {
         return fmt.Errorf("failed to start services: %w", err)
     }
-    
+
     // Create desktop shortcuts
     if err := a.createShortcuts(); err != nil {
         return fmt.Errorf("failed to create shortcuts: %w", err)
     }
-    
+
     return nil
 }
 
@@ -340,7 +351,7 @@ HOST_PROJECT_PATH=%s
         strings.ReplaceAll(a.workspacePath, "\\", "/"),
         strings.ReplaceAll(a.installPath, "\\", "/"),
     )
-    
+
     envPath := filepath.Join(a.installPath, ".env")
     return os.WriteFile(envPath, []byte(envContent), 0644)
 }
@@ -350,12 +361,12 @@ func (a *AgenticForgeInstaller) startServices() error {
     cmd := exec.Command("docker", "compose", "up", "-d")
     cmd.Dir = a.installPath
     cmd.Env = append(os.Environ(), "DOCKER_BUILDKIT=1")
-    
+
     output, err := cmd.CombinedOutput()
     if err != nil {
         return fmt.Errorf("docker compose failed: %w\nOutput: %s", err, output)
     }
-    
+
     // Start worker process with Windows-specific environment
     return a.startWorker()
 }
@@ -363,19 +374,19 @@ func (a *AgenticForgeInstaller) startServices() error {
 // startWorker launches the AgenticForge worker process
 func (a *AgenticForgeInstaller) startWorker() error {
     workerPath := filepath.Join(a.installPath, "packages", "core", "dist", "worker.js")
-    
+
     cmd := exec.Command("node", workerPath)
     cmd.Dir = filepath.Join(a.installPath, "packages", "core")
     cmd.Env = append(os.Environ(),
         "REDIS_HOST=localhost",
         "POSTGRES_HOST=localhost",
     )
-    
+
     // Start as background process
     if err := cmd.Start(); err != nil {
         return fmt.Errorf("failed to start worker: %w", err)
     }
-    
+
     // Save PID for management
     pidFile := filepath.Join(a.installPath, "worker.pid")
     return os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", cmd.Process.Pid)), 0644)
@@ -383,6 +394,7 @@ func (a *AgenticForgeInstaller) startWorker() error {
 ```
 
 ##### Go Build Process
+
 ```go
 // Build configuration in go.mod
 module agenticforge-installer
@@ -398,6 +410,7 @@ require (
 ```
 
 ##### Build Commands
+
 ```bash
 # Development build
 go build -o agenticforge-dev.exe .
@@ -410,6 +423,7 @@ GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o AgenticForge.exe .
 ```
 
 ##### Embedding AgenticForge Source Code
+
 ```go
 // Build script to prepare embedded assets
 //go:generate go run scripts/prepare-assets.go
@@ -428,12 +442,12 @@ import (
 func main() {
     // Create assets directory
     os.MkdirAll("assets", 0755)
-    
+
     // Zip AgenticForge source (excluding .git, node_modules)
     if err := zipAgenticForgeSource(); err != nil {
         panic(err)
     }
-    
+
     fmt.Println("Assets prepared for embedding")
 }
 
@@ -443,16 +457,16 @@ func zipAgenticForgeSource() error {
         return err
     }
     defer zipFile.Close()
-    
+
     archive := zip.NewWriter(zipFile)
     defer archive.Close()
-    
+
     // Walk through AgenticForge directory
     return filepath.Walk("../../", func(path string, info os.FileInfo, err error) error {
         if err != nil {
             return err
         }
-        
+
         // Skip unwanted directories
         if shouldSkip(path) {
             if info.IsDir() {
@@ -460,7 +474,7 @@ func zipAgenticForgeSource() error {
             }
             return nil
         }
-        
+
         // Add file to zip
         return addToZip(archive, path, info)
     })
@@ -478,13 +492,14 @@ func shouldSkip(path string) bool {
 ```
 
 ##### Windows Integration Features
+
 ```go
 // internal/ui/menu.go - Windows-native menu system
 package ui
 
 import (
     "fmt"
-    
+
     "github.com/charmbracelet/bubbletea"
     "github.com/charmbracelet/lipgloss"
 )
@@ -501,10 +516,10 @@ var (
         Foreground(lipgloss.Color("#FF6B35")).
         Bold(true).
         Padding(1, 2)
-        
+
     itemStyle = lipgloss.NewStyle().
         PaddingLeft(4)
-        
+
     selectedItemStyle = lipgloss.NewStyle().
         PaddingLeft(2).
         Foreground(lipgloss.Color("#00FF00")).
@@ -515,7 +530,7 @@ func NewMenu() MenuModel {
     return MenuModel{
         choices: []string{
             "🟢 Install AgenticForge",
-            "⚡ Check System Requirements", 
+            "⚡ Check System Requirements",
             "🐳 Install Docker Desktop",
             "📦 Install Node.js & pnpm",
             "🚀 Start AgenticForge",
@@ -532,7 +547,7 @@ func NewMenu() MenuModel {
 func (m MenuModel) View() string {
     s := titleStyle.Render("AgenticForge Windows Manager")
     s += "\n\n"
-    
+
     for i, choice := range m.choices {
         cursor := " "
         if m.cursor == i {
@@ -543,36 +558,41 @@ func (m MenuModel) View() string {
         }
         s += "\n"
     }
-    
+
     if m.status != "" {
         s += "\n" + lipgloss.NewStyle().
             Foreground(lipgloss.Color("#FFD700")).
             Render("Status: "+m.status)
     }
-    
+
     s += "\n\nPress Enter to select, q to quit"
     return s
 }
 ```
 
 ### What is PS1?
+
 **PS1 files are PowerShell scripts** - the modern Windows scripting language that replaces old batch files (.bat). PowerShell is:
+
 - **More powerful** than traditional CMD/batch scripts
 - **Built into Windows 10/11** by default
 - **Cross-platform** (works on Windows, Mac, Linux)
 - **Object-oriented** with advanced features like error handling, modules, and remote management
 
 ### Script Types Comparison
-| Script Type | Extension | Description | Capabilities |
-|-------------|-----------|-------------|--------------|
-| **PowerShell** | `.ps1` | Modern Windows scripting | Full-featured, object-oriented, secure |
-| **Batch** | `.bat` | Legacy DOS/Windows scripts | Basic commands, limited functionality |
-| **Command** | `.cmd` | Enhanced batch scripts | Slightly better than .bat |
+
+| Script Type    | Extension | Description                | Capabilities                           |
+| -------------- | --------- | -------------------------- | -------------------------------------- |
+| **PowerShell** | `.ps1`    | Modern Windows scripting   | Full-featured, object-oriented, secure |
+| **Batch**      | `.bat`    | Legacy DOS/Windows scripts | Basic commands, limited functionality  |
+| **Command**    | `.cmd`    | Enhanced batch scripts     | Slightly better than .bat              |
 
 ### Primary Script: `run.ps1`
+
 **PowerShell-based management script with full feature parity**
 
 #### Core Components
+
 - **Environment Management Module**
   - Automatic .env file generation
   - Windows-specific path handling
@@ -601,7 +621,7 @@ classDiagram
         +SetupEnvironment()
         +ConfigureDocker()
     }
-    
+
     class ServiceManager {
         +StartServices()
         +StopServices()
@@ -609,21 +629,21 @@ classDiagram
         +CheckStatus()
         +ManageWorker()
     }
-    
+
     class EnvironmentManager {
         +CreateEnvFile()
         +ValidateConfiguration()
         +SetupPaths()
         +ConfigureRegistry()
     }
-    
+
     class DockerManager {
         +ValidateDockerDesktop()
         +ManageContainers()
         +HandleVolumes()
         +MonitorHealth()
     }
-    
+
     WindowsInstaller --> ServiceManager
     WindowsInstaller --> EnvironmentManager
     ServiceManager --> DockerManager
@@ -631,9 +651,11 @@ classDiagram
 ```
 
 ### Secondary Script: `run.bat`
+
 **Batch script for compatibility and PowerShell bridge**
 
 #### How Users Will Use These Scripts
+
 ```powershell
 # PowerShell method (recommended)
 .\run.ps1
@@ -650,7 +672,9 @@ run.bat
 ```
 
 #### Example PowerShell vs Batch Comparison
+
 **PowerShell (.ps1) - Advanced**
+
 ```powershell
 # Modern PowerShell syntax
 $services = docker compose ps --format json | ConvertFrom-Json
@@ -660,6 +684,7 @@ foreach ($service in $services) {
 ```
 
 **Batch (.bat) - Basic**
+
 ```batch
 REM Basic batch syntax
 docker compose ps
@@ -668,6 +693,7 @@ pause
 ```
 
 #### Functionality
+
 - PowerShell availability detection
 - Execution policy management
 - Legacy Windows support
@@ -676,6 +702,7 @@ pause
 ## Windows-Specific Adaptations
 
 ### Path Management
+
 ```powershell
 # Unix: /home/user/workspace
 # Windows: $env:USERPROFILE\workspace
@@ -684,6 +711,7 @@ $ScriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 ```
 
 ### Process Management
+
 ```powershell
 # Worker process management
 Start-Process -FilePath "node" -ArgumentList "dist/worker.js" -WindowStyle Hidden
@@ -691,6 +719,7 @@ $WorkerProcess = Get-Process -Name "node" | Where-Object {$_.ProcessName -eq "no
 ```
 
 ### Docker Integration
+
 ```powershell
 # Docker Desktop validation
 $DockerDesktop = Get-Process -Name "Docker Desktop" -ErrorAction SilentlyContinue
@@ -710,20 +739,20 @@ sequenceDiagram
     participant Script as run.ps1
     participant Docker as Docker Desktop
     participant Services as AgenticForge Services
-    
+
     User->>Script: Execute .\run.ps1
     Script->>Script: Check Prerequisites
     alt Missing Dependencies
         Script->>User: Display installation instructions
         Script->>Script: Attempt automatic installation
     end
-    
+
     Script->>Docker: Validate Docker Desktop
     alt Docker Not Running
         Script->>Docker: Start Docker Desktop
         Script->>Script: Wait for Docker availability
     end
-    
+
     Script->>Script: Create .env configuration
     Script->>Script: Setup workspace directories
     Script->>Docker: Pull required images
@@ -734,7 +763,9 @@ sequenceDiagram
 ```
 
 ### Prerequisite Installation
+
 - **Automated Chocolatey Integration**
+
   ```powershell
   if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
       Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
@@ -750,6 +781,7 @@ sequenceDiagram
 ### Environment Configuration
 
 #### .env File Generation
+
 ```powershell
 # Windows-specific .env template
 @"
@@ -778,12 +810,12 @@ HOST_PROJECT_PATH=$pwd
 ```mermaid
 stateDiagram-v2
     [*] --> MainMenu
-    
+
     MainMenu --> DockerServices : 1-8
     MainMenu --> TestingQuality : 9-14
     MainMenu --> WindowsSpecific : 15-20
     MainMenu --> Exit : 21
-    
+
     DockerServices --> StartServices : 1
     DockerServices --> RestartAll : 2
     DockerServices --> StopServices : 3
@@ -792,21 +824,21 @@ stateDiagram-v2
     DockerServices --> ContainerShell : 6
     DockerServices --> RebuildAll : 7
     DockerServices --> DockerLogs : 8
-    
+
     TestingQuality --> UnitTests : 9
     TestingQuality --> IntegrationTests : 10
     TestingQuality --> AllTests : 11
     TestingQuality --> LintCode : 12
     TestingQuality --> FormatCode : 13
     TestingQuality --> TypeCheck : 14
-    
+
     WindowsSpecific --> CheckWSL2 : 15
     WindowsSpecific --> ConfigureHyperV : 16
     WindowsSpecific --> UpdateDockerDesktop : 17
     WindowsSpecific --> WindowsServiceSetup : 18
     WindowsSpecific --> TroubleshootWindows : 19
     WindowsSpecific --> SystemDiagnostics : 20
-    
+
     DockerServices --> MainMenu
     TestingQuality --> MainMenu
     WindowsSpecific --> MainMenu
@@ -815,14 +847,14 @@ stateDiagram-v2
 
 ### Windows-Specific Menu Options
 
-| Option | Function | Description |
-|---------|----------|-------------|
-| 15 | Check WSL2 | Validate WSL2 installation and configuration |
-| 16 | Configure Hyper-V | Enable/configure Hyper-V for Docker Desktop |
-| 17 | Update Docker Desktop | Check and update Docker Desktop to latest |
-| 18 | Windows Service Setup | Configure AgenticForge as Windows Service |
-| 19 | Troubleshoot Windows | Windows-specific troubleshooting wizard |
-| 20 | System Diagnostics | Comprehensive system health check |
+| Option | Function              | Description                                  |
+| ------ | --------------------- | -------------------------------------------- |
+| 15     | Check WSL2            | Validate WSL2 installation and configuration |
+| 16     | Configure Hyper-V     | Enable/configure Hyper-V for Docker Desktop  |
+| 17     | Update Docker Desktop | Check and update Docker Desktop to latest    |
+| 18     | Windows Service Setup | Configure AgenticForge as Windows Service    |
+| 19     | Troubleshoot Windows  | Windows-specific troubleshooting wizard      |
+| 20     | System Diagnostics    | Comprehensive system health check            |
 
 ## Error Handling & Troubleshooting
 
@@ -831,27 +863,27 @@ stateDiagram-v2
 ```mermaid
 graph TD
     A[Error Detection] --> B{Error Type}
-    
+
     B -->|Docker Issues| C[Docker Troubleshooting]
     B -->|PowerShell Policy| D[Execution Policy Fix]
     B -->|WSL2 Problems| E[WSL2 Configuration]
     B -->|Port Conflicts| F[Port Resolution]
     B -->|Permission Issues| G[Privilege Escalation]
-    
+
     C --> H[Restart Docker Desktop]
     C --> I[Reset Docker Data]
     C --> J[Reinstall Docker Desktop]
-    
+
     D --> K[Set-ExecutionPolicy RemoteSigned]
     D --> L[Unblock PowerShell Files]
-    
+
     E --> M[Enable WSL2 Feature]
     E --> N[Update WSL Kernel]
     E --> O[Set Default WSL Version]
-    
+
     F --> P[Kill Conflicting Processes]
     F --> Q[Suggest Alternative Ports]
-    
+
     G --> R[Run as Administrator]
     G --> S[UAC Bypass Methods]
 ```
@@ -859,19 +891,20 @@ graph TD
 ### Automated Recovery Mechanisms
 
 #### Docker Desktop Recovery
+
 ```powershell
 function Repair-DockerDesktop {
     param([switch]$ForceReinstall)
-    
+
     Write-Host "Diagnosing Docker Desktop issues..." -ForegroundColor Yellow
-    
+
     # Check if Docker Desktop is running
     $dockerProcess = Get-Process "Docker Desktop" -ErrorAction SilentlyContinue
-    
+
     if (-not $dockerProcess) {
         Write-Host "Starting Docker Desktop..." -ForegroundColor Blue
         Start-Process "Docker Desktop" -WindowStyle Minimized
-        
+
         # Wait for Docker to be available
         $timeout = 120
         do {
@@ -880,7 +913,7 @@ function Repair-DockerDesktop {
             $dockerRunning = docker version --format "{{.Server.Version}}" 2>$null
         } while (-not $dockerRunning -and $timeout -gt 0)
     }
-    
+
     if ($ForceReinstall) {
         Write-Host "Reinstalling Docker Desktop..." -ForegroundColor Red
         # Uninstall and reinstall logic
@@ -893,12 +926,14 @@ function Repair-DockerDesktop {
 ### Windows Compatibility Testing
 
 #### Unit Testing Extensions
+
 - PowerShell Pester framework integration
 - Windows-specific path testing
 - Registry operation validation
 - Service management testing
 
 #### Integration Testing
+
 - Docker Desktop integration tests
 - Cross-platform compatibility validation
 - Performance benchmarking on Windows
@@ -914,11 +949,11 @@ graph LR
     D --> E[Health Check Validation]
     E --> F[Feature Testing]
     F --> G[Cleanup & Teardown]
-    
+
     B --> H[Update Scenario Test]
     H --> I[Migration Testing]
     I --> J[Configuration Preservation]
-    
+
     F --> K[Performance Benchmarks]
     K --> L[Memory Usage Analysis]
     L --> M[Startup Time Measurement]
@@ -929,6 +964,7 @@ graph LR
 ### Option 1: Executable Distribution (RECOMMENDED)
 
 #### Single Executable Package
+
 ```
 AgenticForge-Windows.exe          # Single file download
 ├── Embedded installer logic
@@ -940,6 +976,7 @@ AgenticForge-Windows.exe          # Single file download
 ```
 
 #### Distribution Channels for .exe
+
 - **GitHub Releases**: Direct download `AgenticForge-Windows.exe`
 - **Microsoft Store**: Official Windows app store
 - **Chocolatey**: `choco install agenticforge`
@@ -947,12 +984,13 @@ AgenticForge-Windows.exe          # Single file download
 - **Company Website**: Direct download with installer
 
 #### Executable Installation Flow
+
 ```mermaid
 sequenceDiagram
     participant User
     participant Exe as AgenticForge.exe
     participant System as Windows System
-    
+
     User->>Exe: Double-click AgenticForge.exe
     Exe->>System: Check admin privileges
     Exe->>System: Scan for Docker Desktop
@@ -961,12 +999,12 @@ sequenceDiagram
         User->>Exe: "Yes"
         Exe->>System: Download & install Docker
     end
-    
+
     Exe->>System: Check Node.js
     alt Node Missing
         Exe->>System: Install portable Node.js
     end
-    
+
     Exe->>System: Create AgenticForge folder
     Exe->>System: Extract source code
     Exe->>System: Create desktop shortcut
@@ -976,6 +1014,7 @@ sequenceDiagram
 ### Option 2: Script-Based Distribution
 
 ### Installation Package Structure
+
 ```
 AgenticForge-Windows/
 ├── run.ps1                    # Main PowerShell script
@@ -997,6 +1036,7 @@ AgenticForge-Windows/
 ```
 
 ### Distribution Methods
+
 - **GitHub Releases**: Packaged ZIP with all scripts
 - **Chocolatey Package**: `choco install agenticforge`
 - **PowerShell Gallery**: `Install-Script AgenticForge`
@@ -1007,6 +1047,7 @@ AgenticForge-Windows/
 ### Windows-Specific Optimizations
 
 #### Docker Desktop Configuration
+
 ```powershell
 # Optimize Docker Desktop for AgenticForge
 $dockerConfig = @{
@@ -1024,6 +1065,7 @@ $dockerConfig | ConvertTo-Json -Depth 10 | Out-File "$env:APPDATA\Docker\setting
 ```
 
 #### WSL2 Integration Optimization
+
 - Memory allocation tuning
 - CPU scheduling optimization
 - Disk I/O performance improvements

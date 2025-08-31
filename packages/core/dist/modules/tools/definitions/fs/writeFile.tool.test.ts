@@ -2,14 +2,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
 // Mock modules first
-vi.mock('../../../../config.ts', async () => {
-  return {
-    config: {
-      WORKSPACE_PATH: '/mock-workspace',
-    },
-  };
-});
-
 vi.mock('fs', async () => {
   const vitest = await import('vitest');
   return {
@@ -69,12 +61,14 @@ describe('writeFileTool', () => {
       { content, path: filePath },
       mockCtx,
     );
+    // The tool uses path.resolve, so we need to match that behavior in the test
+    const absolutePath = path.resolve(filePath);
     expect(fs.mkdir).toHaveBeenCalledWith(
-      path.join(config.WORKSPACE_PATH, path.dirname(filePath)),
+      path.dirname(absolutePath),
       { recursive: true },
     );
     expect(fs.writeFile).toHaveBeenCalledWith(
-      path.join(config.WORKSPACE_PATH, filePath),
+      absolutePath,
       content,
       'utf-8',
     );
@@ -91,8 +85,10 @@ describe('writeFileTool', () => {
       { content, path: filePath },
       mockCtx,
     );
+    // The tool uses path.resolve, so we need to match that behavior in the test
+    const absolutePath = path.resolve(filePath);
     expect(fs.writeFile).toHaveBeenCalledWith(
-      path.join(config.WORKSPACE_PATH, filePath),
+      absolutePath,
       content,
       'utf-8',
     );

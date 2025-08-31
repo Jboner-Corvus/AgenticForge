@@ -4,11 +4,11 @@ services:
     container_name: g_forge_redis
     command: redis-server --port 6379
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -p 6379 ping"]
+      test: ['CMD-SHELL', 'redis-cli -p 6379 ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -21,15 +21,25 @@ services:
     image: postgres:16-alpine
     container_name: g_forge_postgres
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups:rw
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-gforge}
       POSTGRES_USER: ${POSTGRES_USER:-user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      # Optimisations PostgreSQL pour production
+      POSTGRES_MAX_CONNECTIONS: 200
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 1GB
+      POSTGRES_WORK_MEM: 4MB
+      POSTGRES_MAINTENANCE_WORK_MEM: 64MB
+      POSTGRES_CHECKPOINT_COMPLETION_TARGET: 0.9
+      POSTGRES_WAL_BUFFERS: 16MB
+      POSTGRES_DEFAULT_STATISTICS_TARGET: 100
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+      test: ['CMD-SHELL', 'pg_isready -U $POSTGRES_USER -d $POSTGRES_DB']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,6 +47,15 @@ services:
     restart: unless-stopped
     networks:
       - agentic_network
+    # Ressources optimisées
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
 
   server:
     build:
@@ -46,9 +65,9 @@ services:
         - VITE_AUTH_TOKEN=${AUTH_TOKEN}
     container_name: g_forge_server
     ports:
-      - "${PUBLIC_PORT:-8080}:3001"
+      - '${PUBLIC_PORT:-8080}:3001'
     volumes:
-      - ./workspace:/home/demon/agentforge/workspace
+      - ./workspace:/app/workspace
     depends_on:
       redis:
         condition: service_healthy
@@ -76,13 +95,12 @@ services:
       - LLM_PROVIDER_HIERARCHY=${LLM_PROVIDER_HIERARCHY}
       - GEMINI_API_KEY=${LLM_API_KEY}
       - SESSION_PORT=${SESSION_PORT}
-      - HOST_PROJECT_PATH=${HOST_PROJECT_PATH}
-      - HOST_SYSTEM_PATH=/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - HOST_PROJECT_PATH=/app/workspace
       - TOOLS_PATH=/usr/src/app/packages/core/dist/modules/tools/definitions
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/api/health']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -98,7 +116,7 @@ services:
         - VITE_AUTH_TOKEN=${AUTH_TOKEN}
     container_name: g_forge_web
     ports:
-      - "${WEB_PORT}:3000"
+      - '${WEB_PORT}:3000'
     depends_on:
       server:
         condition: service_healthy
@@ -106,10 +124,11 @@ services:
       - VITE_API_BASE_URL=${VITE_API_BASE_URL:-/}
       - AUTH_TOKEN=${AUTH_TOKEN}
       - VITE_AUTH_TOKEN=${AUTH_TOKEN}
+      - VITE_BACKEND_PORT=${PUBLIC_PORT:-8080}
     mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -120,19 +139,18 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     container_name: otel_collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
+    command: ['--config=/etc/otel-collector-config.yaml']
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
-      - "4317:4317" # OTLP gRPC receiver
-      - "4318:4318" # OTLP HTTP receiver
-      - "13133:13133" # Health Check extension
-      - "8888:8888" # Prometheus metrics
+      - '4317:4317' # OTLP gRPC receiver
+      - '4318:4318' # OTLP HTTP receiver
+      - '13133:13133' # Health Check extension
+      - '8888:8888' # Prometheus metrics
     depends_on:
       - redis
     networks:
       - agentic_network
-    
 
 volumes:
   postgres_data:

@@ -2,11 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { useCanvasStore } from '../../store/canvasStore';
 
 export const useResizablePanel = (initialControlPanelWidth: number) => {
-  const [controlPanelWidth, setControlPanelWidth] = useState(initialControlPanelWidth);
+  const [controlPanelWidth, setControlPanelWidth] = useState(
+    initialControlPanelWidth,
+  );
   const isResizingControlPanel = useRef(false);
   const isResizingCanvas = useRef(false);
-  const canvasWidth = useCanvasStore(state => state.canvasWidth);
-  const setCanvasWidthStore = useCanvasStore(state => state.setCanvasWidth);
+  const canvasWidth = useCanvasStore((state) => state.canvasWidth);
+  const setCanvasWidthStore = useCanvasStore((state) => state.setCanvasWidth);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {

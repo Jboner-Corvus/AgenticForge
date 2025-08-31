@@ -5,10 +5,7 @@ const integrationTestPaths = [
   'src/**/__tests__/**/*.integration.ts',
 ];
 
-const unitTestPaths = [
-  'src/**/*.test.ts',
-  'src/**/__tests__/**/*.ts',
-];
+const unitTestPaths = ['src/**/*.test.ts', 'src/**/__tests__/**/*.ts'];
 
 export default defineConfig(({ mode }) => {
   const isIntegration = mode === 'integration';
@@ -19,9 +16,9 @@ export default defineConfig(({ mode }) => {
       environment: 'node',
       include: isIntegration ? integrationTestPaths : unitTestPaths,
       exclude: [
-        'node_modules', 
-        'dist', 
-        ...(isIntegration ? [] : integrationTestPaths) // Exclude integration tests from unit runs
+        'node_modules',
+        'dist',
+        ...(isIntegration ? [] : integrationTestPaths), // Exclude integration tests from unit runs
       ],
       setupFiles: ['src/test/setup.ts'],
       // Reduce verbosity

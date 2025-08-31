@@ -8,6 +8,7 @@ import { Agent } from './agent.ts';
 // Mocks globaux simplifiés
 vi.mock('../../config.ts', () => ({
   config: { AGENT_MAX_ITERATIONS: 5, LLM_PROVIDER_HIERARCHY: ['openai'] },
+  getConfig: () => ({ AGENT_MAX_ITERATIONS: 5, LLM_PROVIDER_HIERARCHY: ['openai'] }),
 }));
 vi.mock('../../logger.ts', () => ({
   getLoggerInstance: () => ({
@@ -36,11 +37,20 @@ vi.mock('../redis/redisClient.ts', () => ({
 }));
 vi.mock('../../utils/llmProvider.ts', () => ({
   getLlmProvider: () => ({
-    getLlmResponse: vi.fn().mockResolvedValue('{"answer": "Security test"}'),
+    getLlmResponse: vi.fn(() => Promise.resolve('{\"answer\": \"Security test\"}')).mockResolvedValue('{\"answer\": \"Security test\"}'),
+    getErrorType: vi.fn()
   }),
 }));
 vi.mock('../llm/LlmKeyManager.ts', () => ({
-  LlmKeyManager: { hasAvailableKeys: vi.fn().mockResolvedValue(true) },
+  LlmKeyManager: {
+    getNextAvailableKey: vi.fn(),
+    getKey: vi.fn(),
+    hasAvailableKeys: vi.fn().mockResolvedValue(true),
+    invalidateKey: vi.fn(),
+    markKeyAsBad: vi.fn(),
+    resetKeyStatus: vi.fn(),
+    rotateKey: vi.fn(),
+  },
 }));
 vi.mock('../tools/toolRegistry.ts', () => ({
   toolRegistry: { execute: vi.fn() },
@@ -111,26 +121,27 @@ describe('Security and Validation Integration Tests', () => {
     });
 
     it('should validate tool parameters for security', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
+      const toolRegistryModule = await import('../tools/toolRegistry.ts');
+      const mockToolRegistry = toolRegistryModule.toolRegistry;
 
       // Dangerous parameters
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"command": {"name": "fileRead", "params": {"path": "../../etc/passwd"}}}',
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: { name: 'fileRead', params: { path: '../../etc/passwd' } },
       });
 
-      mockToolRegistry.execute.mockRejectedValue(
+      vi.mocked(mockToolRegistry.execute).mockRejectedValue(
         new Error('Path traversal detected'),
       );
       await agent.run();
 
-      expect(mockToolRegistry.execute).toHaveBeenCalled();
+      expect(vi.mocked(mockToolRegistry.execute)).toHaveBeenCalled();
     });
   });
 
@@ -255,9 +266,9 @@ describe('Security and Validation Integration Tests', () => {
 
   describe('Error Handling and Information Disclosure', () => {
     it('should not leak sensitive information in error messages', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      mockLlmProvider.getLlmResponse.mockRejectedValue(
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      vi.mocked(mockLlmProvider.getLlmResponse).mockRejectedValue(
         new Error(
           'Database connection failed: host=secret-db.internal user=admin password=secret123',
         ),
@@ -270,9 +281,9 @@ describe('Security and Validation Integration Tests', () => {
     });
 
     it('should implement secure error logging', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      mockLlmProvider.getLlmResponse.mockRejectedValue(new Error('Test error'));
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      vi.mocked(mockLlmProvider.getLlmResponse).mockRejectedValue(new Error('Test error'));
 
       await agent.run();
 

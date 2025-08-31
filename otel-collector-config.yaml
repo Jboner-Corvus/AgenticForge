@@ -11,7 +11,7 @@ exporters:
   debug:
     verbosity: detailed
   prometheus:
-    endpoint: "0.0.0.0:8889" # Expose Prometheus metrics
+    endpoint: '0.0.0.0:8889' # Expose Prometheus metrics
 
 service:
   pipelines:

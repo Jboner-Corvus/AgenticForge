@@ -5,12 +5,14 @@ Interface de chat moderne et intelligente inspirée de Claude Code, conçue pour
 ## 🌟 Fonctionnalités
 
 ### 🎯 Interface Moderne
+
 - **Design élégant** inspiré de Claude Code
 - **Thèmes adaptatifs** (classic/pinned)
 - **Animations fluides** avec Framer Motion
 - **Interface responsive** sur tous les appareils
 
 ### 🚀 Fonctionnalités Avancées
+
 - **Auto-scroll intelligent** vers les nouveaux messages
 - **Historique des messages** (Ctrl+↑/↓)
 - **Suggestions contextuelles** pour démarrer une conversation
@@ -18,6 +20,7 @@ Interface de chat moderne et intelligente inspirée de Claude Code, conçue pour
 - **Enregistrement vocal** (à venir)
 
 ### 💬 Expérience de Chat
+
 - **Input fixé en bas** comme WhatsApp/Discord
 - **Indicateur de frappe** en temps réel
 - **Compteur de messages non lus**
@@ -25,6 +28,7 @@ Interface de chat moderne et intelligente inspirée de Claude Code, conçue pour
 - **Feedback** sur les réponses (👍/👎)
 
 ### 👨‍💻 Affichage de Code Optimisé
+
 - **Syntax highlighting** automatique
 - **Numéros de ligne** configurables
 - **Blocs collapsibles** pour le code long
@@ -33,6 +37,7 @@ Interface de chat moderne et intelligente inspirée de Claude Code, conçue pour
 - **Exécution** de code (JavaScript/Python)
 
 ### 🔧 Personnalisation
+
 - **Thèmes visuels** multiples
 - **Réglages utilisateur** sauvegardés
 - **Modes d'affichage** flexibles
@@ -41,31 +46,31 @@ Interface de chat moderne et intelligente inspirée de Claude Code, conçue pour
 ## 📦 Composants
 
 ### `EnhancedChatContainer`
+
 Conteneur principal du chat avec header, messages et input.
 
 ```tsx
-<EnhancedChatContainer 
-  variant="classic" 
+<EnhancedChatContainer
+  variant="classic"
   showHeader={true}
   allowResize={false}
 />
 ```
 
 ### `EnhancedChatInput`
+
 Input de chat avancé avec suggestions et historique.
 
 ```tsx
-<EnhancedChatInput 
-  variant="classic"
-  showSuggestions={true}
-/>
+<EnhancedChatInput variant="classic" showSuggestions={true} />
 ```
 
 ### `EnhancedCodeBlock`
+
 Affichage de code avec fonctionnalités avancées.
 
 ```tsx
-<EnhancedCodeBlock 
+<EnhancedCodeBlock
   code={codeString}
   language="typescript"
   filename="example.ts"
@@ -75,34 +80,31 @@ Affichage de code avec fonctionnalités avancées.
 ```
 
 ### `EnhancedMessage`
+
 Message enrichi avec actions et métadonnées.
 
 ```tsx
-<EnhancedMessage 
-  message={messageObject}
-  variant="classic"
-  showActions={true}
-/>
+<EnhancedMessage message={messageObject} variant="classic" showActions={true} />
 ```
 
 ### `TypingIndicator`
+
 Indicateur de frappe animé.
 
 ```tsx
-<TypingIndicator 
-  variant="classic"
-  message="L'assistant réfléchit..."
-/>
+<TypingIndicator variant="classic" message="L'assistant réfléchit..." />
 ```
 
 ## 🎨 Thèmes
 
 ### Classic Theme
+
 - Interface claire et moderne
 - Couleurs adaptatives du système
 - Typographie optimisée
 
 ### Pinned Theme
+
 - Style gaming/cyber
 - Effets néon et transparences
 - Couleurs cyan/bleues
@@ -110,19 +112,14 @@ Indicateur de frappe animé.
 ## 🚦 Utilisation
 
 ```tsx
-import { 
+import {
   EnhancedChatContainer,
   EnhancedChatInput,
-  EnhancedCodeBlock 
+  EnhancedCodeBlock,
 } from './components/enhanced';
 
 function App() {
-  return (
-    <EnhancedChatContainer 
-      variant="classic"
-      showHeader={true}
-    />
-  );
+  return <EnhancedChatContainer variant="classic" showHeader={true} />;
 }
 ```
 
@@ -140,6 +137,7 @@ function App() {
 ## 🎯 Inspiration
 
 Cette interface s'inspire des meilleures pratiques de :
+
 - **Claude Code** (Anthropic)
 - **GitHub Copilot Chat**
 - **VSCode Chat**

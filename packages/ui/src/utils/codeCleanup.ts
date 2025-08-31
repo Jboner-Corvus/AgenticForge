@@ -59,18 +59,18 @@ export const safeJSONStringify = (obj: unknown, fallback = '{}'): string => {
 // Async error handling
 export const asyncTryCatch = async <T>(
   asyncFn: () => Promise<T>,
-  errorHandler?: (error: Error) => T | Promise<T>
+  errorHandler?: (error: Error) => T | Promise<T>,
 ): Promise<T | null> => {
   try {
     return await asyncFn();
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     safeError('Async operation failed:', err);
-    
+
     if (errorHandler) {
       return await errorHandler(err);
     }
-    
+
     return null;
   }
 };
@@ -78,10 +78,10 @@ export const asyncTryCatch = async <T>(
 // Debounce utility
 export const debounce = <T extends (...args: unknown[]) => unknown>(
   func: T,
-  delay: number
+  delay: number,
 ): ((...args: Parameters<T>) => void) => {
   let timeoutId: NodeJS.Timeout;
-  
+
   return (...args: Parameters<T>) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => func(...args), delay);
@@ -91,10 +91,10 @@ export const debounce = <T extends (...args: unknown[]) => unknown>(
 // Throttle utility
 export const throttle = <T extends (...args: unknown[]) => unknown>(
   func: T,
-  delay: number
+  delay: number,
 ): ((...args: Parameters<T>) => void) => {
   let lastCall = 0;
-  
+
   return (...args: Parameters<T>) => {
     const now = Date.now();
     if (now - lastCall >= delay) {
@@ -129,13 +129,13 @@ export const safeLocalStorageSet = (key: string, value: unknown): boolean => {
 // Cleanup function for event listeners
 export const createCleanupManager = () => {
   const cleanupFunctions: (() => void)[] = [];
-  
+
   const addCleanup = (cleanup: () => void) => {
     cleanupFunctions.push(cleanup);
   };
-  
+
   const runCleanup = () => {
-    cleanupFunctions.forEach(cleanup => {
+    cleanupFunctions.forEach((cleanup) => {
       try {
         cleanup();
       } catch (error) {
@@ -144,7 +144,7 @@ export const createCleanupManager = () => {
     });
     cleanupFunctions.length = 0;
   };
-  
+
   return { addCleanup, runCleanup };
 };
 
@@ -152,19 +152,19 @@ export const createCleanupManager = () => {
 export const measurePerformance = <T>(
   name: string,
   fn: () => T,
-  threshold = 16 // 16ms = one frame at 60fps
+  threshold = 16, // 16ms = one frame at 60fps
 ): T => {
   const start = performance.now();
   const result = fn();
   const end = performance.now();
   const duration = end - start;
-  
+
   if (duration > threshold) {
     safeWarn(`🐌 Performance warning: ${name} took ${duration.toFixed(2)}ms`);
   } else if (DEBUG_MODE) {
     safeLog(`⚡ Performance: ${name} took ${duration.toFixed(2)}ms`);
   }
-  
+
   return result;
 };
 
@@ -172,33 +172,44 @@ export const measurePerformance = <T>(
 export const measureAsyncPerformance = async <T>(
   name: string,
   fn: () => Promise<T>,
-  threshold = 1000 // 1 second for async operations
+  threshold = 1000, // 1 second for async operations
 ): Promise<T> => {
   const start = performance.now();
   const result = await fn();
   const end = performance.now();
   const duration = end - start;
-  
+
   if (duration > threshold) {
-    safeWarn(`🐌 Async performance warning: ${name} took ${duration.toFixed(2)}ms`);
+    safeWarn(
+      `🐌 Async performance warning: ${name} took ${duration.toFixed(2)}ms`,
+    );
   } else if (DEBUG_MODE) {
     safeLog(`⚡ Async performance: ${name} took ${duration.toFixed(2)}ms`);
   }
-  
+
   return result;
 };
 
 // Memory usage monitoring (development only)
 export const logMemoryUsage = (label: string) => {
-  if (!DEBUG_MODE || !(performance as unknown as { memory?: unknown }).memory) return;
-  
-  const memory = (performance as unknown as { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
+  if (!DEBUG_MODE || !(performance as unknown as { memory?: unknown }).memory)
+    return;
+
+  const memory = (
+    performance as unknown as {
+      memory?: {
+        usedJSHeapSize: number;
+        totalJSHeapSize: number;
+        jsHeapSizeLimit: number;
+      };
+    }
+  ).memory;
   if (!memory) return;
-  
+
   safeLog(`💾 Memory usage (${label}):`, {
     used: `${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
     total: `${(memory.totalJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
-    limit: `${(memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)}MB`
+    limit: `${(memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)}MB`,
   });
 };
 
@@ -206,29 +217,54 @@ export const logMemoryUsage = (label: string) => {
 export class ErrorBoundaryHelper {
   static logError(error: Error, errorInfo?: unknown) {
     safeError('Error Boundary caught an error:', error, errorInfo);
-    
+
     // In production, you might want to send this to an error reporting service
     if (!DEBUG_MODE) {
       // Example: Sentry.captureException(error);
     }
   }
-  
+
   static createErrorFallback = (componentName: string) => {
-    return ({ error, resetError }: { error: Error; resetError: () => void }) => {
-      return React.createElement('div', { className: 'error-boundary-fallback p-4 bg-destructive/10 border border-destructive/30 rounded-lg' },
-        React.createElement('h2', { className: 'text-lg font-bold text-destructive' }, 'Something went wrong'),
-        React.createElement('p', { className: 'mt-2 text-sm' },
+    return ({
+      error,
+      resetError,
+    }: {
+      error: Error;
+      resetError: () => void;
+    }) => {
+      return React.createElement(
+        'div',
+        {
+          className:
+            'error-boundary-fallback p-4 bg-destructive/10 border border-destructive/30 rounded-lg',
+        },
+        React.createElement(
+          'h2',
+          { className: 'text-lg font-bold text-destructive' },
+          'Something went wrong',
+        ),
+        React.createElement(
+          'p',
+          { className: 'mt-2 text-sm' },
           'An error occurred in the ',
           React.createElement('strong', null, componentName),
-          ' component.'
+          ' component.',
         ),
-        React.createElement('p', { className: 'mt-2 text-xs text-muted-foreground' },
-          'Error: ', error.message
+        React.createElement(
+          'p',
+          { className: 'mt-2 text-xs text-muted-foreground' },
+          'Error: ',
+          error.message,
         ),
-        React.createElement('button', {
-          onClick: resetError,
-          className: 'mt-4 px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity'
-        }, 'Try again')
+        React.createElement(
+          'button',
+          {
+            onClick: resetError,
+            className:
+              'mt-4 px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity',
+          },
+          'Try again',
+        ),
       );
     };
   };

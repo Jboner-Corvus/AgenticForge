@@ -7,26 +7,29 @@ import { LLMContent } from './llm-types.ts';
 import { LlmApiKey, LlmKeyErrorType, LlmKeyManager } from './LlmKeyManager.ts';
 
 export class QwenProvider implements ILlmProvider {
-  public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
-    // Pour les erreurs 401/403, on vérifie d'abord si c'est vraiment une erreur de clé
+  public getErrorType(statusCode: number, errorBody: string): LlmKeyErrorType {
     if (statusCode === 401 || statusCode === 403) {
-      // Si c'est une erreur de clé invalide, on la désactive temporairement au lieu de manière permanente
-      if (
-        _errorBody.includes('invalid_api_key') ||
-        _errorBody.includes('Incorrect API key') ||
-        _errorBody.includes('invalid access token') ||
-        _errorBody.includes('token expired')
-      ) {
-        return LlmKeyErrorType.TEMPORARY;
-      }
-      // Pour d'autres erreurs 401/403, on les traite comme temporaires
-      return LlmKeyErrorType.TEMPORARY;
+      return LlmKeyErrorType.PERMANENT;
     } else if (statusCode === 429) {
       return LlmKeyErrorType.TEMPORARY;
     } else if (statusCode >= 500) {
       return LlmKeyErrorType.TEMPORARY;
+    } else if (
+      errorBody.includes('invalid_api_key') ||
+      errorBody.includes('Incorrect API key')
+    ) {
+      return LlmKeyErrorType.PERMANENT;
     }
     return LlmKeyErrorType.TEMPORARY;
+  }
+
+  private isResponseTruncated(content: string): boolean {
+    // Simple heuristic to detect truncated responses
+    const truncatedIndicators = ['...}', '..."', '...]', '...\n', '... '];
+
+    return truncatedIndicators.some(
+      (indicator) => content.endsWith(indicator) && content.length > 500,
+    );
   }
 
   public async getLlmResponse(
@@ -55,6 +58,16 @@ export class QwenProvider implements ILlmProvider {
       log.error(errorMessage);
       throw new LlmError(errorMessage);
     }
+
+    // Log the key being used for better visibility
+    log.info(
+      {
+        apiKeyPrefix: activeKey.apiKey.substring(0, 10) + '...',
+        apiModel: activeKey.apiModel,
+        apiProvider: activeKey.apiProvider,
+      },
+      'Using Qwen API key for request',
+    );
 
     // Qwen Portal API endpoint (hardcoded as requested)
     const QWEN_API_BASE_URL = 'https://portal.qwen.ai/v1';
@@ -86,9 +99,9 @@ export class QwenProvider implements ILlmProvider {
 
     // Improved retry logic with exponential backoff and endpoint fallback
     let lastError: Error | null = null;
-    const MAX_RETRIES = 5; // Reduced from 8 for better performance
-    const INITIAL_DELAY_MS = 1000;
-    const MAX_DELAY_MS = 10000;
+    const MAX_RETRIES = 3; // Further reduced for better performance
+    const INITIAL_DELAY_MS = 500; // Reduced initial delay
+    const MAX_DELAY_MS = 5000; // Reduced max delay
 
     // Try each API endpoint
     for (const apiUrl of apiUrls) {
@@ -115,9 +128,9 @@ export class QwenProvider implements ILlmProvider {
             } via ${activeKey!.apiProvider} at ${apiUrl} (attempt ${attempt + 1}/${MAX_RETRIES})`,
           );
 
-          // Use AbortSignal with shorter timeout for better responsiveness
+          // Use AbortSignal with longer timeout for complex responses
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+          const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
           const response = await fetch(apiUrl, {
             body,
@@ -246,7 +259,9 @@ export class QwenProvider implements ILlmProvider {
               );
               continue;
             } else {
-              throw new LlmError('Qwen API request timed out after all retries');
+              throw new LlmError(
+                'Qwen API request timed out after all retries',
+              );
             }
           } else {
             log.error({ error }, 'Error calling Qwen API');
@@ -266,65 +281,4 @@ export class QwenProvider implements ILlmProvider {
 
     throw lastError || new LlmError('All Qwen API endpoints failed');
   }
-
-  /**
-   * Check if a response appears to be truncated or incomplete
-   */
-  private isResponseTruncated(content: string): boolean {
-    const trimmed = content.trim();
-    
-    // Check for common truncation patterns
-    const truncationIndicators = [
-      '\\', // Escaped characters at end
-      '{',  // Unclosed object
-      '[',  // Unclosed array
-      '"',  // Unclosed string
-      ':',  // Incomplete key-value pair
-      ',',  // Trailing comma
-    ];
-    
-    // Check if text ends with a truncation indicator
-    if (truncationIndicators.some(indicator => trimmed.endsWith(indicator))) {
-      return true;
-    }
-    
-    // Check for incomplete code blocks
-    const codeBlockPatterns = [
-      '``javascript',
-      '``html',
-      '``json',
-      'function',
-      'const ',
-      'let ',
-      'var ',
-      'if (',
-      'for (',
-      'while (',
-    ];
-    
-    if (codeBlockPatterns.some(pattern => 
-      trimmed.includes(pattern) && 
-      !trimmed.includes('```') && 
-      trimmed.length > 100)) {
-      return true;
-    }
-    
-    // Check if response seems incomplete based on expected structure
-    if (trimmed.includes('Tool Call:') && !trimmed.includes('}')) {
-      return true;
-    }
-    
-    // Additional check for truncated responses that are very long but incomplete
-    if (trimmed.length > 1000 && 
-        (trimmed.endsWith('.') || trimmed.endsWith('}') || trimmed.endsWith(']')) &&
-        !trimmed.includes('"command"') && 
-        !trimmed.includes('"thought"') && 
-        !trimmed.includes('"answer"')) {
-      // If it's a very long response but doesn't contain expected JSON fields, it might be truncated
-      return true;
-    }
-    
-    return false;
-  }
-
 }

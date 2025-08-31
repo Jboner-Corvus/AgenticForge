@@ -1,6 +1,18 @@
 import { memo, useEffect, useState } from 'react';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Shield, Key } from 'lucide-react';
 import { useLLMKeysStore, LLMKey } from '../store/llmKeysStore';
@@ -15,10 +27,10 @@ const fetchMasterKey = async (): Promise<LLMKey | null> => {
     // Get auth token from localStorage
     const authToken = localStorage.getItem('backendAuthToken');
     if (!authToken) return null;
-    
+
     const masterKeyData = await getMasterLlmApiKeyApi(authToken, null);
     if (!masterKeyData) return null;
-    
+
     return {
       id: 'master-key',
       providerId: masterKeyData.providerId || 'Master',
@@ -31,7 +43,7 @@ const fetchMasterKey = async (): Promise<LLMKey | null> => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       usageCount: 0,
-      metadata: { environment: 'universal', tags: ['master'] }
+      metadata: { environment: 'universal', tags: ['master'] },
     };
   } catch (error) {
     console.warn('Failed to fetch master key:', error);
@@ -41,18 +53,22 @@ const fetchMasterKey = async (): Promise<LLMKey | null> => {
 
 const saveKeyHierarchy = async (orderedKeys: LLMKey[]) => {
   // In a real implementation, this would make an API call to save the new order.
-  console.log('Saving new key hierarchy:', orderedKeys.map(k => k.keyName));
-  await new Promise(resolve => setTimeout(resolve, 500));
+  console.log(
+    'Saving new key hierarchy:',
+    orderedKeys.map((k) => k.keyName),
+  );
+  await new Promise((resolve) => setTimeout(resolve, 500));
 };
 
-const SortableKeyItem = ({ apiKey, isMaster }: { apiKey: LLMKey, isMaster: boolean }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: apiKey.id, disabled: isMaster });
+const SortableKeyItem = ({
+  apiKey,
+  isMaster,
+}: {
+  apiKey: LLMKey;
+  isMaster: boolean;
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: apiKey.id, disabled: isMaster });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -68,15 +84,16 @@ const SortableKeyItem = ({ apiKey, isMaster }: { apiKey: LLMKey, isMaster: boole
         isMaster ? 'border-yellow-500/50' : 'border-gray-600'
       }`}
     >
-      <div {...listeners} className={`cursor-grab ${isMaster ? 'cursor-not-allowed text-gray-600' : 'text-gray-400'}`}>
+      <div
+        {...listeners}
+        className={`cursor-grab ${isMaster ? 'cursor-not-allowed text-gray-600' : 'text-gray-400'}`}
+      >
         <GripVertical className="h-5 w-5" />
       </div>
       <div className="ml-4 flex-grow">
         <div className="font-bold text-white flex items-center">
           {apiKey.providerName}
-          {isMaster && (
-            <Shield className="h-4 w-4 ml-2 text-yellow-500" />
-          )}
+          {isMaster && <Shield className="h-4 w-4 ml-2 text-yellow-500" />}
         </div>
         <div className="text-xs text-gray-400 flex items-center">
           <Key className="h-3 w-3 mr-1" />
@@ -116,16 +133,14 @@ export const HierarchyManager = memo(() => {
     setOrderedKeys(allKeys);
   }, [userKeys, masterKey]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor)
-  );
+  const sensors = useSensors(useSensor(PointerSensor));
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       setOrderedKeys((keys) => {
-        const oldIndex = keys.findIndex(k => k.id === active.id);
-        const newIndex = keys.findIndex(k => k.id === over.id);
+        const oldIndex = keys.findIndex((k) => k.id === active.id);
+        const newIndex = keys.findIndex((k) => k.id === over.id);
         // Prevent master key from being moved
         if (oldIndex === 0 || newIndex === 0) return keys;
         return arrayMove(keys, oldIndex, newIndex);
@@ -135,7 +150,9 @@ export const HierarchyManager = memo(() => {
 
   const handleSaveChanges = async () => {
     setIsSaving(true);
-    const userConfigurableKeys = orderedKeys.filter(k => k.providerId !== 'Master' && k.id !== 'master-key');
+    const userConfigurableKeys = orderedKeys.filter(
+      (k) => k.providerId !== 'Master' && k.id !== 'master-key',
+    );
     await saveKeyHierarchy(userConfigurableKeys);
     setIsSaving(false);
   };
@@ -143,19 +160,32 @@ export const HierarchyManager = memo(() => {
   return (
     <Card className="mb-6 bg-gray-800/50 border-gray-700">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-200">Hiérarchie des Clés</CardTitle>
+        <CardTitle className="text-lg font-semibold text-gray-200">
+          Hiérarchie des Clés
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-gray-400 mb-4">
-          Glissez-déposez les clés pour définir leur ordre de priorité. Le système essaiera les clés dans cet ordre, en commençant par la clé Master.
+          Glissez-déposez les clés pour définir leur ordre de priorité. Le
+          système essaiera les clés dans cet ordre, en commençant par la clé
+          Master.
         </p>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={orderedKeys.map(k => k.id)} strategy={verticalListSortingStrategy}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={orderedKeys.map((k) => k.id)}
+            strategy={verticalListSortingStrategy}
+          >
             {orderedKeys.map((key) => (
-              <SortableKeyItem 
-                key={key.id} 
-                apiKey={key} 
-                isMaster={key.providerId === 'Master' || key.id === 'master-key'} 
+              <SortableKeyItem
+                key={key.id}
+                apiKey={key}
+                isMaster={
+                  key.providerId === 'Master' || key.id === 'master-key'
+                }
               />
             ))}
           </SortableContext>

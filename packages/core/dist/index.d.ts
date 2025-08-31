@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { Logger } from 'pino';
 export { Logger } from 'pino';
 import { Job, Queue } from 'bullmq';
-import { a as SessionData, T as Tool, S as SessionManager, A as AgentSession } from './types-X5iVOMgV.js';
-export { I as ILlmProvider, c as LLMContent, b as LlmApiKey, d as LlmError, L as LlmKeyErrorType, e as Session } from './types-X5iVOMgV.js';
+import { a as SessionData, T as Tool, S as SessionManager, A as AgentSession } from './types-CXEr7hYR.js';
+export { I as ILlmProvider, b as LLMContent, L as LlmApiKey, c as LlmError, d as Session } from './types-CXEr7hYR.js';
 import IORedis from 'ioredis';
 export { getAllTools } from './modules/tools/definitions/index.js';
 export { toolRegistry } from './modules/tools/toolRegistry.js';
@@ -11,6 +11,7 @@ import { Request, Response, NextFunction } from 'express';
 export { getTools } from './utils/toolLoader.js';
 export { configWatcher, initializeWebServer } from './webServer.js';
 export { initializeWorker, processJob } from './worker.js';
+export { LlmKeyErrorType } from './modules/llm/LlmKeyManager.js';
 export { FinishToolSignal } from './modules/tools/definitions/system/finish.tool.js';
 import 'fastmcp';
 import 'pg';
@@ -44,7 +45,7 @@ declare const configSchema: z.ZodObject<{
     PORT: z.ZodDefault<z.ZodNumber>;
     POSTGRES_DB: z.ZodDefault<z.ZodString>;
     POSTGRES_HOST: z.ZodDefault<z.ZodString>;
-    POSTGRES_PASSWORD: z.ZodOptional<z.ZodString>;
+    POSTGRES_PASSWORD: z.ZodDefault<z.ZodString>;
     POSTGRES_PORT: z.ZodDefault<z.ZodNumber>;
     POSTGRES_USER: z.ZodDefault<z.ZodString>;
     QUALITY_GATE_API_KEY: z.ZodOptional<z.ZodString>;
@@ -65,6 +66,18 @@ declare const configSchema: z.ZodObject<{
     WORKER_STALLED_INTERVAL_MS: z.ZodDefault<z.ZodNumber>;
     WORKER_WORKSPACE_PATH: z.ZodOptional<z.ZodString>;
     WORKSPACE_PATH: z.ZodDefault<z.ZodString>;
+    GEMINI_MAX_HISTORY_LENGTH: z.ZodDefault<z.ZodNumber>;
+    GEMINI_REQUEST_TIMEOUT_MS: z.ZodDefault<z.ZodNumber>;
+    GEMINI_AUTO_REENABLE_KEYS: z.ZodDefault<z.ZodBoolean>;
+    GEMINI_ITERATION_DELAY_MS: z.ZodDefault<z.ZodNumber>;
+    AGENT_ITERATION_DELAY_MS: z.ZodDefault<z.ZodNumber>;
+    LLM_REQUEST_TIMEOUT_MS: z.ZodDefault<z.ZodNumber>;
+    LLM_CONNECTION_TIMEOUT_MS: z.ZodDefault<z.ZodNumber>;
+    LLM_MAX_RETRIES: z.ZodDefault<z.ZodNumber>;
+    LLM_RETRY_DELAY_BASE_MS: z.ZodDefault<z.ZodNumber>;
+    AGENT_MAX_MALFORMED_RESPONSES: z.ZodDefault<z.ZodNumber>;
+    AGENT_MAX_LLM_FAILURES: z.ZodDefault<z.ZodNumber>;
+    AGENT_FALLBACK_ENABLED: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     AGENT_MAX_ITERATIONS: number;
     CODE_EXECUTION_TIMEOUT_MS: number;
@@ -82,6 +95,7 @@ declare const configSchema: z.ZodObject<{
     PORT: number;
     POSTGRES_DB: string;
     POSTGRES_HOST: string;
+    POSTGRES_PASSWORD: string;
     POSTGRES_PORT: number;
     POSTGRES_USER: string;
     REDIS_DB: number;
@@ -92,6 +106,18 @@ declare const configSchema: z.ZodObject<{
     WORKER_MAX_STALLED_COUNT: number;
     WORKER_STALLED_INTERVAL_MS: number;
     WORKSPACE_PATH: string;
+    GEMINI_MAX_HISTORY_LENGTH: number;
+    GEMINI_REQUEST_TIMEOUT_MS: number;
+    GEMINI_AUTO_REENABLE_KEYS: boolean;
+    GEMINI_ITERATION_DELAY_MS: number;
+    AGENT_ITERATION_DELAY_MS: number;
+    LLM_REQUEST_TIMEOUT_MS: number;
+    LLM_CONNECTION_TIMEOUT_MS: number;
+    LLM_MAX_RETRIES: number;
+    LLM_RETRY_DELAY_BASE_MS: number;
+    AGENT_MAX_MALFORMED_RESPONSES: number;
+    AGENT_MAX_LLM_FAILURES: number;
+    AGENT_FALLBACK_ENABLED: boolean;
     AUTH_TOKEN?: string | undefined;
     GITHUB_CLIENT_ID?: string | undefined;
     GITHUB_CLIENT_SECRET?: string | undefined;
@@ -102,7 +128,6 @@ declare const configSchema: z.ZodObject<{
     LLM_API_KEY?: string | undefined;
     MCP_API_KEY?: string | undefined;
     MCP_WEBHOOK_URL?: string | undefined;
-    POSTGRES_PASSWORD?: string | undefined;
     QUALITY_GATE_API_KEY?: string | undefined;
     QUALITY_GATE_URL?: string | undefined;
     QWEN_API_BASE_URL?: string | undefined;
@@ -161,6 +186,18 @@ declare const configSchema: z.ZodObject<{
     WORKER_STALLED_INTERVAL_MS?: number | undefined;
     WORKER_WORKSPACE_PATH?: string | undefined;
     WORKSPACE_PATH?: string | undefined;
+    GEMINI_MAX_HISTORY_LENGTH?: number | undefined;
+    GEMINI_REQUEST_TIMEOUT_MS?: number | undefined;
+    GEMINI_AUTO_REENABLE_KEYS?: boolean | undefined;
+    GEMINI_ITERATION_DELAY_MS?: number | undefined;
+    AGENT_ITERATION_DELAY_MS?: number | undefined;
+    LLM_REQUEST_TIMEOUT_MS?: number | undefined;
+    LLM_CONNECTION_TIMEOUT_MS?: number | undefined;
+    LLM_MAX_RETRIES?: number | undefined;
+    LLM_RETRY_DELAY_BASE_MS?: number | undefined;
+    AGENT_MAX_MALFORMED_RESPONSES?: number | undefined;
+    AGENT_MAX_LLM_FAILURES?: number | undefined;
+    AGENT_FALLBACK_ENABLED?: boolean | undefined;
 }>;
 type Config = z.infer<typeof configSchema>;
 declare let config: Config;
@@ -184,8 +221,13 @@ declare class Agent {
     private loopCounter;
     private loopDetectionThreshold;
     private malformedResponseCounter;
+    private readonly MAX_MALFORMED_RESPONSES;
+    private readonly MAX_LLM_FAILURES;
+    private llmFailureCounter;
     private readonly maxBehaviorHistory;
     private readonly session;
+    private executedActions;
+    private lastDisplayCanvasCall;
     private readonly sessionManager;
     private subscriber;
     private readonly taskQueue;
@@ -200,6 +242,7 @@ declare class Agent {
     llmApiKey?: string | undefined);
     run(): Promise<string>;
     private calculateTextSimilarity;
+    private detectRepetitiveResponse;
     private cleanup;
     /**
      * Converts plain text responses to valid JSON format
@@ -213,9 +256,17 @@ declare class Agent {
     private detectLoop;
     private executeTool;
     private extractJsonFromMarkdown;
+    private attemptFallbackResponse;
     private parseLlmResponse;
     private publishToChannel;
     private setupInterruptListener;
+    private trackExecutedAction;
+    private hasExecutedActionRecently;
+    private getActionExecutionSummary;
+    /**
+     * Crée une todo list intelligente basée sur le contenu de la demande utilisateur
+     */
+    private createSmartTodoList;
 }
 
 declare const getMasterPrompt: (session: AgentSession, tools: Tool[]) => string;

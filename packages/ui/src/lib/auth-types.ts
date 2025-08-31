@@ -4,7 +4,7 @@ import type {
   OAuthMetadata,
   OAuthProtectedResourceMetadata,
   OAuthTokens,
-} from "@modelcontextprotocol/sdk/shared/auth.js";
+} from '@modelcontextprotocol/sdk/shared/auth.js';
 
 // Single state interface for OAuth state
 export interface AuthDebuggerState {
@@ -25,16 +25,16 @@ export interface AuthDebuggerState {
 }
 
 // Message types for inline feedback
-export type MessageType = "error" | "info" | "success";
+export type MessageType = 'error' | 'info' | 'success';
 
 // OAuth flow steps
 export type OAuthStep =
-  | "authorization_code"
-  | "authorization_redirect"
-  | "client_registration"
-  | "complete"
-  | "metadata_discovery"
-  | "token_request";
+  | 'authorization_code'
+  | 'authorization_redirect'
+  | 'client_registration'
+  | 'complete'
+  | 'metadata_discovery'
+  | 'token_request';
 
 export interface StatusMessage {
   message: string;
@@ -42,14 +42,14 @@ export interface StatusMessage {
 }
 
 export const EMPTY_DEBUGGER_STATE: AuthDebuggerState = {
-  authorizationCode: "",
+  authorizationCode: '',
   authorizationUrl: null,
   authServerUrl: null,
   isInitiatingAuth: false,
   latestError: null,
   oauthClientInfo: null,
   oauthMetadata: null,
-  oauthStep: "metadata_discovery",
+  oauthStep: 'metadata_discovery',
   oauthTokens: null,
   resource: null,
   resourceMetadata: null,

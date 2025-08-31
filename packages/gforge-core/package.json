@@ -7,7 +7,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "echo 'Build completed'"
+    "build": "echo 'Build completed'",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@types/compression": "^1.8.1",

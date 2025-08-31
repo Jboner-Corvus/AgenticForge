@@ -9,13 +9,13 @@ interface SliderProps {
   className?: string;
 }
 
-export const Slider: React.FC<SliderProps> = ({ 
-  value, 
-  onValueChange, 
-  min, 
-  max, 
+export const Slider: React.FC<SliderProps> = ({
+  value,
+  onValueChange,
+  min,
+  max,
   step = 1,
-  className = ''
+  className = '',
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseFloat(e.target.value);

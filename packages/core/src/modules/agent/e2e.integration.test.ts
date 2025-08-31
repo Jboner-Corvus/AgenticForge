@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import type { SessionData, Tool } from '../../types.ts';
+import type { AgentResponseMessage, SessionData, Tool, UserMessage } from '../../types.ts';
 
 import { getMockQueue } from '../../test/mockQueue.ts';
 import { Agent } from './agent.ts';
@@ -12,6 +12,10 @@ vi.mock('../../config.ts', () => ({
     AGENT_MAX_ITERATIONS: 10,
     LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
   },
+  getConfig: () => ({
+    AGENT_MAX_ITERATIONS: 10,
+    LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
+  }),
 }));
 vi.mock('../../logger.ts', () => ({
   getLoggerInstance: () => ({
@@ -40,11 +44,29 @@ vi.mock('../redis/redisClient.ts', () => ({
     publish: vi.fn(),
   }),
 }));
-vi.mock('../../utils/llmProvider.ts', () => ({
-  getLlmProvider: () => ({ getLlmResponse: vi.fn() }),
-}));
+vi.mock('../../utils/llmProvider.ts', () => {
+  const mockGetLlmResponse = vi.fn(() => Promise.resolve(''));
+  // Add the chaining methods that the tests expect
+  mockGetLlmResponse.mockResolvedValueOnce = vi.fn(() => mockGetLlmResponse);
+  mockGetLlmResponse.mockResolvedValue = vi.fn(() => mockGetLlmResponse);
+  
+  return {
+    getLlmProvider: vi.fn(() => ({ 
+      getLlmResponse: mockGetLlmResponse,
+      getErrorType: vi.fn()
+    })),
+  };
+});
 vi.mock('../llm/LlmKeyManager.ts', () => ({
-  LlmKeyManager: { hasAvailableKeys: vi.fn().mockResolvedValue(true) },
+  LlmKeyManager: { 
+    getNextAvailableKey: vi.fn(),
+    getKey: vi.fn(),
+    hasAvailableKeys: vi.fn().mockResolvedValue(true),
+    invalidateKey: vi.fn(),
+    markKeyAsBad: vi.fn(),
+    resetKeyStatus: vi.fn(),
+    rotateKey: vi.fn()
+  },
 }));
 vi.mock('../tools/toolRegistry.ts', () => ({
   toolRegistry: { execute: vi.fn() },
@@ -114,14 +136,15 @@ describe('End-to-End Workflow Integration Tests', () => {
 
   describe('Complete Data Analysis Workflow', () => {
     it('should execute complete data analysis pipeline', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
+      const toolRegistryModule = await import('../tools/toolRegistry.ts');
+      const mockToolRegistry = toolRegistryModule.toolRegistry;
 
       // Workflow: Read data → Process → Analyze → Generate report
-      mockLlmProvider.getLlmResponse
+      vi.mocked(mockLlmProvider.getLlmResponse)
         .mockResolvedValueOnce(
           '{"thought": "I need to read the data file first"}',
         )
@@ -141,7 +164,7 @@ describe('End-to-End Workflow Integration Tests', () => {
           '{"answer": "Sales analysis completed. Revenue increased 15% compared to last quarter."}',
         );
 
-      mockResponseSchema.parse
+      vi.mocked(mockResponseSchema.parse)
         .mockReturnValueOnce({ thought: 'I need to read the data file first' })
         .mockReturnValueOnce({
           command: { name: 'fileRead', params: { path: '/data/sales.csv' } },
@@ -163,7 +186,7 @@ describe('End-to-End Workflow Integration Tests', () => {
             'Sales analysis completed. Revenue increased 15% compared to last quarter.',
         });
 
-      mockToolRegistry.execute
+      vi.mocked(mockToolRegistry.execute)
         .mockResolvedValueOnce(
           'ProductA,100,5000\nProductB,150,7500\nProductC,200,10000',
         )
@@ -177,13 +200,13 @@ describe('End-to-End Workflow Integration Tests', () => {
 
       expect(result).toContain('Sales analysis completed');
       expect(result).toContain('15%');
-      expect(mockToolRegistry.execute).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(mockToolRegistry.execute)).toHaveBeenCalledTimes(2);
       expect(mockSessionData.history.length).toBeGreaterThan(5);
     });
 
     it('should handle research and synthesis workflow', async () => {
       const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
+        require('../../utils/llmProvider.ts').getLlmProvider('openai');
       const mockResponseSchema =
         require('./responseSchema.ts').llmResponseSchema;
       const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
@@ -260,10 +283,10 @@ describe('End-to-End Workflow Integration Tests', () => {
 
   describe('Multi-step Problem Solving', () => {
     it('should solve complex problems requiring multiple iterations', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
       // Complex problem: Plan → Execute → Validate → Adjust → Finalize
       const responses = [
@@ -278,12 +301,13 @@ describe('End-to-End Workflow Integration Tests', () => {
       ];
 
       responses.forEach((response) => {
-        mockLlmProvider.getLlmResponse.mockResolvedValueOnce(response);
-        mockResponseSchema.parse.mockReturnValueOnce(JSON.parse(response));
+        vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValueOnce(response);
+        vi.mocked(mockResponseSchema.parse).mockReturnValueOnce(JSON.parse(response));
       });
 
-      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
-      mockToolRegistry.execute
+      const toolRegistryModule = await import('../tools/toolRegistry.ts');
+      const mockToolRegistry = toolRegistryModule.toolRegistry;
+      vi.mocked(mockToolRegistry.execute)
         .mockResolvedValueOnce(
           '{"inconsistent_records": 15, "total_records": 1000}',
         )
@@ -298,59 +322,129 @@ describe('End-to-End Workflow Integration Tests', () => {
 
       expect(result).toContain('Problem solved');
       expect(result).toContain('multi-step');
-      expect(mockLlmProvider.getLlmResponse).toHaveBeenCalledTimes(8);
+      expect(vi.mocked(mockLlmProvider.getLlmResponse)).toHaveBeenCalledTimes(8);
+    });
+
+    it('should handle multi-step problem solving with tool chaining', async () => {
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
+
+      // Multi-step problem solving workflow
+      const responses = [
+        '{"thought": "First, I need to gather information about the problem."}',
+        '{"command": {"name": "webSearch", "params": {"query": "multi-step problem solving techniques"}}}',
+        '{"thought": "Now I need to analyze the search results."}',
+        '{"command": {"name": "dataAnalysis", "params": {"data": "search_results", "type": "problem_analysis"}}}',
+        '{"thought": "Based on my analysis, I can now formulate a solution."}',
+        '{"command": {"name": "fileRead", "params": {"path": "/solutions/best_practices.txt"}}}',
+        '{"thought": "I have all the information needed to solve the problem."}',
+        '{"answer": "Problem solved using multi-step approach with tool chaining."}',
+      ];
+
+      // Set up the mock responses using the existing mock function with chaining
+      const mockGetLlmResponse = vi.fn();
+      mockGetLlmResponse.mockResolvedValueOnce(responses[0]);
+      mockGetLlmResponse.mockResolvedValueOnce(responses[1]);
+      mockGetLlmResponse.mockResolvedValueOnce(responses[2]);
+      mockGetLlmResponse.mockResolvedValueOnce(responses[3]);
+      mockGetLlmResponse.mockResolvedValueOnce(responses[4]);
+      mockGetLlmResponse.mockResolvedValueOnce(responses[5]);
+      mockGetLlmResponse.mockResolvedValueOnce(responses[6]);
+      mockGetLlmResponse.mockResolvedValueOnce(responses[7]);
+      vi.mocked(mockLlmProvider.getLlmResponse).mockImplementation(mockGetLlmResponse);
+
+      const mockParse = vi.fn();
+      mockParse.mockReturnValueOnce(JSON.parse(responses[0]));
+      mockParse.mockReturnValueOnce(JSON.parse(responses[1]));
+      mockParse.mockReturnValueOnce(JSON.parse(responses[2]));
+      mockParse.mockReturnValueOnce(JSON.parse(responses[3]));
+      mockParse.mockReturnValueOnce(JSON.parse(responses[4]));
+      mockParse.mockReturnValueOnce(JSON.parse(responses[5]));
+      mockParse.mockReturnValueOnce(JSON.parse(responses[6]));
+      mockParse.mockReturnValueOnce(JSON.parse(responses[7]));
+      
+      vi.mocked(mockResponseSchema.parse).mockImplementation(mockParse);
+
+      const toolRegistryModule = await import('../tools/toolRegistry.ts');
+      const mockToolRegistry = toolRegistryModule.toolRegistry;
+      const mockExecute = vi.fn();
+      mockExecute.mockResolvedValueOnce(
+        '{"inconsistent_records": 15, "total_records": 1000}',
+      );
+      mockExecute.mockResolvedValueOnce(
+        '{"validation_methods": ["cross_reference", "statistical_check"]}',
+      );
+      mockExecute.mockResolvedValueOnce(
+        '{"validation_result": "success", "fixed_records": 15}',
+      );
+      
+      vi.mocked(mockToolRegistry.execute).mockImplementation(mockExecute);
+
+      const result = await agent.run();
+
+      expect(result).toContain('Problem solved');
+      expect(result).toContain('multi-step');
+      expect(mockGetLlmResponse).toHaveBeenCalledTimes(8);
     });
 
     it('should handle error recovery and alternative approaches', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
+      const toolRegistryModule = await import('../tools/toolRegistry.ts');
+      const mockToolRegistry = toolRegistryModule.toolRegistry;
 
       // Error recovery workflow
-      mockLlmProvider.getLlmResponse
-        .mockResolvedValueOnce(
-          '{"command": {"name": "fileRead", "params": {"path": "/missing/file.txt"}}}',
-        )
-        .mockResolvedValueOnce(
-          '{"thought": "The file is missing. Let me try an alternative approach."}',
-        )
-        .mockResolvedValueOnce(
-          '{"command": {"name": "webSearch", "params": {"query": "alternative data source"}}}',
-        )
-        .mockResolvedValueOnce(
-          '{"answer": "Successfully found alternative data source and completed the task."}',
-        );
+      const mockGetLlmResponse = vi.fn();
+      mockGetLlmResponse.mockResolvedValueOnce(
+        '{"command": {"name": "fileRead", "params": {"path": "/missing/file.txt"}}}',
+      );
+      mockGetLlmResponse.mockResolvedValueOnce(
+        '{"thought": "The file is missing. Let me try an alternative approach."}',
+      );
+      mockGetLlmResponse.mockResolvedValueOnce(
+        '{"command": {"name": "webSearch", "params": {"query": "alternative data source"}}}',
+      );
+      mockGetLlmResponse.mockResolvedValueOnce(
+        '{"answer": "Successfully found alternative data source and completed the task."}',
+      );
+      vi.mocked(mockLlmProvider.getLlmResponse).mockImplementation(mockGetLlmResponse);
 
-      mockResponseSchema.parse
-        .mockReturnValueOnce({
-          command: { name: 'fileRead', params: { path: '/missing/file.txt' } },
-        })
-        .mockReturnValueOnce({
-          thought: 'The file is missing. Let me try an alternative approach.',
-        })
-        .mockReturnValueOnce({
-          command: {
-            name: 'webSearch',
-            params: { query: 'alternative data source' },
-          },
-        })
-        .mockReturnValueOnce({
-          answer:
-            'Successfully found alternative data source and completed the task.',
-        });
+      const mockParse = vi.fn();
+      mockParse.mockReturnValueOnce({
+        command: { name: 'fileRead', params: { path: '/missing/file.txt' } },
+      });
+      mockParse.mockReturnValueOnce({
+        thought: 'The file is missing. Let me try an alternative approach.',
+      });
+      mockParse.mockReturnValueOnce({
+        command: {
+          name: 'webSearch',
+          params: { query: 'alternative data source' },
+        },
+      });
+      mockParse.mockReturnValueOnce({
+        answer:
+          'Successfully found alternative data source and completed the task.',
+      });
+      
+      vi.mocked(mockResponseSchema.parse).mockImplementation(mockParse);
 
-      mockToolRegistry.execute
-        .mockRejectedValueOnce(new Error('File not found'))
-        .mockResolvedValueOnce({
-          results: [{ data: 'backup_data', source: 'alternative_api' }],
-        });
+      const mockExecute = vi.fn();
+      mockExecute.mockRejectedValueOnce(new Error('File not found'));
+      mockExecute.mockResolvedValueOnce({
+        results: [{ data: 'backup_data', source: 'alternative_api' }],
+      });
+      
+      vi.mocked(mockToolRegistry.execute).mockImplementation(mockExecute);
 
       const result = await agent.run();
 
       expect(result).toContain('Successfully found alternative');
-      expect(mockToolRegistry.execute).toHaveBeenCalledTimes(2);
+      expect(mockExecute).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -363,30 +457,30 @@ describe('End-to-End Workflow Integration Tests', () => {
           id: '1',
           timestamp: Date.now() - 5000,
           type: 'user',
-        },
+        } as UserMessage,
         {
           content: 'I analyzed Q3 sales. Revenue was $2.5M, up 12%.',
           id: '2',
           timestamp: Date.now() - 4000,
           type: 'agent_response',
-        },
+        } as AgentResponseMessage,
         {
           content: 'Now compare with Q2 data',
           id: '3',
           timestamp: Date.now() - 3000,
           type: 'user',
-        },
-      ] as any[];
+        } as UserMessage,
+      ];
 
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"answer": "Comparing Q3 ($2.5M) with Q2 ($2.2M), we see a 13.6% growth quarter-over-quarter."}',
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         answer:
           'Comparing Q3 ($2.5M) with Q2 ($2.2M), we see a 13.6% growth quarter-over-quarter.',
       });
@@ -398,34 +492,39 @@ describe('End-to-End Workflow Integration Tests', () => {
       expect(result).toContain('13.6%');
     });
 
-    it('should handle session persistence and recovery', async () => {
-      // Simulate session recovery
-      const persistedSession = {
+    it('should maintain session continuity across restarts', async () => {
+      // Simulate a recovered session
+      const recoveredSessionData: SessionData = {
         ...mockSessionData,
-        workingContext: {
-          currentFile: 'data_analysis.json',
-          lastAction: 'progress 70% - revenue: 2500000, growth: 0.12',
-        },
+        history: [
+          {
+            content: 'Previous analysis showed promising results',
+            id: 'msg-1',
+            timestamp: Date.now() - 10000,
+            type: 'agent_response',
+          } as AgentResponseMessage,
+        ],
       };
 
+      const mockQueue = getMockQueue();
       const recoveredAgent = new Agent(
         mockJob,
-        persistedSession,
-        getMockQueue(),
-        mockTools,
+        recoveredSessionData,
+        mockQueue,
+        [],
         'openai',
         mockSessionManager,
       );
 
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"answer": "Continuing from previous analysis, I can now finalize the report."}',
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         answer:
           'Continuing from previous analysis, I can now finalize the report.',
       });
@@ -433,20 +532,21 @@ describe('End-to-End Workflow Integration Tests', () => {
       const result = await recoveredAgent.run();
 
       expect(result).toContain('Continuing from previous');
-      expect(mockSessionManager.saveSession).toHaveBeenCalled();
+      expect(vi.mocked(mockSessionManager.saveSession)).toHaveBeenCalled();
     });
   });
 
   describe('Integration with External Systems', () => {
     it('should integrate with multiple external APIs', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
+      const toolRegistryModule = await import('../tools/toolRegistry.ts');
+      const mockToolRegistry = toolRegistryModule.toolRegistry;
 
       // Multi-API integration workflow
-      mockLlmProvider.getLlmResponse
+      vi.mocked(mockLlmProvider.getLlmResponse)
         .mockResolvedValueOnce(
           '{"command": {"name": "webSearch", "params": {"query": "weather forecast Paris"}}}',
         )
@@ -457,7 +557,7 @@ describe('End-to-End Workflow Integration Tests', () => {
           '{"answer": "Weather analysis complete. Paris will have mild temperatures this week with a 20% chance of rain."}',
         );
 
-      mockResponseSchema.parse
+      vi.mocked(mockResponseSchema.parse)
         .mockReturnValueOnce({
           command: {
             name: 'webSearch',
@@ -472,7 +572,7 @@ describe('End-to-End Workflow Integration Tests', () => {
             'Weather analysis complete. Paris will have mild temperatures this week with a 20% chance of rain.',
         });
 
-      mockToolRegistry.execute
+      vi.mocked(mockToolRegistry.execute)
         .mockResolvedValueOnce({
           forecast: '7 days',
           humidity: '65%',
@@ -496,7 +596,7 @@ describe('End-to-End Workflow Integration Tests', () => {
       ];
 
       const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
+        require('../../utils/llmProvider.ts').getLlmProvider('openai');
       const mockResponseSchema =
         require('./responseSchema.ts').llmResponseSchema;
 

@@ -9,7 +9,11 @@ interface ToolCallDisplayProps {
   timestamp: string;
 }
 
-export const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ params, toolName, timestamp }) => {
+export const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({
+  params,
+  toolName,
+  timestamp,
+}) => {
   return (
     <Accordion title={`🛠️ Tool used: ${toolName}`}>
       <Card className="bg-secondary border-border text-secondary-foreground my-2 animate-fade-in">
@@ -17,9 +21,7 @@ export const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ params, toolNa
           <pre className="text-sm bg-background p-2 rounded-md mt-1">
             {JSON.stringify(params, null, 2)}
           </pre>
-          <div className="text-xs text-muted-foreground mt-1">
-            {timestamp}
-          </div>
+          <div className="text-xs text-muted-foreground mt-1">{timestamp}</div>
         </CardContent>
       </Card>
     </Accordion>

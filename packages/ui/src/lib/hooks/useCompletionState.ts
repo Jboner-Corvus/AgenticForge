@@ -1,9 +1,9 @@
 import type {
   PromptReference,
   ResourceReference,
-} from "@modelcontextprotocol/sdk/types.js";
+} from '@modelcontextprotocol/sdk/types.js';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface CompletionState {
   completions: Record<string, string[]>;

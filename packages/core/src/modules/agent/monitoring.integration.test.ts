@@ -32,6 +32,12 @@ vi.mock('../../config.ts', () => ({
     MONITORING_ENABLED: true,
     TELEMETRY_ENDPOINT: 'http://localhost:4317',
   },
+  getConfig: () => ({
+    AGENT_MAX_ITERATIONS: 5,
+    LLM_PROVIDER_HIERARCHY: ['openai'],
+    MONITORING_ENABLED: true,
+    TELEMETRY_ENDPOINT: 'http://localhost:4317',
+  }),
 }));
 vi.mock('../../logger.ts', () => ({
   getLoggerInstance: () => ({
@@ -62,12 +68,21 @@ vi.mock('../redis/redisClient.ts', () => ({
   }),
 }));
 vi.mock('../../utils/llmProvider.ts', () => ({
-  getLlmProvider: () => ({
+  getLlmProvider: (providerName: string) => ({
     getLlmResponse: vi.fn().mockResolvedValue('{"answer": "Monitoring test"}'),
+    getErrorType: vi.fn()
   }),
-}));
+}))
 vi.mock('../llm/LlmKeyManager.ts', () => ({
-  LlmKeyManager: { hasAvailableKeys: vi.fn().mockResolvedValue(true) },
+  LlmKeyManager: {
+    getNextAvailableKey: vi.fn(),
+    getKey: vi.fn(),
+    hasAvailableKeys: vi.fn().mockResolvedValue(true),
+    invalidateKey: vi.fn(),
+    markKeyAsBad: vi.fn(),
+    resetKeyStatus: vi.fn(),
+    rotateKey: vi.fn(),
+  },
 }));
 vi.mock('../tools/toolRegistry.ts', () => ({
   toolRegistry: { execute: vi.fn() },
@@ -138,7 +153,7 @@ describe('Monitoring and Observability Integration Tests', () => {
 
     it('should track LLM provider performance metrics', async () => {
       const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
+        require('../../utils/llmProvider.ts').getLlmProvider('openai');
 
       // Simulate LLM provider response time
       mockLlmProvider.getLlmResponse.mockImplementation(
@@ -153,19 +168,20 @@ describe('Monitoring and Observability Integration Tests', () => {
     });
 
     it('should monitor tool execution statistics', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
-      const mockToolRegistry = require('../tools/toolRegistry.ts').toolRegistry;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
+      const toolRegistryModule = await import('../tools/toolRegistry.ts');
+      const mockToolRegistry = toolRegistryModule.toolRegistry;
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"command": {"name": "testTool", "params": {}}}',
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: { name: 'testTool', params: {} },
       });
-      mockToolRegistry.execute.mockResolvedValue('Tool executed');
+      vi.mocked(mockToolRegistry.execute).mockResolvedValue('Tool executed');
 
       await agent.run();
       expect(mockToolRegistry.execute).toHaveBeenCalled();
@@ -181,8 +197,9 @@ describe('Monitoring and Observability Integration Tests', () => {
     });
 
     it('should trace cross-service communications', async () => {
+      const redisClientModule = await import('../redis/redisClient.ts');
       const mockRedisClient =
-        require('../redis/redisClient.ts').getRedisClientInstance();
+        redisClientModule.getRedisClientInstance();
 
       await agent.run();
 
@@ -225,10 +242,10 @@ describe('Monitoring and Observability Integration Tests', () => {
     });
 
     it('should detect and report degraded performance', async () => {
-      // Simulate slow response
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      mockLlmProvider.getLlmResponse.mockImplementation(
+      // Simulate slow response using the proper mock
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      vi.mocked(mockLlmProvider.getLlmResponse).mockImplementation(
         () =>
           new Promise((resolve) =>
             setTimeout(() => resolve('{"answer": "Slow response"}'), 3000),
@@ -259,9 +276,9 @@ describe('Monitoring and Observability Integration Tests', () => {
 
   describe('Error Tracking and Alerting', () => {
     it('should track and categorize errors', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      mockLlmProvider.getLlmResponse.mockRejectedValue(
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      vi.mocked(mockLlmProvider.getLlmResponse).mockRejectedValue(
         new Error('LLM timeout'),
       );
 
@@ -271,14 +288,15 @@ describe('Monitoring and Observability Integration Tests', () => {
 
     it('should generate alerts for critical failures', async () => {
       const criticalError = new Error('Critical system failure');
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      mockLlmProvider.getLlmResponse.mockRejectedValue(criticalError);
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      vi.mocked(mockLlmProvider.getLlmResponse).mockRejectedValue(criticalError);
 
       await agent.run();
 
+      const redisClientModule = await import('../redis/redisClient.ts');
       const redisClient =
-        require('../redis/redisClient.ts').getRedisClientInstance();
+        redisClientModule.getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalled();
     });
 
@@ -311,8 +329,9 @@ describe('Monitoring and Observability Integration Tests', () => {
 
       await agent.run();
 
+      const redisClientModule = await import('../redis/redisClient.ts');
       const redisClient =
-        require('../redis/redisClient.ts').getRedisClientInstance();
+        redisClientModule.getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         expect.stringContaining('quality_metrics'),
         expect.any(Object),
@@ -366,8 +385,9 @@ describe('Monitoring and Observability Integration Tests', () => {
 
       await agent.run();
 
+      const redisClientModule = await import('../redis/redisClient.ts');
       const redisClient =
-        require('../redis/redisClient.ts').getRedisClientInstance();
+        redisClientModule.getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         expect.stringContaining('dashboard_update'),
         expect.any(String),
@@ -388,8 +408,9 @@ describe('Monitoring and Observability Integration Tests', () => {
 
       await agent.run();
 
+      const redisClientModule = await import('../redis/redisClient.ts');
       const redisClient =
-        require('../redis/redisClient.ts').getRedisClientInstance();
+        redisClientModule.getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'metrics_stream',
         expect.stringContaining('executionTime'),

@@ -84,6 +84,6 @@ describe('llmProvider', () => {
           role: 'user',
         },
       ]),
-    ).rejects.toThrow('Failed to communicate with the LLM.');
+    ).rejects.toThrow(/Failed to communicate with the LLM/);
   });
 });

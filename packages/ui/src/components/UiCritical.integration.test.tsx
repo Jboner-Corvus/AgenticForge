@@ -7,7 +7,7 @@ import { UserInput } from './UserInput';
 vi.mock('../lib/store', async () => {
   const mod = await import('../lib/__mocks__/store');
   const useStore = mod.useStore;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   (useStore as any).getState = vi.fn(() => mod.mockState);
   return {
     useStore,
@@ -67,14 +67,14 @@ describe('UI - Critical Tests', () => {
       ...useStore.getState(),
       isProcessing: true,
     };
-    
+
     (useStore.getState as Mock).mockReturnValue(processingState);
-    
+
     renderWithProviders(<UserInput />);
-    
+
     const textarea = screen.getByPlaceholderText('Type your message...');
     const sendButton = screen.queryByRole('button', { name: /send message/i });
-    
+
     // Check that UI elements are disabled during processing
     expect(textarea).toBeDisabled();
     expect(sendButton).not.toBeInTheDocument(); // Button is replaced by spinner
@@ -86,26 +86,26 @@ describe('UI - Critical Tests', () => {
       ...useStore.getState(),
       isProcessing: false,
     };
-    
+
     (useStore.getState as Mock).mockReturnValue(notProcessingState);
-    
+
     renderWithProviders(<UserInput />);
-    
+
     const sendButton = screen.getByRole('button', { name: /send message/i });
-    
+
     // Try to send empty message
     fireEvent.click(sendButton);
-    
+
     // Verify that startAgent is not called for empty input
     // expect(useStore.getState().startAgent).not.toHaveBeenCalled(); // TS2339: startAgent doesn't exist on AppState. Test needs fix.
   });
 
   it('should handle very long user input', () => {
     renderWithProviders(<UserInput />);
-    
+
     const textarea = screen.getByPlaceholderText('Type your message...');
     const longMessage = 'A'.repeat(10000); // Very long message
-    
+
     fireEvent.change(textarea, { target: { value: longMessage } });
     // Just check that the value was set, not that a specific function was called
     expect(textarea).toHaveValue(longMessage);

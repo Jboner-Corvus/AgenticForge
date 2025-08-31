@@ -90,11 +90,13 @@
 ### 🤖 超簡単インストール（100%自動）
 
 **オプション1：1行インストール**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Jboner-Corvus/AgenticForge/main/install.sh | bash
 ```
 
 **オプション2：クラシックインストール**
+
 ```bash
 # 1. プロジェクトをクローン
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
@@ -106,6 +108,7 @@ chmod +x run-v2.sh
 ```
 
 **オプション3：インタラクティブインストール**
+
 ```bash
 # 1. プロジェクトをクローン
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
@@ -140,8 +143,9 @@ chmod +x run-v2.sh
 **「1) 🟢 サービス開始」を選択して自動インストール**
 
 **🔧 初回起動時、システムは：**
+
 - デフォルト値で`.env`ファイルを自動作成
-- 必要なpnpm依存関係をインストール  
+- 必要なpnpm依存関係をインストール
 - コアおよびUIパッケージをビルド
 - すべてのDockerサービスを起動
 - 本番環境を設定
@@ -187,13 +191,14 @@ AgenticForgeは、Webインターフェースから直接アクセスできる�
 
 #### LlmKeyManagerの機能：
 
--   **リアルタイムでのキー追加/削除**：異なるプロバイダー（OpenAI、Gemini、Anthropicなど）のAPIキーを、システムを再起動せずに追加または削除。
--   **有効化/無効化**：その場でキーを有効化または無効化。
--   **自動フェイルオーバー**：APIキーが失敗した場合（リクエスト制限に達した、エラーなど）、システムはサービスの継続性を確保するために自動的に次の有効なキーに切り替えます。
--   **監視と統計**：キーの使用状況、アクティブなキーの数、設定されたプロバイダーの数を追跡。
--   **有効性テスト**：インターフェースから直接各キーの有効性をテスト。
+- **リアルタイムでのキー追加/削除**：異なるプロバイダー（OpenAI、Gemini、Anthropicなど）のAPIキーを、システムを再起動せずに追加または削除。
+- **有効化/無効化**：その場でキーを有効化または無効化。
+- **自動フェイルオーバー**：APIキーが失敗した場合（リクエスト制限に達した、エラーなど）、システムはサービスの継続性を確保するために自動的に次の有効なキーに切り替えます。
+- **監視と統計**：キーの使用状況、アクティブなキーの数、設定されたプロバイダーの数を追跡。
+- **有効性テスト**：インターフェースから直接各キーの有効性をテスト。
 
 #### 追加キーの追加
+
 1. **Webインターフェース経由**：[localhost:3002](http://localhost:3002) → 「APIキー」タブ
 2. **機能**：
    - ✅ リアルタイムでのキー追加/削除
@@ -203,6 +208,7 @@ AgenticForgeは、Webインターフェースから直接アクセスできる�
    - ✅ 同時マルチプロバイダーサポート
 
 #### 自動階層
+
 システムは信頼性の順序でキーをテストし、キーが失敗した場合は自動的に切り替えます。
 
 ---
@@ -211,16 +217,17 @@ AgenticForgeは、Webインターフェースから直接アクセスできる�
 
 ### オプション1：クラウドAPI（開始に推奨）
 
-| プロバイダー | 推奨モデル (2025) | APIキーの取得 |
-|-------------|---------------------|---------------------|
-| **Google AI** | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys) |
-| **OpenAI** | `gpt-5`, `gpt-4o`, `gpt-4.1` | [platform.openai.com](https://platform.openai.com/signup) |
-| **Anthropic** | `claude-4-opus`, `claude-4-sonnet` | [console.anthropic.com](https://console.anthropic.com/) |
-| **DeepSeek** | `deepseek-v3`, `deepseek-r1` | [platform.deepseek.com](https://platform.deepseek.com) |
+| プロバイダー  | 推奨モデル (2025)                    | APIキーの取得                                             |
+| ------------- | ------------------------------------ | --------------------------------------------------------- |
+| **Google AI** | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)   |
+| **OpenAI**    | `gpt-5`, `gpt-4o`, `gpt-4.1`         | [platform.openai.com](https://platform.openai.com/signup) |
+| **Anthropic** | `claude-4-opus`, `claude-4-sonnet`   | [console.anthropic.com](https://console.anthropic.com/)   |
+| **DeepSeek**  | `deepseek-v3`, `deepseek-r1`         | [platform.deepseek.com](https://platform.deepseek.com)    |
 
 ### オプション2：ローカルAI（プライバシー用）
 
 #### Ollama
+
 1. **Ollamaをインストール**：[ollama.ai](https://ollama.ai/)
 2. **モデルをダウンロード**：
    ```bash
@@ -229,9 +236,10 @@ AgenticForgeは、Webインターフェースから直接アクセスできる�
    ```
 
 #### LM Studio
+
 1. **LM Studioをインストール**：[lmstudio.ai](https://lmstudio.ai/)
 2. **モデルをダウンロード**してローカルサーバーを起動
-3. **設定**： 
+3. **設定**：
    ```env
    LLM_PROVIDER="openai"
    LLM_API_BASE_URL="http://localhost:1234/v1"
@@ -287,6 +295,7 @@ AgenticForgeには、API経由でエージェント機能を検証するため�
 ```
 
 **利用可能なテストタイプ：**
+
 - ✅ **キャンバスとToDoリスト**：図とタスクリストの作成と管理
 - ✅ **MCPツール**：カスタムツールの作成と実行
 - ✅ **コード生成**：TypeScript、Python、その他の言語
@@ -316,10 +325,10 @@ pnpm run format    # 自動フォーマット
 
 ### メインインターフェース
 
-| インターフェース | URL | 説明 |
-|-----------|-----|-------------|
+| インターフェース           | URL                                     | 説明                                         |
+| -------------------------- | --------------------------------------- | -------------------------------------------- |
 | **🎨 Webインターフェース** | [localhost:3002](http://localhost:3002) | エージェントと対話するメインインターフェース |
-| **🛠️ APIサーバー** | [localhost:8080](http://localhost:8080) | バックエンドAPIおよびメインサーバー |
+| **🛠️ APIサーバー**         | [localhost:8080](http://localhost:8080) | バックエンドAPIおよびメインサーバー          |
 
 ---
 
@@ -327,7 +336,7 @@ pnpm run format    # 自動フォーマット
 
 ### 🚀 クイックスタート
 
-1. **アクセス** [localhost:3002](http://localhost:3002) 
+1. **アクセス** [localhost:3002](http://localhost:3002)
 2. **テスト** リアルタイムMCPツール鍛造：
    ```
    "システムログを分析するカスタムMCPツールを作成し、
@@ -342,16 +351,18 @@ pnpm run format    # 自動フォーマット
 ### 🔧 カスタムMCPツール鍛造
 
 #### ⚡ 高度なシステムツール
+
 ```bash
 "リアルタイムで監視するMCPツールを鍛造：
-- TypeScriptとZodスキーマでツールをコーディング  
+- TypeScriptとZodスキーマでツールをコーディング
 - AgenticForgeワーカーに直接統合
 - CPU/RAM/プロセスを監視するインターフェース
 - Webインターフェースでのリアルタイム表示
 - すべての機能の即時テスト"
 ```
 
-#### 🌐 スマートWebツール  
+#### 🌐 スマートWebツール
+
 ```bash
 "インテリジェントなMCPスクレイピングツールを作成：
 - セッション管理付きのコード生成
@@ -364,10 +375,11 @@ pnpm run format    # 自動フォーマット
 ### 🌐 フルスタックアプリケーション
 
 #### ⚙️ システム自動化と監視
+
 ```bash
 "このYAML設定ファイルを読み取り、Pythonデーモンを作成：
 - 定義されたシステムプロセスを監視
-- cronタスクを自動実行  
+- cronタスクを自動実行
 - ログを/var/log/automation.logに送信
 - 障害時にサービスを再起動
 - systemctl --userでデーモンを起動"
@@ -376,6 +388,7 @@ pnpm run format    # 自動フォーマット
 ### 📊 パフォーマンスツール
 
 #### 🏃‍♂️ 完全システムベンチマーク
+
 ```bash
 "このマシンの完全ベンチマークを実行：
 - stress-ngでCPU/RAM/ディスクをテスト
@@ -386,6 +399,7 @@ pnpm run format    # 自動フォーマット
 ```
 
 #### 📚 自動生成ドキュメント
+
 ```bash
 "プロジェクトを再帰的にスキャンし、ソースコードを分析して生成：
 - アーキテクチャ図付きの詳細なREADME.md
@@ -398,11 +412,12 @@ pnpm run format    # 自動フォーマット
 ### 🔧 プロジェクト管理
 
 #### 🌳 Gitワークフローと自動デプロイ
+
 ```bash
 "このリポジトリに完全なGitワークフローを設定：
 - フック付きのGitFlowをインストールおよび設定
 - 自動テスト付きのpre-commitスクリプトを作成
-- ローカルでGitHub ActionsまたはGitLab CIを設定  
+- ローカルでGitHub ActionsまたはGitLab CIを設定
 - ビルド、テスト、サービス再起動を行うデプロイスクリプト
 - 機能ブランチで完全なワークフローをテスト"
 ```
@@ -410,6 +425,7 @@ pnpm run format    # 自動フォーマット
 ### 🎯 専門化プロジェクト
 
 #### 🤖 カスタムMCPツールスイート付きエージェント
+
 ```bash
 "AgenticForgeをクローンし、独自のMCPツールを持つ専門化エージェントを作成：
 - 5つのMCPツールを鍛造：監視、デプロイ、バックアップ、アラート、分析
@@ -419,7 +435,8 @@ pnpm run format    # 自動フォーマット
 - 自動鍛造ツールスイートの完全テスト"
 ```
 
-#### 💻 インテリジェントシステム管理  
+#### 💻 インテリジェントシステム管理
+
 ```bash
 "このLinuxサーバーを分析し、管理ダッシュボードを作成：
 - リアルタイム監視：CPU、RAM、ディスク、ネットワーク
@@ -430,7 +447,8 @@ pnpm run format    # 自動フォーマット
 - ポート8080のnginx経由でアクセス可能なインターフェース"
 ```
 
-**🔥 独自のパワー**: 
+**🔥 独自のパワー**:
+
 - **🛠️ MCP鍛造**：TypeScriptでカスタムMCPツールを作成し、ワーカーに統合して即座にテスト
 - **⚡ 直接実行**：完全なシステムアクセス - インストール、設定、テスト、自動デプロイ
 - **🎯 完全透明性**：Webインターフェースで鍛造されたMCPツールの動作を直接表示
@@ -439,14 +457,14 @@ pnpm run format    # 自動フォーマット
 
 ### 高度なシステム管理
 
-| 操作 | コマンド | 使用法 |
-|--------|----------|-----------|
-| **完全コンソール** | `./run-v2.sh` | メイン管理インターフェース |
-| **クイック起動** | `./run-v2.sh start` | 直接システム起動 |
-| **監視** | `./run-v2.sh status` | Dockerサービスステータス |
-| **ライブログ** | `./run-v2.sh logs` | リアルタイム監視 |
-| **再起動** | `./run-v2.sh restart` | 設定変更後 |
-| **メンテナンス** | `./run-v2.sh` → オプション7-14 | テスト、lint、フォーマット、再構築 |
+| 操作               | コマンド                       | 使用法                             |
+| ------------------ | ------------------------------ | ---------------------------------- |
+| **完全コンソール** | `./run-v2.sh`                  | メイン管理インターフェース         |
+| **クイック起動**   | `./run-v2.sh start`            | 直接システム起動                   |
+| **監視**           | `./run-v2.sh status`           | Dockerサービスステータス           |
+| **ライブログ**     | `./run-v2.sh logs`             | リアルタイム監視                   |
+| **再起動**         | `./run-v2.sh restart`          | 設定変更後                         |
+| **メンテナンス**   | `./run-v2.sh` → オプション7-14 | テスト、lint、フォーマット、再構築 |
 
 ---
 
@@ -493,7 +511,7 @@ pnpm run format    # 自動フォーマット
 - **🚨 問題**：[GitHub Issues](https://github.com/votre-username/g-forge/issues)
 - **💬 議論**：[GitHub Discussions](https://github.com/votre-username/g-forge/discussions)
 - **📚 ドキュメント**：[プロジェクトWiki](https://github.com/votre-username/g-forge/wiki)
-- **🎮 Discord**：[コミュニティに参加](https://discord.gg/VNtXQByKfg) - *創作を共有し、リアルタイムで助けを得て、最新ニュースをいち早く発見*
+- **🎮 Discord**：[コミュニティに参加](https://discord.gg/VNtXQByKfg) - _創作を共有し、リアルタイムで助けを得て、最新ニュースをいち早く発見_
 
 ---
 

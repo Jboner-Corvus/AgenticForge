@@ -166,12 +166,14 @@ curl -X POST http://localhost:8080/api/test-chat \
 ## Processus de test
 
 Pour chaque tâche :
+
 1. Exécuter la tâche en utilisant l'API
 2. **Après chaque tâche, aller voir les logs dans `worker.log` si tout est correct**
 3. **Corriger le code source si nécessaire**
 4. Cocher la case une fois la tâche validée
 
 Les logs peuvent être consultés avec :
+
 ```bash
 tail -n 200 worker.log
 ```

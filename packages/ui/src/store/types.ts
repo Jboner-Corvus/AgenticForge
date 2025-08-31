@@ -42,7 +42,7 @@ export interface LlmApiKey {
     tags: string[];
     description?: string;
   };
-  
+
   // Legacy compatibility fields
   provider?: string; // alias for providerId
   key?: string; // alias for keyValue
@@ -67,7 +67,7 @@ export interface BackendLlmApiKey {
 export interface ToastOptions {
   title?: string;
   description?: string;
-  variant?: "default" | "destructive";
+  variant?: 'default' | 'destructive';
 }
 
 import type { CanvasType } from './canvasStore';
