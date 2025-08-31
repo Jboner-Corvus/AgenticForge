@@ -37,6 +37,10 @@ vi.mock('../../config.ts', () => ({
     AGENT_MAX_ITERATIONS: 5,
     LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
   },
+  getConfig: () => ({
+    AGENT_MAX_ITERATIONS: 5,
+    LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
+  }),
 }));
 
 vi.mock('../../logger.ts', () => ({

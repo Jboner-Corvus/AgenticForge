@@ -18,75 +18,81 @@ vi.mock('../lib/api', () => ({
 
 // Test component to interact with the store
 const TestStoreComponent = () => {
-  const { 
-    llmApiKeys, 
-    activeLlmApiKeyIndex, 
+  const {
+    llmApiKeys,
+    activeLlmApiKeyIndex,
     addLlmApiKey,
     leaderboardStats,
     updateLeaderboardStats,
-    initializeSessionAndMessages
+    initializeSessionAndMessages,
   } = useCombinedStore();
-  
+
   const { isProcessing, setIsProcessing } = useUIStore();
   const { sessionId, setSessionId } = useSessionStore();
 
   return (
     <div>
       <div data-testid="session-id">{sessionId || 'no-session'}</div>
-      <div data-testid="is-processing">{isProcessing ? 'processing' : 'idle'}</div>
+      <div data-testid="is-processing">
+        {isProcessing ? 'processing' : 'idle'}
+      </div>
       <div data-testid="llm-keys-count">{llmApiKeys.length}</div>
       <div data-testid="active-key-index">{activeLlmApiKeyIndex}</div>
       <div data-testid="tokens-saved">{leaderboardStats.tokensSaved}</div>
-      
-      <button 
-        data-testid="set-session" 
+
+      <button
+        data-testid="set-session"
         onClick={() => setSessionId('test-session-123')}
       >
         Set Session
       </button>
-      
-      <button 
-        data-testid="toggle-processing" 
+
+      <button
+        data-testid="toggle-processing"
         onClick={() => setIsProcessing(!isProcessing)}
       >
         Toggle Processing
       </button>
-      
-      <button 
-        data-testid="add-llm-key" 
-        onClick={() => addLlmApiKey({
-          id: 'test-id',
-          providerId: 'test-provider',
-          providerName: 'test-provider',
-          keyName: 'test-key',
-          keyValue: 'test-key-123',
-          isEncrypted: false,
-          isActive: true,
-          priority: 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          usageCount: 0,
-          metadata: {
-            environment: 'universal',
-            tags: []
-          },
-          provider: 'test-provider',
-          key: 'test-key-123',
-          nickname: 'test-key'
-        })}
+
+      <button
+        data-testid="add-llm-key"
+        onClick={() =>
+          addLlmApiKey({
+            id: 'test-id',
+            providerId: 'test-provider',
+            providerName: 'test-provider',
+            keyName: 'test-key',
+            keyValue: 'test-key-123',
+            isEncrypted: false,
+            isActive: true,
+            priority: 1,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            usageCount: 0,
+            metadata: {
+              environment: 'universal',
+              tags: [],
+            },
+            provider: 'test-provider',
+            key: 'test-key-123',
+            nickname: 'test-key',
+          })
+        }
       >
         Add LLM Key
       </button>
-      
-      <button 
-        data-testid="update-stats" 
-        onClick={() => updateLeaderboardStats({ tokensSaved: 100, successfulRuns: 1 })}
+
+      <button
+        data-testid="update-stats"
+        onClick={() =>
+          updateLeaderboardStats({ tokensSaved: 100, successfulRuns: 1 })
+        }
       >
         Update Stats
       </button>
-      
-      <button 
-        data-testid="initialize" 
+
+      <button
+        data-testid="initialize"
         onClick={() => initializeSessionAndMessages()}
       >
         Initialize
@@ -98,7 +104,7 @@ const TestStoreComponent = () => {
 describe('Store Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Reset stores to initial state
     useCombinedStore.setState({
       llmApiKeys: [],
@@ -108,21 +114,21 @@ describe('Store Integration Tests', () => {
         successfulRuns: 0,
         sessionsCreated: 0,
         apiKeysAdded: 0,
-      }
+      },
     });
-    
+
     useUIStore.setState({
-      isProcessing: false
+      isProcessing: false,
     });
-    
+
     useSessionStore.setState({
-      sessionId: null
+      sessionId: null,
     });
   });
 
   it('should initialize with correct default values', () => {
     render(<TestStoreComponent />);
-    
+
     expect(screen.getByTestId('session-id')).toHaveTextContent('no-session');
     expect(screen.getByTestId('is-processing')).toHaveTextContent('idle');
     expect(screen.getByTestId('llm-keys-count')).toHaveTextContent('0');
@@ -132,29 +138,31 @@ describe('Store Integration Tests', () => {
 
   it('should update session state across stores', () => {
     render(<TestStoreComponent />);
-    
+
     fireEvent.click(screen.getByTestId('set-session'));
-    
-    expect(screen.getByTestId('session-id')).toHaveTextContent('test-session-123');
+
+    expect(screen.getByTestId('session-id')).toHaveTextContent(
+      'test-session-123',
+    );
   });
 
   it('should toggle processing state', () => {
     render(<TestStoreComponent />);
-    
+
     expect(screen.getByTestId('is-processing')).toHaveTextContent('idle');
-    
+
     fireEvent.click(screen.getByTestId('toggle-processing'));
-    
+
     expect(screen.getByTestId('is-processing')).toHaveTextContent('processing');
   });
 
   it('should add LLM API keys and update stats', async () => {
     render(<TestStoreComponent />);
-    
+
     expect(screen.getByTestId('llm-keys-count')).toHaveTextContent('0');
-    
+
     fireEvent.click(screen.getByTestId('add-llm-key'));
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('llm-keys-count')).toHaveTextContent('1');
     });
@@ -162,46 +170,48 @@ describe('Store Integration Tests', () => {
 
   it('should update leaderboard statistics', () => {
     render(<TestStoreComponent />);
-    
+
     expect(screen.getByTestId('tokens-saved')).toHaveTextContent('0');
-    
+
     fireEvent.click(screen.getByTestId('update-stats'));
-    
+
     expect(screen.getByTestId('tokens-saved')).toHaveTextContent('100');
   });
 
   it('should handle store state synchronization', async () => {
     render(<TestStoreComponent />);
-    
+
     // Test multiple state updates
     fireEvent.click(screen.getByTestId('set-session'));
     fireEvent.click(screen.getByTestId('toggle-processing'));
     fireEvent.click(screen.getByTestId('update-stats'));
-    
+
     // Verify all states are properly updated
-    expect(screen.getByTestId('session-id')).toHaveTextContent('test-session-123');
+    expect(screen.getByTestId('session-id')).toHaveTextContent(
+      'test-session-123',
+    );
     expect(screen.getByTestId('is-processing')).toHaveTextContent('processing');
     expect(screen.getByTestId('tokens-saved')).toHaveTextContent('100');
   });
 
   it('should not cause infinite loops or crashes', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     render(<TestStoreComponent />);
-    
+
     // Trigger multiple rapid state changes
     for (let i = 0; i < 10; i++) {
       fireEvent.click(screen.getByTestId('toggle-processing'));
       fireEvent.click(screen.getByTestId('update-stats'));
     }
-    
+
     // Component should still be functional
     expect(screen.getByTestId('is-processing')).toBeInTheDocument();
     expect(screen.getByTestId('tokens-saved')).toBeInTheDocument();
-    
+
     // No errors should be logged
     expect(consoleSpy).not.toHaveBeenCalled();
-    
+
     consoleSpy.mockRestore();
   });
 });

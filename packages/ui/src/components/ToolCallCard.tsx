@@ -8,7 +8,10 @@ interface ToolCallCardProps {
   toolName: string;
 }
 
-export const ToolCallCard: React.FC<ToolCallCardProps> = ({ params, toolName }) => {
+export const ToolCallCard: React.FC<ToolCallCardProps> = ({
+  params,
+  toolName,
+}) => {
   return (
     <Accordion title={`🛠️ Tool used: ${toolName}`}>
       <Card className="bg-secondary border-border text-secondary-foreground my-2 animate-fade-in">

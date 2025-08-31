@@ -1,32 +1,28 @@
-import { pino } from 'pino';
+import pino from 'pino';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getLogger, resetLoggerForTesting } from './logger.ts';
-
 vi.mock('pino', () => ({
-  pino: vi.fn(() => ({ info: vi.fn(), trace: vi.fn() })),
+  default: vi.fn(() => ({ info: vi.fn(), trace: vi.fn() })),
 }));
 
 vi.mock('./logger.ts', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...(actual as any),
-    getLogger: vi.fn().mockImplementation(() => {
-      return pino();
-    }),
-    resetLoggerForTesting: vi.fn(),
   };
 });
 
 describe('logger', () => {
   beforeEach(() => {
-    (resetLoggerForTesting as import('vitest').Mock).mockClear();
-    (getLogger as import('vitest').Mock).mockClear();
-    (pino as unknown as import('vitest').Mock).mockClear();
+    vi.clearAllMocks();
   });
 
-  it('should be an instance of a pino logger', () => {
-    const logger = getLogger();
+  it('should be an instance of a pino logger', async () => {
+    // Reset the logger instance for testing
+    const loggerModule = await import('./logger.ts');
+    loggerModule.resetLoggerForTesting();
+    
+    const logger = loggerModule.getLogger();
     expect(logger).toBeDefined();
     expect(pino).toHaveBeenCalled();
   });

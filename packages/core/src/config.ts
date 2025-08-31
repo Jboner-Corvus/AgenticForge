@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const configSchema = z.object({
-  AGENT_MAX_ITERATIONS: z.coerce.number().default(100),
+  AGENT_MAX_ITERATIONS: z.coerce.number().default(15), // 🚨 RÉDUIT: 100 -> 15 pour éviter les boucles infinies
   AUTH_TOKEN: z.string().optional(),
   CODE_EXECUTION_TIMEOUT_MS: z.coerce.number().default(60000),
   CONTAINER_MEMORY_LIMIT: z.string().default('2g'),
@@ -48,7 +48,7 @@ const configSchema = z.object({
   PORT: z.coerce.number().default(3001),
   POSTGRES_DB: z.string().default('gforge'),
   POSTGRES_HOST: z.string().default('postgres'),
-  POSTGRES_PASSWORD: z.string().optional(),
+  POSTGRES_PASSWORD: z.string().default('secure_password'),
 
   POSTGRES_PORT: z.coerce.number().default(5432),
   POSTGRES_USER: z.string().default('user'),
@@ -67,12 +67,29 @@ const configSchema = z.object({
   SESSION_EXPIRATION: z.coerce.number().default(7 * 24 * 60 * 60), // 7 days in seconds
   TAVILY_API_KEY: z.string().optional(),
   WEBHOOK_SECRET: z.string().optional(),
-  WORKER_CONCURRENCY: z.coerce.number().default(5),
+  WORKER_CONCURRENCY: z.coerce.number().default(2), // Reduced from 5 to 2 to prevent memory overflow
   WORKER_MAX_STALLED_COUNT: z.coerce.number().default(3),
   WORKER_STALLED_INTERVAL_MS: z.coerce.number().default(30000), // 30 seconds
   WORKER_WORKSPACE_PATH: z.string().optional(),
   // Standardized workspace path
-  WORKSPACE_PATH: z.string().default('/home/demon/agentforge/workspace'),
+  WORKSPACE_PATH: z.string().default('/home/demon/agenticforge-workspace'),
+  // Gemini-specific optimizations
+  GEMINI_MAX_HISTORY_LENGTH: z.coerce.number().default(50), // Limit history length for Gemini
+  GEMINI_REQUEST_TIMEOUT_MS: z.coerce.number().default(30000), // 30 second timeout for Gemini requests
+  GEMINI_AUTO_REENABLE_KEYS: z.boolean().default(true), // Automatically re-enable temporarily disabled keys
+  GEMINI_ITERATION_DELAY_MS: z.coerce.number().default(2000), // Delay between iterations for Gemini
+  AGENT_ITERATION_DELAY_MS: z.coerce.number().default(1000), // Delay between iterations for other providers
+  
+  // Global timeout settings for robustness
+  LLM_REQUEST_TIMEOUT_MS: z.coerce.number().default(45000), // Global timeout for all LLM requests
+  LLM_CONNECTION_TIMEOUT_MS: z.coerce.number().default(10000), // Connection timeout
+  LLM_MAX_RETRIES: z.coerce.number().default(3), // Maximum retry attempts for all providers
+  LLM_RETRY_DELAY_BASE_MS: z.coerce.number().default(1000), // Base delay for exponential backoff
+  
+  // Agent resilience settings
+  AGENT_MAX_MALFORMED_RESPONSES: z.coerce.number().default(3), // 🚨 RÉDUIT: 5 -> 3 pour éviter les boucles
+  AGENT_MAX_LLM_FAILURES: z.coerce.number().default(3), // Max consecutive LLM failures
+  AGENT_FALLBACK_ENABLED: z.boolean().default(true) // Enable fallback responses
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -80,6 +97,39 @@ export type Config = z.infer<typeof configSchema>;
 export let config: Config = {} as Config;
 
 export function getConfig(): Config {
+  // If config hasn't been loaded yet, load it synchronously for tests
+  if (!config || Object.keys(config).length === 0) {
+    try {
+      // Try multiple possible .env file locations to handle different execution contexts
+      let envPath = path.resolve(__dirname, '..', '..', '..', '.env');
+      if (!require('fs').existsSync(envPath)) {
+        // If running from dist/, try going up one more level
+        envPath = path.resolve(__dirname, '..', '..', '..', '..', '.env');
+      }
+      if (!require('fs').existsSync(envPath)) {
+        // If still not found, try from current working directory
+        envPath = path.resolve(process.cwd(), '.env');
+      }
+
+      const result = dotenv.config({
+        path: envPath,
+      });
+
+      if (result.error) {
+        console.warn(
+          'Could not find .env file, using environment variables only.',
+          result.error,
+        );
+      }
+
+      config = configSchema.parse(process.env);
+    } catch (error) {
+      console.error('Error loading config:', error);
+      // Return a default config with minimal settings for tests
+      config = configSchema.parse({});
+    }
+  }
+
   return config;
 }
 
@@ -88,7 +138,18 @@ export async function loadConfig() {
   // The NODE_ENV check was removed to allow .env variables to be used in tests.
   // If specific test configurations are needed, they should be managed via test-specific .env files or direct environment variable setting in test scripts.
   console.log('DEBUG: process.cwd():', process.cwd());
-  const envPath = path.resolve(__dirname, '..', '..', '..', '.env');
+
+  // Try multiple possible .env file locations to handle different execution contexts
+  let envPath = path.resolve(__dirname, '..', '..', '..', '.env');
+  if (!require('fs').existsSync(envPath)) {
+    // If running from dist/, try going up one more level
+    envPath = path.resolve(__dirname, '..', '..', '..', '..', '.env');
+  }
+  if (!require('fs').existsSync(envPath)) {
+    // If still not found, try from current working directory
+    envPath = path.resolve(process.cwd(), '.env');
+  }
+
   console.log('DEBUG: Resolved .env path:', envPath);
   const result = dotenv.config({
     path: envPath,

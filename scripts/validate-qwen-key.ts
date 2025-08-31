@@ -7,13 +7,13 @@
 
 async function validateQwenKey(apiKey: string) {
   console.log('Validating Qwen API Key...');
-  
+
   try {
     // Test endpoint for Qwen API key validation (using the correct Qwen Portal endpoint)
     const response = await fetch('https://portal.qwen.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -21,11 +21,11 @@ async function validateQwenKey(apiKey: string) {
         messages: [
           {
             role: 'user',
-            content: 'Hello, this is a test message to validate the API key.'
-          }
+            content: 'Hello, this is a test message to validate the API key.',
+          },
         ],
-        max_tokens: 10
-      })
+        max_tokens: 10,
+      }),
     });
 
     if (response.ok) {
@@ -54,6 +54,6 @@ if (!apiKey) {
   process.exit(1);
 }
 
-validateQwenKey(apiKey).then(isValid => {
+validateQwenKey(apiKey).then((isValid) => {
   process.exit(isValid ? 0 : 1);
 });

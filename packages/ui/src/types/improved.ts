@@ -46,7 +46,9 @@ export interface FormField<T = unknown> {
   disabled?: boolean;
 }
 
-export interface FormState<T extends Record<string, unknown> = Record<string, unknown>> {
+export interface FormState<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> {
   values: T;
   errors: Partial<Record<keyof T, string>>;
   touched: Partial<Record<keyof T, boolean>>;
@@ -73,7 +75,7 @@ export interface RenderProp<T = unknown> {
 
 // Higher-order component types
 export type HOC<P = unknown, R = P> = (
-  Component: ComponentType<P>
+  Component: ComponentType<P>,
 ) => ComponentType<R>;
 
 // Utility types
@@ -222,7 +224,12 @@ export interface Plugin {
 }
 
 // Navigation types
-export type NavigationPage = 'chat' | 'leaderboard' | 'llm-api-keys' | 'oauth' | 'settings';
+export type NavigationPage =
+  | 'chat'
+  | 'leaderboard'
+  | 'llm-api-keys'
+  | 'oauth'
+  | 'settings';
 
 export interface NavigationItem {
   key: NavigationPage;

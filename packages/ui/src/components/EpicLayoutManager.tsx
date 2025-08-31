@@ -15,12 +15,21 @@ interface PinnableComponentProps {
   className?: string;
 }
 
-const PinnableComponent: React.FC<PinnableComponentProps> = ({ id, children, className = '' }) => {
+const PinnableComponent: React.FC<PinnableComponentProps> = ({
+  id,
+  children,
+  className = '',
+}) => {
   const component = usePinningStore((state) => state.components[id]);
   const updateComponent = usePinningStore((state) => state.updateComponent);
   const bringToFront = usePinningStore((state) => state.bringToFront);
 
-  if (!component || !component.isPinned || !component.isVisible || !component.position) {
+  if (
+    !component ||
+    !component.isPinned ||
+    !component.isVisible ||
+    !component.position
+  ) {
     return null;
   }
 
@@ -37,36 +46,42 @@ const PinnableComponent: React.FC<PinnableComponentProps> = ({ id, children, cla
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ 
+      animate={{
         opacity: component.opacity ?? 1,
         scale: component.scale ?? 1,
         x: `${safeX}vw`,
         y: `${safeY}vh`,
       }}
       exit={{ opacity: 0, scale: 0.8 }}
-      transition={{ type: "spring", damping: 20, stiffness: 300 }}
+      transition={{ type: 'spring', damping: 20, stiffness: 300 }}
       className={`fixed ${className}`}
       style={{
         width: `${safeWidth}vw`,
         height: `${safeHeight}vh`,
         zIndex: component.zIndex ?? 1,
-        pointerEvents: 'auto'
+        pointerEvents: 'auto',
       }}
       onMouseDown={handleMouseDown}
       drag={component.isPinned}
       dragMomentum={false}
       onDragEnd={(_event, info) => {
         if (!position) return;
-        
-        const newX = Math.max(0, Math.min(95, safeX + (info.offset.x / window.innerWidth) * 100));
-        const newY = Math.max(0, Math.min(95, safeY + (info.offset.y / window.innerHeight) * 100));
-        
+
+        const newX = Math.max(
+          0,
+          Math.min(95, safeX + (info.offset.x / window.innerWidth) * 100),
+        );
+        const newY = Math.max(
+          0,
+          Math.min(95, safeY + (info.offset.y / window.innerHeight) * 100),
+        );
+
         updateComponent(id, {
           position: {
             ...position,
             x: newX,
-            y: newY
-          }
+            y: newY,
+          },
         });
       }}
     >
@@ -79,13 +94,13 @@ const PinnableComponent: React.FC<PinnableComponentProps> = ({ id, children, cla
 export const EpicLayoutManager: React.FC = () => {
   // Initialisation du système de pinning
   useInitializePinning();
-  
+
   const components = usePinningStore((state) => state.components);
   const layoutMode = usePinningStore((state) => state.layoutMode);
   const showGrid = usePinningStore((state) => state.showGrid);
   const gridSize = usePinningStore((state) => state.gridSize);
   const globalOpacity = usePinningStore((state) => state.globalOpacity);
-  
+
   // Store states
   const isCanvasVisible = useCombinedStore((state) => state.isCanvasVisible);
   const canvasContent = useCombinedStore((state) => state.canvasContent);
@@ -95,38 +110,38 @@ export const EpicLayoutManager: React.FC = () => {
   // Auto-update component visibility based on store states
   useEffect(() => {
     if (updatingRef.current) return; // Prevent recursive updates
-    
+
     updatingRef.current = true;
-    
+
     const updateComponent = usePinningStore.getState().updateComponent;
     const { components } = usePinningStore.getState();
-    
+
     // Only update if values actually changed to prevent infinite loops
     const updates = [
       { id: 'canvas', isVisible: isCanvasVisible || !!canvasContent },
       { id: 'chat', isVisible: currentPage === 'chat' },
       { id: 'input', isVisible: currentPage !== 'chat' }, // Input séparé seulement si pas en mode chat
-      { id: 'controlpanel', isVisible: true } // Always visible in battlefield mode
+      { id: 'controlpanel', isVisible: true }, // Always visible in battlefield mode
     ];
-    
+
     updates.forEach(({ id, isVisible }) => {
       const currentComponent = components[id];
       if (currentComponent?.isVisible !== isVisible) {
         updateComponent(id, { isVisible });
       }
     });
-    
+
     updatingRef.current = false;
   }, [isCanvasVisible, canvasContent, currentPage]);
 
   // GRILLE ÉPIQUE
   const GridOverlay = () => {
     if (!showGrid) return null;
-    
+
     const lines = [];
-    const cols = Math.floor(100 / (gridSize / window.innerWidth * 100));
-    const rows = Math.floor(100 / (gridSize / window.innerHeight * 100));
-    
+    const cols = Math.floor(100 / ((gridSize / window.innerWidth) * 100));
+    const rows = Math.floor(100 / ((gridSize / window.innerHeight) * 100));
+
     // Lignes verticales
     for (let i = 0; i <= cols; i++) {
       lines.push(
@@ -134,10 +149,10 @@ export const EpicLayoutManager: React.FC = () => {
           key={`v-${i}`}
           className="absolute top-0 bottom-0 w-px bg-cyan-500/20"
           style={{ left: `${(i * 100) / cols}%` }}
-        />
+        />,
       );
     }
-    
+
     // Lignes horizontales
     for (let i = 0; i <= rows; i++) {
       lines.push(
@@ -145,15 +160,11 @@ export const EpicLayoutManager: React.FC = () => {
           key={`h-${i}`}
           className="absolute left-0 right-0 h-px bg-cyan-500/20"
           style={{ top: `${(i * 100) / rows}%` }}
-        />
+        />,
       );
     }
-    
-    return (
-      <div className="fixed inset-0 pointer-events-none z-0">
-        {lines}
-      </div>
-    );
+
+    return <div className="fixed inset-0 pointer-events-none z-0">{lines}</div>;
   };
 
   // INDICATEUR DE MODE ÉPIQUE
@@ -177,13 +188,13 @@ export const EpicLayoutManager: React.FC = () => {
     <>
       {/* GRILLE */}
       <GridOverlay />
-      
+
       {/* INDICATEUR DE MODE */}
       {layoutMode !== 'freeform' && <LayoutModeIndicator />}
-      
+
       {/* OVERLAY GLOBAL OPACITY */}
       {globalOpacity < 1 && (
-        <div 
+        <div
           className="fixed inset-0 bg-black pointer-events-none z-[1000]"
           style={{ opacity: 1 - globalOpacity }}
         />
@@ -192,15 +203,15 @@ export const EpicLayoutManager: React.FC = () => {
       {/* COMPOSANTS PINNÉS ÉPIQUES */}
       <AnimatePresence>
         {/* HEADER PINNÉ */}
-        <PinnableComponent 
-          id="header" 
+        <PinnableComponent
+          id="header"
           className="backdrop-blur-sm bg-black/80 border-b border-cyan-500/30 rounded-lg"
         >
           <HeaderContainer />
         </PinnableComponent>
 
         {/* CONTROL PANEL DRAGGABLE */}
-        <PinnableComponent 
+        <PinnableComponent
           id="controlpanel"
           className="backdrop-blur-sm rounded-2xl"
         >
@@ -208,15 +219,12 @@ export const EpicLayoutManager: React.FC = () => {
         </PinnableComponent>
 
         {/* CANVAS PINNÉ */}
-        <PinnableComponent 
-          id="canvas"
-          className="backdrop-blur-sm rounded-2xl"
-        >
+        <PinnableComponent id="canvas" className="backdrop-blur-sm rounded-2xl">
           <EpicCanvas />
         </PinnableComponent>
 
         {/* CHAT PINNÉ */}
-        <PinnableComponent 
+        <PinnableComponent
           id="chat"
           className="backdrop-blur-sm bg-black/80 border border-cyan-500/30 rounded-2xl overflow-hidden"
         >
@@ -224,7 +232,7 @@ export const EpicLayoutManager: React.FC = () => {
         </PinnableComponent>
 
         {/* INPUT PINNÉ */}
-        <PinnableComponent 
+        <PinnableComponent
           id="input"
           className="backdrop-blur-sm bg-black/80 border border-cyan-500/30 rounded-2xl p-4"
         >
@@ -235,8 +243,13 @@ export const EpicLayoutManager: React.FC = () => {
       {/* DEBUG INFO (DEV ONLY) */}
       {process.env.NODE_ENV === 'development' && (
         <div className="fixed bottom-4 left-4 bg-black/80 backdrop-blur-sm rounded-lg p-2 text-xs text-cyan-400 font-mono border border-cyan-500/30 z-[9998]">
-          <div>PINNED: {Object.values(components).filter(c => c.isPinned).length}</div>
-          <div>VISIBLE: {Object.values(components).filter(c => c.isVisible).length}</div>
+          <div>
+            PINNED: {Object.values(components).filter((c) => c.isPinned).length}
+          </div>
+          <div>
+            VISIBLE:{' '}
+            {Object.values(components).filter((c) => c.isVisible).length}
+          </div>
           <div>MODE: {layoutMode}</div>
           <div>GRID: {showGrid ? 'ON' : 'OFF'}</div>
           <div>OPACITY: {(globalOpacity * 100).toFixed(0)}%</div>

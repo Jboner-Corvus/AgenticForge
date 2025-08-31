@@ -1,4 +1,3 @@
-
 import { useState, useEffect, ReactNode } from 'react';
 import { fr, en } from '../translations';
 import { Language, Translations } from '../types/language';

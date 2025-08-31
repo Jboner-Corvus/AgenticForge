@@ -27,7 +27,7 @@ try {
   // Create the destination directory if it doesn't exist
   mkdirSync(resolve('./dist/modules'), { recursive: true });
   mkdirSync(resolve('./dist/modules/tools'), { recursive: true });
-  
+
   // Copy the entire definitions directory
   cpSync(toolsSourcePath, toolsDestPath, { recursive: true });
   console.log('Copied tools definitions to dist directory');

@@ -17,19 +17,19 @@ import { SettingsModalContainer } from './components/SettingsModalContainer';
 import { ChatContainer } from './components/ChatContainer';
 import { usePinningStore } from './store/pinningStore';
 // Lazy imports pour optimiser le bundle
-import { 
-  LazyLeaderboardPage, 
-  LazyLlmKeyManager, 
+import {
+  LazyLeaderboardPage,
+  LazyLlmKeyManager,
   LazyOAuthPage,
   LazyLayoutManager,
   LazyCanvas,
   LazyAgentCanvas,
   LazyDebugLogContainer,
-  LazySubAgentCLIView
+  LazySubAgentCLIView,
 } from './components/optimized/LazyComponents';
 // Import du store unifié
 import { useCombinedStore as useStore } from './store';
-import { 
+import {
   useCurrentPage,
   useIsControlPanelVisible,
   useIsCanvasVisible,
@@ -38,16 +38,18 @@ import {
   useCanvasWidth,
   useCanvasContent,
   useActiveCliJobId,
-  useIsDarkMode
+  useIsDarkMode,
 } from './store/hooks';
 
 // Import du nouveau composant UnifiedTodoListPanel
 import { UnifiedTodoListPanel } from './components/UnifiedTodoListPanel';
 
-
 export default function App() {
   console.log('🔥🔥🔥 [DEBUG] App component loading!');
-  
+  console.log('🚀 [APP] JavaScript is executing!');
+  console.log('📊 [APP] Current timestamp:', Date.now());
+  console.log('🌐 [APP] Window location:', window.location.href);
+
   // Use individual store hooks to avoid infinite loops
   const currentPage = useCurrentPage();
   const isControlPanelVisible = useIsControlPanelVisible();
@@ -58,7 +60,7 @@ export default function App() {
   const canvasContent = useCanvasContent();
   const activeCliJobId = useActiveCliJobId();
   const isDarkMode = useIsDarkMode();
-  
+
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const { translations } = useLanguage();
 
@@ -71,18 +73,23 @@ export default function App() {
   // Pinning store states
   const layoutMode = usePinningStore((state) => state.layoutMode);
   const components = usePinningStore((state) => state.components);
-  const hasPinnedComponents = Object.values(components).some(c => c.isPinned && c.isVisible);
-  
-  const { controlPanelWidth, handleMouseDownCanvas, setCanvasWidth } = useResizablePanel(300);
+  const hasPinnedComponents = Object.values(components).some(
+    (c) => c.isPinned && c.isVisible,
+  );
+
+  const { controlPanelWidth, handleMouseDownCanvas, setCanvasWidth } =
+    useResizablePanel(300);
 
   // Hook pour ajuster la largeur du canvas lors du redimensionnement de la fenêtre
   const setCanvasWidthStore = useStore((state) => state.setCanvasWidth);
-  const initializeSessionAndMessages = useStore((state) => state.initializeSessionAndMessages);
+  const initializeSessionAndMessages = useStore(
+    (state) => state.initializeSessionAndMessages,
+  );
 
   useEffect(() => {
     initializeSessionAndMessages();
   }, [initializeSessionAndMessages]);
-  
+
   useEffect(() => {
     const handleResize = () => {
       if (typeof window !== 'undefined') {
@@ -103,7 +110,9 @@ export default function App() {
   const renderMainContent = () => {
     switch (currentPage) {
       case 'chat':
-        return <ChatContainer variant="classic" showShadow={true} enhanced={true} />;
+        return (
+          <ChatContainer variant="classic" showShadow={true} enhanced={true} />
+        );
       case 'leaderboard':
         return <LazyLeaderboardPage />;
       case 'llm-api-keys':
@@ -120,96 +129,117 @@ export default function App() {
       <SessionIdProvider>
         <div className="min-h-screen flex flex-col bg-background text-foreground overflow-x-hidden relative">
           <AppInitializer />
-        <HeaderContainer />
-        <UnifiedTodoListPanel />
-        <Suspense fallback={<div>Loading Settings...</div>}>
-          <SettingsModalContainer />
-        </Suspense>
-
-        {/* SYSTÈME ÉPIQUE DE PINNING - Affiché si des composants sont pinnés */}
-        {hasPinnedComponents && <LazyLayoutManager />}
-
-        {/* LAYOUT CLASSIQUE - Masqué si en mode battlefield */}
-        <div className={`flex flex-1 overflow-hidden min-w-0 ${layoutMode === 'battlefield' ? 'opacity-20 pointer-events-none' : ''}`}>
-          {isControlPanelVisible && (
-            <div
-              className="flex-shrink-0 overflow-hidden relative"
-              style={{ width: controlPanelWidth, minWidth: '250px', maxWidth: '400px' }}
-            >
-              <ControlPanel />
-            </div>
-          )}
-
-          {/* Conteneur principal pour la discussion et le canevas */}
-          <main className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 flex overflow-hidden min-w-0">
-              <div className="flex-1 min-w-0 overflow-hidden">
-                {renderMainContent()}
-              </div>
-
-
-              {/* Section du Canvas CLASSIQUE - masquée si pinnée */}
-              {(isCanvasVisible || isCanvasPinned) && currentPage === 'chat' && !isCanvasFullscreen && !components.canvas?.isPinned && (
-                <div
-                  className="flex-shrink-0 h-full relative border-l-2 border-cyan-500/20"
-                  style={{ 
-                    width: canvasWidth, 
-                    minWidth: '300px', 
-                    maxWidth: `${Math.min(800, typeof window !== 'undefined' ? window.innerWidth * 0.6 : 600)}px`
-                  }}
-                >
-                  <AnimatePresence>
-                    <LazyAgentCanvas />
-                  </AnimatePresence>
-                  <div
-                    id="canvas-divider"
-                    role={translations.separator}
-                    aria-valuenow={canvasWidth}
-                    aria-valuemin={300}
-                    aria-valuemax={typeof window !== 'undefined' ? window.innerWidth * 0.6 : 600}
-                    aria-controls="agent-output-canvas"
-                    tabIndex={0}
-                    onMouseDown={handleMouseDownCanvas}
-                    onKeyDown={(e) => {
-                      if (e.key === 'ArrowLeft') {
-                        const maxCanvasWidth = typeof window !== 'undefined' ? window.innerWidth * 0.6 : 600;
-                        const newWidth = Math.min(maxCanvasWidth, canvasWidth + 10);
-                        setCanvasWidth(newWidth);
-                      } else if (e.key === 'ArrowRight') {
-                        const newWidth = Math.max(300, canvasWidth - 10);
-                        setCanvasWidth(newWidth);
-                      }
-                    }}
-                    className="absolute top-0 left-0 w-2 h-full cursor-ew-resize bg-border hover:bg-primary transition-colors duration-200 z-10"
-                  />
-                </div>
-              )}
-              
-              {/* Canvas ÉPIQUE en mode plein écran - remplace l'ancien canvas */}
-              {(isCanvasFullscreen || components.canvas?.isMaximized) && (canvasContent || isCanvasVisible) && (
-                <div className="fixed inset-0 z-50">
-                  <AnimatePresence>
-                    <LazyCanvas />
-                  </AnimatePresence>
-                </div>
-              )}
-            </div>
-
-            {activeCliJobId && (
-              <div className="mt-4">
-                <LazySubAgentCLIView jobId={activeCliJobId} />
+          <HeaderContainer />
+          <UnifiedTodoListPanel />
+          <Suspense fallback={<div>Loading Settings...</div>}>
+            <SettingsModalContainer />
+          </Suspense>
+          {/* SYSTÈME ÉPIQUE DE PINNING - Affiché si des composants sont pinnés */}
+          {hasPinnedComponents && <LazyLayoutManager />}
+          {/* LAYOUT CLASSIQUE - Masqué si en mode battlefield */}
+          <div
+            className={`flex flex-1 overflow-hidden min-w-0 ${layoutMode === 'battlefield' ? 'opacity-20 pointer-events-none' : ''}`}
+          >
+            {isControlPanelVisible && (
+              <div
+                className="flex-shrink-0 overflow-hidden relative"
+                style={{
+                  width: controlPanelWidth,
+                  minWidth: '250px',
+                  maxWidth: '400px',
+                }}
+              >
+                <ControlPanel />
               </div>
             )}
-          </main>
-        </div>
-        
-        <LazyDebugLogContainer />
-        <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
-        <AuthManager 
-          showStatusIndicator={true}
-          indicatorPosition="bottom-right"
-          onAuthError={() => console.log('🔐 Système d\'authentification activé')}
-        />
+
+            {/* Conteneur principal pour la discussion et le canevas */}
+            <main className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 flex overflow-hidden min-w-0">
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  {renderMainContent()}
+                </div>
+
+                {/* Section du Canvas CLASSIQUE - masquée si pinnée */}
+                {(isCanvasVisible || isCanvasPinned) &&
+                  currentPage === 'chat' &&
+                  !isCanvasFullscreen &&
+                  !components.canvas?.isPinned && (
+                    <div
+                      className="flex-shrink-0 h-full relative border-l-2 border-cyan-500/20"
+                      style={{
+                        width: canvasWidth,
+                        minWidth: '300px',
+                        maxWidth: `${Math.min(800, typeof window !== 'undefined' ? window.innerWidth * 0.6 : 600)}px`,
+                      }}
+                    >
+                      <AnimatePresence>
+                        <LazyAgentCanvas />
+                      </AnimatePresence>
+                      <div
+                        id="canvas-divider"
+                        role={translations.separator}
+                        aria-valuenow={canvasWidth}
+                        aria-valuemin={300}
+                        aria-valuemax={
+                          typeof window !== 'undefined'
+                            ? window.innerWidth * 0.6
+                            : 600
+                        }
+                        aria-controls="agent-output-canvas"
+                        tabIndex={0}
+                        onMouseDown={handleMouseDownCanvas}
+                        onKeyDown={(e) => {
+                          if (e.key === 'ArrowLeft') {
+                            const maxCanvasWidth =
+                              typeof window !== 'undefined'
+                                ? window.innerWidth * 0.6
+                                : 600;
+                            const newWidth = Math.min(
+                              maxCanvasWidth,
+                              canvasWidth + 10,
+                            );
+                            setCanvasWidth(newWidth);
+                          } else if (e.key === 'ArrowRight') {
+                            const newWidth = Math.max(300, canvasWidth - 10);
+                            setCanvasWidth(newWidth);
+                          }
+                        }}
+                        className="absolute top-0 left-0 w-2 h-full cursor-ew-resize bg-border hover:bg-primary transition-colors duration-200 z-10"
+                      />
+                    </div>
+                  )}
+
+                {/* Canvas ÉPIQUE en mode plein écran - remplace l'ancien canvas */}
+                {(isCanvasFullscreen || components.canvas?.isMaximized) &&
+                  (canvasContent || isCanvasVisible) && (
+                    <div className="fixed inset-0 z-50">
+                      <AnimatePresence>
+                        <LazyCanvas />
+                      </AnimatePresence>
+                    </div>
+                  )}
+              </div>
+
+              {activeCliJobId && (
+                <div className="mt-4">
+                  <LazySubAgentCLIView jobId={activeCliJobId} />
+                </div>
+              )}
+            </main>
+          </div>
+          <LazyDebugLogContainer />
+          <LoginModal
+            isOpen={isLoginModalOpen}
+            onClose={() => setIsLoginModalOpen(false)}
+          />
+          <AuthManager
+            showStatusIndicator={true}
+            indicatorPosition="bottom-right"
+            onAuthError={() =>
+              console.log("🔐 Système d'authentification activé")
+            }
+          />
         </div>
       </SessionIdProvider>
     </LanguageProvider>

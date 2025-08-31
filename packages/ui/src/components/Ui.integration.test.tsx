@@ -7,7 +7,7 @@ import { UserInput } from './UserInput';
 vi.mock('../lib/store', async () => {
   const mod = await import('../lib/__mocks__/store');
   const useStore = mod.useStore;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   (useStore as any).getState = vi.fn(() => mod.mockState);
   return {
     useStore,
@@ -45,7 +45,7 @@ describe('UI Integration Tests', () => {
     vi.clearAllMocks();
 
     (useStore.getState as Mock).mockReturnValue(useStore.getState());
-    
+
     // Mock window.prompt and window.confirm
     vi.spyOn(window, 'prompt').mockImplementation(() => 'Test Session Name');
     vi.spyOn(window, 'confirm').mockImplementation(() => true);
@@ -70,14 +70,14 @@ describe('UI Integration Tests', () => {
       ...useStore.getState(),
       isProcessing: true,
     };
-    
+
     (useStore.getState as Mock).mockReturnValue(processingState);
-    
+
     renderWithProviders(<UserInput />);
-    
+
     const textarea = screen.getByPlaceholderText('Type your message...');
     const sendButton = screen.queryByRole('button', { name: /send message/i });
-    
+
     // Check that UI elements are disabled during processing
     expect(textarea).toBeDisabled();
     expect(sendButton).not.toBeInTheDocument(); // Button is replaced by spinner
@@ -86,7 +86,7 @@ describe('UI Integration Tests', () => {
   it('should handle empty user input gracefully', () => {
     const startAgentMock = vi.fn();
     (useAgentStream as Mock).mockReturnValue({
-        startAgent: startAgentMock,
+      startAgent: startAgentMock,
     });
 
     // Set processing state to false for this test
@@ -94,16 +94,16 @@ describe('UI Integration Tests', () => {
       ...useStore.getState(),
       isProcessing: false,
     };
-    
+
     (useStore.getState as Mock).mockReturnValue(notProcessingState);
-    
+
     renderWithProviders(<UserInput />);
-    
+
     const sendButton = screen.getByRole('button', { name: /send message/i });
-    
+
     // Try to send empty message
     fireEvent.click(sendButton);
-    
+
     // Verify that startAgent is not called for empty input
     expect(startAgentMock).not.toHaveBeenCalled();
   });

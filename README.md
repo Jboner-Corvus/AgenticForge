@@ -19,7 +19,7 @@
 
 <p align="center">
   <em>
-     Automatisez vos opérations en toute confiance. AgentMCP orchestre des sous-agents spécialisés, vous permettant de visualiser chaque outil MCP en temps réel dans le canevas. Regardez vos idées prendre vie instantanément. Grâce au basculement API intelligent, profitez d'une continuité sans interruption. L'IA souveraine est là. Saurez-vous la maîtriser ?
+     Automatisez vos opérations en toute confiance. AgentMCP orchestre des sous-agents spécialisés, vous permettant de visualiser chaque outil MCP en temps réel dans le canevas. Regardez vos idées prendre vie instantanément. Grâce au basculement MCP intelligent, profitez d'une continuité sans interruption. L'IA souveraine est là. Saurez-vous la maîtriser ?
   </em>
 </p>
 <br>
@@ -90,11 +90,13 @@
 ### 🤖 Installation Ultra-Simple (100% Automatique)
 
 **Option 1: Installation en une ligne**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Jboner-Corvus/AgenticForge/main/install.sh | bash
 ```
 
 **Option 2: Installation classique**
+
 ```bash
 # 1. Cloner le projet
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
@@ -106,6 +108,7 @@ chmod +x run-v2.sh
 ```
 
 **Option 3: Installation interactive**
+
 ```bash
 # 1. Cloner le projet
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
@@ -140,8 +143,9 @@ chmod +x run-v2.sh
 **Choisissez "1) 🟢 Start Services" pour l'installation automatique**
 
 **🔧 Au premier démarrage, le système :**
+
 - Crée automatiquement le fichier `.env` avec des valeurs par défaut
-- Installe les dépendances pnpm nécessaires  
+- Installe les dépendances pnpm nécessaires
 - Build les packages core et UI
 - Lance tous les services Docker
 - Configure l'environnement de production
@@ -188,13 +192,14 @@ AgentMCP intègre un **LlmKeyManager** puissant pour une gestion centralisée et
 
 #### Fonctionnalités du LlmKeyManager :
 
--   **Ajout/Suppression de Clés en Temps Réel** : Ajoutez ou supprimez des clés API pour différents fournisseurs (OpenAI, Gemini, Anthropic, etc.) sans redémarrer le système.
--   **Activation/Désactivation** : Activez ou désactivez des clés à la volée.
--   **Basculement Automatique (Failover)** : Si une clé API échoue (limite de requêtes atteinte, erreur), le système bascule automatiquement sur la prochaine clé valide pour garantir une continuité de service.
--   **Monitoring et Statistiques** : Suivez l'utilisation de vos clés, le nombre de clés actives, et le nombre de fournisseurs configurés.
--   **Tests de Validité** : Testez la validité de chaque clé directement depuis l'interface.
+- **Ajout/Suppression de Clés en Temps Réel** : Ajoutez ou supprimez des clés API pour différents fournisseurs (OpenAI, Gemini, Anthropic, etc.) sans redémarrer le système.
+- **Activation/Désactivation** : Activez ou désactivez des clés à la volée.
+- **Basculement Automatique (Failover)** : Si une clé API échoue (limite de requêtes atteinte, erreur), le système bascule automatiquement sur la prochaine clé valide pour garantir une continuité de service.
+- **Monitoring et Statistiques** : Suivez l'utilisation de vos clés, le nombre de clés actives, et le nombre de fournisseurs configurés.
+- **Tests de Validité** : Testez la validité de chaque clé directement depuis l'interface.
 
 #### Ajout de Clés Supplémentaires
+
 1. **Via l'Interface Web** : [localhost:3002](http://localhost:3002) → Onglet "Clés API"
 2. **Fonctionnalités** :
    - ✅ Ajout/suppression de clés en temps réel
@@ -212,7 +217,8 @@ LLM_PROVIDER=qwen
 LLM_MODEL_NAME=qwen3-coder-plus
 LLM_API_KEY=votre_cle_api_qwen
 QWEN_API_BASE_URL=https://portal.qwen.ai/v1/chat/completions
-```
+
+````
 
 Consultez le fichier [docs/QWEN_PROVIDER.md](docs/QWEN_PROVIDER.md) pour plus de détails sur la configuration et le dépannage du fournisseur Qwen.
 
@@ -228,7 +234,7 @@ Pour exécuter ces scripts :
 ```bash
 cd /chemin/vers/AgentMCP
 ts-node scripts/diagnose-qwen-connection.ts
-```
+````
 
 Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un résumé complet des améliorations apportées au fournisseur Qwen.
 
@@ -238,18 +244,18 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
 
 ### Option 1 : API Cloud (Recommandée pour débuter)
 
-| Fournisseur | Modèles Recommandés (2025) | Point d'accès / Clé API |
-|:------------|:-----------------------------------|:----------------------------------------------------|
-| **Google AI** | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com/keys](https://aistudio.google.com/keys) |
-| **Qwen** | `qwen-coder-plus` | [portal.qwen.ai](https://portal.qwen.ai/) |
-| **OpenAI** | `gpt-5` | [platform.openai.com](https://platform.openai.com/signup) |
-| **X AI** | `grok-4` | [x.ai](https://x.ai/) |
-| **OpenRouter**| `z-ai/glm-4.5-air:free` | [openrouter.ai](https://openrouter.ai/keys) |
-
+| Fournisseur    | Modèles Recommandés (2025)           | Point d'accès / Clé API                                      |
+| :------------- | :----------------------------------- | :----------------------------------------------------------- |
+| **Google AI**  | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com/keys](https://aistudio.google.com/keys) |
+| **Qwen**       | `qwen-coder-plus`                    | [portal.qwen.ai](https://portal.qwen.ai/)                    |
+| **OpenAI**     | `gpt-5`                              | [platform.openai.com](https://platform.openai.com/signup)    |
+| **X AI**       | `grok-4`                             | [x.ai](https://x.ai/)                                        |
+| **OpenRouter** | `z-ai/glm-4.5-air:free`              | [openrouter.ai](https://openrouter.ai/keys)                  |
 
 ### Option 2 : IA Locale (Pour la confidentialité)
 
 #### Ollama
+
 1. **Installer Ollama** : [ollama.ai](https://ollama.ai/)
 2. **Télécharger un modèle** :
    ```bash
@@ -258,9 +264,10 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
    ```
 
 #### LM Studio
+
 1. **Installer LM Studio** : [lmstudio.ai](https://lmstudio.ai/)
 2. **Télécharger un modèle** et démarrer le serveur local
-3. **Configuration** : 
+3. **Configuration** :
    ```env
    LLM_PROVIDER="openai"
    LLM_API_BASE_URL="http://localhost:1234/v1"
@@ -281,36 +288,37 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
 ./run-v2.sh
 ```
 
-
 ## 🎯 Cas d'Usage et Exemples
 
 ### 🚀 Démarrage Rapide
 
-1. **Accédez** à [localhost:3002](http://localhost:3002) 
+1. **Accédez** à [localhost:3002](http://localhost:3002)
 2. **Testez** la forge d'outils MCP en temps réel :
    ```
-   "Crée un outil MCP personnalisé pour analyser les logs système, 
+   "Crée un outil MCP personnalisé pour analyser les logs système,
    code-le en TypeScript, l'intègre au worker et teste-le immédiatement"
    ```
 3. **Ou testez** l'exécution système directe :
    ```
-   "Analyse mon système, crée une API REST dans un nouveau dossier, 
+   "Analyse mon système, crée une API REST dans un nouveau dossier,
    installe les dépendances avec npm, lance les tests et démarre le serveur"
    ```
 
 ### 🔧 Forge d'Outils MCP Personnalisés
 
 #### ⚡ Outils Système Avancés
+
 ```bash
 "Forge un outil MCP qui monitor en temps réel :
-- Code l'outil en TypeScript avec Zod schemas  
+- Code l'outil en TypeScript avec Zod schemas
 - Intègre-le directement au worker AgentMCP
 - Interface pour surveiller CPU/RAM/Processus
 - Affichage temps réel dans l'interface web
 - Test immédiat de toutes les fonctionnalités"
 ```
 
-#### 🌐 Outils Web Intelligents  
+#### 🌐 Outils Web Intelligents
+
 ```bash
 "Crée un outil MCP de scraping intelligent :
 - Génère le code avec gestion des sessions
@@ -323,10 +331,11 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
 ### 🌐 Applications Full-Stack
 
 #### ⚙️ Automation & Supervision Système
+
 ```bash
 "Lis ce fichier YAML de configuration, crée un daemon Python qui :
 - Monitor les processus système définis
-- Exécute les tâches cron automatiquement  
+- Exécute les tâches cron automatiquement
 - Envoie les logs vers /var/log/automation.log
 - Redémarre les services en cas d'échec
 - Lance le daemon avec systemctl --user"
@@ -335,6 +344,7 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
 ### 📊 Outils de Performance
 
 #### 🏃‍♂️ Benchmarking Système Complet
+
 ```bash
 "Lance un benchmark complet de cette machine :
 - Teste CPU/RAM/Disque avec stress-ng
@@ -345,6 +355,7 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
 ```
 
 #### 📚 Documentation Auto-Générée
+
 ```bash
 "Scan récursivement mon projet, analyse le code source, génère :
 - README.md détaillé avec diagrammes d'architecture
@@ -357,11 +368,12 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
 ### 🔧 Gestion de Projet
 
 #### 🌳 Workflows Git avec Déploiement Automatique
+
 ```bash
 "Configure un workflow Git complet dans ce repo :
 - Installe et configure GitFlow avec les hooks
 - Crée les scripts pre-commit avec tests auto
-- Configure GitHub Actions ou GitLab CI localement  
+- Configure GitHub Actions ou GitLab CI localement
 - Script de déploiement qui build, test et relance les services
 - Test le workflow complet avec une feature branch"
 ```
@@ -369,6 +381,7 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
 ### 🎯 Projets Spécialisés
 
 #### 🤖 Agent avec Suite d'Outils MCP Custom
+
 ```bash
 "Clone AgentMCP, crée un agent spécialisé avec ses propres outils MCP :
 - Forge 5 outils MCP : monitoring, déploiement, backup, alertes, analytics
@@ -378,7 +391,8 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
 - Test complet de la suite d'outils forgés automatiquement"
 ```
 
-#### 💻 Administration Système Intelligente  
+#### 💻 Administration Système Intelligente
+
 ```bash
 "Analyse ce serveur Linux et crée un tableau de bord admin :
 - Monitor temps réel : CPU, RAM, disque, réseau
@@ -389,7 +403,8 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
 - Interface accessible via nginx sur port 8080"
 ```
 
-**🔥 Puissance Unique :** 
+**🔥 Puissance Unique :**
+
 - **🛠️ Forge MCP** : Crée des outils MCP personnalisés en TypeScript, les intègre au worker et les test immédiatement
 - **⚡ Exécution Directe** : Accès système complet - installation, configuration, tests, déploiement automatisés
 - **🎯 Transparence Totale** : Visualisez vos outils MCP forgés en action directement dans l'interface web
@@ -398,14 +413,14 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
 
 ### Gestion Système Avancée
 
-| Action | Commande | Utilisation |
-|--------|----------|-----------|
-| **Console Complète** | `./run-v2.sh` | Interface de gestion principale |
-| **Démarrage Rapide** | `./run-v2.sh start` | Lancement direct du système |
-| **Monitoring** | `./run-v2.sh status` | État des services Docker |
-| **Logs Live** | `./run-v2.sh logs` | Surveillance temps réel |
-| **Redémarrage** | `./run-v2.sh restart` | Après modification config |
-| **Maintenance** | `./run-v2.sh` → Options 7-14 | Tests, lint, format, rebuild |
+| Action               | Commande                     | Utilisation                     |
+| -------------------- | ---------------------------- | ------------------------------- |
+| **Console Complète** | `./run-v2.sh`                | Interface de gestion principale |
+| **Démarrage Rapide** | `./run-v2.sh start`          | Lancement direct du système     |
+| **Monitoring**       | `./run-v2.sh status`         | État des services Docker        |
+| **Logs Live**        | `./run-v2.sh logs`           | Surveillance temps réel         |
+| **Redémarrage**      | `./run-v2.sh restart`        | Après modification config       |
+| **Maintenance**      | `./run-v2.sh` → Options 7-14 | Tests, lint, format, rebuild    |
 
 ---
 
@@ -452,7 +467,7 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour les détails.
 - **🚨 Issues** : [GitHub Issues](https://github.com/votre-username/agentmcp/issues)
 - **💬 Discussions** : [GitHub Discussions](https://github.com/votre-username/agentmcp/discussions)
 - **📚 Documentation** : [Wiki du Projet](https://github.com/votre-username/agentmcp/wiki)
-- **🎮 Discord** : [Rejoignez la communauté](https://discord.gg/VNtXQByKfg) - *Partagez vos créations, obtenez de l'aide en temps réel et découvrez les dernières nouveautés en avant-première*
+- **🎮 Discord** : [Rejoignez la communauté](https://discord.gg/VNtXQByKfg) - _Partagez vos créations, obtenez de l'aide en temps réel et découvrez les dernières nouveautés en avant-première_
 
 ---
 

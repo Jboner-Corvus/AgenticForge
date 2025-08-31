@@ -18,14 +18,14 @@ if (!LLM_API_KEY) {
 const testMessages = [
   {
     role: 'user',
-    content: 'Hello, this is a test message.'
-  }
+    content: 'Hello, this is a test message.',
+  },
 ];
 
 const requestBody = {
   model: LLM_MODEL_NAME,
   messages: testMessages,
-  max_tokens: 100
+  max_tokens: 100,
 };
 
 const body = JSON.stringify(requestBody);
@@ -35,21 +35,21 @@ console.log('\nSending test request...');
 const options = {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${LLM_API_KEY}`,
-    'Content-Type': 'application/json'
-  }
+    Authorization: `Bearer ${LLM_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
 };
 
 const req = https.request(QWEN_API_BASE_URL, options, (res) => {
   let data = '';
-  
+
   res.on('data', (chunk) => {
     data += chunk;
   });
-  
+
   res.on('end', () => {
     console.log(`Status Code: ${res.statusCode}`);
-    
+
     if (res.statusCode === 200) {
       try {
         const response = JSON.parse(data);
@@ -64,7 +64,7 @@ const req = https.request(QWEN_API_BASE_URL, options, (res) => {
       console.error('❌ LLM Connection: FAILED');
       console.error(`Status: ${res.statusCode}`);
       console.error(`Response: ${data.substring(0, 200)}`);
-      
+
       // Check for common issues
       if (res.statusCode === 401 || res.statusCode === 403) {
         console.log('\n🔧 Troubleshooting tips:');

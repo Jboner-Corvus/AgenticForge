@@ -239,38 +239,64 @@ export class VersionService {
     try {
       this.logger.debug('Fetching latest release from GitHub API');
 
-      const response = await fetch(`${this.githubApiUrl}/latest`, {
-        headers: {
-          Accept: 'application/vnd.github.v3+json',
-          'User-Agent': 'AgenticForge-VersionChecker/1.0',
-        },
-      });
+      // Add retry logic for network resilience
+      let lastError: Error | null = null;
+      
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+          
+          const response = await fetch(`${this.githubApiUrl}/latest`, {
+            headers: {
+              Accept: 'application/vnd.github.v3+json',
+              'User-Agent': 'AgenticForge-VersionChecker/1.0',
+            },
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            throw new Error(
+              `GitHub API returned ${response.status}: ${response.statusText}`,
+            );
+          }
 
-      if (!response.ok) {
-        throw new Error(
-          `GitHub API returned ${response.status}: ${response.statusText}`,
-        );
+          const release: GitHubRelease = await response.json();
+
+          // Filter out drafts and prereleases for stable version checking
+          if (release.draft || release.prerelease) {
+            this.logger.warn(
+              'Latest release is draft or prerelease, checking for stable release',
+            );
+            return this.getLatestStableRelease();
+          }
+
+          this.logger.debug(
+            { tag: release.tag_name },
+            'Latest release retrieved from GitHub',
+          );
+          return release;
+        } catch (error) {
+          lastError = error as Error;
+          this.logger.warn(
+            { error, attempt },
+            `Failed to fetch latest release from GitHub (attempt ${attempt}/3)`,
+          );
+          
+          // Wait before retrying (exponential backoff)
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          }
+        }
       }
-
-      const release: GitHubRelease = await response.json();
-
-      // Filter out drafts and prereleases for stable version checking
-      if (release.draft || release.prerelease) {
-        this.logger.warn(
-          'Latest release is draft or prerelease, checking for stable release',
-        );
-        return this.getLatestStableRelease();
-      }
-
-      this.logger.debug(
-        { tag: release.tag_name },
-        'Latest release retrieved from GitHub',
-      );
-      return release;
+      
+      throw lastError || new Error('Unknown error occurred');
     } catch (error) {
       this.logger.error(
         { error },
-        'Failed to fetch latest release from GitHub',
+        'Failed to fetch latest release from GitHub after all retries',
       );
       throw new AppError(
         'Failed to check for updates',
@@ -424,35 +450,61 @@ export class VersionService {
    */
   private async getLatestStableRelease(): Promise<GitHubRelease> {
     try {
-      const response = await fetch(this.githubApiUrl, {
-        headers: {
-          Accept: 'application/vnd.github.v3+json',
-          'User-Agent': 'AgenticForge-VersionChecker/1.0',
-        },
-      });
+      // Add retry logic for network resilience
+      let lastError: Error | null = null;
+      
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+          
+          const response = await fetch(this.githubApiUrl, {
+            headers: {
+              Accept: 'application/vnd.github.v3+json',
+              'User-Agent': 'AgenticForge-VersionChecker/1.0',
+            },
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            throw new Error(
+              `GitHub API returned ${response.status}: ${response.statusText}`,
+            );
+          }
 
-      if (!response.ok) {
-        throw new Error(
-          `GitHub API returned ${response.status}: ${response.statusText}`,
-        );
+          const releases: GitHubRelease[] = await response.json();
+
+          // Find first stable release
+          const stableRelease = releases.find(
+            (release) => !release.draft && !release.prerelease,
+          );
+
+          if (!stableRelease) {
+            throw new Error('No stable releases found');
+          }
+
+          return stableRelease;
+        } catch (error) {
+          lastError = error as Error;
+          this.logger.warn(
+            { error, attempt },
+            `Failed to fetch stable releases from GitHub (attempt ${attempt}/3)`,
+          );
+          
+          // Wait before retrying (exponential backoff)
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          }
+        }
       }
-
-      const releases: GitHubRelease[] = await response.json();
-
-      // Find first stable release
-      const stableRelease = releases.find(
-        (release) => !release.draft && !release.prerelease,
-      );
-
-      if (!stableRelease) {
-        throw new Error('No stable releases found');
-      }
-
-      return stableRelease;
+      
+      throw lastError || new Error('Unknown error occurred');
     } catch (error) {
       this.logger.error(
         { error },
-        'Failed to fetch stable releases from GitHub',
+        'Failed to fetch stable releases from GitHub after all retries',
       );
       throw error;
     }

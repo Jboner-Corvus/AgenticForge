@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function useDraggablePane(initialHeight: number) {
   const [height, setHeight] = useState(initialHeight);
@@ -11,7 +11,7 @@ export function useDraggablePane(initialHeight: number) {
       setIsDragging(true);
       dragStartY.current = e.clientY;
       dragStartHeight.current = height;
-      document.body.style.userSelect = "none";
+      document.body.style.userSelect = 'none';
     },
     [height],
   );
@@ -31,16 +31,16 @@ export function useDraggablePane(initialHeight: number) {
 
   const handleDragEnd = useCallback(() => {
     setIsDragging(false);
-    document.body.style.userSelect = "";
+    document.body.style.userSelect = '';
   }, []);
 
   useEffect(() => {
     if (isDragging) {
-      window.addEventListener("mousemove", handleDragMove);
-      window.addEventListener("mouseup", handleDragEnd);
+      window.addEventListener('mousemove', handleDragMove);
+      window.addEventListener('mouseup', handleDragEnd);
       return () => {
-        window.removeEventListener("mousemove", handleDragMove);
-        window.removeEventListener("mouseup", handleDragEnd);
+        window.removeEventListener('mousemove', handleDragMove);
+        window.removeEventListener('mouseup', handleDragEnd);
       };
     }
   }, [isDragging, handleDragMove, handleDragEnd]);
@@ -63,7 +63,7 @@ export function useDraggableSidebar(initialWidth: number) {
       setIsDragging(true);
       dragStartX.current = e.clientX;
       dragStartWidth.current = width;
-      document.body.style.userSelect = "none";
+      document.body.style.userSelect = 'none';
     },
     [width],
   );
@@ -83,16 +83,16 @@ export function useDraggableSidebar(initialWidth: number) {
 
   const handleDragEnd = useCallback(() => {
     setIsDragging(false);
-    document.body.style.userSelect = "";
+    document.body.style.userSelect = '';
   }, []);
 
   useEffect(() => {
     if (isDragging) {
-      window.addEventListener("mousemove", handleDragMove);
-      window.addEventListener("mouseup", handleDragEnd);
+      window.addEventListener('mousemove', handleDragMove);
+      window.addEventListener('mouseup', handleDragEnd);
       return () => {
-        window.removeEventListener("mousemove", handleDragMove);
-        window.removeEventListener("mouseup", handleDragEnd);
+        window.removeEventListener('mousemove', handleDragMove);
+        window.removeEventListener('mouseup', handleDragEnd);
       };
     }
   }, [isDragging, handleDragMove, handleDragEnd]);

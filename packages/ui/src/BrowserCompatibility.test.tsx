@@ -21,7 +21,8 @@ describe('Browser Compatibility Tests', () => {
       Object.defineProperty(window, 'navigator', {
         value: {
           ...originalNavigator,
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          userAgent:
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         },
         writable: true,
       });
@@ -34,7 +35,8 @@ describe('Browser Compatibility Tests', () => {
       Object.defineProperty(window, 'navigator', {
         value: {
           ...originalNavigator,
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
+          userAgent:
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
         },
         writable: true,
       });
@@ -47,12 +49,15 @@ describe('Browser Compatibility Tests', () => {
       Object.defineProperty(window, 'navigator', {
         value: {
           ...originalNavigator,
-          userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15',
+          userAgent:
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15',
         },
         writable: true,
       });
 
-      const isSafari = navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome');
+      const isSafari =
+        navigator.userAgent.includes('Safari') &&
+        !navigator.userAgent.includes('Chrome');
       expect(isSafari).toBe(true);
     });
 
@@ -60,7 +65,8 @@ describe('Browser Compatibility Tests', () => {
       Object.defineProperty(window, 'navigator', {
         value: {
           ...originalNavigator,
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.59',
+          userAgent:
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.59',
         },
         writable: true,
       });
@@ -73,7 +79,8 @@ describe('Browser Compatibility Tests', () => {
       Object.defineProperty(window, 'navigator', {
         value: {
           ...originalNavigator,
-          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1',
+          userAgent:
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1',
         },
         writable: true,
       });
@@ -139,7 +146,7 @@ describe('Browser Compatibility Tests', () => {
     it('should support Symbol', () => {
       const sym1 = Symbol('test');
       const sym2 = Symbol('test');
-      
+
       expect(typeof sym1).toBe('symbol');
       expect(sym1).not.toBe(sym2);
     });
@@ -149,7 +156,7 @@ describe('Browser Compatibility Tests', () => {
     // Mock localStorage for testing
     const localStorageMock = (() => {
       let store: { [key: string]: string } = {};
-      
+
       return {
         getItem(key: string) {
           return store[key] || null;
@@ -162,7 +169,7 @@ describe('Browser Compatibility Tests', () => {
         },
         clear() {
           store = {};
-        }
+        },
       };
     })();
 
@@ -191,16 +198,16 @@ describe('Browser Compatibility Tests', () => {
       const obj = { test: 'value', number: 42 };
       const jsonString = JSON.stringify(obj);
       const parsed = JSON.parse(jsonString);
-      
+
       expect(parsed).toEqual(obj);
     });
 
     it('should support console methods', () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-      
+
       console.log('test message');
       expect(consoleSpy).toHaveBeenCalledWith('test message');
-      
+
       consoleSpy.mockRestore();
     });
 
@@ -208,13 +215,13 @@ describe('Browser Compatibility Tests', () => {
       return new Promise((resolve) => {
         // Use vi.useFakeTimers() to properly mock timers
         vi.useFakeTimers();
-        
+
         const timeoutId = setTimeout(() => {
           resolve('timeout executed');
         }, 10);
 
         expect(timeoutId).toBeDefined();
-        
+
         // Advance timers to execute the timeout
         vi.advanceTimersByTime(10);
         vi.useRealTimers();
@@ -225,14 +232,14 @@ describe('Browser Compatibility Tests', () => {
 
     it('should support addEventListener', () => {
       const mockCallback = vi.fn();
-      
+
       window.addEventListener('test-event', mockCallback);
-      
+
       const event = new CustomEvent('test-event');
       window.dispatchEvent(event);
-      
+
       expect(mockCallback).toHaveBeenCalled();
-      
+
       window.removeEventListener('test-event', mockCallback);
     });
   });
@@ -241,7 +248,7 @@ describe('Browser Compatibility Tests', () => {
     it('should support CSS custom properties', () => {
       const testElement = document.createElement('div');
       testElement.style.setProperty('--test-var', 'red');
-      
+
       const value = testElement.style.getPropertyValue('--test-var');
       expect(value).toBe('red');
     });
@@ -249,21 +256,21 @@ describe('Browser Compatibility Tests', () => {
     it('should support flexbox', () => {
       const testElement = document.createElement('div');
       testElement.style.display = 'flex';
-      
+
       expect(testElement.style.display).toBe('flex');
     });
 
     it('should support grid', () => {
       const testElement = document.createElement('div');
       testElement.style.display = 'grid';
-      
+
       expect(testElement.style.display).toBe('grid');
     });
 
     it('should support transform', () => {
       const testElement = document.createElement('div');
       testElement.style.transform = 'translateX(10px)';
-      
+
       expect(testElement.style.transform).toBe('translateX(10px)');
     });
   });
@@ -273,10 +280,10 @@ describe('Browser Compatibility Tests', () => {
       const div = document.createElement('div');
       div.className = 'test-class';
       document.body.appendChild(div);
-      
+
       const found = document.querySelector('.test-class');
       expect(found).toBe(div);
-      
+
       document.body.removeChild(div);
     });
 
@@ -285,26 +292,26 @@ describe('Browser Compatibility Tests', () => {
       const div2 = document.createElement('div');
       div1.className = 'test-class';
       div2.className = 'test-class';
-      
+
       document.body.appendChild(div1);
       document.body.appendChild(div2);
-      
+
       const found = document.querySelectorAll('.test-class');
       expect(found.length).toBe(2);
-      
+
       document.body.removeChild(div1);
       document.body.removeChild(div2);
     });
 
     it('should support classList', () => {
       const div = document.createElement('div');
-      
+
       div.classList.add('class1');
       expect(div.classList.contains('class1')).toBe(true);
-      
+
       div.classList.remove('class1');
       expect(div.classList.contains('class1')).toBe(false);
-      
+
       div.classList.toggle('class2');
       expect(div.classList.contains('class2')).toBe(true);
     });
@@ -312,7 +319,7 @@ describe('Browser Compatibility Tests', () => {
     it('should support dataset', () => {
       const div = document.createElement('div');
       div.dataset.testId = 'my-test-id';
-      
+
       expect(div.dataset.testId).toBe('my-test-id');
       expect(div.getAttribute('data-test-id')).toBe('my-test-id');
     });
@@ -321,20 +328,20 @@ describe('Browser Compatibility Tests', () => {
   describe('Error Handling', () => {
     it('should handle try/catch blocks', () => {
       let caught = false;
-      
+
       try {
         throw new Error('Test error');
       } catch (error) {
         caught = true;
         expect((error as Error).message).toBe('Test error');
       }
-      
+
       expect(caught).toBe(true);
     });
 
     it('should handle Promise rejections', () => {
       const rejectedPromise = Promise.reject(new Error('Promise error'));
-      
+
       return rejectedPromise.catch((error) => {
         expect(error.message).toBe('Promise error');
       });
@@ -344,7 +351,7 @@ describe('Browser Compatibility Tests', () => {
       const asyncError = async () => {
         throw new Error('Async error');
       };
-      
+
       try {
         await asyncError();
         expect(true).toBe(false); // Should not reach here
@@ -367,7 +374,7 @@ describe('Browser Compatibility Tests', () => {
           expect(typeof timestamp).toBe('number');
           resolve(timestamp);
         };
-        
+
         requestAnimationFrame(callback);
       });
     }, 10000); // Increase timeout to 10 seconds

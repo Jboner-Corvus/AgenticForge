@@ -11,6 +11,7 @@ A key requirement is to enable the frontend to display sub-agents in the canvas 
 System prompts are adjusted to ensure proper utilization of the new CLI agent management tools, with specific instructions for when to use the specialized delegation mechanisms.
 
 ### Repository Type: Backend Application with Full-Stack Integration
+
 AgenticForge is a sophisticated backend application built with Node.js/TypeScript and FastAPI, featuring a React frontend. It implements a microservices architecture with MCP (Model Context Protocol) for dynamic tool creation and management.
 
 ## Architecture
@@ -22,50 +23,50 @@ graph TB
     subgraph "CLI Agent Manager Layer"
         CAM[CLI Agent Manager - Master Orchestrator]
         TR[Task Router - Work Assignment]
-        RM[Resource Manager - Token Economy] 
+        RM[Resource Manager - Token Economy]
         SM[Stream Manager - Real-time Monitoring]
         TM[Timer Manager - Rate Control]
         TXM[Tmux Manager - Session Control]
     end
-    
+
     subgraph "Professional Sub-Agent Layer"
         GC[gemini-cli - Knowledge Specialist]
         QC[qwen-code - Coding Expert]
         CC[claude-code - Creative Specialist]
     end
-    
+
     subgraph "AgenticForge Core"
         TR_CORE[Tool Registry]
         AGENT[Agent Orchestrator]
         REDIS[Redis Pub/Sub]
         API[Web API]
     end
-    
+
     subgraph "Client Layer"
         UI[React Frontend]
         CANVAS[Canvas Component - Visualization]
         SSE[Server-Sent Events]
     end
-    
+
     CAM --> TR
     CAM --> RM
     CAM --> SM
     CAM --> TM
     CAM --> TXM
-    
+
     TR --> GC
-    TR --> QC  
+    TR --> QC
     TR --> CC
-    
+
     CAM --> TR_CORE
     SM --> REDIS
     REDIS --> SSE
     SSE --> UI
     SSE --> CANVAS
-    
+
     AGENT --> CAM
     API --> CAM
-    
+
     style CAM fill:#4CAF50,stroke:#2E7D32
     style TR fill:#2196F3,stroke:#1565C0
     style RM fill:#FF9800,stroke:#E65100
@@ -103,7 +104,7 @@ CLI_AGENT_TOKEN_ECONOMY=enabled
 
 # Agent-specific settings - Professional Configuration
 GEMINI_CLI_PATH=/usr/local/bin/gemini-cli
-QWEN_CODE_PATH=/usr/local/bin/qwen-code  
+QWEN_CODE_PATH=/usr/local/bin/qwen-code
 CLAUDE_CODE_PATH=/usr/local/bin/claude-code
 
 # Resource limits - Token Economy
@@ -132,49 +133,50 @@ TOKEN_OPTIMIZATION_LEVEL=aggressive
 
 ``typescript
 interface AgentConfig {
-  name: string
-  executable: string
-  specializations: string[]
-  maxConcurrentTasks: number
-  defaultTimeout: number
-  retryAttempts: number
-  circuitBreakerConfig: CircuitBreakerConfig
-  minSleepInterval: number
-  enforceTimers: boolean
-  useTmuxSessions: boolean
-  sessionPersistence: boolean
-  professionalConfiguration: ProfessionalConfig
+name: string
+executable: string
+specializations: string[]
+maxConcurrentTasks: number
+defaultTimeout: number
+retryAttempts: number
+circuitBreakerConfig: CircuitBreakerConfig
+minSleepInterval: number
+enforceTimers: boolean
+useTmuxSessions: boolean
+sessionPersistence: boolean
+professionalConfiguration: ProfessionalConfig
 }
 
 interface ProfessionalConfig {
-  specializationDepth: 'basic' | 'intermediate' | 'expert'
-  resourceAllocation: 'conservative' | 'balanced' | 'high'
-  errorRecovery: 'basic' | 'robust' | 'comprehensive' | 'adaptive'
-  monitoringLevel: 'periodic' | 'continuous' | 'intensive'
+specializationDepth: 'basic' | 'intermediate' | 'expert'
+resourceAllocation: 'conservative' | 'balanced' | 'high'
+errorRecovery: 'basic' | 'robust' | 'comprehensive' | 'adaptive'
+monitoringLevel: 'periodic' | 'continuous' | 'intensive'
 }
 
 const agentConfigs: AgentConfig[] = [
-  {
-    name: 'gemini-cli',
-    executable: process.env.GEMINI_CLI_PATH || 'gemini-cli',
-    specializations: ['general', 'analysis', 'content'],
-    maxConcurrentTasks: 5,
-    defaultTimeout: 120000,
-    retryAttempts: 2,
-    circuitBreakerConfig: { threshold: 5, timeout: 60000 },
-    minSleepInterval: parseInt(process.env.GEMINI_CLI_MIN_SLEEP_MS || '1000'),
-    enforceTimers: true,
-    useTmuxSessions: process.env.CLI_AGENT_USE_TMUX === 'true',
-    sessionPersistence: process.env.TMUX_PERSIST_SESSIONS === 'true',
-    professionalConfiguration: {
-      specializationDepth: 'expert',
-      resourceAllocation: 'balanced',
-      errorRecovery: 'robust',
-      monitoringLevel: 'continuous'
-    }
-  },
-  // ... other agents with professional configurations
+{
+name: 'gemini-cli',
+executable: process.env.GEMINI_CLI_PATH || 'gemini-cli',
+specializations: ['general', 'analysis', 'content'],
+maxConcurrentTasks: 5,
+defaultTimeout: 120000,
+retryAttempts: 2,
+circuitBreakerConfig: { threshold: 5, timeout: 60000 },
+minSleepInterval: parseInt(process.env.GEMINI_CLI_MIN_SLEEP_MS || '1000'),
+enforceTimers: true,
+useTmuxSessions: process.env.CLI_AGENT_USE_TMUX === 'true',
+sessionPersistence: process.env.TMUX_PERSIST_SESSIONS === 'true',
+professionalConfiguration: {
+specializationDepth: 'expert',
+resourceAllocation: 'balanced',
+errorRecovery: 'robust',
+monitoringLevel: 'continuous'
+}
+},
+// ... other agents with professional configurations
 ]
+
 ```
 
 ### MCP Tool Creation for CLI Agents
@@ -182,11 +184,13 @@ const agentConfigs: AgentConfig[] = [
 Leverage existing MCP tool creation system to generate specialized tools for each CLI agent with built-in timer enforcement and tmux session management. System prompts are adjusted to ensure proper utilization of these tools:
 
 ```
-When managing CLI agents, always use the delegateTaskEnhanced tool for complex tasks that require multiple CLI tools. 
+
+When managing CLI agents, always use the delegateTaskEnhanced tool for complex tasks that require multiple CLI tools.
 For tasks requiring process isolation, use tmux-enabled agents.
 For time-sensitive operations, ensure timer enforcement is activated.
 Maintain professional configuration of all sub-agents with appropriate specializations.
-```
+
+````
 
 ```typescript
 // Auto-generated tools for each CLI agent with professional configuration
@@ -207,7 +211,7 @@ const geminiCliTool = await createAgentTool({
 })
 
 const qwenCodeTool = await createAgentTool({
-  agentName: 'qwen-code', 
+  agentName: 'qwen-code',
   specializations: ['code-generation', 'debugging', 'refactoring'],
   defaultTimeout: 180000,
   enforceTimers: true,
@@ -237,23 +241,26 @@ const claudeCodeTool = await createAgentTool({
     monitoringLevel: 'continuous'
   }
 })
-```
+````
 
 ### Professional Sub-Agent Configuration
 
 Each CLI sub-agent is configured as a professional specialist with appropriate capabilities:
 
 **gemini-cli - Knowledge Specialist**
+
 - Specialization: General knowledge, content generation, analysis
 - Configuration: Balanced resource allocation with robust error recovery
 - Monitoring: Continuous oversight with real-time feedback
 
 **qwen-code - Coding Expert**
+
 - Specialization: Code generation, debugging, refactoring
 - Configuration: High resource allocation with comprehensive error recovery
 - Monitoring: Continuous oversight with detailed execution tracking
 
 **claude-code - Creative Specialist**
+
 - Specialization: Creative writing, analysis, research
 - Configuration: Balanced resource allocation with adaptive error recovery
 - Monitoring: Continuous oversight with quality assessment
@@ -265,6 +272,7 @@ The orchestrator ensures each sub-agent maintains its professional configuration
 ### Task Management API
 
 **POST /api/cli-agents/tasks**
+
 ```
 {
   "taskDescription": "Generate a React component for user authentication",
@@ -280,6 +288,7 @@ The orchestrator ensures each sub-agent maintains its professional configuration
 ```
 
 **Response:**
+
 ```
 {
   "taskId": "task-uuid-123",
@@ -290,6 +299,7 @@ The orchestrator ensures each sub-agent maintains its professional configuration
 ```
 
 **GET /api/cli-agents/status**
+
 ```
 {
   "agents": [
@@ -302,7 +312,7 @@ The orchestrator ensures each sub-agent maintains its professional configuration
       "timers": []
     },
     {
-      "name": "qwen-code", 
+      "name": "qwen-code",
       "status": "busy",
       "credits": 92,
       "currentTasks": 5,
@@ -329,6 +339,7 @@ The orchestrator ensures each sub-agent maintains its professional configuration
 ```
 
 **POST /api/cli-agents/timers**
+
 ```
 {
   "agent": "gemini-cli",
@@ -342,6 +353,7 @@ The orchestrator ensures each sub-agent maintains its professional configuration
 ```
 
 **Response:**
+
 ```
 {
   "timerId": "timer-456",
@@ -351,6 +363,7 @@ The orchestrator ensures each sub-agent maintains its professional configuration
 ```
 
 **GET /api/cli-agents/sessions**
+
 ```
 {
   "sessions": [
@@ -375,6 +388,7 @@ The orchestrator ensures each sub-agent maintains its professional configuration
 ```
 
 **POST /api/cli-agents/sessions/{sessionId}/terminate**
+
 ```
 {
   "force": false
@@ -382,6 +396,7 @@ The orchestrator ensures each sub-agent maintains its professional configuration
 ```
 
 **Response:**
+
 ```
 {
   "sessionId": "session-789",
@@ -412,7 +427,7 @@ sequenceDiagram
     participant SM as Stream Manager
     participant CANVAS as Canvas Display
     participant Redis
-    
+
     Client->>CAM: Submit Task Request
     CAM->>TR: Route Task (Based on Specialization)
     TR->>RM: Check Resources (Token Economy)
@@ -424,7 +439,7 @@ sequenceDiagram
     CAM->>SM: Create Stream Channel (Continuous Monitoring)
     CAM->>CANVAS: Update Agent Status (Real-time Visualization)
     CAM->>CLI: Execute Task in Tmux Session (Professional Execution)
-    
+
     loop Continuous Supervision
         CLI->>SM: Stream Output (Real-time Feedback)
         SM->>Redis: Publish Event
@@ -435,7 +450,7 @@ sequenceDiagram
         TXM->>CLI: Manage Session (Persistent Oversight)
         CAM->>RM: Monitor Resource Usage (Token Economy)
     end
-    
+
     CLI->>CAM: Task Complete
     CAM->>RM: Release Credits (Resource Management)
     CAM->>TM: Cancel Timers
@@ -451,7 +466,7 @@ sequenceDiagram
 1. **Task Classification**: Analyze task description using keyword matching and NLP
 2. **Agent Scoring**: Score each agent based on:
    - Specialization match (35%)
-   - Resource availability (20%) 
+   - Resource availability (20%)
    - Current load (15%)
    - Historical performance (10%)
    - Timer compatibility (10%)
@@ -488,26 +503,27 @@ Implement token economy principles:
 
 ``typescript
 interface ErrorHandler {
-  handleAgentFailure(agent: string, error: Error): Promise<RecoveryAction>
-  handleResourceExhaustion(agent: string): Promise<AlternativeAgent[]>
-  handleStreamDisruption(taskId: string): Promise<ReconnectionStrategy>
+handleAgentFailure(agent: string, error: Error): Promise<RecoveryAction>
+handleResourceExhaustion(agent: string): Promise<AlternativeAgent[]>
+handleStreamDisruption(taskId: string): Promise<ReconnectionStrategy>
 }
 
 enum RecoveryAction {
-  RETRY = 'retry',
-  FALLBACK = 'fallback',
-  FAIL = 'fail',
-  QUEUE = 'queue'
+RETRY = 'retry',
+FALLBACK = 'fallback',
+FAIL = 'fail',
+QUEUE = 'queue'
 }
 
 // As a responsible orchestrator, always attempt recovery before considering failure
 const orchestratorPhilosophy = {
-  persistence: "Never abandon sub-agents",
-  recoveryFocus: "Prioritize recovery over failure",
-  resourceConservation: "Implement token economy in error handling",
-  continuousEngagement: "Find alternative work when primary tasks fail"
+persistence: "Never abandon sub-agents",
+recoveryFocus: "Prioritize recovery over failure",
+resourceConservation: "Implement token economy in error handling",
+continuousEngagement: "Find alternative work when primary tasks fail"
 };
-```
+
+````
 
 
 ## Testing Strategy
@@ -529,20 +545,20 @@ describe('CLI Agent Manager', () => {
     responses: ['Mock response 1', 'Mock response 2'],
     delay: 1000
   })
-  
+
   it('should route tasks based on specialization', async () => {
     const task = { taskDescription: 'Generate Python code', agent: 'auto' }
     const result = await cliManager.delegateTask(task)
     expect(result.assignedAgent).toBe('qwen-code')
   })
-  
+
   it('should maintain continuous supervision of sub-agents', async () => {
     const task = { taskDescription: 'Long-running task', agent: 'qwen-code' }
     const result = await cliManager.delegateTask(task)
     // Verify that supervision mechanisms are active
     expect(cliManager.getSupervisionStatus('qwen-code')).toBe('active')
   })
-  
+
   it('should implement token economy principles', async () => {
     const initialCredits = await resourceManager.getCredits('gemini-cli')
     const task = { taskDescription: 'Simple query', agent: 'gemini-cli' }
@@ -553,11 +569,12 @@ describe('CLI Agent Manager', () => {
     expect(cliManager.getTokenEfficiency()).toBeGreaterThan(0.8)
   })
 })
-```
+````
 
 ### Integration Testing
 
 **CLI Tool Integration:**
+
 - Test actual CLI tool execution with safe commands
 - Validate streaming output and event publishing
 - Verify error handling and recovery mechanisms
@@ -565,6 +582,7 @@ describe('CLI Agent Manager', () => {
 - Validate token economy implementation
 
 **Tmux Session Management:**
+
 - Test tmux session creation, attachment, and detachment
 - Validate process isolation between different agent sessions
 - Verify session persistence and cleanup procedures
@@ -572,6 +590,7 @@ describe('CLI Agent Manager', () => {
 - Validate continuous session monitoring
 
 **Resource Management:**
+
 - Test credit deduction and restoration
 - Validate rate limiting enforcement
 - Test circuit breaker activation and recovery
@@ -581,6 +600,7 @@ describe('CLI Agent Manager', () => {
 ### Performance Testing
 
 **Load Testing:**
+
 - Concurrent task execution across multiple CLI agents
 - Stream handling under high message volume
 - Resource contention and queuing behavior
@@ -588,6 +608,7 @@ describe('CLI Agent Manager', () => {
 - Token economy effectiveness under stress
 
 **Metrics:**
+
 - Task completion time per agent
 - Stream latency and throughput
 - Error rates and recovery times

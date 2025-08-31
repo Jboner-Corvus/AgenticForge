@@ -25,6 +25,13 @@ vi.mock('../../config.ts', () => ({
     MEMORY_THRESHOLD_MB: 512,
     RESPONSE_TIME_THRESHOLD_MS: 5000,
   },
+  getConfig: () => ({
+    AGENT_MAX_ITERATIONS: 5,
+    CPU_THRESHOLD_PERCENT: 80,
+    LLM_PROVIDER_HIERARCHY: ['openai'],
+    MEMORY_THRESHOLD_MB: 512,
+    RESPONSE_TIME_THRESHOLD_MS: 5000,
+  }),
 }));
 
 vi.mock('../../logger.ts', () => ({

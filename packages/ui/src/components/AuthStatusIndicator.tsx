@@ -18,7 +18,7 @@ interface AuthStatusIndicatorProps {
 export const AuthStatusIndicator: React.FC<AuthStatusIndicatorProps> = ({
   position = 'bottom-right',
   autoHideDuration = 0,
-  onFixAuthRequest
+  onFixAuthRequest,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [lastError, setLastError] = useState<AuthError | null>(null);
@@ -40,7 +40,7 @@ export const AuthStatusIndicator: React.FC<AuthStatusIndicatorProps> = ({
         }, autoHideDuration);
       }
     },
-    maxErrors: 1
+    maxErrors: 1,
   });
 
   const tokenStatus = getCurrentTokenStatus();
@@ -79,18 +79,20 @@ export const AuthStatusIndicator: React.FC<AuthStatusIndicatorProps> = ({
       return {
         icon: <AlertTriangle className="h-4 w-4 text-yellow-500" />,
         title: 'Token Manquant',
-        message: 'Aucun token d\'authentification configuré',
+        message: "Aucun token d'authentification configuré",
         bgColor: 'bg-yellow-900/20',
-        borderColor: 'border-yellow-700/50'
+        borderColor: 'border-yellow-700/50',
       };
     }
 
     return {
       icon: <Shield className="h-4 w-4 text-red-500" />,
-      title: 'Erreur d\'Authentification',
-      message: lastError ? `Échec sur ${lastError.url}` : 'Token invalide ou expiré',
+      title: "Erreur d'Authentification",
+      message: lastError
+        ? `Échec sur ${lastError.url}`
+        : 'Token invalide ou expiré',
       bgColor: 'bg-red-900/20',
-      borderColor: 'border-red-700/50'
+      borderColor: 'border-red-700/50',
     };
   };
 
@@ -105,12 +107,12 @@ export const AuthStatusIndicator: React.FC<AuthStatusIndicatorProps> = ({
         transition={{ duration: 0.3, ease: 'easeOut' }}
         className={`fixed ${getPositionClasses()} z-50 max-w-sm`}
       >
-        <div className={`${statusInfo.bgColor} ${statusInfo.borderColor} border rounded-lg shadow-lg backdrop-blur-sm p-4`}>
+        <div
+          className={`${statusInfo.bgColor} ${statusInfo.borderColor} border rounded-lg shadow-lg backdrop-blur-sm p-4`}
+        >
           <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 mt-0.5">
-              {statusInfo.icon}
-            </div>
-            
+            <div className="flex-shrink-0 mt-0.5">{statusInfo.icon}</div>
+
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
                 <h4 className="text-sm font-medium text-white">
@@ -125,15 +127,15 @@ export const AuthStatusIndicator: React.FC<AuthStatusIndicatorProps> = ({
                   <X className="h-3 w-3" />
                 </Button>
               </div>
-              
-              <p className="text-xs text-gray-300 mb-3">
-                {statusInfo.message}
-              </p>
+
+              <p className="text-xs text-gray-300 mb-3">{statusInfo.message}</p>
 
               {lastError && (
                 <div className="text-xs text-gray-400 mb-3 space-y-1">
                   <div>Méthode: {lastError.method}</div>
-                  <div>Heure: {new Date(lastError.timestamp).toLocaleTimeString()}</div>
+                  <div>
+                    Heure: {new Date(lastError.timestamp).toLocaleTimeString()}
+                  </div>
                 </div>
               )}
 
@@ -146,7 +148,10 @@ export const AuthStatusIndicator: React.FC<AuthStatusIndicatorProps> = ({
                   <Key className="h-3 w-3 mr-1" />
                   Corriger
                 </Button>
-                <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
+                <Badge
+                  variant="outline"
+                  className="text-xs border-gray-600 text-gray-300"
+                >
                   {authToken ? 'Token présent' : 'Aucun token'}
                 </Badge>
               </div>

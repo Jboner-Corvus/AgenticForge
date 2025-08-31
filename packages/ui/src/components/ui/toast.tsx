@@ -1,8 +1,8 @@
-import { type VariantProps } from "class-variance-authority";
-import * as React from "react";
+import { type VariantProps } from 'class-variance-authority';
+import * as React from 'react';
 
-import { cn } from "@/lib/utils";
-import { toastVariants } from "./toast.variants";
+import { cn } from '@/lib/utils';
+import { toastVariants } from './toast.variants';
 
 interface ToastProps
   extends React.HTMLAttributes<HTMLDivElement>,
@@ -26,8 +26,8 @@ const Toast = React.forwardRef<HTMLDivElement, ToastProps>(
         {children}
       </div>
     );
-  }
+  },
 );
-Toast.displayName = "Toast";
+Toast.displayName = 'Toast';
 
 export { Toast, type ToastProps };

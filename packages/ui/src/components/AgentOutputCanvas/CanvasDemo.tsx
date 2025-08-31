@@ -6,14 +6,22 @@ import { demoMarkdownContent, demoHtmlContent } from './demoContent';
 const CanvasDemo: React.FC = () => {
   const setCanvasContent = useCanvasStore((state) => state.setCanvasContent);
   const setCanvasType = useCanvasStore((state) => state.setCanvasType);
-  const setIsCanvasVisible = useCanvasStore((state) => state.setIsCanvasVisible);
-  const addCanvasToHistory = useCanvasStore((state) => state.addCanvasToHistory);
+  const setIsCanvasVisible = useCanvasStore(
+    (state) => state.setIsCanvasVisible,
+  );
+  const addCanvasToHistory = useCanvasStore(
+    (state) => state.addCanvasToHistory,
+  );
 
   const loadMarkdownDemo = () => {
     setCanvasContent(demoMarkdownContent);
     setCanvasType('markdown');
     setIsCanvasVisible(true);
-    addCanvasToHistory('Démonstration Markdown', demoMarkdownContent, 'markdown');
+    addCanvasToHistory(
+      'Démonstration Markdown',
+      demoMarkdownContent,
+      'markdown',
+    );
   };
 
   const loadHtmlDemo = () => {
@@ -37,7 +45,7 @@ Fonctionnalités :
 - Historique de navigation
 
 Note : Ce contenu est complètement indépendant de la todolist.`;
-    
+
     setCanvasContent(textContent);
     setCanvasType('text');
     setIsCanvasVisible(true);
@@ -54,48 +62,53 @@ Note : Ce contenu est complètement indépendant de la todolist.`;
 
   return (
     <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Démonstration du Canvas</h2>
+      <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+        Démonstration du Canvas
+      </h2>
       <p className="mb-6 text-gray-700 dark:text-gray-300">
-        Cliquez sur les boutons ci-dessous pour charger différents types de contenu dans le canvas.
-        Le canvas est maintenant complètement indépendant de la todolist.
+        Cliquez sur les boutons ci-dessous pour charger différents types de
+        contenu dans le canvas. Le canvas est maintenant complètement
+        indépendant de la todolist.
       </p>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Button 
+        <Button
           onClick={loadMarkdownDemo}
           className="bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg transition-colors"
         >
           Charger Markdown
         </Button>
-        
-        <Button 
+
+        <Button
           onClick={loadHtmlDemo}
           className="bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg transition-colors"
         >
           Charger HTML
         </Button>
-        
-        <Button 
+
+        <Button
           onClick={loadTextDemo}
           className="bg-purple-500 hover:bg-purple-600 text-white py-3 px-4 rounded-lg transition-colors"
         >
           Charger Texte Brut
         </Button>
-        
-        <Button 
+
+        <Button
           onClick={loadUrlDemo}
           className="bg-orange-500 hover:bg-orange-600 text-white py-3 px-4 rounded-lg transition-colors"
         >
           Charger URL
         </Button>
       </div>
-      
+
       <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-        <h3 className="font-bold text-blue-800 dark:text-blue-200 mb-2">ℹ️ Information</h3>
+        <h3 className="font-bold text-blue-800 dark:text-blue-200 mb-2">
+          ℹ️ Information
+        </h3>
         <p className="text-blue-700 dark:text-blue-300">
-          Le canvas et la todolist sont maintenant deux composants complètement indépendants. 
-          Vous pouvez utiliser le canvas pour afficher le contenu généré par l'agent sans 
-          interférer avec la gestion des tâches.
+          Le canvas et la todolist sont maintenant deux composants complètement
+          indépendants. Vous pouvez utiliser le canvas pour afficher le contenu
+          généré par l'agent sans interférer avec la gestion des tâches.
         </p>
       </div>
     </div>

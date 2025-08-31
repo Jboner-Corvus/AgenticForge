@@ -1,13 +1,28 @@
 // import { useLanguage } from '../lib/contexts/LanguageContext'; // Supprimé: never used
 import { Button } from './ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from './ui/tooltip';
 
 import { Logo } from './Logo';
 import { ConnectionStatus } from './ConnectionStatus';
 import { VersionDisplay } from './VersionDisplay';
 
 // import { Settings, PanelLeft, Sun, Moon, LayoutDashboard, BarChart, Key, MessageSquare, Bug, Square, List } from 'lucide-react'; // Supprimé: never used
-import { PanelLeft, Sun, Moon, LayoutDashboard, BarChart, Key, MessageSquare, Bug, List } from 'lucide-react';
+import {
+  PanelLeft,
+  Sun,
+  Moon,
+  LayoutDashboard,
+  BarChart,
+  Key,
+  MessageSquare,
+  Bug,
+  List,
+} from 'lucide-react';
 import { useCanvasStore } from '../store/canvasStore';
 import { useUIStore } from '../store/uiStore';
 
@@ -16,7 +31,9 @@ interface HeaderProps {
   isControlPanelVisible: boolean;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
-  setCurrentPage: (page: 'chat' | 'leaderboard' | 'llm-api-keys' | 'oauth') => void;
+  setCurrentPage: (
+    page: 'chat' | 'leaderboard' | 'llm-api-keys' | 'oauth',
+  ) => void;
   toggleDebugLogVisibility: () => void;
 }
 
@@ -29,11 +46,17 @@ export function Header({
   toggleDebugLogVisibility,
 }: HeaderProps) {
   const isCanvasVisible = useCanvasStore((state) => state.isCanvasVisible);
-  const setIsCanvasVisible = useCanvasStore((state) => state.setIsCanvasVisible);
-  
+  const setIsCanvasVisible = useCanvasStore(
+    (state) => state.setIsCanvasVisible,
+  );
+
   // Unified Todo List Panel visibility
-  const isUnifiedTodoListVisible = useUIStore((state) => state.isUnifiedTodoListVisible);
-  const setIsUnifiedTodoListVisible = useUIStore((state) => state.setIsUnifiedTodoListVisible);
+  const isUnifiedTodoListVisible = useUIStore(
+    (state) => state.isUnifiedTodoListVisible,
+  );
+  const setIsUnifiedTodoListVisible = useUIStore(
+    (state) => state.setIsUnifiedTodoListVisible,
+  );
 
   const handleToggleCanvas = () => {
     setIsCanvasVisible(!isCanvasVisible);
@@ -44,66 +67,85 @@ export function Header({
     {
       icon: isDarkMode ? Sun : Moon,
       onClick: toggleDarkMode,
-      label: isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode",
-      ariaLabel: isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode",
-      active: false
+      label: isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+      ariaLabel: isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+      active: false,
     },
     {
       icon: LayoutDashboard,
       onClick: handleToggleCanvas,
-      label: "Afficher/Masquer le Canevas",
-      ariaLabel: "Toggle Canvas",
-      active: isCanvasVisible
-    },
-    {
-      icon: List,
-      onClick: () => {
-        // Toggle the Unified Todo List Panel
-        setIsUnifiedTodoListVisible(!isUnifiedTodoListVisible);
-      },
-      label: "Afficher/Masquer la TodoList",
-      ariaLabel: "Toggle TodoList",
-      active: isUnifiedTodoListVisible
+      label: 'Afficher/Masquer le Canevas',
+      ariaLabel: 'Toggle Canvas',
+      active: isCanvasVisible,
     },
     {
       icon: MessageSquare,
       onClick: () => setCurrentPage('chat'),
-      label: "Chat",
-      ariaLabel: "Chat",
-      active: false
+      label: 'Chat',
+      ariaLabel: 'Chat',
+      active: false,
+    },
+    {
+      icon: List,
+      onClick: () => {
+        const newState = !isUnifiedTodoListVisible;
+        // Toggle the Unified Todo List Panel via store
+        setIsUnifiedTodoListVisible(newState);
+        // Also send message to the component directly
+        window.postMessage(
+          {
+            type: 'toggle_chat_todo_list',
+            show: newState,
+          },
+          '*',
+        );
+      },
+      label: 'Afficher/Masquer la TodoList',
+      ariaLabel: 'Toggle TodoList',
+      active: isUnifiedTodoListVisible,
     },
     {
       icon: BarChart,
       onClick: () => setCurrentPage('leaderboard'),
-      label: "Leaderboard",
-      ariaLabel: "Leaderboard",
-      active: false
+      label: 'Leaderboard',
+      ariaLabel: 'Leaderboard',
+      active: false,
     },
     {
       icon: Key,
       onClick: () => setCurrentPage('llm-api-keys'),
-      label: "LLM API Keys",
-      ariaLabel: "LLM API Keys",
-      active: false
+      label: 'LLM API Keys',
+      ariaLabel: 'LLM API Keys',
+      active: false,
     },
     {
       icon: () => (
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         </svg>
       ),
       onClick: () => setCurrentPage('oauth'),
-      label: "OAuth Management",
-      ariaLabel: "OAuth Management",
-      active: false
+      label: 'OAuth Management',
+      ariaLabel: 'OAuth Management',
+      active: false,
     },
     {
       icon: Bug,
       onClick: toggleDebugLogVisibility,
-      label: "Debug Log",
-      ariaLabel: "Debug Log",
-      active: false
-    }
+      label: 'Debug Log',
+      ariaLabel: 'Debug Log',
+      active: false,
+    },
   ];
 
   return (
@@ -137,9 +179,10 @@ export function Header({
                       className={`
                         relative transition-all duration-300 hover:scale-110 
                         h-10 w-10 p-0 mx-1 rounded-xl
-                        ${button.active ? 
-                          'bg-purple-900/50 border-purple-700/50 text-purple-300 shadow-lg' : 
-                          'bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 border border-gray-700'
+                        ${
+                          button.active
+                            ? 'bg-purple-900/50 border-purple-700/50 text-purple-300 shadow-lg'
+                            : 'bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 border border-gray-700'
                         }
                       `}
                     >
@@ -152,7 +195,7 @@ export function Header({
                       )}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent 
+                  <TooltipContent
                     className="bg-gray-800 text-gray-200 border border-gray-700 rounded-lg shadow-lg"
                     side="bottom"
                   >
@@ -161,8 +204,7 @@ export function Header({
                 </Tooltip>
               );
             })}
-            
-            </TooltipProvider>
+          </TooltipProvider>
         </div>
       </div>
     </header>

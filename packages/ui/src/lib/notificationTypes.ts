@@ -2,11 +2,11 @@ import {
   NotificationSchema as BaseNotificationSchema,
   ClientNotificationSchema,
   ServerNotificationSchema,
-} from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod";
+} from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
 
 export const StdErrNotificationSchema = z.object({
-  method: z.literal("notifications/stderr"),
+  method: z.literal('notifications/stderr'),
   params: z.object({
     content: z.string(),
   }),

@@ -1,11 +1,12 @@
 {
   "name": "@jboner-corvus/agenticforge",
-  "version": "1.0.371",
+  "version": "1.0.476",
   "description": "Une plateforme avancée pour la création et la gestion d'agents intelligents.",
   "main": "dist/index.js",
   "files": [
     "dist"
   ],
+  "type": "module",
   "scripts": {
     "build": "pnpm --recursive run build",
     "prepublishOnly": "npm run build",
@@ -14,7 +15,8 @@
     "test": "pnpm --recursive run test",
     "test:unit": "pnpm --recursive run test:unit",
     "test:integration": "pnpm --recursive run test:integration",
-    "test:integration:runner": "./integration-test-runner.sh"
+    "test:integration:runner": "./integration-test-runner.sh",
+    "format": "prettier --write ."
   },
   "repository": {
     "type": "git",
@@ -45,6 +47,13 @@
     "globals": "16.3.0",
     "playwright-core": "1.54.2",
     "prettier": "3.6.2",
-    "typescript-eslint": "8.39.0"
-  }
+    "typescript-eslint": "8.39.0",
+    "ws": "^8.18.3"
+  },
+  "directories": {
+    "doc": "docs",
+    "lib": "lib",
+    "test": "tests"
+  },
+  "keywords": []
 }

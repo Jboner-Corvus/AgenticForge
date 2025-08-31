@@ -25,56 +25,74 @@ export const useAuthInterceptor = (options: UseAuthInterceptorOptions = {}) => {
   const {
     onAuthError,
     ignoredUrls = ['/health', '/public'],
-    maxErrors = 1
+    maxErrors = 1,
   } = options;
 
   const { addDebugLog, authToken } = useCombinedStore();
 
-  const shouldIgnoreUrl = useCallback((url: string) => {
-    return ignoredUrls.some(ignored => url.includes(ignored));
-  }, [ignoredUrls]);
+  const shouldIgnoreUrl = useCallback(
+    (url: string) => {
+      return ignoredUrls.some((ignored) => url.includes(ignored));
+    },
+    [ignoredUrls],
+  );
 
-  const handleAuthError = useCallback((error: AuthError) => {
-    addDebugLog(`[${new Date().toLocaleTimeString()}] [AUTH_INTERCEPTOR] 401 détecté sur ${error.url} (${error.method})`);
-    onAuthError?.(error);
-  }, [addDebugLog, onAuthError]);
+  const handleAuthError = useCallback(
+    (error: AuthError) => {
+      addDebugLog(
+        `[${new Date().toLocaleTimeString()}] [AUTH_INTERCEPTOR] 401 détecté sur ${error.url} (${error.method})`,
+      );
+      onAuthError?.(error);
+    },
+    [addDebugLog, onAuthError],
+  );
 
   // Intercepter les appels fetch globaux
   useEffect(() => {
     const originalFetch = window.fetch;
     let errorCount = 0;
-    
-    window.fetch = async (...args: Parameters<typeof fetch>): Promise<Response> => {
+
+    window.fetch = async (
+      ...args: Parameters<typeof fetch>
+    ): Promise<Response> => {
       const response = await originalFetch(...args);
-      
+
       // Reset error count on successful response
       if (response.ok) {
         errorCount = 0;
       }
-      
+
       // Détecter les erreurs 401
       if (response.status === 401) {
-        const url = typeof args[0] === 'string' ? args[0] : args[0] instanceof URL ? args[0].toString() : (args[0] as Request).url;
-        const method = typeof args[1] === 'object' && args[1]?.method ? args[1].method : 'GET';
-        
+        const url =
+          typeof args[0] === 'string'
+            ? args[0]
+            : args[0] instanceof URL
+              ? args[0].toString()
+              : (args[0] as Request).url;
+        const method =
+          typeof args[1] === 'object' && args[1]?.method
+            ? args[1].method
+            : 'GET';
+
         // Éviter les boucles infinies sur les endpoints publics
         if (!shouldIgnoreUrl(url)) {
           errorCount++;
-          
+
           if (errorCount >= maxErrors) {
             const authError: AuthError = {
               url,
               status: response.status,
               timestamp: Date.now(),
-              method
+              method,
             };
-            
+
             handleAuthError(authError);
             errorCount = 0; // Reset after triggering
           }
         }
       }
-      
+
       return response;
     };
 
@@ -89,11 +107,11 @@ export const useAuthInterceptor = (options: UseAuthInterceptorOptions = {}) => {
     try {
       const response = await fetch('/api/health', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
-      
+
       return response.ok;
     } catch (error) {
       console.error('Erreur validation token:', error);
@@ -110,7 +128,7 @@ export const useAuthInterceptor = (options: UseAuthInterceptorOptions = {}) => {
   return {
     validateToken,
     getCurrentTokenStatus,
-    currentToken: authToken
+    currentToken: authToken,
   };
 };
 

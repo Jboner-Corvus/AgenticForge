@@ -13,11 +13,13 @@ This error occurred because the system.prompt.md file was not being copied to th
 ## Root Cause
 
 The system.prompt.md file exists in the source directory:
+
 ```
 /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/agent/system.prompt.md
 ```
 
 But the worker process expects to find it in the dist directory:
+
 ```
 /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/system.prompt.md
 ```
@@ -27,6 +29,7 @@ The copy-assets.js script is responsible for copying this file during the build 
 ## Solution
 
 1. **Manual Fix**: Run the copy-assets.js script manually to copy the file:
+
    ```bash
    cd /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core
    node scripts/copy-assets.js
@@ -40,6 +43,7 @@ The copy-assets.js script is responsible for copying this file during the build 
 ## Verification
 
 After running the copy-assets.js script, the system.prompt.md file is now present in the dist directory:
+
 ```bash
 cd /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core
 ls -la dist/system.prompt.md

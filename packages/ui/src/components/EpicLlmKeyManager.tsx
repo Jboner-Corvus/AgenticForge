@@ -1,27 +1,64 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Key, Plus, Trash2, Eye, EyeOff, TestTube, RefreshCw, Database, 
-  Upload, Download, AlertTriangle, CheckCircle, 
-  Search, Globe, Lock, Unlock, Target, GripVertical, Shield
+import {
+  Key,
+  Plus,
+  Trash2,
+  Eye,
+  EyeOff,
+  TestTube,
+  RefreshCw,
+  Database,
+  Upload,
+  Download,
+  AlertTriangle,
+  CheckCircle,
+  Search,
+  Globe,
+  Lock,
+  Unlock,
+  Target,
+  GripVertical,
+  Shield,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 import { Switch } from './ui/switch';
 import { useLLMKeysStore, LLMKey } from '../store/llmKeysStore';
 import { llmKeysApi } from '../lib/api/llmKeysApi';
 import { LoadingSpinner } from './LoadingSpinner';
 import { OpenAILogo, GeminiLogo } from './icons/LlmLogos';
 import { OpenRouterLogo } from './icons/LlmLogos/OpenRouterLogo';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 // PROVIDER LOGOS MAPPING
-const PROVIDER_LOGOS: Record<string, React.ComponentType<{ className?: string }>> = {
+const PROVIDER_LOGOS: Record<
+  string,
+  React.ComponentType<{ className?: string }>
+> = {
   openai: OpenAILogo,
   anthropic: () => <div className="text-orange-400 font-bold">A</div>, // Fallback
   'google-flash': GeminiLogo,
@@ -29,7 +66,7 @@ const PROVIDER_LOGOS: Record<string, React.ComponentType<{ className?: string }>
   google: GeminiLogo, // Fallback for legacy
   xai: () => <div className="text-green-400 font-bold text-lg">𝕏</div>, // xAI/X logo
   qwen: () => <div className="text-blue-400 font-bold">Q</div>, // Qwen logo
-  openrouter: OpenRouterLogo
+  openrouter: OpenRouterLogo,
 };
 
 // PROVIDER DISPLAY NAMES
@@ -37,29 +74,61 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic Claude',
   'google-flash': 'Google Gemini Flash',
-  'gemini': 'Gemini',
+  gemini: 'Gemini',
   google: 'Google Gemini', // Fallback for legacy
   xai: 'xAI Grok',
   qwen: 'Qwen3 Coder',
-  openrouter: 'OpenRouter'
+  openrouter: 'OpenRouter',
 };
 
 // KEY PERFORMANCE STATS COMPONENT
 const KeyPerformanceStats: React.FC = () => {
   const { keys } = useLLMKeysStore();
-  
+
   // Calculate overall stats
-  const totalRequests = keys.reduce((sum, key) => sum + (key.usageStats?.totalRequests || 0), 0);
-  const successfulRequests = keys.reduce((sum, key) => sum + (key.usageStats?.successfulRequests || 0), 0);
-  const failedRequests = keys.reduce((sum, key) => sum + (key.usageStats?.failedRequests || 0), 0);
-  const successRate = totalRequests > 0 ? Math.round((successfulRequests / totalRequests) * 100) : 0;
-  const activeKeys = keys.filter(key => key.isActive).length;
-  
+  const totalRequests = keys.reduce(
+    (sum, key) => sum + (key.usageStats?.totalRequests || 0),
+    0,
+  );
+  const successfulRequests = keys.reduce(
+    (sum, key) => sum + (key.usageStats?.successfulRequests || 0),
+    0,
+  );
+  const failedRequests = keys.reduce(
+    (sum, key) => sum + (key.usageStats?.failedRequests || 0),
+    0,
+  );
+  const successRate =
+    totalRequests > 0
+      ? Math.round((successfulRequests / totalRequests) * 100)
+      : 0;
+  const activeKeys = keys.filter((key) => key.isActive).length;
+
   const perfStatItems = [
-    { label: 'SUCCESS RATE', value: `${successRate}%`, icon: CheckCircle, color: 'text-green-400' },
-    { label: 'ACTIVE KEYS', value: activeKeys, icon: Key, color: 'text-cyan-400' },
-    { label: 'TOTAL REQUESTS', value: totalRequests.toLocaleString(), icon: Target, color: 'text-purple-400' },
-    { label: 'FAILED REQUESTS', value: failedRequests.toLocaleString(), icon: AlertTriangle, color: 'text-red-400' }
+    {
+      label: 'SUCCESS RATE',
+      value: `${successRate}%`,
+      icon: CheckCircle,
+      color: 'text-green-400',
+    },
+    {
+      label: 'ACTIVE KEYS',
+      value: activeKeys,
+      icon: Key,
+      color: 'text-cyan-400',
+    },
+    {
+      label: 'TOTAL REQUESTS',
+      value: totalRequests.toLocaleString(),
+      icon: Target,
+      color: 'text-purple-400',
+    },
+    {
+      label: 'FAILED REQUESTS',
+      value: failedRequests.toLocaleString(),
+      icon: AlertTriangle,
+      color: 'text-red-400',
+    },
   ];
 
   return (
@@ -74,10 +143,10 @@ const KeyPerformanceStats: React.FC = () => {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wider">{stat.label}</p>
-              <p className={`text-2xl font-bold ${stat.color}`}>
-                {stat.value}
+              <p className="text-xs text-gray-400 uppercase tracking-wider">
+                {stat.label}
               </p>
+              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
             </div>
             <stat.icon className={`h-8 w-8 ${stat.color} opacity-70`} />
           </div>
@@ -90,12 +159,32 @@ const KeyPerformanceStats: React.FC = () => {
 // EPIC KEY STATS COMPONENT
 const EpicKeyStats: React.FC = () => {
   const { stats, isLoading, isSyncing } = useLLMKeysStore();
-  
+
   const statItems = [
-    { label: 'TOTAL KEYS', value: stats.totalKeys, icon: Key, color: 'text-cyan-400' },
-    { label: 'ACTIVE', value: stats.activeKeys, icon: CheckCircle, color: 'text-green-400' },
-    { label: 'PROVIDERS', value: stats.providersCount, icon: Globe, color: 'text-purple-400' },
-    { label: 'USAGE', value: stats.totalUsage, icon: Target, color: 'text-yellow-400' }
+    {
+      label: 'TOTAL KEYS',
+      value: stats.totalKeys,
+      icon: Key,
+      color: 'text-cyan-400',
+    },
+    {
+      label: 'ACTIVE',
+      value: stats.activeKeys,
+      icon: CheckCircle,
+      color: 'text-green-400',
+    },
+    {
+      label: 'PROVIDERS',
+      value: stats.providersCount,
+      icon: Globe,
+      color: 'text-purple-400',
+    },
+    {
+      label: 'USAGE',
+      value: stats.totalUsage,
+      icon: Target,
+      color: 'text-yellow-400',
+    },
   ];
 
   return (
@@ -110,7 +199,9 @@ const EpicKeyStats: React.FC = () => {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wider">{stat.label}</p>
+              <p className="text-xs text-gray-400 uppercase tracking-wider">
+                {stat.label}
+              </p>
               <p className={`text-2xl font-bold ${stat.color}`}>
                 {isLoading ? '...' : stat.value.toLocaleString()}
               </p>
@@ -120,7 +211,7 @@ const EpicKeyStats: React.FC = () => {
           {isSyncing && (
             <motion.div
               animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
               className="mt-2"
             >
               <RefreshCw className="h-4 w-4 text-blue-400" />
@@ -134,8 +225,19 @@ const EpicKeyStats: React.FC = () => {
 
 // REDIS CONTROL PANEL
 const RedisControlPanel: React.FC = () => {
-  const { syncWithRedis, importKeysFromRedis, exportKeysToRedis, cleanupDuplicates, isSyncing, error } = useLLMKeysStore();
-  const [redisInfo, setRedisInfo] = useState<{ connected: boolean; keyCount: number; memory: string } | null>(null);
+  const {
+    syncWithRedis,
+    importKeysFromRedis,
+    exportKeysToRedis,
+    cleanupDuplicates,
+    isSyncing,
+    error,
+  } = useLLMKeysStore();
+  const [redisInfo, setRedisInfo] = useState<{
+    connected: boolean;
+    keyCount: number;
+    memory: string;
+  } | null>(null);
   const [scanning, setScanning] = useState(false);
 
   const fetchRedisInfo = async () => {
@@ -148,7 +250,7 @@ const RedisControlPanel: React.FC = () => {
       setRedisInfo({
         connected: false,
         keyCount: 0,
-        memory: '0K'
+        memory: '0K',
       });
     }
   };
@@ -180,19 +282,26 @@ const RedisControlPanel: React.FC = () => {
       <CardContent>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
-            <div className={`w-3 h-3 rounded-full ${redisInfo?.connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+            <div
+              className={`w-3 h-3 rounded-full ${redisInfo?.connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}
+            />
             <span className="text-sm text-gray-300">
-              {redisInfo?.connected ? `Connected • ${redisInfo.keyCount} keys` : 'Disconnected'}
+              {redisInfo?.connected
+                ? `Connected • ${redisInfo.keyCount} keys`
+                : 'Disconnected'}
             </span>
             {redisInfo?.memory && (
-              <Badge variant="outline" className="text-gray-400 border-gray-600">
+              <Badge
+                variant="outline"
+                className="text-gray-400 border-gray-600"
+              >
                 Memory: {redisInfo.memory}
               </Badge>
             )}
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={fetchRedisInfo}
             className="border-gray-600 hover:border-cyan-500/50"
           >
@@ -208,7 +317,11 @@ const RedisControlPanel: React.FC = () => {
             disabled={scanning}
             className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
           >
-            {scanning ? <LoadingSpinner className="h-4 w-4 mr-2" /> : <Search className="h-4 w-4 mr-2" />}
+            {scanning ? (
+              <LoadingSpinner className="h-4 w-4 mr-2" />
+            ) : (
+              <Search className="h-4 w-4 mr-2" />
+            )}
             Scan
           </Button>
           <Button
@@ -218,7 +331,11 @@ const RedisControlPanel: React.FC = () => {
             disabled={isSyncing}
             className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
           >
-            {isSyncing ? <LoadingSpinner className="h-4 w-4 mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+            {isSyncing ? (
+              <LoadingSpinner className="h-4 w-4 mr-2" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
             Sync
           </Button>
           <Button
@@ -268,24 +385,26 @@ const RedisControlPanel: React.FC = () => {
   );
 };
 
-
-
 // SORTABLE KEY ITEM FOR HIERARCHY
-const SortableKeyItem = ({ keyData, isMaster, priority }: { keyData: LLMKey, isMaster: boolean, priority?: number }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: keyData.id, disabled: isMaster });
+const SortableKeyItem = ({
+  keyData,
+  isMaster,
+  priority,
+}: {
+  keyData: LLMKey;
+  isMaster: boolean;
+  priority?: number;
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: keyData.id, disabled: isMaster });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
 
-  const Logo = PROVIDER_LOGOS[keyData.providerId] || (() => <Key className="h-5 w-5" />);
+  const Logo =
+    PROVIDER_LOGOS[keyData.providerId] || (() => <Key className="h-5 w-5" />);
 
   return (
     <div
@@ -296,11 +415,18 @@ const SortableKeyItem = ({ keyData, isMaster, priority }: { keyData: LLMKey, isM
         isMaster ? 'border-yellow-500/50' : 'border-gray-600'
       }`}
     >
-      <div {...listeners} className={`cursor-grab mr-3 ${isMaster ? 'cursor-not-allowed text-gray-600' : 'text-gray-400'}`}>
+      <div
+        {...listeners}
+        className={`cursor-grab mr-3 ${isMaster ? 'cursor-not-allowed text-gray-600' : 'text-gray-400'}`}
+      >
         <GripVertical className="h-5 w-5" />
       </div>
-      <div className={`p-2 rounded-lg mr-3 ${isMaster ? 'bg-yellow-900/50' : 'bg-gray-800'}`}>
-        <Logo className={`h-5 w-5 ${isMaster ? 'text-yellow-400' : 'text-gray-400'}`} />
+      <div
+        className={`p-2 rounded-lg mr-3 ${isMaster ? 'bg-yellow-900/50' : 'bg-gray-800'}`}
+      >
+        <Logo
+          className={`h-5 w-5 ${isMaster ? 'text-yellow-400' : 'text-gray-400'}`}
+        />
       </div>
       <div className="flex-grow">
         <span className="font-bold text-white">{keyData.keyName}</span>
@@ -335,10 +461,10 @@ const HierarchyManager: React.FC = () => {
       try {
         const response = await fetch('/api/llm-keys/master-key', {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('backendAuthToken') || ''}`
-          }
+            Authorization: `Bearer ${localStorage.getItem('backendAuthToken') || ''}`,
+          },
         });
-        
+
         if (response.ok) {
           const masterKeyData = await response.json();
           setMasterKey({
@@ -353,18 +479,18 @@ const HierarchyManager: React.FC = () => {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             usageCount: 0,
-            metadata: { 
-              environment: 'universal', 
-              tags: [], 
-              description: 'Master key loaded from .env file' 
-            }
+            metadata: {
+              environment: 'universal',
+              tags: [],
+              description: 'Master key loaded from .env file',
+            },
           });
         }
       } catch (error) {
         console.warn('Failed to fetch master key:', error);
       }
     };
-    
+
     fetchMaster();
   }, []);
 
@@ -375,28 +501,27 @@ const HierarchyManager: React.FC = () => {
       try {
         const response = await fetch('/api/llm-keys/hierarchy', {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('backendAuthToken') || ''}`
-          }
+            Authorization: `Bearer ${localStorage.getItem('backendAuthToken') || ''}`,
+          },
         });
-        
+
         if (response.ok) {
           const hierarchy = await response.json();
-          
+
           // Sort keys based on hierarchy
           const sortedKeys = [...keys].sort((a, b) => {
             const keyAIdentifier = `${a.providerId}|${a.keyValue}|${a.providerName}|`;
             const keyBIdentifier = `${b.providerId}|${b.keyValue}|${b.providerName}|`;
-            
-            const priorityA = hierarchy[keyAIdentifier] ?? Number.MAX_SAFE_INTEGER;
-            const priorityB = hierarchy[keyBIdentifier] ?? Number.MAX_SAFE_INTEGER;
-            
+
+            const priorityA =
+              hierarchy[keyAIdentifier] ?? Number.MAX_SAFE_INTEGER;
+            const priorityB =
+              hierarchy[keyBIdentifier] ?? Number.MAX_SAFE_INTEGER;
+
             return priorityA - priorityB;
           });
-          
-          setOrderedKeys([
-            ...(masterKey ? [masterKey] : []),
-            ...sortedKeys
-          ]);
+
+          setOrderedKeys([...(masterKey ? [masterKey] : []), ...sortedKeys]);
         } else {
           // Fallback to default ordering
           const allKeys = [...(masterKey ? [masterKey] : []), ...keys];
@@ -411,20 +536,18 @@ const HierarchyManager: React.FC = () => {
         setIsLoading(false);
       }
     };
-    
+
     loadKeyHierarchy();
   }, [keys, masterKey]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor)
-  );
+  const sensors = useSensors(useSensor(PointerSensor));
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
       setOrderedKeys((keys) => {
-        const oldIndex = keys.findIndex(k => k.id === active.id);
-        const newIndex = keys.findIndex(k => k.id === over.id);
+        const oldIndex = keys.findIndex((k) => k.id === active.id);
+        const newIndex = keys.findIndex((k) => k.id === over.id);
         // Prevent master key from being moved
         if (oldIndex === 0 || newIndex === 0) return keys;
         return arrayMove(keys, oldIndex, newIndex);
@@ -436,8 +559,8 @@ const HierarchyManager: React.FC = () => {
     setIsSaving(true);
     try {
       // Create hierarchy object with key identifiers and priorities
-      const hierarchy: {[key: string]: number} = {};
-      
+      const hierarchy: { [key: string]: number } = {};
+
       orderedKeys.forEach((key, index) => {
         // Skip master key as it always has highest priority
         if (key.providerId !== 'master') {
@@ -446,17 +569,17 @@ const HierarchyManager: React.FC = () => {
           hierarchy[keyIdentifier] = index;
         }
       });
-      
+
       // Save hierarchy to backend
       const response = await fetch('/api/llm-keys/hierarchy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('backendAuthToken') || ''}`
+          Authorization: `Bearer ${localStorage.getItem('backendAuthToken') || ''}`,
         },
-        body: JSON.stringify(hierarchy)
+        body: JSON.stringify(hierarchy),
       });
-      
+
       if (response.ok) {
         // Refresh keys to ensure UI is updated
         await fetchKeys();
@@ -475,7 +598,9 @@ const HierarchyManager: React.FC = () => {
       <Card className="mb-6 bg-gradient-to-br from-gray-900/90 to-gray-800/90 border-gray-700">
         <CardContent className="p-6 flex items-center justify-center">
           <LoadingSpinner className="h-6 w-6" />
-          <span className="ml-2 text-gray-400">Chargement de la hiérarchie...</span>
+          <span className="ml-2 text-gray-400">
+            Chargement de la hiérarchie...
+          </span>
         </CardContent>
       </Card>
     );
@@ -491,23 +616,32 @@ const HierarchyManager: React.FC = () => {
       </CardHeader>
       <CardContent>
         <p className="text-sm text-gray-400 mb-4">
-          Glissez-déposez les clés pour définir leur ordre de priorité. Le système essaiera les clés dans cet ordre, en commençant par la clé Master.
+          Glissez-déposez les clés pour définir leur ordre de priorité. Le
+          système essaiera les clés dans cet ordre, en commençant par la clé
+          Master.
         </p>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={orderedKeys.map(k => k.id)} strategy={verticalListSortingStrategy}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={orderedKeys.map((k) => k.id)}
+            strategy={verticalListSortingStrategy}
+          >
             {orderedKeys.map((key, index) => (
-              <SortableKeyItem 
-                key={key.id} 
-                keyData={key} 
-                isMaster={key.providerId === 'master'} 
+              <SortableKeyItem
+                key={key.id}
+                keyData={key}
+                isMaster={key.providerId === 'master'}
                 priority={index}
               />
             ))}
           </SortableContext>
         </DndContext>
         <div className="mt-4 flex justify-end">
-          <Button 
-            onClick={handleSaveChanges} 
+          <Button
+            onClick={handleSaveChanges}
             disabled={isSaving}
             className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500"
           >
@@ -527,17 +661,20 @@ const HierarchyManager: React.FC = () => {
 };
 
 // ADD KEY MODAL - BEAUTIFIED VERSION
-const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
+  isOpen,
+  onClose,
+}) => {
   const { providers, addKey, isLoading } = useLLMKeysStore();
   const [formData, setFormData] = useState({
     providerId: '',
     keyName: '',
     keyValue: '',
     isActive: true,
-    priority: 5
+    priority: 5,
   });
 
-  const selectedProvider = providers.find(p => p.id === formData.providerId);
+  const selectedProvider = providers.find((p) => p.id === formData.providerId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -546,7 +683,8 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
     try {
       await addKey({
         providerId: formData.providerId,
-        providerName: PROVIDER_DISPLAY_NAMES[formData.providerId] || selectedProvider.name,
+        providerName:
+          PROVIDER_DISPLAY_NAMES[formData.providerId] || selectedProvider.name,
         keyName: formData.keyName,
         keyValue: formData.keyValue,
         isEncrypted: false,
@@ -555,8 +693,8 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
         metadata: {
           environment: 'universal', // Toutes les clés fonctionnent partout
           tags: [],
-          description: '' // Removed description field as requested
-        }
+          description: '', // Removed description field as requested
+        },
       });
       onClose();
       setFormData({
@@ -564,7 +702,7 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
         keyName: '',
         keyValue: '',
         isActive: true,
-        priority: 5
+        priority: 5,
       });
     } catch (error) {
       console.error('Failed to add key:', error);
@@ -594,9 +732,9 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
               <p className="text-gray-400 text-sm">Connect your AI provider</p>
             </div>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onClose}
             className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-full"
           >
@@ -607,34 +745,60 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Provider Selection */}
           <div className="space-y-3">
-            <label htmlFor="provider-select" className="block text-sm font-semibold text-gray-300">
+            <label
+              htmlFor="provider-select"
+              className="block text-sm font-semibold text-gray-300"
+            >
               AI Provider
             </label>
-            <Select value={formData.providerId} onValueChange={(value) => setFormData({...formData, providerId: value})}>
-              <SelectTrigger id="provider-select" className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 transition-colors h-12 text-base">
+            <Select
+              value={formData.providerId}
+              onValueChange={(value) =>
+                setFormData({ ...formData, providerId: value })
+              }
+            >
+              <SelectTrigger
+                id="provider-select"
+                className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 transition-colors h-12 text-base"
+              >
                 <SelectValue placeholder="Choose your AI provider">
                   {selectedProvider && (
                     <div className="flex items-center gap-3">
                       {PROVIDER_LOGOS[selectedProvider.id] && (
                         <div className="h-5 w-5">
-                          {React.createElement(PROVIDER_LOGOS[selectedProvider.id], { className: "h-5 w-5" })}
+                          {React.createElement(
+                            PROVIDER_LOGOS[selectedProvider.id],
+                            { className: 'h-5 w-5' },
+                          )}
                         </div>
                       )}
-                      <span>{PROVIDER_DISPLAY_NAMES[selectedProvider.id] || selectedProvider.displayName}</span>
+                      <span>
+                        {PROVIDER_DISPLAY_NAMES[selectedProvider.id] ||
+                          selectedProvider.displayName}
+                      </span>
                     </div>
                   )}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-600">
-                {providers.map(provider => (
-                  <SelectItem key={provider.id} value={provider.id} className="hover:bg-gray-700">
+                {providers.map((provider) => (
+                  <SelectItem
+                    key={provider.id}
+                    value={provider.id}
+                    className="hover:bg-gray-700"
+                  >
                     <div className="flex items-center gap-3">
                       {PROVIDER_LOGOS[provider.id] && (
                         <div className="h-4 w-4">
-                          {React.createElement(PROVIDER_LOGOS[provider.id], { className: "h-4 w-4" })}
+                          {React.createElement(PROVIDER_LOGOS[provider.id], {
+                            className: 'h-4 w-4',
+                          })}
                         </div>
                       )}
-                      <span>{PROVIDER_DISPLAY_NAMES[provider.id] || provider.displayName}</span>
+                      <span>
+                        {PROVIDER_DISPLAY_NAMES[provider.id] ||
+                          provider.displayName}
+                      </span>
                     </div>
                   </SelectItem>
                 ))}
@@ -644,14 +808,23 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
 
           {/* Key Name */}
           <div className="space-y-3">
-            <label htmlFor="key-name-input" className="block text-sm font-semibold text-gray-300">
+            <label
+              htmlFor="key-name-input"
+              className="block text-sm font-semibold text-gray-300"
+            >
               Key Name
             </label>
             <Input
               id="key-name-input"
               value={formData.keyName}
-              onChange={(e) => setFormData({...formData, keyName: e.target.value})}
-              placeholder={selectedProvider ? `My ${PROVIDER_DISPLAY_NAMES[selectedProvider.id] || selectedProvider.displayName} Key` : "Give your key a name"}
+              onChange={(e) =>
+                setFormData({ ...formData, keyName: e.target.value })
+              }
+              placeholder={
+                selectedProvider
+                  ? `My ${PROVIDER_DISPLAY_NAMES[selectedProvider.id] || selectedProvider.displayName} Key`
+                  : 'Give your key a name'
+              }
               className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 focus:border-cyan-500 transition-colors h-12 text-base"
               required
             />
@@ -659,7 +832,10 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
 
           {/* API Key */}
           <div className="space-y-3">
-            <label htmlFor="api-key-input" className="block text-sm font-semibold text-gray-300">
+            <label
+              htmlFor="api-key-input"
+              className="block text-sm font-semibold text-gray-300"
+            >
               API Key
             </label>
             <div className="relative">
@@ -667,7 +843,9 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
                 id="api-key-input"
                 type="password"
                 value={formData.keyValue}
-                onChange={(e) => setFormData({...formData, keyValue: e.target.value})}
+                onChange={(e) =>
+                  setFormData({ ...formData, keyValue: e.target.value })
+                }
                 placeholder="sk-..."
                 className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 focus:border-cyan-500 transition-colors h-12 text-base pr-12"
                 required
@@ -679,13 +857,22 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
           {/* Active Toggle */}
           <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
             <div>
-              <label htmlFor="activate-key-switch" className="text-sm font-semibold text-gray-300">Activate Key</label>
-              <p className="text-xs text-gray-400">Enable this key immediately after adding</p>
+              <label
+                htmlFor="activate-key-switch"
+                className="text-sm font-semibold text-gray-300"
+              >
+                Activate Key
+              </label>
+              <p className="text-xs text-gray-400">
+                Enable this key immediately after adding
+              </p>
             </div>
             <Switch
               id="activate-key-switch"
               checked={formData.isActive}
-              onCheckedChange={(checked) => setFormData({...formData, isActive: checked})}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, isActive: checked })
+              }
               className="data-[state=checked]:bg-cyan-500"
             />
           </div>
@@ -693,18 +880,32 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
           {/* Priority Slider */}
           <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
             <div>
-              <label htmlFor="priority-slider" className="text-sm font-semibold text-gray-300">Priority Level</label>
-              <p className="text-xs text-gray-400">Lower numbers = higher priority (1-10)</p>
+              <label
+                htmlFor="priority-slider"
+                className="text-sm font-semibold text-gray-300"
+              >
+                Priority Level
+              </label>
+              <p className="text-xs text-gray-400">
+                Lower numbers = higher priority (1-10)
+              </p>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-400 w-6">{formData.priority}</span>
+              <span className="text-sm text-gray-400 w-6">
+                {formData.priority}
+              </span>
               <input
                 id="priority-slider"
                 type="range"
                 min="1"
                 max="10"
                 value={formData.priority}
-                onChange={(e) => setFormData({...formData, priority: parseInt(e.target.value)})}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    priority: parseInt(e.target.value),
+                  })
+                }
                 className="w-24 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
               />
             </div>
@@ -712,17 +913,22 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpe
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-6">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onClose} 
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
               className="flex-1 h-12 border-gray-600 hover:border-gray-500 hover:bg-gray-800/50"
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              disabled={isLoading || !formData.providerId || !formData.keyName || !formData.keyValue}
+            <Button
+              type="submit"
+              disabled={
+                isLoading ||
+                !formData.providerId ||
+                !formData.keyName ||
+                !formData.keyValue
+              }
               className="flex-1 h-12 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-semibold"
             >
               {isLoading ? (
@@ -751,7 +957,8 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<boolean | null>(null);
 
-  const Logo = PROVIDER_LOGOS[keyData.providerId] || (() => <Key className="h-6 w-6" />);
+  const Logo =
+    PROVIDER_LOGOS[keyData.providerId] || (() => <Key className="h-6 w-6" />);
 
   const handleTest = async () => {
     setTesting(true);
@@ -768,7 +975,9 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
   };
 
   const keyValue = keyData.keyValue || '';
-  const maskedKey = keyValue ? `${keyValue.slice(0, 8)}${'*'.repeat(Math.max(0, keyValue.length - 12))}${keyValue.slice(-4)}` : 'No Key';
+  const maskedKey = keyValue
+    ? `${keyValue.slice(0, 8)}${'*'.repeat(Math.max(0, keyValue.length - 12))}${keyValue.slice(-4)}`
+    : 'No Key';
 
   return (
     <motion.div
@@ -780,48 +989,63 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
     >
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${keyData.isActive ? 'bg-cyan-900/50' : 'bg-gray-800'}`}>
-                <Logo className={`h-6 w-6 ${keyData.isActive ? 'text-cyan-400' : 'text-gray-400'}`} />
-              </div>
-              <div>
-                <h3 className="font-semibold text-white">{keyData.keyName}</h3>
-                <p className="text-sm text-gray-400">{PROVIDER_DISPLAY_NAMES[keyData.providerId] || keyData.providerName}</p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div
+              className={`p-2 rounded-lg ${keyData.isActive ? 'bg-cyan-900/50' : 'bg-gray-800'}`}
+            >
+              <Logo
+                className={`h-6 w-6 ${keyData.isActive ? 'text-cyan-400' : 'text-gray-400'}`}
+              />
             </div>
-            <div className="flex items-center gap-2">
-              {keyData.isActive ? (
-                <Badge className="bg-green-900/50 text-green-300 border-green-700/50">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Active
-                </Badge>
-              ) : (
-                <Badge className="bg-gray-700/50 text-gray-300 border-gray-600">
-                  Inactive
-                </Badge>
-              )}
-              <Badge className={`border ${keyData.priority <= 3 ? 'border-red-500/50 text-red-400 bg-red-900/20' : keyData.priority <= 6 ? 'border-yellow-500/50 text-yellow-400 bg-yellow-900/20' : 'border-green-500/50 text-green-400 bg-green-900/20'}`}>
-                P{keyData.priority}
-              </Badge>
+            <div>
+              <h3 className="font-semibold text-white">{keyData.keyName}</h3>
+              <p className="text-sm text-gray-400">
+                {PROVIDER_DISPLAY_NAMES[keyData.providerId] ||
+                  keyData.providerName}
+              </p>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            {keyData.isActive ? (
+              <Badge className="bg-green-900/50 text-green-300 border-green-700/50">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Active
+              </Badge>
+            ) : (
+              <Badge className="bg-gray-700/50 text-gray-300 border-gray-600">
+                Inactive
+              </Badge>
+            )}
+            <Badge
+              className={`border ${keyData.priority <= 3 ? 'border-red-500/50 text-red-400 bg-red-900/20' : keyData.priority <= 6 ? 'border-yellow-500/50 text-yellow-400 bg-yellow-900/20' : 'border-green-500/50 text-green-400 bg-green-900/20'}`}
+            >
+              P{keyData.priority}
+            </Badge>
+          </div>
+        </div>
 
         {/* Key Display */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-xs text-gray-400 uppercase tracking-wider">API Key</div>
+            <div className="text-xs text-gray-400 uppercase tracking-wider">
+              API Key
+            </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowKey(!showKey)}
               className="h-6 w-6 p-0"
             >
-              {showKey ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+              {showKey ? (
+                <EyeOff className="h-3 w-3" />
+              ) : (
+                <Eye className="h-3 w-3" />
+              )}
             </Button>
           </div>
           <div className="bg-gray-800/50 rounded-lg p-3 font-mono text-sm">
             <span className="text-gray-300">
-              {showKey ? (keyData.keyValue || 'No Key') : maskedKey}
+              {showKey ? keyData.keyValue || 'No Key' : maskedKey}
             </span>
           </div>
         </div>
@@ -830,25 +1054,35 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
         <div className="mb-4">
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div>
-              <div className="text-gray-400 uppercase tracking-wider">Usage</div>
-              <div className="text-gray-300">{keyData.usageCount.toLocaleString()}</div>
+              <div className="text-gray-400 uppercase tracking-wider">
+                Usage
+              </div>
+              <div className="text-gray-300">
+                {keyData.usageCount.toLocaleString()}
+              </div>
             </div>
             <div>
-              <div className="text-gray-400 uppercase tracking-wider">Priority</div>
+              <div className="text-gray-400 uppercase tracking-wider">
+                Priority
+              </div>
               <div className="text-gray-300">{keyData.priority}</div>
             </div>
             {keyData.usageStats && (
               <>
                 <div>
-                  <div className="text-gray-400 uppercase tracking-wider">Success Rate</div>
+                  <div className="text-gray-400 uppercase tracking-wider">
+                    Success Rate
+                  </div>
                   <div className="text-gray-300">
-                    {keyData.usageStats.totalRequests > 0 
-                      ? `${Math.round(((keyData.usageStats.successfulRequests / keyData.usageStats.totalRequests) * 100))}%`
+                    {keyData.usageStats.totalRequests > 0
+                      ? `${Math.round((keyData.usageStats.successfulRequests / keyData.usageStats.totalRequests) * 100)}%`
                       : '0%'}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-400 uppercase tracking-wider">Error Rate</div>
+                  <div className="text-gray-400 uppercase tracking-wider">
+                    Error Rate
+                  </div>
                   <div className="text-gray-300">
                     {Math.round(keyData.usageStats.errorRate * 100)}%
                   </div>
@@ -861,15 +1095,21 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
         {/* Description */}
         {keyData.metadata.description && (
           <div className="mb-4">
-            <div className="text-xs text-gray-400 uppercase tracking-wider">Description</div>
-            <p className="mt-1 text-sm text-gray-300">{keyData.metadata.description}</p>
+            <div className="text-xs text-gray-400 uppercase tracking-wider">
+              Description
+            </div>
+            <p className="mt-1 text-sm text-gray-300">
+              {keyData.metadata.description}
+            </p>
           </div>
         )}
 
         {/* Last Used */}
         {keyData.lastUsed && (
           <div className="mb-4">
-            <div className="text-xs text-gray-400 uppercase tracking-wider">Last Used</div>
+            <div className="text-xs text-gray-400 uppercase tracking-wider">
+              Last Used
+            </div>
             <p className="mt-1 text-sm text-gray-300">
               {new Date(keyData.lastUsed).toLocaleString()}
             </p>
@@ -879,10 +1119,16 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
         {/* Tags */}
         {keyData.metadata.tags.length > 0 && (
           <div className="mb-4">
-            <div className="text-xs text-gray-400 uppercase tracking-wider mb-2 block">Tags</div>
+            <div className="text-xs text-gray-400 uppercase tracking-wider mb-2 block">
+              Tags
+            </div>
             <div className="flex flex-wrap gap-1">
-              {keyData.metadata.tags.map(tag => (
-                <Badge key={tag} variant="outline" className="text-xs border-gray-600 text-gray-400">
+              {keyData.metadata.tags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="outline"
+                  className="text-xs border-gray-600 text-gray-400"
+                >
                   {tag}
                 </Badge>
               ))}
@@ -899,8 +1145,11 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
               onClick={handleTest}
               disabled={testing}
               className={`border-blue-500/50 text-blue-400 hover:bg-blue-500/10 ${
-                testResult === true ? 'border-green-500/50 text-green-400' :
-                testResult === false ? 'border-red-500/50 text-red-400' : ''
+                testResult === true
+                  ? 'border-green-500/50 text-green-400'
+                  : testResult === false
+                    ? 'border-red-500/50 text-red-400'
+                    : ''
               }`}
             >
               {testing ? (
@@ -917,12 +1166,17 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
               variant="outline"
               size="sm"
               onClick={() => toggleKeyStatus(keyData.id)}
-              className={keyData.isActive ? 
-                'border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10' :
-                'border-green-500/50 text-green-400 hover:bg-green-500/10'
+              className={
+                keyData.isActive
+                  ? 'border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10'
+                  : 'border-green-500/50 text-green-400 hover:bg-green-500/10'
               }
             >
-              {keyData.isActive ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+              {keyData.isActive ? (
+                <Lock className="h-4 w-4" />
+              ) : (
+                <Unlock className="h-4 w-4" />
+              )}
             </Button>
           </div>
           <Button
@@ -941,11 +1195,17 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
 
 // MAIN COMPONENT
 export const EpicLlmKeyManager: React.FC = () => {
-  const { 
-    providers, fetchKeys, fetchProviders, getFilteredKeys, 
-    selectedProvider, setSelectedProvider,
-    showInactiveKeys, 
-    toggleShowInactiveKeys, isLoading, forceDeduplication 
+  const {
+    providers,
+    fetchKeys,
+    fetchProviders,
+    getFilteredKeys,
+    selectedProvider,
+    setSelectedProvider,
+    showInactiveKeys,
+    toggleShowInactiveKeys,
+    isLoading,
+    forceDeduplication,
   } = useLLMKeysStore();
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -970,10 +1230,12 @@ export const EpicLlmKeyManager: React.FC = () => {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
                 🔐 LLM Key Manager
               </h1>
-              <p className="text-gray-400 mt-2">Manage your AI provider keys with Redis integration</p>
+              <p className="text-gray-400 mt-2">
+                Manage your AI provider keys with Redis integration
+              </p>
             </div>
             <div className="flex gap-2">
-              <Button 
+              <Button
                 onClick={() => {
                   // Force refresh to apply deduplication
                   fetchKeys();
@@ -984,33 +1246,38 @@ export const EpicLlmKeyManager: React.FC = () => {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
-              <Button 
+              <Button
                 onClick={async () => {
                   // Clean Duplicates initiated
                   try {
                     // First try backend cleanup
-                    const response = await fetch('/api/llm-keys/cleanup-duplicates', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('backendAuthToken') || ''}`
-                      }
-                    });
-                    
+                    const response = await fetch(
+                      '/api/llm-keys/cleanup-duplicates',
+                      {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${localStorage.getItem('backendAuthToken') || ''}`,
+                        },
+                      },
+                    );
+
                     if (response.ok) {
                       console.log('✅ Backend cleanup réussi');
                     } else {
-                      console.warn('⚠️ Backend cleanup failed, using frontend fallback');
+                      console.warn(
+                        '⚠️ Backend cleanup failed, using frontend fallback',
+                      );
                     }
-                    
+
                     // Always run frontend deduplication as backup
                     forceDeduplication();
-                    
+
                     // Force refresh to ensure UI is updated
                     setTimeout(() => {
                       fetchKeys();
                     }, 500);
-                    
+
                     console.log('✅ Déduplication terminée');
                   } catch (error) {
                     console.error('❌ Erreur:', error);
@@ -1025,7 +1292,7 @@ export const EpicLlmKeyManager: React.FC = () => {
                 <Trash2 className="h-4 w-4 mr-2" />
                 Clean Duplicates
               </Button>
-              <Button 
+              <Button
                 onClick={() => setShowAddModal(true)}
                 className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500"
               >
@@ -1050,22 +1317,37 @@ export const EpicLlmKeyManager: React.FC = () => {
         <Card className="bg-gradient-to-br from-gray-900/90 to-gray-800/90 border-gray-700 mb-6">
           <CardContent className="p-6">
             <div className="flex flex-wrap gap-4 items-center">
-              <Select value={selectedProvider || 'all'} onValueChange={(value) => setSelectedProvider(value === 'all' ? null : value)}>
+              <Select
+                value={selectedProvider || 'all'}
+                onValueChange={(value) =>
+                  setSelectedProvider(value === 'all' ? null : value)
+                }
+              >
                 <SelectTrigger className="w-48 bg-gray-800 border-gray-600">
                   <SelectValue placeholder="All Providers" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Providers</SelectItem>
-                  {providers.map(provider => (
+                  {providers.map((provider) => (
                     <SelectItem key={provider.id} value={provider.id}>
-                      {PROVIDER_DISPLAY_NAMES[provider.id] || provider.displayName}
+                      {PROVIDER_DISPLAY_NAMES[provider.id] ||
+                        provider.displayName}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <div className="flex items-center gap-2">
-                <Switch id="show-inactive-switch" checked={showInactiveKeys} onCheckedChange={toggleShowInactiveKeys} />
-                <label htmlFor="show-inactive-switch" className="text-sm text-gray-300">Show inactive</label>
+                <Switch
+                  id="show-inactive-switch"
+                  checked={showInactiveKeys}
+                  onCheckedChange={toggleShowInactiveKeys}
+                />
+                <label
+                  htmlFor="show-inactive-switch"
+                  className="text-sm text-gray-300"
+                >
+                  Show inactive
+                </label>
               </div>
             </div>
           </CardContent>
@@ -1083,9 +1365,16 @@ export const EpicLlmKeyManager: React.FC = () => {
             className="text-center py-12"
           >
             <Key className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-300 mb-2">No keys found</h3>
-            <p className="text-gray-400 mb-6">Add your first API key to get started</p>
-            <Button onClick={() => setShowAddModal(true)} className="bg-cyan-600 hover:bg-cyan-500">
+            <h3 className="text-xl font-semibold text-gray-300 mb-2">
+              No keys found
+            </h3>
+            <p className="text-gray-400 mb-6">
+              Add your first API key to get started
+            </p>
+            <Button
+              onClick={() => setShowAddModal(true)}
+              className="bg-cyan-600 hover:bg-cyan-500"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add First Key
             </Button>
@@ -1101,7 +1390,10 @@ export const EpicLlmKeyManager: React.FC = () => {
         )}
 
         {/* Add Key Modal */}
-        <AddKeyModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} />
+        <AddKeyModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+        />
       </div>
     </div>
   );

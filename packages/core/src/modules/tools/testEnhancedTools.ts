@@ -1,19 +1,19 @@
 // Test script to verify enhanced tools are working
-import { enhancedTodoListTool, projectPlanningTool } from './enhancedTools.ts';
+import { projectPlanningTool, delegateTaskTool } from './enhancedTools.ts';
 
 console.log('Testing enhanced tools...');
 
 // Test that tools are properly exported
-console.log('enhancedTodoListTool:', enhancedTodoListTool?.name || 'Not found');
+console.log('delegateTaskTool:', delegateTaskTool?.name || 'Not found');
 console.log('projectPlanningTool:', projectPlanningTool?.name || 'Not found');
 
 // Verify tool properties
-if (enhancedTodoListTool) {
-  console.log('\nEnhanced Todo List Tool:');
-  console.log('- Name:', enhancedTodoListTool.name);
+if (delegateTaskTool) {
+  console.log('\nDelegate Task Tool:');
+  console.log('- Name:', delegateTaskTool.name);
   console.log(
     '- Description:',
-    enhancedTodoListTool.description?.substring(0, 100) + '...',
+    delegateTaskTool.description?.substring(0, 100) + '...',
   );
 }
 

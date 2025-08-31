@@ -1,33 +1,38 @@
 .task-counter {
-  padding: 16px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background-color: #f9f9f9;
-  margin: 16px 0;
+  padding: 1rem;
+  border: 1px solid #374151;
+  border-radius: 0.75rem;
+  background-color: rgba(31, 41, 55, 0.5);
+  margin: 1rem 0;
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .task-counter h3 {
   margin-top: 0;
-  color: #333;
+  color: #f9fafb;
+  font-weight: 600;
 }
 
 .progress-container {
   width: 100%;
-  height: 20px;
-  background-color: #e0e0e0;
-  border-radius: 10px;
+  height: 12px;
+  background-color: #374151;
+  border-radius: 9999px;
   overflow: hidden;
-  margin: 8px 0;
+  margin: 0.5rem 0;
 }
 
 .progress-bar {
   height: 100%;
-  background-color: #4caf50;
-  transition: width 0.3s ease;
+  background: linear-gradient(to right, #06b6d4, #3b82f6);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .task-counter p {
-  margin: 8px 0 0;
-  font-weight: bold;
-  color: #555;
+  margin: 0.5rem 0 0;
+  font-weight: 500;
+  color: #d1d5db;
 }

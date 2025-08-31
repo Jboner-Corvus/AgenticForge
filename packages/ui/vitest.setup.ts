@@ -5,8 +5,6 @@ import * as matchers from '@testing-library/jest-dom/matchers';
 
 expect.extend(matchers);
 
-
-
 // Mock React.act for React 19 compatibility
 if (!('act' in React)) {
   // @ts-expect-error - React 19 compatibility
@@ -19,7 +17,7 @@ if (!('act' in React)) {
       then: (resolve: () => void) => {
         resolve();
         return { catch: () => {} };
-      }
+      },
     };
   };
 }
@@ -41,7 +39,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-process.env.VITE_MCP_PROXY_ADDRESS = "http://localhost:6277";
+process.env.VITE_MCP_PROXY_ADDRESS = 'http://localhost:6277';
 
 // Mock global fetch for tests that use it
 global.fetch = vi.fn(() =>

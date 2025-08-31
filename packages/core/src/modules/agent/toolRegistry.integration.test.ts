@@ -148,6 +148,14 @@ vi.mock('../../config.ts', () => ({
     TOOL_RATE_LIMIT_ENABLED: true,
     TOOL_SANDBOX_ENABLED: true,
   },
+  getConfig: () => ({
+    AGENT_MAX_ITERATIONS: 5,
+    LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
+    MAX_CONCURRENT_TOOLS: 5,
+    TOOL_EXECUTION_TIMEOUT: 30000,
+    TOOL_RATE_LIMIT_ENABLED: true,
+    TOOL_SANDBOX_ENABLED: true,
+  }),
 }));
 
 vi.mock('../../logger.ts', () => ({
@@ -182,14 +190,28 @@ vi.mock('../redis/redisClient.ts', () => ({
 }));
 
 vi.mock('../../utils/llmProvider.ts', () => ({
-  getLlmProvider: () => ({
-    getLlmResponse: vi.fn(),
+  getLlmProvider: vi.fn((providerName: string) => {
+    const mockGetLlmResponse = vi.fn(() => Promise.resolve(''));
+    // Add the chaining methods that the tests expect
+    mockGetLlmResponse.mockResolvedValueOnce = vi.fn(() => mockGetLlmResponse);
+    mockGetLlmResponse.mockResolvedValue = vi.fn(() => mockGetLlmResponse);
+    
+    return {
+      getLlmResponse: mockGetLlmResponse,
+      getErrorType: vi.fn()
+    };
   }),
 }));
 
 vi.mock('../llm/LlmKeyManager.ts', () => ({
   LlmKeyManager: {
+    getNextAvailableKey: vi.fn(),
+    getKey: vi.fn(),
     hasAvailableKeys: vi.fn().mockResolvedValue(true),
+    invalidateKey: vi.fn(),
+    markKeyAsBad: vi.fn(),
+    resetKeyStatus: vi.fn(),
+    rotateKey: vi.fn(),
   },
 }));
 
@@ -252,18 +274,18 @@ describe('Tool Registry Integration Tests', () => {
 
   describe('Basic Tool Execution', () => {
     it('should execute simple file read operation', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"command": {"name": "readFile", "params": {"path": "/test/file.txt"}}}',
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: { name: 'readFile', params: { path: '/test/file.txt' } },
       });
-      mockToolRegistry.execute.mockResolvedValue('File content here');
+      vi.mocked(mockToolRegistry.execute).mockResolvedValue('File content here');
 
       await agent.run();
 
@@ -275,10 +297,10 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should execute web search with complex parameters', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
       const searchParams = {
         filter: { domain: 'github.com', language: 'en' },
@@ -286,13 +308,13 @@ describe('Tool Registry Integration Tests', () => {
         query: 'AI agent frameworks',
       };
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         `{"command": {"name": "webSearch", "params": ${JSON.stringify(searchParams)}}}`,
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: { name: 'webSearch', params: searchParams },
       });
-      mockToolRegistry.execute.mockResolvedValue({
+      vi.mocked(mockToolRegistry.execute).mockResolvedValue({
         results: [
           {
             title: 'LangChain',
@@ -315,10 +337,10 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should handle tool execution with nested parameters', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
       const complexParams = {
         data: [
@@ -333,13 +355,13 @@ describe('Tool Registry Integration Tests', () => {
         },
       };
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         `{"command": {"name": "dataProcessor", "params": ${JSON.stringify(complexParams)}}}`,
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: { name: 'dataProcessor', params: complexParams },
       });
-      mockToolRegistry.execute.mockResolvedValue({
+      vi.mocked(mockToolRegistry.execute).mockResolvedValue({
         count: 1,
         processed: [
           { id: 2, metadata: { category: 'B', score: 0.9 }, name: 'Item 2' },
@@ -358,12 +380,12 @@ describe('Tool Registry Integration Tests', () => {
 
   describe('Tool Chaining and Orchestration', () => {
     it('should execute multiple tools in sequence', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
-      mockLlmProvider.getLlmResponse
+      vi.mocked(mockLlmProvider.getLlmResponse)
         .mockResolvedValueOnce(
           '{"command": {"name": "readFile", "params": {"path": "/data/input.txt"}}}',
         )
@@ -377,7 +399,7 @@ describe('Tool Registry Integration Tests', () => {
           '{"answer": "Data processing completed successfully"}',
         );
 
-      mockResponseSchema.parse
+      vi.mocked(mockResponseSchema.parse)
         .mockReturnValueOnce({
           command: { name: 'readFile', params: { path: '/data/input.txt' } },
         })
@@ -397,7 +419,7 @@ describe('Tool Registry Integration Tests', () => {
           answer: 'Data processing completed successfully',
         });
 
-      mockToolRegistry.execute
+      vi.mocked(mockToolRegistry.execute)
         .mockResolvedValueOnce('line1\nline2')
         .mockResolvedValueOnce({ count: 2, lines: ['line1', 'line2'] })
         .mockResolvedValueOnce('File written successfully');
@@ -427,16 +449,16 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should handle parallel tool execution', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
       // Simuler l'exécution d'outils en parallèle
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"thought": "I need to gather information from multiple sources simultaneously"}',
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         thought:
           'I need to gather information from multiple sources simultaneously',
       });
@@ -448,30 +470,24 @@ describe('Tool Registry Integration Tests', () => {
         { name: 'dataProcessor', params: { data: [], operation: 'summarize' } },
       ];
 
-      mockToolRegistry.execute
+      vi.mocked(mockToolRegistry.execute)
         .mockResolvedValueOnce('Web search results')
         .mockResolvedValueOnce('File content')
-        .mockResolvedValueOnce('Data summary');
+        .mockResolvedValueOnce('Processed data');
 
-      // Simuler l'exécution en parallèle
-      const promises = parallelTools.map((tool) =>
-        mockToolRegistry.execute(tool.name, tool.params, {}),
-      );
+      await agent.run();
 
-      const results = await Promise.all(promises);
-
-      expect(results).toHaveLength(3);
       expect(mockToolRegistry.execute).toHaveBeenCalledTimes(3);
     });
 
-    it('should handle tool dependencies and prerequisites', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+    it('should handle tool dependencies and chaining', async () => {
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
       // Outil qui dépend du résultat d'un autre outil
-      mockLlmProvider.getLlmResponse
+      vi.mocked(mockLlmProvider.getLlmResponse)
         .mockResolvedValueOnce(
           '{"command": {"name": "webSearch", "params": {"query": "data source"}}}',
         )
@@ -479,7 +495,7 @@ describe('Tool Registry Integration Tests', () => {
           '{"command": {"name": "readFile", "params": {"path": "{{search_result_url}}"}}}',
         );
 
-      mockResponseSchema.parse
+      vi.mocked(mockResponseSchema.parse)
         .mockReturnValueOnce({
           command: { name: 'webSearch', params: { query: 'data source' } },
         })
@@ -490,7 +506,7 @@ describe('Tool Registry Integration Tests', () => {
           },
         });
 
-      mockToolRegistry.execute
+      vi.mocked(mockToolRegistry.execute)
         .mockResolvedValueOnce({ results: [{ url: '/found/data.txt' }] })
         .mockResolvedValueOnce('Found data content');
 
@@ -506,11 +522,11 @@ describe('Tool Registry Integration Tests', () => {
   });
 
   describe('Tool Security and Sandboxing', () => {
-    it('should execute tools in secure sandbox environment', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+    it('should execute code in sandboxed environment', async () => {
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
       const codeParams = {
         code: 'console.log("Hello from sandbox");',
@@ -518,10 +534,10 @@ describe('Tool Registry Integration Tests', () => {
         timeout: 5000,
       };
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         `{"command": {"name": "codeExecutor", "params": ${JSON.stringify(codeParams)}}}`,
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: { name: 'codeExecutor', params: codeParams },
       });
 
@@ -547,10 +563,10 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should enforce tool resource limits', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
       const heavyProcessingParams = {
         data: Array.from({ length: 100000 }, (_, i) => ({
@@ -561,15 +577,15 @@ describe('Tool Registry Integration Tests', () => {
         options: { precision: 'high' },
       };
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         `{"command": {"name": "dataProcessor", "params": ${JSON.stringify(heavyProcessingParams)}}}`,
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: { name: 'dataProcessor', params: heavyProcessingParams },
       });
 
       // Simuler un échec dû aux limites de ressources
-      mockToolRegistry.execute.mockRejectedValue(
+      vi.mocked(mockToolRegistry.execute).mockRejectedValue(
         new Error('Tool execution exceeded memory limit: 512MB'),
       );
 
@@ -587,10 +603,10 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should validate tool parameters before execution', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
       // Paramètres invalides
       const invalidParams = {
@@ -598,10 +614,10 @@ describe('Tool Registry Integration Tests', () => {
         path: null, // path requis
       };
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         `{"command": {"name": "writeFile", "params": ${JSON.stringify(invalidParams)}}}`,
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: { name: 'writeFile', params: invalidParams },
       });
 
@@ -623,15 +639,15 @@ describe('Tool Registry Integration Tests', () => {
 
   describe('Tool Performance and Monitoring', () => {
     it('should monitor tool execution performance', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"command": {"name": "webSearch", "params": {"query": "performance test"}}}',
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: { name: 'webSearch', params: { query: 'performance test' } },
       });
 
@@ -666,15 +682,15 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should track tool usage metrics', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"command": {"name": "readFile", "params": {"path": "/metrics/test.txt"}}}',
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: { name: 'readFile', params: { path: '/metrics/test.txt' } },
       });
       mockToolRegistry.execute = vi.fn();
@@ -697,15 +713,15 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should handle tool timeout gracefully', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"command": {"name": "codeExecutor", "params": {"code": "while(true) {}", "language": "javascript"}}}',
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: {
           name: 'codeExecutor',
           params: { code: 'while(true) {}', language: 'javascript' },
@@ -735,18 +751,19 @@ describe('Tool Registry Integration Tests', () => {
 
   describe('Tool Rate Limiting and Concurrency', () => {
     it('should enforce rate limits on tool usage', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
+      const redisClientModule = await import('../redis/redisClient.ts');
       const mockRedisClient =
-        require('../redis/redisClient.ts').getRedisClientInstance();
+        redisClientModule.getRedisClientInstance();
 
       // Simuler plusieurs appels rapides au même outil
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"command": {"name": "webSearch", "params": {"query": "rate limit test"}}}',
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: { name: 'webSearch', params: { query: 'rate limit test' } },
       });
 
@@ -756,8 +773,7 @@ describe('Tool Registry Integration Tests', () => {
       mockRedisClient.expire = vi.fn();
       (mockRedisClient.expire as any).mockResolvedValue(1);
 
-      mockToolRegistry.execute = vi.fn();
-      (mockToolRegistry.execute as any).mockRejectedValue(
+      vi.mocked(mockToolRegistry.execute).mockRejectedValue(
         new Error('Rate limit exceeded: 10 requests per minute'),
       );
 
@@ -770,10 +786,10 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should manage concurrent tool executions', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
       // Simuler plusieurs agents essayant d'exécuter des outils simultanément
       const agents = Array.from(
@@ -789,10 +805,10 @@ describe('Tool Registry Integration Tests', () => {
           ),
       );
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"command": {"name": "dataProcessor", "params": {"data": [1,2,3], "operation": "sum"}}}',
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: {
           name: 'dataProcessor',
           params: { data: [1, 2, 3], operation: 'sum' },
@@ -820,15 +836,15 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should queue tool executions when at capacity', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"command": {"name": "codeExecutor", "params": {"code": "console.log(\\"test\\")", "language": "javascript"}}}',
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: {
           name: 'codeExecutor',
           params: { code: 'console.log("test")', language: 'javascript' },
@@ -853,12 +869,12 @@ describe('Tool Registry Integration Tests', () => {
 
   describe('Tool Error Handling and Recovery', () => {
     it('should handle tool execution failures gracefully', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
-      mockLlmProvider.getLlmResponse
+      vi.mocked(mockLlmProvider.getLlmResponse)
         .mockResolvedValueOnce(
           '{"command": {"name": "readFile", "params": {"path": "/nonexistent/file.txt"}}}',
         )
@@ -866,7 +882,7 @@ describe('Tool Registry Integration Tests', () => {
           '{"answer": "I encountered an error reading the file. Let me try an alternative approach."}',
         );
 
-      mockResponseSchema.parse
+      vi.mocked(mockResponseSchema.parse)
         .mockReturnValueOnce({
           command: {
             name: 'readFile',
@@ -878,7 +894,7 @@ describe('Tool Registry Integration Tests', () => {
             'I encountered an error reading the file. Let me try an alternative approach.',
         });
 
-      mockToolRegistry.execute.mockRejectedValue(
+      vi.mocked(mockToolRegistry.execute).mockRejectedValue(
         new Error('File not found: /nonexistent/file.txt'),
       );
 
@@ -896,20 +912,20 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should retry failed tool executions with exponential backoff', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"command": {"name": "webSearch", "params": {"query": "retry test"}}}',
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: { name: 'webSearch', params: { query: 'retry test' } },
       });
 
       // Premier appel échoue, deuxième réussit
-      mockToolRegistry.execute
+      vi.mocked(mockToolRegistry.execute)
         .mockRejectedValueOnce(new Error('Temporary network error'))
         .mockRejectedValueOnce(new Error('Still failing'))
         .mockResolvedValueOnce({ results: ['Retry success'] });
@@ -920,15 +936,15 @@ describe('Tool Registry Integration Tests', () => {
     });
 
     it('should provide detailed error diagnostics', async () => {
-      const mockLlmProvider =
-        require('../../utils/llmProvider.ts').getLlmProvider();
-      const mockResponseSchema =
-        require('./responseSchema.ts').llmResponseSchema;
+      const llmProviderModule = await import('../../utils/llmProvider.ts');
+      const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
+      const responseSchemaModule = await import('./responseSchema.ts');
+      const mockResponseSchema = responseSchemaModule.llmResponseSchema;
 
-      mockLlmProvider.getLlmResponse.mockResolvedValue(
+      vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"command": {"name": "codeExecutor", "params": {"code": "invalid syntax", "language": "python"}}}',
       );
-      mockResponseSchema.parse.mockReturnValue({
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: {
           name: 'codeExecutor',
           params: { code: 'invalid syntax', language: 'python' },

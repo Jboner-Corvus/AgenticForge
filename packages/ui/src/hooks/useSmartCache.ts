@@ -26,7 +26,7 @@ const requestMap = new Map<string, Promise<unknown>>();
 export const useSmartCache = <T>(
   key: string,
   fetcher: () => Promise<T>,
-  options: CacheOptions = {}
+  options: CacheOptions = {},
 ): CacheResult<T> => {
   const {
     ttl = 5 * 60 * 1000, // 5 minutes default
@@ -34,7 +34,7 @@ export const useSmartCache = <T>(
     staleWhileRevalidate = true,
     background = false,
     retry = 3,
-    dedupe = true
+    dedupe = true,
   } = options;
 
   const cacheStore = useCacheStore();
@@ -47,13 +47,16 @@ export const useSmartCache = <T>(
   const hasData = cachedEntry !== null;
   const isStale = isExpired && hasData;
 
-  const initialState = useMemo(() => ({
-    data: cachedEntry,
-    error: null as Error | null,
-    isLoading: !hasData,
-    isValidating: false,
-    isStale
-  }), [cachedEntry, hasData, isStale]);
+  const initialState = useMemo(
+    () => ({
+      data: cachedEntry,
+      error: null as Error | null,
+      isLoading: !hasData,
+      isValidating: false,
+      isStale,
+    }),
+    [cachedEntry, hasData, isStale],
+  );
 
   const [state, setState] = useState(initialState);
 
@@ -70,63 +73,69 @@ export const useSmartCache = <T>(
   }, []);
 
   // Fetch function with retry logic
-  const fetchWithRetry = useCallback(async (attempt = 1): Promise<T> => {
-    try {
-      return await fetcherRef.current();
-    } catch (error) {
-      if (attempt < retry) {
-        // Exponential backoff
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return fetchWithRetry(attempt + 1);
-      }
-      throw error;
-    }
-  }, [retry]);
-
-  // Main fetch function
-  const fetchData = useCallback(async (force = false): Promise<T | null> => {
-    const cacheKey = `${key}_fetch`;
-    
-    // Deduplicate requests
-    if (dedupe && requestMap.has(cacheKey) && !force) {
+  const fetchWithRetry = useCallback(
+    async (attempt = 1): Promise<T> => {
       try {
-        return await requestMap.get(cacheKey)! as T | null;
+        return await fetcherRef.current();
       } catch (error) {
-        // If shared request fails, continue with individual request
-      }
-    }
-
-    const fetchPromise = fetchWithRetry().then(
-      (data) => {
-        requestMap.delete(cacheKey);
-        return data;
-      },
-      (error) => {
-        requestMap.delete(cacheKey);
+        if (attempt < retry) {
+          // Exponential backoff
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          return fetchWithRetry(attempt + 1);
+        }
         throw error;
       }
-    );
+    },
+    [retry],
+  );
 
-    if (dedupe) {
-      requestMap.set(cacheKey, fetchPromise);
-      // Clean up after request completes
-      fetchPromise.finally(() => {
-        requestMap.delete(cacheKey);
-      });
-    }
+  // Main fetch function
+  const fetchData = useCallback(
+    async (force = false): Promise<T | null> => {
+      const cacheKey = `${key}_fetch`;
 
-    return fetchPromise;
-  }, [key, dedupe, fetchWithRetry]);
+      // Deduplicate requests
+      if (dedupe && requestMap.has(cacheKey) && !force) {
+        try {
+          return (await requestMap.get(cacheKey)!) as T | null;
+        } catch (error) {
+          // If shared request fails, continue with individual request
+        }
+      }
+
+      const fetchPromise = fetchWithRetry().then(
+        (data) => {
+          requestMap.delete(cacheKey);
+          return data;
+        },
+        (error) => {
+          requestMap.delete(cacheKey);
+          throw error;
+        },
+      );
+
+      if (dedupe) {
+        requestMap.set(cacheKey, fetchPromise);
+        // Clean up after request completes
+        fetchPromise.finally(() => {
+          requestMap.delete(cacheKey);
+        });
+      }
+
+      return fetchPromise;
+    },
+    [key, dedupe, fetchWithRetry],
+  );
 
   // Revalidate function
   const revalidate = useCallback(async () => {
     if (!mountedRef.current) return;
-    
-    setState(prev => ({
+
+    setState((prev) => ({
       ...prev,
       isValidating: true,
-      error: null
+      error: null,
     }));
 
     try {
@@ -137,35 +146,38 @@ export const useSmartCache = <T>(
   }, [fetchData]);
 
   // Mutate function (optimistic updates)
-  const mutate = useCallback(async (data?: T, revalidateAfter = true) => {
-    if (!mountedRef.current) return;
+  const mutate = useCallback(
+    async (data?: T, revalidateAfter = true) => {
+      if (!mountedRef.current) return;
 
-    if (data !== undefined) {
-      // Optimistic update
-      cacheStore.set(key, data, ttl, tags);
-      setState(prev => ({
-        ...prev,
-        data,
-        error: null,
-        isStale: false
-      }));
-    }
-
-    if (revalidateAfter) {
-      // Revalidate in background
-      try {
-        await revalidate();
-      } catch (error) {
-        // Revalidation error is handled in revalidate function
+      if (data !== undefined) {
+        // Optimistic update
+        cacheStore.set(key, data, ttl, tags);
+        setState((prev) => ({
+          ...prev,
+          data,
+          error: null,
+          isStale: false,
+        }));
       }
-    }
-  }, [key, ttl, tags, cacheStore, revalidate]);
+
+      if (revalidateAfter) {
+        // Revalidate in background
+        try {
+          await revalidate();
+        } catch (error) {
+          // Revalidation error is handled in revalidate function
+        }
+      }
+    },
+    [key, ttl, tags, cacheStore, revalidate],
+  );
 
   // Initial fetch effect
   useEffect(() => {
     if (!hasData || (isExpired && !staleWhileRevalidate)) {
       // No data or expired without stale-while-revalidate
-      setState(prev => ({ ...prev, isLoading: true }));
+      setState((prev) => ({ ...prev, isLoading: true }));
       fetchData();
     } else if (isExpired && staleWhileRevalidate) {
       // Stale data available, fetch in background
@@ -173,7 +185,7 @@ export const useSmartCache = <T>(
         // Non-blocking background fetch
         setTimeout(() => fetchData(), 0);
       } else {
-        setState(prev => ({ ...prev, isValidating: true }));
+        setState((prev) => ({ ...prev, isValidating: true }));
         fetchData();
       }
     }
@@ -186,7 +198,7 @@ export const useSmartCache = <T>(
     isValidating: state.isValidating,
     isStale: state.isStale,
     mutate,
-    revalidate
+    revalidate,
   };
 };
 
@@ -194,7 +206,7 @@ export const useSmartCache = <T>(
 export const preloadCache = <T>(
   key: string,
   fetcher: () => Promise<T>,
-  options: CacheOptions = {}
+  options: CacheOptions = {},
 ) => {
   const cacheStore = useCacheStore.getState();
   const { ttl = 5 * 60 * 1000, tags = [] } = options;
@@ -202,11 +214,11 @@ export const preloadCache = <T>(
   // Only preload if not already cached
   if (!cacheStore.has(key)) {
     fetcher()
-      .then(data => {
+      .then((data) => {
         cacheStore.set(key, data, ttl, tags);
         console.log(`📦 Preloaded cache: ${key}`);
       })
-      .catch(error => {
+      .catch((error) => {
         console.warn(`⚠️ Failed to preload cache: ${key}`, error);
       });
   }
@@ -215,16 +227,22 @@ export const preloadCache = <T>(
 // Hook for cache invalidation
 export const useCacheInvalidation = () => {
   const cacheStore = useCacheStore();
-  
-  const invalidateByTag = useCallback((tag: string) => {
-    cacheStore.invalidateByTag(tag);
-    console.log(`🏷️ Invalidated cache by tag: ${tag}`);
-  }, [cacheStore]);
 
-  const invalidateByKey = useCallback((key: string) => {
-    cacheStore.delete(key);
-    console.log(`🗑️ Invalidated cache key: ${key}`);
-  }, [cacheStore]);
+  const invalidateByTag = useCallback(
+    (tag: string) => {
+      cacheStore.invalidateByTag(tag);
+      console.log(`🏷️ Invalidated cache by tag: ${tag}`);
+    },
+    [cacheStore],
+  );
+
+  const invalidateByKey = useCallback(
+    (key: string) => {
+      cacheStore.delete(key);
+      console.log(`🗑️ Invalidated cache key: ${key}`);
+    },
+    [cacheStore],
+  );
 
   const invalidateAll = useCallback(() => {
     cacheStore.clear();
@@ -234,7 +252,7 @@ export const useCacheInvalidation = () => {
   return {
     invalidateByTag,
     invalidateByKey,
-    invalidateAll
+    invalidateAll,
   };
 };
 
@@ -244,7 +262,7 @@ export const useCacheWarming = (patterns: string[]) => {
 
   useEffect(() => {
     // Warm cache by prefetching related data patterns
-    patterns.forEach(pattern => {
+    patterns.forEach((pattern) => {
       // This would be implemented based on your specific prefetch logic
       console.log(`🔥 Warming cache for pattern: ${pattern}`);
     });
@@ -255,21 +273,21 @@ export const useCacheWarming = (patterns: string[]) => {
 export const useApiCache = <T>(
   endpoint: string,
   params: Record<string, unknown> = {},
-  options: CacheOptions = {}
+  options: CacheOptions = {},
 ) => {
   const key = `api_${endpoint}_${JSON.stringify(params)}`;
-  
+
   const fetcher = useCallback(async () => {
     const searchParams = new URLSearchParams(
-      Object.entries(params).map(([key, value]) => [key, String(value)])
+      Object.entries(params).map(([key, value]) => [key, String(value)]),
     ).toString();
     const url = searchParams ? `${endpoint}?${searchParams}` : endpoint;
-    
+
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
-    
+
     return response.json();
   }, [endpoint, params]);
 
@@ -277,6 +295,6 @@ export const useApiCache = <T>(
     ttl: 2 * 60 * 1000, // 2 minutes for API calls
     tags: [endpoint.split('/')[1] || endpoint], // Tag by resource type
     staleWhileRevalidate: true,
-    ...options
+    ...options,
   });
 };

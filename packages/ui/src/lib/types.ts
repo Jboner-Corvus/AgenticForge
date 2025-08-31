@@ -4,7 +4,11 @@ export type AgentMessage = {
   type: 'agent_response';
   timestamp: string;
 };
-export type AgentThought = { content: string; type: 'agent_thought'; timestamp: string; };
+export type AgentThought = {
+  content: string;
+  type: 'agent_thought';
+  timestamp: string;
+};
 export type AgentToolCall = {
   params: Record<string, unknown>;
   toolName: string;
@@ -12,12 +16,12 @@ export type AgentToolCall = {
   timestamp: string;
 };
 export type AgentToolResult = (
-  | { result: Record<string, unknown>; toolName: string; }
-  | { result: { output: string }; toolName: 'executeShellCommand'; }
-) & { type: 'tool_result'; timestamp: string; };
-export type JobCompleted = { type: 'job_completed'; timestamp: string; };
+  | { result: Record<string, unknown>; toolName: string }
+  | { result: { output: string }; toolName: 'executeShellCommand' }
+) & { type: 'tool_result'; timestamp: string };
+export type JobCompleted = { type: 'job_completed'; timestamp: string };
 
-export type JobFailed = { type: 'job_failed'; timestamp: string; };
+export type JobFailed = { type: 'job_failed'; timestamp: string };
 
 export type UserMessage = {
   content: string;
@@ -57,6 +61,10 @@ export type NewChatMessage =
   | { type: 'tool_call'; toolName: string; params: Record<string, unknown> }
   | { type: 'tool_result'; toolName: string; result: Record<string, unknown> }
   | { type: 'error'; content: string }
-  | { type: 'agent_canvas_output'; content: string; contentType: 'html' | 'markdown' | 'url' | 'text' };
+  | {
+      type: 'agent_canvas_output';
+      content: string;
+      contentType: 'html' | 'markdown' | 'url' | 'text';
+    };
 
 export type ChatMessage = DisplayableItem;

@@ -21,17 +21,42 @@ import { getResponseJsonSchema } from './responseSchema.ts';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Corrige le chemin pour pointer vers le fichier source, que le code soit exécuté depuis /src ou /dist
-const promptFilePath = path.resolve(__dirname, 'system.prompt.md');
+// Lazy load the system prompt with multiple fallback paths
+let PREAMBLE_CONTENT: string | null = null;
 
-const PREAMBLE_CONTENT = readFileSync(promptFilePath, 'utf-8').replace(
-  /`/g,
-  '`',
-);
+const getSystemPromptContent = (): string => {
+  if (PREAMBLE_CONTENT !== null) {
+    return PREAMBLE_CONTENT;
+  }
+
+  // Try multiple possible locations for the system prompt file
+  const possiblePaths = [
+    path.resolve(__dirname, 'system.prompt.md'), // dist/modules/agent/system.prompt.md
+    path.resolve(__dirname, '..', '..', '..', 'system.prompt.md'), // dist/system.prompt.md
+    path.resolve(__dirname, '..', '..', '..', '..', 'src', 'modules', 'agent', 'system.prompt.md'), // src/modules/agent/system.prompt.md
+  ];
+
+  for (const filePath of possiblePaths) {
+    try {
+      if (existsSync(filePath)) {
+        PREAMBLE_CONTENT = readFileSync(filePath, 'utf-8');
+        return PREAMBLE_CONTENT;
+      }
+    } catch (error) {
+      // Continue to next path
+      continue;
+    }
+  }
+
+  // Fallback if file not found
+  console.warn('Warning: system.prompt.md not found, using fallback content');
+  PREAMBLE_CONTENT = '# AgenticForge - AI Assistant\n\nYou are AgenticForge, an AI assistant. Please respond helpfully.';
+  return PREAMBLE_CONTENT;
+};
 
 const getPreamble = () => {
   const schema = JSON.stringify(getResponseJsonSchema(), null, 2);
-  return PREAMBLE_CONTENT.replace('{{RESPONSE_JSON_SCHEMA}}', schema);
+  return getSystemPromptContent().replace('{{RESPONSE_JSON_SCHEMA}}', schema);
 };
 
 const TOOLS_SECTION_HEADER = '## Available Tools:';

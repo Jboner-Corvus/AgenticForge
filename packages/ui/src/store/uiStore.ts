@@ -6,26 +6,26 @@ import { clientConfig } from '../config';
 export interface UIState {
   // Page navigation
   currentPage: PageType;
-  
+
   // Modal states
   isSettingsModalOpen: boolean;
-  
+
   // Panel visibility
   isControlPanelVisible: boolean;
   isDebugLogVisible: boolean;
   isTodoListVisible: boolean;
   isUnifiedTodoListVisible: boolean;
-  
+
   // Theme
   isDarkMode: boolean;
-  
+
   // Processing states
   isProcessing: boolean;
   agentProgress: number;
-  
+
   // Form states
   messageInputValue: string;
-  
+
   // Status indicators
   agentStatus: string | null;
   toolStatus: string;
@@ -36,24 +36,24 @@ export interface UIState {
   toolCount: number | string;
   toolCreationEnabled: boolean;
   codeExecutionEnabled: boolean;
-  
+
   // Backend Authentication (pour l'accès à l'API AgenticForge)
   // IMPORTANT: Ceci n'est PAS un token LLM !
   authToken: string | null; // Token d'authentification backend
   jobId: string | null;
   activeCliJobId: string | null;
-  
+
   // Stream management
   streamCloseFunc: (() => void) | null;
-  
+
   // Debug
   debugLog: string[];
-  
+
   // Enhanced Auth Actions
   setAuthTokenAndValidate: (token: string | null) => Promise<void>;
   refreshAuthToken: () => Promise<void>;
   getValidAuthToken: () => string | null;
-  
+
   // Actions
   setCurrentPage: (page: PageType) => void;
   setIsSettingsModalOpen: (isOpen: boolean) => void;
@@ -62,14 +62,14 @@ export interface UIState {
   setIsUnifiedTodoListVisible: (isVisible: boolean) => void;
   toggleDebugLogVisibility: () => void;
   toggleDarkMode: () => void;
-  
+
   // Processing
   setIsProcessing: (isProcessing: boolean) => void;
   setAgentProgress: (progress: number) => void;
-  
+
   // Form
   setMessageInputValue: (value: string) => void;
-  
+
   // Status
   setAgentStatus: (status: string | null) => void;
   setToolStatus: (status: string) => void;
@@ -79,19 +79,19 @@ export interface UIState {
   setToolCount: (count: number | string) => void;
   setToolCreationEnabled: (enabled: boolean) => void;
   setCodeExecutionEnabled: (enabled: boolean) => void;
-  
+
   // Auth
   setAuthToken: (token: string | null) => void;
   setJobId: (jobId: string | null) => void;
   setActiveCliJobId: (jobId: string | null) => void;
-  
+
   // Debug
   addDebugLog: (log: string) => void;
   clearDebugLog: () => void;
-  
+
   // Toast (to be implemented)
   toast: (options: ToastOptions) => void;
-  
+
   // Computed
   getSystemStatus: () => {
     healthy: boolean;
@@ -110,7 +110,7 @@ export const useUIStore = create<UIState>()(
       isControlPanelVisible: false,
       isDebugLogVisible: false,
       isTodoListVisible: false,
-      isUnifiedTodoListVisible: false,
+      isUnifiedTodoListVisible: true,
       isDarkMode: false,
       isProcessing: false,
       agentProgress: 0,
@@ -132,18 +132,24 @@ export const useUIStore = create<UIState>()(
 
       // Enhanced Auth Actions
       setAuthTokenAndValidate: async (token: string | null) => {
-        console.log('🔐 [UIStore] Setting BACKEND auth token (not LLM key):', token?.substring(0, 30) + '...');
-        
+        console.log(
+          '🔐 [UIStore] Setting BACKEND auth token (not LLM key):',
+          token?.substring(0, 30) + '...',
+        );
+
         if (!token) {
-          set({ 
+          set({
             authToken: null,
-            isAuthenticated: false 
+            isAuthenticated: false,
           });
           // Remove from localStorage
           try {
             localStorage.removeItem('backendAuthToken');
           } catch (error) {
-            console.warn('Failed to remove backend token from localStorage:', error);
+            console.warn(
+              'Failed to remove backend token from localStorage:',
+              error,
+            );
           }
           return;
         }
@@ -153,28 +159,33 @@ export const useUIStore = create<UIState>()(
           // In a real implementation, we would validate the token with the backend
           // For now, we'll just assume it's valid if it's not empty
           if (token.trim() !== '') {
-            set({ 
+            set({
               authToken: token,
-              isAuthenticated: true 
+              isAuthenticated: true,
             });
             // Save backend token to localStorage with clear name
             try {
               localStorage.setItem('backendAuthToken', token);
-              console.log('✅ [UIStore] Backend auth token saved to localStorage');
+              console.log(
+                '✅ [UIStore] Backend auth token saved to localStorage',
+              );
             } catch (error) {
-              console.warn('Failed to save backend token to localStorage:', error);
+              console.warn(
+                'Failed to save backend token to localStorage:',
+                error,
+              );
             }
           } else {
-            set({ 
+            set({
               authToken: null,
-              isAuthenticated: false 
+              isAuthenticated: false,
             });
           }
         } catch (error) {
           console.error('Backend token validation failed:', error);
-          set({ 
+          set({
             authToken: null,
-            isAuthenticated: false 
+            isAuthenticated: false,
           });
         }
       },
@@ -186,16 +197,16 @@ export const useUIStore = create<UIState>()(
           const storedToken = localStorage.getItem('backendAuthToken');
           if (storedToken) {
             console.log('✅ [UIStore] Found backend token in localStorage');
-            set({ 
+            set({
               authToken: storedToken,
-              isAuthenticated: true 
+              isAuthenticated: true,
             });
           } else if (clientConfig.AUTH_TOKEN) {
             // Fallback to the default token from config
             console.log('✅ [UIStore] Using backend token from config');
-            set({ 
+            set({
               authToken: clientConfig.AUTH_TOKEN,
-              isAuthenticated: true 
+              isAuthenticated: true,
             });
             // Save it to localStorage for next time
             try {
@@ -213,36 +224,43 @@ export const useUIStore = create<UIState>()(
 
       getValidAuthToken: () => {
         console.log('🔍 [UIStore] Getting valid BACKEND auth token...');
-        
+
         // First check the store
         const storeToken = get().authToken;
         if (storeToken) {
           console.log('✅ [UIStore] Using backend token from store');
           return storeToken;
         }
-        
+
         // Then check localStorage with correct key
         try {
           const localStorageToken = localStorage.getItem('backendAuthToken');
           if (localStorageToken) {
-            console.log('✅ [UIStore] Found backend token in localStorage, updating store');
+            console.log(
+              '✅ [UIStore] Found backend token in localStorage, updating store',
+            );
             // Update the store with the token from localStorage
-            set({ 
+            set({
               authToken: localStorageToken,
-              isAuthenticated: true 
+              isAuthenticated: true,
             });
             return localStorageToken;
           }
         } catch (error) {
-          console.error('Error getting backend token from localStorage:', error);
+          console.error(
+            'Error getting backend token from localStorage:',
+            error,
+          );
         }
-        
+
         // Finally, fallback to the default token from config
         if (clientConfig.AUTH_TOKEN) {
-          console.log('✅ [UIStore] Using backend token from config as fallback');
-          set({ 
+          console.log(
+            '✅ [UIStore] Using backend token from config as fallback',
+          );
+          set({
             authToken: clientConfig.AUTH_TOKEN,
-            isAuthenticated: true 
+            isAuthenticated: true,
           });
           // Try to save it for next time
           try {
@@ -252,25 +270,32 @@ export const useUIStore = create<UIState>()(
           }
           return clientConfig.AUTH_TOKEN;
         }
-        
-        console.warn('⚠️ [UIStore] No valid backend auth token found anywhere!');
+
+        console.warn(
+          '⚠️ [UIStore] No valid backend auth token found anywhere!',
+        );
         return null;
       },
 
       // Actions
       setCurrentPage: (currentPage) => set({ currentPage }),
-      setIsSettingsModalOpen: (isSettingsModalOpen) => set({ isSettingsModalOpen }),
-      setIsControlPanelVisible: (isControlPanelVisible) => set({ isControlPanelVisible }),
+      setIsSettingsModalOpen: (isSettingsModalOpen) =>
+        set({ isSettingsModalOpen }),
+      setIsControlPanelVisible: (isControlPanelVisible) =>
+        set({ isControlPanelVisible }),
       setIsTodoListVisible: (isTodoListVisible) => set({ isTodoListVisible }),
-      setIsUnifiedTodoListVisible: (isUnifiedTodoListVisible) => set({ isUnifiedTodoListVisible }),
-      
-      toggleDebugLogVisibility: () => set((state) => ({ 
-        isDebugLogVisible: !state.isDebugLogVisible 
-      })),
-      
-      toggleDarkMode: () => set((state) => ({ 
-        isDarkMode: !state.isDarkMode 
-      })),
+      setIsUnifiedTodoListVisible: (isUnifiedTodoListVisible) =>
+        set({ isUnifiedTodoListVisible }),
+
+      toggleDebugLogVisibility: () =>
+        set((state) => ({
+          isDebugLogVisible: !state.isDebugLogVisible,
+        })),
+
+      toggleDarkMode: () =>
+        set((state) => ({
+          isDarkMode: !state.isDarkMode,
+        })),
 
       // Processing
       setIsProcessing: (isProcessing) => set({ isProcessing }),
@@ -286,32 +311,43 @@ export const useUIStore = create<UIState>()(
       setServerHealthy: (serverHealthy) => set({ serverHealthy }),
       setTokenStatus: (tokenStatus) => set({ tokenStatus }),
       setToolCount: (toolCount) => set({ toolCount }),
-      setToolCreationEnabled: (toolCreationEnabled) => set({ toolCreationEnabled }),
-      setCodeExecutionEnabled: (codeExecutionEnabled) => set({ codeExecutionEnabled }),
+      setToolCreationEnabled: (toolCreationEnabled) =>
+        set({ toolCreationEnabled }),
+      setCodeExecutionEnabled: (codeExecutionEnabled) =>
+        set({ codeExecutionEnabled }),
 
       // Backend Auth (for AgenticForge API access)
       setAuthToken: (authToken) => {
-        console.log('🔐 [UIStore] Setting backend auth token:', authToken?.substring(0, 30) + '...');
-        set({ 
+        console.log(
+          '🔐 [UIStore] Setting backend auth token:',
+          authToken?.substring(0, 30) + '...',
+        );
+        set({
           authToken,
-          isAuthenticated: !!authToken 
+          isAuthenticated: !!authToken,
         });
         // Save to localStorage with clear naming
         if (authToken) {
           try {
             localStorage.setItem('backendAuthToken', authToken);
           } catch (error) {
-            console.warn('Failed to save backend token to localStorage:', error);
+            console.warn(
+              'Failed to save backend token to localStorage:',
+              error,
+            );
           }
         } else {
           try {
             localStorage.removeItem('backendAuthToken');
           } catch (error) {
-            console.warn('Failed to remove backend token from localStorage:', error);
+            console.warn(
+              'Failed to remove backend token from localStorage:',
+              error,
+            );
           }
         }
       },
-      
+
       setJobId: (jobId) => set({ jobId }),
       setActiveCliJobId: (activeCliJobId) => set({ activeCliJobId }),
 
@@ -322,30 +358,29 @@ export const useUIStore = create<UIState>()(
           console.warn('Attempted to log undefined/null value:', log);
           return;
         }
-        
+
         // Filter out repetitive logs to reduce spam
-        const shouldSkipLog = (
+        const shouldSkipLog =
           log.includes('Token loaded from cookie') ||
           log.includes('Interface initialized') ||
           log.includes('Session retrieved') ||
           log.includes('Checking server health') ||
           log.includes('Server status: Online') ||
-          log.includes('VERBOSE')
-        );
-        
+          log.includes('VERBOSE');
+
         if (shouldSkipLog) {
           return; // Skip repetitive logs
         }
-        
+
         set((state) => {
           const newLogs = [...state.debugLog, log];
           // Keep only the last 50 logs to prevent memory issues and lag
           return {
-            debugLog: newLogs.slice(-50)
+            debugLog: newLogs.slice(-50),
           };
         });
       },
-      
+
       clearDebugLog: () => set({ debugLog: [] }),
 
       // Toast placeholder (can be implemented with actual toast library)
@@ -358,18 +393,18 @@ export const useUIStore = create<UIState>()(
       getSystemStatus: () => {
         const state = get();
         const errors = [];
-        
+
         if (!state.serverHealthy) errors.push('Server unhealthy');
         if (!state.isAuthenticated) errors.push('Not authenticated');
         if (state.agentStatus === 'error') errors.push('Agent error');
-        
+
         return {
           healthy: state.serverHealthy && state.isAuthenticated,
           authenticated: state.isAuthenticated,
           processing: state.isProcessing,
-          errors
+          errors,
         };
-      }
+      },
     }),
     {
       name: 'agenticforge-ui-store',
@@ -381,8 +416,8 @@ export const useUIStore = create<UIState>()(
         toolCreationEnabled: state.toolCreationEnabled,
         codeExecutionEnabled: state.codeExecutionEnabled,
         authToken: state.authToken,
-        tokenStatus: state.tokenStatus
-      })
-    }
-  )
+        tokenStatus: state.tokenStatus,
+      }),
+    },
+  ),
 );

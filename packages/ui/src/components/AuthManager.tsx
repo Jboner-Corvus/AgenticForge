@@ -18,7 +18,7 @@ interface AuthManagerProps {
 export const AuthManager: React.FC<AuthManagerProps> = ({
   showStatusIndicator = true,
   indicatorPosition = 'bottom-right',
-  onAuthError
+  onAuthError,
 }) => {
   const [forceShowModal, setForceShowModal] = useState(false);
 
@@ -35,9 +35,7 @@ export const AuthManager: React.FC<AuthManagerProps> = ({
   return (
     <>
       {/* Gestionnaire principal des erreurs d'authentification */}
-      <AuthErrorHandler 
-        onAuthError={handleAuthError}
-      />
+      <AuthErrorHandler onAuthError={handleAuthError} />
 
       {/* Indicateur discret en bas à droite */}
       {showStatusIndicator && (
@@ -50,9 +48,7 @@ export const AuthManager: React.FC<AuthManagerProps> = ({
 
       {/* Modal forcée par l'indicateur de statut */}
       {forceShowModal && (
-        <AuthErrorHandler 
-          onAuthError={() => setForceShowModal(false)}
-        />
+        <AuthErrorHandler onAuthError={() => setForceShowModal(false)} />
       )}
     </>
   );

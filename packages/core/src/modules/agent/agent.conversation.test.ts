@@ -10,7 +10,15 @@ vi.mock('../../config.ts', () => ({
   config: {
     AGENT_MAX_ITERATIONS: 10,
     LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
+    AGENT_MAX_MALFORMED_RESPONSES: 5,
+    AGENT_MAX_LLM_FAILURES: 3,
   },
+  getConfig: () => ({
+    AGENT_MAX_ITERATIONS: 10,
+    LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
+    AGENT_MAX_MALFORMED_RESPONSES: 5,
+    AGENT_MAX_LLM_FAILURES: 3,
+  }),
 }));
 
 vi.mock('../../logger.ts', () => ({
@@ -558,7 +566,7 @@ describe('Agent Conversation Integration Tests', () => {
           '{"thought": "Good results found. Now I need to analyze and structure this information."}',
         )
         .mockResolvedValueOnce(
-          '{"canvas": {"content": "# Research Report\n\n## Key Findings\n- Finding 1\n- Finding 2", "contentType": "markdown"}}',
+          '{"canvas": {"content": "# Research Report\n\n## Key Findings\n- Finding 1\n- Finding 2", "contentType": "html"}}',
         );
 
       (mockResponseSchema.parse as Mock)
@@ -577,7 +585,7 @@ describe('Agent Conversation Integration Tests', () => {
           canvas: {
             content:
               '# Research Report\n\n## Key Findings\n- Finding 1\n- Finding 2',
-            contentType: 'markdown',
+            contentType: 'html',
           },
         });
 
@@ -764,7 +772,7 @@ describe('Agent Conversation Integration Tests', () => {
           '{"thought": "The user wants creative content. I should write an engaging story."}',
         )
         .mockResolvedValueOnce(
-          '{"canvas": {"content": "# The Digital Companion\n\nOnce upon a time, in a world where code and consciousness intertwined...", "contentType": "markdown"}}',
+          '{"canvas": {"content": "# The Digital Companion\n\nOnce upon a time, in a world where code and consciousness intertwined...", "contentType": "html"}}',
         );
 
       (mockResponseSchema.parse as Mock)
@@ -776,7 +784,7 @@ describe('Agent Conversation Integration Tests', () => {
           canvas: {
             content:
               '# The Digital Companion\n\nOnce upon a time, in a world where code and consciousness intertwined...',
-            contentType: 'markdown',
+            contentType: 'html',
           },
         });
 

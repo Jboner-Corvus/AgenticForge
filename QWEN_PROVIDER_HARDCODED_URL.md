@@ -9,12 +9,14 @@ This document summarizes the changes made to hardcode the Qwen API URL instead o
 The `QWEN_API_BASE_URL` environment variable has been removed from the [.env](file:///home/demon/agentforge/AgenticForge2/AgenticForge/.env) file as requested.
 
 **Before:**
+
 ```
 LLM_API_KEY=_trPxyNaN47_vdVlnVTBu3RkqdaccB6g0YzjaCc3kxjw7f6O7omPJKQZhQRcCCDxOJ5mZ8CeODz17v0t-fKRUw
 QWEN_API_BASE_URL=https://portal.qwen.ai/v1/chat/completions
 ```
 
 **After:**
+
 ```
 LLM_API_KEY=_trPxyNaN47_vdVlnVTBu3RkqdaccB6g0YzjaCc3kxjw7f6O7omPJKQZhQRcCCDxOJ5mZ8CeODz17v0t-fKRUw
 ```
@@ -26,6 +28,7 @@ The Qwen provider in the backend has been updated to use a hardcoded URL instead
 **File:** [/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/llm/qwenProvider.ts](file:///home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/src/modules/llm/qwenProvider.ts)
 
 **Changes:**
+
 ```typescript
 // Qwen Portal API endpoint (hardcoded as requested)
 const QWEN_API_BASE_URL = 'https://portal.qwen.ai/v1';
@@ -34,7 +37,7 @@ const apiUrls = [
   `${QWEN_API_BASE_URL}/chat/completions`, // Hardcoded endpoint as requested
   'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation',
   'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-  'https://qwen.aliyuncs.com/v1/chat/completions'
+  'https://qwen.aliyuncs.com/v1/chat/completions',
 ].filter(Boolean) as string[];
 ```
 
@@ -45,6 +48,7 @@ The Qwen provider in the frontend is already configured with the correct hardcod
 **File:** [/home/demon/agentforge/AgenticForge2/AgenticForge/packages/ui/src/store/llmKeysStore.ts](file:///home/demon/agentforge/AgenticForge2/AgenticForge/packages/ui/src/store/llmKeysStore.ts)
 
 **Configuration:**
+
 ```typescript
 {
   id: 'qwen',

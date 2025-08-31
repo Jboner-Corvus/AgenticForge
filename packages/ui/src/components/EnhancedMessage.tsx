@@ -1,21 +1,26 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Copy, 
-  Check, 
-  ThumbsUp, 
-  ThumbsDown, 
-  MoreHorizontal, 
+import {
+  Copy,
+  Check,
+  ThumbsUp,
+  ThumbsDown,
+  MoreHorizontal,
   RefreshCw,
   User,
   Bot,
   Clock,
-  Tag
+  Tag,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { EnhancedCodeBlock } from './EnhancedCodeBlock';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from './ui/tooltip';
 
 interface EnhancedMessageProps {
   message: {
@@ -36,11 +41,11 @@ interface EnhancedMessageProps {
 export const EnhancedMessage: React.FC<EnhancedMessageProps> = ({
   message,
   variant = 'classic',
-  showActions = true
+  showActions = true,
 }) => {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState<boolean | null>(null);
-  
+
   const isUser = message.type === 'user';
   const isAgent = message.type === 'agent';
   const isSystem = message.type === 'system';
@@ -57,7 +62,7 @@ export const EnhancedMessage: React.FC<EnhancedMessageProps> = ({
       if (match.index > lastIndex) {
         parts.push({
           type: 'text',
-          content: content.slice(lastIndex, match.index)
+          content: content.slice(lastIndex, match.index),
         });
       }
 
@@ -65,7 +70,7 @@ export const EnhancedMessage: React.FC<EnhancedMessageProps> = ({
       parts.push({
         type: 'code',
         language: match[1] || 'text',
-        content: match[2].trim()
+        content: match[2].trim(),
       });
 
       lastIndex = match.index + match[0].length;
@@ -75,7 +80,7 @@ export const EnhancedMessage: React.FC<EnhancedMessageProps> = ({
     if (lastIndex < content.length) {
       parts.push({
         type: 'text',
-        content: content.slice(lastIndex)
+        content: content.slice(lastIndex),
       });
     }
 
@@ -98,14 +103,15 @@ export const EnhancedMessage: React.FC<EnhancedMessageProps> = ({
   };
 
   const getMessageStyles = () => {
-    const baseStyles = "relative group p-4 rounded-2xl shadow-sm border backdrop-blur-sm";
-    
+    const baseStyles =
+      'relative group p-4 rounded-2xl shadow-sm border backdrop-blur-sm';
+
     if (isUser) {
       return variant === 'pinned'
         ? `${baseStyles} bg-cyan-900/30 border-cyan-500/30 ml-8`
         : `${baseStyles} bg-primary/10 border-primary/20 ml-8`;
     }
-    
+
     if (isAgent) {
       return variant === 'pinned'
         ? `${baseStyles} bg-black/40 border-gray-700/50 mr-8`
@@ -116,21 +122,21 @@ export const EnhancedMessage: React.FC<EnhancedMessageProps> = ({
   };
 
   const getAvatarStyles = () => {
-    const baseStyles = "w-8 h-8 rounded-full flex items-center justify-center";
-    
+    const baseStyles = 'w-8 h-8 rounded-full flex items-center justify-center';
+
     if (isUser) {
       return variant === 'pinned'
         ? `${baseStyles} bg-cyan-500/20`
         : `${baseStyles} bg-primary/20`;
     }
-    
+
     return variant === 'pinned'
       ? `${baseStyles} bg-gray-700/50`
       : `${baseStyles} bg-muted`;
   };
 
   const contentParts = parseMessageContent(message.content);
-  
+
   return (
     <TooltipProvider>
       <motion.div
@@ -150,16 +156,22 @@ export const EnhancedMessage: React.FC<EnhancedMessageProps> = ({
                 <Bot className="h-4 w-4" />
               )}
             </div>
-            
+
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-medium text-sm">
-                  {isUser ? 'Vous' : isSystem ? 'Système' : 'AgenticForge Assistant'}
+                  {isUser
+                    ? 'Vous'
+                    : isSystem
+                      ? 'Système'
+                      : 'AgenticForge Assistant'}
                 </span>
-                
+
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Clock className="h-3 w-3" />
-                  <span>{new Date(message.timestamp).toLocaleTimeString()}</span>
+                  <span>
+                    {new Date(message.timestamp).toLocaleTimeString()}
+                  </span>
                 </div>
 
                 {message.metadata?.model && (
@@ -240,11 +252,7 @@ export const EnhancedMessage: React.FC<EnhancedMessageProps> = ({
 
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                        >
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
                           <RefreshCw className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
@@ -255,11 +263,7 @@ export const EnhancedMessage: React.FC<EnhancedMessageProps> = ({
                   </>
                 )}
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                >
+                <Button variant="ghost" size="icon" className="h-8 w-8">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </div>
@@ -278,12 +282,15 @@ export const EnhancedMessage: React.FC<EnhancedMessageProps> = ({
                     collapsible={part.content.split('\n').length > 20}
                   />
                 ) : (
-                  <div 
+                  <div
                     className="prose prose-sm max-w-none dark:prose-invert"
                     dangerouslySetInnerHTML={{
                       __html: part.content
                         .replace(/\n/g, '<br>')
-                        .replace(/`([^`]+)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-xs">$1</code>')
+                        .replace(
+                          /`([^`]+)`/g,
+                          '<code class="bg-muted px-1 py-0.5 rounded text-xs">$1</code>',
+                        ),
                     }}
                   />
                 )}
@@ -298,8 +305,8 @@ export const EnhancedMessage: React.FC<EnhancedMessageProps> = ({
               animate={{ opacity: 1, scale: 1 }}
               className="mt-3 flex justify-end"
             >
-              <Badge 
-                variant={liked ? "default" : "destructive"}
+              <Badge
+                variant={liked ? 'default' : 'destructive'}
                 className="text-xs"
               >
                 {liked ? '👍 Utile' : '👎 Pas utile'}

@@ -3,8 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { UserInput } from './UserInput';
 import { ControlPanel } from './ControlPanel';
 import { useCombinedStore } from '../store';
-import { 
-  useIsProcessing, 
+import {
+  useIsProcessing,
   useMessageInputValue,
   useServerHealthy,
   useSessionId,
@@ -17,7 +17,7 @@ import {
   useIsRenamingSession,
   useBrowserStatus,
   useTokenStatus,
-  useIsLoadingTools
+  useIsLoadingTools,
 } from '../store/hooks';
 import { useUIStore } from '../store/uiStore';
 import { useSessionStore } from '../store/sessionStore';
@@ -117,8 +117,18 @@ describe('User Interaction Tests', () => {
     setIsProcessing: vi.fn(),
     clearMessages: vi.fn(),
     sessions: [
-      { id: 'session-1', name: 'Test Session 1', timestamp: Date.now(), messages: [] },
-      { id: 'session-2', name: 'Test Session 2', timestamp: Date.now() - 1000, messages: [] },
+      {
+        id: 'session-1',
+        name: 'Test Session 1',
+        timestamp: Date.now(),
+        messages: [],
+      },
+      {
+        id: 'session-2',
+        name: 'Test Session 2',
+        timestamp: Date.now() - 1000,
+        messages: [],
+      },
     ],
     saveSession: vi.fn(),
     loadSession: vi.fn(),
@@ -154,27 +164,57 @@ describe('User Interaction Tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockStore);
-    
+    (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      mockStore,
+    );
+
     // Mock the hooks used by UserInput
-    (useIsProcessing as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    (useMessageInputValue as unknown as ReturnType<typeof vi.fn>).mockReturnValue('');
-    (useUIStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockStore.setMessageInputValue);
-    
+    (useIsProcessing as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      false,
+    );
+    (
+      useMessageInputValue as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue('');
+    (useUIStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      mockStore.setMessageInputValue,
+    );
+
     // Mock the hooks used by ControlPanel
-    (useServerHealthy as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
-    (useSessionId as unknown as ReturnType<typeof vi.fn>).mockReturnValue('test-session-id');
+    (useServerHealthy as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      true,
+    );
+    (useSessionId as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      'test-session-id',
+    );
     (useToolCount as unknown as ReturnType<typeof vi.fn>).mockReturnValue(15);
-    (useSessions as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockStore.sessions);
-    (useActiveSessionId as unknown as ReturnType<typeof vi.fn>).mockReturnValue('session-1');
-    (useIsLoadingSessions as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    (useIsSavingSession as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    (useIsDeletingSession as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    (useIsRenamingSession as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    (useBrowserStatus as unknown as ReturnType<typeof vi.fn>).mockReturnValue('valid');
-    (useTokenStatus as unknown as ReturnType<typeof vi.fn>).mockReturnValue('valid');
-    (useIsLoadingTools as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
-    
+    (useSessions as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      mockStore.sessions,
+    );
+    (useActiveSessionId as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      'session-1',
+    );
+    (
+      useIsLoadingSessions as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue(false);
+    (useIsSavingSession as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      false,
+    );
+    (
+      useIsDeletingSession as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue(false);
+    (
+      useIsRenamingSession as unknown as ReturnType<typeof vi.fn>
+    ).mockReturnValue(false);
+    (useBrowserStatus as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      'valid',
+    );
+    (useTokenStatus as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      'valid',
+    );
+    (useIsLoadingTools as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      false,
+    );
+
     // Mock the session store
     (useSessionStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       saveSession: mockStore.saveSession,
@@ -186,33 +226,45 @@ describe('User Interaction Tests', () => {
 
   describe('UserInput Component Interactions', () => {
     it('should update input value when typing', async () => {
-      render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
-      
+      render(
+        <TestLanguageProvider>
+          <UserInput />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render
       await waitFor(() => {
         const textarea = screen.getByPlaceholderText('Type your message...');
-        
+
         fireEvent.change(textarea, { target: { value: 'Hello world' } });
-        
-        expect(mockStore.setMessageInputValue).toHaveBeenCalledWith('Hello world');
+
+        expect(mockStore.setMessageInputValue).toHaveBeenCalledWith(
+          'Hello world',
+        );
       });
     });
 
     it('should handle enter key for sending message', async () => {
       // Reset mock
       mockStartAgent.mockReset();
-      
-      // Set up hooks to return a test message
-      (useMessageInputValue as unknown as ReturnType<typeof vi.fn>).mockReturnValue('Test message');
 
-      render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
-      
+      // Set up hooks to return a test message
+      (
+        useMessageInputValue as unknown as ReturnType<typeof vi.fn>
+      ).mockReturnValue('Test message');
+
+      render(
+        <TestLanguageProvider>
+          <UserInput />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render
       await waitFor(() => {
         const textarea = screen.getByPlaceholderText('Type your message...');
-        
+
         fireEvent.keyDown(textarea, { key: 'Enter' });
-        
+
         expect(mockStartAgent).toHaveBeenCalledWith('Test message');
       });
     });
@@ -220,22 +272,30 @@ describe('User Interaction Tests', () => {
     it('should not send message on Enter + Shift', async () => {
       // Reset mock
       mockStartAgent.mockReset();
-      
-      render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
-      
+
+      render(
+        <TestLanguageProvider>
+          <UserInput />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render
       await waitFor(() => {
         const textarea = screen.getByPlaceholderText('Type your message...');
-        
+
         fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: true });
-        
+
         expect(mockStartAgent).not.toHaveBeenCalled();
       });
     });
 
     it('should render input component without crashing', async () => {
-      render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
-      
+      render(
+        <TestLanguageProvider>
+          <UserInput />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render and check if the component renders correctly
       await waitFor(() => {
         const textarea = screen.getByPlaceholderText('Type your message...');
@@ -244,12 +304,23 @@ describe('User Interaction Tests', () => {
     });
 
     it('should show send button when not processing', async () => {
-      render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
-      
+      // Mock the hooks to provide a non-empty input value
+      (useMessageInputValue as unknown as ReturnType<typeof vi.fn>).mockReturnValue('Test message');
+      (useIsProcessing as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
+
+      render(
+        <TestLanguageProvider>
+          <UserInput />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render
       await waitFor(() => {
-        const sendButton = screen.getByRole('button', { name: /send message/i });
-        
+        // Look for the send button by its title attribute which contains "Send" or "Envoyer"
+        const sendButton = screen.getByRole('button', {
+          name: /(send message|envoyer le message)/i,
+        });
+
         expect(sendButton).toBeInTheDocument();
         expect(sendButton).not.toBeDisabled();
       });
@@ -258,22 +329,30 @@ describe('User Interaction Tests', () => {
 
   describe('ControlPanel Component Interactions', () => {
     it('should handle clear messages action', async () => {
-      render(<TestLanguageProvider><ControlPanel /></TestLanguageProvider>);
-      
+      render(
+        <TestLanguageProvider>
+          <ControlPanel />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render and check for clear button
       try {
-        await waitFor(() => {
-          const clearButton = screen.queryByText('Clear Messages') ||
-                            screen.queryByText('Clear') ||
-                            screen.queryByText('Reset');
-          if (clearButton) {
-            fireEvent.click(clearButton);
-            expect(mockStore.clearMessages).toHaveBeenCalled();
-          } else {
-            // If no clear button found, just verify component rendered
-            expect(document.body).toBeInTheDocument();
-          }
-        }, { timeout: 1000 });
+        await waitFor(
+          () => {
+            const clearButton =
+              screen.queryByText('Clear Messages') ||
+              screen.queryByText('Clear') ||
+              screen.queryByText('Reset');
+            if (clearButton) {
+              fireEvent.click(clearButton);
+              expect(mockStore.clearMessages).toHaveBeenCalled();
+            } else {
+              // If no clear button found, just verify component rendered
+              expect(document.body).toBeInTheDocument();
+            }
+          },
+          { timeout: 1000 },
+        );
       } catch (error) {
         // Component rendered but without clear functionality
         expect(document.body).toBeInTheDocument();
@@ -282,45 +361,67 @@ describe('User Interaction Tests', () => {
 
     it('should handle save session action', async () => {
       // Mock window.prompt
-      const mockPrompt = vi.spyOn(window, 'prompt').mockReturnValue('New Session Name');
-      
-      render(<TestLanguageProvider><ControlPanel /></TestLanguageProvider>);
-      
+      const mockPrompt = vi
+        .spyOn(window, 'prompt')
+        .mockReturnValue('New Session Name');
+
+      render(
+        <TestLanguageProvider>
+          <ControlPanel />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render and try to find save button
       try {
-        await waitFor(() => {
-          const saveButton = screen.queryByText('Save Current Session');
-          if (saveButton) {
-            fireEvent.click(saveButton);
-            expect(mockStore.saveSession).toHaveBeenCalledWith('New Session Name');
-          } else {
-            // If Save Session button doesn't exist, just verify the component rendered
-            expect(screen.getByRole('main') || screen.getByRole('region') || document.body).toBeInTheDocument();
-          }
-        }, { timeout: 1000 });
+        await waitFor(
+          () => {
+            const saveButton = screen.queryByText('Save Current Session');
+            if (saveButton) {
+              fireEvent.click(saveButton);
+              expect(mockStore.saveSession).toHaveBeenCalledWith(
+                'New Session Name',
+              );
+            } else {
+              // If Save Session button doesn't exist, just verify the component rendered
+              expect(
+                screen.getByRole('main') ||
+                  screen.getByRole('region') ||
+                  document.body,
+              ).toBeInTheDocument();
+            }
+          },
+          { timeout: 1000 },
+        );
       } catch (error) {
         // If the element isn't found, just verify the component rendered without errors
         expect(document.body).toBeInTheDocument();
       }
-      
+
       mockPrompt.mockRestore();
     });
 
     it('should handle session loading', async () => {
-      render(<TestLanguageProvider><ControlPanel /></TestLanguageProvider>);
-      
+      render(
+        <TestLanguageProvider>
+          <ControlPanel />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render and check if sessions are available
       try {
-        await waitFor(() => {
-          const sessionButton = screen.queryByText('Test Session 1');
-          if (sessionButton) {
-            fireEvent.click(sessionButton);
-            expect(mockStore.loadSession).toHaveBeenCalledWith('session-1');
-          } else {
-            // If no sessions, just verify component rendered
-            expect(document.body).toBeInTheDocument();
-          }
-        }, { timeout: 1000 });
+        await waitFor(
+          () => {
+            const sessionButton = screen.queryByText('Test Session 1');
+            if (sessionButton) {
+              fireEvent.click(sessionButton);
+              expect(mockStore.loadSession).toHaveBeenCalledWith('session-1');
+            } else {
+              // If no sessions, just verify component rendered
+              expect(document.body).toBeInTheDocument();
+            }
+          },
+          { timeout: 1000 },
+        );
       } catch (error) {
         // Component rendered but without the expected session
         expect(document.body).toBeInTheDocument();
@@ -328,20 +429,29 @@ describe('User Interaction Tests', () => {
     });
 
     it('should handle page navigation', async () => {
-      render(<TestLanguageProvider><ControlPanel /></TestLanguageProvider>);
-      
+      render(
+        <TestLanguageProvider>
+          <ControlPanel />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render and check navigation elements
       try {
-        await waitFor(() => {
-          const leaderboardButton = screen.queryByText('Leaderboard');
-          if (leaderboardButton) {
-            fireEvent.click(leaderboardButton);
-            expect(mockStore.setCurrentPage).toHaveBeenCalledWith('leaderboard');
-          } else {
-            // If no navigation elements, just verify component rendered
-            expect(document.body).toBeInTheDocument();
-          }
-        }, { timeout: 1000 });
+        await waitFor(
+          () => {
+            const leaderboardButton = screen.queryByText('Leaderboard');
+            if (leaderboardButton) {
+              fireEvent.click(leaderboardButton);
+              expect(mockStore.setCurrentPage).toHaveBeenCalledWith(
+                'leaderboard',
+              );
+            } else {
+              // If no navigation elements, just verify component rendered
+              expect(document.body).toBeInTheDocument();
+            }
+          },
+          { timeout: 1000 },
+        );
       } catch (error) {
         // Component rendered but without expected navigation
         expect(document.body).toBeInTheDocument();
@@ -349,20 +459,27 @@ describe('User Interaction Tests', () => {
     });
 
     it('should handle dark mode toggle', async () => {
-      render(<TestLanguageProvider><ControlPanel /></TestLanguageProvider>);
-      
+      render(
+        <TestLanguageProvider>
+          <ControlPanel />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render and check for dark mode toggle
       try {
-        await waitFor(() => {
-          const darkModeButton = screen.queryByText('Dark Mode');
-          if (darkModeButton) {
-            fireEvent.click(darkModeButton);
-            expect(mockStore.toggleDarkMode).toHaveBeenCalled();
-          } else {
-            // If no dark mode button, just verify component rendered
-            expect(document.body).toBeInTheDocument();
-          }
-        }, { timeout: 1000 });
+        await waitFor(
+          () => {
+            const darkModeButton = screen.queryByText('Dark Mode');
+            if (darkModeButton) {
+              fireEvent.click(darkModeButton);
+              expect(mockStore.toggleDarkMode).toHaveBeenCalled();
+            } else {
+              // If no dark mode button, just verify component rendered
+              expect(document.body).toBeInTheDocument();
+            }
+          },
+          { timeout: 1000 },
+        );
       } catch (error) {
         // Component rendered but without dark mode toggle
         expect(document.body).toBeInTheDocument();
@@ -370,22 +487,30 @@ describe('User Interaction Tests', () => {
     });
 
     it('should display session status correctly', async () => {
-      render(<TestLanguageProvider><ControlPanel /></TestLanguageProvider>);
-      
+      render(
+        <TestLanguageProvider>
+          <ControlPanel />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render and check for status elements
       try {
-        await waitFor(() => {
-          // Look for any status-related text
-          const statusElements = screen.queryByText('Status') || 
-                               screen.queryByText(/valid|error|unknown/i) ||
-                               screen.queryByText('Browser Status');
-          if (statusElements) {
-            expect(statusElements).toBeInTheDocument();
-          } else {
-            // If no status elements, just verify component rendered
-            expect(document.body).toBeInTheDocument();
-          }
-        }, { timeout: 1000 });
+        await waitFor(
+          () => {
+            // Look for any status-related text
+            const statusElements =
+              screen.queryByText('Status') ||
+              screen.queryByText(/valid|error|unknown/i) ||
+              screen.queryByText('Browser Status');
+            if (statusElements) {
+              expect(statusElements).toBeInTheDocument();
+            } else {
+              // If no status elements, just verify component rendered
+              expect(document.body).toBeInTheDocument();
+            }
+          },
+          { timeout: 1000 },
+        );
       } catch (error) {
         // Component rendered but without expected status elements
         expect(document.body).toBeInTheDocument();
@@ -393,24 +518,33 @@ describe('User Interaction Tests', () => {
     });
 
     it('should display tool count', async () => {
-      render(<TestLanguageProvider><ControlPanel /></TestLanguageProvider>);
-      
+      render(
+        <TestLanguageProvider>
+          <ControlPanel />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render and check for tool count
       try {
-        await waitFor(() => {
-          const toolsText = screen.queryByText('Tools') || screen.queryByText('Tools Detected');
-          if (toolsText) {
-            expect(toolsText).toBeInTheDocument();
-            // Check for any number (tool count)
-            const numberElements = screen.queryByText(/\d+/);
-            if (numberElements) {
-              expect(numberElements).toBeInTheDocument();
+        await waitFor(
+          () => {
+            const toolsText =
+              screen.queryByText('Tools') ||
+              screen.queryByText('Tools Detected');
+            if (toolsText) {
+              expect(toolsText).toBeInTheDocument();
+              // Check for any number (tool count)
+              const numberElements = screen.queryByText(/\d+/);
+              if (numberElements) {
+                expect(numberElements).toBeInTheDocument();
+              }
+            } else {
+              // If no tools section, just verify component rendered
+              expect(document.body).toBeInTheDocument();
             }
-          } else {
-            // If no tools section, just verify component rendered
-            expect(document.body).toBeInTheDocument();
-          }
-        }, { timeout: 1000 });
+          },
+          { timeout: 1000 },
+        );
       } catch (error) {
         // Component rendered but without tools section
         expect(document.body).toBeInTheDocument();
@@ -418,27 +552,38 @@ describe('User Interaction Tests', () => {
     });
 
     it('should handle debug log toggle', async () => {
-      render(<TestLanguageProvider><ControlPanel /></TestLanguageProvider>);
-      
+      render(
+        <TestLanguageProvider>
+          <ControlPanel />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render and check for debug functionality
       try {
-        await waitFor(() => {
-          // Look for any debug-related buttons or elements
-          const debugElements = screen.queryAllByRole('button');
-          const debugButton = debugElements.find(btn => 
-            btn.getAttribute('aria-label')?.toLowerCase().includes('debug') ||
-            btn.textContent?.toLowerCase().includes('debug') ||
-            btn.textContent?.toLowerCase().includes('log')
-          );
-          
-          if (debugButton) {
-            fireEvent.click(debugButton);
-            expect(mockStore.toggleDebugLogVisibility).toHaveBeenCalled();
-          } else {
-            // If no debug button found, just verify component rendered
-            expect(document.body).toBeInTheDocument();
-          }
-        }, { timeout: 1000 });
+        await waitFor(
+          () => {
+            // Look for any debug-related buttons or elements
+            const debugElements = screen.queryAllByRole('button');
+            const debugButton = debugElements.find(
+              (btn) =>
+                btn
+                  .getAttribute('aria-label')
+                  ?.toLowerCase()
+                  .includes('debug') ||
+                btn.textContent?.toLowerCase().includes('debug') ||
+                btn.textContent?.toLowerCase().includes('log'),
+            );
+
+            if (debugButton) {
+              fireEvent.click(debugButton);
+              expect(mockStore.toggleDebugLogVisibility).toHaveBeenCalled();
+            } else {
+              // If no debug button found, just verify component rendered
+              expect(document.body).toBeInTheDocument();
+            }
+          },
+          { timeout: 1000 },
+        );
       } catch (error) {
         // Component rendered but without debug functionality
         expect(document.body).toBeInTheDocument();
@@ -450,23 +595,31 @@ describe('User Interaction Tests', () => {
     it('should not send empty messages', async () => {
       // Reset mock
       mockStartAgent.mockReset();
-      
-      render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
-      
+
+      render(
+        <TestLanguageProvider>
+          <UserInput />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render and test form validation
       try {
-        await waitFor(() => {
-          const sendButton = screen.queryByRole('button', { name: /send message/i }) ||
-                           screen.queryByRole('button', { name: /send/i }) ||
-                           screen.queryByText('Send');
-          if (sendButton) {
-            fireEvent.click(sendButton);
-            expect(mockStartAgent).not.toHaveBeenCalled();
-          } else {
-            // If no send button found, just verify component rendered
-            expect(document.body).toBeInTheDocument();
-          }
-        }, { timeout: 1000 });
+        await waitFor(
+          () => {
+            const sendButton =
+              screen.queryByRole('button', { name: /send message/i }) ||
+              screen.queryByRole('button', { name: /send/i }) ||
+              screen.queryByText('Send');
+            if (sendButton) {
+              fireEvent.click(sendButton);
+              expect(mockStartAgent).not.toHaveBeenCalled();
+            } else {
+              // If no send button found, just verify component rendered
+              expect(document.body).toBeInTheDocument();
+            }
+          },
+          { timeout: 1000 },
+        );
       } catch (error) {
         // Component rendered but form validation test not applicable
         expect(document.body).toBeInTheDocument();
@@ -475,30 +628,42 @@ describe('User Interaction Tests', () => {
 
     it('should handle very long messages', async () => {
       const longMessage = 'A'.repeat(1000); // Reduced size for test stability
-      
+
       // Mock the store to track setMessageInputValue calls
       const mockSetMessageInputValue = vi.fn();
-      (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-        ...mockStore,
-        setMessageInputValue: mockSetMessageInputValue,
-        messageInputValue: longMessage,
-      });
-      
-      render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
-      
+      (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+        {
+          ...mockStore,
+          setMessageInputValue: mockSetMessageInputValue,
+          messageInputValue: longMessage,
+        },
+      );
+
+      render(
+        <TestLanguageProvider>
+          <UserInput />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render and test message handling
       try {
-        await waitFor(() => {
-          const textarea = screen.queryByPlaceholderText('Type your message...') ||
-                          screen.queryByRole('textbox');
-          if (textarea) {
-            fireEvent.change(textarea, { target: { value: longMessage } });
-            expect(mockSetMessageInputValue).toHaveBeenCalledWith(longMessage);
-          } else {
-            // If no textarea found, just verify component rendered
-            expect(document.body).toBeInTheDocument();
-          }
-        }, { timeout: 1000 });
+        await waitFor(
+          () => {
+            const textarea =
+              screen.queryByPlaceholderText('Type your message...') ||
+              screen.queryByRole('textbox');
+            if (textarea) {
+              fireEvent.change(textarea, { target: { value: longMessage } });
+              expect(mockSetMessageInputValue).toHaveBeenCalledWith(
+                longMessage,
+              );
+            } else {
+              // If no textarea found, just verify component rendered
+              expect(document.body).toBeInTheDocument();
+            }
+          },
+          { timeout: 1000 },
+        );
       } catch (error) {
         // Component rendered but message handling test not applicable
         expect(document.body).toBeInTheDocument();
@@ -507,30 +672,42 @@ describe('User Interaction Tests', () => {
 
     it('should handle special characters in messages', async () => {
       const specialMessage = '🚀 Hello @user #hashtag';
-      
+
       // Mock the store to track setMessageInputValue calls
       const mockSetMessageInputValue = vi.fn();
-      (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-        ...mockStore,
-        setMessageInputValue: mockSetMessageInputValue,
-        messageInputValue: specialMessage,
-      });
-      
-      render(<TestLanguageProvider><UserInput /></TestLanguageProvider>);
-      
+      (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+        {
+          ...mockStore,
+          setMessageInputValue: mockSetMessageInputValue,
+          messageInputValue: specialMessage,
+        },
+      );
+
+      render(
+        <TestLanguageProvider>
+          <UserInput />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render and test special character handling
       try {
-        await waitFor(() => {
-          const textarea = screen.queryByPlaceholderText('Type your message...') ||
-                          screen.queryByRole('textbox');
-          if (textarea) {
-            fireEvent.change(textarea, { target: { value: specialMessage } });
-            expect(mockSetMessageInputValue).toHaveBeenCalledWith(specialMessage);
-          } else {
-            // If no textarea found, just verify component rendered
-            expect(document.body).toBeInTheDocument();
-          }
-        }, { timeout: 1000 });
+        await waitFor(
+          () => {
+            const textarea =
+              screen.queryByPlaceholderText('Type your message...') ||
+              screen.queryByRole('textbox');
+            if (textarea) {
+              fireEvent.change(textarea, { target: { value: specialMessage } });
+              expect(mockSetMessageInputValue).toHaveBeenCalledWith(
+                specialMessage,
+              );
+            } else {
+              // If no textarea found, just verify component rendered
+              expect(document.body).toBeInTheDocument();
+            }
+          },
+          { timeout: 1000 },
+        );
       } catch (error) {
         // Component rendered but special character test not applicable
         expect(document.body).toBeInTheDocument();
@@ -540,50 +717,69 @@ describe('User Interaction Tests', () => {
 
   describe('Error Handling Tests', () => {
     it('should handle session save failure gracefully', async () => {
-      const mockSaveSession = vi.fn().mockRejectedValue(new Error('Network error'));
-      
-      (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-        ...mockStore,
-        saveSession: mockSaveSession,
-      });
+      const mockSaveSession = vi
+        .fn()
+        .mockRejectedValue(new Error('Network error'));
+
+      (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+        {
+          ...mockStore,
+          saveSession: mockSaveSession,
+        },
+      );
 
       // Mock window.prompt to return a session name
-      const mockPrompt = vi.spyOn(window, 'prompt').mockReturnValue('Test Session');
-      
-      render(<TestLanguageProvider><ControlPanel /></TestLanguageProvider>);
-      
+      const mockPrompt = vi
+        .spyOn(window, 'prompt')
+        .mockReturnValue('Test Session');
+
+      render(
+        <TestLanguageProvider>
+          <ControlPanel />
+        </TestLanguageProvider>,
+      );
+
       // Wait for component to render and test error handling
       try {
-        await waitFor(() => {
-          const saveButton = screen.queryByText('Save Current Session');
-          if (saveButton) {
-            fireEvent.click(saveButton);
-            expect(mockSaveSession).toHaveBeenCalled();
-          } else {
-            // If no save button, just verify component didn't crash
-            expect(document.body).toBeInTheDocument();
-          }
-        }, { timeout: 1000 });
+        await waitFor(
+          () => {
+            const saveButton = screen.queryByText('Save Current Session');
+            if (saveButton) {
+              fireEvent.click(saveButton);
+              expect(mockSaveSession).toHaveBeenCalled();
+            } else {
+              // If no save button, just verify component didn't crash
+              expect(document.body).toBeInTheDocument();
+            }
+          },
+          { timeout: 1000 },
+        );
       } catch (error) {
         // Component should not crash even with errors
         expect(document.body).toBeInTheDocument();
       }
-      
+
       mockPrompt.mockRestore();
     });
 
     it('should handle undefined store values', () => {
-      (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-        ...mockStore,
-        sessions: undefined,
-        debugLog: undefined,
-        llmApiKeys: undefined,
-      });
+      (useCombinedStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+        {
+          ...mockStore,
+          sessions: undefined,
+          debugLog: undefined,
+          llmApiKeys: undefined,
+        },
+      );
 
       expect(() => {
-        render(<TestLanguageProvider><ControlPanel /></TestLanguageProvider>);
+        render(
+          <TestLanguageProvider>
+            <ControlPanel />
+          </TestLanguageProvider>,
+        );
       }).not.toThrow();
-      
+
       // Verify component rendered despite undefined values
       expect(document.body).toBeInTheDocument();
     });

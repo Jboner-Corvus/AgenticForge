@@ -40,7 +40,7 @@ export function VersionManager() {
     showNotifications: true,
     notificationPosition: 'top',
     dismissedVersions: [],
-    skippedVersions: []
+    skippedVersions: [],
   });
 
   // Load user preferences from localStorage
@@ -49,17 +49,12 @@ export function VersionManager() {
     if (savedPrefs) {
       try {
         const parsed = JSON.parse(savedPrefs);
-        setUserPreferences(prev => ({ ...prev, ...parsed }));
+        setUserPreferences((prev) => ({ ...prev, ...parsed }));
       } catch (error) {
         console.warn('Failed to parse saved preferences:', error);
       }
     }
   }, []);
-
-
-
-
-
 
   return (
     <>

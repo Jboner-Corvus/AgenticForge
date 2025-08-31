@@ -1,0 +1,13 @@
+# Ignore generated files that have syntax errors
+packages/core/packages/core/dist/**
+packages/core/dist/playwright-core-HKJS6OPG.js
+scripts/diagnose-qwen-connection.ts
+
+# Ignore other build artifacts
+dist/
+node_modules/
+*.log
+.env
+.env.local
+.tmp
+.cache

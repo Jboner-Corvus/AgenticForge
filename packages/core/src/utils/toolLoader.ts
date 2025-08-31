@@ -51,11 +51,16 @@ export async function _internalLoadTools(): Promise<void> {
     for (const file of toolFiles) {
       // Check if file has already been loaded to prevent duplicate registration
       if (loadedToolFiles.has(file)) {
-        console.log(`[_internalLoadTools] File already loaded, skipping: ${file}`);
-        getLogger().debug({ file }, `[_internalLoadTools] File already loaded, skipping.`);
+        console.log(
+          `[_internalLoadTools] File already loaded, skipping: ${file}`,
+        );
+        getLogger().debug(
+          { file },
+          `[_internalLoadTools] File already loaded, skipping.`,
+        );
         continue;
       }
-      
+
       console.log(`[GEMINI-DEBUG] Loading tool file: ${file}`);
       await loadToolFile(file);
       console.log(
@@ -235,7 +240,7 @@ async function loadToolFile(file: string): Promise<void> {
 
         if (parsedTool.success) {
           const tool = parsedTool.data as Tool;
-          
+
           // Check if tool with same name is already registered
           if (toolRegistry.get(tool.name)) {
             logger.warn(
@@ -244,7 +249,7 @@ async function loadToolFile(file: string): Promise<void> {
             );
             continue;
           }
-          
+
           toolRegistry.register(tool);
           loadedToolFiles.add(file);
           fileToToolNameMap.set(file, tool.name);

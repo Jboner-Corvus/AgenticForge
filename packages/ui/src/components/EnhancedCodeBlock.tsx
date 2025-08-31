@@ -1,20 +1,25 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Copy, 
-  Check, 
-  Download, 
-  Play, 
-  FileText, 
-  Eye, 
+import {
+  Copy,
+  Check,
+  Download,
+  Play,
+  FileText,
+  Eye,
   EyeOff,
   Maximize2,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from './ui/tooltip';
 
 interface EnhancedCodeBlockProps {
   code: string;
@@ -31,12 +36,12 @@ export const EnhancedCodeBlock: React.FC<EnhancedCodeBlockProps> = ({
   filename,
   collapsible = false,
   showLineNumbers = true,
-  maxHeight = 400
+  maxHeight = 400,
 }) => {
   const [copied, setCopied] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(collapsible);
   const [showFullCode, setShowFullCode] = useState(false);
-  
+
   const lines = code.split('\n');
   const isLongCode = lines.length > 20;
 
@@ -71,7 +76,9 @@ export const EnhancedCodeBlock: React.FC<EnhancedCodeBlockProps> = ({
       html: 'bg-orange-500/20 text-orange-300',
       json: 'bg-gray-500/20 text-gray-300',
     };
-    return colors[lang as keyof typeof colors] || 'bg-gray-500/20 text-gray-300';
+    return (
+      colors[lang as keyof typeof colors] || 'bg-gray-500/20 text-gray-300'
+    );
   };
 
   return (
@@ -98,18 +105,23 @@ export const EnhancedCodeBlock: React.FC<EnhancedCodeBlockProps> = ({
                 )}
               </Button>
             )}
-            
+
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-gray-400" />
               {filename && (
-                <span className="text-sm text-gray-300 font-mono">{filename}</span>
+                <span className="text-sm text-gray-300 font-mono">
+                  {filename}
+                </span>
               )}
             </div>
-            
-            <Badge className={getLanguageBadgeColor(language)} variant="outline">
+
+            <Badge
+              className={getLanguageBadgeColor(language)}
+              variant="outline"
+            >
               {language}
             </Badge>
-            
+
             <Badge variant="outline" className="text-xs text-gray-400">
               {lines.length} {lines.length === 1 ? 'ligne' : 'lignes'}
             </Badge>
@@ -223,7 +235,7 @@ export const EnhancedCodeBlock: React.FC<EnhancedCodeBlockProps> = ({
                 )}
               </code>
             </pre>
-            
+
             {!showFullCode && isLongCode && (
               <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-gray-900 to-transparent flex items-end justify-center pb-2">
                 <Button

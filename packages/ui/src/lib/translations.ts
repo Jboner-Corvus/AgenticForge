@@ -7,11 +7,11 @@ export const fr = {
   offline: 'Hors ligne',
   agentCapabilities: 'Capacités',
   toolsDetected: 'Outils détectés',
-  toolCreation: 'Création d\'outils',
+  toolCreation: "Création d'outils",
   codeExecution: 'Exécution de code',
   sessionManagement: 'Actions',
   newSessionButton: 'Nouvelle session',
-  clearHistory: 'Effacer l\'historique',
+  clearHistory: "Effacer l'historique",
   saveCurrentSession: 'Sauvegarder la session actuelle',
   savedSessions: 'Historique',
   noSessionsSaved: 'Aucune session sauvegardée',
@@ -27,27 +27,29 @@ export const fr = {
   // AppInitializer translations
   newSessionGenerated: 'Nouvelle session générée',
   sessionRetrieved: 'Session récupérée',
-  checkingServerHealth: 'Vérification de l\'état du serveur',
+  checkingServerHealth: "Vérification de l'état du serveur",
   serverStatus: 'Statut du serveur',
   serverOnline: 'En ligne',
   serverOffline: 'Hors ligne',
   serverHealthCheckFailed: 'Échec de la vérification du serveur',
-  tokenLoadedFromEnv: 'Token chargé depuis l\'environnement',
+  tokenLoadedFromEnv: "Token chargé depuis l'environnement",
   tokenLoadedFromCookie: 'Token chargé depuis le cookie',
   noTokenFound: 'Aucun token trouvé',
   interfaceInitialized: 'Interface initialisée',
   agentReady: 'Agent prêt',
   // OAuth Management translations
   oauthManagement: 'Gestion OAuth',
-  oauthManagementDescription: 'Configurez vos connexions OAuth pour l\'authentification',
+  oauthManagementDescription:
+    "Configurez vos connexions OAuth pour l'authentification",
   githubIntegration: 'Intégration GitHub',
   googleIntegration: 'Intégration Google',
   twitterIntegration: 'Intégration Twitter',
-  authToken: 'Token d\'authentification',
+  authToken: "Token d'authentification",
   authTokenPlaceholder: 'Entrez votre token Bearer...',
   saveToken: 'Sauvegarder le token',
   securityWarning: 'Avertissement de sécurité',
-  oauthSecurityWarning: 'Vos tokens OAuth sont stockés de manière sécurisée et ne sont jamais exposés côté client.',
+  oauthSecurityWarning:
+    'Vos tokens OAuth sont stockés de manière sécurisée et ne sont jamais exposés côté client.',
   checkingStatus: 'Vérification du statut...',
   githubConnectionStatus: 'Statut de connexion GitHub',
   githubConnected: 'Connecté à GitHub',
@@ -62,7 +64,8 @@ export const fr = {
   connectGitHub: 'Connecter GitHub',
   connectGoogle: 'Connecter Google',
   connectTwitter: 'Connecter Twitter',
-  oauthExplanation: 'OAuth vous permet de vous authentifier de manière sécurisée.',
+  oauthExplanation:
+    'OAuth vous permet de vous authentifier de manière sécurisée.',
   // Store translations for API calls
   fetchingToolsList: 'Récupération de la liste des outils...',
   toolsFound: 'outils trouvés',
@@ -116,7 +119,8 @@ export const en = {
   agentReady: 'Agent ready',
   // OAuth Management translations
   oauthManagement: 'OAuth Management',
-  oauthManagementDescription: 'Configure your OAuth connections for authentication',
+  oauthManagementDescription:
+    'Configure your OAuth connections for authentication',
   githubIntegration: 'GitHub Integration',
   googleIntegration: 'Google Integration',
   twitterIntegration: 'Twitter Integration',
@@ -124,7 +128,8 @@ export const en = {
   authTokenPlaceholder: 'Enter your Bearer token...',
   saveToken: 'Save Token',
   securityWarning: 'Security Warning',
-  oauthSecurityWarning: 'Your OAuth tokens are stored securely and are never exposed on the client side.',
+  oauthSecurityWarning:
+    'Your OAuth tokens are stored securely and are never exposed on the client side.',
   checkingStatus: 'Checking status...',
   githubConnectionStatus: 'GitHub Connection Status',
   githubConnected: 'Connected to GitHub',
@@ -156,12 +161,12 @@ export const en = {
 export const getTranslations = () => {
   const language = localStorage.getItem('language') as 'fr' | 'en' | null;
   const translations = language === 'fr' ? fr : en;
-  
+
   // Defensive check to ensure translations object is valid
   if (!translations || typeof translations !== 'object') {
     console.warn('Translations not found, falling back to English');
     return en;
   }
-  
+
   return translations;
 };

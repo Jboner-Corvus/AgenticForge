@@ -2,23 +2,32 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { CanvasHistoryItem } from './types';
 
-export type CanvasType = 'html' | 'markdown' | 'url' | 'text' | 'json' | 'webapp' | 'game' | 'embed' | 'wasm';
+export type CanvasType =
+  | 'html'
+  | 'markdown'
+  | 'url'
+  | 'text'
+  | 'json'
+  | 'webapp'
+  | 'game'
+  | 'embed'
+  | 'wasm';
 
 export interface CanvasState {
   // Canvas content
   canvasContent: string;
   canvasType: CanvasType;
-  
+
   // Canvas display state
   isCanvasVisible: boolean;
   isCanvasPinned: boolean;
   isCanvasFullscreen: boolean;
   canvasWidth: number;
-  
+
   // Canvas history
   canvasHistory: CanvasHistoryItem[];
   currentCanvasIndex: number;
-  
+
   // Actions
   setCanvasContent: (content: string) => void;
   setCanvasType: (type: CanvasType) => void;
@@ -26,18 +35,22 @@ export interface CanvasState {
   setCanvasPinned: (isPinned: boolean) => void;
   setCanvasFullscreen: (isFullscreen: boolean) => void;
   setCanvasWidth: (width: number) => void;
-  
+
   // Canvas management
   clearCanvas: () => void;
   resetCanvas: () => void;
   toggleIsCanvasVisible: () => void;
-  
+
   // History management
-  addCanvasToHistory: (title: string, content: string, type: CanvasType) => void;
+  addCanvasToHistory: (
+    title: string,
+    content: string,
+    type: CanvasType,
+  ) => void;
   navigateToCanvas: (index: number) => void;
   removeCanvasFromHistory: (index: number) => void;
   clearCanvasHistory: () => void;
-  
+
   // Computed
   hasCanvasContent: () => boolean;
   getCurrentHistoryItem: () => CanvasHistoryItem | null;
@@ -71,25 +84,28 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       // Canvas management
-      clearCanvas: () => set({
-        canvasContent: '',
-        canvasType: 'text',
-        isCanvasVisible: false,
-        isCanvasFullscreen: false
-      }),
+      clearCanvas: () =>
+        set({
+          canvasContent: '',
+          canvasType: 'text',
+          isCanvasVisible: false,
+          isCanvasFullscreen: false,
+        }),
 
-      resetCanvas: () => set({
-        canvasContent: '',
-        canvasType: 'text',
-        isCanvasVisible: false,
-        isCanvasPinned: false,
-        isCanvasFullscreen: false,
-        canvasWidth: 500
-      }),
+      resetCanvas: () =>
+        set({
+          canvasContent: '',
+          canvasType: 'text',
+          isCanvasVisible: false,
+          isCanvasPinned: false,
+          isCanvasFullscreen: false,
+          canvasWidth: 500,
+        }),
 
-      toggleIsCanvasVisible: () => set((state) => ({
-        isCanvasVisible: !state.isCanvasVisible
-      })),
+      toggleIsCanvasVisible: () =>
+        set((state) => ({
+          isCanvasVisible: !state.isCanvasVisible,
+        })),
 
       // History management
       addCanvasToHistory: (title, content, type) => {
@@ -98,7 +114,7 @@ export const useCanvasStore = create<CanvasState>()(
           title,
           content,
           type,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
 
         set((state) => {
@@ -121,7 +137,7 @@ export const useCanvasStore = create<CanvasState>()(
             currentCanvasIndex: newHistory.length - 1,
             canvasContent: content,
             canvasType: type,
-            isCanvasVisible: true
+            isCanvasVisible: true,
           };
         });
 
@@ -136,7 +152,7 @@ export const useCanvasStore = create<CanvasState>()(
             currentCanvasIndex: index,
             canvasContent: item.content,
             canvasType: item.type,
-            isCanvasVisible: true
+            isCanvasVisible: true,
           });
           console.log(`✅ Navigated to canvas: "${item.title}"`);
         } else {
@@ -152,9 +168,9 @@ export const useCanvasStore = create<CanvasState>()(
 
           const newHistory = [...state.canvasHistory];
           const removedItem = newHistory.splice(index, 1)[0];
-          
+
           let newCurrentIndex = state.currentCanvasIndex;
-          
+
           // Adjust current index if necessary
           if (index === state.currentCanvasIndex) {
             // If we removed the current item, go to previous or next
@@ -166,21 +182,21 @@ export const useCanvasStore = create<CanvasState>()(
                 currentCanvasIndex: -1,
                 canvasContent: '',
                 canvasType: 'text' as CanvasType,
-                isCanvasVisible: false
+                isCanvasVisible: false,
               };
             } else if (index > 0) {
               newCurrentIndex = index - 1;
             } else {
               newCurrentIndex = 0;
             }
-            
+
             // Load the new current item
             const newCurrentItem = newHistory[newCurrentIndex];
             set({
               canvasHistory: newHistory,
               currentCanvasIndex: newCurrentIndex,
               canvasContent: newCurrentItem.content,
-              canvasType: newCurrentItem.type
+              canvasType: newCurrentItem.type,
             });
           } else if (index < state.currentCanvasIndex) {
             // Adjust index if we removed an item before current
@@ -188,10 +204,10 @@ export const useCanvasStore = create<CanvasState>()(
           }
 
           console.log(`✅ Removed canvas from history: "${removedItem.title}"`);
-          
+
           return {
             canvasHistory: newHistory,
-            currentCanvasIndex: newCurrentIndex
+            currentCanvasIndex: newCurrentIndex,
           };
         });
       },
@@ -202,7 +218,7 @@ export const useCanvasStore = create<CanvasState>()(
           currentCanvasIndex: -1,
           canvasContent: '',
           canvasType: 'text',
-          isCanvasVisible: false
+          isCanvasVisible: false,
         });
         console.log('✅ Canvas history cleared');
       },
@@ -215,7 +231,10 @@ export const useCanvasStore = create<CanvasState>()(
 
       getCurrentHistoryItem: () => {
         const state = get();
-        if (state.currentCanvasIndex >= 0 && state.currentCanvasIndex < state.canvasHistory.length) {
+        if (
+          state.currentCanvasIndex >= 0 &&
+          state.currentCanvasIndex < state.canvasHistory.length
+        ) {
           return state.canvasHistory[state.currentCanvasIndex];
         }
         return null;
@@ -229,7 +248,7 @@ export const useCanvasStore = create<CanvasState>()(
       canNavigateForward: () => {
         const state = get();
         return state.currentCanvasIndex < state.canvasHistory.length - 1;
-      }
+      },
     }),
     {
       name: 'agenticforge-canvas-store',
@@ -239,7 +258,7 @@ export const useCanvasStore = create<CanvasState>()(
         isCanvasPinned: state.isCanvasPinned,
         canvasHistory: state.canvasHistory.slice(-20), // Keep only last 20 items
         // Don't persist current content or display states
-      })
-    }
-  )
+      }),
+    },
+  ),
 );

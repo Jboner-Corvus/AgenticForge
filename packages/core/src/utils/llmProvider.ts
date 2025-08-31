@@ -190,20 +190,47 @@ class AnthropicProvider implements ILlmProvider {
 }
 
 class GeminiProvider implements ILlmProvider {
+  // Invalid response patterns
+  private static readonly INVALID_RESPONSE_PATTERNS = [
+    'currently unable to process your request',
+    'quota.*exceeded',
+    'free-tier quota',
+    'Please try again once the quota has reset',
+    'I can\'t provide',
+    'I cannot assist',
+    'I\'m unable to help',
+    'I apologize, but I cannot',
+    'I don\'t have the ability',
+    'As an AI language model',
+    'I\'m just an AI',
+    'I\'m an AI assistant',
+    'I can\'t do that',
+    'I\'m not able to',
+    'I don\'t have access to',
+    'I cannot generate',
+    'I cannot create',
+    'ERROR:',
+    'FAILED:',
+    '503 Service Temporarily Unavailable',
+    '502 Bad Gateway',
+    '500 Internal Server Error',
+    'Connection timeout',
+    'Request timeout'
+  ];
+  // Add rate limiting tracking
+  private static lastRequestTime: number = 0;
+  private static lastResetTime: number = Date.now();
+  private static readonly MAX_RETRIES = 5; // Augmenté pour plus de robustesse
+  private static requestCount: number = 0;
+
+  private static readonly RETRY_DELAYS = [2000, 4000, 8000, 15000, 30000]; // Exponential backoff plus long
+  
   public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
     if (statusCode === 401 || statusCode === 403) {
       // Unauthorized, Forbidden - likely invalid API key
       return LlmKeyErrorType.PERMANENT;
     } else if (statusCode === 429) {
       // Too Many Requests - rate limit
-      // Check if it's a quota/limit exceeded error (permanent for billing period)
-      if (
-        _errorBody.includes('quota') ||
-        _errorBody.includes('limit') ||
-        _errorBody.includes('exceeded')
-      ) {
-        return LlmKeyErrorType.PERMANENT;
-      }
       return LlmKeyErrorType.TEMPORARY;
     } else if (statusCode >= 500) {
       // Server errors - temporary issues
@@ -223,6 +250,16 @@ class GeminiProvider implements ILlmProvider {
     systemPrompt?: string,
     apiKey?: string,
     modelName?: string,
+  ): Promise<string> {
+    return this.getLlmResponseWithRetry(messages, systemPrompt, apiKey, modelName, 0);
+  }
+
+  private async getLlmResponseWithRetry(
+    messages: LLMContent[],
+    systemPrompt?: string,
+    apiKey?: string,
+    modelName?: string,
+    retryCount: number = 0,
   ): Promise<string> {
     const log = getLogger().child({ module: 'GeminiProvider' });
 
@@ -245,13 +282,63 @@ class GeminiProvider implements ILlmProvider {
       throw new LlmError(errorMessage);
     }
 
+    // Implement improved rate limiting
+    const now = Date.now();
+    const timeSinceLastReset = now - GeminiProvider.lastResetTime;
+
+    // Reset counter every minute
+    if (timeSinceLastReset > 60000) {
+      GeminiProvider.requestCount = 0;
+      GeminiProvider.lastResetTime = now;
+      log.debug('Rate limit counter reset');
+    }
+
+    // Stricter rate limiting - max 10 requests per minute
+    const MAX_REQUESTS_PER_MINUTE = 10;
+    if (GeminiProvider.requestCount >= MAX_REQUESTS_PER_MINUTE) {
+      const waitTime = 60000 - timeSinceLastReset;
+      log.warn(`Rate limit exceeded (${GeminiProvider.requestCount}/${MAX_REQUESTS_PER_MINUTE}). Waiting ${waitTime}ms`);
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+      // Reset after waiting
+      GeminiProvider.requestCount = 0;
+      GeminiProvider.lastResetTime = Date.now();
+    }
+
+    // Add delay if we're making requests too quickly
+    const timeSinceLastRequest = now - GeminiProvider.lastRequestTime;
+    const minDelay = getConfig().LLM_REQUEST_DELAY_MS || 3000; // Increased to 3 seconds
+    if (timeSinceLastRequest < minDelay) {
+      const delay = minDelay - timeSinceLastRequest;
+      log.info(`Rate limiting: Adding ${delay}ms delay before Gemini API call`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+
+    // Increment request counter
+    GeminiProvider.requestCount++;
+    GeminiProvider.lastRequestTime = Date.now();
+
+    // Log request rate with warning if approaching limit
+    const rateStatus = GeminiProvider.requestCount >= MAX_REQUESTS_PER_MINUTE * 0.8 ? '⚠️ HIGH' : '✅ OK';
+    log.info(
+      `Gemini API request #${GeminiProvider.requestCount}/${MAX_REQUESTS_PER_MINUTE} in current minute ${rateStatus}`,
+    );
+
     const baseUrl =
       activeKey.baseUrl || 'https://generativelanguage.googleapis.com/v1';
     const apiUrl = `${baseUrl}/models/${modelName || getConfig().LLM_MODEL_NAME}:generateContent?key=${activeKey.apiKey}`;
 
-    const geminiMessages = messages.map((msg) => {
+    // Optimize messages for Gemini - limit history to prevent memory issues and timeouts
+    const maxMessages = getConfig().GEMINI_MAX_HISTORY_LENGTH || 30; // Réduit par défaut
+    const maxMessageLength = 8000; // Limite la longueur de chaque message
+    const geminiMessages = messages.slice(-maxMessages).map((msg) => {
+      // Tronquer les messages trop longs
+      const messageText = msg.parts.map((p: { text: string }) => p.text).join('');
+      const truncatedText = messageText.length > maxMessageLength
+        ? messageText.substring(0, maxMessageLength) + '...[truncated]'
+        : messageText;
+
       let role = msg.role;
-      let parts = msg.parts;
+      let parts = [{ text: truncatedText }];
 
       if (role === 'tool') {
         // Gemini API does not directly support 'tool' role in 'contents'.
@@ -259,7 +346,7 @@ class GeminiProvider implements ILlmProvider {
         role = 'user';
         parts = [
           {
-            text: `Tool output: ${parts.map((p: { text: string }) => p.text).join('')}`,
+            text: `Tool output: ${truncatedText}`,
           },
         ];
       }
@@ -290,17 +377,32 @@ class GeminiProvider implements ILlmProvider {
     const body = JSON.stringify(requestBody);
 
     try {
-      // Log 2: Avant chaque appel LLM
+      // Log with retry information
+      const retryInfo = retryCount > 0 ? ` (retry ${retryCount}/${GeminiProvider.MAX_RETRIES})` : '';
       log.info(
-        `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
+        `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}${retryInfo}`,
       );
+
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutMs = getConfig().GEMINI_REQUEST_TIMEOUT_MS || 45000; // Timeout plus long par défaut
+      const timeoutId = setTimeout(
+        () => controller.abort(),
+        timeoutMs,
+      );
+      log.info(`Setting timeout to ${timeoutMs}ms for Gemini API call`);
+
       const response = await fetch(apiUrl, {
         body,
         headers: {
           'Content-Type': 'application/json',
+          'x-goog-api-key': activeKey.apiKey,
         },
         method: 'POST',
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorBody = await response.text();
@@ -316,9 +418,81 @@ class GeminiProvider implements ILlmProvider {
       }
 
       const data = await response.json();
+      log.debug({ 
+        headers: Object.fromEntries(response.headers.entries()),
+        response: data,
+        status: response.status,
+        statusText: response.statusText 
+      }, 'Raw Gemini API response');
 
-      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (content === undefined || content === null) {
+      // Handle different response structures
+      let content: string | undefined;
+      
+      // Log the structure of the response for debugging
+      log.debug({ 
+        candidates: data.candidates, 
+        candidatesType: typeof data.candidates,
+        hasCandidates: !!data.candidates,
+        hasPromptFeedback: !!data.promptFeedback,
+        keys: Object.keys(data || {})
+      }, 'Response structure analysis');
+
+      // Check if we have candidates array with at least one element
+      if (data.candidates && Array.isArray(data.candidates) && data.candidates.length > 0) {
+        const firstCandidate = data.candidates[0];
+        log.debug({ firstCandidate }, 'First candidate structure');
+        
+        // Check if the first candidate has content with parts
+        if (firstCandidate.content?.parts && Array.isArray(firstCandidate.content.parts)) {
+          // Extract all text parts and join them
+          content = firstCandidate.content.parts
+            .map((part: { text?: string }) => part.text || '')
+            .join('');
+          log.debug('Extracted content from candidates[0].content.parts');
+        } 
+        // Handle UNEXPECTED_TOOL_CALL finish reason with content
+        else if (firstCandidate.finishReason === 'UNEXPECTED_TOOL_CALL' && firstCandidate.content?.parts?.[0]?.text) {
+          content = firstCandidate.content.parts[0].text;
+          log.warn('UNEXPECTED_TOOL_CALL finish reason encountered, but content is available');
+        }
+        // Handle UNEXPECTED_TOOL_CALL without content
+        else if (firstCandidate.finishReason === 'UNEXPECTED_TOOL_CALL') {
+          log.warn('UNEXPECTED_TOOL_CALL finish reason encountered without content. This may indicate the model attempted to make tool calls directly.');
+          content = "The model attempted to make tool calls directly, which is not supported in this context. Please try rephrasing your request or using available tools explicitly.";
+        }
+        // Handle other finish reasons with no content
+        else {
+          log.warn(`Candidate has no valid content. Finish reason: ${firstCandidate.finishReason || 'undefined'}`);
+          // Essayer d'extraire du contenu alternatif si disponible
+          if (firstCandidate.content && typeof firstCandidate.content === 'object') {
+            const altContent = JSON.stringify(firstCandidate.content);
+            if (altContent.length > 10) {
+              content = `Model response (raw): ${altContent}`;
+              log.info('Using alternative content extraction');
+            } else {
+              content = "The model did not return a valid response. Please try again or rephrase your request.";
+            }
+          } else {
+            content = "The model did not return a valid response. Please try again or rephrase your request.";
+          }
+        }
+      }
+      // Handle cases where there are no candidates but we have a promptFeedback field
+      else if (data.promptFeedback) {
+        log.warn('Gemini API returned promptFeedback instead of candidates. This may indicate content safety issues.');
+        content = "The request was blocked due to safety concerns. Please try rephrasing your request with different content.";
+      }
+      // Handle cases where there are no candidates and no promptFeedback
+      else {
+        log.warn('Gemini API returned response without candidates field.');
+        // Try to extract any possible content from the response
+        if (data.candidates) {
+          log.debug({ candidates: data.candidates }, 'Candidates field exists but is not an array or is empty');
+        }
+        content = "The model did not return a valid response. Please try again or rephrase your request.";
+      }
+
+      if (content === undefined || content === null || content.trim() === '') {
         log.error(
           { response: data },
           'Invalid response structure from Gemini API',
@@ -336,10 +510,40 @@ class GeminiProvider implements ILlmProvider {
           'Invalid response structure from Gemini API. The model may have returned an empty response.',
         );
       }
+      
+      // Enhanced validation of content quality with better parsing
+      let processedContent = content;
 
-      // Placeholder for token counting. In a real scenario, you'd parse the API response
-      // for actual token counts or estimate them based on input/output length.
-      // For now, we'll just increment by a fixed amount or based on content length.
+      // Try to extract JSON from mixed text+JSON responses
+      if (content.includes('```json')) {
+        const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch && jsonMatch[1]) {
+          try {
+            const parsedJson = JSON.parse(jsonMatch[1].trim());
+            if (parsedJson.command) {
+              processedContent = JSON.stringify(parsedJson);
+              log.info('Successfully extracted JSON from mixed response');
+            }
+          } catch (parseError) {
+            log.warn({ parseError }, 'Failed to parse extracted JSON, using original content');
+          }
+        }
+      }
+
+      if (this.isInvalidResponse(processedContent)) {
+        log.error({ content: processedContent }, 'Gemini API returned invalid/error content');
+        const errorType = processedContent.includes('quota') ? LlmKeyErrorType.TEMPORARY : LlmKeyErrorType.TEMPORARY;
+        await LlmKeyManager.markKeyAsBad(
+          activeKey.apiProvider,
+          activeKey.apiKey,
+          errorType,
+        );
+        throw new LlmError(`Gemini API returned invalid response: ${processedContent.substring(0, 200)}...`);
+      }
+
+      content = processedContent;
+
+      // More accurate token counting for Gemini
       const estimatedTokens =
         messages.reduce(
           (sum, msg) =>
@@ -371,17 +575,88 @@ class GeminiProvider implements ILlmProvider {
       if (_error instanceof LlmError) {
         throw _error;
       }
-      log.error({ _error }, 'Failed to get response from LLM');
+
+      const error = _error instanceof Error ? _error : new Error(String(_error));
+      log.error({ error, retryCount }, 'Failed to get response from LLM');
+
+      // Enhanced error classification
+      const isNetworkError = error.message.includes('AbortError') ||
+                            error.message.includes('network') ||
+                            error.message.includes('timeout') ||
+                            error.message.includes('ECONNRESET') ||
+                            error.message.includes('ETIMEDOUT') ||
+                            error.message.includes('fetch failed') ||
+                            error.message.includes('Failed to fetch') ||
+                            error.name === 'AbortError';
+
+      const isRetryableApiError = error.message.includes('503') ||
+                                error.message.includes('502') ||
+                                error.message.includes('504') ||
+                                error.message.includes('rate limit') ||
+                                error.message.includes('temporarily unavailable') ||
+                                error.message.includes('Internal server error');
+
+      const isInvalidResponseError = error.message.includes('invalid response') ||
+                                   error.message.includes('parsing failed') ||
+                                   error.message.includes('JSON');
+
+      // Don't retry on invalid response errors - they're likely permanent
+      if (isInvalidResponseError && retryCount < GeminiProvider.MAX_RETRIES) {
+        log.warn('Invalid response error detected - not retrying as this is likely a permanent issue');
+      } else if ((isNetworkError || isRetryableApiError) && retryCount < GeminiProvider.MAX_RETRIES) {
+        const delay = GeminiProvider.RETRY_DELAYS[Math.min(retryCount, GeminiProvider.RETRY_DELAYS.length - 1)];
+        const errorType = isNetworkError ? 'network' : 'API';
+        log.info(`${errorType} error detected. Retrying in ${delay}ms... (attempt ${retryCount + 1}/${GeminiProvider.MAX_RETRIES})`);
+        log.debug({ error: error.message }, 'Error details for retry');
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.getLlmResponseWithRetry(messages, systemPrompt, apiKey, modelName, retryCount + 1);
+      }
+
       if (activeKey) {
-        // Assume network errors or unhandled exceptions are temporary
+        // Smarter key management based on error type
+        let errorType: LlmKeyErrorType = LlmKeyErrorType.TEMPORARY;
+        if (isInvalidResponseError) {
+          errorType = LlmKeyErrorType.PERMANENT; // Don't retry invalid responses
+        } else if (error.message.includes('quota') || error.message.includes('billing')) {
+          errorType = LlmKeyErrorType.PERMANENT; // Quota/billing issues are permanent
+        } else if (error.message.includes('authentication') || error.message.includes('unauthorized')) {
+          errorType = LlmKeyErrorType.PERMANENT; // Auth issues are permanent
+        }
+
         await LlmKeyManager.markKeyAsBad(
           activeKey.apiProvider,
           activeKey.apiKey,
-          LlmKeyErrorType.TEMPORARY,
+          errorType,
         );
       }
-      throw new LlmError('Failed to communicate with the LLM.');
+
+      // Provide more helpful error messages
+      let errorMessage = `Failed to communicate with the LLM after ${retryCount + 1} attempts`;
+      if (isInvalidResponseError) {
+        errorMessage += ': Invalid response format from API';
+      } else if (isNetworkError) {
+        errorMessage += ': Network connectivity issue';
+      } else {
+        errorMessage += `: ${error.message}`;
+      }
+
+      throw new LlmError(errorMessage);
     }
+  }
+
+  private isInvalidResponse(content: string): boolean {
+    // Check if content is too short to be meaningful
+    if (content.trim().length < 10) {
+      return true;
+    }
+    
+    // Check against known invalid patterns
+    const lowerContent = content.toLowerCase();
+    return GeminiProvider.INVALID_RESPONSE_PATTERNS.some(pattern => {
+      const regex = new RegExp(pattern, 'i');
+      return regex.test(lowerContent);
+    });
   }
 }
 

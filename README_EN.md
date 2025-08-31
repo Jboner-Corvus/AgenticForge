@@ -90,11 +90,13 @@
 ### 🤖 Ultra-Simple Installation (100% Automatic)
 
 **Option 1: One-line installation**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Jboner-Corvus/AgenticForge/main/install.sh | bash
 ```
 
 **Option 2: Classic installation**
+
 ```bash
 # 1. Clone the project
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
@@ -106,6 +108,7 @@ chmod +x run-v2.sh
 ```
 
 **Option 3: Interactive installation**
+
 ```bash
 # 1. Clone the project
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
@@ -140,8 +143,9 @@ chmod +x run-v2.sh
 **Choose "1) 🟢 Start Services" for automatic installation**
 
 **🔧 On first startup, the system:**
+
 - Automatically creates the `.env` file with default values
-- Installs necessary pnpm dependencies  
+- Installs necessary pnpm dependencies
 - Builds core and UI packages
 - Launches all Docker services
 - Configures the production environment
@@ -187,13 +191,14 @@ AgenticForge integrates a powerful **LlmKeyManager** for centralized and dynamic
 
 #### LlmKeyManager Features:
 
--   **Real-Time Key Addition/Removal**: Add or remove API keys for different providers (OpenAI, Gemini, Anthropic, etc.) without restarting the system.
--   **Activation/Deactivation**: Activate or deactivate keys on the fly.
--   **Automatic Failover**: If an API key fails (request limit reached, error), the system automatically switches to the next valid key to ensure service continuity.
--   **Monitoring and Statistics**: Track your key usage, number of active keys, and number of configured providers.
--   **Validity Tests**: Test the validity of each key directly from the interface.
+- **Real-Time Key Addition/Removal**: Add or remove API keys for different providers (OpenAI, Gemini, Anthropic, etc.) without restarting the system.
+- **Activation/Deactivation**: Activate or deactivate keys on the fly.
+- **Automatic Failover**: If an API key fails (request limit reached, error), the system automatically switches to the next valid key to ensure service continuity.
+- **Monitoring and Statistics**: Track your key usage, number of active keys, and number of configured providers.
+- **Validity Tests**: Test the validity of each key directly from the interface.
 
 #### Adding Additional Keys
+
 1. **Via Web Interface**: [localhost:3002](http://localhost:3002) → "API Keys" Tab
 2. **Features**:
    - ✅ Real-time key addition/removal
@@ -203,6 +208,7 @@ AgenticForge integrates a powerful **LlmKeyManager** for centralized and dynamic
    - ✅ Simultaneous multi-provider support
 
 #### Automatic Hierarchy
+
 The system tests keys in order of reliability and automatically switches if a key fails.
 
 ---
@@ -211,16 +217,17 @@ The system tests keys in order of reliability and automatically switches if a ke
 
 ### Option 1: Cloud API (Recommended to get started)
 
-| Provider | Recommended Models (2025) | Get an API Key |
-|-------------|---------------------|---------------------|
-| **Google AI** | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys) |
-| **OpenAI** | `gpt-5`, `gpt-4o`, `gpt-4.1` | [platform.openai.com](https://platform.openai.com/signup) |
-| **Anthropic** | `claude-4-opus`, `claude-4-sonnet` | [console.anthropic.com](https://console.anthropic.com/) |
-| **DeepSeek** | `deepseek-v3`, `deepseek-r1` | [platform.deepseek.com](https://platform.deepseek.com) |
+| Provider      | Recommended Models (2025)            | Get an API Key                                            |
+| ------------- | ------------------------------------ | --------------------------------------------------------- |
+| **Google AI** | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)   |
+| **OpenAI**    | `gpt-5`, `gpt-4o`, `gpt-4.1`         | [platform.openai.com](https://platform.openai.com/signup) |
+| **Anthropic** | `claude-4-opus`, `claude-4-sonnet`   | [console.anthropic.com](https://console.anthropic.com/)   |
+| **DeepSeek**  | `deepseek-v3`, `deepseek-r1`         | [platform.deepseek.com](https://platform.deepseek.com)    |
 
 ### Option 2: Local AI (For privacy)
 
 #### Ollama
+
 1. **Install Ollama**: [ollama.ai](https://ollama.ai/)
 2. **Download a model**:
    ```bash
@@ -229,9 +236,10 @@ The system tests keys in order of reliability and automatically switches if a ke
    ```
 
 #### LM Studio
+
 1. **Install LM Studio**: [lmstudio.ai](https://lmstudio.ai/)
 2. **Download a model** and start the local server
-3. **Configuration**: 
+3. **Configuration**:
    ```env
    LLM_PROVIDER="openai"
    LLM_API_BASE_URL="http://localhost:1234/v1"
@@ -287,6 +295,7 @@ AgenticForge includes a complete test suite to validate agent capabilities via A
 ```
 
 **Available test types:**
+
 - ✅ **Canvas & Todo List**: Creation and management of diagrams and task lists
 - ✅ **MCP Tools**: Creation and execution of custom tools
 - ✅ **Code Generation**: TypeScript, Python and other languages
@@ -316,10 +325,10 @@ pnpm run format    # Automatic formatting
 
 ### Main Interfaces
 
-| Interface | URL | Description |
-|-----------|-----|-------------|
+| Interface            | URL                                     | Description                               |
+| -------------------- | --------------------------------------- | ----------------------------------------- |
 | **🎨 Web Interface** | [localhost:3002](http://localhost:3002) | Main interface to interact with the agent |
-| **🛠️ API Server** | [localhost:8080](http://localhost:8080) | Backend API and main server |
+| **🛠️ API Server**    | [localhost:8080](http://localhost:8080) | Backend API and main server               |
 
 ---
 
@@ -327,31 +336,33 @@ pnpm run format    # Automatic formatting
 
 ### 🚀 Quick Start
 
-1. **Access** [localhost:3002](http://localhost:3002) 
+1. **Access** [localhost:3002](http://localhost:3002)
 2. **Test** real-time MCP tool forging:
    ```
-   "Create a custom MCP tool to analyze system logs, 
+   "Create a custom MCP tool to analyze system logs,
    code it in TypeScript, integrate it to the worker and test it immediately"
    ```
 3. **Or test** direct system execution:
    ```
-   "Analyze my system, create a REST API in a new folder, 
+   "Analyze my system, create a REST API in a new folder,
    install dependencies with npm, run tests and start the server"
    ```
 
 ### 🔧 Custom MCP Tool Forge
 
 #### ⚡ Advanced System Tools
+
 ```bash
 "Forge an MCP tool that monitors in real time:
-- Code the tool in TypeScript with Zod schemas  
+- Code the tool in TypeScript with Zod schemas
 - Integrate it directly to the AgenticForge worker
 - Interface to monitor CPU/RAM/Processes
 - Real-time display in web interface
 - Immediate testing of all features"
 ```
 
-#### 🌐 Smart Web Tools  
+#### 🌐 Smart Web Tools
+
 ```bash
 "Create an intelligent MCP scraping tool:
 - Generate code with session management
@@ -364,10 +375,11 @@ pnpm run format    # Automatic formatting
 ### 🌐 Full-Stack Applications
 
 #### ⚙️ System Automation & Supervision
+
 ```bash
 "Read this YAML configuration file, create a Python daemon that:
 - Monitor defined system processes
-- Automatically execute cron tasks  
+- Automatically execute cron tasks
 - Send logs to /var/log/automation.log
 - Restart services in case of failure
 - Launch the daemon with systemctl --user"
@@ -376,6 +388,7 @@ pnpm run format    # Automatic formatting
 ### 📊 Performance Tools
 
 #### 🏃‍♂️ Complete System Benchmarking
+
 ```bash
 "Run a complete benchmark of this machine:
 - Test CPU/RAM/Disk with stress-ng
@@ -386,6 +399,7 @@ pnpm run format    # Automatic formatting
 ```
 
 #### 📚 Auto-Generated Documentation
+
 ```bash
 "Recursively scan my project, analyze source code, generate:
 - Detailed README.md with architecture diagrams
@@ -398,11 +412,12 @@ pnpm run format    # Automatic formatting
 ### 🔧 Project Management
 
 #### 🌳 Git Workflows with Automatic Deployment
+
 ```bash
 "Configure a complete Git workflow in this repo:
 - Install and configure GitFlow with hooks
 - Create pre-commit scripts with auto tests
-- Configure GitHub Actions or GitLab CI locally  
+- Configure GitHub Actions or GitLab CI locally
 - Deployment script that builds, tests and restarts services
 - Test the complete workflow with a feature branch"
 ```
@@ -410,6 +425,7 @@ pnpm run format    # Automatic formatting
 ### 🎯 Specialized Projects
 
 #### 🤖 Agent with Custom MCP Tool Suite
+
 ```bash
 "Clone AgenticForge, create a specialized agent with its own MCP tools:
 - Forge 5 MCP tools: monitoring, deployment, backup, alerts, analytics
@@ -419,7 +435,8 @@ pnpm run format    # Automatic formatting
 - Complete test of the automatically forged tool suite"
 ```
 
-#### 💻 Intelligent System Administration  
+#### 💻 Intelligent System Administration
+
 ```bash
 "Analyze this Linux server and create an admin dashboard:
 - Real-time monitor: CPU, RAM, disk, network
@@ -430,7 +447,8 @@ pnpm run format    # Automatic formatting
 - Interface accessible via nginx on port 8080"
 ```
 
-**🔥 Unique Power**: 
+**🔥 Unique Power**:
+
 - **🛠️ MCP Forge**: Creates custom MCP tools in TypeScript, integrates them to the worker and tests them immediately
 - **⚡ Direct Execution**: Complete system access - installation, configuration, testing, automated deployment
 - **🎯 Total Transparency**: View your forged MCP tools in action directly in the web interface
@@ -439,14 +457,14 @@ pnpm run format    # Automatic formatting
 
 ### Advanced System Management
 
-| Action | Command | Usage |
-|--------|----------|-----------|
-| **Complete Console** | `./run-v2.sh` | Main management interface |
-| **Quick Startup** | `./run-v2.sh start` | Direct system launch |
-| **Monitoring** | `./run-v2.sh status` | Docker service status |
-| **Live Logs** | `./run-v2.sh logs` | Real-time monitoring |
-| **Restart** | `./run-v2.sh restart` | After config modification |
-| **Maintenance** | `./run-v2.sh` → Options 7-14 | Tests, lint, format, rebuild |
+| Action               | Command                      | Usage                        |
+| -------------------- | ---------------------------- | ---------------------------- |
+| **Complete Console** | `./run-v2.sh`                | Main management interface    |
+| **Quick Startup**    | `./run-v2.sh start`          | Direct system launch         |
+| **Monitoring**       | `./run-v2.sh status`         | Docker service status        |
+| **Live Logs**        | `./run-v2.sh logs`           | Real-time monitoring         |
+| **Restart**          | `./run-v2.sh restart`        | After config modification    |
+| **Maintenance**      | `./run-v2.sh` → Options 7-14 | Tests, lint, format, rebuild |
 
 ---
 
@@ -493,7 +511,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 - **🚨 Issues**: [GitHub Issues](https://github.com/votre-username/g-forge/issues)
 - **💬 Discussions**: [GitHub Discussions](https://github.com/votre-username/g-forge/discussions)
 - **📚 Documentation**: [Project Wiki](https://github.com/votre-username/g-forge/wiki)
-- **🎮 Discord**: [Join the community](https://discord.gg/VNtXQByKfg) - *Share your creations, get real-time help and discover the latest news in advance*
+- **🎮 Discord**: [Join the community](https://discord.gg/VNtXQByKfg) - _Share your creations, get real-time help and discover the latest news in advance_
 
 ---
 

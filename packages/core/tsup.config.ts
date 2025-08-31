@@ -2,14 +2,15 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: [
-    'src/index.ts', 
-    'src/webServer.ts', 
-    'src/worker.ts', 
+    'src/index.ts',
+    'src/webServer.ts',
+    'src/worker.ts',
     'src/server-start.ts',
     'src/utils/toolLoader.ts',
     'src/utils/llmProvider.ts',
+    'src/modules/llm/LlmKeyManager.ts', // Add this line
     'src/modules/tools/toolRegistry.ts',
-    'src/modules/tools/definitions/**/*.ts'
+    'src/modules/tools/definitions/**/*.ts',
   ],
   format: ['esm'],
   dts: true,
@@ -127,7 +128,7 @@ const require = createRequire(import.meta.url);`,
     'node:dgram',
     'node:diagnostics_channel',
     'node:inspector',
-    'node:trace_events'
+    'node:trace_events',
   ],
   noExternal: [],
   target: 'es2022',
@@ -135,11 +136,11 @@ const require = createRequire(import.meta.url);`,
   assets: [
     {
       from: ['./src/modules/agent/system.prompt.md'],
-      to: ['./dist/system.prompt.md']
+      to: ['./dist/system.prompt.md'],
     },
     {
       from: ['./src/tools'],
-      to: ['./dist/tools']
-    }
+      to: ['./dist/tools'],
+    },
   ],
 });

@@ -23,14 +23,14 @@ export class ErrorBoundary extends Component<Props, State> {
     this.state = {
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
     };
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
     return {
       hasError: true,
-      error
+      error,
     };
   }
 
@@ -40,7 +40,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
     // Log error
     ErrorBoundaryHelper.logError(error, errorInfo);
-    safeError(`ErrorBoundary (${this.props.componentName || 'Unknown'}):`, error, errorInfo);
+    safeError(
+      `ErrorBoundary (${this.props.componentName || 'Unknown'}):`,
+      error,
+      errorInfo,
+    );
 
     // Call custom error handler if provided
     if (this.props.onError) {
@@ -74,7 +78,7 @@ export class ErrorBoundary extends Component<Props, State> {
     this.setState({
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
     });
   };
 
@@ -87,18 +91,20 @@ export class ErrorBoundary extends Component<Props, State> {
 
       // Default error UI
       const componentName = this.props.componentName || 'Component';
-      
+
       // Create fallback UI directly to match test expectations
       return (
         <div className="error-boundary-fallback p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
-          <h2 className="text-lg font-bold text-destructive">Something went wrong</h2>
+          <h2 className="text-lg font-bold text-destructive">
+            Something went wrong
+          </h2>
           <p className="mt-2 text-sm">
             An error occurred in the <strong>{componentName}</strong> component.
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
             Error: {this.state.error?.message}
           </p>
-          <button 
+          <button
             onClick={this.handleReset}
             className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity"
           >
@@ -115,7 +121,7 @@ export class ErrorBoundary extends Component<Props, State> {
 // Higher-order component for easy usage
 export const withErrorBoundary = <P extends object>(
   Component: React.ComponentType<P>,
-  errorBoundaryProps?: Omit<Props, 'children'>
+  errorBoundaryProps?: Omit<Props, 'children'>,
 ) => {
   const WrappedComponent = (props: P) => (
     <ErrorBoundary {...errorBoundaryProps}>
@@ -124,7 +130,7 @@ export const withErrorBoundary = <P extends object>(
   );
 
   WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name})`;
-  
+
   return WrappedComponent;
 };
 

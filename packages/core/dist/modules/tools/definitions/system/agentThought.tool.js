@@ -22,7 +22,9 @@ var agentThoughtTool = {
     const parsedParams = AgentThoughtParams.parse(params);
     const { thought } = parsedParams;
     try {
-      log.info(`Agent thought: ${thought.substring(0, 100)}${thought.length > 100 ? "..." : ""}`);
+      log.info(
+        `Agent thought: ${thought.substring(0, 100)}${thought.length > 100 ? "..." : ""}`
+      );
       if (context.session) {
         const thoughtMessage = {
           content: thought,

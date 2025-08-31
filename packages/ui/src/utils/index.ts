@@ -9,10 +9,10 @@ export {
   validateKeyFormat,
   detectKeyType,
   generateKeyDisplayName,
-  calculateKeyStrength
+  calculateKeyStrength,
 } from './keyUtils';
 
-// Card display utilities  
+// Card display utilities
 export {
   formatRelativeTime,
   formatUsageCount,
@@ -21,11 +21,11 @@ export {
   calculateSuccessRate,
   getStatusColor,
   truncateText,
-  generateTagColor
+  generateTagColor,
 } from './cardUtils';
 
 // Logger utility (if exists)
 export * from './logger';
 
-// Code cleanup utility (if exists)  
+// Code cleanup utility (if exists)
 export * from './codeCleanup';

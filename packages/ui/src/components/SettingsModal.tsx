@@ -14,10 +14,15 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({
+  isOpen,
+  onClose,
+}) => {
   const { translations } = useLanguage();
   const setAuthToken = useCombinedStore((state) => state.setAuthToken);
-  const fetchAndDisplayToolCount = useCombinedStore((state) => state.fetchAndDisplayToolCount);
+  const fetchAndDisplayToolCount = useCombinedStore(
+    (state) => state.fetchAndDisplayToolCount,
+  );
   const addDebugLog = useCombinedStore((state) => state.addDebugLog);
   const setToolCount = useCombinedStore((state) => state.setToolCount);
   const setTokenStatus = useCombinedStore((state) => state.setTokenStatus);
@@ -30,20 +35,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [tokenInputValue, setTokenInputValue] = useState<string>('');
   const [tempCanvasWidth, setTempCanvasWidth] = useState<number>(canvasWidth);
 
-
   const handleSaveToken = useCallback(() => {
     const tokenValue = tokenInputValue.trim();
     setAuthToken(tokenValue);
     if (tokenValue) {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] ${translations.newTokenSaved}.`);
+      addDebugLog(
+        `[${new Date().toLocaleTimeString()}] ${translations.newTokenSaved}.`,
+      );
       fetchAndDisplayToolCount();
     } else {
-      addDebugLog(`[${new Date().toLocaleTimeString()}] ${translations.tokenDeleted}.`);
+      addDebugLog(
+        `[${new Date().toLocaleTimeString()}] ${translations.tokenDeleted}.`,
+      );
       setToolCount(0);
     }
     setTokenStatus(!!tokenValue);
     onClose();
-  }, [fetchAndDisplayToolCount, tokenInputValue, addDebugLog, setAuthToken, setToolCount, setTokenStatus, onClose, translations]);
+  }, [
+    fetchAndDisplayToolCount,
+    tokenInputValue,
+    addDebugLog,
+    setAuthToken,
+    setToolCount,
+    setTokenStatus,
+    onClose,
+    translations,
+  ]);
 
   const handleSaveCanvasSettings = useCallback(() => {
     setCanvasWidth(tempCanvasWidth);
@@ -56,7 +73,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         <div className="flex flex-col space-y-4">
           <h3 className="text-lg font-medium">Authentification</h3>
           <div className="flex items-center space-x-2">
-            <Label className="text-sm" htmlFor="authToken">{translations.authToken}</Label>
+            <Label className="text-sm" htmlFor="authToken">
+              {translations.authToken}
+            </Label>
             <Input
               autoComplete="off"
               className="w-full bg-input border-border text-foreground placeholder-muted-foreground"
@@ -68,7 +87,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               value={tokenInputValue}
             />
           </div>
-          <Button aria-label="Save Token" className="bg-primary hover:bg-accent text-primary-foreground" onClick={handleSaveToken} type="button" disabled={isLoadingTools}>
+          <Button
+            aria-label="Save Token"
+            className="bg-primary hover:bg-accent text-primary-foreground"
+            onClick={handleSaveToken}
+            type="button"
+            disabled={isLoadingTools}
+          >
             {isLoadingTools ? <LoadingSpinner className="mr-2" /> : null}
             {translations.saveToken}
           </Button>
@@ -87,7 +112,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               onCheckedChange={setCanvasPinned}
             />
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Label className="text-sm" htmlFor="canvasWidth">
               Largeur du canevas (px)
@@ -105,11 +130,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               ({canvasWidth}px actuel)
             </span>
           </div>
-          
-          <Button 
-            aria-label="Save Canvas Settings" 
-            className="bg-primary hover:bg-accent text-primary-foreground" 
-            onClick={handleSaveCanvasSettings} 
+
+          <Button
+            aria-label="Save Canvas Settings"
+            className="bg-primary hover:bg-accent text-primary-foreground"
+            onClick={handleSaveCanvasSettings}
             type="button"
           >
             Enregistrer les paramètres du canevas

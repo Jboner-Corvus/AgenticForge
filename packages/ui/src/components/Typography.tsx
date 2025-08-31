@@ -6,7 +6,11 @@ interface TypographyProps {
   className?: string;
 }
 
-export const Typography: React.FC<TypographyProps> = ({ variant, children, className }) => {
+export const Typography: React.FC<TypographyProps> = ({
+  variant,
+  children,
+  className,
+}) => {
   const getTypographyClass = () => {
     switch (variant) {
       case 'h1':
@@ -29,8 +33,6 @@ export const Typography: React.FC<TypographyProps> = ({ variant, children, class
   const Tag = variant === 'p' ? 'p' : variant;
 
   return (
-    <Tag className={`${getTypographyClass()} ${className}`}>
-      {children}
-    </Tag>
+    <Tag className={`${getTypographyClass()} ${className}`}>{children}</Tag>
   );
 };

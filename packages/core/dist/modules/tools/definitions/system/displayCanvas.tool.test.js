@@ -2,10 +2,11 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
   displayCanvasTool
-} from "../../../../chunk-67FLVU3Q.js";
+} from "../../../../chunk-4OKX522H.js";
+import "../../../../chunk-EJC34O7O.js";
 import {
   sendToCanvas
-} from "../../../../chunk-3B2NS2K5.js";
+} from "../../../../chunk-TKYKZMJX.js";
 import {
   beforeEach,
   describe,
@@ -13,9 +14,9 @@ import {
   it,
   vi
 } from "../../../../chunk-AQKYZ7X3.js";
-import "../../../../chunk-2TWFUMQU.js";
-import "../../../../chunk-5JE7E5SU.js";
-import "../../../../chunk-DVHMHG4X.js";
+import "../../../../chunk-UWC7S2CG.js";
+import "../../../../chunk-BL4YZGPN.js";
+import "../../../../chunk-VUKI2J6K.js";
 import {
   init_esm_shims
 } from "../../../../chunk-SB7UONON.js";
@@ -33,7 +34,7 @@ describe("displayCanvasTool", () => {
   it("should have correct name and description", () => {
     globalExpect(displayCanvasTool.name).toBe("display_canvas");
     globalExpect(displayCanvasTool.description).toBe(
-      "Affiche du contenu dans le canvas de l'interface utilisateur. Peut afficher du HTML, Markdown, du texte brut ou une URL. Tr\xE8s utile pour montrer des visualisations, des rapports, des graphiques, des animations, des jeux simples, etc."
+      "\u{1F680} CANVAS \xC9PIQUE - Affiche TOUT dans le canvas ! HTML, Markdown, texte, URLs, jeux complets, apps React, projets multi-fichiers avec JS/CSS/images/sons. D\xE9tection automatique des assets externes et gestion intelligente des projets complexes. Support automatique des r\xE9f\xE9rences de fichiers."
     );
   });
   it("should have correct parameters schema", () => {
@@ -45,7 +46,8 @@ describe("displayCanvasTool", () => {
       "html",
       "markdown",
       "text",
-      "url"
+      "url",
+      "project"
     ]);
     globalExpect(shape.title._def.typeName).toBe("ZodOptional");
     globalExpect(shape.title._def.innerType._def.typeName).toBe("ZodString");
@@ -90,10 +92,18 @@ describe("displayCanvasTool", () => {
     );
     globalExpect(sendToCanvas).toHaveBeenCalledWith("test-job-id", content, "html");
     globalExpect(mockLog.info).toHaveBeenCalledWith(
-      "Content sent to canvas for job test-job-id with type html"
+      "\u{1F680} \xC9PIQUE CANVAS - Analyse du contenu..."
+    );
+    globalExpect(mockLog.info).toHaveBeenCalledWith(
+      "\u{1F527} Fragment HTML extrait"
+    );
+    globalExpect(mockLog.info).toHaveBeenCalledWith(
+      "\u{1F3A8} \u2705 Contenu affich\xE9 dans le canvas (type: html)"
     );
     globalExpect(result).toEqual({
-      success: true
+      success: true,
+      message: "\u2705 Contenu affich\xE9 dans le canvas",
+      assetsDetected: 0
     });
   });
   it("should send Markdown content to canvas successfully", async () => {
@@ -140,10 +150,15 @@ describe("displayCanvasTool", () => {
       "markdown"
     );
     globalExpect(mockLog.info).toHaveBeenCalledWith(
-      "Content sent to canvas for job test-job-id with type markdown"
+      "\u{1F680} \xC9PIQUE CANVAS - Analyse du contenu..."
+    );
+    globalExpect(mockLog.info).toHaveBeenCalledWith(
+      "\u{1F3A8} \u2705 Contenu affich\xE9 dans le canvas (type: markdown)"
     );
     globalExpect(result).toEqual({
-      success: true
+      success: true,
+      message: "\u2705 Contenu affich\xE9 dans le canvas",
+      assetsDetected: 0
     });
   });
   it("should send content with title to canvas", async () => {
@@ -186,13 +201,21 @@ describe("displayCanvasTool", () => {
     );
     globalExpect(sendToCanvas).toHaveBeenCalledWith("test-job-id", content, "html");
     globalExpect(mockLog.info).toHaveBeenCalledWith(
-      "Displaying content with title: Test Title"
+      "\u{1F680} \xC9PIQUE CANVAS - Analyse du contenu..."
     );
     globalExpect(mockLog.info).toHaveBeenCalledWith(
-      "Content sent to canvas for job test-job-id with type html"
+      "\u{1F527} Fragment HTML extrait"
+    );
+    globalExpect(mockLog.info).toHaveBeenCalledWith(
+      "\u{1F3F7}\uFE0F  Titre: Test Title"
+    );
+    globalExpect(mockLog.info).toHaveBeenCalledWith(
+      "\u{1F3A8} \u2705 Contenu affich\xE9 dans le canvas (type: html)"
     );
     globalExpect(result).toEqual({
-      success: true
+      success: true,
+      message: "\u2705 Contenu affich\xE9 dans le canvas",
+      assetsDetected: 0
     });
   });
   it("should handle errors when sending to canvas fails", async () => {
@@ -236,7 +259,7 @@ describe("displayCanvasTool", () => {
           taskQueue: {}
         }
       )
-    ).rejects.toThrow("Failed to display content in canvas: Canvas error");
+    ).rejects.toThrow("Canvas \xE9pique failed: Canvas error");
     globalExpect(mockLog.error).toHaveBeenCalled();
   });
 });

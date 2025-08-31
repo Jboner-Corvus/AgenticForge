@@ -64,6 +64,7 @@ This document summarizes the improvements made to the Qwen provider in AgenticFo
 ### Environment Variables
 
 Added new configuration option:
+
 ```env
 QWEN_API_BASE_URL=https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation
 ```
@@ -77,12 +78,14 @@ LLM_REQUEST_DELAY_MS=1000  # Reduced from 2000ms
 ## Testing
 
 Created utility scripts for testing:
+
 1. `scripts/test-qwen-provider.ts` - Basic functionality test
 2. `scripts/validate-qwen-key.ts` - API key validation utility
 
 ## Documentation
 
 Added comprehensive documentation:
+
 1. `docs/QWEN_PROVIDER.md` - Complete configuration and troubleshooting guide
 2. Updated README.md with Qwen provider information
 
@@ -97,6 +100,7 @@ These improvements specifically address the original issues:
 ## Usage
 
 After applying these improvements, users should experience:
+
 - More reliable Qwen provider connections
 - Faster recovery from temporary network issues
 - Better error messages for troubleshooting

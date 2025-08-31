@@ -2,7 +2,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
   writeFile
-} from "../../../../chunk-PVI3LVZ2.js";
+} from "../../../../chunk-L4OO3HDI.js";
 import {
   describe,
   globalExpect,
@@ -11,10 +11,8 @@ import {
 } from "../../../../chunk-AQKYZ7X3.js";
 import {
   getLoggerInstance
-} from "../../../../chunk-5JE7E5SU.js";
-import {
-  config
-} from "../../../../chunk-DVHMHG4X.js";
+} from "../../../../chunk-BL4YZGPN.js";
+import "../../../../chunk-VUKI2J6K.js";
 import {
   init_esm_shims
 } from "../../../../chunk-SB7UONON.js";
@@ -23,13 +21,6 @@ import {
 init_esm_shims();
 import { promises as fs } from "fs";
 import path from "path";
-vi.mock("../../../../config.ts", async () => {
-  return {
-    config: {
-      WORKSPACE_PATH: "/mock-workspace"
-    }
-  };
-});
 vi.mock("fs", async () => {
   const vitest = await import("../../../../dist-WHHVNEQB.js");
   return {
@@ -74,12 +65,13 @@ describe("writeFileTool", () => {
       { content, path: filePath },
       mockCtx
     );
+    const absolutePath = path.resolve(filePath);
     globalExpect(fs.mkdir).toHaveBeenCalledWith(
-      path.join(config.WORKSPACE_PATH, path.dirname(filePath)),
+      path.dirname(absolutePath),
       { recursive: true }
     );
     globalExpect(fs.writeFile).toHaveBeenCalledWith(
-      path.join(config.WORKSPACE_PATH, filePath),
+      absolutePath,
       content,
       "utf-8"
     );
@@ -95,8 +87,9 @@ describe("writeFileTool", () => {
       { content, path: filePath },
       mockCtx
     );
+    const absolutePath = path.resolve(filePath);
     globalExpect(fs.writeFile).toHaveBeenCalledWith(
-      path.join(config.WORKSPACE_PATH, filePath),
+      absolutePath,
       content,
       "utf-8"
     );

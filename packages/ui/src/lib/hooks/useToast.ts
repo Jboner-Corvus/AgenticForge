@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
 // Inspired by react-hot-toast library
-import * as React from "react";
+import * as React from 'react';
 
-import type { ToastProps } from "@/components/ui/toast";
+import type { ToastProps } from '@/components/ui/toast';
 
 const TOAST_LIMIT = 5;
 const TOAST_REMOVE_DELAY = 1000000;
@@ -18,28 +18,28 @@ type ToasterToast = {
 let count = 0;
 
 const ActionType = {
-  ADD_TOAST: "ADD_TOAST",
-  DISMISS_TOAST: "DISMISS_TOAST",
-  REMOVE_TOAST: "REMOVE_TOAST",
-  UPDATE_TOAST: "UPDATE_TOAST",
+  ADD_TOAST: 'ADD_TOAST',
+  DISMISS_TOAST: 'DISMISS_TOAST',
+  REMOVE_TOAST: 'REMOVE_TOAST',
+  UPDATE_TOAST: 'UPDATE_TOAST',
 } as const;
 
 type Action =
   | {
       toast: Partial<ToasterToast>;
-      type: "UPDATE_TOAST";
+      type: 'UPDATE_TOAST';
     }
   | {
       toast: ToasterToast;
-      type: "ADD_TOAST";
+      type: 'ADD_TOAST';
     }
   | {
-      toastId?: ToasterToast["id"];
-      type: "DISMISS_TOAST";
+      toastId?: ToasterToast['id'];
+      type: 'DISMISS_TOAST';
     }
   | {
-      toastId?: ToasterToast["id"];
-      type: "REMOVE_TOAST";
+      toastId?: ToasterToast['id'];
+      type: 'REMOVE_TOAST';
     };
 
 interface State {
@@ -128,7 +128,7 @@ const listeners: Array<(state: State) => void> = [];
 
 let memoryState: State = { toasts: [] };
 
-type Toast = Omit<ToasterToast, "id">;
+type Toast = Omit<ToasterToast, 'id'>;
 
 function dispatch(action: Action) {
   memoryState = reducer(memoryState, action);

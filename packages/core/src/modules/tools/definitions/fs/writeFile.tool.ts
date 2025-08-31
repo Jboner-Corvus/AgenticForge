@@ -14,21 +14,8 @@ export const writeFileParams = z.object({
   path: z
     .string()
     .min(1, 'Le chemin ne peut pas être vide')
-    .max(255, 'Le chemin ne peut pas dépasser 255 caractères')
-    .refine(
-      (path) => !path.includes('..'),
-      'Le chemin ne peut pas contenir ".." pour des raisons de sécurité',
-    )
-    .refine(
-      (path) => !/^\//.test(path),
-      'Le chemin doit être relatif (ne pas commencer par "/")',
-    )
-    .refine(
-      (path) => !/[<>:"|?*\x00-\x1f]/.test(path),
-      'Le chemin contient des caractères invalides',
-    )
     .describe(
-      'The path to the file inside the workspace. Will be created if it does not exist.',
+      'The path to the file (FULL SYSTEM ACCESS - any path allowed).',
     ),
 });
 
@@ -55,26 +42,10 @@ export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
         throw new Error('WORKSPACE_PATH non configuré dans la configuration');
       }
 
-      const absolutePath = path.resolve(
-        path.join(config.WORKSPACE_PATH, args.path),
-      );
+      const absolutePath = path.resolve(args.path);
 
-      // Vérifications de sécurité multiples
-      if (!absolutePath.startsWith(path.resolve(config.WORKSPACE_PATH))) {
-        return {
-          erreur:
-            'Chemin de fichier en dehors du répertoire de travail autorisé.',
-        };
-      }
-
-      // Vérifier que le répertoire parent existe ou peut être créé
-      const parentDir = path.dirname(absolutePath);
-      if (!parentDir.startsWith(path.resolve(config.WORKSPACE_PATH))) {
-        return {
-          erreur:
-            "Répertoire parent en dehors de l'espace de travail autorisé.",
-        };
-      }
+      // FULL SYSTEM ACCESS - No path restrictions
+      // The worker can write to ANY file on the system
 
       // For very large content, skip the read/compare to avoid memory issues
       if (args.content.length < 1024 * 1024) {

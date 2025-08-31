@@ -90,11 +90,13 @@
 ### 🤖 Instalação Ultra-Simples (100% Automática)
 
 **Opção 1: Instalação em uma linha**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Jboner-Corvus/AgenticForge/main/install.sh | bash
 ```
 
 **Opção 2: Instalação clássica**
+
 ```bash
 # 1. Clonar o projeto
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
@@ -106,6 +108,7 @@ chmod +x run-v2.sh
 ```
 
 **Opção 3: Instalação interativa**
+
 ```bash
 # 1. Clonar o projeto
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
@@ -140,8 +143,9 @@ chmod +x run-v2.sh
 **Escolha "1) 🟢 Iniciar Serviços" para instalação automática**
 
 **🔧 Na primeira inicialização, o sistema:**
+
 - Cria automaticamente o arquivo `.env` com valores padrão
-- Instala as dependências pnpm necessárias  
+- Instala as dependências pnpm necessárias
 - Compila os pacotes core e UI
 - Inicia todos os serviços Docker
 - Configura o ambiente de produção
@@ -187,13 +191,14 @@ O AgenticForge integra um **LlmKeyManager** poderoso para gerenciamento centrali
 
 #### Recursos do LlmKeyManager:
 
--   **Adição/Remoção de Chaves em Tempo Real**: Adicione ou remova chaves API para diferentes provedores (OpenAI, Gemini, Anthropic, etc.) sem reiniciar o sistema.
--   **Ativação/Desativação**: Ative ou desative chaves instantaneamente.
--   **Failover Automático**: Se uma chave API falhar (limite de requisições atingido, erro), o sistema alterna automaticamente para a próxima chave válida para garantir a continuidade do serviço.
--   **Monitoramento e Estatísticas**: Acompanhe o uso de suas chaves, número de chaves ativas e número de provedores configurados.
--   **Testes de Validade**: Teste a validade de cada chave diretamente da interface.
+- **Adição/Remoção de Chaves em Tempo Real**: Adicione ou remova chaves API para diferentes provedores (OpenAI, Gemini, Anthropic, etc.) sem reiniciar o sistema.
+- **Ativação/Desativação**: Ative ou desative chaves instantaneamente.
+- **Failover Automático**: Se uma chave API falhar (limite de requisições atingido, erro), o sistema alterna automaticamente para a próxima chave válida para garantir a continuidade do serviço.
+- **Monitoramento e Estatísticas**: Acompanhe o uso de suas chaves, número de chaves ativas e número de provedores configurados.
+- **Testes de Validade**: Teste a validade de cada chave diretamente da interface.
 
 #### Adicionando Chaves Adicionais
+
 1. **Via Interface Web**: [localhost:3002](http://localhost:3002) → Aba "Chaves API"
 2. **Recursos**:
    - ✅ Adição/remoção de chaves em tempo real
@@ -203,6 +208,7 @@ O AgenticForge integra um **LlmKeyManager** poderoso para gerenciamento centrali
    - ✅ Suporte a múltiplos provedores simultaneamente
 
 #### Hierarquia Automática
+
 O sistema testa as chaves em ordem de confiabilidade e alterna automaticamente se uma chave falhar.
 
 ---
@@ -211,16 +217,17 @@ O sistema testa as chaves em ordem de confiabilidade e alterna automaticamente s
 
 ### Opção 1: API na Nuvem (Recomendado para começar)
 
-| Provedor | Modelos Recomendados (2025) | Obter uma Chave API |
-|-------------|---------------------|---------------------|
-| **Google AI** | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys) |
-| **OpenAI** | `gpt-5`, `gpt-4o`, `gpt-4.1` | [platform.openai.com](https://platform.openai.com/signup) |
-| **Anthropic** | `claude-4-opus`, `claude-4-sonnet` | [console.anthropic.com](https://console.anthropic.com/) |
-| **DeepSeek** | `deepseek-v3`, `deepseek-r1` | [platform.deepseek.com](https://platform.deepseek.com) |
+| Provedor      | Modelos Recomendados (2025)          | Obter uma Chave API                                       |
+| ------------- | ------------------------------------ | --------------------------------------------------------- |
+| **Google AI** | `gemini-2.5-pro`, `gemini-2.5-flash` | [aistudio.google.com](https://aistudio.google.com/keys)   |
+| **OpenAI**    | `gpt-5`, `gpt-4o`, `gpt-4.1`         | [platform.openai.com](https://platform.openai.com/signup) |
+| **Anthropic** | `claude-4-opus`, `claude-4-sonnet`   | [console.anthropic.com](https://console.anthropic.com/)   |
+| **DeepSeek**  | `deepseek-v3`, `deepseek-r1`         | [platform.deepseek.com](https://platform.deepseek.com)    |
 
 ### Opção 2: IA Local (Para privacidade)
 
 #### Ollama
+
 1. **Instalar Ollama**: [ollama.ai](https://ollama.ai/)
 2. **Baixar um modelo**:
    ```bash
@@ -229,9 +236,10 @@ O sistema testa as chaves em ordem de confiabilidade e alterna automaticamente s
    ```
 
 #### LM Studio
+
 1. **Instalar LM Studio**: [lmstudio.ai](https://lmstudio.ai/)
 2. **Baixar um modelo** e iniciar o servidor local
-3. **Configuração**: 
+3. **Configuração**:
    ```env
    LLM_PROVIDER="openai"
    LLM_API_BASE_URL="http://localhost:1234/v1"
@@ -287,6 +295,7 @@ O AgenticForge inclui um conjunto completo de testes para validar as capacidades
 ```
 
 **Tipos de testes disponíveis:**
+
 - ✅ **Canvas e Lista de Tarefas**: Criação e gerenciamento de diagramas e listas de tarefas
 - ✅ **Ferramentas MCP**: Criação e execução de ferramentas personalizadas
 - ✅ **Geração de Código**: TypeScript, Python e outras linguagens
@@ -316,10 +325,10 @@ pnpm run format    # Formatação automática
 
 ### Interfaces Principais
 
-| Interface | URL | Descrição |
-|-----------|-----|-------------|
+| Interface            | URL                                     | Descrição                                       |
+| -------------------- | --------------------------------------- | ----------------------------------------------- |
 | **🎨 Interface Web** | [localhost:3002](http://localhost:3002) | Interface principal para interagir com o agente |
-| **🛠️ Servidor API** | [localhost:8080](http://localhost:8080) | API backend e servidor principal |
+| **🛠️ Servidor API**  | [localhost:8080](http://localhost:8080) | API backend e servidor principal                |
 
 ---
 
@@ -327,31 +336,33 @@ pnpm run format    # Formatação automática
 
 ### 🚀 Início Rápido
 
-1. **Acesse** [localhost:3002](http://localhost:3002) 
+1. **Acesse** [localhost:3002](http://localhost:3002)
 2. **Teste** a forja de ferramentas MCP em tempo real:
    ```
-   "Crie uma ferramenta MCP personalizada para analisar logs do sistema, 
+   "Crie uma ferramenta MCP personalizada para analisar logs do sistema,
    codifique-a em TypeScript, integre-a ao worker e teste-a imediatamente"
    ```
 3. **Ou teste** a execução direta do sistema:
    ```
-   "Analise meu sistema, crie uma API REST em uma nova pasta, 
+   "Analise meu sistema, crie uma API REST em uma nova pasta,
    instale dependências com npm, execute testes e inicie o servidor"
    ```
 
 ### 🔧 Forja de Ferramentas MCP Personalizadas
 
 #### ⚡ Ferramentas Avançadas do Sistema
+
 ```bash
 "Forje uma ferramenta MCP que monitore em tempo real:
-- Codifique a ferramenta em TypeScript com esquemas Zod  
+- Codifique a ferramenta em TypeScript com esquemas Zod
 - Integre-a diretamente ao worker do AgenticForge
 - Interface para monitorar CPU/RAM/Processos
 - Exibição em tempo real na interface web
 - Teste imediato de todos os recursos"
 ```
 
-#### 🌐 Ferramentas Web Inteligentes  
+#### 🌐 Ferramentas Web Inteligentes
+
 ```bash
 "Crie uma ferramenta de scraping MCP inteligente:
 - Gere código com gerenciamento de sessões
@@ -364,10 +375,11 @@ pnpm run format    # Formatação automática
 ### 🌐 Aplicações Full-Stack
 
 #### ⚙️ Automação e Supervisão do Sistema
+
 ```bash
 "Leia este arquivo de configuração YAML, crie um daemon Python que:
 - Monitore processos do sistema definidos
-- Execute tarefas cron automaticamente  
+- Execute tarefas cron automaticamente
 - Envie logs para /var/log/automation.log
 - Reinicie serviços em caso de falha
 - Inicie o daemon com systemctl --user"
@@ -376,6 +388,7 @@ pnpm run format    # Formatação automática
 ### 📊 Ferramentas de Desempenho
 
 #### 🏃‍♂️ Benchmarking Completo do Sistema
+
 ```bash
 "Execute um benchmark completo desta máquina:
 - Teste CPU/RAM/Disco com stress-ng
@@ -386,6 +399,7 @@ pnpm run format    # Formatação automática
 ```
 
 #### 📚 Documentação Auto-Gerada
+
 ```bash
 "Analise recursivamente meu projeto, analise o código-fonte, gere:
 - README.md detalhado com diagramas de arquitetura
@@ -398,11 +412,12 @@ pnpm run format    # Formatação automática
 ### 🔧 Gerenciamento de Projetos
 
 #### 🌳 Workflows Git com Implantação Automática
+
 ```bash
 "Configure um workflow Git completo neste repositório:
 - Instale e configure GitFlow com hooks
 - Crie scripts pre-commit com testes automáticos
-- Configure GitHub Actions ou GitLab CI localmente  
+- Configure GitHub Actions ou GitLab CI localmente
 - Script de implantação que compila, testa e reinicia os serviços
 - Teste o workflow completo com um branch de feature"
 ```
@@ -410,6 +425,7 @@ pnpm run format    # Formatação automática
 ### 🎯 Projetos Especializados
 
 #### 🤖 Agente com Conjunto de Ferramentas MCP Personalizado
+
 ```bash
 "Clone o AgenticForge, crie um agente especializado com suas próprias ferramentas MCP:
 - Forje 5 ferramentas MCP: monitoramento, implantação, backup, alertas, análise
@@ -419,7 +435,8 @@ pnpm run format    # Formatação automática
 - Teste completo do conjunto de ferramentas forjadas automaticamente"
 ```
 
-#### 💻 Administração de Sistemas Inteligente  
+#### 💻 Administração de Sistemas Inteligente
+
 ```bash
 "Analise este servidor Linux e crie um painel de administração:
 - Monitor em tempo real: CPU, RAM, disco, rede
@@ -430,7 +447,8 @@ pnpm run format    # Formatação automática
 - Interface acessível via nginx na porta 8080"
 ```
 
-**🔥 Poder Único**: 
+**🔥 Poder Único**:
+
 - **🛠️ Forja MCP**: Cria ferramentas MCP personalizadas em TypeScript, integra-as ao worker e testa-as imediatamente
 - **⚡ Execução Direta**: Acesso completo ao sistema - instalação, configuração, testes, implantação automatizada
 - **🎯 Transparência Total**: Visualize suas ferramentas MCP forjadas em ação diretamente na interface web
@@ -439,14 +457,14 @@ pnpm run format    # Formatação automática
 
 ### Gerenciamento Avançado do Sistema
 
-| Ação | Comando | Uso |
-|--------|----------|-----------|
-| **Console Completo** | `./run-v2.sh` | Interface principal de gerenciamento |
-| **Inicialização Rápida** | `./run-v2.sh start` | Inicialização direta do sistema |
-| **Monitoramento** | `./run-v2.sh status` | Status dos serviços Docker |
-| **Logs em Tempo Real** | `./run-v2.sh logs` | Monitoramento em tempo real |
-| **Reinicialização** | `./run-v2.sh restart` | Após modificação de configuração |
-| **Manutenção** | `./run-v2.sh` → Opções 7-14 | Testes, lint, formatação, reconstrução |
+| Ação                     | Comando                     | Uso                                    |
+| ------------------------ | --------------------------- | -------------------------------------- |
+| **Console Completo**     | `./run-v2.sh`               | Interface principal de gerenciamento   |
+| **Inicialização Rápida** | `./run-v2.sh start`         | Inicialização direta do sistema        |
+| **Monitoramento**        | `./run-v2.sh status`        | Status dos serviços Docker             |
+| **Logs em Tempo Real**   | `./run-v2.sh logs`          | Monitoramento em tempo real            |
+| **Reinicialização**      | `./run-v2.sh restart`       | Após modificação de configuração       |
+| **Manutenção**           | `./run-v2.sh` → Opções 7-14 | Testes, lint, formatação, reconstrução |
 
 ---
 
@@ -493,7 +511,7 @@ Este projeto está licenciado sob a Licença MIT. Veja o arquivo `LICENSE` para 
 - **🚨 Problemas**: [GitHub Issues](https://github.com/votre-username/g-forge/issues)
 - **💬 Discussões**: [GitHub Discussions](https://github.com/votre-username/g-forge/discussions)
 - **📚 Documentação**: [Wiki do Projeto](https://github.com/votre-username/g-forge/wiki)
-- **🎮 Discord**: [Junte-se à comunidade](https://discord.gg/VNtXQByKfg) - *Compartilhe suas criações, obtenha ajuda em tempo real e descubra as últimas notícias com antecedência*
+- **🎮 Discord**: [Junte-se à comunidade](https://discord.gg/VNtXQByKfg) - _Compartilhe suas criações, obtenha ajuda em tempo real e descubra as últimas notícias com antecedência_
 
 ---
 

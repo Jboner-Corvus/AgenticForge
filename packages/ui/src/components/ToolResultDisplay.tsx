@@ -9,7 +9,11 @@ interface ToolResultDisplayProps {
   timestamp: string;
 }
 
-export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({ result, toolName, timestamp }) => {
+export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({
+  result,
+  toolName,
+  timestamp,
+}) => {
   if (toolName === 'finish') {
     return null; // N'affiche rien pour l'outil 'finish'
   }
@@ -33,16 +37,16 @@ export const ToolResultDisplay: React.FC<ToolResultDisplayProps> = ({ result, to
     <Card className="bg-secondary border-border text-secondary-foreground my-2 animate-fade-in">
       <CardHeader className="flex flex-row items-center space-x-2 p-2">
         <span className="text-2xl">✅</span>
-        <CardTitle className="text-base font-bold">Result from {toolName}</CardTitle>
+        <CardTitle className="text-base font-bold">
+          Result from {toolName}
+        </CardTitle>
       </CardHeader>
       <CardContent className="p-2">
         {/* La balise <pre> préserve le formatage (espaces, sauts de ligne) */}
         <pre className="text-sm bg-background p-2 rounded-md whitespace-pre-wrap font-sans">
           {resultString}
         </pre>
-        <div className="text-xs text-muted-foreground mt-1">
-          {timestamp}
-        </div>
+        <div className="text-xs text-muted-foreground mt-1">{timestamp}</div>
       </CardContent>
     </Card>
   );

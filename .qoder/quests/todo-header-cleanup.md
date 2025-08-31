@@ -28,6 +28,7 @@ graph TD
 ### 2.3 Backend Integration
 
 The backend `manageTodoList.tool.ts` sends WebSocket messages with todo data that components listen for. The message format includes:
+
 - Type identifier (`chat_header_todo`)
 - Todo data with tasks and statistics
 - Timestamp for data freshness
@@ -44,6 +45,7 @@ The header contains a "List" button that sends a `toggle_chat_todo_list` message
 ### 3.2 Multiple Todo List Interfaces
 
 There are two distinct todo list interfaces that create user confusion:
+
 1. **Chat Header Todo List** - A compact display in the chat area
 2. **Todo List Panel** - A full-featured management panel in a separate floating window
 
@@ -54,6 +56,7 @@ Users are confused about which interface to use and how they relate to each othe
 ### 4.1 Unified Todo List Panel
 
 Unify the two separate todo list interfaces into a single comprehensive panel that:
+
 1. Appears in the header area when toggled
 2. Provides both compact summary and full management capabilities
 3. Is directly controlled by the header button
@@ -69,11 +72,11 @@ graph TD
 
 ### 4.3 Component Responsibilities
 
-| Component | Responsibility |
-|-----------|----------------|
-| Header Button | Toggle Unified Todo List Panel visibility |
+| Component              | Responsibility                                             |
+| ---------------------- | ---------------------------------------------------------- |
+| Header Button          | Toggle Unified Todo List Panel visibility                  |
 | Unified TodoList Panel | Display todo summary and provide full management interface |
-| Backend Tool | Manage todo list data and send updates |
+| Backend Tool           | Manage todo list data and send updates                     |
 
 ## 5. Implementation Plan
 
@@ -97,11 +100,13 @@ Modify the Header component to directly control the Unified Todo List Panel:
 ### 5.2 Create Unified TodoList Component
 
 Create a new UnifiedTodoListPanel component that combines:
+
 1. The compact summary view from ChatHeaderTodoList
 2. The full management interface from TodoListPanel
 3. Toggle functionality between summary and detailed views
 
 The component structure should include:
+
 - Header with title, view toggle, and close button
 - Stats summary section
 - Task list with filtering capabilities
@@ -112,6 +117,7 @@ The component structure should include:
 - Project progress visualization (when applicable)
 
 The task detail panel should display:
+
 - Full task description with markdown support
 - Priority level with visual indicator
 - Status with change options
@@ -133,17 +139,16 @@ The task detail panel should display:
 Position the UnifiedTodoListPanel directly below the header when visible:
 
 ```jsx
-<header>
-  {/* Header content */}
-</header>
-{isUnifiedTodoListVisible && (
-  <UnifiedTodoListPanel />
-)}
+<header>{/* Header content */}</header>;
+{
+  isUnifiedTodoListVisible && <UnifiedTodoListPanel />;
+}
 ```
 
 ### 5.4 Component Styling
 
 The UnifiedTodoListPanel should use:
+
 - Consistent styling with the existing UI design system
 - Dark mode support matching the application theme
 - Responsive layout that works on different screen sizes
@@ -151,6 +156,7 @@ The UnifiedTodoListPanel should use:
 - Proper z-index to appear above other content but below modals
 
 Task focus styling should include:
+
 - Highlighted border or background for focused tasks
 - Visual distinction for the current task (different color or animation)
 - Smooth transitions when focusing/unfocusing tasks
@@ -160,6 +166,7 @@ Task focus styling should include:
 ### 5.5 Streamlined Data Flow
 
 The Unified TodoList Panel will respond to both:
+
 1. WebSocket messages from the backend tool for data updates
 2. UI control messages from the Header for visibility toggling
 
@@ -385,21 +392,25 @@ The Unified TodoList Panel should receive updates via WebSocket messages from th
 ```typescript
 useEffect(() => {
   const handleMessage = (event: MessageEvent) => {
-    if (event.data && (event.data.type === 'chat_header_todo' || event.data.type === 'unified_todo')) {
+    if (
+      event.data &&
+      (event.data.type === 'chat_header_todo' ||
+        event.data.type === 'unified_todo')
+    ) {
       // Update todo data state
       setTodoData(event.data.data);
       // Optionally show panel when new data arrives
       if (!isUnifiedTodoListVisible) {
         setIsUnifiedTodoListVisible(true);
       }
-      
+
       // Check if a current task is indicated in the data
       if (event.data.data.currentTaskId) {
         setCurrentTaskId(event.data.data.currentTaskId);
       }
     }
   };
-  
+
   window.addEventListener('message', handleMessage);
   return () => window.removeEventListener('message', handleMessage);
 }, [isUnifiedTodoListVisible]);
@@ -616,4 +627,3 @@ useEffect(() => {
 ## 11. Conclusion
 
 The unified todo list panel with advanced interactive features and agent integration will provide users with a powerful, intuitive task management experience. By combining the functionality of multiple separate panels into a single cohesive interface, users will have clearer control over their tasks while benefiting from real-time agent insights and collaboration features. The enhanced current task display with live agent thought stream integration will give users unprecedented visibility into the task execution process, making it easier to understand and guide the AI assistant's work.
-

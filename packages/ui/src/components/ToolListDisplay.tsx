@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import type { Tool } from '../lib/types';
@@ -8,7 +7,10 @@ interface ToolListDisplayProps {
   timestamp: string;
 }
 
-export const ToolListDisplay: React.FC<ToolListDisplayProps> = ({ tools, timestamp }) => {
+export const ToolListDisplay: React.FC<ToolListDisplayProps> = ({
+  tools,
+  timestamp,
+}) => {
   return (
     <Card className="mb-4">
       <CardHeader>
@@ -22,7 +24,9 @@ export const ToolListDisplay: React.FC<ToolListDisplayProps> = ({ tools, timesta
                 <CardTitle>{tool.name}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">{tool.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {tool.description}
+                </p>
                 {tool.parameters && (
                   <div className="mt-4">
                     <h4 className="text-sm font-semibold">Parameters:</h4>
@@ -35,9 +39,7 @@ export const ToolListDisplay: React.FC<ToolListDisplayProps> = ({ tools, timesta
             </Card>
           ))}
         </div>
-        <div className="text-xs text-muted-foreground mt-4">
-          {timestamp}
-        </div>
+        <div className="text-xs text-muted-foreground mt-4">{timestamp}</div>
       </CardContent>
     </Card>
   );

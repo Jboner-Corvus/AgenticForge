@@ -45,12 +45,12 @@ interface VersionDisplayProps {
   checkInterval?: number; // in milliseconds
 }
 
-export function VersionDisplay({ 
+export function VersionDisplay({
   showUpdateIndicator = true,
   onUpdateClick,
   position = 'bottom-right',
   enableAutoCheck = true,
-  checkInterval = 300000 // 5 minutes
+  checkInterval = 300000, // 5 minutes
 }: VersionDisplayProps = {}) {
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [updateInfo, setUpdateInfo] = useState<UpdateCheckResult | null>(null);
@@ -63,11 +63,11 @@ export function VersionDisplay({
       setIsLoading(true);
       const response = await fetch('/api/version/current', {
         headers: {
-          'Authorization': `Bearer ${clientConfig.AUTH_TOKEN}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${clientConfig.AUTH_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setVersionInfo(data);
@@ -79,7 +79,7 @@ export function VersionDisplay({
       console.error('Error fetching version:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
-      
+
       // Fallback to package.json version if API fails
       setVersionInfo({
         current: '1.0.304', // From package.json
@@ -87,15 +87,15 @@ export function VersionDisplay({
         description: 'G-Forge Core Backend',
         rootName: '@jboner-corvus/agenticforge',
         buildDate: new Date().toISOString(),
-        services: { 
-          web: 'localhost:3002', 
+        services: {
+          web: 'localhost:3002',
           api: 'localhost:3001',
           postgres: 'localhost:5432',
-          redis: 'localhost:6379'
+          redis: 'localhost:6379',
         },
         environment: 'development',
         repository: 'https://github.com/Jboner-Corvus/AgenticForge.git',
-        homepage: 'https://github.com/Jboner-Corvus/AgenticForge#readme'
+        homepage: 'https://github.com/Jboner-Corvus/AgenticForge#readme',
       });
     } finally {
       setIsLoading(false);
@@ -104,20 +104,20 @@ export function VersionDisplay({
 
   const checkForUpdates = useCallback(async () => {
     if (!versionInfo || !showUpdateIndicator) return;
-    
+
     try {
       const response = await fetch('/api/version/check', {
         headers: {
-          'Authorization': `Bearer ${clientConfig.AUTH_TOKEN}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${clientConfig.AUTH_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setUpdateInfo(data);
         setLastChecked(new Date());
-        
+
         // Trigger callback if update available
         if (data.hasUpdate && onUpdateClick) {
           onUpdateClick(data);
@@ -153,7 +153,7 @@ export function VersionDisplay({
   // Auto-check for updates periodically
   useEffect(() => {
     if (!enableAutoCheck || !showUpdateIndicator) return;
-    
+
     const interval = setInterval(checkForUpdates, checkInterval);
     return () => clearInterval(interval);
   }, [enableAutoCheck, showUpdateIndicator, checkForUpdates, checkInterval]);
@@ -161,9 +161,11 @@ export function VersionDisplay({
   if (error && !versionInfo) {
     return (
       <div className={getPositionClasses(position)}>
-        <div className="text-xs text-red-500 bg-background/80 backdrop-blur-sm px-2 py-1 rounded cursor-pointer hover:bg-background/90 transition-colors"
-             onClick={() => fetchVersion()}
-             title={`Error: ${error}. Click to retry.`}>
+        <div
+          className="text-xs text-red-500 bg-background/80 backdrop-blur-sm px-2 py-1 rounded cursor-pointer hover:bg-background/90 transition-colors"
+          onClick={() => fetchVersion()}
+          title={`Error: ${error}. Click to retry.`}
+        >
           ⚠ Version unavailable
         </div>
       </div>
@@ -182,10 +184,10 @@ export function VersionDisplay({
 
   const hasUpdate = updateInfo?.hasUpdate ?? false;
   const severity = updateInfo?.comparison?.severity;
-  
+
   return (
     <div className={getPositionClasses(position)}>
-      <div 
+      <div
         className={`text-xs bg-background/80 backdrop-blur-sm px-2 py-1 rounded transition-colors cursor-pointer hover:bg-background/90 ${
           hasUpdate ? 'border border-orange-500/50' : ''
         }`}
@@ -193,27 +195,35 @@ export function VersionDisplay({
         title={getTooltipText(versionInfo, updateInfo, error)}
       >
         <div className="flex items-center gap-2">
-          <span className={hasUpdate ? 'text-orange-400' : 'text-muted-foreground'}>
+          <span
+            className={hasUpdate ? 'text-orange-400' : 'text-muted-foreground'}
+          >
             v{versionInfo.current}
           </span>
-          
+
           {hasUpdate && showUpdateIndicator && (
             <div className="flex items-center gap-1">
-              <div className={`w-2 h-2 rounded-full ${
-                severity === 'major' ? 'bg-red-500 animate-pulse' :
-                severity === 'minor' ? 'bg-orange-500 animate-pulse' :
-                'bg-blue-500 animate-pulse'
-              }`} />
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  severity === 'major'
+                    ? 'bg-red-500 animate-pulse'
+                    : severity === 'minor'
+                      ? 'bg-orange-500 animate-pulse'
+                      : 'bg-blue-500 animate-pulse'
+                }`}
+              />
               <span className="text-xs text-orange-400">
                 → v{updateInfo?.latest}
               </span>
             </div>
           )}
-          
+
           {error && (
-            <span className="text-yellow-500" title={error}>⚠</span>
+            <span className="text-yellow-500" title={error}>
+              ⚠
+            </span>
           )}
-          
+
           {lastChecked && (
             <span className="text-xs text-muted-foreground/60">
               {formatLastChecked(lastChecked)}
@@ -225,7 +235,9 @@ export function VersionDisplay({
   );
 }
 
-function getPositionClasses(position: 'bottom-right' | 'header' | 'sidebar'): string {
+function getPositionClasses(
+  position: 'bottom-right' | 'header' | 'sidebar',
+): string {
   switch (position) {
     case 'bottom-right':
       return 'fixed bottom-4 right-4';
@@ -239,21 +251,21 @@ function getPositionClasses(position: 'bottom-right' | 'header' | 'sidebar'): st
 }
 
 function getTooltipText(
-  versionInfo: VersionInfo, 
-  updateInfo: UpdateCheckResult | null, 
-  error: string | null
+  versionInfo: VersionInfo,
+  updateInfo: UpdateCheckResult | null,
+  error: string | null,
 ): string {
   const lines = [];
-  
+
   lines.push(`${versionInfo.name} v${versionInfo.current}`);
   lines.push(`Environment: ${versionInfo.environment}`);
   lines.push(`Build: ${new Date(versionInfo.buildDate).toLocaleDateString()}`);
-  
+
   if (updateInfo?.hasUpdate) {
     lines.push('');
     lines.push(`🚀 Update available: v${updateInfo.latest}`);
     lines.push(`Severity: ${updateInfo.comparison?.severity}`);
-    
+
     if (updateInfo.comparison?.features.length) {
       lines.push(`Features: ${updateInfo.comparison.features.length}`);
     }
@@ -261,9 +273,11 @@ function getTooltipText(
       lines.push(`Bug fixes: ${updateInfo.comparison.bugFixes.length}`);
     }
     if (updateInfo.comparison?.breakingChanges.length) {
-      lines.push(`⚠ Breaking changes: ${updateInfo.comparison.breakingChanges.length}`);
+      lines.push(
+        `⚠ Breaking changes: ${updateInfo.comparison.breakingChanges.length}`,
+      );
     }
-    
+
     lines.push('');
     lines.push('Click to upgrade');
   } else if (updateInfo) {
@@ -271,12 +285,12 @@ function getTooltipText(
     lines.push('✓ Up to date');
     lines.push('Click to view repository');
   }
-  
+
   if (error) {
     lines.push('');
     lines.push(`⚠ ${error}`);
   }
-  
+
   return lines.join('\n');
 }
 
@@ -284,13 +298,13 @@ function formatLastChecked(date: Date): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
-  
+
   if (diffMins < 1) return 'now';
   if (diffMins < 60) return `${diffMins}m`;
-  
+
   const diffHours = Math.floor(diffMins / 60);
   if (diffHours < 24) return `${diffHours}h`;
-  
+
   const diffDays = Math.floor(diffHours / 24);
   return `${diffDays}d`;
 }
