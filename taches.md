@@ -154,7 +154,7 @@ curl -X POST http://localhost:8080/api/test-chat \
 ## Exemple de test
 
 ```bash
-curl -X POST http://localhost:8080/api/test-chat \
+curl -X POST http://localhost:3002/api/test-chat \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0" \
   -d '{
@@ -162,6 +162,7 @@ curl -X POST http://localhost:8080/api/test-chat \
     "sessionName": "Test de base writeFile/readFile"
   }'
 ```
+
 
 ## Processus de test
 

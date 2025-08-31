@@ -6,7 +6,8 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Send, Paperclip, Mic, Square } from 'lucide-react';
 import { useLanguage } from '../lib/contexts/LanguageContext';
-import { LoadingSpinner } from './LoadingSpinner';
+// LoadingSpinner component is imported but not currently used
+// import { LoadingSpinner } from './LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Configuration des limites
@@ -18,7 +19,7 @@ export const UserInput = () => {
   const { translations } = useLanguage();
   const inputValue = useMessageInputValue();
   const setInputValue = useUIStore((state) => state.setMessageInputValue);
-  const { startAgent } = useAgentStream();
+  const { startAgent, interruptAgent } = useAgentStream();
   const isProcessing = useIsProcessing();
 
   // États locaux pour les fonctionnalités avancées
@@ -142,6 +143,13 @@ export const UserInput = () => {
     setInputValue('');
     setAttachments([]);
   }, [inputValue, attachments, isProcessing, startAgent, setInputValue]);
+
+  // Handle stopping the agent
+  const handleStopAgent = useCallback(() => {
+    if (isProcessing) {
+      interruptAgent();
+    }
+  }, [isProcessing, interruptAgent]);
 
   // Gestion des raccourcis clavier améliorés
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -280,18 +288,23 @@ export const UserInput = () => {
             {isRecording ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
           </Button>
 
-          {/* Bouton d'envoi */}
+          {/* Bouton d'envoi ou d'arrêt */}
           {isProcessing ? (
-            <div className="h-8 w-8 flex items-center justify-center">
-              <LoadingSpinner className="h-4 w-4" />
-            </div>
+            <Button
+              onClick={handleStopAgent}
+              size="icon"
+              className="h-8 w-8 rounded-full bg-red-500 hover:bg-red-600"
+              title={translations?.stop || "Arrêter"}
+            >
+              <Square className="h-4 w-4" />
+            </Button>
           ) : (
             <Button
               onClick={validateAndSendMessage}
               size="icon"
               disabled={!inputValue.trim() && attachments.length === 0}
               className="h-8 w-8 rounded-full bg-primary hover:bg-primary/90"
-              title="Envoyer le message (Enter)"
+              title={translations?.sendMessage || "Envoyer le message (Enter)"}
             >
               <Send className="h-4 w-4" />
             </Button>

@@ -204,7 +204,8 @@ describe('UserInput', () => {
 
     // Wait for the component to render
     await waitFor(() => {
-      expect(screen.getByLabelText('Loading')).toBeInTheDocument(); // Check for the LoadingSpinner
+      // Now we show a stop button when processing instead of a loading spinner
+      expect(screen.getByRole('button', { name: /Arrêter/i })).toBeInTheDocument();
     });
   });
 });
