@@ -406,10 +406,13 @@ wait_for_postgres() {
 }
 
 wait_for_server() {
+    # Use the correct port - if PUBLIC_PORT is set, use it, otherwise default to 3001
+    local server_port=${PUBLIC_PORT:-3001}
     for i in {1..120}; do
-        if curl -s "http://localhost:${PUBLIC_PORT:-8080}/api/health" >/dev/null 2>&1; then
+        if curl -s "http://localhost:${server_port}/api/health" >/dev/null 2>&1; then
             return 0
         fi
+        echo -n "."
         sleep 1
     done
     return 1
@@ -892,15 +895,26 @@ restart_worker() {
 stop_services() {
     echo -e "${COLOR_YELLOW}🛑 Stopping services...${NC}"
 
-    # Stop worker
+    # Stop worker processes more aggressively
+    echo -e "${COLOR_CYAN}🔍 Searching for worker processes...${NC}"
+
+    # Kill all worker processes
+    pkill -f "node dist/worker.js" || true
+    pkill -f "worker.js" || true
+
+    # Also kill by PID file if it exists
     if [[ -f "$ROOT_DIR/worker.pid" ]]; then
         local pid
         pid=$(cat "$ROOT_DIR/worker.pid")
         if kill -0 "$pid" 2>/dev/null; then
-            kill "$pid"
-            rm -f "$ROOT_DIR/worker.pid"
+            kill -9 "$pid" 2>/dev/null || true
         fi
+        rm -f "$ROOT_DIR/worker.pid"
+        echo -e "${COLOR_CYAN}📝 Removed worker PID file${NC}"
     fi
+
+    # Wait for processes to fully stop
+    sleep 2
 
     # Stop Docker
     cd "$ROOT_DIR"
@@ -1576,8 +1590,26 @@ main() {
 
 # Helper function for restart
 restart_all_services() {
+    echo -e "${COLOR_YELLOW}🛑 Stopping all services...${NC}"
     stop_services
-    start_services
+
+    # Give services time to fully stop
+    sleep 3
+
+    echo -e "${COLOR_BLUE}🚀 Starting all services...${NC}"
+    if ! start_services_silent; then
+        echo -e "${COLOR_RED}❌ Failed to start services${NC}"
+        return 1
+    fi
+
+    echo -e "${COLOR_YELLOW}🔄 Ensuring worker is properly restarted...${NC}"
+    if ! restart_worker; then
+        echo -e "${COLOR_RED}❌ Failed to restart worker${NC}"
+        return 1
+    fi
+
+    echo -e "${COLOR_GREEN}✅ All services restarted successfully!${NC}"
+    return 0
 }
 
 main "$@"

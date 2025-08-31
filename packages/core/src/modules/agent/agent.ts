@@ -880,6 +880,12 @@ export class Agent {
       
       try {
         params = JSON.parse(jsonStr);
+
+        // Special handling for display_canvas tool - ensure content is a string
+        if (toolName === 'display_canvas' && params && typeof (params as any).content === 'object') {
+          this.log.info('🔧 Converting display_canvas content object to JSON string');
+          (params as any).content = JSON.stringify((params as any).content);
+        }
       } catch (e) {
         this.log.warn(`Failed to parse JSON params for tool ${toolName}: ${jsonStr}`);
         // Last fallback: extract specific fields manually
