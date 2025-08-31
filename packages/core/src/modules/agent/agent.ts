@@ -62,7 +62,7 @@ export class Agent {
   private readonly job: Job<{ prompt: string }>;
   private readonly log: Logger;
   private loopCounter = 0;
-  private loopDetectionThreshold = 2; // Detect loops after 2 repetitions (reduced)
+  private loopDetectionThreshold = 5; // Detect loops after 5 repetitions (increased for complex tasks)
   private malformedResponseCounter = 0;
   private readonly MAX_MALFORMED_RESPONSES = getConfig().AGENT_MAX_MALFORMED_RESPONSES;
   private readonly MAX_LLM_FAILURES = getConfig().AGENT_MAX_LLM_FAILURES;
@@ -112,7 +112,7 @@ export class Agent {
 
     // Initialize loop detection properties
     this.behaviorHistory = [];
-    this.loopDetectionThreshold = 3; // Detect loops after 3 repetitions
+    this.loopDetectionThreshold = 5; // Detect loops after 5 repetitions
   }
 
   public async run(): Promise<string> {
@@ -414,7 +414,8 @@ export class Agent {
             { parsedResponse },
             'Parsed LLM response before answer check',
           );
-          const { answer, canvas, command, thought } = parsedResponse;
+          const { answer, canvas, thought } = parsedResponse;
+          let command = parsedResponse.command;
 
           if (answer) {
             this.session.history.push({
@@ -474,14 +475,16 @@ export class Agent {
           }
           if (canvas) {
             iterationLog.info({ canvas }, 'Agent canvas output');
-            this.publishToChannel({
-              content: canvas.content,
-              contentType: canvas.contentType,
-              type: 'agent_canvas_output',
-            });
+            // Use display_canvas tool instead of direct publishing
             if (!command) {
-              this.publishToChannel({ type: 'agent_canvas_close' });
-              return 'Agent displayed content on the canvas.';
+              command = {
+                name: 'display_canvas',
+                params: {
+                  content: canvas.content,
+                  contentType: canvas.contentType || 'html'
+                }
+              };
+              this.log.info('🔧 Converting canvas output to display_canvas tool call');
             }
           }
 
@@ -944,6 +947,9 @@ export class Agent {
       'continuer',
       'reprendre',
       'recommencer',
+      'next',
+      'go', 
+      'ok',
       'lancer',
       'start',
       'run',
@@ -968,12 +974,24 @@ export class Agent {
       lowerText.includes(keyword),
     );
 
-    // If it's a direct action on a game/project, go straight to file operations
+    // If it's a direct action on a game/project, explore project structure first
     if (isDirectAction && isGameRequest) {
-      thought = "L'utilisateur demande de continuer/reprendre un projet. Je vais d'abord explorer les fichiers disponibles.";
+      thought = "L'utilisateur demande de continuer/reprendre un projet. Je vais d'abord explorer la structure du projet.";
       command = {
-        name: 'listFiles',
-        params: {},
+        name: 'listDirectory',
+        params: {
+          path: '.',
+        },
+      };
+    }
+    // For short continuation words, also explore project first
+    else if (isDirectAction && cleanText.length < 15) {
+      thought = "L'utilisateur veut continuer. Je vais d'abord voir l'état actuel du projet.";
+      command = {
+        name: 'listDirectory', 
+        params: {
+          path: '.',
+        },
       };
     }
 
@@ -1190,14 +1208,11 @@ export class Agent {
    * Check if a response appears to be truncated or incomplete
    */
   private isResponseTruncated(text: string): boolean {
-    // Check for common truncation patterns
+    // Check for common truncation patterns (only strong indicators)
     const truncationIndicators = [
       '\\', // Escaped characters at end
-      '{',  // Unclosed object
-      '[',  // Unclosed array
-      '"',  // Unclosed string
-      ':',  // Incomplete key-value pair
-      ',',  // Trailing comma
+      '",', // Incomplete key-value pair with comma
+      '":', // Incomplete string with colon
     ];
     
     const trimmed = text.trim();
@@ -1235,12 +1250,11 @@ export class Agent {
     }
     
     // Additional check for truncated responses that end mid-sentence
+    // Only consider it truncated if it has clear indicators of incomplete JSON structure
     if (trimmed.length > 100 && 
-        (trimmed.endsWith('.') || trimmed.endsWith('}') || trimmed.endsWith(']')) &&
-        !trimmed.includes('"command"') && 
-        !trimmed.includes('"thought"') && 
-        !trimmed.includes('"answer"')) {
-      // If it's a long response but doesn't contain expected JSON fields, it might be truncated
+        (trimmed.includes('{"') || trimmed.includes('"command"') || trimmed.includes('"thought"')) &&
+        !trimmed.endsWith('}') && !trimmed.endsWith('"]')) {
+      // If it starts JSON structure but doesn't end properly, it might be truncated
       return true;
     }
     

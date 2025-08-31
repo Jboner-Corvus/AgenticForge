@@ -74,11 +74,18 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic Claude',
   'google-flash': 'Google Gemini Flash',
-  gemini: 'Gemini',
-  google: 'Google Gemini', // Fallback for legacy
+  'google-pro': 'Google Gemini Pro',
+  gemini: 'Google Gemini',
+  google: 'Google Gemini',
   xai: 'xAI Grok',
   qwen: 'Qwen3 Coder',
   openrouter: 'OpenRouter',
+  unknown: 'Unknown Provider',
+};
+
+// FUNCTION TO GET PROPER PROVIDER NAME
+const getProviderDisplayName = (providerId: string, fallbackName?: string): string => {
+  return PROVIDER_DISPLAY_NAMES[providerId] || fallbackName || PROVIDER_DISPLAY_NAMES.unknown;
 };
 
 // KEY PERFORMANCE STATS COMPONENT
@@ -403,8 +410,12 @@ const SortableKeyItem = ({
     transition,
   };
 
-  const Logo =
-    PROVIDER_LOGOS[keyData.providerId] || (() => <Key className="h-5 w-5" />);
+  // Get proper logo with fallback
+  const Logo = PROVIDER_LOGOS[keyData.providerId] || (() => (
+    <div className="w-5 h-5 bg-gray-700 rounded flex items-center justify-center text-xs font-bold text-gray-300">
+      {keyData.providerId.charAt(0).toUpperCase()}
+    </div>
+  ));
 
   return (
     <div
@@ -430,7 +441,9 @@ const SortableKeyItem = ({
       </div>
       <div className="flex-grow">
         <span className="font-bold text-white">{keyData.keyName}</span>
-        <div className="text-xs text-gray-400">{keyData.providerName}</div>
+        <div className="text-xs text-gray-400">
+          {getProviderDisplayName(keyData.providerId, keyData.providerName)}
+        </div>
       </div>
       {priority !== undefined && !isMaster && (
         <Badge className="bg-gray-700 text-gray-300 border-gray-600">
@@ -673,6 +686,53 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
     isActive: true,
     priority: 5,
   });
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Validate key format based on provider
+  const validateKeyFormat = (providerId: string, keyValue: string): boolean => {
+    if (!keyValue) return false;
+    
+    const formatPatterns: Record<string, RegExp> = {
+      openai: /^sk-[a-zA-Z0-9-_]{32,}$/,
+      anthropic: /^sk-ant-[a-zA-Z0-9-_]{32,}$/,
+      google: /^AI[a-zA-Z0-9-_]{32,}$/,
+      'google-flash': /^AI[a-zA-Z0-9-_]{32,}$/,
+      'google-pro': /^AI[a-zA-Z0-9-_]{32,}$/,
+      gemini: /^AI[a-zA-Z0-9-_]{32,}$/,
+      xai: /^xai-[a-zA-Z0-9-_]{32,}$/,
+      openrouter: /^sk-or-[a-zA-Z0-9-_]{32,}$/,
+    };
+    
+    const pattern = formatPatterns[providerId];
+    return pattern ? pattern.test(keyValue) : keyValue.length >= 10;
+  };
+
+  // Real-time validation
+  useEffect(() => {
+    const errors: Record<string, string> = {};
+    
+    if (formData.keyValue && formData.providerId) {
+      if (!validateKeyFormat(formData.providerId, formData.keyValue)) {
+        const expectedFormats: Record<string, string> = {
+          openai: 'sk-...',
+          anthropic: 'sk-ant-...',
+          google: 'AI...',
+          'google-flash': 'AI...',
+          'google-pro': 'AI...',
+          gemini: 'AI...',
+          xai: 'xai-...',
+          openrouter: 'sk-or-...',
+        };
+        errors.keyValue = `Expected format: ${expectedFormats[formData.providerId] || 'Valid API key'}`;
+      }
+    }
+    
+    if (formData.keyName && formData.keyName.length < 3) {
+      errors.keyName = 'Key name must be at least 3 characters';
+    }
+    
+    setValidationErrors(errors);
+  }, [formData.keyValue, formData.providerId, formData.keyName]);
 
   const selectedProvider = providers.find((p) => p.id === formData.providerId);
 
@@ -684,7 +744,7 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
       await addKey({
         providerId: formData.providerId,
         providerName:
-          PROVIDER_DISPLAY_NAMES[formData.providerId] || selectedProvider.name,
+          getProviderDisplayName(formData.providerId, selectedProvider.displayName),
         keyName: formData.keyName,
         keyValue: formData.keyValue,
         isEncrypted: false,
@@ -773,8 +833,7 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                         </div>
                       )}
                       <span>
-                        {PROVIDER_DISPLAY_NAMES[selectedProvider.id] ||
-                          selectedProvider.displayName}
+                        {getProviderDisplayName(selectedProvider.id, selectedProvider.displayName)}
                       </span>
                     </div>
                   )}
@@ -796,8 +855,7 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                         </div>
                       )}
                       <span>
-                        {PROVIDER_DISPLAY_NAMES[provider.id] ||
-                          provider.displayName}
+                        {getProviderDisplayName(provider.id, provider.displayName)}
                       </span>
                     </div>
                   </SelectItem>
@@ -822,12 +880,17 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
               }
               placeholder={
                 selectedProvider
-                  ? `My ${PROVIDER_DISPLAY_NAMES[selectedProvider.id] || selectedProvider.displayName} Key`
+                  ? `My ${getProviderDisplayName(selectedProvider.id, selectedProvider.displayName)} Key`
                   : 'Give your key a name'
               }
-              className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 focus:border-cyan-500 transition-colors h-12 text-base"
+              className={`bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 focus:border-cyan-500 transition-colors h-12 text-base ${
+                validationErrors.keyName ? 'border-red-500/50' : ''
+              }`}
               required
             />
+            {validationErrors.keyName && (
+              <p className="text-red-400 text-xs mt-1">{validationErrors.keyName}</p>
+            )}
           </div>
 
           {/* API Key */}
@@ -846,12 +909,23 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, keyValue: e.target.value })
                 }
-                placeholder="sk-..."
-                className="bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 focus:border-cyan-500 transition-colors h-12 text-base pr-12"
+                placeholder={
+                  selectedProvider
+                    ? `Enter your ${getProviderDisplayName(selectedProvider.id, selectedProvider.displayName)} API key`
+                    : 'Enter your API key'
+                }
+                className={`bg-gray-800/50 border-gray-600/50 hover:border-cyan-500/50 focus:border-cyan-500 transition-colors h-12 text-base pr-12 ${
+                  validationErrors.keyValue ? 'border-red-500/50' : ''
+                }`}
                 required
               />
-              <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Key className={`absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${
+                validationErrors.keyValue ? 'text-red-400' : 'text-gray-400'
+              }`} />
             </div>
+            {validationErrors.keyValue && (
+              <p className="text-red-400 text-xs mt-1">{validationErrors.keyValue}</p>
+            )}
           </div>
 
           {/* Active Toggle */}
@@ -911,6 +985,21 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
             </div>
           </div>
 
+          {/* Form Status */}
+          {Object.keys(validationErrors).length > 0 && (
+            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-4 w-4 text-red-400" />
+                <span className="text-red-300 text-sm font-semibold">Validation Errors</span>
+              </div>
+              <ul className="text-red-300 text-xs space-y-1">
+                {Object.entries(validationErrors).map(([field, error]) => (
+                  <li key={field}>• {error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex gap-3 pt-6">
             <Button
@@ -927,9 +1016,10 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                 isLoading ||
                 !formData.providerId ||
                 !formData.keyName ||
-                !formData.keyValue
+                !formData.keyValue ||
+                Object.keys(validationErrors).length > 0
               }
-              className="flex-1 h-12 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-semibold"
+              className="flex-1 h-12 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
@@ -957,8 +1047,12 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<boolean | null>(null);
 
-  const Logo =
-    PROVIDER_LOGOS[keyData.providerId] || (() => <Key className="h-6 w-6" />);
+  // Get proper logo with fallback
+  const Logo = PROVIDER_LOGOS[keyData.providerId] || (() => (
+    <div className="w-6 h-6 bg-gray-700 rounded flex items-center justify-center text-xs font-bold text-gray-300">
+      {keyData.providerId.charAt(0).toUpperCase()}
+    </div>
+  ));
 
   const handleTest = async () => {
     setTesting(true);
@@ -974,10 +1068,37 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
     }
   };
 
-  const keyValue = keyData.keyValue || '';
-  const maskedKey = keyValue
-    ? `${keyValue.slice(0, 8)}${'*'.repeat(Math.max(0, keyValue.length - 12))}${keyValue.slice(-4)}`
-    : 'No Key';
+  // Enhanced key masking based on provider type
+  const getMaskedKey = (keyValue: string, providerId: string): string => {
+    if (!keyValue) return 'No Key';
+    
+    const maskingRules: Record<string, { start: number; end: number }> = {
+      openai: { start: 7, end: 6 },        // sk-proj-***...***
+      anthropic: { start: 8, end: 6 },     // sk-ant-***...***
+      google: { start: 6, end: 6 },        // AI****...****
+      'google-flash': { start: 6, end: 6 },
+      'google-pro': { start: 6, end: 6 },
+      gemini: { start: 6, end: 6 },
+      xai: { start: 8, end: 6 },           // xai-****...****
+      qwen: { start: 4, end: 4 },          // ****...****
+      openrouter: { start: 8, end: 6 },    // sk-or-***...***
+      default: { start: 4, end: 4 },
+    };
+    
+    const rule = maskingRules[providerId] || maskingRules.default;
+    
+    if (keyValue.length <= rule.start + rule.end) {
+      return `${keyValue.charAt(0)}${'*'.repeat(Math.max(1, keyValue.length - 2))}${keyValue.charAt(keyValue.length - 1)}`;
+    }
+    
+    const start = keyValue.substring(0, rule.start);
+    const end = keyValue.substring(keyValue.length - rule.end);
+    const middle = '*'.repeat(Math.max(3, keyValue.length - rule.start - rule.end));
+    
+    return `${start}${middle}${end}`;
+  };
+  
+  const maskedKey = getMaskedKey(keyData.keyValue || '', keyData.providerId);
 
   return (
     <motion.div
@@ -1000,8 +1121,7 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
             <div>
               <h3 className="font-semibold text-white">{keyData.keyName}</h3>
               <p className="text-sm text-gray-400">
-                {PROVIDER_DISPLAY_NAMES[keyData.providerId] ||
-                  keyData.providerName}
+                {getProviderDisplayName(keyData.providerId, keyData.providerName)}
               </p>
             </div>
           </div>
@@ -1013,77 +1133,129 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
               </Badge>
             ) : (
               <Badge className="bg-gray-700/50 text-gray-300 border-gray-600">
+                <Lock className="h-3 w-3 mr-1" />
                 Inactive
               </Badge>
             )}
             <Badge
               className={`border ${keyData.priority <= 3 ? 'border-red-500/50 text-red-400 bg-red-900/20' : keyData.priority <= 6 ? 'border-yellow-500/50 text-yellow-400 bg-yellow-900/20' : 'border-green-500/50 text-green-400 bg-green-900/20'}`}
             >
-              P{keyData.priority}
+              P{keyData.priority} ({keyData.priority <= 3 ? 'High' : keyData.priority <= 6 ? 'Med' : 'Low'})
             </Badge>
           </div>
         </div>
 
-        {/* Key Display */}
+        {/* Enhanced Key Display */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-xs text-gray-400 uppercase tracking-wider">
+            <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">
               API Key
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowKey(!showKey)}
-              className="h-6 w-6 p-0"
-            >
-              {showKey ? (
-                <EyeOff className="h-3 w-3" />
-              ) : (
-                <Eye className="h-3 w-3" />
+            <div className="flex items-center gap-2">
+              {keyData.keyValue && (
+                <div className={`text-xs px-2 py-1 rounded ${
+                  keyData.keyValue.startsWith('sk-') 
+                    ? 'bg-green-900/30 text-green-300'
+                    : keyData.keyValue.startsWith('xai-')
+                      ? 'bg-blue-900/30 text-blue-300'
+                      : 'bg-gray-700/50 text-gray-300'
+                }`}>
+                  {keyData.keyValue.startsWith('sk-') 
+                    ? 'Standard'
+                    : keyData.keyValue.startsWith('xai-')
+                      ? 'xAI Format'
+                      : 'Custom Format'
+                  }
+                </div>
               )}
-            </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowKey(!showKey)}
+                className="h-6 w-6 p-0 hover:bg-gray-700/50"
+              >
+                {showKey ? (
+                  <EyeOff className="h-3 w-3" />
+                ) : (
+                  <Eye className="h-3 w-3" />
+                )}
+              </Button>
+            </div>
           </div>
-          <div className="bg-gray-800/50 rounded-lg p-3 font-mono text-sm">
-            <span className="text-gray-300">
+          <div className="bg-gray-800/50 rounded-lg p-3 font-mono text-sm border border-gray-700/50">
+            <span className={`text-gray-300 ${showKey ? 'select-all' : ''}`}>
               {showKey ? keyData.keyValue || 'No Key' : maskedKey}
             </span>
           </div>
         </div>
 
-        {/* Metadata */}
+        {/* Enhanced Metadata */}
         <div className="mb-4">
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <div className="text-gray-400 uppercase tracking-wider">
-                Usage
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            <div className="bg-gray-800/30 p-3 rounded-lg">
+              <div className="text-gray-400 uppercase tracking-wider mb-1">
+                Usage Count
               </div>
-              <div className="text-gray-300">
-                {keyData.usageCount.toLocaleString()}
+              <div className="text-gray-300 font-semibold text-lg">
+                {keyData.usageCount?.toLocaleString() || '0'}
               </div>
             </div>
-            <div>
-              <div className="text-gray-400 uppercase tracking-wider">
-                Priority
+            <div className="bg-gray-800/30 p-3 rounded-lg">
+              <div className="text-gray-400 uppercase tracking-wider mb-1">
+                Priority Level
               </div>
-              <div className="text-gray-300">{keyData.priority}</div>
+              <div className="flex items-center gap-2">
+                <div className={`text-lg font-semibold ${
+                  keyData.priority <= 3 
+                    ? 'text-red-400' 
+                    : keyData.priority <= 6 
+                      ? 'text-yellow-400' 
+                      : 'text-green-400'
+                }`}>
+                  {keyData.priority}
+                </div>
+                <div className={`text-xs px-2 py-1 rounded ${
+                  keyData.priority <= 3 
+                    ? 'bg-red-900/30 text-red-300' 
+                    : keyData.priority <= 6 
+                      ? 'bg-yellow-900/30 text-yellow-300' 
+                      : 'bg-green-900/30 text-green-300'
+                }`}>
+                  {keyData.priority <= 3 ? 'High' : keyData.priority <= 6 ? 'Medium' : 'Low'}
+                </div>
+              </div>
             </div>
             {keyData.usageStats && (
               <>
-                <div>
-                  <div className="text-gray-400 uppercase tracking-wider">
+                <div className="bg-gray-800/30 p-3 rounded-lg">
+                  <div className="text-gray-400 uppercase tracking-wider mb-1">
                     Success Rate
                   </div>
-                  <div className="text-gray-300">
+                  <div className={`font-semibold text-lg ${
+                    keyData.usageStats.totalRequests > 0
+                      ? Math.round((keyData.usageStats.successfulRequests / keyData.usageStats.totalRequests) * 100) >= 90
+                        ? 'text-green-400'
+                        : Math.round((keyData.usageStats.successfulRequests / keyData.usageStats.totalRequests) * 100) >= 70
+                          ? 'text-yellow-400'
+                          : 'text-red-400'
+                      : 'text-gray-400'
+                  }`}>
                     {keyData.usageStats.totalRequests > 0
                       ? `${Math.round((keyData.usageStats.successfulRequests / keyData.usageStats.totalRequests) * 100)}%`
                       : '0%'}
                   </div>
                 </div>
-                <div>
-                  <div className="text-gray-400 uppercase tracking-wider">
+                <div className="bg-gray-800/30 p-3 rounded-lg">
+                  <div className="text-gray-400 uppercase tracking-wider mb-1">
                     Error Rate
                   </div>
-                  <div className="text-gray-300">
+                  <div className={`font-semibold text-lg ${
+                    keyData.usageStats.errorRate <= 0.1 
+                      ? 'text-green-400' 
+                      : keyData.usageStats.errorRate <= 0.3 
+                        ? 'text-yellow-400' 
+                        : 'text-red-400'
+                  }`}>
                     {Math.round(keyData.usageStats.errorRate * 100)}%
                   </div>
                 </div>
@@ -1092,29 +1264,61 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
           </div>
         </div>
 
-        {/* Description */}
-        {keyData.metadata.description && (
-          <div className="mb-4">
-            <div className="text-xs text-gray-400 uppercase tracking-wider">
-              Description
+        {/* Enhanced Provider Info */}
+        <div className="mb-4">
+          <div className="bg-gray-800/30 p-3 rounded-lg border border-gray-700/50">
+            <div className="text-xs text-gray-400 uppercase tracking-wider mb-2">
+              Provider Information
             </div>
-            <p className="mt-1 text-sm text-gray-300">
-              {keyData.metadata.description}
-            </p>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Provider ID:</span>
+                <span className="text-gray-300 font-mono text-sm">{keyData.providerId}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Display Name:</span>
+                <span className="text-gray-300">{getProviderDisplayName(keyData.providerId, keyData.providerName)}</span>
+              </div>
+              {keyData.metadata?.description && (
+                <div className="pt-2 border-t border-gray-700">
+                  <span className="text-gray-400">Description:</span>
+                  <p className="text-gray-300 text-sm mt-1">{keyData.metadata.description}</p>
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
 
-        {/* Last Used */}
-        {keyData.lastUsed && (
-          <div className="mb-4">
-            <div className="text-xs text-gray-400 uppercase tracking-wider">
-              Last Used
+        {/* Enhanced Timestamps */}
+        <div className="mb-4">
+          <div className="bg-gray-800/30 p-3 rounded-lg border border-gray-700/50">
+            <div className="text-xs text-gray-400 uppercase tracking-wider mb-2">
+              Timeline
             </div>
-            <p className="mt-1 text-sm text-gray-300">
-              {new Date(keyData.lastUsed).toLocaleString()}
-            </p>
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Created:</span>
+                <span className="text-gray-300">
+                  {new Date(keyData.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Updated:</span>
+                <span className="text-gray-300">
+                  {new Date(keyData.updatedAt).toLocaleDateString()}
+                </span>
+              </div>
+              {keyData.lastUsed && (
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Last Used:</span>
+                  <span className="text-green-300">
+                    {new Date(keyData.lastUsed).toLocaleString()}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
 
         {/* Tags */}
         {keyData.metadata.tags.length > 0 && (
@@ -1136,21 +1340,23 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
           </div>
         )}
 
-        {/* Actions */}
+        {/* Enhanced Actions */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-700">
           <div className="flex gap-2">
+            {/* Test Key Button */}
             <Button
               variant="outline"
               size="sm"
               onClick={handleTest}
-              disabled={testing}
-              className={`border-blue-500/50 text-blue-400 hover:bg-blue-500/10 ${
+              disabled={testing || !keyData.keyValue}
+              className={`border-blue-500/50 text-blue-400 hover:bg-blue-500/10 transition-all duration-200 ${
                 testResult === true
-                  ? 'border-green-500/50 text-green-400'
+                  ? 'border-green-500/50 text-green-400 bg-green-500/10'
                   : testResult === false
-                    ? 'border-red-500/50 text-red-400'
+                    ? 'border-red-500/50 text-red-400 bg-red-500/10'
                     : ''
               }`}
+              title={testing ? 'Testing key...' : testResult === true ? 'Key is valid' : testResult === false ? 'Key test failed' : 'Test this API key'}
             >
               {testing ? (
                 <LoadingSpinner className="h-4 w-4" />
@@ -1161,7 +1367,12 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
               ) : (
                 <TestTube className="h-4 w-4" />
               )}
+              <span className="ml-1 text-xs hidden sm:inline">
+                {testing ? 'Testing' : testResult === true ? 'Valid' : testResult === false ? 'Failed' : 'Test'}
+              </span>
             </Button>
+            
+            {/* Toggle Status Button */}
             <Button
               variant="outline"
               size="sm"
@@ -1171,21 +1382,33 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
                   ? 'border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10'
                   : 'border-green-500/50 text-green-400 hover:bg-green-500/10'
               }
+              title={keyData.isActive ? 'Disable this key' : 'Enable this key'}
             >
               {keyData.isActive ? (
                 <Lock className="h-4 w-4" />
               ) : (
                 <Unlock className="h-4 w-4" />
               )}
+              <span className="ml-1 text-xs hidden sm:inline">
+                {keyData.isActive ? 'Disable' : 'Enable'}
+              </span>
             </Button>
           </div>
+          
+          {/* Delete Button */}
           <Button
             variant="outline"
             size="sm"
-            onClick={() => deleteKey(keyData.id)}
+            onClick={() => {
+              if (window.confirm(`Are you sure you want to delete "${keyData.keyName}"?`)) {
+                deleteKey(keyData.id);
+              }
+            }}
             className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+            title="Delete this key"
           >
             <Trash2 className="h-4 w-4" />
+            <span className="ml-1 text-xs hidden sm:inline">Delete</span>
           </Button>
         </div>
       </div>
@@ -1330,8 +1553,7 @@ export const EpicLlmKeyManager: React.FC = () => {
                   <SelectItem value="all">All Providers</SelectItem>
                   {providers.map((provider) => (
                     <SelectItem key={provider.id} value={provider.id}>
-                      {PROVIDER_DISPLAY_NAMES[provider.id] ||
-                        provider.displayName}
+                      {getProviderDisplayName(provider.id, provider.displayName)}
                     </SelectItem>
                   ))}
                 </SelectContent>

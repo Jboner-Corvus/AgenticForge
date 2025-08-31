@@ -16,6 +16,7 @@ import { getLoggerInstance } from './logger.ts';
 import { getJobQueue } from './modules/queue/queue.ts';
 const config = getConfig();
 import clientConsoleRouter from './modules/api/clientConsole.api.ts';
+import canvasConsoleFeedbackRouter from './modules/api/canvasConsoleFeedback.api.ts';
 import { initializeWebSocketManager } from './modules/websocket/websocketServer.ts';
 import { LlmKeyManager as _LlmKeyManager } from './modules/llm/LlmKeyManager.ts';
 import { SessionManager } from './modules/session/sessionManager.ts';
@@ -131,6 +132,9 @@ export async function initializeWebServer(
 
     // Add client console API routes
     app.use(clientConsoleRouter);
+
+    // Add canvas console feedback API routes
+    app.use(canvasConsoleFeedbackRouter);
 
     // Initialize version service
     const versionService = new VersionService();

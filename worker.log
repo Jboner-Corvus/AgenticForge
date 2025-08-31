@@ -36,139 +36,241 @@ DEBUG: .env file loaded successfully. Keys loaded: [
 Resolved WORKSPACE_PATH: /home/demon/agenticforge-workspace
 process.env.REDIS_HOST: localhost
 config.REDIS_HOST: localhost
-config.LLM_API_KEY: AIzaSyBeOGxSzYwJqVKd2QhsWb7rW6Ku2KO-eUk
-{"level":30,"time":1756603269523,"pid":144382,"hostname":"tiloup","msg":"🚀 [WORKER] Worker file loaded and starting..."}
-{"level":30,"time":1756603269523,"pid":144382,"hostname":"tiloup","msg":"🔧 [WORKER] Starting configuration load..."}
-{"level":30,"time":1756603269527,"pid":144382,"hostname":"tiloup","msg":"✅ [WORKER] Configuration loaded successfully"}
-{"level":30,"time":1756603269547,"pid":144382,"hostname":"tiloup","msg":"Successfully connected to Redis."}
-{"level":30,"time":1756603269551,"pid":144382,"hostname":"tiloup","msg":"✅ Worker lock acquired by process 144382"}
-{"level":30,"time":1756603269552,"pid":144382,"hostname":"tiloup","msg":"🔍 DEBUG WORKER CONFIG:"}
-{"level":40,"time":1756603269553,"pid":144382,"hostname":"tiloup","apiKey":"AIzaSyBeOG...","apiModel":"gemini-2.5-flash","apiProvider":"gemini","msg":"LLM API key already exists - updating existing entry instead of creating duplicate."}
-{"level":30,"time":1756603269554,"pid":144382,"hostname":"tiloup","apiKey":"AIzaSyBeOG...","apiModel":"gemini-2.5-flash","apiProvider":"gemini","msg":"LLM API key updated (duplicate avoided)."}
-{"level":30,"time":1756603269554,"pid":144382,"hostname":"tiloup","msg":"LLM API key for gemini added to KeyManager."}
-{"level":30,"time":1756603269554,"pid":144382,"hostname":"tiloup","msg":"[INIT LLM] LLM API key management is now handled dynamically."}
-{"level":30,"time":1756603269554,"pid":144382,"hostname":"tiloup","msg":"PostgreSQL Host for Worker: localhost"}
-{"level":30,"time":1756603269554,"pid":144382,"hostname":"tiloup","msg":"PostgreSQL Connection Details: host=localhost, user=user, db=gforge, password_length=8"}
-{"level":30,"time":1756603269583,"pid":144382,"hostname":"tiloup","msg":"PostgreSQL pool initialized successfully for worker"}
+config.LLM_API_KEY: AIzaSyDmfcNia3quV8X58w85GjJn9dZqQ61uObM
+{"level":30,"time":1756610590994,"pid":230846,"hostname":"tiloup","msg":"🚀 [WORKER] Worker file loaded and starting..."}
+{"level":30,"time":1756610590994,"pid":230846,"hostname":"tiloup","msg":"🔧 [WORKER] Starting configuration load..."}
+{"level":30,"time":1756610590998,"pid":230846,"hostname":"tiloup","msg":"✅ [WORKER] Configuration loaded successfully"}
+{"level":30,"time":1756610591018,"pid":230846,"hostname":"tiloup","msg":"Successfully connected to Redis."}
+{"level":30,"time":1756610591035,"pid":230846,"hostname":"tiloup","msg":"✅ Worker lock acquired by process 230846"}
+{"level":30,"time":1756610591035,"pid":230846,"hostname":"tiloup","msg":"🔍 DEBUG WORKER CONFIG:"}
+{"level":40,"time":1756610591036,"pid":230846,"hostname":"tiloup","apiKey":"AIzaSyDmfc...","apiModel":"gemini-2.5-flash","apiProvider":"gemini","msg":"LLM API key already exists - updating existing entry instead of creating duplicate."}
+{"level":30,"time":1756610591039,"pid":230846,"hostname":"tiloup","apiKey":"AIzaSyDmfc...","apiModel":"gemini-2.5-flash","apiProvider":"gemini","msg":"LLM API key updated (duplicate avoided)."}
+{"level":30,"time":1756610591039,"pid":230846,"hostname":"tiloup","msg":"LLM API key for gemini added to KeyManager."}
+{"level":30,"time":1756610591039,"pid":230846,"hostname":"tiloup","msg":"[INIT LLM] LLM API key management is now handled dynamically."}
+{"level":30,"time":1756610591039,"pid":230846,"hostname":"tiloup","msg":"PostgreSQL Host for Worker: localhost"}
+{"level":30,"time":1756610591039,"pid":230846,"hostname":"tiloup","msg":"PostgreSQL Connection Details: host=localhost, user=user, db=gforge, password_length=8"}
+{"level":30,"time":1756610591073,"pid":230846,"hostname":"tiloup","msg":"PostgreSQL pool initialized successfully for worker"}
 [_internalLoadTools] Starting to load tools dynamically.
 [getToolsDir] Constructed tools path: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions
 [findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions
 [findToolFiles] Looking for files with extension: .tool.js
-[findToolFiles] Found 10 entries in directory
+[findToolFiles] Found 16 entries in directory
 [findToolFiles] Processing entry: ai, isDirectory: true, isFile: false
 [findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai
 [findToolFiles] Looking for files with extension: .tool.js
-[findToolFiles] Found 4 entries in directory
+[findToolFiles] Found 13 entries in directory
+[findToolFiles] Processing entry: summarize.tool.d.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: summarize.tool.d.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarize.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarize.tool.d.ts.map, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: summarize.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js
+[findToolFiles] Processing entry: summarize.tool.js.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarize.tool.test.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: summarize.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarize.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarize.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarizer.prompt.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: summarizer.prompt.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: summarizer.prompt.ts, isDirectory: false, isFile: true
 [findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js
 [findToolFiles] Processing entry: browser, isDirectory: true, isFile: false
 [findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/browser
 [findToolFiles] Looking for files with extension: .tool.js
-[findToolFiles] Found 1 entries in directory
+[findToolFiles] Found 3 entries in directory
+[findToolFiles] Processing entry: tools.browser.integration.test.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: tools.browser.integration.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: tools.browser.integration.test.ts, isDirectory: false, isFile: true
 [findToolFiles] Returning files: 
+[findToolFiles] Processing entry: clientConsole.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: clientConsole.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js
+[findToolFiles] Processing entry: clientConsole.tool.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: code, isDirectory: true, isFile: false
 [findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code
 [findToolFiles] Looking for files with extension: .tool.js
-[findToolFiles] Found 2 entries in directory
+[findToolFiles] Found 6 entries in directory
+[findToolFiles] Processing entry: executeShellCommand.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: executeShellCommand.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js
+[findToolFiles] Processing entry: executeShellCommand.tool.test.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: executeShellCommand.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: executeShellCommand.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: executeShellCommand.tool.ts, isDirectory: false, isFile: true
 [findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js
 [findToolFiles] Processing entry: fs, isDirectory: true, isFile: false
 [findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs
 [findToolFiles] Looking for files with extension: .tool.js
-[findToolFiles] Found 12 entries in directory
+[findToolFiles] Found 40 entries in directory
+[findToolFiles] Processing entry: editFile.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: editFile.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js
+[findToolFiles] Processing entry: editFile.tool.test.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: editFile.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: editFile.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: editFile.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listDirectory.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: listDirectory.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js
+[findToolFiles] Processing entry: listDirectory.tool.test.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: listDirectory.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listDirectory.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listDirectory.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listFiles.tool.d.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: listFiles.tool.d.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listFiles.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listFiles.tool.d.ts.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listFiles.tool.js.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: readFile.tool.d.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: readFile.tool.d.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: readFile.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: readFile.tool.d.ts.map, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: readFile.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js
+[findToolFiles] Processing entry: readFile.tool.js.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: readFile.tool.test.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: readFile.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: readFile.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: readFile.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: simpleList.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: simpleList.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js
+[findToolFiles] Processing entry: simpleList.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: writeFile.tool.d.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: writeFile.tool.d.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: writeFile.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: writeFile.tool.d.ts.map, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: writeFile.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js
+[findToolFiles] Processing entry: writeFile.tool.js.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: writeFile.tool.test.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: writeFile.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: writeFile.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: writeFile.tool.ts, isDirectory: false, isFile: true
 [findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js
+[findToolFiles] Processing entry: index.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: index.d.ts.map, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: index.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: index.js.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: index.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: planning, isDirectory: true, isFile: false
 [findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning
 [findToolFiles] Looking for files with extension: .tool.js
-[findToolFiles] Found 2 entries in directory
+[findToolFiles] Found 6 entries in directory
+[findToolFiles] Processing entry: projectPlanning.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: projectPlanning.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js
+[findToolFiles] Processing entry: projectPlanning.tool.test.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: projectPlanning.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: projectPlanning.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: projectPlanning.tool.ts, isDirectory: false, isFile: true
 [findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js
 [findToolFiles] Processing entry: search, isDirectory: true, isFile: false
 [findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search
 [findToolFiles] Looking for files with extension: .tool.js
-[findToolFiles] Found 5 entries in directory
+[findToolFiles] Found 16 entries in directory
+[findToolFiles] Processing entry: webNavigate.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: webNavigate.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js
+[findToolFiles] Processing entry: webNavigate.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearch.tool.d.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: webSearch.tool.d.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearch.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearch.tool.d.ts.map, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: webSearch.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js
+[findToolFiles] Processing entry: webSearch.tool.js.map, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearch.tool.test.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: webSearch.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearch.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearch.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: webSearchApi.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: webSearchApi.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js
+[findToolFiles] Processing entry: webSearchApi.tool.ts, isDirectory: false, isFile: true
 [findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js
 [findToolFiles] Processing entry: system, isDirectory: true, isFile: false
 [findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system
 [findToolFiles] Looking for files with extension: .tool.js
-[findToolFiles] Found 14 entries in directory
+[findToolFiles] Found 43 entries in directory
 [findToolFiles] Processing entry: __tests__, isDirectory: true, isFile: false
 [findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/__tests__
 [findToolFiles] Looking for files with extension: .tool.js
-[findToolFiles] Found 2 entries in directory
+[findToolFiles] Found 6 entries in directory
+[findToolFiles] Processing entry: developmentPreferences.test.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: developmentPreferences.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: developmentPreferences.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: todoWrite.test.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: todoWrite.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: todoWrite.test.ts, isDirectory: false, isFile: true
 [findToolFiles] Returning files: 
+[findToolFiles] Processing entry: agentThought.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: agentThought.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentThought.tool.js
+[findToolFiles] Processing entry: agentThought.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: canvasConsoleFeedback.tool.d.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: canvasConsoleFeedback.tool.js, isDirectory: false, isFile: true
+[findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/canvasConsoleFeedback.tool.js
+[findToolFiles] Processing entry: canvasConsoleFeedback.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: createTool.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: createTool.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js
+[findToolFiles] Processing entry: createTool.tool.test.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: createTool.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: createTool.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: createTool.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: delegateTask.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: delegateTask.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js
+[findToolFiles] Processing entry: delegateTask.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: displayCanvas.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: displayCanvas.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js
+[findToolFiles] Processing entry: displayCanvas.tool.test.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: displayCanvas.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: displayCanvas.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: displayCanvas.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: finish.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: finish.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js
+[findToolFiles] Processing entry: finish.tool.test.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: finish.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: finish.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: finish.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: getDevelopmentPreferences.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: getDevelopmentPreferences.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/getDevelopmentPreferences.tool.js
+[findToolFiles] Processing entry: getDevelopmentPreferences.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listTools.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: listTools.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js
+[findToolFiles] Processing entry: listTools.tool.test.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: listTools.tool.test.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listTools.tool.test.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: listTools.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: setDevelopmentPreferences.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: setDevelopmentPreferences.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/setDevelopmentPreferences.tool.js
+[findToolFiles] Processing entry: setDevelopmentPreferences.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: todoWrite.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: todoWrite.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js
-[findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentThought.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/getDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/setDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js
+[findToolFiles] Processing entry: todoWrite.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentThought.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/canvasConsoleFeedback.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/getDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/setDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js
 [findToolFiles] Processing entry: web, isDirectory: true, isFile: false
 [findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web
 [findToolFiles] Looking for files with extension: .tool.js
-[findToolFiles] Found 2 entries in directory
+[findToolFiles] Found 6 entries in directory
+[findToolFiles] Processing entry: browser.tool.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: browser.tool.js, isDirectory: false, isFile: true
 [findToolFiles] Found matching file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js
+[findToolFiles] Processing entry: browser.tool.ts, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: browserManager.d.ts, isDirectory: false, isFile: true
 [findToolFiles] Processing entry: browserManager.js, isDirectory: false, isFile: true
+[findToolFiles] Processing entry: browserManager.ts, isDirectory: false, isFile: true
 [findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js
-[findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentThought.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/getDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/setDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js
-[_internalLoadTools] Found tool files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentThought.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/getDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/setDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js
+[findToolFiles] Returning files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentThought.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/canvasConsoleFeedback.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/getDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/setDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js
+[_internalLoadTools] Found tool files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentThought.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/canvasConsoleFeedback.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/getDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/setDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js
 [GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js
 [_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js
 [GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js
@@ -184,22 +286,22 @@ config.LLM_API_KEY: AIzaSyBeOGxSzYwJqVKd2QhsWb7rW6Ku2KO-eUk
 [GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js
 [_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js
 [GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js
-{"level":30,"time":1756603270584,"pid":144382,"hostname":"tiloup","path":"/home/demon/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin","msg":"Worker process.env.PATH at startup:"}
-{"level":30,"time":1756603270584,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Starting to load tools dynamically."}
-{"level":30,"time":1756603270585,"pid":144382,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions"}
-{"level":30,"time":1756603270585,"pid":144382,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai"}
-{"level":30,"time":1756603270586,"pid":144382,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/browser"}
-{"level":30,"time":1756603270587,"pid":144382,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code"}
-{"level":30,"time":1756603270587,"pid":144382,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs"}
-{"level":30,"time":1756603270589,"pid":144382,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning"}
-{"level":30,"time":1756603270589,"pid":144382,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search"}
-{"level":30,"time":1756603270590,"pid":144382,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system"}
-{"level":30,"time":1756603270590,"pid":144382,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/__tests__"}
-{"level":30,"time":1756603270592,"pid":144382,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web"}
 [_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js
 [GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js
 [_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js
 [GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js
+{"level":30,"time":1756610592075,"pid":230846,"hostname":"tiloup","path":"/home/demon/.qoder-server/bin/bb7f40c9458d6437a38f9ea187fcd2ab0389eb1e/bin/remote-cli:/home/demon/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin","msg":"Worker process.env.PATH at startup:"}
+{"level":30,"time":1756610592076,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Starting to load tools dynamically."}
+{"level":30,"time":1756610592076,"pid":230846,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions"}
+{"level":30,"time":1756610592077,"pid":230846,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai"}
+{"level":30,"time":1756610592079,"pid":230846,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/browser"}
+{"level":30,"time":1756610592080,"pid":230846,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code"}
+{"level":30,"time":1756610592080,"pid":230846,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs"}
+{"level":30,"time":1756610592084,"pid":230846,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning"}
+{"level":30,"time":1756610592084,"pid":230846,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search"}
+{"level":30,"time":1756610592086,"pid":230846,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system"}
+{"level":30,"time":1756610592086,"pid":230846,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/__tests__"}
+{"level":30,"time":1756610592090,"pid":230846,"hostname":"tiloup","msg":"[findToolFiles] Scanning directory: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web"}
 [_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js
 [GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js
 [_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js
@@ -207,6 +309,8 @@ config.LLM_API_KEY: AIzaSyBeOGxSzYwJqVKd2QhsWb7rW6Ku2KO-eUk
 [_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js
 [GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentThought.tool.js
 [_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentThought.tool.js
+[GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/canvasConsoleFeedback.tool.js
+[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/canvasConsoleFeedback.tool.js
 [GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js
 [_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js
 [GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js
@@ -225,61 +329,63 @@ config.LLM_API_KEY: AIzaSyBeOGxSzYwJqVKd2QhsWb7rW6Ku2KO-eUk
 [_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js
 [GEMINI-DEBUG] Loading tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js
 [_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js
-22 tools have been loaded dynamically.
+23 tools have been loaded dynamically.
 [getToolsDir] Constructed tools path: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions
 Worker initialisé et prêt à traiter les jobs.
-{"level":30,"time":1756603270592,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Found tool files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentThought.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/getDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/setDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js"}
-{"level":30,"time":1756603270595,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js","toolName":"ai_summarize","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603270595,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js"}
-{"level":30,"time":1756603270597,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js","toolName":"client_console","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603270597,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js"}
-{"level":30,"time":1756603270600,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js","toolName":"executeShellCommand","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603270600,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js"}
-{"level":30,"time":1756603270602,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js","toolName":"editFile","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603270602,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js"}
-{"level":30,"time":1756603270605,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js","toolName":"listFiles","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603270605,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js"}
-{"level":30,"time":1756603270608,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js","toolName":"readFile","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603270608,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js"}
-{"level":30,"time":1756603270609,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js","toolName":"simpleList","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603270609,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js"}
-{"level":30,"time":1756603270612,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js","toolName":"writeFile","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603270612,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js"}
-{"level":30,"time":1756603270616,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js","toolName":"project_planning","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603270616,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js"}
-{"level":30,"time":1756603270835,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js","toolName":"webNavigate","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603270835,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js"}
-{"level":30,"time":1756603271047,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js","toolName":"webSearch","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603271047,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js"}
-{"level":30,"time":1756603271049,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js","toolName":"webSearchApi","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603271049,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js"}
-{"level":30,"time":1756603271050,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentThought.tool.js","toolName":"agent_thought","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603271051,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentThought.tool.js"}
-{"level":30,"time":1756603271054,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js","toolName":"system_createTool","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603271054,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js"}
-{"level":30,"time":1756603271069,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js","toolName":"delegateTask","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603271069,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js"}
-{"level":30,"time":1756603271073,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js","toolName":"display_canvas","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603271073,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js"}
-{"level":30,"time":1756603271074,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js","toolName":"finish","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603271074,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js"}
-{"level":30,"time":1756603271076,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/getDevelopmentPreferences.tool.js","toolName":"get_development_preferences","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603271076,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/getDevelopmentPreferences.tool.js"}
-{"level":30,"time":1756603271078,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js","toolName":"listTools","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603271078,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js"}
-{"level":30,"time":1756603271081,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/setDevelopmentPreferences.tool.js","toolName":"set_development_preferences","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603271081,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/setDevelopmentPreferences.tool.js"}
-{"level":30,"time":1756603271084,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js","toolName":"todoWrite","msg":"[loadToolFile] Successfully registered tool."}
-{"level":40,"time":1756603271084,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js","toolName":"todoWrite","msg":"[loadToolFile] Tool with name todoWrite already registered, skipping."}
-{"level":30,"time":1756603271084,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js"}
-{"level":30,"time":1756603271477,"pid":144382,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js","toolName":"browser","msg":"[loadToolFile] Successfully registered tool."}
-{"level":30,"time":1756603271477,"pid":144382,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js"}
-{"level":30,"time":1756603271477,"pid":144382,"hostname":"tiloup","msg":"22 tools have been loaded dynamically."}
-{"level":30,"time":1756603271477,"pid":144382,"hostname":"tiloup","msg":"[watchTools] Watching for tool changes in: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions"}
-{"level":30,"time":1756603271477,"pid":144382,"hostname":"tiloup","msg":"[watchTools] Also watching generated tools in: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/packages/core/dist/tools/generated"}
-{"level":30,"time":1756603271480,"pid":144382,"hostname":"tiloup","msg":"22 tools detected at startup"}
-{"level":30,"time":1756603271488,"pid":144382,"hostname":"tiloup","msg":"[watchTools] Initial scan complete. Ready for changes."}
-{"level":30,"time":1756603271489,"pid":144382,"hostname":"tiloup","msg":"[watchTools] Initial scan complete. Ready for changes."}
-{"level":30,"time":1756603271493,"pid":144382,"hostname":"tiloup","msg":"PostgreSQL sessions table ensured."}
-{"level":30,"time":1756603271493,"pid":144382,"hostname":"tiloup","module":"KeyCleanup","msg":"Periodic key cleanup task started (every 15 minutes)"}
-{"level":30,"time":1756603271496,"pid":144382,"hostname":"tiloup","msg":"Worker initialisé et prêt à traiter les jobs."}
+{"level":30,"time":1756610592091,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Found tool files: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentThought.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/canvasConsoleFeedback.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/getDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/setDevelopmentPreferences.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js, /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js"}
+{"level":30,"time":1756610592094,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js","toolName":"ai_summarize","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592095,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/ai/summarize.tool.js"}
+{"level":30,"time":1756610592097,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js","toolName":"client_console","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592097,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/clientConsole.tool.js"}
+{"level":30,"time":1756610592102,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js","toolName":"executeShellCommand","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592102,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/code/executeShellCommand.tool.js"}
+{"level":30,"time":1756610592106,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js","toolName":"editFile","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592106,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/editFile.tool.js"}
+{"level":30,"time":1756610592109,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js","toolName":"listFiles","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592110,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/listDirectory.tool.js"}
+{"level":30,"time":1756610592112,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js","toolName":"readFile","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592112,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/readFile.tool.js"}
+{"level":30,"time":1756610592114,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js","toolName":"simpleList","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592114,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/simpleList.tool.js"}
+{"level":30,"time":1756610592117,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js","toolName":"writeFile","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592117,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/fs/writeFile.tool.js"}
+{"level":30,"time":1756610592122,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js","toolName":"project_planning","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592122,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/planning/projectPlanning.tool.js"}
+{"level":30,"time":1756610592418,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js","toolName":"webNavigate","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592418,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webNavigate.tool.js"}
+{"level":30,"time":1756610592716,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js","toolName":"webSearch","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592717,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearch.tool.js"}
+{"level":30,"time":1756610592718,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js","toolName":"webSearchApi","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592719,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/search/webSearchApi.tool.js"}
+{"level":30,"time":1756610592720,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentThought.tool.js","toolName":"agent_thought","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592720,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/agentThought.tool.js"}
+{"level":30,"time":1756610592722,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/canvasConsoleFeedback.tool.js","toolName":"canvas_console_feedback","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592722,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/canvasConsoleFeedback.tool.js"}
+{"level":30,"time":1756610592727,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js","toolName":"system_createTool","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592727,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/createTool.tool.js"}
+{"level":30,"time":1756610592747,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js","toolName":"delegateTask","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592748,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/delegateTask.tool.js"}
+{"level":30,"time":1756610592752,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js","toolName":"display_canvas","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592753,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/displayCanvas.tool.js"}
+{"level":30,"time":1756610592754,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js","toolName":"finish","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592754,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/finish.tool.js"}
+{"level":30,"time":1756610592756,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/getDevelopmentPreferences.tool.js","toolName":"get_development_preferences","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592756,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/getDevelopmentPreferences.tool.js"}
+{"level":30,"time":1756610592759,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js","toolName":"listTools","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592759,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/listTools.tool.js"}
+{"level":30,"time":1756610592761,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/setDevelopmentPreferences.tool.js","toolName":"set_development_preferences","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610592761,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/setDevelopmentPreferences.tool.js"}
+{"level":30,"time":1756610592765,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js","toolName":"todo_write","msg":"[loadToolFile] Successfully registered tool."}
+{"level":40,"time":1756610592765,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js","toolName":"todo_write","msg":"[loadToolFile] Tool with name todo_write already registered, skipping."}
+{"level":30,"time":1756610592765,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/system/todoWrite.tool.js"}
+{"level":30,"time":1756610593174,"pid":230846,"hostname":"tiloup","file":"/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js","toolName":"browser","msg":"[loadToolFile] Successfully registered tool."}
+{"level":30,"time":1756610593174,"pid":230846,"hostname":"tiloup","msg":"[_internalLoadTools] Successfully loaded tool file: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions/web/browser.tool.js"}
+{"level":30,"time":1756610593175,"pid":230846,"hostname":"tiloup","msg":"23 tools have been loaded dynamically."}
+{"level":30,"time":1756610593175,"pid":230846,"hostname":"tiloup","msg":"[watchTools] Watching for tool changes in: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/dist/modules/tools/definitions"}
+{"level":30,"time":1756610593175,"pid":230846,"hostname":"tiloup","msg":"[watchTools] Also watching generated tools in: /home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/packages/core/dist/tools/generated"}
+{"level":30,"time":1756610593177,"pid":230846,"hostname":"tiloup","msg":"23 tools detected at startup"}
+{"level":30,"time":1756610593186,"pid":230846,"hostname":"tiloup","msg":"[watchTools] Initial scan complete. Ready for changes."}
+{"level":30,"time":1756610593187,"pid":230846,"hostname":"tiloup","msg":"[watchTools] Initial scan complete. Ready for changes."}
+{"level":30,"time":1756610593191,"pid":230846,"hostname":"tiloup","msg":"PostgreSQL sessions table ensured."}
+{"level":30,"time":1756610593192,"pid":230846,"hostname":"tiloup","module":"KeyCleanup","msg":"Periodic key cleanup task started (every 15 minutes)"}
+{"level":30,"time":1756610593195,"pid":230846,"hostname":"tiloup","msg":"Worker initialisé et prêt à traiter les jobs."}

@@ -1,11 +1,11 @@
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
-  getDevelopmentPreferencesTool
-} from "../../../../../chunk-R7G5NPWH.js";
-import {
   setDevelopmentPreferencesTool
 } from "../../../../../chunk-OWOI4XID.js";
+import {
+  getDevelopmentPreferencesTool
+} from "../../../../../chunk-R7G5NPWH.js";
 import {
   beforeEach,
   describe,

@@ -1,6 +1,7 @@
 import * as dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 // FICHIER : packages/core/src/config.ts
 import { z } from 'zod';
 
@@ -102,11 +103,11 @@ export function getConfig(): Config {
     try {
       // Try multiple possible .env file locations to handle different execution contexts
       let envPath = path.resolve(__dirname, '..', '..', '..', '.env');
-      if (!require('fs').existsSync(envPath)) {
+      if (!existsSync(envPath)) {
         // If running from dist/, try going up one more level
         envPath = path.resolve(__dirname, '..', '..', '..', '..', '.env');
       }
-      if (!require('fs').existsSync(envPath)) {
+      if (!existsSync(envPath)) {
         // If still not found, try from current working directory
         envPath = path.resolve(process.cwd(), '.env');
       }
@@ -141,11 +142,11 @@ export async function loadConfig() {
 
   // Try multiple possible .env file locations to handle different execution contexts
   let envPath = path.resolve(__dirname, '..', '..', '..', '.env');
-  if (!require('fs').existsSync(envPath)) {
+  if (!existsSync(envPath)) {
     // If running from dist/, try going up one more level
     envPath = path.resolve(__dirname, '..', '..', '..', '..', '.env');
   }
-  if (!require('fs').existsSync(envPath)) {
+  if (!existsSync(envPath)) {
     // If still not found, try from current working directory
     envPath = path.resolve(process.cwd(), '.env');
   }
