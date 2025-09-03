@@ -15,7 +15,7 @@ export const writeFileParams = z.object({
     .string()
     .min(1, 'Le chemin ne peut pas être vide')
     .describe(
-      'The path to the file within the workspace.',
+      'The path to the file within the workspace. Use absolute paths (starting with /) for global access.',
     ),
 });
 
@@ -37,33 +37,46 @@ export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
     'Writes content to a file, overwriting it. Creates the file and directories if they do not exist.',
   execute: async (args: z.infer<typeof writeFileParams>, ctx: Ctx) => {
     try {
-      // Validation supplémentaire du workspace
-      if (!config.WORKSPACE_PATH) {
-        throw new Error('WORKSPACE_PATH non configuré dans la configuration');
-      }
+      let absolutePath: string;
 
-      const absolutePath = path.resolve(config.WORKSPACE_PATH, args.path);
+      if (path.isAbsolute(args.path)) {
+        ctx.log.info(`Global write access for path: ${args.path}`);
+        absolutePath = args.path;
+      } else {
+        // Validation supplémentaire du workspace
+        if (!config.WORKSPACE_PATH) {
+          throw new Error('WORKSPACE_PATH non configuré dans la configuration');
+        }
 
-      if (!absolutePath.startsWith(config.WORKSPACE_PATH)) {
-        return {
-          erreur: 'File path is outside the allowed workspace directory.',
-        } as z.infer<typeof writeFileOutput>;
+        absolutePath = path.resolve(config.WORKSPACE_PATH, args.path);
+
+        // Vérifier que le chemin absolu commence par le WORKSPACE_PATH
+        if (!absolutePath.startsWith(path.resolve(config.WORKSPACE_PATH))) {
+          return {
+            erreur: 'File path is outside the allowed workspace directory.',
+          } as z.infer<typeof writeFileOutput>;
+        }
       }
 
       // For very large content, skip the read/compare to avoid memory issues
       if (args.content.length < 1024 * 1024) {
         // 1MB threshold
-        if (
-          await fs
-            .stat(absolutePath)
-            .then(() => true)
-            .catch(() => false)
-        ) {
-          const currentContent = await fs.readFile(absolutePath, 'utf-8');
-          if (currentContent === args.content) {
-            const message = `File ${args.path} already contains the desired content. No changes made.`;
-            ctx.log.info(message);
-            return { message: message };
+        const fileExists = await fs
+          .stat(absolutePath)
+          .then(() => true)
+          .catch(() => false);
+          
+        if (fileExists) {
+          try {
+            const currentContent = await fs.readFile(absolutePath, 'utf-8');
+            if (currentContent === args.content) {
+              const message = `File ${args.path} already contains the desired content. No changes made.`;
+              ctx.log.info(message);
+              return { message: message };
+            }
+          } catch (readError) {
+            // If we can't read the file, we'll just overwrite it
+            ctx.log.warn({ err: readError }, `Could not read existing file ${args.path}, will overwrite`);
           }
         }
       }

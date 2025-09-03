@@ -33,7 +33,7 @@ const DEFAULT_MASTER_KEY_MODEL = 'gemini-2.5-pro'; // Align with .env LLM_MODEL_
 
 const LLM_API_KEYS_REDIS_KEY = 'llmApiKeys';
 const LLM_API_KEYS_HIERARCHY_REDIS_KEY = 'llmApiKeysHierarchy'; // New key for hierarchy
-const MAX_TEMPORARY_ERROR_COUNT = 999; // Augmenter considérément le seuil avant de désactiver temporairement
+const MAX_TEMPORARY_ERROR_COUNT = 5; // More reasonable threshold for temporary errors
 const TEMPORARY_DISABLE_DURATION_MS = 30 * 1000; // Réduire la durée de désactivation à 30 secondes
 
 export class LlmKeyManager {
@@ -900,41 +900,105 @@ export class LlmKeyManager {
   private static createEnvironmentKey(provider: string): LlmApiKey | null {
     let apiKey: string | undefined;
     let modelName: string | undefined;
+    let actualProvider = provider;
 
-    // Try specific provider keys first, then fallback to generic LLM_API_KEY only if provider matches
-    switch (provider.toLowerCase()) {
-      case 'gemini':
-        apiKey = process.env.GEMINI_API_KEY || (config.LLM_PROVIDER === 'gemini' ? config.LLM_API_KEY : undefined);
-        modelName = config.LLM_MODEL_NAME || 'gemini-2.5-flash';
-        break;
-      case 'openai':
-        apiKey = process.env.OPENAI_API_KEY || (config.LLM_PROVIDER === 'openai' ? config.LLM_API_KEY : undefined);
-        modelName = 'gpt-4';
-        break;
-      case 'qwen':
-        apiKey = process.env.QWEN_API_KEY || (config.LLM_PROVIDER === 'qwen' ? config.LLM_API_KEY : undefined);
-        modelName = 'qwen-plus';
-        break;
-      default:
-        // Only use generic LLM_API_KEY if the provider matches the configured provider
-        if (config.LLM_PROVIDER === provider) {
-          apiKey = config.LLM_API_KEY;
-          modelName = config.LLM_MODEL_NAME;
+    // Handle custom Gemini provider names (gemini-flash-1, gemini-pro-1, etc.)
+    if (provider.startsWith('gemini-flash-') || provider.startsWith('gemini-pro-')) {
+      actualProvider = 'gemini';
+      // Extract the key number from the provider name
+      const keyNumber = provider.match(/(\d+)$/)?.[1];
+      if (keyNumber) {
+        // Map to the corresponding environment variable based on flash/pro type
+        let envVarName: string;
+        if (provider.includes('flash')) {
+          envVarName = `LLM_API_KEY_GEMINI_FLASH_${keyNumber}`;
+          modelName = 'gemini-2.5-flash';
+        } else if (provider.includes('pro')) {
+          envVarName = `LLM_API_KEY_GEMINI_PRO_${keyNumber}`;
+          modelName = 'gemini-2.5-pro';
+        } else {
+          // Fallback for unknown type
+          envVarName = `LLM_API_KEY_GEMINI_FLASH_${keyNumber}`;
+          modelName = 'gemini-2.5-flash';
         }
+        apiKey = process.env[envVarName];
+
+        // Debug logging
+        getLogger().info({
+          provider,
+          keyNumber,
+          envVarName,
+          hasKey: !!apiKey,
+          keyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'none'
+        }, '🔍 Custom Gemini provider mapping');
+
+        // If no key found for this specific provider, try fallback to main key
+        if (!apiKey) {
+          getLogger().warn({
+            provider,
+            envVarName,
+            fallbackTo: 'LLM_API_KEY'
+          }, 'No specific key found for custom provider, trying main LLM_API_KEY');
+          apiKey = config.LLM_API_KEY;
+        }
+      } else {
+        // If no key number found, fallback to main key
+        getLogger().warn({
+          provider,
+          issue: 'No key number found in provider name'
+        }, 'Invalid custom Gemini provider name format, using main key');
+        apiKey = config.LLM_API_KEY;
+        modelName = provider.includes('flash') ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+      }
+    }
+
+    // If we didn't get a key from custom mapping, try standard provider keys
+    if (!apiKey) {
+      // Try specific provider keys first, then fallback to generic LLM_API_KEY only if provider matches
+      switch (actualProvider.toLowerCase()) {
+        case 'gemini':
+          apiKey = process.env.GEMINI_API_KEY || (config.LLM_PROVIDER === 'gemini' ? config.LLM_API_KEY : undefined);
+          modelName = modelName || config.LLM_MODEL_NAME || 'gemini-2.5-flash';
+          break;
+        case 'openai':
+          apiKey = process.env.OPENAI_API_KEY || (config.LLM_PROVIDER === 'openai' ? config.LLM_API_KEY : undefined);
+          modelName = modelName || 'gpt-4';
+          break;
+        case 'qwen':
+          apiKey = process.env.QWEN_API_KEY || (config.LLM_PROVIDER === 'qwen' ? config.LLM_API_KEY : undefined);
+          modelName = modelName || 'qwen-plus';
+          break;
+        default:
+          // Only use generic LLM_API_KEY if the provider matches the configured provider
+          if (config.LLM_PROVIDER === actualProvider) {
+            apiKey = config.LLM_API_KEY;
+            modelName = config.LLM_MODEL_NAME;
+          }
+      }
     }
 
     if (!apiKey) {
       return null;
     }
 
-    return {
+    const keyInfo = {
       apiKey: apiKey,
       apiModel: modelName || 'default',
-      apiProvider: provider,
+      apiProvider: actualProvider,
       errorCount: 0,
       isPermanentlyDisabled: false,
       lastUsed: Date.now(),
     };
+
+    getLogger().info({
+      provider: actualProvider,
+      model: keyInfo.apiModel,
+      hasKey: !!apiKey,
+      keySource: apiKey ? (apiKey === config.LLM_API_KEY ? 'main' : 'custom') : 'none',
+      keyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'none'
+    }, '🔑 Created environment key for provider');
+
+    return keyInfo;
   }
 
   /**

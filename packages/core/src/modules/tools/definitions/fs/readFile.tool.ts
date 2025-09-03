@@ -19,6 +19,13 @@ export const readFileParams = z.object({
     .describe(
       'The path to the file (FULL SYSTEM ACCESS - any path allowed).',
     ),
+  filePath: z
+    .string()
+    .min(1, 'Le chemin ne peut pas être vide')
+    .optional()
+    .describe(
+      'The path to the file (alternative parameter for compatibility).',
+    ),
   start_line: z
     .number()
     .int()
@@ -40,6 +47,16 @@ export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> =
     description:
       'Reads the content of a file from the workspace or AgenticForge directory. Use this to "open", "view", or "check" a file.',
     execute: async (args: z.infer<typeof readFileParams>, ctx: Ctx) => {
+      // Gérer les deux paramètres possibles (path ou filePath)
+      const filePath = args.path || args.filePath;
+      
+      // Vérifier qu'au moins un des deux paramètres est fourni
+      if (!filePath) {
+        return {
+          erreur: 'Le chemin du fichier est requis (paramètre "path" ou "filePath")',
+        };
+      }
+
       // Validation des paramètres de lignes
       if (args.start_line && args.end_line && args.start_line > args.end_line) {
         return {
@@ -49,7 +66,7 @@ export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> =
       }
 
       // FULL SYSTEM ACCESS - Resolve any path as-is
-      let resolvedPath = path.resolve(args.path);
+      let resolvedPath = path.resolve(filePath);
 
       // FULL SYSTEM ACCESS - No path restrictions
       // The worker can access ANY file on the system
@@ -67,7 +84,7 @@ export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> =
 
         const content = await fs.readFile(resolvedPath, 'utf-8');
         ctx.log.info(
-          `Successfully read file: ${args.path} (${stats.size} bytes)`,
+          `Successfully read file: ${filePath} (${stats.size} bytes)`,
         );
 
         // Logique pour extraire une plage de lignes
@@ -86,7 +103,7 @@ export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> =
           const snippet = lines.slice(start, end).join('\n');
 
           ctx.log.info(
-            `Extracted lines ${args.start_line} to ${end} from ${args.path}`,
+            `Extracted lines ${args.start_line} to ${end} from ${filePath}`,
           );
           return snippet;
         }
@@ -96,7 +113,7 @@ export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> =
           // 5MB de contenu texte
           const preview = content.substring(0, 5 * 1024 * 1024);
           ctx.log.warn(
-            `File too large for full display, showing first 5MB of ${args.path}`,
+            `File too large for full display, showing first 5MB of ${filePath}`,
           );
           return (
             preview +
@@ -110,7 +127,7 @@ export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> =
         let errorMessage = 'Erreur inconnue lors de la lecture du fichier';
 
         if (nodeError.code === 'ENOENT') {
-          errorMessage = `Fichier non trouvé: ${args.path}`;
+          errorMessage = `Fichier non trouvé: ${filePath}`;
         } else if (nodeError.code === 'EACCES') {
           errorMessage = 'Permission refusée pour lire le fichier';
         } else if (nodeError.code === 'EISDIR') {
@@ -121,7 +138,7 @@ export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> =
           errorMessage = `Erreur de lecture: ${nodeError.message}`;
         }
 
-        ctx.log.error({ err: error }, `Failed to read file: ${args.path}`);
+        ctx.log.error({ err: error }, `Failed to read file: ${filePath}`);
         return { erreur: errorMessage };
       }
     },

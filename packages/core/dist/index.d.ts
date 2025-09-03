@@ -224,6 +224,8 @@ declare class Agent {
     private readonly MAX_MALFORMED_RESPONSES;
     private readonly MAX_LLM_FAILURES;
     private llmFailureCounter;
+    private consecutiveLlmFailures;
+    private readonly MAX_CONSECUTIVE_LLM_FAILURES;
     private readonly maxBehaviorHistory;
     private readonly session;
     private executedActions;
@@ -264,9 +266,61 @@ declare class Agent {
     private hasExecutedActionRecently;
     private getActionExecutionSummary;
     /**
+     * Detect if the agent should start working on pending tasks
+     */
+    private detectIfShouldStartWorking;
+    /**
+     * Get the next pending task based on recent todo creation
+     */
+    private getNextPendingTask;
+    /**
+     * Convert a task to an appropriate command
+     */
+    private convertTaskToCommand;
+    /**
+     * Check if the current task involves completing a form
+     */
+    private isFormCompletionTask;
+    /**
+     * Get the next logical form field command based on recent actions
+     */
+    private getNextFormFieldCommand;
+    /**
+     * Detect if the agent has pending work based on the response content
+     */
+    private detectIfAgentHasPendingWork;
+    /**
+     * Detect if the response indicates continuation of work rather than completion
+     */
+    private detectIfContinuationResponse;
+    /**
+     * Detect if we should switch to local mode based on text content
+     */
+    private detectIfShouldUseLocalMode;
+    /**
+     * Generate a response for local mode operation
+     */
+    private generateLocalModeResponse;
+    /**
+     * Generate a local fallback response when all LLM providers fail
+     */
+    private generateLocalFallbackResponse;
+    /**
+     * Convert a task to a local command that doesn't require LLM
+     */
+    private convertTaskToLocalCommand;
+    /**
      * Crée une todo list intelligente basée sur le contenu de la demande utilisateur
      */
     private createSmartTodoList;
+    /**
+     * Check if the response indicates continuation of a form-filling task
+     */
+    private isFormContinuationResponse;
+    /**
+     * Get the next form step based on the continuation response
+     */
+    private getNextFormStep;
 }
 
 declare const getMasterPrompt: (session: AgentSession, tools: Tool[]) => string;

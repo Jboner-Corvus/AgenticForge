@@ -399,17 +399,57 @@ export async function processJob(
 
 async function checkWorkerLock(redisClient: Redis): Promise<boolean> {
   const lockKey = 'worker:singleton:lock';
-  const lockTimeout = 60; // 60 seconds
-  const processId = `${process.pid}:${Date.now()}`;
-  
+  const lockTimeout = 300; // 5 minutes pour plus de stabilité
+  const processId = `${process.pid}:${Date.now()}:${Math.random().toString(36).substring(2, 15)}`;
+
   try {
+    // Vérifier d'abord si un lock existe déjà
+    const existingLock = await redisClient.get(lockKey);
+    if (existingLock) {
+      const [existingPid, timestamp] = existingLock.split(':');
+      const lockAge = Date.now() - parseInt(timestamp);
+
+      // Vérifier si le processus existe toujours
+      try {
+        process.kill(parseInt(existingPid), 0); // Signal 0 pour vérifier si le processus existe
+        // Si on arrive ici, le processus existe encore
+        if (lockAge < 60000) { // Lock récent (< 1 minute)
+          getLoggerInstance().warn(`❌ Worker already running (PID: ${existingPid}, age: ${lockAge}ms), process ${process.pid} will exit`);
+          return false;
+        } else {
+          // Lock plus ancien mais processus encore actif - forcer l'arrêt de l'ancien
+          getLoggerInstance().warn(`⚠️ Found old but active worker (PID: ${existingPid}), attempting to kill it`);
+          try {
+            process.kill(parseInt(existingPid), 'SIGTERM');
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Attendre 2 secondes
+            // Vérifier si le processus est mort
+            try {
+              process.kill(parseInt(existingPid), 0);
+              // Si on arrive ici, le processus est encore vivant, utiliser SIGKILL
+              getLoggerInstance().warn(`🔪 Force killing stubborn worker PID: ${existingPid}`);
+              process.kill(parseInt(existingPid), 'SIGKILL');
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            } catch {
+              // Processus mort, c'est bon
+              getLoggerInstance().info(`✅ Successfully killed old worker PID: ${existingPid}`);
+            }
+          } catch (killError) {
+            getLoggerInstance().error({ killError }, `Failed to kill old worker PID: ${existingPid}`);
+          }
+        }
+      } catch {
+        // Le processus n'existe plus, on peut prendre le lock
+        getLoggerInstance().info(`🔄 Taking over lock from dead worker (PID: ${existingPid}, age: ${lockAge}ms)`);
+      }
+    }
+
     // Try to set lock with expiration
     const result = await redisClient.set(lockKey, processId, 'EX', lockTimeout, 'NX');
-    
+
     if (result === 'OK') {
       getLoggerInstance().info(`✅ Worker lock acquired by process ${process.pid}`);
-      
-      // Refresh lock periodically
+
+      // Refresh lock periodically (plus fréquemment)
       const refreshInterval = setInterval(async () => {
         try {
           const currentLock = await redisClient.get(lockKey);
@@ -418,31 +458,47 @@ async function checkWorkerLock(redisClient: Redis): Promise<boolean> {
             getLoggerInstance().debug(`🔄 Worker lock refreshed by process ${process.pid}`);
           } else {
             clearInterval(refreshInterval);
-            getLoggerInstance().warn(`⚠️ Worker lock lost by process ${process.pid}, shutting down`);
-            process.exit(0);
+            getLoggerInstance().error(`⚠️ Worker lock stolen by another process, shutting down ${process.pid}`);
+            process.exit(1);
           }
         } catch (error) {
           getLoggerInstance().error({ error }, 'Error refreshing worker lock');
         }
-      }, (lockTimeout / 2) * 1000);
-      
-      // Clean up on exit
-      process.on('SIGTERM', async () => {
-        clearInterval(refreshInterval);
-        await redisClient.del(lockKey);
-        getLoggerInstance().info(`🧹 Worker lock released by process ${process.pid}`);
+      }, 10000); // Rafraîchir toutes les 10 secondes (plus fréquent)
+
+      // Cleanup handlers plus robustes
+      const cleanup = async () => {
+        try {
+          clearInterval(refreshInterval);
+          const currentLock = await redisClient.get(lockKey);
+          if (currentLock === processId) {
+            await redisClient.del(lockKey);
+            getLoggerInstance().info(`🧹 Worker lock released by process ${process.pid}`);
+          }
+        } catch (error) {
+          getLoggerInstance().error({ error }, 'Error during lock cleanup');
+        }
+      };
+
+      process.on('SIGTERM', cleanup);
+      process.on('SIGINT', cleanup);
+      process.on('exit', cleanup);
+
+      // Handler spécial pour les erreurs non gérées
+      process.on('uncaughtException', (error) => {
+        getLoggerInstance().error({ error }, 'Uncaught exception in worker, cleaning up');
+        cleanup().finally(() => process.exit(1));
       });
-      
-      process.on('SIGINT', async () => {
-        clearInterval(refreshInterval);
-        await redisClient.del(lockKey);
-        getLoggerInstance().info(`🧹 Worker lock released by process ${process.pid}`);
+
+      process.on('unhandledRejection', (reason) => {
+        getLoggerInstance().error({ reason }, 'Unhandled rejection in worker, cleaning up');
+        cleanup().finally(() => process.exit(1));
       });
-      
+
       return true;
     } else {
-      const existingLock = await redisClient.get(lockKey);
-      getLoggerInstance().warn(`❌ Worker already running with lock: ${existingLock}, process ${process.pid} will exit`);
+      const finalLock = await redisClient.get(lockKey);
+      getLoggerInstance().warn(`❌ Failed to acquire worker lock, existing: ${finalLock}, process ${process.pid} will exit`);
       return false;
     }
   } catch (error) {
@@ -475,6 +531,7 @@ if (process.env.NODE_ENV !== 'test') {
     NODE_ENV: process.env.NODE_ENV
   });
 
+  // Load main LLM key
   if (config.LLM_API_KEY && config.LLM_PROVIDER && config.LLM_MODEL_NAME) {
     await LlmKeyManager.addKey(
       config.LLM_PROVIDER,
@@ -482,12 +539,43 @@ if (process.env.NODE_ENV !== 'test') {
       config.LLM_MODEL_NAME,
     );
     getLoggerInstance().info(
-      `LLM API key for ${config.LLM_PROVIDER} added to KeyManager.`,
+      `Main LLM API key for ${config.LLM_PROVIDER} added to KeyManager.`,
     );
   } else {
     getLoggerInstance().warn(
       `LLM_API_KEY, LLM_PROVIDER, or LLM_MODEL_NAME not fully configured in .env. LLM functionality may be limited.`,
     );
+  }
+
+  // Load all Gemini provider keys from environment
+  const geminiKeys = [
+    { provider: 'gemini-flash-2', model: 'gemini-2.5-flash', envVar: 'LLM_API_KEY_GEMINI_FLASH_2' },
+    { provider: 'gemini-pro-2', model: 'gemini-2.5-pro', envVar: 'LLM_API_KEY_GEMINI_PRO_2' },
+    { provider: 'gemini-flash-3', model: 'gemini-2.5-flash', envVar: 'LLM_API_KEY_GEMINI_FLASH_3' },
+    { provider: 'gemini-pro-3', model: 'gemini-2.5-pro', envVar: 'LLM_API_KEY_GEMINI_PRO_3' },
+    { provider: 'gemini-flash-4', model: 'gemini-2.5-flash', envVar: 'LLM_API_KEY_GEMINI_FLASH_4' },
+    { provider: 'gemini-pro-4', model: 'gemini-2.5-pro', envVar: 'LLM_API_KEY_GEMINI_PRO_4' },
+  ];
+
+  for (const keyConfig of geminiKeys) {
+    const apiKey = process.env[keyConfig.envVar];
+    if (apiKey) {
+      try {
+        await LlmKeyManager.addKey(
+          'gemini', // All these are Gemini providers
+          apiKey,
+          keyConfig.model,
+        );
+        getLoggerInstance().info(
+          `Gemini API key for ${keyConfig.provider} (${keyConfig.model}) added to KeyManager.`,
+        );
+      } catch (error) {
+        getLoggerInstance().warn(
+          { error, provider: keyConfig.provider },
+          `Failed to add Gemini API key for ${keyConfig.provider}`,
+        );
+      }
+    }
   }
 
   getLoggerInstance().info(

@@ -1333,7 +1333,7 @@ export const LlmApiKeyManagementPage = memo(() => {
   }, [backendKeys, searchTerm, selectedProvider, showInactive]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 overflow-y-auto">
       {/* Système de notifications */}
       <NotificationSystem
         notifications={notifications}
@@ -1465,7 +1465,7 @@ export const LlmApiKeyManagementPage = memo(() => {
       </Card>
 
       {/* Intelligent Key Cards Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-6 max-h-[calc(100vh-300px)] overflow-y-auto">
         <AnimatePresence>
           {filteredKeys.map((key, index) => (
             <motion.div

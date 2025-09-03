@@ -12,7 +12,7 @@ export const listFilesParams = z.object({
     .string()
     .optional()
     .describe(
-      'The subdirectory to list within the project. Defaults to the root.',
+      'The subdirectory to list within the project. Defaults to the root. Use absolute paths (starting with /) for global access.',
     ),
 });
 
@@ -31,10 +31,16 @@ export const listFilesTool: Tool<
     'Lists files and directories within a specified path in the project.',
   execute: async (args: z.infer<typeof listFilesParams>, ctx: Ctx) => {
     const listPath = args.path || '.';
-    const targetDir = path.resolve(WORKSPACE_DIR, listPath);
+    let targetDir: string;
 
-    if (!targetDir.startsWith(WORKSPACE_DIR)) {
-      return { erreur: 'Path is outside the allowed project directory.' };
+    if (path.isAbsolute(listPath)) {
+      ctx.log.info(`Global access for path: ${listPath}`);
+      targetDir = listPath;
+    } else {
+      targetDir = path.resolve(WORKSPACE_DIR, listPath);
+      if (!targetDir.startsWith(WORKSPACE_DIR)) {
+        return { erreur: 'Path is outside the allowed project directory.' };
+      }
     }
 
     try {

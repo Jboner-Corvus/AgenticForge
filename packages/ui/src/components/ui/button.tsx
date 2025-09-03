@@ -3,7 +3,7 @@ import { type VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 
 import { buttonVariants } from './button.variants';
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils';
 
 function Button({
   asChild = false,

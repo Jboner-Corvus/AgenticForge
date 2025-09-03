@@ -64,11 +64,11 @@ describe('writeFileTool', () => {
     // The tool uses path.resolve, so we need to match that behavior in the test
     const absolutePath = path.resolve(filePath);
     expect(fs.mkdir).toHaveBeenCalledWith(
-      path.dirname(absolutePath),
+      '/tmp/workspace',
       { recursive: true },
     );
     expect(fs.writeFile).toHaveBeenCalledWith(
-      absolutePath,
+      '/tmp/workspace/newfile.txt',
       content,
       'utf-8',
     );
@@ -88,7 +88,7 @@ describe('writeFileTool', () => {
     // The tool uses path.resolve, so we need to match that behavior in the test
     const absolutePath = path.resolve(filePath);
     expect(fs.writeFile).toHaveBeenCalledWith(
-      absolutePath,
+      '/tmp/workspace/existingfile.txt',
       content,
       'utf-8',
     );

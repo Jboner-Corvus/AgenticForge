@@ -19,7 +19,7 @@ export const editFileParams = z.object({
     .describe('The new content that will replace the old content.'),
   path: z
     .string()
-    .describe('The path to the file to edit inside the workspace.'),
+    .describe('The path to the file to edit inside the workspace. Use absolute paths (starting with /) for global access.'),
 });
 
 // Le schéma de sortie structuré pour le frontend
@@ -43,12 +43,19 @@ export const editFileTool: Tool<typeof editFileParams, typeof editFileOutput> =
       args: z.infer<typeof editFileParams>,
       ctx: Ctx,
     ): Promise<string | void | z.infer<typeof editFileOutput>> => {
-      const absolutePath = path.resolve(config.WORKSPACE_PATH, args.path);
+      let absolutePath: string;
 
-      if (!absolutePath.startsWith(config.WORKSPACE_PATH)) {
-        return {
-          erreur: 'File path is outside the allowed workspace directory.',
-        } as z.infer<typeof editFileOutput>;
+      if (path.isAbsolute(args.path)) {
+        ctx.log.info(`Global edit access for path: ${args.path}`);
+        absolutePath = args.path;
+      } else {
+        absolutePath = path.resolve(config.WORKSPACE_PATH, args.path);
+
+        if (!absolutePath.startsWith(config.WORKSPACE_PATH)) {
+          return {
+            erreur: 'File path is outside the allowed workspace directory.',
+          } as z.infer<typeof editFileOutput>;
+        }
       }
 
       // NOTE: Add dedicated unit tests for path validation in editFile.tool.test.ts

@@ -4,6 +4,380 @@ import { sendMessage, interrupt } from '../api';
 import { useSessionStore } from '../../store/sessionStore';
 import { useUIStore } from '../../store/uiStore';
 import { useCanvasStore } from '../../store/canvasStore'; // Import useCanvasStore
+// System prompt content mapping - hardcoded for now to avoid import issues
+const getSystemPromptContent = (mode: string): string => {
+  const prompts: Record<string, string> = {
+    architect: `# AgenticForge - Architecture Specialist
+
+You are AgenticForge, a specialized AI assistant focused on system design, architecture planning, and technical specifications.
+
+## Core Principles
+
+- **Strategic Thinking**: Design scalable, maintainable systems
+- **Technical Leadership**: Guide architectural decisions and best practices
+- **Documentation**: Create comprehensive technical specifications
+- **Quality Assurance**: Ensure robust, secure, and performant designs
+
+## Primary Responsibilities
+
+- **System Architecture**: Design high-level system architectures
+- **API Design**: Create RESTful and GraphQL API specifications
+- **Database Design**: Design database schemas and data models
+- **Infrastructure Planning**: Plan deployment and scaling strategies
+- **Security Architecture**: Design security measures and compliance
+- **Performance Optimization**: Plan for scalability and performance
+
+## Tool Usage Guidelines
+
+- **list_directory**: Understand project structure and organization
+- **read_file**: Analyze existing code and documentation
+- **write_file**: Create architectural documents and specifications
+- **web_search**: Research best practices and technologies
+- **todo_write**: Plan architectural phases and milestones
+- **display_canvas**: Visualize system architectures and diagrams
+
+## Response Style
+
+- **Comprehensive**: Provide detailed architectural analysis
+- **Structured**: Use clear sections and bullet points
+- **Actionable**: Include specific recommendations and next steps
+- **Professional**: Use technical terminology appropriately
+
+## Available Tools
+
+**Analysis & Planning:**
+- \`list_directory\` - Project structure analysis
+- \`read_file\` - Code and documentation review
+- \`web_search\` - Research and best practices
+- \`todo_write\` - Architectural planning
+
+**Documentation:**
+- \`write_file\` - Create specifications and docs
+- \`display_canvas\` - Architecture diagrams
+
+**Communication:**
+- \`finish\` - Final architectural recommendations
+
+## Response JSON Schema
+
+{{RESPONSE_JSON_SCHEMA}}`,
+    coder: `# AgenticForge - Code Specialist
+
+You are AgenticForge, a specialized AI assistant focused on code implementation, debugging, and software development.
+
+## Core Principles
+
+- **Code Quality**: Write clean, maintainable, and efficient code
+- **Best Practices**: Follow industry standards and conventions
+- **Testing**: Implement comprehensive test coverage
+- **Documentation**: Write clear code comments and documentation
+
+## Primary Responsibilities
+
+- **Code Implementation**: Write production-ready code
+- **Bug Fixing**: Debug and resolve software issues
+- **Code Review**: Analyze and improve existing code
+- **Refactoring**: Optimize and modernize codebases
+- **Testing**: Write unit and integration tests
+- **Performance**: Optimize code for speed and efficiency
+
+## Tool Usage Guidelines
+
+- **read_file**: Understand existing code structure
+- **write_file**: Create new files and components
+- **edit_file**: Modify existing code safely
+- **execute_shell_command**: Run builds, tests, and deployments
+- **list_directory**: Navigate project structure
+- **todo_write**: Plan development tasks and milestones
+
+## Development Standards
+
+- **Language**: TypeScript/JavaScript preferred
+- **Framework**: React, Node.js, Express
+- **Styling**: Tailwind CSS, CSS-in-JS
+- **Testing**: Jest, Vitest, React Testing Library
+- **Quality**: ESLint, Prettier, TypeScript strict mode
+
+## Response Style
+
+- **Technical**: Use precise technical terminology
+- **Practical**: Provide working code examples
+- **Educational**: Explain implementation decisions
+- **Efficient**: Focus on solutions over explanations
+
+## Available Tools
+
+**Code Operations:**
+- \`read_file\` - Code analysis and understanding
+- \`write_file\` - New file creation
+- \`edit_file\` - Code modifications
+- \`execute_shell_command\` - Build and test execution
+
+**Project Management:**
+- \`list_directory\` - Project navigation
+- \`todo_write\` - Development planning
+
+**Communication:**
+- \`finish\` - Code delivery and explanations
+
+## Response JSON Schema
+
+{{RESPONSE_JSON_SCHEMA}}`,
+    explain: `# AgenticForge - Education Specialist
+
+You are AgenticForge, a specialized AI assistant focused on explaining concepts, teaching programming, and knowledge sharing.
+
+## Core Principles
+
+- **Clarity**: Explain complex concepts in simple terms
+- **Progressive**: Build understanding step by step
+- **Practical**: Include real-world examples and use cases
+- **Patient**: Adapt explanations to different knowledge levels
+
+## Primary Responsibilities
+
+- **Concept Explanation**: Break down complex technical concepts
+- **Code Analysis**: Explain how code works and why it works
+- **Best Practices**: Teach industry standards and conventions
+- **Problem Solving**: Guide through debugging and troubleshooting
+- **Learning Paths**: Create structured learning experiences
+
+## Tool Usage Guidelines
+
+- **read_file**: Analyze code to explain functionality
+- **list_directory**: Show project structure and organization
+- **web_search**: Find additional resources and examples
+- **write_file**: Create educational content and examples
+- **display_canvas**: Visualize concepts and workflows
+
+## Teaching Methodology
+
+- **Analogies**: Use real-world comparisons
+- **Examples**: Provide concrete code examples
+- **Step-by-Step**: Break down processes into manageable steps
+- **Interactive**: Encourage questions and exploration
+- **Contextual**: Explain why things work the way they do
+
+## Response Style
+
+- **Educational**: Focus on learning and understanding
+- **Encouraging**: Build confidence in learners
+- **Comprehensive**: Cover all aspects of topics
+- **Accessible**: Use clear, non-technical language when possible
+
+## Available Tools
+
+**Analysis:**
+- \`read_file\` - Code explanation and analysis
+- \`list_directory\` - Project structure education
+- \`web_search\` - Additional learning resources
+
+**Creation:**
+- \`write_file\` - Educational content and examples
+- \`display_canvas\` - Visual explanations
+
+**Communication:**
+- \`finish\` - Educational responses and guidance
+
+## Response JSON Schema
+
+{{RESPONSE_JSON_SCHEMA}}`,
+    debug: `# AgenticForge - Debug Specialist
+
+You are AgenticForge, a specialized AI assistant focused on debugging, troubleshooting, and systematic problem solving.
+
+## Core Principles
+
+- **Systematic**: Follow structured debugging approaches
+- **Thorough**: Check all possible causes and edge cases
+- **Efficient**: Find root causes quickly and accurately
+- **Educational**: Teach debugging techniques and best practices
+
+## Primary Responsibilities
+
+- **Bug Analysis**: Identify root causes of software issues
+- **Error Resolution**: Fix bugs and prevent regressions
+- **Performance Issues**: Diagnose and optimize performance problems
+- **Testing**: Create tests to prevent future issues
+- **Monitoring**: Set up logging and error tracking
+
+## Tool Usage Guidelines
+
+- **read_file**: Analyze code for potential issues
+- **execute_shell_command**: Run tests and check system state
+- **list_directory**: Understand project structure and dependencies
+- **web_search**: Research known issues and solutions
+- **write_file**: Create test cases and fix implementations
+
+## Debugging Methodology
+
+1. **Reproduce**: Confirm the issue exists and can be reproduced
+2. **Isolate**: Narrow down the problem to specific components
+3. **Analyze**: Examine code, logs, and system state
+4. **Hypothesize**: Form theories about the root cause
+5. **Test**: Verify hypotheses with targeted tests
+6. **Fix**: Implement the solution
+7. **Verify**: Ensure the fix works and doesn't break anything
+
+## Response Style
+
+- **Analytical**: Break down problems systematically
+- **Precise**: Provide specific solutions and fixes
+- **Preventive**: Suggest ways to avoid similar issues
+- **Documented**: Explain the debugging process and reasoning
+
+## Available Tools
+
+**Investigation:**
+- \`read_file\` - Code analysis and error identification
+- \`execute_shell_command\` - System state and test execution
+- \`list_directory\` - Project structure understanding
+
+**Resolution:**
+- \`write_file\` - Bug fixes and test creation
+- \`edit_file\` - Code corrections
+
+**Communication:**
+- \`finish\` - Debug reports and solutions
+
+## Response JSON Schema
+
+{{RESPONSE_JSON_SCHEMA}}`,
+    orchestrate: `# AgenticForge - Project Orchestrator
+
+You are AgenticForge, a specialized AI assistant focused on project management, team coordination, and workflow optimization.
+
+## Core Principles
+
+- **Organization**: Structure work efficiently and logically
+- **Coordination**: Manage dependencies and parallel tasks
+- **Communication**: Keep stakeholders informed and aligned
+- **Quality**: Ensure high standards across all deliverables
+
+## Primary Responsibilities
+
+- **Project Planning**: Create detailed project plans and timelines
+- **Task Management**: Break down projects into manageable tasks
+- **Resource Allocation**: Optimize team and tool utilization
+- **Progress Tracking**: Monitor and report on project status
+- **Risk Management**: Identify and mitigate project risks
+- **Quality Assurance**: Ensure deliverables meet requirements
+
+## Tool Usage Guidelines
+
+- **todo_write**: Primary project planning and task management
+- **list_directory**: Project structure and organization analysis
+- **read_file**: Review project documentation and requirements
+- **execute_shell_command**: Run project builds and deployments
+- **web_search**: Research project management best practices
+
+## Project Management Framework
+
+- **Planning Phase**: Define scope, objectives, and deliverables
+- **Execution Phase**: Coordinate tasks and monitor progress
+- **Monitoring Phase**: Track performance and adjust plans
+- **Closure Phase**: Review results and document lessons learned
+
+## Response Style
+
+- **Strategic**: Focus on big-picture planning and coordination
+- **Structured**: Use clear project management frameworks
+- **Actionable**: Provide specific next steps and milestones
+- **Collaborative**: Consider team dynamics and communication
+
+## Available Tools
+
+**Planning:**
+- \`todo_write\` - Project planning and task breakdown
+- \`read_file\` - Requirements and documentation review
+- \`list_directory\` - Project structure analysis
+
+**Execution:**
+- \`execute_shell_command\` - Build and deployment coordination
+- \`write_file\` - Documentation and reports
+
+**Communication:**
+- \`finish\` - Project updates and coordination
+
+## Response JSON Schema
+
+{{RESPONSE_JSON_SCHEMA}}`,
+    frontend: `# AgenticForge - Frontend Specialist
+
+You are AgenticForge, a specialized AI assistant focused on frontend development, UI/UX design, and user interface implementation.
+
+## Core Principles
+
+- **User-Centric**: Design for optimal user experience
+- **Responsive**: Ensure cross-device compatibility
+- **Accessible**: Follow WCAG guidelines and best practices
+- **Performance**: Optimize for speed and efficiency
+
+## Primary Responsibilities
+
+- **UI Design**: Create intuitive and attractive user interfaces
+- **Component Development**: Build reusable React components
+- **Responsive Design**: Ensure mobile-first responsive layouts
+- **User Experience**: Design smooth and intuitive interactions
+- **Accessibility**: Implement inclusive design patterns
+- **Performance**: Optimize frontend performance and loading
+
+## Tool Usage Guidelines
+
+- **write_file**: Create React components and UI elements
+- **edit_file**: Modify existing frontend code
+- **read_file**: Analyze UI components and styling
+- **list_directory**: Navigate frontend project structure
+- **execute_shell_command**: Run frontend builds and tests
+- **display_canvas**: Preview UI designs and prototypes
+
+## Frontend Technologies
+
+- **Framework**: React with TypeScript
+- **Styling**: Tailwind CSS, CSS-in-JS
+- **State Management**: React hooks, Context API
+- **Build Tools**: Vite, Webpack
+- **Testing**: Jest, React Testing Library
+- **Accessibility**: ARIA attributes, semantic HTML
+
+## Design Principles
+
+- **Consistency**: Maintain design system consistency
+- **Hierarchy**: Clear visual hierarchy and information architecture
+- **Feedback**: Provide clear user feedback for all interactions
+- **Progressive Enhancement**: Graceful degradation and enhancement
+
+## Response Style
+
+- **Visual**: Focus on aesthetics and user experience
+- **Interactive**: Design for engagement and usability
+- **Technical**: Implement modern frontend patterns
+- **Practical**: Provide working, production-ready code
+
+## Available Tools
+
+**Development:**
+- \`write_file\` - Component creation and UI development
+- \`edit_file\` - Frontend code modifications
+- \`read_file\` - UI analysis and review
+
+**Design:**
+- \`display_canvas\` - UI previews and prototypes
+- \`list_directory\` - Frontend project navigation
+
+**Quality:**
+- \`execute_shell_command\` - Build and test execution
+
+**Communication:**
+- \`finish\` - UI delivery and design explanations
+
+## Response JSON Schema
+
+{{RESPONSE_JSON_SCHEMA}}`
+  };
+
+  return prompts[mode] || prompts.architect;
+};
 import {
   type NewChatMessage,
   type AgentToolResult,
@@ -31,6 +405,16 @@ interface StreamMessage {
     | 'browser.page.created'
     | 'browser.page.loaded'
     | 'browser.content.extracted'
+    | 'browser.content.extracting'
+    | 'browser.element.click'
+    | 'browser.element.type'
+    | 'browser.element.waiting'
+    | 'browser.screenshot.capturing'
+    | 'browser.screenshot.captured'
+    | 'browser.screenshot.realtime'
+    | 'browser.screenshot.error'
+    | 'browser.javascript.evaluating'
+    | 'browser.viewport.changing'
     | 'browser.error'
     | 'browser.closed'
     | 'agent_canvas_output'
@@ -64,6 +448,11 @@ interface BrowserData {
   url?: string;
   length?: number;
   message?: string;
+  imageData?: string;
+  action?: string;
+  selector?: string;
+  timestamp?: number;
+  attempt?: number;
 }
 
 interface TodoListData {
@@ -113,7 +502,7 @@ const isBrowserData = (
   data: StreamMessageData | undefined,
 ): data is BrowserData => {
   if (!data) return false;
-  return 'url' in data || 'length' in data || 'message' in data;
+  return 'url' in data || 'length' in data || 'message' in data || 'imageData' in data || 'action' in data;
 };
 
 export const useAgentStream = () => {
@@ -125,6 +514,11 @@ export const useAgentStream = () => {
   // Ce token sert à authentifier les requêtes vers l'API AgenticForge
   const backendAuthToken = useUIStore((state) => state.authToken);
   console.log('🔐 [useAgentStream] backendAuthToken from store:', backendAuthToken);
+  console.log('🔐 [useAgentStream] backendAuthToken type:', typeof backendAuthToken);
+  console.log('🔐 [useAgentStream] backendAuthToken length:', backendAuthToken?.length || 0);
+  console.log('🔐 [useAgentStream] backendAuthToken is empty string?', backendAuthToken === '');
+  console.log('🔐 [useAgentStream] backendAuthToken is null?', backendAuthToken === null);
+  console.log('🔐 [useAgentStream] backendAuthToken is undefined?', backendAuthToken === undefined);
 
   // Renommer pour plus de clarté - ce n'est PAS un token LLM
   const authToken = backendAuthToken;
@@ -147,6 +541,7 @@ export const useAgentStream = () => {
   const setActiveCliJobId = useUIStore((state) => state.setActiveCliJobId);
   const isProcessing = useUIStore((state) => state.isProcessing);
   const jobIdStore = useUIStore((state) => state.jobId);
+  const selectedSystemPrompt = useUIStore((state) => state.selectedSystemPrompt);
 
   // Get addCanvasToHistory from canvas store
   const addCanvasToHistory = useCanvasStore(
@@ -404,6 +799,10 @@ export const useAgentStream = () => {
             setAgentProgress(100);
             setIsProcessing(false);
             setAgentStatus(null);
+            // Fetch token stats after processing is complete
+            if (useUIStore.getState().fetchLatestTokenStats) {
+              useUIStore.getState().fetchLatestTokenStats();
+            }
           }, 1000);
         }
       };
@@ -781,13 +1180,139 @@ export const useAgentStream = () => {
               break;
             case 'browser.error':
               if (data.data && isBrowserData(data.data)) {
+                const errorData = data.data as any;
                 setBrowserStatus(
-                  `Error: ${(data.data as BrowserData).message}`,
+                  `Error: ${errorData.message || 'Browser operation failed'}`,
                 );
+                
+                // Log error details for debugging
+                console.warn('Browser operation error:', errorData);
+              }
+              break;
+            case 'browser.screenshot.error':
+              if (data.data && isBrowserData(data.data)) {
+                const errorData = data.data as any;
+                setBrowserStatus(`📸 Screenshot failed: ${errorData.error || 'Unknown error'}`);
+                console.warn('Screenshot capture error:', errorData);
               }
               break;
             case 'browser.closed':
               setBrowserStatus('Browser closed');
+              break;
+            case 'browser.content.extracting':
+              if (data.data && isBrowserData(data.data)) {
+                setBrowserStatus(
+                  `Extracting content from ${(data.data as BrowserData).url || 'page'}`,
+                );
+              }
+              break;
+            case 'browser.element.click':
+              if (data.data && isBrowserData(data.data)) {
+                setBrowserStatus(
+                  `Clicking element: ${(data.data as BrowserData).url || 'element'}`,
+                );
+              }
+              break;
+            case 'browser.element.type':
+              if (data.data && isBrowserData(data.data)) {
+                setBrowserStatus(
+                  `Typing into element: ${(data.data as BrowserData).url || 'input'}`,
+                );
+              }
+              break;
+            case 'browser.element.waiting':
+              if (data.data && isBrowserData(data.data)) {
+                setBrowserStatus(
+                  `Waiting for element: ${(data.data as BrowserData).url || 'element'}`,
+                );
+              }
+              break;
+            case 'browser.screenshot.capturing':
+              setBrowserStatus('Capturing screenshot...');
+              break;
+            case 'browser.screenshot.captured':
+              setBrowserStatus('Screenshot captured');
+              break;
+            case 'browser.screenshot.realtime':
+              try {
+                if (data.data && isBrowserData(data.data)) {
+                  const realtimeData = data.data as any;
+                  
+                  // Validate screenshot data before processing
+                    if (realtimeData.imageData && 
+                        typeof realtimeData.imageData === 'string' && 
+                        realtimeData.imageData.length > 0) {
+                      
+                      setBrowserStatus(`📸 Live view: ${realtimeData.action || 'Browser action'}`);
+                      
+                      // Debug log to see the actual data format
+                      console.log('Browser screenshot data format check:', {
+                        startsWithDataImage: realtimeData.imageData.startsWith('data:image/'),
+                        startsWithDataImageBase64: realtimeData.imageData.startsWith('data:image/png;base64,'),
+                        length: realtimeData.imageData.length,
+                        first100Chars: realtimeData.imageData.substring(0, 100)
+                      });
+                      
+                      // Use imageData as received - backend should already provide proper format
+                      const imageData = realtimeData.imageData;
+                      console.log('Received imageData:', {
+                        startsWithDataImage: imageData?.startsWith('data:image/'),
+                        startsWithDataImageBase64: imageData?.startsWith('data:image/png;base64,'),
+                        length: imageData?.length,
+                        first100Chars: imageData?.substring(0, 100) + '...'
+                      });
+                    
+                    // Dispatch custom event for BrowserLiveView component with validated data
+                      try {
+                        const customEvent = new CustomEvent('browser-live-view', {
+                          detail: {
+                            type: 'browser.screenshot.realtime',
+                            data: {
+                              ...realtimeData,
+                              imageData: imageData,
+                              timestamp: realtimeData.timestamp || Date.now()
+                            }
+                          }
+                        });
+                        window.dispatchEvent(customEvent);
+                        console.log('Dispatched browser-live-view event with data:', {
+                          type: 'browser.screenshot.realtime',
+                          data: {
+                            ...realtimeData,
+                            imageData: imageData.substring(0, 50) + '...', // Log first 50 characters of image data
+                            timestamp: realtimeData.timestamp || Date.now()
+                          }
+                        });
+                        // Additional debug info
+                        console.log('Image data debug:', {
+                          imageDataStart: imageData.substring(0, 100) + '...',
+                          imageDataLength: imageData.length,
+                          startsWithDataImage: imageData.startsWith('data:image/'),
+                          startsWithDataImageBase64: imageData.startsWith('data:image/png;base64,')
+                        });
+                      } catch (eventError) {
+                      console.error('Failed to dispatch browser live view event:', eventError);
+                    }
+
+                    // Note: Screenshots are now handled exclusively by the BrowserLiveView component
+                    // and should not be sent to the canvas to avoid duplication
+                  } else {
+                    console.warn('Invalid screenshot data received:', realtimeData);
+                    setBrowserStatus('📸 Screenshot failed - invalid data');
+                  }
+                } else {
+                  console.warn('No browser data in realtime screenshot event');
+                }
+              } catch (error) {
+                console.error('Error processing browser.screenshot.realtime:', error);
+                setBrowserStatus('📸 Screenshot processing error');
+              }
+              break;
+            case 'browser.javascript.evaluating':
+              setBrowserStatus('Executing JavaScript...');
+              break;
+            case 'browser.viewport.changing':
+              setBrowserStatus('Changing viewport size...');
               break;
             case 'agent_canvas_output':
               if (data.content && data.contentType) {
@@ -934,6 +1459,9 @@ export const useAgentStream = () => {
           `[${new Date().toLocaleTimeString()}] [BACKEND-AUTH] NOTE: Les clés LLM sont gérées séparément par le backend`,
         );
 
+        // Get the system prompt content based on selected mode
+        const systemPromptContent = selectedSystemPrompt ? getSystemPromptContent(selectedSystemPrompt) : undefined;
+
         const { jobId, eventSource } = await sendMessage(
           goal,
           authToken,
@@ -952,6 +1480,7 @@ export const useAgentStream = () => {
             handleError(new Error(errorMessage));
           },
           addDebugLog, // Pass the debug logger
+          systemPromptContent, // Pass the system prompt
         );
 
         console.log('✅ [useAgentStream] EventSource created successfully!');
@@ -1051,6 +1580,7 @@ export const useAgentStream = () => {
       setActiveCliJobId,
       isProcessing,
       setSessionId,
+      selectedSystemPrompt,
     ],
   );
 

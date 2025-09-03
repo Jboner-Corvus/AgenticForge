@@ -1378,7 +1378,7 @@ export const EnhancedLlmKeyManager: React.FC = () => {
   }, [fetchKeys, fetchProviders]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6">
+    <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 overflow-y-auto">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -1540,7 +1540,7 @@ export const EnhancedLlmKeyManager: React.FC = () => {
             </Button>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-8 max-h-[calc(100vh-200px)] overflow-y-auto">
             <AnimatePresence>
               {filteredKeys.map((key) => (
                 <KeyCard key={key.id} keyData={key} />

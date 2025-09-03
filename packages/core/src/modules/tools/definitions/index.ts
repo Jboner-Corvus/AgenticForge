@@ -17,7 +17,6 @@ import { z } from 'zod';
 import type { Ctx as _Ctx, Tool } from '../../../types.ts';
 
 import { getTools } from '../../../utils/toolLoader.ts';
-import { clientConsoleTool } from './clientConsole.tool.ts';
 import { canvasConsoleFeedbackTool } from './system/canvasConsoleFeedback.tool.ts';
 import { finishTool, FinishToolSignal } from './system/finish.tool.ts';
 
@@ -27,9 +26,6 @@ export const getAllTools = async (): Promise<
   console.log('[getAllTools] function called');
   const tools = await getTools();
   tools.push(finishTool as unknown as Tool<z.AnyZodObject, z.ZodTypeAny>);
-  tools.push(
-    clientConsoleTool as unknown as Tool<z.AnyZodObject, z.ZodTypeAny>,
-  );
   tools.push(
     canvasConsoleFeedbackTool as unknown as Tool<z.AnyZodObject, z.ZodTypeAny>,
   );

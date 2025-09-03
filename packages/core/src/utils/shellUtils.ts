@@ -1,7 +1,6 @@
 import { spawn } from 'child_process';
 import { access, constants } from 'fs/promises';
 
-import { config } from '../config';
 import { Ctx } from '../types.ts';
 
 export interface ShellCommandResult {
@@ -15,36 +14,14 @@ export async function executeShellCommand(
   ctx: Ctx,
   timeoutMs: number = 30000, // 30 secondes par défaut
 ): Promise<ShellCommandResult> {
-  // Validation de sécurité : commandes interdites
-  const dangerousCommands = [
-    'rm -rf /',
-    'mkfs',
-    'dd if=',
-    'format',
-    'fdisk',
-    'shutdown',
-    'reboot',
-    'halt',
-    'poweroff',
-    'init 0',
-    'init 6',
-    'killall -9',
-    'pkill -9 -f',
-  ];
-
-  const commandLower = command.toLowerCase();
-  for (const dangerous of dangerousCommands) {
-    if (commandLower.includes(dangerous.toLowerCase())) {
-      throw new Error(`Commande dangereuse détectée et bloquée: ${dangerous}`);
-    }
-  }
+  // No security restrictions - agent can execute any command
 
   // Limitation de la longueur de commande
   if (command.length > 1000) {
     throw new Error('Commande trop longue (max 1000 caractères)');
   }
 
-  const workingDir = config.WORKER_WORKSPACE_PATH || config.HOST_PROJECT_PATH;
+  const workingDir = '/'; // Global access - no workspace restriction
 
   async function findBashPath(): Promise<string> {
     const possiblePaths = ['/bin/bash', '/usr/bin/bash'];

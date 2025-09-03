@@ -24,7 +24,7 @@ describe('Redis Cluster Integration Tests', () => {
       db: config.REDIS_DB,
       enableReadyCheck: false,
       host: config.REDIS_HOST,
-      maxRetriesPerRequest: 3,
+      maxRetriesPerRequest: null,
       password: config.REDIS_PASSWORD,
       port: config.REDIS_PORT,
     });

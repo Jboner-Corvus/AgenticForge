@@ -493,7 +493,7 @@ The full token has been copied to your clipboard.`);
 
   return (
     <motion.div
-      className="container mx-auto py-8 bg-gray-900 min-h-screen"
+      className="container mx-auto py-8 bg-gray-900"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -513,7 +513,7 @@ The full token has been copied to your clipboard.`);
               {translations.oauthManagementDescription}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6 pt-6">
+          <CardContent className="space-y-6 pt-6 pb-8 max-h-[calc(100vh-200px)] overflow-y-auto">
             <div className="space-y-4">
               <h3 className="text-lg font-bold flex items-center text-white">
                 <Key className="mr-2 h-5 w-5 text-purple-400" />

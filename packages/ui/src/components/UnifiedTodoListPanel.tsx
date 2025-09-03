@@ -319,6 +319,19 @@ export const UnifiedTodoListPanel: React.FC = () => {
         </div>
       </div>
 
+      {/* Current task display when minimized */}
+      {!isExpanded && inProgressTodos.length > 0 && (
+        <div className="px-3 pb-2">
+          <div className="flex items-center space-x-2 text-xs">
+            <Target className="h-3 w-3 text-blue-400" />
+            <span className="text-gray-300 font-medium">Current task:</span>
+            <span className="text-gray-200 truncate flex-1 ml-1">
+              {inProgressTodos[0].content}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Vue étendue avec meilleur style */}
       <AnimatePresence>
         {isExpanded && (

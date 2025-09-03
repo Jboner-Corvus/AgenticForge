@@ -80,6 +80,7 @@ export async function initializeWebServer(
 
     const app = express();
     const sessionManager = await SessionManager.create(pgClient);
+    
     app.use(express.json());
     // Serve static files from UI dist directory
     const uiDistPath = path.join(
@@ -95,8 +96,26 @@ export async function initializeWebServer(
 
     // Add CORS middleware for all routes
     app.use((req, res, next) => {
-      // For local development, allow all origins
-      res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+      // Allow specific origins for development and production
+      const allowedOrigins = [
+        'http://localhost:3002',
+        'http://127.0.0.1:3002',
+        'http://192.168.40.28:3002',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001',
+        'http://192.168.40.28:3001',
+        'http://localhost:3003',  // Vite dev server default port
+        'http://127.0.0.1:3003'
+      ];
+
+      const origin = req.headers.origin;
+      if (origin && allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+      } else if (!origin) {
+        // Allow requests without origin (like mobile apps, Postman, etc.)
+        res.header('Access-Control-Allow-Origin', '*');
+      }
+
       res.header(
         'Access-Control-Allow-Methods',
         'GET, POST, PUT, DELETE, OPTIONS',
@@ -105,11 +124,7 @@ export async function initializeWebServer(
         'Access-Control-Allow-Headers',
         'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Session-ID',
       );
-
-      // Only set credentials to true if we have a specific origin (not '*')
-      if (req.headers.origin) {
-        res.header('Access-Control-Allow-Credentials', 'true');
-      }
+      res.header('Access-Control-Allow-Credentials', 'true');
 
       // Handle preflight OPTIONS requests
       if (req.method === 'OPTIONS') {
@@ -117,6 +132,11 @@ export async function initializeWebServer(
       }
 
       next();
+    });
+
+    // Add health endpoint after CORS middleware
+    app.get('/api/health', (req: express.Request, res: express.Response) => {
+      res.status(200).send('OK');
     });
 
     app.use(
@@ -462,10 +482,6 @@ export async function initializeWebServer(
       },
     );
 
-    app.get('/api/health', (req: express.Request, res: express.Response) => {
-      res.status(200).send('OK');
-    });
-
     // Route pour servir les assets des projets canvas
     app.get('/api/canvas/assets/:jobId/:filename', async (req: express.Request, res: express.Response) => {
       try {
@@ -718,9 +734,23 @@ export async function initializeWebServer(
         const { jobId } = req.params;
 
         // Set SSE headers
+        const allowedOrigins = [
+          'http://localhost:3002',
+          'http://127.0.0.1:3002',
+          'http://192.168.40.28:3002',
+          'http://localhost:3001',
+          'http://127.0.0.1:3001',
+          'http://192.168.40.28:3001'
+        ];
+
+        const origin = req.headers.origin;
+        const corsOrigin = (origin && allowedOrigins.includes(origin)) ? origin : '*';
+
         res.writeHead(200, {
-          'Access-Control-Allow-Headers': 'Cache-Control',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': corsOrigin,
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Session-ID',
+          'Access-Control-Allow-Credentials': 'true',
           'Cache-Control': 'no-cache',
           Connection: 'keep-alive',
           'Content-Type': 'text/event-stream',
@@ -893,6 +923,66 @@ export async function initializeWebServer(
           getLoggerInstance().error(
             { error },
             'Error managing session implicitly',
+          );
+          next(error);
+        }
+      },
+    );
+
+    // New endpoint to clean up Redis session data
+    app.post(
+      '/api/session/cleanup-redis',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        const { oldSessionId } = req.body;
+        if (!oldSessionId) {
+          return res.status(400).json({ error: 'Old session ID is required.' });
+        }
+
+        try {
+          getLoggerInstance().info(
+            { oldSessionId },
+            'Cleaning up Redis data for old session.',
+          );
+
+          // Delete session-specific Redis keys
+          const keysToDelete = [
+            `qwen:accessToken:${oldSessionId}`,
+            `qwen:codeVerifier:${oldSessionId}`,
+            `github:accessToken:${oldSessionId}`,
+          ];
+
+          for (const key of keysToDelete) {
+            try {
+              await redisClient.del(key);
+              getLoggerInstance().info(
+                { key, oldSessionId },
+                'Deleted Redis key for old session.',
+              );
+            } catch (error) {
+              getLoggerInstance().warn(
+                { error, key, oldSessionId },
+                'Failed to delete Redis key for old session.',
+              );
+            }
+          }
+
+          getLoggerInstance().info(
+            { oldSessionId },
+            'Redis cleanup completed for old session.',
+          );
+
+          res.status(200).json({
+            message: 'Redis cleanup completed successfully.',
+            oldSessionId,
+          });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error, oldSessionId },
+            'Error cleaning up Redis data for old session.',
           );
           next(error);
         }
@@ -1095,6 +1185,37 @@ export async function initializeWebServer(
             throw new AppError('Session not found', { statusCode: 404 });
           }
           res.status(200).json(sessionData);
+        } catch (_error) {
+          next(_error);
+        }
+      },
+    );
+
+    // Token usage stats endpoint
+    app.get(
+      '/api/tokens/latest',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const tokenStats = await redisClient.hgetall('session:tokens:latest');
+          if (!tokenStats || Object.keys(tokenStats).length === 0) {
+            res.status(200).json({
+              input_tokens: 0,
+              output_tokens: 0,
+              total_tokens: 0,
+              timestamp: null
+            });
+          } else {
+            res.status(200).json({
+              input_tokens: parseInt(tokenStats.input_tokens || '0'),
+              output_tokens: parseInt(tokenStats.output_tokens || '0'),
+              total_tokens: parseInt(tokenStats.total_tokens || '0'),
+              timestamp: parseInt(tokenStats.timestamp || '0')
+            });
+          }
         } catch (_error) {
           next(_error);
         }

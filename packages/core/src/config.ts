@@ -72,8 +72,8 @@ const configSchema = z.object({
   WORKER_MAX_STALLED_COUNT: z.coerce.number().default(3),
   WORKER_STALLED_INTERVAL_MS: z.coerce.number().default(30000), // 30 seconds
   WORKER_WORKSPACE_PATH: z.string().optional(),
-  // Standardized workspace path
-  WORKSPACE_PATH: z.string().default('/home/demon/agenticforge-workspace'),
+  // Standardized workspace path - unified for all tools
+  WORKSPACE_PATH: z.string().default(`${process.env.HOME}/agentforge/AgenticForge2/AgenticForge/packages/core/workspace`),
   // Gemini-specific optimizations
   GEMINI_MAX_HISTORY_LENGTH: z.coerce.number().default(50), // Limit history length for Gemini
   GEMINI_REQUEST_TIMEOUT_MS: z.coerce.number().default(30000), // 30 second timeout for Gemini requests

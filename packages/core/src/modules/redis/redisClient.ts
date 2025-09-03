@@ -7,8 +7,14 @@ let redisClient: IORedis | null = null;
 
 const redisOptions: RedisOptions = {
   host: process.env.REDIS_HOST || 'localhost',
-  maxRetriesPerRequest: null,
   port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : 6379,
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false,
+  lazyConnect: true,
+  reconnectOnError: (err) => {
+    logger.warn({ err }, 'Redis reconnection triggered by error');
+    return err.message.includes('ECONNREFUSED');
+  },
 };
 
 export const getRedisClientInstance = (): IORedis => {
@@ -25,8 +31,20 @@ export const getRedisClientInstance = (): IORedis => {
         logger.info('Successfully connected to Redis.');
       });
 
+      redisClient.on('ready', () => {
+        logger.info('Redis client ready and connected.');
+      });
+
       redisClient.on('error', (err) => {
         logger.error({ err }, 'Redis connection error:');
+      });
+
+      redisClient.on('close', () => {
+        logger.warn('Redis connection closed.');
+      });
+
+      redisClient.on('reconnecting', (delay: number) => {
+        logger.info({ delay }, 'Redis reconnecting...');
       });
     } catch (error) {
       logger.error({ error }, 'Failed to create Redis client');

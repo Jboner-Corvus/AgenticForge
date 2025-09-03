@@ -192,6 +192,11 @@ async function findToolFiles(
         files = files.concat(await findToolFiles(fullPath, extension));
       } else if (entry.isFile() && entry.name.endsWith(extension)) {
         console.log(`[findToolFiles] Found matching file: ${fullPath}`);
+        // Special logging for Playwright/browser tools
+        if (fullPath.includes('playwright') || fullPath.includes('browser')) {
+          console.log(`[findToolFiles] [PLAYWRIGHT/BROWSER] Found tool file: ${fullPath}`);
+          getLogger().info(`[findToolFiles] [PLAYWRIGHT/BROWSER] Found tool file: ${fullPath}`);
+        }
         files.push(fullPath);
       }
     }
@@ -214,6 +219,7 @@ async function findToolFiles(
 async function loadToolFile(file: string): Promise<void> {
   const logger = getLogger();
   logger.debug({ file }, `[loadToolFile] Attempting to load tool file.`);
+  console.log(`[loadToolFile] Attempting to load tool file: ${file}`);
 
   try {
     const module = await import(`${path.resolve(file)}?v=${Date.now()}`); // Cache-busting
@@ -221,6 +227,8 @@ async function loadToolFile(file: string): Promise<void> {
       { file, moduleExports: Object.keys(module) },
       `[loadToolFile] Successfully imported module.`,
     );
+    console.log(`[loadToolFile] Successfully imported module from ${file}`);
+    console.log(`[loadToolFile] Module exports: ${Object.keys(module).join(', ')}`);
 
     for (const exportName in module) {
       const exportedItem = module[exportName];
@@ -234,6 +242,7 @@ async function loadToolFile(file: string): Promise<void> {
           { exportName, file },
           `[loadToolFile] Found potential tool export.`,
         );
+        console.log(`[loadToolFile] Found potential tool export: ${exportName} in ${file}`);
 
         // Valider l'objet avec Zod mais ne pas afficher les détails verbeux
         const parsedTool = toolSchema.safeParse(exportedItem);
@@ -247,6 +256,7 @@ async function loadToolFile(file: string): Promise<void> {
               { file, toolName: tool.name },
               `[loadToolFile] Tool with name ${tool.name} already registered, skipping.`,
             );
+            console.log(`[loadToolFile] Tool ${tool.name} already registered, skipping.`);
             continue;
           }
 
@@ -257,6 +267,7 @@ async function loadToolFile(file: string): Promise<void> {
             { file, toolName: tool.name },
             `[loadToolFile] Successfully registered tool.`,
           );
+          console.log(`[loadToolFile] Successfully registered tool: ${tool.name} from ${file}`);
         } else {
           logger.warn(
             {
@@ -269,12 +280,14 @@ async function loadToolFile(file: string): Promise<void> {
             },
             `[loadToolFile] Skipping invalid tool export due to Zod schema mismatch.`,
           );
+          console.log(`[loadToolFile] Skipping invalid tool export ${exportName} from ${file} due to Zod schema mismatch`);
         }
       } else {
         logger.debug(
           { exportName, file },
           `[loadToolFile] Skipping non-tool export.`,
         );
+        console.log(`[loadToolFile] Skipping non-tool export: ${exportName} from ${file}`);
       }
     }
   } catch (error) {
@@ -285,6 +298,7 @@ async function loadToolFile(file: string): Promise<void> {
         file,
         logContext: `[loadToolFile] Failed to load browser tool (likely due to Playwright issues). This tool will be skipped.`,
       });
+      console.log(`[loadToolFile] [BROWSER TOOL WARNING] Failed to load browser tool from ${file}:`, error);
       return; // Skip this tool but continue loading others
     }
 
@@ -293,6 +307,7 @@ async function loadToolFile(file: string): Promise<void> {
       file,
       logContext: `[loadToolFile] Failed to dynamically load or process tool file.`,
     });
+    console.log(`[loadToolFile] ERROR Failed to load tool file ${file}:`, error);
   }
 }
 

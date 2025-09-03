@@ -168,10 +168,10 @@ run_installation() {
     echo -e "${COLOR_BLUE}🚀 Running automated installation...${NC}"
     
     # Make script executable
-    chmod +x run-v2.sh
-    
+    chmod +x run.sh
+
     # Run automated installation
-    if ./run-v2.sh install; then
+    if ./run.sh install; then
         echo -e "${COLOR_GREEN}✅ AgenticForge installed successfully!${NC}"
         echo ""
         echo -e "${COLOR_CYAN}🎉 Installation Complete!${NC}"
@@ -182,14 +182,14 @@ run_installation() {
         echo ""
         echo -e "${COLOR_YELLOW}🔧 Management Commands:${NC}"
         echo -e "   cd $INSTALL_DIR"
-        echo -e "   ./run-v2.sh status    # Check service status"
-        echo -e "   ./run-v2.sh stop      # Stop all services"
-        echo -e "   ./run-v2.sh restart   # Restart all services"
-        echo -e "   ./run-v2.sh menu      # Interactive menu"
+        echo -e "   ./run.sh status    # Check service status"
+        echo -e "   ./run.sh stop      # Stop all services"
+        echo -e "   ./run.sh restart   # Restart all services"
+        echo -e "   ./run.sh menu      # Interactive menu"
         echo ""
     else
         echo -e "${COLOR_RED}❌ Installation failed${NC}"
-        echo -e "${COLOR_YELLOW}💡 Try running: cd $INSTALL_DIR && ./run-v2.sh setup${NC}"
+        echo -e "${COLOR_YELLOW}💡 Try running: cd $INSTALL_DIR && ./run.sh setup${NC}"
         exit 1
     fi
 }

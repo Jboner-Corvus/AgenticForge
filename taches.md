@@ -16,9 +16,9 @@
 - [ ] 3. Modifier un fichier existant
 - [ ] 4. Supprimer un fichier
 - [ ] 5. Lister le contenu d'un répertoire
-- [x] 6. Créer un répertoire
-- [x] 7. Supprimer un répertoire
-- [x] 8. Créer une arborescence de fichiers complexes
+- [ ] 6. Créer un répertoire
+- [ ] 7. Supprimer un répertoire
+- [ ] 8. Créer une arborescence de fichiers complexes
 - [ ] 9. Rechercher des fichiers par motif
 - [ ] 10. Obtenir des informations sur un fichier
 
@@ -137,12 +137,29 @@
 - [ ] 79. Tester la récupération après une tâche échouée
 - [ ] 80. Tester la persistance des sessions après un redémarrage
 
+
+9 :
+
+  Teste tous les outils Browser Live 
+  
+  
+
+  1. playwright_navigate vers https://example.com
+  3. playwright_click sur le lien "More information..."
+  4. playwright_wait_for_selector pour attendre h1
+  5. playwright_get_content pour extraire le texte
+  6. playwright_type dans un champ de recherche s'il existe
+  7. playwright_set_viewport à 1280x720
+  8. playwright_evaluate pour exécuter console.log("Test Browser Live
+  View")
+
+
 ## Format des requêtes API
 
 Pour tester une tâche, utiliser la commande curl suivante :
 
 ```bash
-curl -X POST http://localhost:8080/api/test-chat \
+curl -X POST http://localhost:3002/api/test-chat \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0" \
   -d '{
@@ -162,6 +179,9 @@ curl -X POST http://localhost:3002/api/test-chat \
     "sessionName": "Test de base writeFile/readFile"
   }'
 ```
+
+
+
 
 
 ## Processus de test

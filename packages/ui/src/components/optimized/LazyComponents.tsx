@@ -9,6 +9,12 @@ export const LeaderboardPage = lazy(() =>
   })),
 );
 
+export const BrowserLiveView = lazy(() =>
+  import('../BrowserLiveView').then((module) => ({
+    default: module.BrowserLiveView,
+  })),
+);
+
 export const EnhancedLlmKeyManager = lazy(() =>
   import('../EnhancedLlmKeyManager').then((module) => ({
     default: module.EnhancedLlmKeyManager,
@@ -147,5 +153,11 @@ export const LazyDebugLogContainer: React.FC = () => (
 export const LazySubAgentCLIView: React.FC<{ jobId: string }> = ({ jobId }) => (
   <LazyWrapper>
     <SubAgentCLIView jobId={jobId} />
+  </LazyWrapper>
+);
+
+export const LazyBrowserLiveView: React.FC = () => (
+  <LazyWrapper>
+    <BrowserLiveView />
   </LazyWrapper>
 );

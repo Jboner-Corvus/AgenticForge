@@ -13,14 +13,14 @@ declare const editFileParams: z.ZodObject<{
     new_content: z.ZodString;
     path: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    path: string;
     content_to_replace: string;
     new_content: string;
+    path: string;
     is_regex?: boolean | undefined;
 }, {
-    path: string;
     content_to_replace: string;
     new_content: string;
+    path: string;
     is_regex?: boolean | undefined;
 }>;
 declare const editFileOutput: z.ZodUnion<[z.ZodObject<{

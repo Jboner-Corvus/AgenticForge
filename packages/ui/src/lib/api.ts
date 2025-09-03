@@ -1,22 +1,39 @@
 // packages/ui/src/lib/api.ts
 
-// Get base URL from environment variable or default to relative path for proxy
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+// Backend API URL - use environment variables or default to relative path for proxy
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ||
+                 import.meta.env.VITE_BACKEND_URL ||
+                 (typeof window !== 'undefined' ?
+                   (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ?
+                     'http://localhost:3001' :  // Use localhost for local development
+                     'http://192.168.40.28:3001') :  // Use network IP for remote access
+                   'http://localhost:3001');
 
 /**
  * Récupère le token d'authentification backend valide.
  * Priorité: paramètre fourni > localStorage > variable d'environnement
  */
 function getBackendAuthToken(providedToken?: string | null): string | null {
+  console.log('🔍 [getBackendAuthToken] === DIAGNOSTIC TOKEN BACKEND ===');
+  console.log('🔍 [getBackendAuthToken] providedToken:', providedToken);
+  console.log('🔍 [getBackendAuthToken] providedToken type:', typeof providedToken);
+  console.log('🔍 [getBackendAuthToken] providedToken length:', providedToken?.length || 0);
+
   // 1. Utiliser le token fourni en paramètre
   if (providedToken) {
+    console.log('✅ [getBackendAuthToken] Using provided token');
     return providedToken;
   }
 
   // 2. Essayer localStorage (token utilisateur sauvegardé)
   try {
     const storedToken = localStorage.getItem('backendAuthToken');
+    console.log('🔍 [getBackendAuthToken] localStorage token:', storedToken);
+    console.log('🔍 [getBackendAuthToken] localStorage token type:', typeof storedToken);
+    console.log('🔍 [getBackendAuthToken] localStorage token length:', storedToken?.length || 0);
+
     if (storedToken) {
+      console.log('✅ [getBackendAuthToken] Using token from localStorage');
       return storedToken;
     }
   } catch (error) {
@@ -29,10 +46,19 @@ function getBackendAuthToken(providedToken?: string | null): string | null {
   // 3. Fallback sur la variable d'environnement (pour le développement)
   const envToken =
     import.meta.env.VITE_AUTH_TOKEN || import.meta.env.AUTH_TOKEN;
+  console.log('🔍 [getBackendAuthToken] VITE_AUTH_TOKEN:', import.meta.env.VITE_AUTH_TOKEN);
+  console.log('🔍 [getBackendAuthToken] AUTH_TOKEN:', import.meta.env.AUTH_TOKEN);
+  console.log('🔍 [getBackendAuthToken] envToken result:', envToken);
+  console.log('🔍 [getBackendAuthToken] envToken type:', typeof envToken);
+  console.log('🔍 [getBackendAuthToken] envToken length:', envToken?.length || 0);
+
   if (envToken) {
+    console.log('✅ [getBackendAuthToken] Using token from environment variables');
     return envToken;
   }
 
+  console.log('❌ [getBackendAuthToken] No token found anywhere');
+  console.log('🔍 [getBackendAuthToken] === FIN DIAGNOSTIC TOKEN BACKEND ===');
   return null;
 }
 
@@ -93,12 +119,12 @@ function buildApiUrl(endpoint: string): string {
   // Remove leading slash from endpoint if it exists
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
 
-  // Handle different cases for BASE_URL
-  if (!BASE_URL || BASE_URL === '/') {
-    // If base URL is empty or root, just return the endpoint with leading slash
-    return `/${cleanEndpoint}`;
+  // Use relative path for proxy in development, absolute URL in production
+  if (BASE_URL === '') {
+    // For relative paths, ensure endpoint starts with /api/
+    return endpoint.startsWith('/api/') ? endpoint : `/api/${cleanEndpoint}`;
   } else {
-    // Ensure base URL ends with a slash if it's not empty
+    // Always use BASE_URL for absolute URLs
     const formattedBaseUrl = BASE_URL.endsWith('/') ? BASE_URL : BASE_URL + '/';
     return `${formattedBaseUrl}${cleanEndpoint}`;
   }
@@ -114,6 +140,7 @@ export async function sendMessage(
   onMessage: (event: MessageEvent) => void,
   onError: (error: Event | Error) => void,
   addDebugLog?: (message: string) => void,
+  systemPrompt?: string,
 ): Promise<{ jobId: string; eventSource: EventSource }> {
   try {
     console.log('🚀 [sendMessage] Starting request to /api/chat');
@@ -128,10 +155,15 @@ export async function sendMessage(
       `[API] 🚀 Envoi de la requête vers /api/chat avec prompt de ${prompt.length} caractères`,
     );
 
+    const requestBody: any = { prompt };
+    if (systemPrompt) {
+      requestBody.systemPrompt = systemPrompt;
+    }
+
     const response = await fetch(buildApiUrl('/api/chat'), {
       method: 'POST',
       headers,
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify(requestBody),
     });
 
     console.log('📡 [sendMessage] Response received!');
@@ -480,6 +512,32 @@ export async function getLeaderboardStats(
   return await response.json();
 }
 
+/**
+ * Récupère les statistiques de tokens du dernier prompt.
+ */
+export async function getLatestTokenStats(
+  authToken: string | null = null,
+  sessionId: string | null = null,
+): Promise<{
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  timestamp: number | null;
+}> {
+  const headers = getAuthHeaders(authToken, sessionId);
+
+  const response = await fetch(buildApiUrl('/api/tokens/latest'), {
+    method: 'GET',
+    headers,
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Erreur lors de la récupération des statistiques de tokens`,
+    );
+  }
+  return await response.json();
+}
+
 import { type LlmApiKey } from '../store/types';
 
 /**
@@ -686,4 +744,26 @@ export async function testLlmApiKey(
   }
 
   return await response.json();
+}
+
+/**
+ * Nettoie les données Redis pour une ancienne session.
+ */
+export async function cleanupRedisSessionData(
+  oldSessionId: string,
+  authToken: string | null = null,
+  sessionId: string | null = null,
+): Promise<void> {
+  const response = await fetch(buildApiUrl('/api/session/cleanup-redis'), {
+    method: 'POST',
+    headers: getAuthHeaders(authToken, sessionId),
+    body: JSON.stringify({ oldSessionId }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(
+      errorData.message || `Erreur lors du nettoyage des données Redis`,
+    );
+  }
 }
