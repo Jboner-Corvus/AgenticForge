@@ -11,6 +11,9 @@ vi.mock('../../store/uiStore', () => ({
 }));
 
 // Mock the UI store selectors properly
+const mockSetMessageInputValue = vi.fn();
+const mockSetSelectedSystemPrompt = vi.fn();
+
 vi.mocked(useUIStore).mockImplementation((selector) => {
   const mockState = {
     // Required state properties
@@ -50,8 +53,8 @@ vi.mocked(useUIStore).mockImplementation((selector) => {
     toggleDarkMode: vi.fn(),
     setIsProcessing: vi.fn(),
     setAgentProgress: vi.fn(),
-    setMessageInputValue: vi.fn(),
-    setSelectedSystemPrompt: vi.fn(),
+    setMessageInputValue: mockSetMessageInputValue,
+    setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
     setAgentStatus: vi.fn(),
     setToolStatus: vi.fn(),
     setBrowserStatus: vi.fn(),
@@ -157,6 +160,70 @@ describe('System Prompt Integration Tests - End-to-End', () => {
   const mockStartAgent = vi.fn();
   const mockInterruptAgent = vi.fn();
 
+  // Helper function to create mock state
+  const createMockState = (overrides: any = {}) => {
+    return {
+      // Required state properties
+      currentPage: 'chat' as any,
+      isSettingsModalOpen: false,
+      isControlPanelVisible: false,
+      isDebugLogVisible: false,
+      isTodoListVisible: false,
+      isUnifiedTodoListVisible: true,
+      isDarkMode: false,
+      isProcessing: false,
+      agentProgress: 0,
+      messageInputValue: '',
+      selectedSystemPrompt: 'architect',
+      agentStatus: null,
+      toolStatus: '',
+      browserStatus: 'idle',
+      serverHealthy: false,
+      isAuthenticated: false,
+      tokenStatus: false,
+      toolCount: 0,
+      toolCreationEnabled: false,
+      codeExecutionEnabled: true,
+      authToken: 'test-token',
+      jobId: null,
+      activeCliJobId: null,
+      streamCloseFunc: null,
+      debugLog: [],
+
+      // Required action functions
+      setCurrentPage: vi.fn(),
+      setIsSettingsModalOpen: vi.fn(),
+      setIsControlPanelVisible: vi.fn(),
+      setIsTodoListVisible: vi.fn(),
+      setIsUnifiedTodoListVisible: vi.fn(),
+      toggleDebugLogVisibility: vi.fn(),
+      toggleDarkMode: vi.fn(),
+      setIsProcessing: vi.fn(),
+      setAgentProgress: vi.fn(),
+      setMessageInputValue: mockSetMessageInputValue,
+      setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
+      setAgentStatus: vi.fn(),
+      setToolStatus: vi.fn(),
+      setBrowserStatus: vi.fn(),
+      setServerHealthy: vi.fn(),
+      setTokenStatus: vi.fn(),
+      setToolCount: vi.fn(),
+      setToolCreationEnabled: vi.fn(),
+      setCodeExecutionEnabled: vi.fn(),
+      setAuthToken: vi.fn(),
+      setJobId: vi.fn(),
+      setActiveCliJobId: vi.fn(),
+      addDebugLog: vi.fn(),
+      clearDebugLog: vi.fn(),
+      toast: vi.fn(),
+      setAuthTokenAndValidate: vi.fn(),
+      refreshAuthToken: vi.fn(),
+      getValidAuthToken: vi.fn(),
+      getSystemStatus: vi.fn(),
+      ...overrides
+    } as any;
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -173,14 +240,13 @@ describe('System Prompt Integration Tests - End-to-End', () => {
 
   describe('Architect Mode', () => {
     beforeEach(() => {
-      (useUIStore as any).mockReturnValue({
-        messageInputValue: '',
-        selectedSystemPrompt: 'architect',
-        isProcessing: false,
-        authToken: 'test-token',
-        setMessageInputValue: vi.fn(),
-        setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-        setIsProcessing: vi.fn()
+      // Update the mock state for this test
+      vi.mocked(useUIStore).mockImplementation((selector) => {
+        const mockState = createMockState({ selectedSystemPrompt: 'architect' });
+        if (typeof selector === 'function') {
+          return selector(mockState);
+        }
+        return mockState;
       });
     });
 
@@ -212,14 +278,13 @@ describe('System Prompt Integration Tests - End-to-End', () => {
 
   describe('Coder Mode', () => {
     beforeEach(() => {
-      (useUIStore as any).mockReturnValue({
-        messageInputValue: '',
-        selectedSystemPrompt: 'coder',
-        isProcessing: false,
-        authToken: 'test-token',
-        setMessageInputValue: vi.fn(),
-        setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-        setIsProcessing: vi.fn()
+      // Update the mock state for this test
+      vi.mocked(useUIStore).mockImplementation((selector) => {
+        const mockState = createMockState({ selectedSystemPrompt: 'coder' });
+        if (typeof selector === 'function') {
+          return selector(mockState);
+        }
+        return mockState;
       });
     });
 
@@ -277,14 +342,12 @@ describe('System Prompt Integration Tests - End-to-End', () => {
 
   describe('Explain Mode', () => {
     beforeEach(() => {
-      (useUIStore as any).mockReturnValue({
-        messageInputValue: '',
-        selectedSystemPrompt: 'explain',
-        isProcessing: false,
-        authToken: 'test-token',
-        setMessageInputValue: vi.fn(),
-        setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-        setIsProcessing: vi.fn()
+      vi.mocked(useUIStore).mockImplementation((selector) => {
+        const mockState = createMockState({ selectedSystemPrompt: 'explain' });
+        if (typeof selector === 'function') {
+          return selector(mockState);
+        }
+        return mockState;
       });
     });
 
@@ -305,14 +368,12 @@ describe('System Prompt Integration Tests - End-to-End', () => {
 
   describe('Debug Mode', () => {
     beforeEach(() => {
-      (useUIStore as any).mockReturnValue({
-        messageInputValue: '',
-        selectedSystemPrompt: 'debug',
-        isProcessing: false,
-        authToken: 'test-token',
-        setMessageInputValue: vi.fn(),
-        setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-        setIsProcessing: vi.fn()
+      vi.mocked(useUIStore).mockImplementation((selector) => {
+        const mockState = createMockState({ selectedSystemPrompt: 'debug' });
+        if (typeof selector === 'function') {
+          return selector(mockState);
+        }
+        return mockState;
       });
     });
 
@@ -333,14 +394,12 @@ describe('System Prompt Integration Tests - End-to-End', () => {
 
   describe('Orchestrate Mode', () => {
     beforeEach(() => {
-      (useUIStore as any).mockReturnValue({
-        messageInputValue: '',
-        selectedSystemPrompt: 'orchestrate',
-        isProcessing: false,
-        authToken: 'test-token',
-        setMessageInputValue: vi.fn(),
-        setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-        setIsProcessing: vi.fn()
+      vi.mocked(useUIStore).mockImplementation((selector) => {
+        const mockState = createMockState({ selectedSystemPrompt: 'orchestrate' });
+        if (typeof selector === 'function') {
+          return selector(mockState);
+        }
+        return mockState;
       });
     });
 
@@ -361,14 +420,12 @@ describe('System Prompt Integration Tests - End-to-End', () => {
 
   describe('FrontEnd Mode', () => {
     beforeEach(() => {
-      (useUIStore as any).mockReturnValue({
-        messageInputValue: '',
-        selectedSystemPrompt: 'frontend',
-        isProcessing: false,
-        authToken: 'test-token',
-        setMessageInputValue: vi.fn(),
-        setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-        setIsProcessing: vi.fn()
+      vi.mocked(useUIStore).mockImplementation((selector) => {
+        const mockState = createMockState({ selectedSystemPrompt: 'frontend' });
+        if (typeof selector === 'function') {
+          return selector(mockState);
+        }
+        return mockState;
       });
     });
 
@@ -443,14 +500,12 @@ describe('System Prompt Integration Tests - End-to-End', () => {
 
   describe('Error Scenarios', () => {
     it('should handle empty system prompt gracefully', () => {
-      (useUIStore as any).mockReturnValue({
-        messageInputValue: '',
-        selectedSystemPrompt: '',
-        isProcessing: false,
-        authToken: 'test-token',
-        setMessageInputValue: vi.fn(),
-        setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-        setIsProcessing: vi.fn()
+      vi.mocked(useUIStore).mockImplementation((selector) => {
+        const mockState = createMockState({ selectedSystemPrompt: '' });
+        if (typeof selector === 'function') {
+          return selector(mockState);
+        }
+        return mockState;
       });
 
       // Ne devrait pas planter avec un mode vide
@@ -458,14 +513,16 @@ describe('System Prompt Integration Tests - End-to-End', () => {
     });
 
     it('should handle processing state correctly', () => {
-      (useUIStore as any).mockReturnValue({
-        messageInputValue: 'Test message',
-        selectedSystemPrompt: 'architect',
-        isProcessing: true,
-        authToken: 'test-token',
-        setMessageInputValue: vi.fn(),
-        setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-        setIsProcessing: vi.fn()
+      vi.mocked(useUIStore).mockImplementation((selector) => {
+        const mockState = createMockState({
+          messageInputValue: 'Test message',
+          selectedSystemPrompt: 'architect',
+          isProcessing: true
+        });
+        if (typeof selector === 'function') {
+          return selector(mockState);
+        }
+        return mockState;
       });
 
       render(<UserInput />);

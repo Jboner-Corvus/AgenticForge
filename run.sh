@@ -628,8 +628,9 @@ show_guided_menu() {
     printf "    5) \033[0;34m📊 Worker Logs\033[0m        - View worker process logs\n"
     printf "    6) \033[0;34m🐚 Container Shell\033[0m    - Access server container\n"
     printf "    7) \033[0;34m🔨 Rebuild All\033[0m        - Full rebuild (use if issues)\n"
-    printf "    8) \033[0;34m🌐 Rebuild Web\033[0m        - Rebuild frontend only (faster)\n"
-    printf "    9) \033[0;34m🐳 Docker Logs\033[0m        - View all container logs\n"
+    printf "    8) \033[0;34m⚡ Rebuild Rapid\033[0m       - Fast rebuild with cache\n"
+    printf "    9) \033[0;34m🌐 Rebuild Web\033[0m        - Rebuild frontend only (faster)\n"
+    printf "   10) \033[0;34m🐳 Docker Logs\033[0m        - View all container logs\n"
     printf "   10) \033[1;33m🔄 Restart Worker\033[0m     - Restart worker only\n"
     echo ""
     echo -e "    ${COLOR_CYAN}🔧 Development${NC}"
@@ -1089,6 +1090,86 @@ rebuild_all() {
     echo -e "${COLOR_CYAN}💡 System prompt and configuration changes have been applied.${NC}"
 }
 
+# Rapid rebuild with cache (faster than full rebuild)
+rebuild_rapid() {
+    echo -e "${COLOR_BLUE}⚡ Rapid rebuild with cache...${NC}"
+
+    start_timer "rebuild_rapid"
+
+    # Stop services first
+    echo -e "${COLOR_YELLOW}🛑 Stopping services...${NC}"
+    stop_services
+
+    # Clean only build directories (not Docker cache)
+    echo -e "${COLOR_YELLOW}🧹 Cleaning build directories...${NC}"
+    rm -rf packages/*/dist
+    rm -rf packages/*/build
+
+    # Build core package locally (required for worker that runs outside Docker)
+    echo -e "${COLOR_YELLOW}📦 Building core package locally (for worker)...${NC}"
+    cd "$ROOT_DIR/packages/core"
+    if pnpm install && pnpm run build; then
+        echo -e "${COLOR_GREEN}✅ Core package built successfully${NC}"
+    else
+        echo -e "${COLOR_RED}❌ Core package build failed${NC}"
+        return 1
+    fi
+
+    # Build UI package locally (required for Docker COPY)
+    echo -e "${COLOR_YELLOW}🌐 Building UI package locally (for Docker)...${NC}"
+    cd "$ROOT_DIR/packages/ui"
+    if pnpm install && NODE_ENV=production pnpm run build; then
+        echo -e "${COLOR_GREEN}✅ UI package built successfully${NC}"
+    else
+        echo -e "${COLOR_RED}❌ UI package build failed${NC}"
+        return 1
+    fi
+
+    echo -e "${COLOR_CYAN}ℹ️ Worker will run outside Docker as configured${NC}"
+    echo -e "${COLOR_CYAN}💡 Core and UI packages built locally for Docker compatibility${NC}"
+
+    # Build Docker with cache (much faster)
+    cd "$ROOT_DIR"
+    echo -e "${COLOR_YELLOW}🐳 Building Docker images (with cache)...${NC}"
+    echo -e "${COLOR_CYAN}   📦 Using cached layers for faster builds${NC}"
+    echo -e "${COLOR_CYAN}   ☕ This should be much faster than full rebuild!${NC}"
+    echo ""
+
+    export DOCKER_BUILDKIT=1
+
+    # Show a progress indicator while building
+    echo -e "${COLOR_BLUE}🔨 Starting Docker build process...${NC}"
+    if docker compose build; then
+        echo ""
+        echo -e "${COLOR_GREEN}✅ Docker images built successfully!${NC}"
+    else
+        echo ""
+        echo -e "${COLOR_RED}❌ Docker build failed${NC}"
+        return 1
+    fi
+
+    # Restart services with proper delay to ensure system prompt reload
+    echo -e "${COLOR_YELLOW}🔄 Restarting services to load updated configuration...${NC}"
+    echo -e "${COLOR_CYAN}   🚀 Starting all services...${NC}"
+    if restart_all_services; then
+        echo -e "${COLOR_GREEN}   ✅ Services restarted successfully${NC}"
+    else
+        echo -e "${COLOR_RED}   ❌ Service restart failed${NC}"
+        return 1
+    fi
+
+    # Wait for services to fully initialize
+    echo -e "${COLOR_CYAN}⏳ Waiting for services to initialize...${NC}"
+    echo -e "${COLOR_CYAN}   📡 This may take up to 2 minutes...${NC}"
+    sleep 5
+    echo -e "${COLOR_GREEN}   ✅ Initialization complete!${NC}"
+
+    end_timer "rebuild_rapid"
+    echo -e "${COLOR_GREEN}🎉 Rapid rebuild finished!${NC}"
+    echo -e "${COLOR_CYAN}💡 System prompt and configuration changes have been applied.${NC}"
+    echo -e "${COLOR_YELLOW}⚡ This was faster than a full rebuild because Docker cache was used!${NC}"
+}
+
 # =============================================================================
 # Testing Functions (separated as per specifications)
 # =============================================================================
@@ -1398,13 +1479,40 @@ main() {
                 echo -e "${COLOR_CYAN}⚡ Service Status:${NC}"
                 docker compose ps 
                 ;;
-            rebuild-all) 
+            rebuild-all)
                 echo -e "${COLOR_BLUE}🔨 Rebuilding everything...${NC}"
-                rebuild_all 
+                rebuild_all
                 ;;
-            rebuild-web) 
+            rebuild-rapid)
+                # Check if help is requested
+                if [[ "$2" == "--help" ]] || [[ "$2" == "-h" ]]; then
+                    echo -e "${COLOR_CYAN}rebuild-rapid - Fast rebuild with Docker cache${NC}"
+                    echo ""
+                    echo -e "${COLOR_BLUE}DESCRIPTION:${NC}"
+                    echo -e "   Performs a rapid rebuild using Docker cache for faster builds."
+                    echo -e "   Skips Docker cache cleanup and uses cached layers when possible."
+                    echo ""
+                    echo -e "${COLOR_BLUE}USAGE:${NC}"
+                    echo -e "   $0 rebuild-rapid"
+                    echo ""
+                    echo -e "${COLOR_BLUE}COMPARED TO rebuild-all:${NC}"
+                    echo -e "   • ${COLOR_GREEN}Faster${NC}: Uses Docker cache instead of --no-cache"
+                    echo -e "   • ${COLOR_GREEN}Smaller${NC}: Skips Docker system prune"
+                    echo -e "   • ${COLOR_YELLOW}Less thorough${NC}: May not catch all cache issues"
+                    echo ""
+                    echo -e "${COLOR_BLUE}WHEN TO USE:${NC}"
+                    echo -e "   • Quick development rebuilds"
+                    echo -e "   • When you know cache is still valid"
+                    echo -e "   • For iterative development work"
+                    echo ""
+                    exit 0
+                fi
+                echo -e "${COLOR_BLUE}⚡ Rapid rebuild with cache...${NC}"
+                rebuild_rapid
+                ;;
+            rebuild-web)
                 echo -e "${COLOR_BLUE}🌐 Rebuilding frontend only...${NC}"
-                rebuild_web 
+                rebuild_web
                 ;;
             restart-worker) 
                 echo -e "${COLOR_YELLOW}🔄 Restarting worker...${NC}"
@@ -1464,7 +1572,7 @@ main() {
             *) 
                 echo -e "${COLOR_RED}Unknown command: $1${NC}"
                 echo ""
-                echo "Usage: $0 {start|stop|restart|status|rebuild-all|rebuild-web|restart-worker|install|deploy|setup|test:unit|test:integration|test:all|quality-check|kill-workers|check-workers|help|menu|dev|stop-dev|dev-logs}"
+                echo "Usage: $0 {start|stop|restart|status|rebuild-all|rebuild-rapid|rebuild-web|restart-worker|install|deploy|setup|test:unit|test:integration|test:all|quality-check|kill-workers|check-workers|help|menu|dev|stop-dev|dev-logs}"
                 echo ""
                 echo -e "${COLOR_CYAN}Available commands:${NC}"
                 echo -e "  ${COLOR_GREEN}install/deploy${NC}   - Fully automated installation (no prompts)"
@@ -1474,6 +1582,7 @@ main() {
                 echo -e "  ${COLOR_YELLOW}restart-worker${NC}   - Restart worker only"
                 echo -e "  ${COLOR_CYAN}status${NC}           - Show service status"
                 echo -e "  ${COLOR_BLUE}rebuild-all${NC}      - Complete rebuild (all services)"
+                echo -e "  ${COLOR_BLUE}rebuild-rapid${NC}    - Fast rebuild with Docker cache"
                 echo -e "  ${COLOR_BLUE}rebuild-web${NC}      - Rebuild frontend only (faster)"
                 echo -e "  ${COLOR_BLUE}setup${NC}            - Run interactive setup wizard"
                 echo -e "  ${COLOR_BLUE}dev${NC}              - Start development server on port 3003"
@@ -1529,61 +1638,65 @@ main() {
                 echo -e "${COLOR_BLUE}🐚 Opening container shell...${NC}"
                 docker exec -it g_forge_server bash 
                 ;;
-            7) 
+            7)
                 echo -e "${COLOR_BLUE}🔨 Starting complete rebuild...${NC}"
-                rebuild_all 
+                rebuild_all
                 ;;
-            8) 
+            8)
+                echo -e "${COLOR_BLUE}⚡ Starting rapid rebuild with cache...${NC}"
+                rebuild_rapid
+                ;;
+            9)
                 echo -e "${COLOR_BLUE}🌐 Starting frontend rebuild...${NC}"
-                rebuild_web 
+                rebuild_web
                 ;;
-            9) 
+            9)
                 echo -e "${COLOR_BLUE}🐳 Showing Docker logs (Ctrl+C to exit):${NC}"
-                docker compose logs -f 
+                docker compose logs -f
                 ;;
-            10) 
+            10)
                 echo -e "${COLOR_YELLOW}🔄 Restarting worker...${NC}"
-                restart_worker 
+                restart_worker
                 ;;
-            11) 
+            11)
                 echo -e "${COLOR_BLUE}💻 Starting development server on port 3003...${NC}"
-                start_dev_server 
+                start_dev_server
                 ;;
-            12) 
+            12)
                 echo -e "${COLOR_RED}🛑 Stopping development server...${NC}"
-                stop_dev_server 
+                stop_dev_server
                 ;;
-            13) 
+            13)
                 echo -e "${COLOR_BLUE}📋 Showing development server logs (Ctrl+C to exit):${NC}"
-                tail -f "$ROOT_DIR/dev-server.log" 2>/dev/null || echo "No development server log found" 
+                tail -f "$ROOT_DIR/dev-server.log" 2>/dev/null || echo "No development server log found"
                 ;;
-            14) 
+            14)
                 echo -e "${COLOR_BLUE}🔬 Running unit tests...${NC}"
                 run_unit_tests
                 ;;
-            15) 
+            15)
                 echo -e "${COLOR_BLUE}🔗 Running integration tests...${NC}"
-                run_integration_tests 
+                run_integration_tests
                 ;;
-            16) 
+            16)
                 echo -e "${COLOR_BLUE}🧪 Running all tests...${NC}"
-                run_all_tests 
+                run_all_tests
                 ;;
-            17) 
+            17)
                 echo -e "${COLOR_BLUE}🎯 Running quality check...${NC}"
                 run_quality_check
                 ;;
-            18) 
+            18)
                 echo -e "${COLOR_BLUE}🔍 Running code linting...${NC}"
-                cd "$ROOT_DIR" && pnpm run lint 
+                cd "$ROOT_DIR" && pnpm run lint
                 ;;
-            19) 
+            19)
                 echo -e "${COLOR_BLUE}✨ Formatting code...${NC}"
-                cd "$ROOT_DIR" && pnpm run format 
+                cd "$ROOT_DIR" && pnpm run format
                 ;;
-            20) 
+            20)
                 echo -e "${COLOR_BLUE}📘 Checking TypeScript types...${NC}"
-                cd "$ROOT_DIR" && pnpm run typecheck 
+                cd "$ROOT_DIR" && pnpm run typecheck
                 ;;
             21)
                 echo -e "${COLOR_BLUE}🔄 Running integration test runner...${NC}"
