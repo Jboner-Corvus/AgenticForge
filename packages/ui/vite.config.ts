@@ -67,6 +67,10 @@ export default defineConfig(({ mode }) => {
       : 'ABSENT',
   );
 
+  // Log the actual values for debugging
+  console.log('🔐 [Vite Config] Root AUTH_TOKEN value:', rootEnv.AUTH_TOKEN);
+  console.log('🔐 [Vite Config] Local VITE_AUTH_TOKEN value:', localEnv.VITE_AUTH_TOKEN);
+
   return {
     // Use '/' as the base path for the app
     base: '/',
@@ -138,6 +142,9 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_BACKEND_PORT': JSON.stringify(
         localEnv.VITE_BACKEND_PORT || rootEnv.VITE_BACKEND_PORT || process.env.VITE_BACKEND_PORT || '3001',
       ),
+      'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
+        localEnv.VITE_API_BASE_URL || rootEnv.VITE_API_BASE_URL || process.env.VITE_API_BASE_URL || '',
+      ),
       'process.env.NODE_ENV': JSON.stringify(
         process.env.NODE_ENV || 'development',
       ),
@@ -165,10 +172,21 @@ export default defineConfig(({ mode }) => {
               // Forcer l'auth header sur toutes les requêtes proxy
               // Priorité: local .env > root .env > process.env
               const authToken = localEnv.VITE_AUTH_TOKEN || rootEnv.AUTH_TOKEN || process.env.AUTH_TOKEN || '';
+              console.log('🔐 [Proxy] Setting Authorization header with token:', authToken ? 'PRÉSENT' : 'ABSENT');
+              if (authToken) {
+                console.log('🔐 [Proxy] Token value (first 20 chars):', authToken.substring(0, 20));
+              }
               proxyReq.setHeader(
                 'Authorization',
                 'Bearer ' + authToken,
               );
+            });
+            proxy.on('error', (err, req, res) => {
+              console.error('🚨 [Proxy] Proxy error:', err);
+              res.writeHead(500, {
+                'Content-Type': 'text/plain',
+              });
+              res.end('Proxy error');
             });
           },
         },
@@ -191,10 +209,21 @@ export default defineConfig(({ mode }) => {
               // Forcer l'auth header sur toutes les requêtes proxy
               // Priorité: local .env > root .env > process.env
               const authToken = localEnv.VITE_AUTH_TOKEN || rootEnv.AUTH_TOKEN || process.env.AUTH_TOKEN || '';
+              console.log('🔐 [Preview Proxy] Setting Authorization header with token:', authToken ? 'PRÉSENT' : 'ABSENT');
+              if (authToken) {
+                console.log('🔐 [Preview Proxy] Token value (first 20 chars):', authToken.substring(0, 20));
+              }
               proxyReq.setHeader(
                 'Authorization',
                 'Bearer ' + authToken,
               );
+            });
+            proxy.on('error', (err, req, res) => {
+              console.error('🚨 [Preview Proxy] Proxy error:', err);
+              res.writeHead(500, {
+                'Content-Type': 'text/plain',
+              });
+              res.end('Proxy error');
             });
           },
         },

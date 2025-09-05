@@ -1,11 +1,22 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import * as React from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useIsProcessing, useMessageInputValue } from '../store/hooks';
 import { useUIStore } from '../store/uiStore';
 import { useAgentStream } from '../lib/hooks/useAgentStream';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { Send, Paperclip, Mic, Square } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger } from './ui/select';
+import { Send, Paperclip, Mic, Square, Settings, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../lib/contexts/LanguageContext';
+// System prompt options - hardcoded for now, will be imported from core later
+const SYSTEM_PROMPT_OPTIONS = [
+  { value: 'architect', label: 'Architect', description: 'System design, architecture planning, and technical specifications' },
+  { value: 'coder', label: 'Coder', description: 'Code implementation, debugging, and development' },
+  { value: 'explain', label: 'Explain', description: 'Code explanation, teaching, and knowledge sharing' },
+  { value: 'debug', label: 'Debug', description: 'Debugging, troubleshooting, and problem solving' },
+  { value: 'orchestrate', label: 'Orchestrate', description: 'Project management, coordination, and workflow optimization' },
+  { value: 'frontend', label: 'FrontEnd', description: 'Frontend development, UI/UX, and user interface design' }
+];
 // LoadingSpinner component is imported but not currently used
 // import { LoadingSpinner } from './LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,14 +30,33 @@ export const UserInput = () => {
   const { translations } = useLanguage();
   const inputValue = useMessageInputValue();
   const setInputValue = useUIStore((state) => state.setMessageInputValue);
+  const selectedSystemPrompt = useUIStore((state) => state.selectedSystemPrompt);
+  const setSelectedSystemPrompt = useUIStore((state) => state.setSelectedSystemPrompt);
   const { startAgent, interruptAgent } = useAgentStream();
   const isProcessing = useIsProcessing();
+
+  // Debug log pour vérifier que le composant se rend
+  console.log('🔧 UserInput rendered with selectedSystemPrompt:', selectedSystemPrompt);
+
+  // Debug effect pour surveiller les changements
+  useEffect(() => {
+    console.log('🎯 System prompt state changed:', {
+      selectedSystemPrompt,
+      availableOptions: SYSTEM_PROMPT_OPTIONS.map(opt => opt.label)
+    });
+  }, [selectedSystemPrompt]);
 
   // États locaux pour les fonctionnalités avancées
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Debug effect pour surveiller l'état du dropdown
+  useEffect(() => {
+    console.log('📋 Dropdown state:', { isDropdownOpen, selectedSystemPrompt });
+  }, [isDropdownOpen, selectedSystemPrompt]);
 
   // Refs
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -64,10 +94,12 @@ export const UserInput = () => {
     setIsDragOver(false);
 
     const files = Array.from(e.dataTransfer.files);
-    const validFiles = files.filter(file =>
-      file.type.startsWith('image/') ||
-      file.type.startsWith('text/') ||
-      file.type === 'application/pdf'
+    const validFiles = files.filter((file): file is File =>
+      file.type !== undefined && (
+        file.type.startsWith('image/') ||
+        file.type.startsWith('text/') ||
+        file.type === 'application/pdf'
+      )
     );
 
     if (validFiles.length > 0) {
@@ -104,7 +136,7 @@ export const UserInput = () => {
   // Gestion des pièces jointes
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setAttachments(prev => [...prev, ...files].slice(0, 5));
+    setAttachments(prev => [...prev, ...files].slice(0, 5) as File[]);
   }, []);
 
   const removeAttachment = useCallback((index: number) => {
@@ -258,6 +290,37 @@ export const UserInput = () => {
 
         {/* Boutons d'action */}
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          {/* System Prompt Dropdown */}
+          <Select
+            value={selectedSystemPrompt}
+            onValueChange={(value) => {
+              console.log('🔧 System prompt changed to:', value);
+              setSelectedSystemPrompt(value);
+              setIsDropdownOpen(false);
+            }}
+            open={isDropdownOpen}
+            onOpenChange={setIsDropdownOpen}
+            disabled={isProcessing}
+          >
+            <SelectTrigger className="h-8 w-32 px-2 border border-border bg-background hover:bg-muted/50 rounded-md transition-colors shadow-sm flex items-center gap-1 relative z-10">
+              <Settings className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground">
+                {SYSTEM_PROMPT_OPTIONS.find(opt => opt.value === selectedSystemPrompt)?.label || 'Mode'}
+              </span>
+              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            </SelectTrigger>
+            <SelectContent align="end" className="w-64 z-[9999] bg-popover border border-border shadow-lg">
+              {SYSTEM_PROMPT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value} className="cursor-pointer">
+                  <div className="flex flex-col">
+                    <span className="font-medium">{option.label}</span>
+                    <span className="text-xs text-muted-foreground">{option.description}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           {/* Bouton pièce jointe */}
           <Button
             type="button"

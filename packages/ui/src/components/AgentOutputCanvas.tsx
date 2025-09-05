@@ -40,6 +40,7 @@ import {
 import { useCanvasStore } from '../store/canvasStore';
 import { useLanguage } from '../lib/contexts/LanguageContext';
 import { useToast } from '../lib/hooks/useToast';
+import { useJobId } from '../store/hooks';
 
 const AgentOutputCanvas: React.FC = () => {
   const { translations } = useLanguage();
@@ -60,9 +61,12 @@ const AgentOutputCanvas: React.FC = () => {
   const currentCanvasIndex = useCurrentCanvasIndex();
   const [iframeKey, setIframeKey] = useState(0);
   const [hasIframeError, setHasIframeError] = useState(false);
+  const [canvasConsoleLogs, setCanvasConsoleLogs] = useState<any[]>([]);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   const { toast } = useToast();
+  const jobId = useJobId();
 
   console.log('🎨 [AgentOutputCanvas] Render avec:', {
     canvasContent: canvasContent?.length || 0,
@@ -74,7 +78,231 @@ const AgentOutputCanvas: React.FC = () => {
   useEffect(() => {
     setHasIframeError(false);
     setIframeKey((prev) => prev + 1); // Force re-render iframe
+    setCanvasConsoleLogs([]); // Clear logs when content changes
   }, [canvasContent]);
+
+  // Gestionnaire de messages postMessage depuis l'iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Vérifier l'origine pour la sécurité (même origine que le parent)
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      if (event.data && event.data.type === 'canvas_console_log') {
+        const logEntry = event.data.data;
+        console.log('🎯 [Canvas Console] Log received:', logEntry);
+
+        setCanvasConsoleLogs(prev => [...prev, logEntry]);
+
+        // Optionnel: afficher dans la console du parent aussi
+        const prefix = `[CANVAS ${logEntry.level.toUpperCase()}]`;
+        switch (logEntry.level) {
+          case 'error':
+            console.error(prefix, logEntry.message);
+            break;
+          case 'warn':
+            console.warn(prefix, logEntry.message);
+            break;
+          case 'info':
+            console.info(prefix, logEntry.message);
+            break;
+          case 'debug':
+            console.debug(prefix, logEntry.message);
+            break;
+          default:
+            console.log(prefix, logEntry.message);
+        }
+      }
+
+      if (event.data && event.data.type === 'canvas_console_logs_response') {
+        const logs = event.data.data;
+        console.log('🎯 [Canvas Console] Logs response received:', logs);
+        setCanvasConsoleLogs(logs);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // Gestionnaire pour les commandes canvas console feedback
+  useEffect(() => {
+    const handleCanvasConsoleFeedback = (event: any) => {
+      if (event.type === 'canvas_console_feedback') {
+        const { action, level, limit, filter } = event;
+
+        if (!iframeRef.current?.contentWindow) {
+          console.warn('Canvas iframe not available for console feedback');
+          return;
+        }
+
+        try {
+          switch (action) {
+            case 'get_logs':
+              // Demander les logs à l'iframe
+              iframeRef.current.contentWindow.postMessage({
+                type: 'canvas_console_command',
+                command: 'get_logs_request',
+                level,
+                limit,
+                filter
+              }, '*');
+              break;
+
+            case 'clear_logs':
+              setCanvasConsoleLogs([]);
+              iframeRef.current.contentWindow.postMessage({
+                type: 'canvas_console_command',
+                command: 'clear_logs'
+              }, '*');
+              break;
+
+            case 'enable_capture':
+              iframeRef.current.contentWindow.postMessage({
+                type: 'canvas_console_command',
+                command: 'enable_capture'
+              }, '*');
+              break;
+
+            case 'disable_capture':
+              iframeRef.current.contentWindow.postMessage({
+                type: 'canvas_console_command',
+                command: 'disable_capture'
+              }, '*');
+              break;
+          }
+        } catch (error) {
+          console.error('Error handling canvas console feedback:', error);
+        }
+      }
+    };
+
+    // Écouter les événements SSE pour les commandes canvas console feedback
+    const eventSource = (window as any).eventSource;
+    if (eventSource) {
+      eventSource.addEventListener('canvas_console_feedback', handleCanvasConsoleFeedback);
+      return () => {
+        eventSource.removeEventListener('canvas_console_feedback', handleCanvasConsoleFeedback);
+      };
+    }
+  }, [canvasConsoleLogs]);
+
+  // EventSource pour recevoir les messages canvas console feedback
+  useEffect(() => {
+    if (!jobId) {
+      console.log('🎯 [Canvas Console] No jobId available for EventSource');
+      return;
+    }
+
+    console.log('🎯 [Canvas Console] Setting up EventSource for jobId:', jobId);
+
+    // Fermer l'EventSource existant s'il y en a un
+    if (eventSourceRef.current) {
+      console.log('🎯 [Canvas Console] Closing existing EventSource');
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+
+    // Récupérer le token d'authentification depuis les variables d'environnement
+    const authToken = import.meta.env.VITE_AUTH_TOKEN;
+
+    console.log('🎯 [Canvas Console] Auth token available:', !!authToken);
+
+    // Créer l'EventSource - le proxy Vite ajoutera automatiquement l'header d'authentification
+    const eventSourceUrl = `/api/chat/stream/${jobId}`;
+
+    console.log('🎯 [Canvas Console] EventSource URL:', eventSourceUrl);
+    console.log('🎯 [Canvas Console] Auth will be handled by Vite proxy automatically');
+
+    const eventSource = new EventSource(eventSourceUrl);
+    eventSourceRef.current = eventSource;
+
+    eventSource.onopen = () => {
+      console.log('🎯 [Canvas Console] EventSource connected successfully');
+    };
+
+    eventSource.onmessage = (event) => {
+      if (event.data === 'heartbeat') {
+        return;
+      }
+
+      try {
+        const data = JSON.parse(event.data);
+        console.log('🎯 [Canvas Console] Received message:', data);
+
+        // Gérer les messages canvas_console_feedback
+        if (data.type === 'canvas_console_feedback') {
+          console.log('🎯 [Canvas Console] Handling canvas console feedback:', data);
+
+          // Le message contient déjà les paramètres d'action
+          const { action, level, limit, filter } = data;
+
+          if (!iframeRef.current?.contentWindow) {
+            console.warn('Canvas iframe not available for console feedback');
+            return;
+          }
+
+          try {
+            switch (action) {
+              case 'get_logs': {
+                const logs = canvasConsoleLogs
+                  .filter(log => !level || log.level === level)
+                  .filter(log => !filter || log.message.toLowerCase().includes(filter.toLowerCase()))
+                  .slice(-(limit || 50));
+
+                iframeRef.current.contentWindow.postMessage({
+                  type: 'canvas_console_command',
+                  command: 'get_logs_response',
+                  data: logs
+                }, '*');
+                break;
+              }
+
+              case 'clear_logs':
+                setCanvasConsoleLogs([]);
+                iframeRef.current.contentWindow.postMessage({
+                  type: 'canvas_console_command',
+                  command: 'clear_logs'
+                }, '*');
+                break;
+
+              case 'enable_capture':
+                iframeRef.current.contentWindow.postMessage({
+                  type: 'canvas_console_command',
+                  command: 'enable_capture'
+                }, '*');
+                break;
+
+              case 'disable_capture':
+                iframeRef.current.contentWindow.postMessage({
+                  type: 'canvas_console_command',
+                  command: 'disable_capture'
+                }, '*');
+                break;
+            }
+          } catch (error) {
+            console.error('Error handling canvas console feedback:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing EventSource message:', error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('🎯 [Canvas Console] EventSource error:', error);
+      console.error('🎯 [Canvas Console] EventSource readyState:', eventSource.readyState);
+      console.error('🎯 [Canvas Console] EventSource URL:', eventSource.url);
+      eventSource.close();
+    };
+
+    return () => {
+      console.log('🎯 [Canvas Console] Cleaning up EventSource');
+      eventSource.close();
+      eventSourceRef.current = null;
+    };
+  }, [jobId, canvasConsoleLogs]);
 
   const canvasVariants: Variants = {
     hidden: {

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Monitoring Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f4f4f4; margin: 0; }
+        .dashboard-container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; width: 80%; max-width: 600px; }
+        h1 { color: #333; margin-bottom: 20px; }
+        .metric { margin-bottom: 15px; }
+        .metric h2 { margin: 0; color: #555; font-size: 1.2em; }
+        .metric p { font-size: 1.8em; font-weight: bold; color: #007bff; margin-top: 5px; }
+        .alert { color: red; font-weight: bold; }
+        .normal { color: green; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <h1>System Monitoring Dashboard</h1>
+        <div class="metric">
+            <h2>CPU Usage</h2>
+            <p id="cpu-usage">--%</p>
+        </div>
+        <div class="metric">
+            <h2>RAM Usage</h2>
+            <p id="ram-usage">--%</p>
+        </div>
+        <div class="metric">
+            <h2>Disk Usage</h2>
+            <p id="disk-usage">--%</p>
+        </div>
+        <div id="alerts"></div>
+    </div>
+
+    <script>
+        function fetchMetrics() {
+            fetch('./metrics.json')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('cpu-usage').textContent = data.cpu + '%';
+                    document.getElementById('ram-usage').textContent = data.ram + '%';
+                    document.getElementById('disk-usage').textContent = data.disk + '%';
+
+                    const alertsDiv = document.getElementById('alerts');
+                    alertsDiv.innerHTML = ''; // Clear previous alerts
+
+                    if (data.cpu > 80) alertsDiv.innerHTML += `<p class="alert">CPU ALERT: ${data.cpu}%</p>`;
+                    if (data.ram > 80) alertsDiv.innerHTML += `<p class="alert">RAM ALERT: ${data.ram}%</p>`;
+                    if (data.disk > 90) alertsDiv.innerHTML += `<p class="alert">DISK ALERT: ${data.disk}%</p>`;
+
+                    // Apply styling based on thresholds (for real-time feedback)
+                    document.getElementById('cpu-usage').className = data.cpu > 80 ? 'alert' : 'normal';
+                    document.getElementById('ram-usage').className = data.ram > 80 ? 'alert' : 'normal';
+                    document.getElementById('disk-usage').className = data.disk > 90 ? 'alert' : 'normal';
+                })
+                .catch(error => console.error('Error fetching metrics:', error));
+        }
+
+        setInterval(fetchMetrics, 2000); // Fetch every 2 seconds
+        fetchMetrics(); // Initial fetch
+    </script>
+</body>
+</html>

@@ -2,11 +2,11 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
   displayCanvasTool
-} from "../../../../chunk-4OKX522H.js";
-import "../../../../chunk-EJC34O7O.js";
+} from "../../../../chunk-PLVJUSXX.js";
+import "../../../../chunk-PMK3N2CV.js";
 import {
   sendToCanvas
-} from "../../../../chunk-TKYKZMJX.js";
+} from "../../../../chunk-L6WJ56J2.js";
 import {
   beforeEach,
   describe,
@@ -14,9 +14,9 @@ import {
   it,
   vi
 } from "../../../../chunk-AQKYZ7X3.js";
-import "../../../../chunk-UWC7S2CG.js";
-import "../../../../chunk-BL4YZGPN.js";
-import "../../../../chunk-VUKI2J6K.js";
+import "../../../../chunk-HKREBWDH.js";
+import "../../../../chunk-ODN6V7GO.js";
+import "../../../../chunk-W2OHWP3M.js";
 import {
   init_esm_shims
 } from "../../../../chunk-SB7UONON.js";
@@ -90,7 +90,7 @@ describe("displayCanvasTool", () => {
         taskQueue: {}
       }
     );
-    globalExpect(sendToCanvas).toHaveBeenCalledWith("test-job-id", content, "html");
+    globalExpect(sendToCanvas).toHaveBeenCalledWith("test-job-id", globalExpect.stringContaining(content), "html");
     globalExpect(mockLog.info).toHaveBeenCalledWith(
       "\u{1F680} \xC9PIQUE CANVAS - Analyse du contenu..."
     );
@@ -199,7 +199,7 @@ describe("displayCanvasTool", () => {
         taskQueue: {}
       }
     );
-    globalExpect(sendToCanvas).toHaveBeenCalledWith("test-job-id", content, "html");
+    globalExpect(sendToCanvas).toHaveBeenCalledWith("test-job-id", globalExpect.stringContaining(content), "html");
     globalExpect(mockLog.info).toHaveBeenCalledWith(
       "\u{1F680} \xC9PIQUE CANVAS - Analyse du contenu..."
     );

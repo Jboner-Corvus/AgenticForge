@@ -104,6 +104,8 @@ export class WebSocketManager {
   }
 
   private handleClientMessage(client: WebSocketClient, message: WebSocketMessage): void {
+    logger.info(`📡 Received message from client ${client.id}:`, message.type, message.data);
+
     switch (message.type) {
       case 'ping':
         this.sendToClient(client, {
@@ -114,8 +116,11 @@ export class WebSocketManager {
         break;
 
       case 'subscribe_job_events':
+        logger.info(`📡 Processing subscribe_job_events for job: ${message.data?.jobId}`);
         if (message.data?.jobId) {
           this.subscribeClientToJobEvents(client, message.data.jobId);
+        } else {
+          logger.warn(`📡 subscribe_job_events missing jobId from client ${client.id}`);
         }
         break;
 

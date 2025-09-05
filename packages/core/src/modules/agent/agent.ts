@@ -62,17 +62,26 @@ export class Agent {
   private readonly job: Job<{ prompt: string }>;
   private readonly log: Logger;
   private loopCounter = 0;
-  private loopDetectionThreshold = 2; // Detect loops after 2 repetitions (reduced)
+  private loopDetectionThreshold = 5; // Detect loops after 5 repetitions (increased for complex tasks)
   private malformedResponseCounter = 0;
   private readonly MAX_MALFORMED_RESPONSES = getConfig().AGENT_MAX_MALFORMED_RESPONSES;
   private readonly MAX_LLM_FAILURES = getConfig().AGENT_MAX_LLM_FAILURES;
   private llmFailureCounter = 0;
+  private consecutiveLlmFailures = 0; // Track consecutive failures
+  private readonly MAX_CONSECUTIVE_LLM_FAILURES = 3; // Allow 3 consecutive failures before fallback
   private readonly maxBehaviorHistory = 10; // Keep track of last 10 behaviors
   private readonly session: SessionData;
-  
+
   // 🚨 AMÉLIORATION: Tracking des actions réalisées
   private executedActions: Map<string, { count: number; lastExecution: number; successful: boolean }> = new Map();
   private lastDisplayCanvasCall = 0;
+
+  // Multi-file operations tracking
+  private pendingMultiFileOperations: Array<{
+    filename: string;
+    content: string;
+    type: 'html' | 'css' | 'javascript';
+  }> = [];
 
   private readonly sessionManager: SessionManager; // New property
   private subscriber: any;
@@ -112,7 +121,7 @@ export class Agent {
 
     // Initialize loop detection properties
     this.behaviorHistory = [];
-    this.loopDetectionThreshold = 3; // Detect loops after 3 repetitions
+    this.loopDetectionThreshold = 5; // Detect loops after 5 repetitions
   }
 
   public async run(): Promise<string> {
@@ -366,17 +375,55 @@ export class Agent {
                 );
                 // Continue to next provider in hierarchy
                 continue;
+              } else if (
+                llmError instanceof LlmError &&
+                (llmError.message.includes('API key not valid') ||
+                 llmError.message.includes('API_KEY_INVALID') ||
+                 llmError.message.includes('invalid api key'))
+              ) {
+                this.log.error(
+                  `Invalid API key for ${providerToTry}: ${llmError.message}`,
+                );
+                // Mark this provider as having invalid key and continue to next
+                continue;
               } else {
-                // Re-throw other types of LLM errors immediately
-                throw llmError;
+                // For other LLM errors, increment failure counter but don't stop immediately
+                this.llmFailureCounter++;
+                const errorMessage = llmError instanceof Error ? llmError.message : String(llmError);
+                this.log.error(`LLM error for ${providerToTry} (${this.llmFailureCounter}/${this.MAX_LLM_FAILURES}): ${errorMessage}`);
+
+                // If we haven't reached max failures, try next provider
+                if (this.llmFailureCounter < this.MAX_LLM_FAILURES) {
+                  this.log.warn(`Trying next provider after LLM error...`);
+                  continue;
+                } else {
+                  // Max failures reached - don't throw error, try fallback approach
+                  this.log.error(`Max LLM failures reached. Attempting fallback mode.`);
+                  break; // Break out of provider loop to try fallback
+                }
               }
             }
           }
 
           if (llmResponse === undefined) {
-            throw new LlmError(
-              'No LLM provider in the hierarchy could provide a response.',
-            );
+            this.log.warn('All LLM providers failed. Attempting fallback mode...');
+            // Try fallback approach instead of throwing error immediately
+            try {
+              llmResponse = await this.attemptFallbackResponse();
+              if (!llmResponse) {
+                // If fallback also fails, try to continue with local tasks
+                this.log.info('Fallback failed. Attempting to continue with local tasks...');
+                const localResponse = await this.generateLocalFallbackResponse();
+                if (localResponse) {
+                  llmResponse = localResponse;
+                } else {
+                  throw new LlmError('All fallback approaches failed. Cannot continue.');
+                }
+              }
+            } catch (fallbackError) {
+              this.log.error({ fallbackError }, 'All fallback approaches failed');
+              throw new LlmError('No LLM provider in the hierarchy could provide a response, and fallback approaches failed.');
+            }
           }
 
           if (this.interrupted) {
@@ -414,7 +461,8 @@ export class Agent {
             { parsedResponse },
             'Parsed LLM response before answer check',
           );
-          const { answer, canvas, command, thought } = parsedResponse;
+          const { answer, canvas, thought } = parsedResponse;
+          let command = parsedResponse.command;
 
           if (answer) {
             this.session.history.push({
@@ -474,14 +522,16 @@ export class Agent {
           }
           if (canvas) {
             iterationLog.info({ canvas }, 'Agent canvas output');
-            this.publishToChannel({
-              content: canvas.content,
-              contentType: canvas.contentType,
-              type: 'agent_canvas_output',
-            });
+            // Use display_canvas tool instead of direct publishing
             if (!command) {
-              this.publishToChannel({ type: 'agent_canvas_close' });
-              return 'Agent displayed content on the canvas.';
+              command = {
+                name: 'display_canvas',
+                params: {
+                  content: canvas.content,
+                  contentType: canvas.contentType || 'html'
+                }
+              };
+              this.log.info('🔧 Converting canvas output to display_canvas tool call');
             }
           }
 
@@ -597,6 +647,53 @@ export class Agent {
                 type: 'error',
               });
             }
+
+            // Handle pending multi-file operations
+            if (this.pendingMultiFileOperations.length > 0 && command.name === 'writeFile') {
+              const nextFile = this.pendingMultiFileOperations.shift();
+              if (nextFile) {
+                iterationLog.info(`Creating next file: ${nextFile.filename}`);
+                // Create next file in the sequence
+                const nextCommand = {
+                  name: 'writeFile' as const,
+                  params: {
+                    path: nextFile.filename,
+                    content: nextFile.content
+                  },
+                };
+
+                // Execute the next file creation
+                const nextResult = await this.executeTool(nextCommand, iterationLog);
+                this.session.history.push({
+                  id: crypto.randomUUID(),
+                  result: nextResult as Record<string, unknown>,
+                  timestamp: Date.now(),
+                  toolName: nextCommand.name,
+                  type: 'tool_result',
+                });
+
+                // If this is the last file and it's HTML, display it in canvas
+                if (this.pendingMultiFileOperations.length === 0 && nextFile.type === 'html') {
+                  iterationLog.info('All files created, displaying HTML in canvas');
+                  const canvasCommand = {
+                    name: 'display_canvas' as const,
+                    params: {
+                      content: nextFile.content,
+                      contentType: 'html'
+                    },
+                  };
+
+                  const canvasResult = await this.executeTool(canvasCommand, iterationLog);
+                  this.session.history.push({
+                    id: crypto.randomUUID(),
+                    result: canvasResult as Record<string, unknown>,
+                    timestamp: Date.now(),
+                    toolName: canvasCommand.name,
+                    type: 'tool_result',
+                  });
+                }
+              }
+            }
           } else if (!thought && !canvas) {
             this.session.history.push({
               content:
@@ -645,33 +742,88 @@ export class Agent {
             });
             
             // If we've had too many malformed responses, try fallback approach
-            if (this.malformedResponseCounter >= this.MAX_MALFORMED_RESPONSES) {
-              this.log.error('Too many malformed responses. Attempting fallback approach.');
-              try {
-                const fallbackResponse = await this.attemptFallbackResponse();
-                return fallbackResponse;
-              } catch (fallbackError) {
-                this.log.error({ fallbackError }, 'Fallback approach also failed');
-                return 'Agent stopped due to persistent parsing issues and fallback failure.';
+              if (this.malformedResponseCounter >= this.MAX_MALFORMED_RESPONSES) {
+                this.log.error('Too many malformed responses. Attempting fallback approach.');
+                try {
+                  const fallbackResponse = await this.attemptFallbackResponse();
+                  if (fallbackResponse) {
+                    return fallbackResponse;
+                  }
+                } catch (fallbackError) {
+                  this.log.error({ fallbackError }, 'Fallback approach also failed');
+                }
+ 
+                // Last resort: provide a simple finish response
+                this.log.warn('Using emergency fallback response');
+                return JSON.stringify({
+                  thought: "Unable to parse LLM response, using emergency fallback",
+                  command: {
+                    name: "finish",
+                    params: {
+                      response: "I apologize, but I'm having trouble processing your request. Could you please rephrase it?"
+                    }
+                  }
+                });
               }
-            }
             continue;
           } else if (errorMessage.includes('Error executing tool')) {
             // This error is already handled by the logic above, so we just continue
             continue;
-          } else if (errorMessage.includes('Failed to communicate with the LLM') || 
-                    errorMessage.includes('LLM API') || 
+          } else if (errorMessage.includes('Failed to communicate with the LLM') ||
+                    errorMessage.includes('LLM API') ||
                     errorMessage.includes('network') ||
-                    errorMessage.includes('timeout')) {
+                    errorMessage.includes('timeout') ||
+                    errorMessage.includes('API key not valid') ||
+                    errorMessage.includes('API_KEY_INVALID')) {
             // Handle LLM communication failures with retry logic
             this.llmFailureCounter++;
             this.log.error(`LLM communication failure (attempt ${this.llmFailureCounter}/${this.MAX_LLM_FAILURES}): ${errorMessage}`);
-            
+
             if (this.llmFailureCounter >= this.MAX_LLM_FAILURES) {
-              this.log.error('Max LLM failures reached. Stopping agent.');
-              return 'Agent stopped due to persistent LLM communication issues. Please check your API keys and network connection.';
+              this.log.error('Max LLM failures reached. Attempting fallback mode...');
+
+              // Try to continue with local tasks instead of stopping
+              try {
+                const localResponse = await this.generateLocalFallbackResponse();
+                if (localResponse) {
+                  this.log.info('Successfully generated local fallback response');
+                  // Parse and use the local response
+                  const parsedLocal = this.parseLlmResponse(localResponse, this.log);
+                  const { answer: localAnswer, canvas: localCanvas, thought: localThought } = parsedLocal;
+                  let localCommand = parsedLocal.command;
+
+                  // Process the local response similar to normal flow
+                  if (localThought) {
+                    this.session.history.push({
+                      content: localThought,
+                      id: crypto.randomUUID(),
+                      timestamp: Date.now(),
+                      type: 'agent_thought',
+                    });
+                  }
+
+                  if (localCommand && localCommand.name === 'finish') {
+                    try {
+                      const finishResult = await this.executeTool(localCommand, this.log);
+                      if (typeof finishResult === 'object' && finishResult !== null && 'answer' in finishResult) {
+                        const finalAnswer = (finishResult as { answer: string }).answer;
+                        this.publishToChannel({ content: finalAnswer, type: 'agent_response' });
+                        return finalAnswer;
+                      }
+                    } catch (finishError) {
+                      this.log.error({ finishError }, 'Local finish command failed');
+                    }
+                  }
+
+                  // If local processing worked, continue to next iteration
+                  continue;
+                }
+              } catch (localError) {
+                this.log.error({ localError }, 'Local fallback also failed');
+                return 'Agent stopped due to persistent LLM communication issues and failed fallback attempts. Please check your API keys and network connection.';
+              }
             }
-            
+
             // Add delay before retry and continue
             await new Promise(resolve => setTimeout(resolve, 2000 * this.llmFailureCounter));
             continue;
@@ -804,12 +956,148 @@ export class Agent {
       // Not valid JSON, proceed with conversion
     }
 
+    // 🚨 IMPROVED: Better extraction of embedded JSON from mixed responses
+    // Handle patterns like: Thought: something...{"command": {...}}
+    const embeddedJsonMatch = cleanText.match(/(\{[\s\S]*?\})(?:\s*$|\n|$)/);
+    if (embeddedJsonMatch) {
+      try {
+        const potentialJson = embeddedJsonMatch[1];
+        JSON.parse(potentialJson); // Validate JSON
+        this.log.info('🔧 Extracted embedded JSON from mixed response');
+        return potentialJson;
+      } catch {
+        // If extraction fails, continue with normal processing
+      }
+    }
+
+    // Handle the specific pattern: Thought: ...{"command": {...}}
+    const thoughtJsonPattern = cleanText.match(/Thought:\s*([^}]+)\s*(\{[\s\S]*?\})/);
+    if (thoughtJsonPattern) {
+      try {
+        const jsonPart = thoughtJsonPattern[2];
+        JSON.parse(jsonPart); // Validate JSON
+        this.log.info('🔧 Extracted JSON from Thought+JSON pattern');
+        return jsonPart;
+      } catch {
+        // If extraction fails, continue with normal processing
+      }
+    }
+
+    // 🚨 ENHANCEMENT: Check if we should switch to local mode due to API issues
+    if (this.llmFailureCounter > 0 && this.detectIfShouldUseLocalMode(cleanText)) {
+      this.log.info('🔄 Switching to local mode due to API failures');
+      return this.generateLocalModeResponse(cleanText);
+    }
+
     // FIRST: Try to extract actual tool calls from the text
     // Support multiple formats:
     // 1. "Tool Call: toolName with params {...}"
     // 2. "Tool Call: toolName({...})"
     // 3. "Tool Call: toolName({...})" (without parentheses)
     // 4. Plain "Tool Call: toolName(...)" when it's the only content
+    // 5. "```tool_code\ntoolName(...)\n```" format
+    
+    // Check for JSON format with "tool_code" field first
+    const jsonToolCodeMatch = cleanText.match(/```json\s*\n\s*{\s*"tool_code":\s*"([^"]+)"\s*}\s*\n```/is);
+    if (jsonToolCodeMatch) {
+      const toolCallStr = jsonToolCodeMatch[1];
+      // Parse the tool call string like "display_canvas(...)"
+      const toolCallParsed = toolCallStr.match(/(\w+)\s*\(\s*([\s\S]*?)\s*\)$/);
+      if (toolCallParsed) {
+        const toolName = toolCallParsed[1];
+        let paramsStr = toolCallParsed[2].trim();
+        
+        // Handle complex parameters with escaped quotes
+        let params = {};
+        if (paramsStr) {
+          // For complex parameters, try to evaluate the JavaScript-like syntax
+          try {
+            // Convert parameter syntax to JSON-like
+            // Handle patterns like: content=json.dumps({...}), contentType="project", title="..."
+            const paramMatches = [...paramsStr.matchAll(/(\w+)=([^,]+?)(?=,\s*\w+=|$)/gs)];
+            paramMatches.forEach(match => {
+              const key = match[1];
+              let value = match[2].trim();
+              
+              // Handle different value types
+              if (value.startsWith('"') && value.endsWith('"')) {
+                // String value
+                (params as any)[key] = value.slice(1, -1);
+              } else if (value.startsWith('json.dumps(') && value.endsWith(')')) {
+                // JSON dumps - extract the object
+                const jsonStr = value.slice(11, -1); // Remove "json.dumps(" and ")"
+                try {
+                  (params as any)[key] = JSON.parse(jsonStr);
+                } catch (e) {
+                  (params as any)[key] = jsonStr;
+                }
+              } else {
+                // Raw value
+                (params as any)[key] = value;
+              }
+            });
+          } catch (e) {
+            // Fallback - use raw string
+            params = { content: paramsStr };
+          }
+        }
+        
+        // Extract thought from everything before ```json
+        const thoughtMatch = cleanText.match(/^(.*?)```json/s);
+        const thought = thoughtMatch ? thoughtMatch[1].trim() : `Exécution de l'outil ${toolName}`;
+        
+        return JSON.stringify({
+          thought: thought,
+          command: {
+            name: toolName,
+            params: params
+          }
+        });
+      }
+    }
+    
+    // Check for ```tool_code format first
+    const toolCodeMatch = cleanText.match(/```tool_code\s*\n\s*(\w+)\s*\(\s*([\s\S]*?)\s*\)\s*\n```/is);
+    if (toolCodeMatch) {
+      const toolName = toolCodeMatch[1];
+      let paramsStr = toolCodeMatch[2].trim();
+      
+      // Handle different parameter formats
+      let params = {};
+      if (paramsStr) {
+        // If it looks like JSON object
+        if (paramsStr.startsWith('{') && paramsStr.endsWith('}')) {
+          try {
+            params = JSON.parse(paramsStr);
+          } catch (e) {
+            // If JSON parse fails, try to extract key-value pairs
+            const keyValueMatches = [...paramsStr.matchAll(/(\w+)=['"](.*?)['"],?/g)];
+            keyValueMatches.forEach(match => {
+              (params as any)[match[1]] = match[2].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+            });
+          }
+        } else {
+          // Handle key=value format
+          const keyValueMatches = [...paramsStr.matchAll(/(\w+)=['"](.*?)['"],?/gs)];
+          keyValueMatches.forEach(match => {
+            (params as any)[match[1]] = match[2].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+          });
+        }
+      }
+      
+      // Extract thought from everything before ```tool_code
+      const thoughtMatch = cleanText.match(/^(.*?)```tool_code/s);
+      const thought = thoughtMatch ? thoughtMatch[1].trim() : `Exécution de l'outil ${toolName}`;
+      
+      return JSON.stringify({
+        thought: thought,
+        command: {
+          name: toolName,
+          params: params
+        }
+      });
+    }
+    
     let toolCallMatch = cleanText.match(/Tool Call:\s*(\w+)\s*with\s*params\s*(\{.*?\}(?:\s*$|\n|Tool Result:))/is);
     
     // If first pattern doesn't match, try the second format: "Tool Call: toolName({...})"
@@ -880,6 +1168,12 @@ export class Agent {
       
       try {
         params = JSON.parse(jsonStr);
+
+        // Special handling for display_canvas tool - ensure content is a string
+        if (toolName === 'display_canvas' && params && typeof (params as any).content === 'object') {
+          this.log.info('🔧 Converting display_canvas content object to JSON string');
+          (params as any).content = JSON.stringify((params as any).content);
+        }
       } catch (e) {
         this.log.warn(`Failed to parse JSON params for tool ${toolName}: ${jsonStr}`);
         // Last fallback: extract specific fields manually
@@ -938,11 +1232,25 @@ export class Agent {
       'continuer',
       'reprendre',
       'recommencer',
+      'next',
+      'go',
+      'ok',
       'lancer',
       'start',
       'run',
       'execute',
       'executer',
+      'type',
+      'enter',
+      'input',
+      'fill',
+      'complete',
+      'submit',
+      'taper',
+      'entrer',
+      'remplir',
+      'compléter',
+      'soumettre',
     ];
     const isDirectAction = directActionKeywords.some((keyword) =>
       lowerText.includes(keyword),
@@ -962,28 +1270,60 @@ export class Agent {
       lowerText.includes(keyword),
     );
 
-    // If it's a direct action on a game/project, go straight to file operations
+    // If it's a direct action on a game/project, explore project structure first
     if (isDirectAction && isGameRequest) {
-      thought = "L'utilisateur demande de continuer/reprendre un projet. Je vais d'abord explorer les fichiers disponibles.";
+      thought = "L'utilisateur demande de continuer/reprendre un projet. Je vais d'abord explorer la structure du projet.";
       command = {
-        name: 'listFiles',
-        params: {},
+        name: 'listDirectory',
+        params: {
+          path: '.',
+        },
       };
     }
+    // For short continuation words, also explore project first
+    else if (isDirectAction && cleanText.length < 15) {
+      thought = "L'utilisateur veut continuer. Je vais d'abord voir l'état actuel du projet.";
+      command = {
+        name: 'listDirectory',
+        params: {
+          path: '.',
+        },
+      };
+    }
+    // Handle form continuation responses (like "I will now type the telephone number...")
+    else if (this.isFormContinuationResponse(cleanText)) {
+      thought = "L'IA indique qu'elle va continuer avec la prochaine étape du formulaire.";
+      command = this.getNextFormStep(cleanText);
+    }
 
-    // Check for canvas-related keywords
+    // Check for canvas-related keywords (more specific to avoid false positives)
     const canvasKeywords = [
       'canvas',
-      'display',
-      'show',
-      'demo',
-      'afficher',
-      'montrer',
+      'demo', 
       'visual',
+      'html page',
+      'web page',
+      'interface',
+      'render',
+      'visualize',
+      'graph',
+      'chart'
     ];
+    
+    // More specific patterns for display requests (avoid agent thoughts)
+    const displayPatterns = [
+      /afficher.*canvas/i,
+      /montrer.*canvas/i,
+      /display.*canvas/i, 
+      /show.*canvas/i,
+      /create.*interface/i,
+      /générer.*page/i,
+      /render.*html/i
+    ];
+    
     const isCanvasRequest = canvasKeywords.some((keyword) =>
       lowerText.includes(keyword),
-    );
+    ) || displayPatterns.some(pattern => pattern.test(cleanText));
 
     // Check for thought-related keywords (to avoid sending thoughts to canvas)
     const thoughtKeywords = [
@@ -1002,14 +1342,24 @@ export class Agent {
     const isThoughtContent = thoughtKeywords.some((keyword) =>
       lowerText.includes(keyword),
     );
+    
+    // Additional check: if the text looks like agent internal thoughts/reasoning
+    const isAgentThought = cleanText.startsWith('Je vais') || 
+                          cleanText.startsWith('I will') ||
+                          cleanText.startsWith('I am going') ||
+                          cleanText.startsWith('Je dois') ||
+                          cleanText.startsWith('I need to') ||
+                          cleanText.includes('next step') ||
+                          cleanText.includes('prochaine étape');
 
-    // Check for todo-related keywords
+    // Check for todo-related keywords (more specific to avoid false positives)
     const todoKeywords = [
       'todo',
       'task',
-      'list',
+      'todo list', 
+      'task list',
+      'liste de tâches',
       'step',
-      'plan',
       'workflow',
       'tâche',
       'étape',
@@ -1017,6 +1367,10 @@ export class Agent {
     const isTodoRequest = todoKeywords.some((keyword) =>
       lowerText.includes(keyword),
     );
+    
+    // Check for direct file/directory listing requests
+    const isListFilesRequest = (lowerText.includes('list') || lowerText.includes('lister')) &&
+      (lowerText.includes('workspace') || lowerText.includes('directory') || lowerText.includes('files') || lowerText.includes('fichiers') || lowerText.includes('dossier'));
 
     // Check for creation/building requests that should use todo lists
     const creationKeywords = [
@@ -1044,48 +1398,76 @@ export class Agent {
       lowerText.includes(keyword),
     );
 
+    // Check for multi-file code responses (HTML, CSS, JS projects)
+    const multiFilePatterns = [
+      /```html[\s\S]*?```[\s\S]*?```css[\s\S]*?```/i,
+      /```html[\s\S]*?```[\s\S]*?```javascript[\s\S]*?```/i,
+      /```css[\s\S]*?```[\s\S]*?```javascript[\s\S]*?```/i,
+      /<\!DOCTYPE html[\s\S]*?<\/html>[\s\S]*?body\s*\{[\s\S]*?\}/i,
+      /index\.html[\s\S]*?style\.css[\s\S]*?game\.js/i,
+      /\*\*index\.html\*\*[\s\S]*?\*\*style\.css\*\*[\s\S]*?\*\*game\.js\*\*/i
+    ];
+    
+    const isMultiFileResponse = multiFilePatterns.some(pattern => pattern.test(cleanText));
+    
+    // If it's a multi-file response, parse and create files
+    if (isMultiFileResponse) {
+      const parsedFiles = this.parseMultiFileResponse(cleanText);
+      if (parsedFiles.length > 0) {
+        // Create the first file and display it in canvas
+        const firstFile = parsedFiles[0];
+        thought = `Création de ${parsedFiles.length} fichiers pour le projet. Création du fichier ${firstFile.filename} et affichage dans le canvas.`;
+        command = {
+          name: 'writeFile',
+          params: {
+            path: firstFile.filename,
+            content: firstFile.content
+          },
+        };
+
+        // Store additional files for subsequent iterations
+        if (parsedFiles.length > 1) {
+          this.pendingMultiFileOperations = parsedFiles.slice(1);
+        }
+
+        return JSON.stringify({ thought, command });
+      }
+    }
 
     // Check if the response appears to be truncated (incomplete)
     const isTruncated = this.isResponseTruncated(cleanText);
     
-    // If response is truncated, try to get a better response instead of processing
+    // If response is truncated, provide direct response
     if (isTruncated) {
-      thought = "La réponse de l'IA semble incomplète. Je vais demander une réponse plus claire.";
+      thought = "La réponse de l'IA semble incomplète.";
       command = {
-        name: 'agent_thought',
+        name: 'finish',
         params: {
-          thought: "La réponse précédente de l'IA était incomplète. Je vais reformuler ma demande pour obtenir une réponse plus claire et complète.",
+          response: "La réponse précédente était incomplète. Pourriez-vous reformuler votre demande pour obtenir une réponse plus claire ?",
         },
       };
     }
-    // Prioritize proper thought handling - if it looks like a thought, use agent_thought tool
-    // But avoid repetitive agent_thought calls
-    else if (isThoughtContent && !isCanvasRequest) {
-      // Check if we've recently used agent_thought to avoid loops
-      const recentCommands = this.commandHistory.slice(-2);
-      const hasRecentAgentThought = recentCommands.some(cmd => cmd.name === 'agent_thought');
-
-      if (hasRecentAgentThought) {
-        // If we've recently used agent_thought, finish instead to avoid loops
-        thought = "Réponse de l'IA traitée.";
-        command = {
-          name: 'finish',
-          params: {
-            response: cleanText,
-          },
-        };
-      } else {
-        // This is clearly thought content, use agent_thought tool
-        thought = cleanText;
-        command = {
-          name: 'agent_thought',
-          params: {
-            thought: cleanText,
-          },
-        };
-      }
-    } else if (isCanvasRequest && !isThoughtContent) {
-      // Handle canvas display requests (but not if it's clearly thought content)
+    // Priority: Direct file/directory listing requests
+    else if (isListFilesRequest) {
+      thought = "L'utilisateur veut lister des fichiers/dossiers.";
+      command = {
+        name: 'listDirectory',
+        params: {
+          path: '.',
+        },
+      };
+    }
+    // Thought content now handled directly with finish
+    else if (isThoughtContent || isAgentThought) {
+      thought = "Réponse de l'IA traitée.";
+      command = {
+        name: 'finish',
+        params: {
+          response: cleanText,
+        },
+      };
+    } else if (isCanvasRequest && !isThoughtContent && !isAgentThought) {
+      // Handle canvas display requests (but not if it's clearly thought content or agent reasoning)
       thought = "L'utilisateur veut afficher quelque chose dans le canvas.";
       
       // Filter out any JSON content or debugging information from canvas display
@@ -1120,7 +1502,7 @@ export class Agent {
       const smartTodos = this.createSmartTodoList(cleanText);
       thought = "Je vais créer une todo list spécifique et utile pour organiser le travail demandé.";
       command = {
-        name: 'todoWrite',
+        name: 'todo_write',
         params: {
           todos: smartTodos,
         },
@@ -1130,7 +1512,7 @@ export class Agent {
       thought =
         "L'utilisateur veut utiliser la todo list. Je vais afficher ou gérer la todo list.";
       command = {
-        name: 'todoWrite',
+        name: 'todo_write',
         params: {
           action: 'display',
         },
@@ -1140,7 +1522,7 @@ export class Agent {
       // Check if we've recently created a todo list to avoid loops
       const recentCommands = this.commandHistory.slice(-2); // Reduced from -3 to -2
       const hasRecentTodoList = recentCommands.some(cmd =>
-        cmd.name === 'todoWrite' &&
+        cmd.name === 'todo_write' &&
         cmd.params &&
         (cmd.params.action === 'create' || cmd.params.action === 'display')
       );
@@ -1159,21 +1541,105 @@ export class Agent {
         const smartTodos = this.createSmartTodoList(cleanText);
         thought = "Je vais créer une todo list spécifique et utile pour organiser le travail demandé.";
         command = {
-          name: 'todoWrite',
+          name: 'todo_write',
           params: {
             todos: smartTodos,
           },
         };
       }
     } else {
-      // Default to finish tool for other requests
-      thought = "Traitement de la réponse de l'utilisateur.";
-      command = {
-        name: 'finish',
-        params: {
-          response: cleanText,
-        },
-      };
+      // Analyze the request to determine the appropriate tool
+      if (cleanText.toLowerCase().includes('search') || cleanText.toLowerCase().includes('recherche')) {
+        thought = "L'utilisateur demande une recherche. Je vais utiliser Playwright pour naviguer vers un moteur de recherche.";
+        command = {
+          name: 'playwright_navigate',
+          params: {
+            url: `https://www.google.com/search?q=${encodeURIComponent(cleanText.replace(/^.*?(search|recherche)\s+/i, '').trim() || cleanText)}`,
+          },
+        };
+      } else if (cleanText.toLowerCase().includes('read') || cleanText.toLowerCase().includes('lire') || cleanText.toLowerCase().includes('file')) {
+        thought = "L'utilisateur veut lire un fichier.";
+        command = {
+          name: 'readFile',
+          params: {
+            filePath: cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/) ? cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/)?.[0] : '/home/demon/agentforge/AgenticForge2',
+          },
+        };
+      } else if (cleanText.toLowerCase().includes('workspace') || cleanText.toLowerCase().includes('project') || cleanText.toLowerCase().includes('projet')) {
+        thought = "L'utilisateur veut explorer le workspace/projet.";
+        command = {
+          name: 'listDirectory',
+          params: {
+            path: '.',
+          },
+        };
+      } else {
+        // 🚨 IMPROVED: Better logic for simple responses vs complex tasks
+        // Check if this is a continuation or work-related request
+        const continueKeywords = ['continue', 'continuer', 'next', 'suivant', 'reprendre', 'resume', 'start'];
+        const workKeywords = ['faire', 'do', 'work', 'implement', 'create', 'build', 'develop'];
+        
+        const shouldContinue = continueKeywords.some(keyword => lowerText.includes(keyword));
+        const isWorkRequest = workKeywords.some(keyword => lowerText.includes(keyword));
+    
+        // For very short responses (like "llo", "hi", "ok"), check if they indicate continuation
+        if (cleanText.length < 10 && !shouldContinue) {
+          thought = "Réponse simple de l'utilisateur.";
+          command = {
+            name: 'finish',
+            params: {
+              response: cleanText.length > 0 ? cleanText : "Hello! How can I help you?",
+            },
+          };
+        } else if (shouldContinue || isWorkRequest) {
+          // L'utilisateur veut continuer ou commencer du travail
+          // Vérifier s'il y a une todo list récente pour continuer
+          const recentTodoCommands = this.commandHistory.slice(-5).filter(cmd => cmd.name === 'todo_write');
+          
+          if (recentTodoCommands.length > 0) {
+            // Il y a une todo list récente, essayer de continuer avec la prochaine tâche
+            thought = "L'utilisateur veut continuer. Je vais travailler sur la prochaine tâche de la todo list.";
+            command = {
+              name: 'listDirectory',
+              params: {
+                path: '.',
+                detailed: true
+              }
+            };
+          } else {
+            // Pas de todo list récente, créer une nouvelle
+            thought = "L'utilisateur veut commencer à travailler. Je vais d'abord créer une todo list.";
+            const smartTodos = this.createSmartTodoList(cleanText);
+            command = {
+              name: 'todo_write',
+              params: {
+                todos: smartTodos,
+              },
+            };
+          }
+        } else {
+          // Pour les autres types de réponses, essayer d'analyser la demande
+          if (lowerText.includes('projet') || lowerText.includes('project') || lowerText.includes('travail')) {
+            thought = "L'utilisateur parle d'un projet. Je vais explorer la structure du projet.";
+            command = {
+              name: 'listDirectory',
+              params: {
+                path: '.',
+                detailed: true
+              }
+            };
+          } else {
+            // Default to finish for simple responses and greetings
+            thought = "Traitement de la réponse de l'utilisateur.";
+            command = {
+              name: 'finish',
+              params: {
+                response: cleanText,
+              },
+            };
+          }
+        }
+      }
     }
 
     const jsonObject = { command, thought };
@@ -1184,14 +1650,11 @@ export class Agent {
    * Check if a response appears to be truncated or incomplete
    */
   private isResponseTruncated(text: string): boolean {
-    // Check for common truncation patterns
+    // Check for common truncation patterns (only strong indicators)
     const truncationIndicators = [
       '\\', // Escaped characters at end
-      '{',  // Unclosed object
-      '[',  // Unclosed array
-      '"',  // Unclosed string
-      ':',  // Incomplete key-value pair
-      ',',  // Trailing comma
+      '",', // Incomplete key-value pair with comma
+      '":', // Incomplete string with colon
     ];
     
     const trimmed = text.trim();
@@ -1229,12 +1692,11 @@ export class Agent {
     }
     
     // Additional check for truncated responses that end mid-sentence
+    // Only consider it truncated if it has clear indicators of incomplete JSON structure
     if (trimmed.length > 100 && 
-        (trimmed.endsWith('.') || trimmed.endsWith('}') || trimmed.endsWith(']')) &&
-        !trimmed.includes('"command"') && 
-        !trimmed.includes('"thought"') && 
-        !trimmed.includes('"answer"')) {
-      // If it's a long response but doesn't contain expected JSON fields, it might be truncated
+        (trimmed.includes('{"') || trimmed.includes('"command"') || trimmed.includes('"thought"')) &&
+        !trimmed.endsWith('}') && !trimmed.endsWith('"]')) {
+      // If it starts JSON structure but doesn't end properly, it might be truncated
       return true;
     }
     
@@ -1397,17 +1859,16 @@ export class Agent {
         log.info('✅ display_canvas tracked as executed successfully');
       }
       
-      // Special handling for agent_thought tool
-      if (command.name === 'agent_thought' && result && typeof result === 'object') {
-        const thoughtResult = result as { thought?: string; success?: boolean };
-        if (thoughtResult.thought) {
-          // Publish the thought as an agent_thought message
-          this.publishToChannel({
-            content: thoughtResult.thought,
-            type: 'agent_thought',
-          });
-          log.info('Published agent thought to channel');
-        }
+      // Auto-finish for simple read-only tools to prevent unnecessary iterations
+      const readOnlyTools = ['listDirectory', 'listFiles', 'readFile'];
+      const isReadOnlyCommand = readOnlyTools.includes(command.name);
+      const isSimpleRequest = this.session.history.length <= 2; // Initial prompt + first response
+      
+      if (isReadOnlyCommand && isSimpleRequest) {
+        log.info(`🏁 Auto-finishing after ${command.name} for simple request`);
+        // Use the tool result as the final response
+        const response = typeof result === 'string' ? result : JSON.stringify(result);
+        throw new FinishToolSignal(response);
       }
       
       return result;
@@ -1500,13 +1961,14 @@ export class Agent {
 
   private parseLlmResponse(llmResponse: string, log: Logger) {
     log.info('🧠 PARSING LLM Response...');
-    
-    // 🚨 AMÉLIORATION 1: Détecter les réponses tronquées ou incomplètes
+
+    // 🚨 IMPROVED: Better detection of malformed responses
     const isIncomplete =
       llmResponse.trim().endsWith('...') ||
       llmResponse.includes('ASSISTANT:') ||
       llmResponse.includes('La réponse de l\'IA semble incomplète') ||
-      (llmResponse.includes('The agent is thinking...') && !llmResponse.includes('Tool Call:') && !llmResponse.includes('{'));
+      (llmResponse.includes('The agent is thinking...') && !llmResponse.includes('Tool Call:') && !llmResponse.includes('{')) ||
+      llmResponse.trim().length < 10; // Too short to be valid
 
     // 🚨 AMÉLIORATION: Détecter les réponses répétitives pour éviter les boucles
     const isRepetitive = this.detectRepetitiveResponse(llmResponse);
@@ -1640,6 +2102,469 @@ export class Agent {
       }
     }
     return summary.length > 0 ? summary.join(', ') : 'No actions executed yet';
+  }
+
+  /**
+   * Detect if the agent should start working on pending tasks
+   */
+  private detectIfShouldStartWorking(text: string): boolean {
+    const lowerText = text.toLowerCase();
+
+    // Check if text indicates starting work or beginning tasks
+    const startIndicators = [
+      'first', 'start', 'begin', 'let\'s', 'i\'ll start', 'commencer',
+      'premièrement', 'commençons', 'je vais commencer'
+    ];
+
+    const hasStartIndicators = startIndicators.some(indicator => lowerText.includes(indicator));
+
+    // Check if we recently created a todo list
+    const recentCommands = this.commandHistory.slice(-2);
+    const hasRecentTodoWrite = recentCommands.some(cmd => cmd.name === 'todo_write');
+
+    // If we just created a todo list and text indicates starting, we should begin work
+    return hasRecentTodoWrite && hasStartIndicators;
+  }
+
+  /**
+   * Get the next pending task based on recent todo creation
+   */
+  private getNextPendingTask(): { id: string; content: string; status: string } | null {
+    // Since we don't have direct access to todo state, we'll infer from command history
+    // This is a simplified approach - in a real implementation, you'd track todo state
+    const recentCommands = this.commandHistory.slice(-3);
+    const todoWriteCommand = recentCommands.find(cmd => cmd.name === 'todo_write');
+
+    if (todoWriteCommand && todoWriteCommand.params?.todos) {
+      const todos = todoWriteCommand.params.todos as Array<{ id: string; content: string; status: string }>;
+      const pendingTodo = todos.find(todo => todo.status === 'pending');
+      return pendingTodo || null;
+    }
+
+    return null;
+  }
+
+  /**
+   * Convert a task to an appropriate command
+   */
+  private convertTaskToCommand(task: { id: string; content: string; status: string }): Command {
+    const lowerContent = task.content.toLowerCase();
+
+    // Map common task types to commands
+    if (lowerContent.includes('list') && lowerContent.includes('tool')) {
+      return {
+        name: 'listTools',
+        params: {}
+      };
+    }
+
+    if (lowerContent.includes('navigate') || lowerContent.includes('go to')) {
+      return {
+        name: 'playwright_navigate',
+        params: {
+          url: 'https://example.com' // Default URL, could be made smarter
+        }
+      };
+    }
+
+    if (lowerContent.includes('content') || lowerContent.includes('extract')) {
+      return {
+        name: 'playwright_get_content',
+        params: {
+          selector: 'body' // Default selector
+        }
+      };
+    }
+
+    if (lowerContent.includes('screenshot')) {
+      return {
+        name: 'playwright_screenshot',
+        params: {}
+      };
+    }
+
+    // Check if this is a form completion task
+    if (this.isFormCompletionTask(task)) {
+      return this.getNextFormFieldCommand();
+    }
+
+    // Default fallback
+    return {
+      name: 'finish',
+      params: {
+        response: `Working on: ${task.content}`
+      }
+    };
+  }
+
+  /**
+   * Check if the current task involves completing a form
+   */
+  private isFormCompletionTask(task: { id: string; content: string; status: string }): boolean {
+    const lowerContent = task.content.toLowerCase();
+
+    // Keywords that indicate form completion tasks
+    const formKeywords = [
+      'form', 'field', 'input', 'fill', 'complete', 'submit',
+      'formulaire', 'champ', 'remplir', 'compléter', 'soumettre',
+      'name', 'email', 'phone', 'address', 'contact',
+      'nom', 'courriel', 'téléphone', 'adresse', 'contact'
+    ];
+
+    return formKeywords.some(keyword => lowerContent.includes(keyword));
+  }
+
+  /**
+   * Get the next logical form field command based on recent actions
+   */
+  private getNextFormFieldCommand(): Command {
+    // Check recent command history to determine next logical step
+    const recentCommands = this.commandHistory.slice(-3);
+
+    // If we just typed in a name field, next might be email or phone
+    const lastTypeCommand = recentCommands.reverse().find(cmd =>
+      cmd.name === 'playwright_type' && cmd.params
+    );
+
+    if (lastTypeCommand) {
+      const lastSelector = (lastTypeCommand.params as any).selector || '';
+
+      // If we just filled a name field, try phone next
+      if (lastSelector.includes('name') || lastSelector.includes('nom')) {
+        return {
+          name: 'playwright_type',
+          params: {
+            selector: 'input[name="phone"], input[name="tel"], input[name="telephone"], input[type="tel"]',
+            text: '+33123456789', // Default phone number
+            clear: true
+          }
+        };
+      }
+
+      // If we just filled a phone field, try email next
+      if (lastSelector.includes('phone') || lastSelector.includes('tel')) {
+        return {
+          name: 'playwright_type',
+          params: {
+            selector: 'input[name="email"], input[type="email"]',
+            text: 'test@example.com', // Default email
+            clear: true
+          }
+        };
+      }
+
+      // If we just filled an email field, try to submit
+      if (lastSelector.includes('email')) {
+        return {
+          name: 'playwright_click',
+          params: {
+            selector: 'button[type="submit"], input[type="submit"], button:contains("Submit"), button:contains("Send")'
+          }
+        };
+      }
+    }
+
+    // Default: look for the first empty required field
+    return {
+      name: 'playwright_type',
+      params: {
+        selector: 'input[required]:not([value]), input[name]:not([value])',
+        text: 'Test Value',
+        clear: true
+      }
+    };
+  }
+
+  /**
+   * Detect if the agent has pending work based on the response content
+   */
+  private detectIfAgentHasPendingWork(text: string): boolean {
+    const lowerText = text.toLowerCase();
+
+    // Keywords that indicate future work or plans
+    const workIndicators = [
+      'i\'ll', 'i will', 'first', 'then', 'next', 'after', 'following',
+      'je vais', 'ensuite', 'suivant', 'après', 'premièrement',
+      'list', 'demonstrate', 'show', 'create', 'implement', 'build',
+      'lister', 'démontrer', 'montrer', 'créer', 'implémenter', 'construire',
+      'continue', 'continuer', 'start', 'commencer', 'begin', 'commencer',
+      'plan', 'planned', 'planning', 'planifié', 'planification'
+    ];
+
+    // Check for work indicators
+    const hasWorkIndicators = workIndicators.some(indicator => lowerText.includes(indicator));
+
+    // Check for question marks (indicating clarification needed, not completion)
+    const hasQuestions = lowerText.includes('?');
+
+    // Check if text mentions specific actions or tools
+    const actionKeywords = [
+      'tool', 'tools', 'navigate', 'content', 'screenshot', 'list',
+      'outil', 'outils', 'naviguer', 'contenu', 'capture', 'lister'
+    ];
+    const hasActionKeywords = actionKeywords.some(keyword => lowerText.includes(keyword));
+
+    // Check recent command history for pending work
+    const recentCommands = this.commandHistory.slice(-3);
+    const hasRecentTodoWrite = recentCommands.some(cmd => cmd.name === 'todo_write');
+
+    // If we recently created a todo list, we likely have work to do
+    if (hasRecentTodoWrite && (hasWorkIndicators || hasActionKeywords)) {
+      return true;
+    }
+
+    // If text contains work indicators and action keywords, agent has work to do
+    if (hasWorkIndicators && hasActionKeywords) {
+      return true;
+    }
+
+    // If text has work indicators but also questions, it might need clarification
+    if (hasWorkIndicators && hasQuestions) {
+      return true;
+    }
+
+    // Default to no pending work if none of the above conditions are met
+    return false;
+  }
+
+  /**
+   * Detect if the response indicates continuation of work rather than completion
+   */
+  private detectIfContinuationResponse(text: string): boolean {
+    const lowerText = text.toLowerCase();
+
+    // Keywords that indicate the agent is about to perform an action
+    const continuationIndicators = [
+      'i will now', 'i\'m going to', 'i\'ll now', 'now i will', 'next i will',
+      'i am going to', 'i\'m about to', 'i\'ll proceed to', 'i will proceed',
+      'je vais maintenant', 'maintenant je vais', 'je vais procéder',
+      'je m\'apprête à', 'ensuite je vais', 'maintenant je',
+      'type', 'enter', 'input', 'fill', 'complete', 'submit',
+      'taper', 'entrer', 'remplir', 'compléter', 'soumettre',
+      'navigate', 'go to', 'visit', 'access', 'open',
+      'naviguer', 'aller à', 'visiter', 'accéder', 'ouvrir',
+      'click', 'select', 'choose', 'pick',
+      'cliquer', 'sélectionner', 'choisir', 'sélectionner',
+      'search', 'find', 'look for', 'locate',
+      'chercher', 'trouver', 'rechercher', 'localiser'
+    ];
+
+    // Check for continuation indicators
+    const hasContinuationIndicators = continuationIndicators.some(indicator =>
+      lowerText.includes(indicator)
+    );
+
+    // Check if response mentions specific form fields or actions
+    const formActionKeywords = [
+      'field', 'input', 'form', 'button', 'textbox', 'textarea',
+      'champ', 'entrée', 'formulaire', 'bouton', 'zone de texte',
+      'name', 'email', 'phone', 'address', 'password',
+      'nom', 'courriel', 'téléphone', 'adresse', 'mot de passe',
+      'telephone', 'téléphone', 'number', 'numéro'
+    ];
+
+    const hasFormKeywords = formActionKeywords.some(keyword =>
+      lowerText.includes(keyword)
+    );
+
+    // Check if this follows a recent form interaction
+    const recentCommands = this.commandHistory.slice(-2);
+    const hasRecentFormInteraction = recentCommands.some(cmd =>
+      cmd.name && (
+        cmd.name.includes('playwright') ||
+        cmd.name.includes('type') ||
+        cmd.name.includes('click') ||
+        cmd.name.includes('fill')
+      )
+    );
+
+    // If response has continuation indicators and form keywords, it's likely a continuation
+    if (hasContinuationIndicators && hasFormKeywords) {
+      return true;
+    }
+
+    // If response has continuation indicators and follows recent form interaction, it's a continuation
+    if (hasContinuationIndicators && hasRecentFormInteraction) {
+      return true;
+    }
+
+    // Specific pattern: "I will now type X into Y" or similar
+    if (lowerText.includes('type') && (lowerText.includes('into') || lowerText.includes('in'))) {
+      return true;
+    }
+
+    // Specific pattern: "I will now enter X" or similar
+    if ((lowerText.includes('enter') || lowerText.includes('input')) && hasFormKeywords) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Detect if we should switch to local mode based on text content
+   */
+  private detectIfShouldUseLocalMode(text: string): boolean {
+    const lowerText = text.toLowerCase();
+
+    // Keywords that indicate local operations
+    const localKeywords = [
+      'list', 'read', 'file', 'directory', 'status', 'info', 'local',
+      'lister', 'lire', 'fichier', 'dossier', 'état', 'information'
+    ];
+
+    // Check for local operation keywords
+    const hasLocalKeywords = localKeywords.some(keyword => lowerText.includes(keyword));
+
+    // Check if we have pending tasks that can be done locally
+    const hasPendingTasks = this.getNextPendingTask() !== null;
+
+    return hasLocalKeywords || hasPendingTasks;
+  }
+
+  /**
+   * Generate a response for local mode operation
+   */
+  private generateLocalModeResponse(text: string): string {
+    const lowerText = text.toLowerCase();
+
+    // Determine appropriate local action based on content
+    if (lowerText.includes('list') || lowerText.includes('lister')) {
+      return JSON.stringify({
+        thought: "Je vais lister les fichiers disponibles localement.",
+        command: {
+          name: 'listFiles',
+          params: { path: '.' }
+        }
+      });
+    }
+
+    if (lowerText.includes('read') || lowerText.includes('lire') || lowerText.includes('file')) {
+      return JSON.stringify({
+        thought: "Je vais lire un fichier localement.",
+        command: {
+          name: 'readFile',
+          params: { filePath: '/home/demon/agentforge/AgenticForge2/AgenticForge/README.md' }
+        }
+      });
+    }
+
+    if (lowerText.includes('status') || lowerText.includes('info') || lowerText.includes('état')) {
+      return JSON.stringify({
+        thought: "Je vais afficher les informations système.",
+        command: {
+          name: 'listTools',
+          params: {}
+        }
+      });
+    }
+
+    // Default local action
+    return JSON.stringify({
+      thought: "Passage en mode local pour effectuer des opérations système.",
+      command: {
+        name: 'listDirectory',
+        params: { path: '.', detailed: true }
+      }
+    });
+  }
+
+  /**
+   * Generate a local fallback response when all LLM providers fail
+   */
+  private async generateLocalFallbackResponse(): Promise<string | undefined> {
+    this.log.info('Generating local fallback response...');
+
+    // Check if we have pending tasks that can be executed locally
+    const nextTask = this.getNextPendingTask();
+    if (nextTask) {
+      this.log.info(`Found pending task: ${nextTask.content}`);
+
+      // Convert task to appropriate local action
+      const localCommand = this.convertTaskToLocalCommand(nextTask);
+      if (localCommand) {
+        this.log.info(`Converting to local command: ${localCommand.name}`);
+
+        // Execute the local command directly
+        try {
+          const result = await this.executeTool(localCommand, this.log);
+          this.log.info('Local command executed successfully');
+
+          // Generate a response based on the result
+          return JSON.stringify({
+            thought: `Executed local task: ${nextTask.content}`,
+            command: {
+              name: 'finish',
+              params: {
+                response: `I successfully completed the local task: ${nextTask.content}. Result: ${result}`
+              }
+            }
+          });
+        } catch (error) {
+          this.log.error({ error }, 'Local command execution failed');
+          return JSON.stringify({
+            thought: `Local task failed: ${nextTask.content}`,
+            command: {
+              name: 'finish',
+              params: {
+                response: `I attempted to complete the local task: ${nextTask.content}, but encountered an error. Please check the system status.`
+              }
+            }
+          });
+        }
+      }
+    }
+
+    // If no local tasks available, provide a basic fallback
+    return JSON.stringify({
+      thought: "All LLM providers are unavailable, but I can help with local system tasks.",
+      command: {
+        name: 'finish',
+        params: {
+          response: "I'm currently unable to access LLM services, but I can help you with local system operations. Please let me know what specific local tasks you'd like me to perform."
+        }
+      }
+    });
+  }
+
+  /**
+   * Convert a task to a local command that doesn't require LLM
+   */
+  private convertTaskToLocalCommand(task: { id: string; content: string; status: string }): Command | null {
+    const lowerContent = task.content.toLowerCase();
+
+    // File system operations
+    if (lowerContent.includes('list') && lowerContent.includes('file')) {
+      return {
+        name: 'listFiles',
+        params: { path: '.' }
+      };
+    }
+
+    if (lowerContent.includes('read') || lowerContent.includes('examine')) {
+      return {
+        name: 'readFile',
+        params: { filePath: '/home/demon/agentforge/AgenticForge2/AgenticForge/README.md' }
+      };
+    }
+
+    // System information
+    if (lowerContent.includes('status') || lowerContent.includes('info')) {
+      return {
+        name: 'listTools',
+        params: {}
+      };
+    }
+
+    // Directory listing
+    if (lowerContent.includes('explore') || lowerContent.includes('directory')) {
+      return {
+        name: 'listDirectory',
+        params: { path: '.', detailed: true }
+      };
+    }
+
+    return null; // No suitable local command found
   }
 
   /**
@@ -1842,5 +2767,245 @@ export class Agent {
     }
 
     return todos;
+  }
+
+  /**
+   * Check if the response indicates continuation of a form-filling task
+   */
+  private isFormContinuationResponse(text: string): boolean {
+    const lowerText = text.toLowerCase();
+
+    // Keywords that indicate form continuation
+    const formContinuationKeywords = [
+      'telephone', 'phone', 'téléphone', 'number', 'numéro',
+      'email', 'courriel', 'address', 'adresse', 'city', 'ville',
+      'zip', 'postal', 'code', 'message', 'comment',
+      'type', 'enter', 'input', 'fill', 'complete',
+      'taper', 'entrer', 'remplir', 'compléter'
+    ];
+
+    // Check if response mentions form fields
+    const hasFormFieldKeywords = formContinuationKeywords.some(keyword =>
+      lowerText.includes(keyword)
+    );
+
+    // Check if response follows recent form interaction
+    const recentCommands = this.commandHistory.slice(-2);
+    const hasRecentFormInteraction = recentCommands.some(cmd =>
+      cmd.name && (
+        cmd.name.includes('playwright_type') ||
+        cmd.name.includes('playwright_click') ||
+        cmd.name === 'playwright_type'
+      )
+    );
+
+    return hasFormFieldKeywords && hasRecentFormInteraction;
+  }
+
+  /**
+   * Parse multi-file responses containing HTML, CSS, and JavaScript code
+   */
+  private parseMultiFileResponse(text: string): Array<{
+    filename: string;
+    content: string;
+    type: 'html' | 'css' | 'javascript';
+  }> {
+    const files: Array<{
+      filename: string;
+      content: string;
+      type: 'html' | 'css' | 'javascript';
+    }> = [];
+
+    // Extract HTML content
+    const htmlMatch = text.match(/```html\s*\n([\s\S]*?)\n```/i);
+    if (htmlMatch) {
+      const htmlContent = htmlMatch[1].trim();
+      // Try to extract filename from content or use default
+      const filenameMatch = htmlContent.match(/<!--\s*filename:\s*([^\s]+)\s*-->/i) ||
+                           htmlContent.match(/<!--\s*([^\s]+\.html)\s*-->/i);
+      const filename = filenameMatch ? filenameMatch[1] : 'index.html';
+      files.push({
+        filename,
+        content: htmlContent,
+        type: 'html'
+      });
+    }
+
+    // Extract CSS content
+    const cssMatch = text.match(/```css\s*\n([\s\S]*?)\n```/i);
+    if (cssMatch) {
+      const cssContent = cssMatch[1].trim();
+      // Try to extract filename from content or use default
+      const filenameMatch = cssContent.match(/\/\*\s*filename:\s*([^\s]+)\s*\*\//i) ||
+                           cssContent.match(/\/\*\s*([^\s]+\.css)\s*\*\//i);
+      const filename = filenameMatch ? filenameMatch[1] : 'style.css';
+      files.push({
+        filename,
+        content: cssContent,
+        type: 'css'
+      });
+    }
+
+    // Extract JavaScript content
+    const jsMatch = text.match(/```javascript\s*\n([\s\S]*?)\n```/i) ||
+                   text.match(/```js\s*\n([\s\S]*?)\n```/i);
+    if (jsMatch) {
+      const jsContent = jsMatch[1].trim();
+      // Try to extract filename from content or use default
+      const filenameMatch = jsContent.match(/\/\/\s*filename:\s*([^\s]+)/i) ||
+                           jsContent.match(/\/\/\s*([^\s]+\.js)/i);
+      const filename = filenameMatch ? filenameMatch[1] : 'game.js';
+      files.push({
+        filename,
+        content: jsContent,
+        type: 'javascript'
+      });
+    }
+
+    // If no code blocks found, try to extract from plain HTML/CSS/JS content
+    if (files.length === 0) {
+      // Look for HTML content
+      const htmlPattern = /<\!DOCTYPE html[\s\S]*?<\/html>/i;
+      const htmlFallback = text.match(htmlPattern);
+      if (htmlFallback) {
+        files.push({
+          filename: 'index.html',
+          content: htmlFallback[0],
+          type: 'html'
+        });
+      }
+
+      // Look for CSS content (style blocks or separate CSS)
+      const cssPattern = /body\s*\{[\s\S]*?\}/i;
+      const cssFallback = text.match(cssPattern);
+      if (cssFallback) {
+        files.push({
+          filename: 'style.css',
+          content: cssFallback[0],
+          type: 'css'
+        });
+      }
+
+      // Look for JavaScript content
+      const jsPattern = /function\s+\w+\s*\([\s\S]*?\}|\w+\s*=\s*\{[\s\S]*?\}|class\s+\w+[\s\S]*?\}/i;
+      const jsFallback = text.match(jsPattern);
+      if (jsFallback) {
+        files.push({
+          filename: 'game.js',
+          content: jsFallback[0],
+          type: 'javascript'
+        });
+      }
+    }
+
+    // If still no files found, try to extract from markdown headers
+    if (files.length === 0) {
+      // Look for **filename.ext** patterns
+      const filePatterns = [
+        /\*\*([^\*]+\.html)\*\*\s*\n([\s\S]*?)(?=\n\*\*|$)/i,
+        /\*\*([^\*]+\.css)\*\*\s*\n([\s\S]*?)(?=\n\*\*|$)/i,
+        /\*\*([^\*]+\.js)\*\*\s*\n([\s\S]*?)(?=\n\*\*|$)/i
+      ];
+
+      filePatterns.forEach(pattern => {
+        const match = text.match(pattern);
+        if (match) {
+          const filename = match[1];
+          const content = match[2].trim();
+          let type: 'html' | 'css' | 'javascript';
+
+          if (filename.endsWith('.html')) {
+            type = 'html';
+          } else if (filename.endsWith('.css')) {
+            type = 'css';
+          } else if (filename.endsWith('.js')) {
+            type = 'javascript';
+          } else {
+            return; // Skip unknown file types
+          }
+
+          files.push({
+            filename,
+            content,
+            type
+          });
+        }
+      });
+    }
+
+    return files;
+  }
+
+  /**
+   * Get the next form step based on the continuation response
+   */
+  private getNextFormStep(text: string): Command {
+    const lowerText = text.toLowerCase();
+
+    // Determine what field to fill based on the response content
+    if (lowerText.includes('telephone') || lowerText.includes('phone') || lowerText.includes('téléphone')) {
+      return {
+        name: 'playwright_type',
+        params: {
+          selector: 'input[name*="phone"], input[name*="tel"], input[name*="telephone"], input[type="tel"]',
+          text: '+33123456789',
+          clear: true
+        }
+      };
+    }
+
+    if (lowerText.includes('email') || lowerText.includes('courriel')) {
+      return {
+        name: 'playwright_type',
+        params: {
+          selector: 'input[name*="email"], input[type="email"]',
+          text: 'test@example.com',
+          clear: true
+        }
+      };
+    }
+
+    if (lowerText.includes('address') || lowerText.includes('adresse')) {
+      return {
+        name: 'playwright_type',
+        params: {
+          selector: 'input[name*="address"], input[name*="addr"], textarea[name*="address"]',
+          text: '123 Test Street',
+          clear: true
+        }
+      };
+    }
+
+    if (lowerText.includes('city') || lowerText.includes('ville')) {
+      return {
+        name: 'playwright_type',
+        params: {
+          selector: 'input[name*="city"], input[name*="ville"]',
+          text: 'Test City',
+          clear: true
+        }
+      };
+    }
+
+    if (lowerText.includes('message') || lowerText.includes('comment')) {
+      return {
+        name: 'playwright_type',
+        params: {
+          selector: 'textarea[name*="message"], textarea[name*="comment"], textarea',
+          text: 'This is a test message from the agent.',
+          clear: true
+        }
+      };
+    }
+
+    // Default: try to find next empty field
+    return {
+      name: 'playwright_type',
+      params: {
+        selector: 'input:not([type="submit"]):not([type="button"]):not([value]), textarea:not([value])',
+        text: 'Test Input',
+        clear: true
+      }
+    };
   }
 }

@@ -10,6 +10,8 @@ import {
   Edit,
   XCircle,
   AlertTriangle,
+  Plus,
+  Coins,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
@@ -44,6 +46,7 @@ import {
 import { useSessionStore } from '../store/sessionStore';
 import { useUIStore } from '../store/uiStore';
 import { LoadingSpinner } from './LoadingSpinner';
+import { useSessionTokensUsed } from '../store/hooks';
 
 export const ControlPanel = memo(() => {
   const { translations } = useLanguage();
@@ -56,9 +59,10 @@ export const ControlPanel = memo(() => {
   // const setToolCreationEnabled = useStore((state) => state.setToolCreationEnabled); // Supprimé: never used
   const sessions = useSessions();
   const activeSessionId = useActiveSessionId();
-  const { saveSession, loadSession, deleteSession, renameSession } =
+  const { saveSession, loadSession, deleteSession, renameSession, createNewSession } =
     useSessionStore();
   const tokenStatus = useTokenStatus();
+  const sessionTokensUsed = useSessionTokensUsed();
 
   // Loading states
   const isLoadingSessions = useIsLoadingSessions();
@@ -268,6 +272,21 @@ export const ControlPanel = memo(() => {
                   )}
                 </span>
               </div>
+              <div className="flex justify-between items-center p-2 rounded hover:bg-accent transition-all duration-200 hover:scale-105">
+                <Label
+                  htmlFor="session-tokens"
+                  className="text-sm flex items-center"
+                >
+                  <Coins className="mr-2 h-4 w-4 text-yellow-500" />
+                  Session Tokens
+                </Label>
+                <span
+                  id="session-tokens"
+                  className="text-sm text-muted-foreground font-mono"
+                >
+                  {sessionTokensUsed.toLocaleString()}
+                </span>
+              </div>
             </CardContent>
           </Card>
 
@@ -279,6 +298,15 @@ export const ControlPanel = memo(() => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pt-4">
+              <Button
+                className="w-full flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white"
+                onClick={() => createNewSession()}
+                variant="secondary"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                New Session
+              </Button>
+
               <Button
                 className="w-full flex items-center justify-center bg-green-500 hover:bg-green-600 text-white"
                 onClick={handleSaveCurrentSession}

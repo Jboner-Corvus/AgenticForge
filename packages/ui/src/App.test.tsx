@@ -98,6 +98,8 @@ vi.mock('./store/hooks', () => ({
   useAgentProgress: vi.fn(() => 0),
   useMessageInputValue: vi.fn(() => ''),
   useStreamCloseFunc: vi.fn(() => null),
+  useLatestTokenStats: vi.fn(() => null),
+  useSessionTokensUsed: vi.fn(() => 0),
 }));
 
 vi.mock('./lib/contexts/LanguageProvider', () => ({

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Console Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        .test-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        .test-button:hover {
+            background: #45a049;
+        }
+        .test-button.danger {
+            background: #f44336;
+        }
+        .test-button.danger:hover {
+            background: #da190b;
+        }
+        .output {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Canvas Console Test</h1>
+        <p>This page demonstrates the canvas console feedback functionality.</p>
+
+        <button class="test-button" onclick="testLog()">Test Console.log</button>
+        <button class="test-button" onclick="testError()">Test Console.error</button>
+        <button class="test-button" onclick="testWarn()">Test Console.warn</button>
+        <button class="test-button" onclick="testInfo()">Test Console.info</button>
+        <button class="test-button" onclick="testDebug()">Test Console.debug</button>
+        <button class="test-button danger" onclick="testErrorThrow()">Test Error Throw</button>
+
+        <div class="output" id="output">
+            Click buttons above to test console output...
+        </div>
+
+        <div style="margin-top: 30px; padding: 20px; background: rgba(255, 255, 255, 0.1); border-radius: 5px;">
+            <h3>💡 Instructions:</h3>
+            <p>The agent can now:</p>
+            <ul>
+                <li>Execute JavaScript code directly in this canvas</li>
+                <li>Monitor all console output in real-time</li>
+                <li>Control console capture (enable/disable)</li>
+                <li>Clear console logs</li>
+                <li>Filter logs by level or search patterns</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function testLog() {
+            console.log('✅ This is a console.log message from the canvas!');
+            updateOutput('console.log executed');
+        }
+
+        function testError() {
+            console.error('❌ This is a console.error message from the canvas!');
+            updateOutput('console.error executed');
+        }
+
+        function testWarn() {
+            console.warn('⚠️ This is a console.warn message from the canvas!');
+            updateOutput('console.warn executed');
+        }
+
+        function testInfo() {
+            console.info('ℹ️ This is a console.info message from the canvas!');
+            updateOutput('console.info executed');
+        }
+
+        function testDebug() {
+            console.debug('🐛 This is a console.debug message from the canvas!');
+            updateOutput('console.debug executed');
+        }
+
+        function testErrorThrow() {
+            try {
+                throw new Error('This is a test error thrown from the canvas!');
+            } catch (error) {
+                console.error('💥 Caught error:', error);
+                updateOutput('Error thrown and caught');
+            }
+        }
+
+        function updateOutput(message) {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            output.textContent = `[${timestamp}] ${message}\n\n` + output.textContent;
+        }
+
+        // Initial message
+        console.log('🎨 Canvas Console Test page loaded successfully!');
+        console.log('🔧 Agent can now interact with this canvas via console commands!');
+    </script>
+</body>
+</html>

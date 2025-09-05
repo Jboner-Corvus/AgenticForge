@@ -4,6 +4,17 @@
 echo "🧪 Test du workspace système AgenticForge"
 echo "========================================"
 
+# Charger les variables d'environnement depuis .env si disponible
+if [[ -f ".env" ]]; then
+    echo "📄 Chargement des variables d'environnement depuis .env..."
+    set -a
+    source .env
+    set +a
+    echo "✅ Variables d'environnement chargées"
+else
+    echo "⚠️ Fichier .env non trouvé"
+fi
+
 # Vérifier les variables d'environnement
 echo "📋 Configuration actuelle:"
 echo "   WORKSPACE_PATH: $WORKSPACE_PATH"

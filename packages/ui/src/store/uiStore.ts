@@ -25,6 +25,15 @@ export interface UIState {
 
   // Form states
   messageInputValue: string;
+  selectedSystemPrompt: string;
+
+  // Token usage stats
+  latestTokenStats: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+    timestamp: number | null;
+  } | null;
 
   // Status indicators
   agentStatus: string | null;
@@ -69,6 +78,16 @@ export interface UIState {
 
   // Form
   setMessageInputValue: (value: string) => void;
+  setSelectedSystemPrompt: (prompt: string) => void;
+
+  // Token stats
+  setLatestTokenStats: (stats: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+    timestamp: number | null;
+  } | null) => void;
+  fetchLatestTokenStats: () => Promise<void>;
 
   // Status
   setAgentStatus: (status: string | null) => void;
@@ -115,6 +134,8 @@ export const useUIStore = create<UIState>()(
       isProcessing: false,
       agentProgress: 0,
       messageInputValue: '',
+      selectedSystemPrompt: 'coder',
+      latestTokenStats: null,
       agentStatus: null,
       toolStatus: '',
       browserStatus: 'idle',
@@ -124,7 +145,7 @@ export const useUIStore = create<UIState>()(
       toolCount: 0,
       toolCreationEnabled: false,
       codeExecutionEnabled: true,
-      authToken: clientConfig.AUTH_TOKEN || null, // Token backend depuis config
+      authToken: clientConfig.AUTH_TOKEN && clientConfig.AUTH_TOKEN.trim() !== '' ? clientConfig.AUTH_TOKEN : null, // Token backend depuis config
       jobId: null,
       activeCliJobId: null,
       streamCloseFunc: null,
@@ -154,11 +175,11 @@ export const useUIStore = create<UIState>()(
           return;
         }
 
-        // Simple validation - just check if token exists
+        // Simple validation - just check if token exists and is not empty
         try {
           // In a real implementation, we would validate the token with the backend
           // For now, we'll just assume it's valid if it's not empty
-          if (token.trim() !== '') {
+          if (token && token.trim() !== '') {
             set({
               authToken: token,
               isAuthenticated: true,
@@ -180,6 +201,15 @@ export const useUIStore = create<UIState>()(
               authToken: null,
               isAuthenticated: false,
             });
+            // Remove from localStorage if token is empty
+            try {
+              localStorage.removeItem('backendAuthToken');
+            } catch (error) {
+              console.warn(
+                'Failed to remove backend token from localStorage:',
+                error,
+              );
+            }
           }
         } catch (error) {
           console.error('Backend token validation failed:', error);
@@ -201,7 +231,7 @@ export const useUIStore = create<UIState>()(
               authToken: storedToken,
               isAuthenticated: true,
             });
-          } else if (clientConfig.AUTH_TOKEN) {
+          } else if (clientConfig.AUTH_TOKEN && clientConfig.AUTH_TOKEN.trim() !== '') {
             // Fallback to the default token from config
             console.log('✅ [UIStore] Using backend token from config');
             set({
@@ -254,7 +284,7 @@ export const useUIStore = create<UIState>()(
         }
 
         // Finally, fallback to the default token from config
-        if (clientConfig.AUTH_TOKEN) {
+        if (clientConfig.AUTH_TOKEN && clientConfig.AUTH_TOKEN.trim() !== '') {
           console.log(
             '✅ [UIStore] Using backend token from config as fallback',
           );
@@ -303,6 +333,20 @@ export const useUIStore = create<UIState>()(
 
       // Form
       setMessageInputValue: (messageInputValue) => set({ messageInputValue }),
+      setSelectedSystemPrompt: (selectedSystemPrompt) => set({ selectedSystemPrompt }),
+
+      // Token stats
+      setLatestTokenStats: (latestTokenStats) => set({ latestTokenStats }),
+      fetchLatestTokenStats: async () => {
+        try {
+          const { getLatestTokenStats } = await import('../lib/api');
+          const authToken = get().getValidAuthToken();
+          const stats = await getLatestTokenStats(authToken);
+          set({ latestTokenStats: stats });
+        } catch (error) {
+          console.error('Failed to fetch token stats:', error);
+        }
+      },
 
       // Status
       setAgentStatus: (agentStatus) => set({ agentStatus }),
@@ -323,11 +367,11 @@ export const useUIStore = create<UIState>()(
           authToken?.substring(0, 30) + '...',
         );
         set({
-          authToken,
-          isAuthenticated: !!authToken,
+          authToken: authToken && authToken.trim() !== '' ? authToken : null,
+          isAuthenticated: !!(authToken && authToken.trim() !== ''),
         });
         // Save to localStorage with clear naming
-        if (authToken) {
+        if (authToken && authToken.trim() !== '') {
           try {
             localStorage.setItem('backendAuthToken', authToken);
           } catch (error) {
@@ -417,6 +461,7 @@ export const useUIStore = create<UIState>()(
         codeExecutionEnabled: state.codeExecutionEnabled,
         authToken: state.authToken,
         tokenStatus: state.tokenStatus,
+        selectedSystemPrompt: state.selectedSystemPrompt,
       }),
     },
   ),

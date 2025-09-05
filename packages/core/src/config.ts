@@ -1,6 +1,7 @@
 import * as dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 // FICHIER : packages/core/src/config.ts
 import { z } from 'zod';
 
@@ -37,7 +38,7 @@ const configSchema = z.object({
     .default('gemini'),
   LLM_PROVIDER_HIERARCHY: z
     .string()
-    .default('huggingface,grok,gemini,openai,mistral,openrouter,qwen')
+    .default('huggingface,grok,gemini,google-flash,openai,mistral,openrouter,qwen')
     .transform((str) => str.split(',').map((s) => s.trim())),
   LLM_REQUEST_DELAY_MS: z.coerce.number().default(1000), // Reduced delay for better performance
   LOG_LEVEL: z.string().default('debug'),
@@ -71,8 +72,8 @@ const configSchema = z.object({
   WORKER_MAX_STALLED_COUNT: z.coerce.number().default(3),
   WORKER_STALLED_INTERVAL_MS: z.coerce.number().default(30000), // 30 seconds
   WORKER_WORKSPACE_PATH: z.string().optional(),
-  // Standardized workspace path
-  WORKSPACE_PATH: z.string().default('/home/demon/agenticforge-workspace'),
+  // Standardized workspace path - unified for all tools
+  WORKSPACE_PATH: z.string().default(`${process.env.HOME}/agentforge/AgenticForge2/AgenticForge/packages/core/workspace`),
   // Gemini-specific optimizations
   GEMINI_MAX_HISTORY_LENGTH: z.coerce.number().default(50), // Limit history length for Gemini
   GEMINI_REQUEST_TIMEOUT_MS: z.coerce.number().default(30000), // 30 second timeout for Gemini requests
@@ -102,11 +103,11 @@ export function getConfig(): Config {
     try {
       // Try multiple possible .env file locations to handle different execution contexts
       let envPath = path.resolve(__dirname, '..', '..', '..', '.env');
-      if (!require('fs').existsSync(envPath)) {
+      if (!existsSync(envPath)) {
         // If running from dist/, try going up one more level
         envPath = path.resolve(__dirname, '..', '..', '..', '..', '.env');
       }
-      if (!require('fs').existsSync(envPath)) {
+      if (!existsSync(envPath)) {
         // If still not found, try from current working directory
         envPath = path.resolve(process.cwd(), '.env');
       }
@@ -141,11 +142,11 @@ export async function loadConfig() {
 
   // Try multiple possible .env file locations to handle different execution contexts
   let envPath = path.resolve(__dirname, '..', '..', '..', '.env');
-  if (!require('fs').existsSync(envPath)) {
+  if (!existsSync(envPath)) {
     // If running from dist/, try going up one more level
     envPath = path.resolve(__dirname, '..', '..', '..', '..', '.env');
   }
-  if (!require('fs').existsSync(envPath)) {
+  if (!existsSync(envPath)) {
     // If still not found, try from current working directory
     envPath = path.resolve(process.cwd(), '.env');
   }

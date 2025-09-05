@@ -10,6 +10,8 @@ import {
   FileText,
   Clock,
   Lightbulb,
+  Settings,
+  ChevronDown,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -24,6 +26,7 @@ import { useIsProcessing, useMessageInputValue } from '../store/hooks';
 import { useUIStore } from '../store/uiStore';
 import { useAgentStream } from '../lib/hooks/useAgentStream';
 import { useLanguage } from '../lib/contexts/LanguageContext';
+import { TokenUsageDisplay } from './TokenUsageDisplay';
 
 // Suggestions intelligentes basées sur le contexte
 const SMART_SUGGESTIONS = [
@@ -54,6 +57,16 @@ const SMART_SUGGESTIONS = [
   },
 ];
 
+// System prompt options - same as UserInput
+const SYSTEM_PROMPT_OPTIONS = [
+  { value: 'architect', label: 'Architect', description: 'System design, architecture planning, and technical specifications' },
+  { value: 'coder', label: 'Coder', description: 'Code implementation, debugging, and development' },
+  { value: 'explain', label: 'Explain', description: 'Code explanation, teaching, and knowledge sharing' },
+  { value: 'debug', label: 'Debug', description: 'Debugging, troubleshooting, and problem solving' },
+  { value: 'orchestrate', label: 'Orchestrate', description: 'Project management, coordination, and workflow optimization' },
+  { value: 'frontend', label: 'FrontEnd', description: 'Frontend development, UI/UX, and user interface design' }
+];
+
 interface EnhancedChatInputProps {
   variant?: 'classic' | 'pinned';
   showSuggestions?: boolean;
@@ -66,6 +79,8 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
   const { translations } = useLanguage();
   const inputValue = useMessageInputValue();
   const setInputValue = useUIStore((state) => state.setMessageInputValue);
+  const selectedSystemPrompt = useUIStore((state) => state.selectedSystemPrompt);
+  const setSelectedSystemPrompt = useUIStore((state) => state.setSelectedSystemPrompt);
   const { startAgent, interruptAgent } = useAgentStream();
   const isProcessing = useIsProcessing();
 
@@ -75,6 +90,7 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isRecording, setIsRecording] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +107,40 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
   useEffect(() => {
     setShowSuggestionsPanel(inputValue === '' && showSuggestions);
   }, [inputValue, showSuggestions]);
+
+  // Fermer le dropdown avec Échap et debug
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isDropdownOpen) {
+        console.log('🔧 [EnhancedChatInput] Closing dropdown with Escape');
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isDropdownOpen]);
+
+  // Debug effect pour surveiller l'état du dropdown
+  useEffect(() => {
+    console.log('🔧 [EnhancedChatInput] Dropdown state changed:', isDropdownOpen);
+  }, [isDropdownOpen]);
+
+  // Fermer le dropdown en cliquant à l'extérieur
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (isDropdownOpen) {
+        const target = e.target as Element;
+        if (!target.closest('[data-dropdown-container]')) {
+          console.log('🔧 [EnhancedChatInput] Click outside, closing dropdown');
+          setIsDropdownOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isDropdownOpen]);
 
   const handleSendMessage = () => {
     console.log('🚀 [EnhancedChatInput] handleSendMessage called');
@@ -275,7 +325,7 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
             }
             onKeyDown={handleKeyDown}
             disabled={isProcessing}
-            className="resize-none border-0 bg-transparent py-4 px-6 pr-32 placeholder:text-muted-foreground/60 focus:ring-0 focus:outline-none"
+            className="resize-none border-0 bg-transparent py-4 px-6 pr-80 placeholder:text-muted-foreground/60 focus:ring-0 focus:outline-none"
             style={{
               borderRadius: '24px',
               minHeight: '56px',
@@ -284,7 +334,64 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
           />
 
           {/* Input Actions Bar */}
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          <div data-dropdown-container className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 overflow-visible relative">
+            {/* System Prompt Selector - Mode Display */}
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🔧 [EnhancedChatInput] Toggle dropdown clicked, current state:', isDropdownOpen);
+                  setIsDropdownOpen(!isDropdownOpen);
+                }}
+                disabled={isProcessing}
+                className="h-8 px-3 text-xs font-medium hover:bg-primary/10 border border-border bg-background flex items-center gap-2"
+                title="Changer le mode de l'agent"
+              >
+                <Settings className="h-3 w-3" />
+                <span>{SYSTEM_PROMPT_OPTIONS.find(opt => opt.value === selectedSystemPrompt)?.label || 'Mode'}</span>
+                <ChevronDown className={`h-3 w-3 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </Button>
+              
+              {/* Dropdown Menu */}
+              {isDropdownOpen && (
+                <div className="absolute bottom-full right-0 mb-1 w-72 bg-background border border-border shadow-xl rounded-lg z-[50] py-2 max-h-80 overflow-y-auto">
+                  <div className="px-3 py-2 text-xs text-muted-foreground border-b border-border">
+                    Choisissez le mode de l'agent
+                  </div>
+                  <div className="py-1">
+                    {SYSTEM_PROMPT_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          console.log('🔧 [EnhancedChatInput] System prompt changed to:', option.value);
+                          setSelectedSystemPrompt(option.value);
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 hover:bg-muted transition-colors ${
+                          selectedSystemPrompt === option.value 
+                            ? 'bg-primary/10 border-l-2 border-primary' 
+                            : ''
+                        }`}
+                      >
+                        <div className="flex flex-col">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-sm">{option.label}</span>
+                            {selectedSystemPrompt === option.value && (
+                              <span className="text-xs text-primary">✓ Actuel</span>
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground mt-1">{option.description}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             {/* History Indicator */}
             {historyIndex >= 0 && (
               <Tooltip>
@@ -373,6 +480,7 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
           {/* Character Count & Shortcuts */}
           <div className="absolute bottom-1 left-4 flex items-center gap-4 text-xs text-muted-foreground">
             <span>{inputValue.length}/2000</span>
+            <TokenUsageDisplay variant="minimal" />
             {inputHistory.length > 0 && (
               <span className="hidden sm:block">
                 Ctrl+↑/↓ pour l'historique

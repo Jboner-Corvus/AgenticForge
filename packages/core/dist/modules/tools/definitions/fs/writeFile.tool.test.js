@@ -2,7 +2,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
   writeFile
-} from "../../../../chunk-L4OO3HDI.js";
+} from "../../../../chunk-5ZBGX46P.js";
 import {
   describe,
   globalExpect,
@@ -11,8 +11,8 @@ import {
 } from "../../../../chunk-AQKYZ7X3.js";
 import {
   getLoggerInstance
-} from "../../../../chunk-BL4YZGPN.js";
-import "../../../../chunk-VUKI2J6K.js";
+} from "../../../../chunk-ODN6V7GO.js";
+import "../../../../chunk-W2OHWP3M.js";
 import {
   init_esm_shims
 } from "../../../../chunk-SB7UONON.js";
@@ -67,11 +67,11 @@ describe("writeFileTool", () => {
     );
     const absolutePath = path.resolve(filePath);
     globalExpect(fs.mkdir).toHaveBeenCalledWith(
-      path.dirname(absolutePath),
+      "/tmp/workspace",
       { recursive: true }
     );
     globalExpect(fs.writeFile).toHaveBeenCalledWith(
-      absolutePath,
+      "/tmp/workspace/newfile.txt",
       content,
       "utf-8"
     );
@@ -89,7 +89,7 @@ describe("writeFileTool", () => {
     );
     const absolutePath = path.resolve(filePath);
     globalExpect(fs.writeFile).toHaveBeenCalledWith(
-      absolutePath,
+      "/tmp/workspace/existingfile.txt",
       content,
       "utf-8"
     );

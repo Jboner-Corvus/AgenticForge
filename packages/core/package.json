@@ -1,6 +1,6 @@
 {
   "name": "@gforge/core",
-  "version": "1.0.492",
+  "version": "1.0.578",
   "description": "G-Forge Core Backend",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -61,6 +61,7 @@
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.0.0",
     "pino": "^9.7.0",
+    "@playwright/mcp": "^0.0.35",
     "playwright": "^1.54.1",
     "puppeteer": "^24.15.0",
     "uuid": "^11.1.0",
@@ -70,6 +71,7 @@
   },
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.16.1",
+    "@modelcontextprotocol/sdk": "^1.17.4",
     "@sebbo2002/semantic-release-jsr": "^3.0.0",
     "@tsconfig/node22": "^22.0.2",
     "@types/cookie-parser": "^1.4.9",

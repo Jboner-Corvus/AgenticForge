@@ -45,6 +45,8 @@ export const useStreamCloseFunc = () =>
 export const useDebugLog = () => useUIStore((state) => state.debugLog);
 export const useIsSettingsModalOpen = () =>
   useUIStore((state) => state.isSettingsModalOpen);
+export const useLatestTokenStats = () =>
+  useUIStore((state) => state.latestTokenStats);
 
 // Canvas Store hooks
 export const useCanvasContent = () =>
@@ -96,6 +98,8 @@ export const useIsDeletingSession = () =>
   useSessionStore((state) => state.isDeletingSession);
 export const useIsRenamingSession = () =>
   useSessionStore((state) => state.isRenamingSession);
+export const useSessionTokensUsed = () =>
+  useSessionStore((state) => state.sessionTokensUsed);
 
 // Combined Store hooks - only for actions and LLM state
 export const useLlmApiKeys = () =>

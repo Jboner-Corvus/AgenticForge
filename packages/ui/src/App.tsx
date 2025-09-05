@@ -43,6 +43,7 @@ import {
 
 // Import du nouveau composant UnifiedTodoListPanel
 import { UnifiedTodoListPanel } from './components/UnifiedTodoListPanel';
+import { PlaywrightLiveMonitor } from './components/PlaywrightLiveMonitor';
 
 export default function App() {
   console.log('🔥🔥🔥 [DEBUG] App component loading!');
@@ -71,7 +72,6 @@ export default function App() {
   }, [isDarkMode]);
 
   // Pinning store states
-  const layoutMode = usePinningStore((state) => state.layoutMode);
   const components = usePinningStore((state) => state.components);
   const hasPinnedComponents = Object.values(components).some(
     (c) => c.isPinned && c.isVisible,
@@ -127,19 +127,20 @@ export default function App() {
   return (
     <LanguageProvider>
       <SessionIdProvider>
-        <div className="min-h-screen flex flex-col bg-background text-foreground overflow-x-hidden relative">
+        <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden relative">
           <AppInitializer />
-          <HeaderContainer />
-          <UnifiedTodoListPanel />
+          {/* Header always pinned at the top - outside the scrollable area */}
+          <div className="shrink-0">
+            <HeaderContainer />
+            <UnifiedTodoListPanel />
+          </div>
           <Suspense fallback={<div>Loading Settings...</div>}>
             <SettingsModalContainer />
           </Suspense>
           {/* SYSTÈME ÉPIQUE DE PINNING - Affiché si des composants sont pinnés */}
           {hasPinnedComponents && <LazyLayoutManager />}
           {/* LAYOUT CLASSIQUE - Masqué si en mode battlefield */}
-          <div
-            className={`flex flex-1 overflow-hidden min-w-0 ${layoutMode === 'battlefield' ? 'opacity-20 pointer-events-none' : ''}`}
-          >
+          <div className="flex flex-1 overflow-hidden">
             {isControlPanelVisible && (
               <div
                 className="flex-shrink-0 overflow-hidden relative"
@@ -155,9 +156,13 @@ export default function App() {
 
             {/* Conteneur principal pour la discussion et le canevas */}
             <main className="flex-1 flex flex-col overflow-hidden">
-              <div className="flex-1 flex overflow-hidden min-w-0">
-                <div className="flex-1 min-w-0 overflow-hidden">
-                  {renderMainContent()}
+              <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 min-w-0 flex flex-col">
+                  {/* Main content area with flex layout */}
+                  <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                    {renderMainContent()}
+                  </div>
+
                 </div>
 
                 {/* Section du Canvas CLASSIQUE - masquée si pinnée */}
@@ -240,6 +245,9 @@ export default function App() {
               console.log("🔐 Système d'authentification activé")
             }
           />
+
+          {/* Playwright Live Monitor for browser automation events */}
+          <PlaywrightLiveMonitor jobId={activeCliJobId || undefined} />
         </div>
       </SessionIdProvider>
     </LanguageProvider>

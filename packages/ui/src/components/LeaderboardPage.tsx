@@ -9,27 +9,33 @@ import {
 } from './icons/LlmLogos';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCombinedStore } from '../store';
-import { useLLMKeysStore } from '../store/llmKeysStore';
-import { LlmApiKey } from '../store/types';
+import { useLLMKeysStore, LLMKey } from '../store/llmKeysStore';
+// Removed unused import LlmApiKey
 import { Button } from './ui/button';
 import { getLeaderboardStats } from '../lib/api';
 
-type ApiKeyUsage = LlmApiKey & {
+type ApiKeyUsage = LLMKey & {
   rank: number;
   keyMask: string;
-  usageStats?: {
-    totalRequests: number;
-    successfulRequests: number;
-    failedRequests: number;
-    averageResponseTime: number;
-    errorRate: number;
-  };
 };
 
-const getProviderVisuals = (provider: LlmApiKey['providerName']) => {
-  if (!provider) {
-    return { Logo: Sparkles, color: 'bg-gray-500', name: 'Unknown' };
-  }
+// PROVIDER DISPLAY MAPPING
+const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
+  openai: 'OpenAI',
+  anthropic: 'Anthropic Claude',
+  'google-flash': 'Google Gemini Flash',
+  'google-pro': 'Google Gemini Pro',
+  gemini: 'Google Gemini',
+  google: 'Google Gemini',
+  xai: 'xAI Grok',
+  qwen: 'Qwen3 Coder',
+  openrouter: 'OpenRouter',
+  unknown: 'Unknown Provider',
+};
+
+const getProviderVisuals = (providerId: string, fallbackName?: string) => {
+  const providerKey = providerId?.toLowerCase() || 'unknown';
+  
   const visuals: Record<
     string,
     { Logo: React.FC<{ className?: string }>; color: string; name: string }
@@ -38,22 +44,38 @@ const getProviderVisuals = (provider: LlmApiKey['providerName']) => {
     anthropic: {
       Logo: AnthropicLogo,
       color: 'bg-purple-500',
-      name: 'Anthropic',
+      name: 'Anthropic Claude',
     },
     google: { Logo: GeminiLogo, color: 'bg-blue-500', name: 'Google Gemini' },
+    'google-flash': { Logo: GeminiLogo, color: 'bg-blue-400', name: 'Google Gemini Flash' },
+    'google-pro': { Logo: GeminiLogo, color: 'bg-blue-600', name: 'Google Gemini Pro' },
+    gemini: { Logo: GeminiLogo, color: 'bg-blue-500', name: 'Google Gemini' },
+    xai: { 
+      Logo: () => <div className="text-green-400 font-bold text-lg">𝕏</div>, 
+      color: 'bg-green-500', 
+      name: 'xAI Grok' 
+    },
+    qwen: { 
+      Logo: () => <div className="text-blue-400 font-bold">Q</div>, 
+      color: 'bg-blue-500', 
+      name: 'Qwen3 Coder' 
+    },
     openrouter: {
       Logo: OpenRouterLogo,
       color: 'bg-pink-500',
       name: 'OpenRouter',
     },
   };
-  return (
-    visuals[provider] || {
-      Logo: Sparkles,
-      color: 'bg-gray-500',
-      name: 'Unknown',
-    }
-  );
+  
+  return visuals[providerKey] || {
+    Logo: () => (
+      <div className="w-5 h-5 bg-gray-700 rounded flex items-center justify-center text-xs font-bold text-gray-300">
+        {providerKey.charAt(0).toUpperCase()}
+      </div>
+    ),
+    color: 'bg-gray-500',
+    name: PROVIDER_DISPLAY_NAMES[providerKey] || fallbackName || 'Unknown Provider',
+  };
 };
 
 // --- Main Component ---
@@ -75,9 +97,6 @@ export const LeaderboardPage = memo(() => {
   );
   const authToken = useCombinedStore((state) => state.authToken);
   const sessionId = useCombinedStore((state) => state.sessionId);
-  const activeLlmApiKeyIndex = useCombinedStore(
-    (state) => state.activeLlmApiKeyIndex,
-  );
 
   // Function to refresh leaderboard data
   const refreshLeaderboardData = async () => {
@@ -123,21 +142,40 @@ export const LeaderboardPage = memo(() => {
         const stats = await getLeaderboardStats(authToken, sessionId);
         setLeaderboardStats(stats);
 
-        // Create leaderboard data based on actual API keys with real stats
-        const apiKeyData: ApiKeyUsage[] = llmApiKeys.map((key: LlmApiKey, index: number) => ({
+        // Create leaderboard data based on actual API keys with enhanced masking
+        const getMaskedKey = (keyValue: string, providerId: string): string => {
+          if (!keyValue) return 'No Key';
+          
+          const maskingRules: Record<string, { start: number; end: number }> = {
+            openai: { start: 7, end: 6 },
+            anthropic: { start: 8, end: 6 },
+            google: { start: 6, end: 6 },
+            'google-flash': { start: 6, end: 6 },
+            'google-pro': { start: 6, end: 6 },
+            gemini: { start: 6, end: 6 },
+            xai: { start: 8, end: 6 },
+            qwen: { start: 4, end: 4 },
+            openrouter: { start: 8, end: 6 },
+            default: { start: 4, end: 4 },
+          };
+          
+          const rule = maskingRules[providerId] || maskingRules.default;
+          
+          if (keyValue.length <= rule.start + rule.end) {
+            return `${keyValue.charAt(0)}${'*'.repeat(Math.max(1, keyValue.length - 2))}${keyValue.charAt(keyValue.length - 1)}`;
+          }
+          
+          const start = keyValue.substring(0, rule.start);
+          const end = keyValue.substring(keyValue.length - rule.end);
+          const middle = '*'.repeat(Math.max(3, keyValue.length - rule.start - rule.end));
+          
+          return `${start}${middle}${end}`;
+        };
+
+        const apiKeyData: ApiKeyUsage[] = llmApiKeys.map((key: LLMKey, index: number) => ({
           ...key,
-          keyMask: key.keyValue
-            ? `${key.keyValue?.substring(0, 8)}...${key.keyValue?.substring(key.keyValue.length - 4)}`
-            : 'No Key',
+          keyMask: getMaskedKey(key.keyValue || '', key.providerId),
           rank: index + 1,
-          // Add usage stats from the key if available
-          usageStats: key.usageStats || {
-            totalRequests: Math.floor(Math.random() * 1000), // Fallback for demo
-            successfulRequests: Math.floor(Math.random() * 900),
-            failedRequests: Math.floor(Math.random() * 100),
-            averageResponseTime: Math.floor(Math.random() * 5000) + 1000,
-            errorRate: Math.random() * 0.1,
-          },
         }));
 
         setLeaderboardData(apiKeyData);
@@ -145,20 +183,20 @@ export const LeaderboardPage = memo(() => {
         console.error('Failed to fetch leaderboard data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load leaderboard data');
 
-        // Fallback to mock data if API fails
-        const mockData: ApiKeyUsage[] = llmApiKeys.map((key: LlmApiKey, index: number) => ({
+        // Fallback to mock data if API fails with enhanced masking
+        const getMaskedKeyFallback = (keyValue: string): string => {
+          if (!keyValue) return 'No Key';
+          const start = Math.min(4, keyValue.length - 4);
+          const end = 4;
+          return keyValue.length > start + end
+            ? `${keyValue.substring(0, start)}${'*'.repeat(Math.max(3, keyValue.length - start - end))}${keyValue.substring(keyValue.length - end)}`
+            : `${keyValue.charAt(0)}${'*'.repeat(Math.max(1, keyValue.length - 2))}${keyValue.charAt(keyValue.length - 1)}`;
+        };
+
+        const mockData: ApiKeyUsage[] = llmApiKeys.map((key: LLMKey, index: number) => ({
           ...key,
-          keyMask: key.keyValue
-            ? `${key.keyValue?.substring(0, 8)}...${key.keyValue?.substring(key.keyValue.length - 4)}`
-            : 'No Key',
+          keyMask: getMaskedKeyFallback(key.keyValue || ''),
           rank: index + 1,
-          usageStats: {
-            totalRequests: Math.floor(Math.random() * 1000),
-            successfulRequests: Math.floor(Math.random() * 900),
-            failedRequests: Math.floor(Math.random() * 100),
-            averageResponseTime: Math.floor(Math.random() * 5000) + 1000,
-            errorRate: Math.random() * 0.1,
-          },
         }));
         setLeaderboardData(mockData);
       }
@@ -310,24 +348,33 @@ export const LeaderboardPage = memo(() => {
               </motion.div>
             </div>
 
-            {/* Additional Info */}
+            {/* Enhanced Additional Info */}
             <div className="bg-muted/50 rounded-lg p-4 mb-6">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <TrendingUp className="h-4 w-4" />
-                <span>
-                  <strong>Performance Insights:</strong> Based on {llmApiKeys.length} API key{llmApiKeys.length !== 1 ? 's' : ''} configured.
-                  {leaderboardStats.successfulRuns > 0 && (
-                    <span className="ml-2">
-                      Success rate: {((leaderboardStats.successfulRuns / (leaderboardStats.successfulRuns + leaderboardStats.sessionsCreated)) * 100).toFixed(1)}%
-                    </span>
-                  )}
-                </span>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <TrendingUp className="h-4 w-4" />
+                  <span>
+                    <strong>Performance Insights:</strong> {llmApiKeys.length} API key{llmApiKeys.length !== 1 ? 's' : ''} configured • 
+                    {llmApiKeys.filter(k => k.isActive).length} active
+                    {leaderboardStats.successfulRuns > 0 && (
+                      <span className="ml-2">
+                        • Success rate: {((leaderboardStats.successfulRuns / Math.max(1, leaderboardStats.successfulRuns + leaderboardStats.sessionsCreated)) * 100).toFixed(1)}%
+                      </span>
+                    )}
+                  </span>
+                </div>
+                {llmApiKeys.length > 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    Providers: {Array.from(new Set(llmApiKeys.map(k => k.providerId))).join(', ')} • 
+                    Total usage: {llmApiKeys.reduce((sum, k) => sum + (k.usageCount || 0), 0).toLocaleString()} requests
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {llmApiKeys.length === 0 ? (
+        {leaderboardData.length === 0 ? (
           <div className="text-center py-12">
             <Sparkles className="mx-auto h-12 w-12 text-muted-foreground" />
             <h3 className="mt-4 text-xl font-semibold">No API Keys Found</h3>
@@ -335,6 +382,13 @@ export const LeaderboardPage = memo(() => {
               Please add API keys in the LLM API Key Management section to see
               leaderboard stats.
             </p>
+            <Button
+              onClick={() => window.location.hash = '#llm-keys'}
+              className="mt-4"
+              variant="outline"
+            >
+              Go to Key Management
+            </Button>
           </div>
         ) : (
           <div className="overflow-x-auto rounded-lg border border-gray-700">
@@ -385,17 +439,16 @@ export const LeaderboardPage = memo(() => {
               <tbody className="divide-y divide-gray-800 bg-background/50">
                 {leaderboardData.map((key, index) => {
                   const { Logo, color, name } = getProviderVisuals(
+                    key.providerId,
                     key.providerName,
                   );
-                  const isActive =
-                    llmApiKeys[activeLlmApiKeyIndex]?.keyValue === key.keyValue;
                   const isMasterKey =
                     key.keyName === 'Master Key (.env)' ||
                     key.id === 'master-key';
 
                   return (
                     <tr
-                      key={key.key || index}
+                      key={key.id || index}
                       className={`hover:bg-gray-800/50 transition-colors ${isMasterKey ? 'bg-yellow-900/10' : ''}`}
                     >
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6">
@@ -412,42 +465,78 @@ export const LeaderboardPage = memo(() => {
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
                         <div className="flex items-center">
-                          <Logo className="h-5 w-5 mr-2" />
-                          {name}
+                          <div className="mr-3">
+                            <Logo className="h-5 w-5" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{name}</span>
+                            <span className="text-xs text-gray-400">ID: {key.providerId}</span>
+                          </div>
                           {isMasterKey && (
                             <Badge className="ml-2 bg-yellow-900/50 text-yellow-300 border border-yellow-700/50">
+                              <Shield className="h-3 w-3 mr-1" />
                               Master
                             </Badge>
                           )}
                         </div>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300 font-medium">
-                        {key.nickname || key.keyName}
-                        {isMasterKey && (
-                          <div className="text-xs text-yellow-500/80">
-                            From Environment
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                        <div className="flex flex-col">
+                          <span className="font-medium">{key.keyName}</span>
+                          <span className="text-xs text-gray-400 font-mono">{key.keyMask}</span>
+                          {isMasterKey && (
+                            <div className="text-xs text-yellow-500/80 mt-1">
+                              From Environment
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {key.usageStats?.totalRequests?.toLocaleString() || key.usageCount?.toLocaleString() || '0'}
+                          </span>
+                          {key.usageStats && (
+                            <span className="text-xs text-gray-400">
+                              {key.usageStats.failedRequests > 0 ? `${key.usageStats.failedRequests} failed` : 'All success'}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {key.usageStats?.successfulRequests?.toLocaleString() || '0'}
+                          </span>
+                          {key.usageStats && key.usageStats.totalRequests > 0 && (
+                            <span className="text-xs text-gray-400">
+                              {Math.round((key.usageStats.successfulRequests / key.usageStats.totalRequests) * 100)}% success
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                        <div className="flex flex-col gap-1">
+                          {key.isActive ? (
+                            <Badge className="bg-green-900/50 text-green-300 border border-green-700/50 w-fit">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Active
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-gray-700/50 text-gray-300 border border-gray-600 w-fit">
+                              Inactive
+                            </Badge>
+                          )}
+                          {isMasterKey && (
+                            <Badge className="bg-yellow-900/50 text-yellow-300 border border-yellow-700/50 w-fit">
+                              <Shield className="h-3 w-3 mr-1" />
+                              Master
+                            </Badge>
+                          )}
+                          <div className="text-xs text-gray-400 mt-1">
+                            P{key.priority} • {key.usageCount || 0} uses
                           </div>
-                        )}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
-                        {key.usageStats?.totalRequests?.toLocaleString() || '0'}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
-                        {key.usageStats?.successfulRequests?.toLocaleString() || '0'}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
-                        {isActive && (
-                          <Badge className="bg-green-900/50 text-green-300 border border-green-700/50">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Active
-                          </Badge>
-                        )}
-                        {isMasterKey && !isActive && (
-                          <Badge className="bg-yellow-900/50 text-yellow-300 border border-yellow-700/50">
-                            <Shield className="h-3 w-3 mr-1" />
-                            Available
-                          </Badge>
-                        )}
+                        </div>
                       </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                         {/* Espace pour les futurs boutons d'action */}

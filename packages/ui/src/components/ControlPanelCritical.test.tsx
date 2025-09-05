@@ -30,6 +30,7 @@ vi.mock('../store/hooks', () => ({
   useIsSavingSession: vi.fn(() => false),
   useIsDeletingSession: vi.fn(() => false),
   useIsRenamingSession: vi.fn(() => false),
+  useSessionTokensUsed: vi.fn(() => 0),
 }));
 
 vi.mock('../lib/hooks/useToast', () => ({
