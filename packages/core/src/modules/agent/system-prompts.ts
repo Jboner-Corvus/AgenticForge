@@ -64,6 +64,12 @@ export const SYSTEM_PROMPT_TEMPLATES: Record<string, SystemPromptTemplate> = {
     displayName: 'FrontEnd',
     description: 'Frontend development, UI/UX, and user interface design',
     content: loadSystemPrompt('frontend')
+  },
+  trading: {
+    name: 'trading',
+    displayName: 'Trading',
+    description: 'Financial analysis, trading strategies, and market insights with Alpha Vantage tools',
+    content: loadSystemPrompt('trading')
   }
 };
 

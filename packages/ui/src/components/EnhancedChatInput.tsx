@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send,
@@ -91,6 +91,7 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<'top' | 'bottom'>('top');
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,6 +126,47 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
   useEffect(() => {
     console.log('🔧 [EnhancedChatInput] Dropdown state changed:', isDropdownOpen);
   }, [isDropdownOpen]);
+
+  // Calculate dropdown position based on available space
+  const calculateDropdownPosition = useCallback(() => {
+    if (!isDropdownOpen) return;
+
+    const button = document.querySelector('[data-dropdown-container] button');
+    if (!button) return;
+
+    const rect = button.getBoundingClientRect();
+    const dropdownHeight = 320; // Approximate height of dropdown
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+
+    if (spaceAbove >= dropdownHeight) {
+      setDropdownPosition('top');
+    } else if (spaceBelow >= dropdownHeight) {
+      setDropdownPosition('bottom');
+    } else {
+      // If neither has enough space, prefer top
+      setDropdownPosition('top');
+    }
+  }, [isDropdownOpen]);
+
+  // Update position when dropdown opens
+  useEffect(() => {
+    if (isDropdownOpen) {
+      calculateDropdownPosition();
+    }
+  }, [isDropdownOpen, calculateDropdownPosition]);
+
+  // Recalculate position on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (isDropdownOpen) {
+        calculateDropdownPosition();
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isDropdownOpen, calculateDropdownPosition]);
 
   // Fermer le dropdown en cliquant à l'extérieur
   useEffect(() => {
@@ -357,7 +399,11 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
               
               {/* Dropdown Menu */}
               {isDropdownOpen && (
-                <div className="absolute bottom-full right-0 mb-1 w-72 bg-background border border-border shadow-xl rounded-lg z-[50] py-2 max-h-80 overflow-y-auto">
+                <div className={`absolute right-0 w-72 bg-background border border-border shadow-xl rounded-lg z-[50] py-2 max-h-80 overflow-y-auto ${
+                  dropdownPosition === 'top'
+                    ? 'bottom-full mb-1'
+                    : 'top-full mt-1'
+                }`}>
                   <div className="px-3 py-2 text-xs text-muted-foreground border-b border-border">
                     Choisissez le mode de l'agent
                   </div>
