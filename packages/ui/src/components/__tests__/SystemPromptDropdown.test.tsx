@@ -117,8 +117,8 @@ vi.mock('../../lib/contexts/LanguageContext', () => ({
   useLanguage: () => ({
     translations: {
       typeYourMessage: 'Tapez votre message...',
-      sendMessage: 'Envoyer le message',
-      stop: 'Arrêter'
+      sendMessage: 'Send message',
+      stop: 'Stop'
     }
   })
 }));
@@ -225,15 +225,97 @@ describe('System Prompt Dropdown Integration Tests', () => {
 
       it(`should send message with ${displayName} system prompt`, async () => {
         // Mock store avec le mode sélectionné
-        (useUIStore as any).mockReturnValue({
-          messageInputValue: 'Test message',
-          selectedSystemPrompt: mode,
+        vi.mocked(useUIStore).mockImplementation((selector) => {
+          const mockState = {
+            messageInputValue: 'Test message',
+            selectedSystemPrompt: mode,
+            isProcessing: false,
+            authToken: 'test-token',
+            setMessageInputValue: vi.fn(),
+            setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
+            setIsProcessing: vi.fn(),
+            currentPage: 'chat' as any,
+            isSettingsModalOpen: false,
+            isControlPanelVisible: false,
+            isDebugLogVisible: false,
+            isTodoListVisible: false,
+            isUnifiedTodoListVisible: true,
+            isDarkMode: false,
+            agentProgress: 0,
+            agentStatus: null,
+            toolStatus: '',
+            browserStatus: 'idle',
+            serverHealthy: false,
+            isAuthenticated: false,
+            tokenStatus: false,
+            toolCount: 0,
+            toolCreationEnabled: false,
+            codeExecutionEnabled: true,
+            jobId: null,
+            activeCliJobId: null,
+            streamCloseFunc: null,
+            debugLog: [],
+            // Add missing properties
+            latestTokenStats: null,
+            setCurrentPage: vi.fn(),
+            setIsSettingsModalOpen: vi.fn(),
+            setIsControlPanelVisible: vi.fn(),
+            setIsTodoListVisible: vi.fn(),
+            setIsUnifiedTodoListVisible: vi.fn(),
+            toggleDebugLogVisibility: vi.fn(),
+            toggleDarkMode: vi.fn(),
+            setAgentProgress: vi.fn(),
+            setAgentStatus: vi.fn(),
+            setToolStatus: vi.fn(),
+            setBrowserStatus: vi.fn(),
+            setServerHealthy: vi.fn(),
+            setTokenStatus: vi.fn(),
+            setToolCount: vi.fn(),
+            setToolCreationEnabled: vi.fn(),
+            setCodeExecutionEnabled: vi.fn(),
+            setAuthToken: vi.fn(),
+            setJobId: vi.fn(),
+            setActiveCliJobId: vi.fn(),
+            addDebugLog: vi.fn(),
+            clearDebugLog: vi.fn(),
+            toast: vi.fn(),
+            setAuthTokenAndValidate: vi.fn(),
+            refreshAuthToken: vi.fn(),
+            getValidAuthToken: vi.fn(),
+            getSystemStatus: vi.fn()
+          } as any;
+          if (typeof selector === 'function') {
+            return selector(mockState);
+          }
+          return mockState;
+        });
+
+        render(<UserInput />);
+
+        // Simuler l'envoi d'un message
+        const sendButton = screen.getByRole('button', { name: /send/i });
+        fireEvent.click(sendButton);
+
+        await waitFor(() => {
+          expect(mockStartAgent).toHaveBeenCalledWith('Test message');
+        });
+      });
+    });
+  });
+
+  describe('System Prompt Content Validation', () => {
+    it('should include system prompt content when sending message', async () => {
+      // Mock store avec mode coder
+      vi.mocked(useUIStore).mockImplementation((selector) => {
+        const mockState = {
+          messageInputValue: 'Write a function',
+          selectedSystemPrompt: 'coder',
           isProcessing: false,
           authToken: 'test-token',
           setMessageInputValue: vi.fn(),
           setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
           setIsProcessing: vi.fn(),
-          currentPage: 'chat',
+          currentPage: 'chat' as any,
           isSettingsModalOpen: false,
           isControlPanelVisible: false,
           isDebugLogVisible: false,
@@ -253,54 +335,40 @@ describe('System Prompt Dropdown Integration Tests', () => {
           jobId: null,
           activeCliJobId: null,
           streamCloseFunc: null,
-          debugLog: []
-        });
-
-        render(<UserInput />);
-
-        // Simuler l'envoi d'un message
-        const sendButton = screen.getByRole('button', { name: /send/i });
-        fireEvent.click(sendButton);
-
-        await waitFor(() => {
-          expect(mockStartAgent).toHaveBeenCalledWith('Test message');
-        });
-      });
-    });
-  });
-
-  describe('System Prompt Content Validation', () => {
-    it('should include system prompt content when sending message', async () => {
-      // Mock store avec mode coder
-      (useUIStore as any).mockReturnValue({
-        messageInputValue: 'Write a function',
-        selectedSystemPrompt: 'coder',
-        isProcessing: false,
-        authToken: 'test-token',
-        setMessageInputValue: vi.fn(),
-        setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-        setIsProcessing: vi.fn(),
-        currentPage: 'chat',
-        isSettingsModalOpen: false,
-        isControlPanelVisible: false,
-        isDebugLogVisible: false,
-        isTodoListVisible: false,
-        isUnifiedTodoListVisible: true,
-        isDarkMode: false,
-        agentProgress: 0,
-        agentStatus: null,
-        toolStatus: '',
-        browserStatus: 'idle',
-        serverHealthy: false,
-        isAuthenticated: false,
-        tokenStatus: false,
-        toolCount: 0,
-        toolCreationEnabled: false,
-        codeExecutionEnabled: true,
-        jobId: null,
-        activeCliJobId: null,
-        streamCloseFunc: null,
-        debugLog: []
+          debugLog: [],
+          // Add missing properties
+          latestTokenStats: null,
+          setCurrentPage: vi.fn(),
+          setIsSettingsModalOpen: vi.fn(),
+          setIsControlPanelVisible: vi.fn(),
+          setIsTodoListVisible: vi.fn(),
+          setIsUnifiedTodoListVisible: vi.fn(),
+          toggleDebugLogVisibility: vi.fn(),
+          toggleDarkMode: vi.fn(),
+          setAgentProgress: vi.fn(),
+          setAgentStatus: vi.fn(),
+          setToolStatus: vi.fn(),
+          setBrowserStatus: vi.fn(),
+          setServerHealthy: vi.fn(),
+          setTokenStatus: vi.fn(),
+          setToolCount: vi.fn(),
+          setToolCreationEnabled: vi.fn(),
+          setCodeExecutionEnabled: vi.fn(),
+          setAuthToken: vi.fn(),
+          setJobId: vi.fn(),
+          setActiveCliJobId: vi.fn(),
+          addDebugLog: vi.fn(),
+          clearDebugLog: vi.fn(),
+          toast: vi.fn(),
+          setAuthTokenAndValidate: vi.fn(),
+          refreshAuthToken: vi.fn(),
+          getValidAuthToken: vi.fn(),
+          getSystemStatus: vi.fn()
+        } as any;
+        if (typeof selector === 'function') {
+          return selector(mockState);
+        }
+        return mockState;
       });
 
       render(<UserInput />);
@@ -336,35 +404,69 @@ describe('System Prompt Dropdown Integration Tests', () => {
   describe('Error Handling', () => {
     it('should handle invalid system prompt mode gracefully', () => {
       // Mock store avec mode invalide
-      (useUIStore as any).mockReturnValue({
-        messageInputValue: '',
-        selectedSystemPrompt: 'invalid_mode',
-        isProcessing: false,
-        authToken: 'test-token',
-        setMessageInputValue: vi.fn(),
-        setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-        setIsProcessing: vi.fn(),
-        currentPage: 'chat',
-        isSettingsModalOpen: false,
-        isControlPanelVisible: false,
-        isDebugLogVisible: false,
-        isTodoListVisible: false,
-        isUnifiedTodoListVisible: true,
-        isDarkMode: false,
-        agentProgress: 0,
-        agentStatus: null,
-        toolStatus: '',
-        browserStatus: 'idle',
-        serverHealthy: false,
-        isAuthenticated: false,
-        tokenStatus: false,
-        toolCount: 0,
-        toolCreationEnabled: false,
-        codeExecutionEnabled: true,
-        jobId: null,
-        activeCliJobId: null,
-        streamCloseFunc: null,
-        debugLog: []
+      vi.mocked(useUIStore).mockImplementation((selector) => {
+        const mockState = {
+          messageInputValue: '',
+          selectedSystemPrompt: 'invalid_mode',
+          isProcessing: false,
+          authToken: 'test-token',
+          setMessageInputValue: vi.fn(),
+          setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
+          setIsProcessing: vi.fn(),
+          currentPage: 'chat' as any,
+          isSettingsModalOpen: false,
+          isControlPanelVisible: false,
+          isDebugLogVisible: false,
+          isTodoListVisible: false,
+          isUnifiedTodoListVisible: true,
+          isDarkMode: false,
+          agentProgress: 0,
+          agentStatus: null,
+          toolStatus: '',
+          browserStatus: 'idle',
+          serverHealthy: false,
+          isAuthenticated: false,
+          tokenStatus: false,
+          toolCount: 0,
+          toolCreationEnabled: false,
+          codeExecutionEnabled: true,
+          jobId: null,
+          activeCliJobId: null,
+          streamCloseFunc: null,
+          debugLog: [],
+          // Add missing properties
+          latestTokenStats: null,
+          setCurrentPage: vi.fn(),
+          setIsSettingsModalOpen: vi.fn(),
+          setIsControlPanelVisible: vi.fn(),
+          setIsTodoListVisible: vi.fn(),
+          setIsUnifiedTodoListVisible: vi.fn(),
+          toggleDebugLogVisibility: vi.fn(),
+          toggleDarkMode: vi.fn(),
+          setAgentProgress: vi.fn(),
+          setAgentStatus: vi.fn(),
+          setToolStatus: vi.fn(),
+          setBrowserStatus: vi.fn(),
+          setServerHealthy: vi.fn(),
+          setTokenStatus: vi.fn(),
+          setToolCount: vi.fn(),
+          setToolCreationEnabled: vi.fn(),
+          setCodeExecutionEnabled: vi.fn(),
+          setAuthToken: vi.fn(),
+          setJobId: vi.fn(),
+          setActiveCliJobId: vi.fn(),
+          addDebugLog: vi.fn(),
+          clearDebugLog: vi.fn(),
+          toast: vi.fn(),
+          setAuthTokenAndValidate: vi.fn(),
+          refreshAuthToken: vi.fn(),
+          getValidAuthToken: vi.fn(),
+          getSystemStatus: vi.fn()
+        } as any;
+        if (typeof selector === 'function') {
+          return selector(mockState);
+        }
+        return mockState;
       });
 
       // Le composant devrait gérer le mode invalide sans planter

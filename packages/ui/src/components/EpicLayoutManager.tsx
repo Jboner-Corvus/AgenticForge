@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePinningStore, useInitializePinning } from '../store/pinningStore';
 import { useCombinedStore } from '../store';
 import EpicCanvas from './EpicCanvas';
-import { UserInput } from './UserInput';
 import { HeaderContainer } from './HeaderContainer';
 import { ChatContainer } from './ChatContainer';
 import { DraggableControlPanel } from './DraggableControlPanel';
@@ -120,7 +119,6 @@ export const EpicLayoutManager: React.FC = () => {
     const updates = [
       { id: 'canvas', isVisible: isCanvasVisible || !!canvasContent },
       { id: 'chat', isVisible: currentPage === 'chat' },
-      { id: 'input', isVisible: currentPage !== 'chat' }, // Input séparé seulement si pas en mode chat
       { id: 'controlpanel', isVisible: true }, // Always visible in battlefield mode
     ];
 
@@ -231,13 +229,6 @@ export const EpicLayoutManager: React.FC = () => {
           <ChatContainer variant="pinned" />
         </PinnableComponent>
 
-        {/* INPUT PINNÉ */}
-        <PinnableComponent
-          id="input"
-          className="backdrop-blur-sm bg-black/80 border border-cyan-500/30 rounded-2xl p-4"
-        >
-          <UserInput />
-        </PinnableComponent>
       </AnimatePresence>
 
       {/* DEBUG INFO (DEV ONLY) */}

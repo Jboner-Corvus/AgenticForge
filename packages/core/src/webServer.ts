@@ -4285,6 +4285,7 @@ export async function initializeWebServer(
       },
     );
 
+
     app.use(handleError);
 
     const server = new Server(app);

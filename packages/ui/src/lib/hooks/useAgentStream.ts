@@ -1022,24 +1022,32 @@ export const useAgentStream = () => {
                     if (
                       parsed.thought ||
                       parsed.command ||
-                      parsed.interaction
+                      parsed.interaction ||
+                      parsed.todos ||
+                      parsed.stats ||
+                      (parsed.type && parsed.type.includes('todo'))
                     ) {
                       console.warn(
-                        '🚫 [useAgentStream] Filtered out agent thought/interaction from canvas in tool.start',
+                        '🚫 [useAgentStream] Filtered out agent thought/interaction/todo from canvas in tool.start',
                       );
                       shouldAddToCanvas = false;
                     }
                   } catch {
-                    // Check for agent thought patterns in text content
+                    // Check for agent thought patterns and todo patterns in text content
                     if (
                       canvas.content.includes('"thought"') ||
                       canvas.content.includes('thinking:') ||
                       canvas.content.includes('réflexion:') ||
+                      canvas.content.includes('"todos"') ||
+                      canvas.content.includes('"status"') ||
+                      canvas.content.includes('claude_code_todo') ||
+                      canvas.content.includes('unified_todo') ||
+                      canvas.content.includes('todo_list') ||
                       (canvas.content.includes('{') &&
                         canvas.content.includes('"command"'))
                     ) {
                       console.warn(
-                        '🚫 [useAgentStream] Filtered out agent thought/interaction from canvas in tool.start',
+                        '🚫 [useAgentStream] Filtered out agent thought/interaction/todo from canvas in tool.start',
                       );
                       shouldAddToCanvas = false;
                     }
@@ -1320,27 +1328,33 @@ export const useAgentStream = () => {
                 const filteredContent = data.content;
                 let shouldDisplay = true;
 
-                // Check if content contains debugging JSON with "thought" field or agent interactions
+                // Check if content contains debugging JSON with "thought" field, agent interactions, or todos
                 try {
                   const parsed = JSON.parse(data.content);
-                  if (parsed.thought || parsed.command || parsed.interaction) {
+                  if (parsed.thought || parsed.command || parsed.interaction || 
+                      parsed.todos || parsed.stats || (parsed.type && parsed.type.includes('todo'))) {
                     console.warn(
-                      '🚫 [useAgentStream] Filtered out agent thought/interaction from canvas - keeping in chat only',
+                      '🚫 [useAgentStream] Filtered out agent thought/interaction/todo from canvas - keeping in chat only',
                     );
                     shouldDisplay = false;
                   }
                 } catch {
-                  // Not JSON, check for debugging patterns and agent thought patterns in text content
+                  // Not JSON, check for debugging patterns, agent thought patterns, and todo patterns in text content
                   if (
                     data.content.includes('"thought"') ||
                     data.content.includes('```json') ||
                     data.content.includes('thinking:') ||
                     data.content.includes('réflexion:') ||
+                    data.content.includes('"todos"') ||
+                    data.content.includes('"status"') ||
+                    data.content.includes('claude_code_todo') ||
+                    data.content.includes('unified_todo') ||
+                    data.content.includes('todo_list') ||
                     (data.content.includes('{') &&
                       data.content.includes('"command"'))
                   ) {
                     console.warn(
-                      '🚫 [useAgentStream] Filtered out agent thought/interaction from canvas - keeping in chat only',
+                      '🚫 [useAgentStream] Filtered out agent thought/interaction/todo from canvas - keeping in chat only',
                     );
                     shouldDisplay = false;
                   }

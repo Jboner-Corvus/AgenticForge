@@ -2362,6 +2362,80 @@ var Agent = class {
       this.log.info("\u{1F504} Switching to local mode due to API failures");
       return this.generateLocalModeResponse(cleanText);
     }
+    const jsonToolCodeMatch = cleanText.match(/```json\s*\n\s*{\s*"tool_code":\s*"([^"]+)"\s*}\s*\n```/is);
+    if (jsonToolCodeMatch) {
+      const toolCallStr = jsonToolCodeMatch[1];
+      const toolCallParsed = toolCallStr.match(/(\w+)\s*\(\s*([\s\S]*?)\s*\)$/);
+      if (toolCallParsed) {
+        const toolName = toolCallParsed[1];
+        let paramsStr = toolCallParsed[2].trim();
+        let params = {};
+        if (paramsStr) {
+          try {
+            const paramMatches = [...paramsStr.matchAll(/(\w+)=([^,]+?)(?=,\s*\w+=|$)/gs)];
+            paramMatches.forEach((match) => {
+              const key = match[1];
+              let value = match[2].trim();
+              if (value.startsWith('"') && value.endsWith('"')) {
+                params[key] = value.slice(1, -1);
+              } else if (value.startsWith("json.dumps(") && value.endsWith(")")) {
+                const jsonStr = value.slice(11, -1);
+                try {
+                  params[key] = JSON.parse(jsonStr);
+                } catch (e) {
+                  params[key] = jsonStr;
+                }
+              } else {
+                params[key] = value;
+              }
+            });
+          } catch (e) {
+            params = { content: paramsStr };
+          }
+        }
+        const thoughtMatch = cleanText.match(/^(.*?)```json/s);
+        const thought2 = thoughtMatch ? thoughtMatch[1].trim() : `Ex\xE9cution de l'outil ${toolName}`;
+        return JSON.stringify({
+          thought: thought2,
+          command: {
+            name: toolName,
+            params
+          }
+        });
+      }
+    }
+    const toolCodeMatch = cleanText.match(/```tool_code\s*\n\s*(\w+)\s*\(\s*([\s\S]*?)\s*\)\s*\n```/is);
+    if (toolCodeMatch) {
+      const toolName = toolCodeMatch[1];
+      let paramsStr = toolCodeMatch[2].trim();
+      let params = {};
+      if (paramsStr) {
+        if (paramsStr.startsWith("{") && paramsStr.endsWith("}")) {
+          try {
+            params = JSON.parse(paramsStr);
+          } catch (e) {
+            const keyValueMatches = [...paramsStr.matchAll(/(\w+)=['"](.*?)['"],?/g)];
+            keyValueMatches.forEach((match) => {
+              params[match[1]] = match[2].replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+            });
+          }
+        } else {
+          const keyValueMatches = [...paramsStr.matchAll(/(\w+)=['"](.*?)['"],?/gs)];
+          keyValueMatches.forEach((match) => {
+            params[match[1]] = match[2].replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+          });
+        }
+      }
+      const thoughtMatch = cleanText.match(/^(.*?)```tool_code/s);
+      const thought2 = thoughtMatch ? thoughtMatch[1].trim() : `Ex\xE9cution de l'outil ${toolName}`;
+      return JSON.stringify({
+        thought: thought2,
+        command: {
+          name: toolName,
+          params
+        }
+      });
+    }
     let toolCallMatch = cleanText.match(/Tool Call:\s*(\w+)\s*with\s*params\s*(\{.*?\}(?:\s*$|\n|Tool Result:))/is);
     if (!toolCallMatch) {
       toolCallMatch = cleanText.match(/Tool Call:\s*(\w+)\s*\(\s*(\{[\s\S]*?\})\s*\)(?:\s*$|\n|Tool Result:)/is);
@@ -2521,16 +2595,28 @@ var Agent = class {
     }
     const canvasKeywords = [
       "canvas",
-      "display",
-      "show",
       "demo",
-      "afficher",
-      "montrer",
-      "visual"
+      "visual",
+      "html page",
+      "web page",
+      "interface",
+      "render",
+      "visualize",
+      "graph",
+      "chart"
+    ];
+    const displayPatterns = [
+      /afficher.*canvas/i,
+      /montrer.*canvas/i,
+      /display.*canvas/i,
+      /show.*canvas/i,
+      /create.*interface/i,
+      /générer.*page/i,
+      /render.*html/i
     ];
     const isCanvasRequest = canvasKeywords.some(
       (keyword) => lowerText.includes(keyword)
-    );
+    ) || displayPatterns.some((pattern) => pattern.test(cleanText));
     const thoughtKeywords = [
       "think",
       "thought",
@@ -2547,12 +2633,14 @@ var Agent = class {
     const isThoughtContent = thoughtKeywords.some(
       (keyword) => lowerText.includes(keyword)
     );
+    const isAgentThought = cleanText.startsWith("Je vais") || cleanText.startsWith("I will") || cleanText.startsWith("I am going") || cleanText.startsWith("Je dois") || cleanText.startsWith("I need to") || cleanText.includes("next step") || cleanText.includes("prochaine \xE9tape");
     const todoKeywords = [
       "todo",
       "task",
-      "list",
+      "todo list",
+      "task list",
+      "liste de t\xE2ches",
       "step",
-      "plan",
       "workflow",
       "t\xE2che",
       "\xE9tape"
@@ -2560,6 +2648,7 @@ var Agent = class {
     const isTodoRequest = todoKeywords.some(
       (keyword) => lowerText.includes(keyword)
     );
+    const isListFilesRequest = (lowerText.includes("list") || lowerText.includes("lister")) && (lowerText.includes("workspace") || lowerText.includes("directory") || lowerText.includes("files") || lowerText.includes("fichiers") || lowerText.includes("dossier"));
     const creationKeywords = [
       "create",
       "build",
@@ -2591,7 +2680,15 @@ var Agent = class {
           response: "La r\xE9ponse pr\xE9c\xE9dente \xE9tait incompl\xE8te. Pourriez-vous reformuler votre demande pour obtenir une r\xE9ponse plus claire ?"
         }
       };
-    } else if (isThoughtContent && !isCanvasRequest) {
+    } else if (isListFilesRequest) {
+      thought = "L'utilisateur veut lister des fichiers/dossiers.";
+      command = {
+        name: "listDirectory",
+        params: {
+          path: "."
+        }
+      };
+    } else if (isThoughtContent || isAgentThought) {
       thought = "R\xE9ponse de l'IA trait\xE9e.";
       command = {
         name: "finish",
@@ -2599,7 +2696,7 @@ var Agent = class {
           response: cleanText
         }
       };
-    } else if (isCanvasRequest && !isThoughtContent) {
+    } else if (isCanvasRequest && !isThoughtContent && !isAgentThought) {
       thought = "L'utilisateur veut afficher quelque chose dans le canvas.";
       let filteredContent = cleanText;
       try {
@@ -2677,19 +2774,20 @@ var Agent = class {
             filePath: cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/) ? cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/)?.[0] : "/home/demon/agentforge/AgenticForge2"
           }
         };
-      } else if (cleanText.toLowerCase().includes("list") || cleanText.toLowerCase().includes("lister")) {
-        thought = "L'utilisateur veut lister des fichiers.";
+      } else if (cleanText.toLowerCase().includes("workspace") || cleanText.toLowerCase().includes("project") || cleanText.toLowerCase().includes("projet")) {
+        thought = "L'utilisateur veut explorer le workspace/projet.";
         command = {
-          name: "listFiles",
+          name: "listDirectory",
           params: {
-            path: "/home/demon/agentforge/AgenticForge2"
+            path: "."
           }
         };
       } else {
-        const hasWorkToDo = this.detectIfAgentHasPendingWork(cleanText);
-        const shouldStartWorking = this.detectIfShouldStartWorking(cleanText);
-        const isContinuationResponse = this.detectIfContinuationResponse(cleanText);
-        if (cleanText.length < 10 && !cleanText.includes("continue") && !cleanText.includes("start")) {
+        const continueKeywords = ["continue", "continuer", "next", "suivant", "reprendre", "resume", "start"];
+        const workKeywords = ["faire", "do", "work", "implement", "create", "build", "develop"];
+        const shouldContinue = continueKeywords.some((keyword) => lowerText.includes(keyword));
+        const isWorkRequest = workKeywords.some((keyword) => lowerText.includes(keyword));
+        if (cleanText.length < 10 && !shouldContinue) {
           thought = "R\xE9ponse simple de l'utilisateur.";
           command = {
             name: "finish",
@@ -2697,13 +2795,39 @@ var Agent = class {
               response: cleanText.length > 0 ? cleanText : "Hello! How can I help you?"
             }
           };
-        } else if (shouldStartWorking) {
-          const nextTask = this.getNextPendingTask();
-          if (nextTask) {
-            thought = `Starting work on: ${nextTask.content}`;
-            command = this.convertTaskToCommand(nextTask);
+        } else if (shouldContinue || isWorkRequest) {
+          const recentTodoCommands = this.commandHistory.slice(-5).filter((cmd) => cmd.name === "todo_write");
+          if (recentTodoCommands.length > 0) {
+            thought = "L'utilisateur veut continuer. Je vais travailler sur la prochaine t\xE2che de la todo list.";
+            command = {
+              name: "listDirectory",
+              params: {
+                path: ".",
+                detailed: true
+              }
+            };
           } else {
-            thought = "Traitement de la demande.";
+            thought = "L'utilisateur veut commencer \xE0 travailler. Je vais d'abord cr\xE9er une todo list.";
+            const smartTodos = this.createSmartTodoList(cleanText);
+            command = {
+              name: "todo_write",
+              params: {
+                todos: smartTodos
+              }
+            };
+          }
+        } else {
+          if (lowerText.includes("projet") || lowerText.includes("project") || lowerText.includes("travail")) {
+            thought = "L'utilisateur parle d'un projet. Je vais explorer la structure du projet.";
+            command = {
+              name: "listDirectory",
+              params: {
+                path: ".",
+                detailed: true
+              }
+            };
+          } else {
+            thought = "Traitement de la r\xE9ponse de l'utilisateur.";
             command = {
               name: "finish",
               params: {
@@ -2711,22 +2835,6 @@ var Agent = class {
               }
             };
           }
-        } else if (hasWorkToDo && isContinuationResponse) {
-          thought = "Continuation de la t\xE2che.";
-          command = {
-            name: "finish",
-            params: {
-              response: cleanText
-            }
-          };
-        } else {
-          thought = "Traitement de la r\xE9ponse de l'utilisateur.";
-          command = {
-            name: "finish",
-            params: {
-              response: cleanText
-            }
-          };
         }
       }
     }
@@ -2897,6 +3005,14 @@ var Agent = class {
       if (command.name === "display_canvas") {
         this.lastDisplayCanvasCall = Date.now();
         log.info("\u2705 display_canvas tracked as executed successfully");
+      }
+      const readOnlyTools = ["listDirectory", "listFiles", "readFile"];
+      const isReadOnlyCommand = readOnlyTools.includes(command.name);
+      const isSimpleRequest = this.session.history.length <= 2;
+      if (isReadOnlyCommand && isSimpleRequest) {
+        log.info(`\u{1F3C1} Auto-finishing after ${command.name} for simple request`);
+        const response = typeof result === "string" ? result : JSON.stringify(result);
+        throw new FinishToolSignal(response);
       }
       return result;
     } catch (_error) {
@@ -4084,23 +4200,16 @@ async function processJob(_job, _jobQueue, _sessionManager, redisConnection) {
             },
             session,
             streamContent: async (data) => {
-              if (data.type === "tool_code_image") {
-                redisConnection.publish(
-                  channel,
-                  JSON.stringify({
-                    content: data.content,
-                    type: "tool_code_image"
-                  })
-                );
-              } else {
-                redisConnection.publish(
-                  channel,
-                  JSON.stringify({
-                    content: data.content,
-                    type: "tool_code"
-                  })
-                );
+              if (data.type === "tool_code_image" || data.type === "tool_code") {
+                return;
               }
+              redisConnection.publish(
+                channel,
+                JSON.stringify({
+                  content: data.content,
+                  type: data.type
+                })
+              );
             },
             taskQueue: _jobQueue
           }
@@ -4190,6 +4299,7 @@ async function checkWorkerLock(redisClient) {
         }
       } catch {
         getLoggerInstance().info(`\u{1F504} Taking over lock from dead worker (PID: ${existingPid}, age: ${lockAge}ms)`);
+        await redisClient.del(lockKey);
       }
     }
     const result = await redisClient.set(lockKey, processId, "EX", lockTimeout, "NX");

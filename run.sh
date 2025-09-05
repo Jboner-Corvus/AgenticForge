@@ -853,8 +853,8 @@ restart_worker() {
     # Use kill_multiple_workers instead of orphan kill logic
     echo -e "${COLOR_CYAN}🔍 Managing existing worker processes...${NC}"
 
-    # Kill all extra workers, keeping only 1 (force mode for automated restart)
-    if ! kill_multiple_workers 1 true; then
+    # Kill ALL workers first for clean restart (force mode)
+    if ! kill_multiple_workers 0 true; then
         echo -e "${COLOR_YELLOW}⚠️ Worker cleanup completed with warnings${NC}"
     fi
 

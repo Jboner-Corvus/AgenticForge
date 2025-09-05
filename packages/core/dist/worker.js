@@ -3,7 +3,7 @@ const require = createRequire(import.meta.url);
 import {
   initializeWorker,
   processJob
-} from "./chunk-SMUGPCGZ.js";
+} from "./chunk-M236GISX.js";
 import "./chunk-OOBFJA27.js";
 import "./chunk-DU33BEDB.js";
 import "./chunk-CZQPSXPM.js";

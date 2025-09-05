@@ -310,23 +310,22 @@ export async function processJob(
             reportProgress: async () => {},
             session: session,
             streamContent: async (data: { content: string; type: string }) => {
-              if (data.type === 'tool_code_image') {
-                redisConnection.publish(
-                  channel,
-                  JSON.stringify({
-                    content: data.content,
-                    type: 'tool_code_image',
-                  }),
-                );
-              } else {
-                redisConnection.publish(
-                  channel,
-                  JSON.stringify({
-                    content: data.content,
-                    type: 'tool_code',
-                  }),
-                );
+              // Ne pas publier les données de type tool_code dans le canal principal
+              // car elles peuvent être mal interprétées comme du contenu canvas
+              // Les todos doivent utiliser le système claude_code_todo dédié
+              if (data.type === 'tool_code_image' || data.type === 'tool_code') {
+                // Ignorer ces types pour éviter l'affichage dans le canvas
+                return;
               }
+              
+              // Publier seulement les autres types de contenu
+              redisConnection.publish(
+                channel,
+                JSON.stringify({
+                  content: data.content,
+                  type: data.type,
+                }),
+              );
             },
             taskQueue: _jobQueue,
           },
@@ -440,6 +439,8 @@ async function checkWorkerLock(redisClient: Redis): Promise<boolean> {
       } catch {
         // Le processus n'existe plus, on peut prendre le lock
         getLoggerInstance().info(`🔄 Taking over lock from dead worker (PID: ${existingPid}, age: ${lockAge}ms)`);
+        // Delete the stale lock so we can acquire a new one
+        await redisClient.del(lockKey);
       }
     }
 

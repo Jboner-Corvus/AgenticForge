@@ -222,13 +222,28 @@ export async function sendMessage(
     // Établit la connexion SSE pour les mises à jour en streaming
     // Add authentication token as query parameter since EventSource doesn't support headers
     const baseUrl = buildApiUrl(`/api/chat/stream/${jobId}`);
-    const separator = baseUrl.includes('?') ? '&' : '?';
-    const eventSourceUrl = `${baseUrl}${separator}auth=${encodeURIComponent(authToken || '')}&sessionId=${encodeURIComponent(sessionId || '')}`;
+    
+    // Create a more robust EventSource URL with proper error handling
+    const urlParams = new URLSearchParams();
+    if (authToken) {
+      urlParams.append('auth', authToken);
+    }
+    if (sessionId) {
+      urlParams.append('sessionId', sessionId);
+    }
+    
+    const eventSourceUrl = `${baseUrl}?${urlParams.toString()}`;
     console.log(
       '🔗 [sendMessage] Creating EventSource with URL:',
       eventSourceUrl,
     );
     addDebugLog?.(`[SSE] 🔗 Création EventSource avec URL: ${eventSourceUrl}`);
+    
+    // Add timeout for EventSource connection
+    const connectionTimeout = setTimeout(() => {
+      console.warn('⚠️ [EventSource] Connection timeout!');
+      addDebugLog?.(`[SSE] ⚠️ Timeout de connexion EventSource`);
+    }, 10000);
 
     const eventSource = new EventSource(eventSourceUrl);
     console.log('📡 [sendMessage] EventSource instance created:', eventSource);
@@ -236,6 +251,10 @@ export async function sendMessage(
     eventSource.onmessage = (event) => {
       console.log('📨 [EventSource] Message received:', event.data);
       addDebugLog?.(`[SSE] 📨 Message EventSource reçu: ${event.data}`);
+      
+      // Clear connection timeout on first message
+      clearTimeout(connectionTimeout);
+      
       onMessage(event);
     };
 
@@ -245,7 +264,10 @@ export async function sendMessage(
       console.error('📊 [EventSource] ReadyState:', eventSource.readyState);
       console.error('🌐 [EventSource] URL:', eventSource.url);
       console.error('🎯 [EventSource] EventSource object:', eventSource);
-
+      
+      // Clear connection timeout on error
+      clearTimeout(connectionTimeout);
+      
       const stateText =
         eventSource.readyState === 0
           ? 'CONNECTING'
@@ -271,6 +293,10 @@ export async function sendMessage(
     // Add event listeners for debugging
     eventSource.onopen = () => {
       console.log('✅ [EventSource] Connection opened successfully!');
+      
+      // Clear connection timeout on successful connection
+      clearTimeout(connectionTimeout);
+      
       console.log('📊 [EventSource] ReadyState:', eventSource.readyState);
       console.log('🌐 [EventSource] Connected to URL:', eventSource.url);
       addDebugLog?.(

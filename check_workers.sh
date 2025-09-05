@@ -1,4 +1,4 @@
-uetoin/bash
+#!/bin/bash
 
 # =============================================================================
 # AgenticForge Worker Management Script v2.0

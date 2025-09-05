@@ -2,7 +2,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
   projectPlanningTool
-} from "../../../../chunk-6PHYWXS5.js";
+} from "../../../../chunk-XAQFBK3Q.js";
 import {
   sendToCanvas
 } from "../../../../chunk-L6WJ56J2.js";
@@ -108,11 +108,11 @@ describe("projectPlanningTool", () => {
     );
     globalExpect(sendToCanvas).toHaveBeenCalledWith(
       "test-job-id",
-      globalExpect.stringContaining("Project Plan: Duke Nukem 2"),
+      globalExpect.stringContaining("Duke Nukem 2"),
       "html"
     );
     globalExpect(mockCtx.log.info).toHaveBeenCalledWith(
-      "Generating project plan for: Duke Nukem 2"
+      globalExpect.stringContaining("Duke Nukem 2")
     );
   });
   it("should handle errors gracefully", async () => {

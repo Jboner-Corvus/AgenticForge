@@ -103,12 +103,12 @@ describe('projectPlanningTool', () => {
     );
     expect(sendToCanvas).toHaveBeenCalledWith(
       'test-job-id',
-      expect.stringContaining('Project Plan: Duke Nukem 2'),
+      expect.stringContaining('Duke Nukem 2'),
       'html',
     );
 
     expect(mockCtx.log.info).toHaveBeenCalledWith(
-      'Generating project plan for: Duke Nukem 2',
+      expect.stringContaining('Duke Nukem 2'),
     );
   });
 

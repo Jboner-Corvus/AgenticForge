@@ -14,67 +14,70 @@ vi.mock('../../store/uiStore', () => ({
 const mockSetMessageInputValue = vi.fn();
 const mockSetSelectedSystemPrompt = vi.fn();
 
+// Create a function to generate mock state
+const createMockState = (overrides: any = {}) => ({
+  // Required state properties
+  currentPage: 'chat' as any,
+  isSettingsModalOpen: false,
+  isControlPanelVisible: false,
+  isDebugLogVisible: false,
+  isTodoListVisible: false,
+  isUnifiedTodoListVisible: true,
+  isDarkMode: false,
+  isProcessing: false,
+  agentProgress: 0,
+  messageInputValue: '',
+  selectedSystemPrompt: 'architect',
+  agentStatus: null,
+  toolStatus: '',
+  browserStatus: 'idle',
+  serverHealthy: false,
+  isAuthenticated: false,
+  tokenStatus: false,
+  toolCount: 0,
+  toolCreationEnabled: false,
+  codeExecutionEnabled: true,
+  authToken: 'test-token',
+  jobId: null,
+  activeCliJobId: null,
+  streamCloseFunc: null,
+  debugLog: [],
+
+  // Required action functions
+  setCurrentPage: vi.fn(),
+  setIsSettingsModalOpen: vi.fn(),
+  setIsControlPanelVisible: vi.fn(),
+  setIsTodoListVisible: vi.fn(),
+  setIsUnifiedTodoListVisible: vi.fn(),
+  toggleDebugLogVisibility: vi.fn(),
+  toggleDarkMode: vi.fn(),
+  setIsProcessing: vi.fn(),
+  setAgentProgress: vi.fn(),
+  setMessageInputValue: mockSetMessageInputValue,
+  setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
+  setAgentStatus: vi.fn(),
+  setToolStatus: vi.fn(),
+  setBrowserStatus: vi.fn(),
+  setServerHealthy: vi.fn(),
+  setTokenStatus: vi.fn(),
+  setToolCount: vi.fn(),
+  setToolCreationEnabled: vi.fn(),
+  setCodeExecutionEnabled: vi.fn(),
+  setAuthToken: vi.fn(),
+  setJobId: vi.fn(),
+  setActiveCliJobId: vi.fn(),
+  addDebugLog: vi.fn(),
+  clearDebugLog: vi.fn(),
+  toast: vi.fn(),
+  setAuthTokenAndValidate: vi.fn(),
+  refreshAuthToken: vi.fn(),
+  getValidAuthToken: vi.fn(),
+  getSystemStatus: vi.fn(),
+  ...overrides
+});
+
 vi.mocked(useUIStore).mockImplementation((selector) => {
-  const mockState = {
-    // Required state properties
-    currentPage: 'chat' as any,
-    isSettingsModalOpen: false,
-    isControlPanelVisible: false,
-    isDebugLogVisible: false,
-    isTodoListVisible: false,
-    isUnifiedTodoListVisible: true,
-    isDarkMode: false,
-    isProcessing: false,
-    agentProgress: 0,
-    messageInputValue: '',
-    selectedSystemPrompt: 'architect',
-    agentStatus: null,
-    toolStatus: '',
-    browserStatus: 'idle',
-    serverHealthy: false,
-    isAuthenticated: false,
-    tokenStatus: false,
-    toolCount: 0,
-    toolCreationEnabled: false,
-    codeExecutionEnabled: true,
-    authToken: 'test-token',
-    jobId: null,
-    activeCliJobId: null,
-    streamCloseFunc: null,
-    debugLog: [],
-
-    // Required action functions
-    setCurrentPage: vi.fn(),
-    setIsSettingsModalOpen: vi.fn(),
-    setIsControlPanelVisible: vi.fn(),
-    setIsTodoListVisible: vi.fn(),
-    setIsUnifiedTodoListVisible: vi.fn(),
-    toggleDebugLogVisibility: vi.fn(),
-    toggleDarkMode: vi.fn(),
-    setIsProcessing: vi.fn(),
-    setAgentProgress: vi.fn(),
-    setMessageInputValue: mockSetMessageInputValue,
-    setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-    setAgentStatus: vi.fn(),
-    setToolStatus: vi.fn(),
-    setBrowserStatus: vi.fn(),
-    setServerHealthy: vi.fn(),
-    setTokenStatus: vi.fn(),
-    setToolCount: vi.fn(),
-    setToolCreationEnabled: vi.fn(),
-    setCodeExecutionEnabled: vi.fn(),
-    setAuthToken: vi.fn(),
-    setJobId: vi.fn(),
-    setActiveCliJobId: vi.fn(),
-    addDebugLog: vi.fn(),
-    clearDebugLog: vi.fn(),
-    toast: vi.fn(),
-    setAuthTokenAndValidate: vi.fn(),
-    refreshAuthToken: vi.fn(),
-    getValidAuthToken: vi.fn(),
-    getSystemStatus: vi.fn(),
-  } as any;
-
+  const mockState = createMockState();
   if (typeof selector === 'function') {
     return selector(mockState);
   }
@@ -115,8 +118,8 @@ vi.mock('../../lib/contexts/LanguageContext', () => ({
   useLanguage: () => ({
     translations: {
       typeYourMessage: 'Tapez votre message...',
-      sendMessage: 'Envoyer le message',
-      stop: 'Arrêter'
+      sendMessage: 'Send message',
+      stop: 'Stop'
     }
   })
 }));
@@ -156,73 +159,8 @@ vi.mock('../ui/select', () => ({
 }));
 
 describe('System Prompt Integration Tests - End-to-End', () => {
-  const mockSetSelectedSystemPrompt = vi.fn();
   const mockStartAgent = vi.fn();
   const mockInterruptAgent = vi.fn();
-
-  // Helper function to create mock state
-  const createMockState = (overrides: any = {}) => {
-    return {
-      // Required state properties
-      currentPage: 'chat' as any,
-      isSettingsModalOpen: false,
-      isControlPanelVisible: false,
-      isDebugLogVisible: false,
-      isTodoListVisible: false,
-      isUnifiedTodoListVisible: true,
-      isDarkMode: false,
-      isProcessing: false,
-      agentProgress: 0,
-      messageInputValue: '',
-      selectedSystemPrompt: 'architect',
-      agentStatus: null,
-      toolStatus: '',
-      browserStatus: 'idle',
-      serverHealthy: false,
-      isAuthenticated: false,
-      tokenStatus: false,
-      toolCount: 0,
-      toolCreationEnabled: false,
-      codeExecutionEnabled: true,
-      authToken: 'test-token',
-      jobId: null,
-      activeCliJobId: null,
-      streamCloseFunc: null,
-      debugLog: [],
-
-      // Required action functions
-      setCurrentPage: vi.fn(),
-      setIsSettingsModalOpen: vi.fn(),
-      setIsControlPanelVisible: vi.fn(),
-      setIsTodoListVisible: vi.fn(),
-      setIsUnifiedTodoListVisible: vi.fn(),
-      toggleDebugLogVisibility: vi.fn(),
-      toggleDarkMode: vi.fn(),
-      setIsProcessing: vi.fn(),
-      setAgentProgress: vi.fn(),
-      setMessageInputValue: mockSetMessageInputValue,
-      setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-      setAgentStatus: vi.fn(),
-      setToolStatus: vi.fn(),
-      setBrowserStatus: vi.fn(),
-      setServerHealthy: vi.fn(),
-      setTokenStatus: vi.fn(),
-      setToolCount: vi.fn(),
-      setToolCreationEnabled: vi.fn(),
-      setCodeExecutionEnabled: vi.fn(),
-      setAuthToken: vi.fn(),
-      setJobId: vi.fn(),
-      setActiveCliJobId: vi.fn(),
-      addDebugLog: vi.fn(),
-      clearDebugLog: vi.fn(),
-      toast: vi.fn(),
-      setAuthTokenAndValidate: vi.fn(),
-      refreshAuthToken: vi.fn(),
-      getValidAuthToken: vi.fn(),
-      getSystemStatus: vi.fn(),
-      ...overrides
-    } as any;
-  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -304,13 +242,15 @@ describe('System Prompt Integration Tests - End-to-End', () => {
 
     it('should switch to coder mode from dropdown', async () => {
       // Commencer avec architect
-      (useUIStore as any).mockReturnValue({
-        messageInputValue: '',
-        setMessageInputValue: vi.fn(),
-        selectedSystemPrompt: 'architect',
-        setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-        isProcessing: false,
-        authToken: 'test-token'
+      vi.mocked(useUIStore).mockImplementation((selector) => {
+        const mockState = createMockState({
+          selectedSystemPrompt: 'architect',
+          setSelectedSystemPrompt: mockSetSelectedSystemPrompt
+        });
+        if (typeof selector === 'function') {
+          return selector(mockState);
+        }
+        return mockState;
       });
 
       const { rerender } = render(<UserInput />);
@@ -324,13 +264,15 @@ describe('System Prompt Integration Tests - End-to-End', () => {
       });
 
       // Re-render avec le nouveau mode
-      (useUIStore as any).mockReturnValue({
-        messageInputValue: '',
-        setMessageInputValue: vi.fn(),
-        selectedSystemPrompt: 'coder',
-        setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-        isProcessing: false,
-        authToken: 'test-token'
+      vi.mocked(useUIStore).mockImplementation((selector) => {
+        const mockState = createMockState({
+          selectedSystemPrompt: 'coder',
+          setSelectedSystemPrompt: mockSetSelectedSystemPrompt
+        });
+        if (typeof selector === 'function') {
+          return selector(mockState);
+        }
+        return mockState;
       });
 
       rerender(<UserInput />);
@@ -447,13 +389,15 @@ describe('System Prompt Integration Tests - End-to-End', () => {
   describe('Mode Switching Workflow', () => {
     it('should allow seamless mode switching during conversation', async () => {
       // Commencer avec architect
-      (useUIStore as any).mockReturnValue({
-        messageInputValue: '',
-        setMessageInputValue: vi.fn(),
-        selectedSystemPrompt: 'architect',
-        setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-        isProcessing: false,
-        authToken: 'test-token'
+      vi.mocked(useUIStore).mockImplementation((selector) => {
+        const mockState = createMockState({
+          selectedSystemPrompt: 'architect',
+          setSelectedSystemPrompt: mockSetSelectedSystemPrompt
+        });
+        if (typeof selector === 'function') {
+          return selector(mockState);
+        }
+        return mockState;
       });
 
       const { rerender } = render(<UserInput />);
@@ -477,13 +421,15 @@ describe('System Prompt Integration Tests - End-to-End', () => {
       expect(mockSetSelectedSystemPrompt).toHaveBeenCalledWith('coder');
 
       // Re-render avec le nouveau mode
-      (useUIStore as any).mockReturnValue({
-        messageInputValue: '',
-        setMessageInputValue: vi.fn(),
-        selectedSystemPrompt: 'coder',
-        setSelectedSystemPrompt: mockSetSelectedSystemPrompt,
-        isProcessing: false,
-        authToken: 'test-token'
+      vi.mocked(useUIStore).mockImplementation((selector) => {
+        const mockState = createMockState({
+          selectedSystemPrompt: 'coder',
+          setSelectedSystemPrompt: mockSetSelectedSystemPrompt
+        });
+        if (typeof selector === 'function') {
+          return selector(mockState);
+        }
+        return mockState;
       });
 
       rerender(<UserInput />);

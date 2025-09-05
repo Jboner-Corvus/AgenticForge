@@ -71,10 +71,17 @@ export class Agent {
   private readonly MAX_CONSECUTIVE_LLM_FAILURES = 3; // Allow 3 consecutive failures before fallback
   private readonly maxBehaviorHistory = 10; // Keep track of last 10 behaviors
   private readonly session: SessionData;
-  
+
   // 🚨 AMÉLIORATION: Tracking des actions réalisées
   private executedActions: Map<string, { count: number; lastExecution: number; successful: boolean }> = new Map();
   private lastDisplayCanvasCall = 0;
+
+  // Multi-file operations tracking
+  private pendingMultiFileOperations: Array<{
+    filename: string;
+    content: string;
+    type: 'html' | 'css' | 'javascript';
+  }> = [];
 
   private readonly sessionManager: SessionManager; // New property
   private subscriber: any;
@@ -640,6 +647,53 @@ export class Agent {
                 type: 'error',
               });
             }
+
+            // Handle pending multi-file operations
+            if (this.pendingMultiFileOperations.length > 0 && command.name === 'writeFile') {
+              const nextFile = this.pendingMultiFileOperations.shift();
+              if (nextFile) {
+                iterationLog.info(`Creating next file: ${nextFile.filename}`);
+                // Create next file in the sequence
+                const nextCommand = {
+                  name: 'writeFile' as const,
+                  params: {
+                    path: nextFile.filename,
+                    content: nextFile.content
+                  },
+                };
+
+                // Execute the next file creation
+                const nextResult = await this.executeTool(nextCommand, iterationLog);
+                this.session.history.push({
+                  id: crypto.randomUUID(),
+                  result: nextResult as Record<string, unknown>,
+                  timestamp: Date.now(),
+                  toolName: nextCommand.name,
+                  type: 'tool_result',
+                });
+
+                // If this is the last file and it's HTML, display it in canvas
+                if (this.pendingMultiFileOperations.length === 0 && nextFile.type === 'html') {
+                  iterationLog.info('All files created, displaying HTML in canvas');
+                  const canvasCommand = {
+                    name: 'display_canvas' as const,
+                    params: {
+                      content: nextFile.content,
+                      contentType: 'html'
+                    },
+                  };
+
+                  const canvasResult = await this.executeTool(canvasCommand, iterationLog);
+                  this.session.history.push({
+                    id: crypto.randomUUID(),
+                    result: canvasResult as Record<string, unknown>,
+                    timestamp: Date.now(),
+                    toolName: canvasCommand.name,
+                    type: 'tool_result',
+                  });
+                }
+              }
+            }
           } else if (!thought && !canvas) {
             this.session.history.push({
               content:
@@ -941,6 +995,109 @@ export class Agent {
     // 2. "Tool Call: toolName({...})"
     // 3. "Tool Call: toolName({...})" (without parentheses)
     // 4. Plain "Tool Call: toolName(...)" when it's the only content
+    // 5. "```tool_code\ntoolName(...)\n```" format
+    
+    // Check for JSON format with "tool_code" field first
+    const jsonToolCodeMatch = cleanText.match(/```json\s*\n\s*{\s*"tool_code":\s*"([^"]+)"\s*}\s*\n```/is);
+    if (jsonToolCodeMatch) {
+      const toolCallStr = jsonToolCodeMatch[1];
+      // Parse the tool call string like "display_canvas(...)"
+      const toolCallParsed = toolCallStr.match(/(\w+)\s*\(\s*([\s\S]*?)\s*\)$/);
+      if (toolCallParsed) {
+        const toolName = toolCallParsed[1];
+        let paramsStr = toolCallParsed[2].trim();
+        
+        // Handle complex parameters with escaped quotes
+        let params = {};
+        if (paramsStr) {
+          // For complex parameters, try to evaluate the JavaScript-like syntax
+          try {
+            // Convert parameter syntax to JSON-like
+            // Handle patterns like: content=json.dumps({...}), contentType="project", title="..."
+            const paramMatches = [...paramsStr.matchAll(/(\w+)=([^,]+?)(?=,\s*\w+=|$)/gs)];
+            paramMatches.forEach(match => {
+              const key = match[1];
+              let value = match[2].trim();
+              
+              // Handle different value types
+              if (value.startsWith('"') && value.endsWith('"')) {
+                // String value
+                (params as any)[key] = value.slice(1, -1);
+              } else if (value.startsWith('json.dumps(') && value.endsWith(')')) {
+                // JSON dumps - extract the object
+                const jsonStr = value.slice(11, -1); // Remove "json.dumps(" and ")"
+                try {
+                  (params as any)[key] = JSON.parse(jsonStr);
+                } catch (e) {
+                  (params as any)[key] = jsonStr;
+                }
+              } else {
+                // Raw value
+                (params as any)[key] = value;
+              }
+            });
+          } catch (e) {
+            // Fallback - use raw string
+            params = { content: paramsStr };
+          }
+        }
+        
+        // Extract thought from everything before ```json
+        const thoughtMatch = cleanText.match(/^(.*?)```json/s);
+        const thought = thoughtMatch ? thoughtMatch[1].trim() : `Exécution de l'outil ${toolName}`;
+        
+        return JSON.stringify({
+          thought: thought,
+          command: {
+            name: toolName,
+            params: params
+          }
+        });
+      }
+    }
+    
+    // Check for ```tool_code format first
+    const toolCodeMatch = cleanText.match(/```tool_code\s*\n\s*(\w+)\s*\(\s*([\s\S]*?)\s*\)\s*\n```/is);
+    if (toolCodeMatch) {
+      const toolName = toolCodeMatch[1];
+      let paramsStr = toolCodeMatch[2].trim();
+      
+      // Handle different parameter formats
+      let params = {};
+      if (paramsStr) {
+        // If it looks like JSON object
+        if (paramsStr.startsWith('{') && paramsStr.endsWith('}')) {
+          try {
+            params = JSON.parse(paramsStr);
+          } catch (e) {
+            // If JSON parse fails, try to extract key-value pairs
+            const keyValueMatches = [...paramsStr.matchAll(/(\w+)=['"](.*?)['"],?/g)];
+            keyValueMatches.forEach(match => {
+              (params as any)[match[1]] = match[2].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+            });
+          }
+        } else {
+          // Handle key=value format
+          const keyValueMatches = [...paramsStr.matchAll(/(\w+)=['"](.*?)['"],?/gs)];
+          keyValueMatches.forEach(match => {
+            (params as any)[match[1]] = match[2].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+          });
+        }
+      }
+      
+      // Extract thought from everything before ```tool_code
+      const thoughtMatch = cleanText.match(/^(.*?)```tool_code/s);
+      const thought = thoughtMatch ? thoughtMatch[1].trim() : `Exécution de l'outil ${toolName}`;
+      
+      return JSON.stringify({
+        thought: thought,
+        command: {
+          name: toolName,
+          params: params
+        }
+      });
+    }
+    
     let toolCallMatch = cleanText.match(/Tool Call:\s*(\w+)\s*with\s*params\s*(\{.*?\}(?:\s*$|\n|Tool Result:))/is);
     
     // If first pattern doesn't match, try the second format: "Tool Call: toolName({...})"
@@ -1139,19 +1296,34 @@ export class Agent {
       command = this.getNextFormStep(cleanText);
     }
 
-    // Check for canvas-related keywords
+    // Check for canvas-related keywords (more specific to avoid false positives)
     const canvasKeywords = [
       'canvas',
-      'display',
-      'show',
-      'demo',
-      'afficher',
-      'montrer',
+      'demo', 
       'visual',
+      'html page',
+      'web page',
+      'interface',
+      'render',
+      'visualize',
+      'graph',
+      'chart'
     ];
+    
+    // More specific patterns for display requests (avoid agent thoughts)
+    const displayPatterns = [
+      /afficher.*canvas/i,
+      /montrer.*canvas/i,
+      /display.*canvas/i, 
+      /show.*canvas/i,
+      /create.*interface/i,
+      /générer.*page/i,
+      /render.*html/i
+    ];
+    
     const isCanvasRequest = canvasKeywords.some((keyword) =>
       lowerText.includes(keyword),
-    );
+    ) || displayPatterns.some(pattern => pattern.test(cleanText));
 
     // Check for thought-related keywords (to avoid sending thoughts to canvas)
     const thoughtKeywords = [
@@ -1170,14 +1342,24 @@ export class Agent {
     const isThoughtContent = thoughtKeywords.some((keyword) =>
       lowerText.includes(keyword),
     );
+    
+    // Additional check: if the text looks like agent internal thoughts/reasoning
+    const isAgentThought = cleanText.startsWith('Je vais') || 
+                          cleanText.startsWith('I will') ||
+                          cleanText.startsWith('I am going') ||
+                          cleanText.startsWith('Je dois') ||
+                          cleanText.startsWith('I need to') ||
+                          cleanText.includes('next step') ||
+                          cleanText.includes('prochaine étape');
 
-    // Check for todo-related keywords
+    // Check for todo-related keywords (more specific to avoid false positives)
     const todoKeywords = [
       'todo',
       'task',
-      'list',
+      'todo list', 
+      'task list',
+      'liste de tâches',
       'step',
-      'plan',
       'workflow',
       'tâche',
       'étape',
@@ -1185,6 +1367,10 @@ export class Agent {
     const isTodoRequest = todoKeywords.some((keyword) =>
       lowerText.includes(keyword),
     );
+    
+    // Check for direct file/directory listing requests
+    const isListFilesRequest = (lowerText.includes('list') || lowerText.includes('lister')) &&
+      (lowerText.includes('workspace') || lowerText.includes('directory') || lowerText.includes('files') || lowerText.includes('fichiers') || lowerText.includes('dossier'));
 
     // Check for creation/building requests that should use todo lists
     const creationKeywords = [
@@ -1212,6 +1398,41 @@ export class Agent {
       lowerText.includes(keyword),
     );
 
+    // Check for multi-file code responses (HTML, CSS, JS projects)
+    const multiFilePatterns = [
+      /```html[\s\S]*?```[\s\S]*?```css[\s\S]*?```/i,
+      /```html[\s\S]*?```[\s\S]*?```javascript[\s\S]*?```/i,
+      /```css[\s\S]*?```[\s\S]*?```javascript[\s\S]*?```/i,
+      /<\!DOCTYPE html[\s\S]*?<\/html>[\s\S]*?body\s*\{[\s\S]*?\}/i,
+      /index\.html[\s\S]*?style\.css[\s\S]*?game\.js/i,
+      /\*\*index\.html\*\*[\s\S]*?\*\*style\.css\*\*[\s\S]*?\*\*game\.js\*\*/i
+    ];
+    
+    const isMultiFileResponse = multiFilePatterns.some(pattern => pattern.test(cleanText));
+    
+    // If it's a multi-file response, parse and create files
+    if (isMultiFileResponse) {
+      const parsedFiles = this.parseMultiFileResponse(cleanText);
+      if (parsedFiles.length > 0) {
+        // Create the first file and display it in canvas
+        const firstFile = parsedFiles[0];
+        thought = `Création de ${parsedFiles.length} fichiers pour le projet. Création du fichier ${firstFile.filename} et affichage dans le canvas.`;
+        command = {
+          name: 'writeFile',
+          params: {
+            path: firstFile.filename,
+            content: firstFile.content
+          },
+        };
+
+        // Store additional files for subsequent iterations
+        if (parsedFiles.length > 1) {
+          this.pendingMultiFileOperations = parsedFiles.slice(1);
+        }
+
+        return JSON.stringify({ thought, command });
+      }
+    }
 
     // Check if the response appears to be truncated (incomplete)
     const isTruncated = this.isResponseTruncated(cleanText);
@@ -1226,8 +1447,18 @@ export class Agent {
         },
       };
     }
+    // Priority: Direct file/directory listing requests
+    else if (isListFilesRequest) {
+      thought = "L'utilisateur veut lister des fichiers/dossiers.";
+      command = {
+        name: 'listDirectory',
+        params: {
+          path: '.',
+        },
+      };
+    }
     // Thought content now handled directly with finish
-    else if (isThoughtContent && !isCanvasRequest) {
+    else if (isThoughtContent || isAgentThought) {
       thought = "Réponse de l'IA traitée.";
       command = {
         name: 'finish',
@@ -1235,8 +1466,8 @@ export class Agent {
           response: cleanText,
         },
       };
-    } else if (isCanvasRequest && !isThoughtContent) {
-      // Handle canvas display requests (but not if it's clearly thought content)
+    } else if (isCanvasRequest && !isThoughtContent && !isAgentThought) {
+      // Handle canvas display requests (but not if it's clearly thought content or agent reasoning)
       thought = "L'utilisateur veut afficher quelque chose dans le canvas.";
       
       // Filter out any JSON content or debugging information from canvas display
@@ -1334,22 +1565,25 @@ export class Agent {
             filePath: cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/) ? cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/)?.[0] : '/home/demon/agentforge/AgenticForge2',
           },
         };
-      } else if (cleanText.toLowerCase().includes('list') || cleanText.toLowerCase().includes('lister')) {
-        thought = "L'utilisateur veut lister des fichiers.";
+      } else if (cleanText.toLowerCase().includes('workspace') || cleanText.toLowerCase().includes('project') || cleanText.toLowerCase().includes('projet')) {
+        thought = "L'utilisateur veut explorer le workspace/projet.";
         command = {
-          name: 'listFiles',
+          name: 'listDirectory',
           params: {
-            path: '/home/demon/agentforge/AgenticForge2',
+            path: '.',
           },
         };
       } else {
         // 🚨 IMPROVED: Better logic for simple responses vs complex tasks
-        const hasWorkToDo = this.detectIfAgentHasPendingWork(cleanText);
-        const shouldStartWorking = this.detectIfShouldStartWorking(cleanText);
-        const isContinuationResponse = this.detectIfContinuationResponse(cleanText);
+        // Check if this is a continuation or work-related request
+        const continueKeywords = ['continue', 'continuer', 'next', 'suivant', 'reprendre', 'resume', 'start'];
+        const workKeywords = ['faire', 'do', 'work', 'implement', 'create', 'build', 'develop'];
+        
+        const shouldContinue = continueKeywords.some(keyword => lowerText.includes(keyword));
+        const isWorkRequest = workKeywords.some(keyword => lowerText.includes(keyword));
     
-        // For very short responses (like "llo", "hi", "ok"), always use finish
-        if (cleanText.length < 10 && !cleanText.includes('continue') && !cleanText.includes('start')) {
+        // For very short responses (like "llo", "hi", "ok"), check if they indicate continuation
+        if (cleanText.length < 10 && !shouldContinue) {
           thought = "Réponse simple de l'utilisateur.";
           command = {
             name: 'finish',
@@ -1357,15 +1591,46 @@ export class Agent {
               response: cleanText.length > 0 ? cleanText : "Hello! How can I help you?",
             },
           };
-        } else if (shouldStartWorking) {
-          // Agent should start working on the first pending task
-          const nextTask = this.getNextPendingTask();
-          if (nextTask) {
-            thought = `Starting work on: ${nextTask.content}`;
-            command = this.convertTaskToCommand(nextTask);
+        } else if (shouldContinue || isWorkRequest) {
+          // L'utilisateur veut continuer ou commencer du travail
+          // Vérifier s'il y a une todo list récente pour continuer
+          const recentTodoCommands = this.commandHistory.slice(-5).filter(cmd => cmd.name === 'todo_write');
+          
+          if (recentTodoCommands.length > 0) {
+            // Il y a une todo list récente, essayer de continuer avec la prochaine tâche
+            thought = "L'utilisateur veut continuer. Je vais travailler sur la prochaine tâche de la todo list.";
+            command = {
+              name: 'listDirectory',
+              params: {
+                path: '.',
+                detailed: true
+              }
+            };
           } else {
-            // Fallback to finish if no specific task found
-            thought = "Traitement de la demande.";
+            // Pas de todo list récente, créer une nouvelle
+            thought = "L'utilisateur veut commencer à travailler. Je vais d'abord créer une todo list.";
+            const smartTodos = this.createSmartTodoList(cleanText);
+            command = {
+              name: 'todo_write',
+              params: {
+                todos: smartTodos,
+              },
+            };
+          }
+        } else {
+          // Pour les autres types de réponses, essayer d'analyser la demande
+          if (lowerText.includes('projet') || lowerText.includes('project') || lowerText.includes('travail')) {
+            thought = "L'utilisateur parle d'un projet. Je vais explorer la structure du projet.";
+            command = {
+              name: 'listDirectory',
+              params: {
+                path: '.',
+                detailed: true
+              }
+            };
+          } else {
+            // Default to finish for simple responses and greetings
+            thought = "Traitement de la réponse de l'utilisateur.";
             command = {
               name: 'finish',
               params: {
@@ -1373,24 +1638,6 @@ export class Agent {
               },
             };
           }
-        } else if (hasWorkToDo && isContinuationResponse) {
-          // Handle continuation with direct action
-          thought = "Continuation de la tâche.";
-          command = {
-            name: 'finish',
-            params: {
-              response: cleanText,
-            },
-          };
-        } else {
-          // Default to finish for simple responses and greetings
-          thought = "Traitement de la réponse de l'utilisateur.";
-          command = {
-            name: 'finish',
-            params: {
-              response: cleanText,
-            },
-          };
         }
       }
     }
@@ -1612,7 +1859,17 @@ export class Agent {
         log.info('✅ display_canvas tracked as executed successfully');
       }
       
-      // Agent thought handling removed - no longer needed
+      // Auto-finish for simple read-only tools to prevent unnecessary iterations
+      const readOnlyTools = ['listDirectory', 'listFiles', 'readFile'];
+      const isReadOnlyCommand = readOnlyTools.includes(command.name);
+      const isSimpleRequest = this.session.history.length <= 2; // Initial prompt + first response
+      
+      if (isReadOnlyCommand && isSimpleRequest) {
+        log.info(`🏁 Auto-finishing after ${command.name} for simple request`);
+        // Use the tool result as the final response
+        const response = typeof result === 'string' ? result : JSON.stringify(result);
+        throw new FinishToolSignal(response);
+      }
       
       return result;
     } catch (_error) {
@@ -2543,6 +2800,140 @@ export class Agent {
     );
 
     return hasFormFieldKeywords && hasRecentFormInteraction;
+  }
+
+  /**
+   * Parse multi-file responses containing HTML, CSS, and JavaScript code
+   */
+  private parseMultiFileResponse(text: string): Array<{
+    filename: string;
+    content: string;
+    type: 'html' | 'css' | 'javascript';
+  }> {
+    const files: Array<{
+      filename: string;
+      content: string;
+      type: 'html' | 'css' | 'javascript';
+    }> = [];
+
+    // Extract HTML content
+    const htmlMatch = text.match(/```html\s*\n([\s\S]*?)\n```/i);
+    if (htmlMatch) {
+      const htmlContent = htmlMatch[1].trim();
+      // Try to extract filename from content or use default
+      const filenameMatch = htmlContent.match(/<!--\s*filename:\s*([^\s]+)\s*-->/i) ||
+                           htmlContent.match(/<!--\s*([^\s]+\.html)\s*-->/i);
+      const filename = filenameMatch ? filenameMatch[1] : 'index.html';
+      files.push({
+        filename,
+        content: htmlContent,
+        type: 'html'
+      });
+    }
+
+    // Extract CSS content
+    const cssMatch = text.match(/```css\s*\n([\s\S]*?)\n```/i);
+    if (cssMatch) {
+      const cssContent = cssMatch[1].trim();
+      // Try to extract filename from content or use default
+      const filenameMatch = cssContent.match(/\/\*\s*filename:\s*([^\s]+)\s*\*\//i) ||
+                           cssContent.match(/\/\*\s*([^\s]+\.css)\s*\*\//i);
+      const filename = filenameMatch ? filenameMatch[1] : 'style.css';
+      files.push({
+        filename,
+        content: cssContent,
+        type: 'css'
+      });
+    }
+
+    // Extract JavaScript content
+    const jsMatch = text.match(/```javascript\s*\n([\s\S]*?)\n```/i) ||
+                   text.match(/```js\s*\n([\s\S]*?)\n```/i);
+    if (jsMatch) {
+      const jsContent = jsMatch[1].trim();
+      // Try to extract filename from content or use default
+      const filenameMatch = jsContent.match(/\/\/\s*filename:\s*([^\s]+)/i) ||
+                           jsContent.match(/\/\/\s*([^\s]+\.js)/i);
+      const filename = filenameMatch ? filenameMatch[1] : 'game.js';
+      files.push({
+        filename,
+        content: jsContent,
+        type: 'javascript'
+      });
+    }
+
+    // If no code blocks found, try to extract from plain HTML/CSS/JS content
+    if (files.length === 0) {
+      // Look for HTML content
+      const htmlPattern = /<\!DOCTYPE html[\s\S]*?<\/html>/i;
+      const htmlFallback = text.match(htmlPattern);
+      if (htmlFallback) {
+        files.push({
+          filename: 'index.html',
+          content: htmlFallback[0],
+          type: 'html'
+        });
+      }
+
+      // Look for CSS content (style blocks or separate CSS)
+      const cssPattern = /body\s*\{[\s\S]*?\}/i;
+      const cssFallback = text.match(cssPattern);
+      if (cssFallback) {
+        files.push({
+          filename: 'style.css',
+          content: cssFallback[0],
+          type: 'css'
+        });
+      }
+
+      // Look for JavaScript content
+      const jsPattern = /function\s+\w+\s*\([\s\S]*?\}|\w+\s*=\s*\{[\s\S]*?\}|class\s+\w+[\s\S]*?\}/i;
+      const jsFallback = text.match(jsPattern);
+      if (jsFallback) {
+        files.push({
+          filename: 'game.js',
+          content: jsFallback[0],
+          type: 'javascript'
+        });
+      }
+    }
+
+    // If still no files found, try to extract from markdown headers
+    if (files.length === 0) {
+      // Look for **filename.ext** patterns
+      const filePatterns = [
+        /\*\*([^\*]+\.html)\*\*\s*\n([\s\S]*?)(?=\n\*\*|$)/i,
+        /\*\*([^\*]+\.css)\*\*\s*\n([\s\S]*?)(?=\n\*\*|$)/i,
+        /\*\*([^\*]+\.js)\*\*\s*\n([\s\S]*?)(?=\n\*\*|$)/i
+      ];
+
+      filePatterns.forEach(pattern => {
+        const match = text.match(pattern);
+        if (match) {
+          const filename = match[1];
+          const content = match[2].trim();
+          let type: 'html' | 'css' | 'javascript';
+
+          if (filename.endsWith('.html')) {
+            type = 'html';
+          } else if (filename.endsWith('.css')) {
+            type = 'css';
+          } else if (filename.endsWith('.js')) {
+            type = 'javascript';
+          } else {
+            return; // Skip unknown file types
+          }
+
+          files.push({
+            filename,
+            content,
+            type
+          });
+        }
+      });
+    }
+
+    return files;
   }
 
   /**

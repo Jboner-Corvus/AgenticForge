@@ -357,7 +357,7 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
               
               {/* Dropdown Menu */}
               {isDropdownOpen && (
-                <div className="absolute top-full right-0 mt-1 w-72 bg-background border border-border shadow-xl rounded-lg z-[50] py-2 max-h-80 overflow-y-auto">
+                <div className="absolute bottom-full right-0 mb-1 w-72 bg-background border border-border shadow-xl rounded-lg z-[50] py-2 max-h-80 overflow-y-auto">
                   <div className="px-3 py-2 text-xs text-muted-foreground border-b border-border">
                     Choisissez le mode de l'agent
                   </div>

@@ -1,0 +1,41 @@
+{
+  "users": [
+    {
+      "id": "user1",
+      "name": "Alice",
+      "email": "alice@example.com"
+    },
+    {
+      "id": "user2",
+      "name": "Bob",
+      "email": "bob@example.com"
+    }
+  ],
+  "products": [
+    {
+      "id": "prod1",
+      "name": "Laptop",
+      "price": 1200,
+      "stock": 10
+    },
+    {
+      "id": "prod2",
+      "name": "Mouse",
+      "price": 25,
+      "stock": 50
+    }
+  ],
+  "orders": [
+    {
+      "orderId": "order1",
+      "userId": "user1",
+      "items": [
+        {
+          "productId": "prod1",
+          "quantity": 1
+        }
+      ],
+      "status": "pending"
+    }
+  ]
+}
