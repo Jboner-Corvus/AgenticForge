@@ -38,7 +38,7 @@ const configSchema = z.object({
     .default('gemini'),
   LLM_PROVIDER_HIERARCHY: z
     .string()
-    .default('huggingface,grok,gemini,openai,mistral,openrouter,qwen')
+    .default('huggingface,grok,gemini,google-flash,openai,mistral,openrouter,qwen')
     .transform((str) => str.split(',').map((s) => s.trim())),
   LLM_REQUEST_DELAY_MS: z.coerce.number().default(1000), // Reduced delay for better performance
   LOG_LEVEL: z.string().default('debug'),

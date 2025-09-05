@@ -550,12 +550,12 @@ if (process.env.NODE_ENV !== 'test') {
 
   // Load all Gemini provider keys from environment
   const geminiKeys = [
-    { provider: 'gemini-flash-2', model: 'gemini-2.5-flash', envVar: 'LLM_API_KEY_GEMINI_FLASH_2' },
     { provider: 'gemini-pro-2', model: 'gemini-2.5-pro', envVar: 'LLM_API_KEY_GEMINI_PRO_2' },
-    { provider: 'gemini-flash-3', model: 'gemini-2.5-flash', envVar: 'LLM_API_KEY_GEMINI_FLASH_3' },
     { provider: 'gemini-pro-3', model: 'gemini-2.5-pro', envVar: 'LLM_API_KEY_GEMINI_PRO_3' },
-    { provider: 'gemini-flash-4', model: 'gemini-2.5-flash', envVar: 'LLM_API_KEY_GEMINI_FLASH_4' },
     { provider: 'gemini-pro-4', model: 'gemini-2.5-pro', envVar: 'LLM_API_KEY_GEMINI_PRO_4' },
+    { provider: 'gemini-flash-2', model: 'gemini-2.5-flash', envVar: 'LLM_API_KEY_GEMINI_FLASH_2' },
+    { provider: 'gemini-flash-3', model: 'gemini-2.5-flash', envVar: 'LLM_API_KEY_GEMINI_FLASH_3' },
+    { provider: 'gemini-flash-4', model: 'gemini-2.5-flash', envVar: 'LLM_API_KEY_GEMINI_FLASH_4' },
   ];
 
   for (const keyConfig of geminiKeys) {
