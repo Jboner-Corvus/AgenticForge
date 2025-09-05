@@ -44,6 +44,7 @@ vi.mock('../store/hooks', () => ({
   useBrowserStatus: vi.fn(),
   useTokenStatus: vi.fn(),
   useIsLoadingTools: vi.fn(),
+  useSessionTokensUsed: vi.fn(() => 0),
 }));
 
 // Mock the UI store

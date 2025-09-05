@@ -112,7 +112,8 @@ vi.mock('../../store/hooks', () => ({
   useStreamCloseFunc: vi.fn(),
   useDebugLog: vi.fn(),
   useIsSettingsModalOpen: vi.fn(),
-  useSessionTokensUsed: vi.fn()
+  useSessionTokensUsed: vi.fn(),
+  useLatestTokenStats: vi.fn()
 }));
 
 vi.mock('../../lib/hooks/useAgentStream', () => ({
