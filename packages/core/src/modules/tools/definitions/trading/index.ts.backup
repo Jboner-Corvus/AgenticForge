@@ -1,0 +1,43 @@
+import { toolRegistry } from '../../toolRegistry';
+
+// Import trading tools
+import { tradingLoginTool } from './login.tool';
+import { tradingOrderTool } from './order.tool';
+import { tradingPriceMonitorTool } from './priceMonitor.tool';
+import { tradingPortfolioTool } from './portfolio.tool';
+import { tradingRiskTool } from './risk.tool';
+import { tradingStrategyTool } from './strategy.tool';
+
+// Export all trading tools
+export {
+  tradingLoginTool,
+  tradingOrderTool,
+  tradingPriceMonitorTool,
+  tradingPortfolioTool,
+  tradingRiskTool,
+  tradingStrategyTool,
+};
+
+// Trading tools array for easy registration
+export const tradingTools = [
+  tradingLoginTool,
+  tradingOrderTool,
+  tradingPriceMonitorTool,
+  tradingPortfolioTool,
+  tradingRiskTool,
+  tradingStrategyTool,
+];
+
+// Auto-register trading tools with the tool registry
+export function registerTradingTools(): void {
+  tradingTools.forEach(tool => {
+    try {
+      toolRegistry.register(tool);
+    } catch (error) {
+      console.warn(`Failed to register trading tool ${tool.name}:`, error);
+    }
+  });
+}
+
+// Initialize trading tools on module load
+registerTradingTools();

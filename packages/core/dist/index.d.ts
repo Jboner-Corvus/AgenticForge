@@ -230,6 +230,7 @@ declare class Agent {
     private readonly session;
     private executedActions;
     private lastDisplayCanvasCall;
+    private pendingMultiFileOperations;
     private readonly sessionManager;
     private subscriber;
     private readonly taskQueue;
@@ -317,6 +318,10 @@ declare class Agent {
      * Check if the response indicates continuation of a form-filling task
      */
     private isFormContinuationResponse;
+    /**
+     * Parse multi-file responses containing HTML, CSS, and JavaScript code
+     */
+    private parseMultiFileResponse;
     /**
      * Get the next form step based on the continuation response
      */

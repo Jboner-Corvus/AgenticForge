@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { UserInput } from '../UserInput';
 import { useUIStore } from '../../store/uiStore';
@@ -210,15 +210,6 @@ describe('System Prompt Dropdown Integration Tests', () => {
   });
 
   describe('System Prompt Mode Switching', () => {
-    const testCases = [
-      { mode: 'architect', displayName: 'Architect' },
-      { mode: 'coder', displayName: 'Coder' },
-      { mode: 'explain', displayName: 'Explain' },
-      { mode: 'debug', displayName: 'Debug' },
-      { mode: 'orchestrate', displayName: 'Orchestrate' },
-      { mode: 'frontend', displayName: 'FrontEnd' }
-    ];
-
     it('should render different system prompt modes', () => {
       // Test that the component can render with different modes
       const modes = ['architect', 'coder', 'explain', 'debug', 'orchestrate', 'frontend'];
