@@ -952,6 +952,43 @@ export class LlmKeyManager {
       }
     }
 
+    // Handle custom OpenRouter provider names (openrouter-sky, openrouter-dusk)
+    if (provider === 'openrouter-sky' || provider === 'openrouter-dusk') {
+      actualProvider = 'openrouter';
+      // Map to the corresponding environment variable based on sky/dusk type
+      let envVarName: string;
+      if (provider === 'openrouter-sky') {
+        envVarName = 'LLM_API_KEY_OPENROUTER_SKY';
+        modelName = 'openrouter/sonoma-sky-alpha';
+      } else if (provider === 'openrouter-dusk') {
+        envVarName = 'LLM_API_KEY_OPENROUTER_DUSK';
+        modelName = 'openrouter/sonoma-dusk-alpha';
+      } else {
+        // Fallback
+        envVarName = 'LLM_API_KEY_OPENROUTER_SKY';
+        modelName = 'openrouter/sonoma-sky-alpha';
+      }
+      apiKey = process.env[envVarName];
+
+      // Debug logging
+      getLogger().info({
+        provider,
+        envVarName,
+        hasKey: !!apiKey,
+        keyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'none'
+      }, '🔍 Custom OpenRouter provider mapping');
+
+      // If no key found for this specific provider, try fallback to main key
+      if (!apiKey) {
+        getLogger().warn({
+          provider,
+          envVarName,
+          fallbackTo: 'LLM_API_KEY'
+        }, 'No specific key found for custom OpenRouter provider, trying main LLM_API_KEY');
+        apiKey = config.LLM_API_KEY;
+      }
+    }
+
     // If we didn't get a key from custom mapping, try standard provider keys
     if (!apiKey) {
       // Try specific provider keys first, then fallback to generic LLM_API_KEY only if provider matches

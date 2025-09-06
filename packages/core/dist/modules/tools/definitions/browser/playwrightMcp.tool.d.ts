@@ -12,17 +12,17 @@ declare const navigateParams: z.ZodObject<{
     waitUntil: z.ZodOptional<z.ZodEnum<["load", "domcontentloaded", "networkidle"]>>;
 }, "strip", z.ZodTypeAny, {
     url: string;
-    waitUntil?: "domcontentloaded" | "load" | "networkidle" | undefined;
+    waitUntil?: "load" | "domcontentloaded" | "networkidle" | undefined;
 }, {
     url: string;
-    waitUntil?: "domcontentloaded" | "load" | "networkidle" | undefined;
+    waitUntil?: "load" | "domcontentloaded" | "networkidle" | undefined;
 }>;
 declare const clickParams: z.ZodObject<{
     selector: z.ZodString;
     button: z.ZodDefault<z.ZodOptional<z.ZodEnum<["left", "right", "middle"]>>>;
 }, "strip", z.ZodTypeAny, {
-    button: "left" | "right" | "middle";
     selector: string;
+    button: "left" | "right" | "middle";
 }, {
     selector: string;
     button?: "left" | "right" | "middle" | undefined;
@@ -32,12 +32,12 @@ declare const typeParams: z.ZodObject<{
     text: z.ZodString;
     clear: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
 }, "strip", z.ZodTypeAny, {
-    text: string;
     selector: string;
+    text: string;
     clear: boolean;
 }, {
-    text: string;
     selector: string;
+    text: string;
     clear?: boolean | undefined;
 }>;
 declare const screenshotParams: z.ZodObject<{
@@ -72,8 +72,8 @@ declare const waitForSelectorParams: z.ZodObject<{
     state: z.ZodDefault<z.ZodOptional<z.ZodEnum<["attached", "detached", "visible", "hidden"]>>>;
 }, "strip", z.ZodTypeAny, {
     timeout: number;
-    state: "attached" | "detached" | "visible" | "hidden";
     selector: string;
+    state: "attached" | "detached" | "visible" | "hidden";
 }, {
     selector: string;
     timeout?: number | undefined;
@@ -83,20 +83,20 @@ declare const getContentParams: z.ZodObject<{
     selector: z.ZodOptional<z.ZodString>;
     property: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    selector?: string | undefined;
     property?: string | undefined;
+    selector?: string | undefined;
 }, {
-    selector?: string | undefined;
     property?: string | undefined;
+    selector?: string | undefined;
 }>;
 declare const setViewportParams: z.ZodObject<{
     width: z.ZodNumber;
     height: z.ZodNumber;
     deviceScaleFactor: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
 }, "strip", z.ZodTypeAny, {
-    deviceScaleFactor: number;
     width: number;
     height: number;
+    deviceScaleFactor: number;
 }, {
     width: number;
     height: number;
@@ -115,16 +115,16 @@ declare const playwrightMcpTools: (Tool<z.ZodObject<{
     waitUntil: z.ZodOptional<z.ZodEnum<["load", "domcontentloaded", "networkidle"]>>;
 }, "strip", z.ZodTypeAny, {
     url: string;
-    waitUntil?: "domcontentloaded" | "load" | "networkidle" | undefined;
+    waitUntil?: "load" | "domcontentloaded" | "networkidle" | undefined;
 }, {
     url: string;
-    waitUntil?: "domcontentloaded" | "load" | "networkidle" | undefined;
+    waitUntil?: "load" | "domcontentloaded" | "networkidle" | undefined;
 }>, any> | Tool<z.ZodObject<{
     selector: z.ZodString;
     button: z.ZodDefault<z.ZodOptional<z.ZodEnum<["left", "right", "middle"]>>>;
 }, "strip", z.ZodTypeAny, {
-    button: "left" | "right" | "middle";
     selector: string;
+    button: "left" | "right" | "middle";
 }, {
     selector: string;
     button?: "left" | "right" | "middle" | undefined;
@@ -133,12 +133,12 @@ declare const playwrightMcpTools: (Tool<z.ZodObject<{
     text: z.ZodString;
     clear: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
 }, "strip", z.ZodTypeAny, {
-    text: string;
     selector: string;
+    text: string;
     clear: boolean;
 }, {
-    text: string;
     selector: string;
+    text: string;
     clear?: boolean | undefined;
 }>, any> | Tool<z.ZodObject<{
     script: z.ZodString;
@@ -155,8 +155,8 @@ declare const playwrightMcpTools: (Tool<z.ZodObject<{
     state: z.ZodDefault<z.ZodOptional<z.ZodEnum<["attached", "detached", "visible", "hidden"]>>>;
 }, "strip", z.ZodTypeAny, {
     timeout: number;
-    state: "attached" | "detached" | "visible" | "hidden";
     selector: string;
+    state: "attached" | "detached" | "visible" | "hidden";
 }, {
     selector: string;
     timeout?: number | undefined;
@@ -165,19 +165,19 @@ declare const playwrightMcpTools: (Tool<z.ZodObject<{
     selector: z.ZodOptional<z.ZodString>;
     property: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    selector?: string | undefined;
     property?: string | undefined;
+    selector?: string | undefined;
 }, {
-    selector?: string | undefined;
     property?: string | undefined;
+    selector?: string | undefined;
 }>, any> | Tool<z.ZodObject<{
     width: z.ZodNumber;
     height: z.ZodNumber;
     deviceScaleFactor: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
 }, "strip", z.ZodTypeAny, {
-    deviceScaleFactor: number;
     width: number;
     height: number;
+    deviceScaleFactor: number;
 }, {
     width: number;
     height: number;

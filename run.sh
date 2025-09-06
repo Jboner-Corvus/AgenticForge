@@ -327,16 +327,42 @@ start_services_silent() {
         echo -e "${COLOR_RED}❌ Failed to start Docker services${NC}"
         return 1
     fi
-    
+
     # Wait for services with timeout
     if ! wait_for_services; then
         echo -e "${COLOR_RED}❌ Services failed to start properly${NC}"
         return 1
     fi
-    
+
     # Start worker
     if ! start_worker_silent; then
         echo -e "${COLOR_RED}❌ Failed to start worker${NC}"
+        return 1
+    fi
+
+    return 0
+}
+
+# Silent service startup without worker (for rebuild scenarios)
+start_services_silent_no_worker() {
+    echo -e "${COLOR_CYAN}🐳 Starting Docker services (without worker)...${NC}"
+
+    cd "$ROOT_DIR"
+
+    # Pull images if needed
+    if ! docker compose pull --quiet; then
+        echo -e "${COLOR_YELLOW}⚠️ Could not pull latest images, using local versions${NC}"
+    fi
+
+    # Start services
+    if ! docker compose up -d; then
+        echo -e "${COLOR_RED}❌ Failed to start Docker services${NC}"
+        return 1
+    fi
+
+    # Wait for services with timeout
+    if ! wait_for_services; then
+        echo -e "${COLOR_RED}❌ Services failed to start properly${NC}"
         return 1
     fi
 
@@ -1826,14 +1852,14 @@ restart_all_services() {
     sleep 3
 
     echo -e "${COLOR_BLUE}🚀 Starting all services...${NC}"
-    if ! start_services_silent; then
+    if ! start_services_silent_no_worker; then
         echo -e "${COLOR_RED}❌ Failed to start services${NC}"
         return 1
     fi
 
-    echo -e "${COLOR_YELLOW}🔄 Ensuring worker is properly restarted...${NC}"
-    if ! restart_worker; then
-        echo -e "${COLOR_RED}❌ Failed to restart worker${NC}"
+    echo -e "${COLOR_YELLOW}🔄 Starting worker...${NC}"
+    if ! start_worker_silent; then
+        echo -e "${COLOR_RED}❌ Failed to start worker${NC}"
         return 1
     fi
 

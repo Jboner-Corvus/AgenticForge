@@ -11,8 +11,8 @@ export { technicalIndicatorsTool } from './technical_indicators.tool.ts';
 // Legacy individual tools (still available for backward compatibility)
 export { timeSeriesIntradayTool } from './time-series-intraday.tool.ts';
 export { timeSeriesDailyTool } from './time-series-daily.tool.ts';
-export { globalQuoteTool } from './global-quote.tool.ts';
-export { symbolSearchTool } from './symbol-search.tool.ts';
+// export { globalQuoteTool } from './global-quote.tool.ts'; // REMOVED: Duplicate functionality with core_stock_apis
+// export { symbolSearchTool } from './symbol-search.tool.ts'; // REMOVED: Duplicate functionality with core_stock_apis
 export { companyOverviewTool } from './company-overview.tool.ts';
 export { newsSentimentTool } from './news-sentiment.tool.ts';
 export { smaTool } from './sma.tool.ts';
@@ -34,8 +34,9 @@ import { technicalIndicatorsTool } from './technical_indicators.tool.ts';
 // Import legacy tools for backward compatibility
 import { timeSeriesIntradayTool } from './time-series-intraday.tool.ts';
 import { timeSeriesDailyTool } from './time-series-daily.tool.ts';
-import { globalQuoteTool } from './global-quote.tool.ts';
-import { symbolSearchTool } from './symbol-search.tool.ts';
+// import { globalQuoteTool } from './global-quote.tool.ts'; // REMOVED: Duplicate functionality
+// import { symbolSearchTool } from './symbol-search.tool.ts'; // REMOVED: Duplicate functionality
+// Note: timeSeriesIntradayTool and timeSeriesDailyTool are kept for now as they may have different parameters/behavior
 import { companyOverviewTool } from './company-overview.tool.ts';
 import { newsSentimentTool } from './news-sentiment.tool.ts';
 import { smaTool } from './sma.tool.ts';
@@ -81,8 +82,8 @@ export const ALL_ALPHA_VANTAGE_TOOLS = [
 export const ALL_ALPHA_VANTAGE_LEGACY_TOOLS = [
   timeSeriesIntradayTool,
   timeSeriesDailyTool,
-  globalQuoteTool,
-  symbolSearchTool,
+  // globalQuoteTool, // REMOVED: Duplicate functionality with core_stock_apis
+  // symbolSearchTool, // REMOVED: Duplicate functionality with core_stock_apis
   companyOverviewTool,
   newsSentimentTool,
   smaTool,

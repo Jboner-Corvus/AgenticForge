@@ -2009,8 +2009,8 @@ export class Agent {
       'interface',
       'render',
       'visualize',
-      'graph',
-      'chart'
+      'graph'
+      // Removed 'chart' to avoid false positives when agent plans to create charts
     ];
     
     // More specific patterns for display requests (avoid agent thoughts)
@@ -2024,9 +2024,26 @@ export class Agent {
       /render.*html/i
     ];
     
-    const isCanvasRequest = canvasKeywords.some((keyword) =>
-      lowerText.includes(keyword),
-    ) || displayPatterns.some(pattern => pattern.test(cleanText));
+    // Check for planning/thinking phrases that should NOT trigger canvas
+    const planningPhrases = [
+      'i will generate',
+      'i need to',
+      'then, i will',
+      'je vais générer',
+      'je dois',
+      'puis, je vais',
+      'now i need',
+      'maintenant je dois',
+      'next, i will',
+      'ensuite, je vais'
+    ];
+    
+    const isPlanningThought = planningPhrases.some(phrase => lowerText.includes(phrase));
+    
+    const isCanvasRequest = !isPlanningThought && (
+      canvasKeywords.some((keyword) => lowerText.includes(keyword)) || 
+      displayPatterns.some(pattern => pattern.test(cleanText))
+    );
 
     // Check for thought-related keywords (to avoid sending thoughts to canvas)
     const thoughtKeywords = [
@@ -2052,8 +2069,13 @@ export class Agent {
                           cleanText.startsWith('I am going') ||
                           cleanText.startsWith('Je dois') ||
                           cleanText.startsWith('I need to') ||
+                          cleanText.startsWith('I have the') ||
+                          cleanText.startsWith('Now I need') ||
                           cleanText.includes('next step') ||
-                          cleanText.includes('prochaine étape');
+                          cleanText.includes('prochaine étape') ||
+                          cleanText.includes('then, i will') ||
+                          cleanText.includes('then i will') ||
+                          isPlanningThought;
 
     // Check for todo-related keywords (more specific to avoid false positives)
     const todoKeywords = [

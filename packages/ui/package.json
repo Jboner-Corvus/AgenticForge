@@ -1,7 +1,7 @@
 {
   "name": "@gforge/ui",
   "private": true,
-  "version": "0.0.276",
+  "version": "0.0.282",
   "type": "module",
   "scripts": {
     "dev": "vite",
