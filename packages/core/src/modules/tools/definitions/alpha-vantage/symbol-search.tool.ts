@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getConfig } from '../../../../config.ts';
 import type { Tool } from '../../../../types.ts';
 import {
   makeAlphaVantageRequest,
@@ -27,7 +28,7 @@ export const symbolSearchTool: Tool<typeof SymbolSearchParams> = {
 
       const apiParams: Record<string, string> = {
         keywords: parsedParams.keywords,
-        apikey: parsedParams.apikey,
+        apikey: parsedParams.apikey || getConfig().ALPHA_VANTAGE_API_KEY || '',
       };
 
       const data = await makeAlphaVantageRequest('SYMBOL_SEARCH', apiParams);

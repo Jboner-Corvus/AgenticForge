@@ -103,8 +103,8 @@ git clone https://github.com/Jboner-Corvus/AgenticForge.git
 cd AgenticForge
 
 # 2. Fully automated installation
-chmod +x run-v2.sh
-./run-v2.sh install
+chmod +x run.sh
+./run.sh install
 ```
 
 **Option 3: Interactive installation**
@@ -115,8 +115,8 @@ git clone https://github.com/Jboner-Corvus/AgenticForge.git
 cd AgenticForge
 
 # 2. Launch the AgenticForge management console
-chmod +x run-v2.sh
-./run-v2.sh
+chmod +x run.sh
+./run.sh
 ```
 
 **Production Management Console:**
@@ -255,28 +255,28 @@ The system tests keys in order of reliability and automatically switches if a ke
 
 ### Interactive Management Console
 
-```bash
-# Access all features via console
-./run-v2.sh
+```
+# Access all features via the console
+./run.sh
 ```
 
 ### Quick Production Commands
 
 ```bash
 # Full startup
-./run-v2.sh start
+./run.sh start
 
 # Check service status
-./run-v2.sh status
+./run.sh status
 
 # View system logs
-./run-v2.sh logs
+./run.sh logs
 
 # Restart after config modification
-./run-v2.sh restart
+./run.sh restart
 
 # Clean system shutdown
-./run-v2.sh stop
+./run.sh stop
 ```
 
 ### 🧪 Complete API Tests
@@ -311,7 +311,7 @@ Code quality tools (lint, TypeScript, format) are integrated into the management
 
 ```bash
 # Complete management console
-./run-v2.sh
+./run.sh
 
 # Or directly:
 pnpm run lint      # Code quality verification
@@ -457,14 +457,14 @@ pnpm run format    # Automatic formatting
 
 ### Advanced System Management
 
-| Action               | Command                      | Usage                        |
-| -------------------- | ---------------------------- | ---------------------------- |
-| **Complete Console** | `./run-v2.sh`                | Main management interface    |
-| **Quick Startup**    | `./run-v2.sh start`          | Direct system launch         |
-| **Monitoring**       | `./run-v2.sh status`         | Docker service status        |
-| **Live Logs**        | `./run-v2.sh logs`           | Real-time monitoring         |
-| **Restart**          | `./run-v2.sh restart`        | After config modification    |
-| **Maintenance**      | `./run-v2.sh` → Options 7-14 | Tests, lint, format, rebuild |
+| Action                 | Command                      | Usage                           |
+| ---------------------- | ---------------------------- | ------------------------------- |
+| **Complete Console**   | `./run.sh`                   | Main management interface       |
+| **Quick Startup**      | `./run.sh start`             | Direct system launch            |
+| **Monitoring**         | `./run.sh status`            | Docker service status           |
+| **Live Logs**          | `./run.sh logs`              | Real-time monitoring            |
+| **Restart**            | `./run.sh restart`           | After config modification       |
+| **Maintenance**        | `./run.sh` → Options 7-14    | Tests, lint, format, rebuild    |
 
 ---
 
@@ -521,6 +521,6 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 
 _Forge your technological future._
 
-[![Get Started](https://img.shields.io/badge/🚀_Get_Started-brightgreen?style=for-the-badge)](./run-v2.sh)
+[![Get Started](https://img.shields.io/badge/🚀_Get_Started-brightgreen?style=for-the-badge)](./run.sh)
 
 </div>

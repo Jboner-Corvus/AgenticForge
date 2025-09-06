@@ -1,17 +1,35 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { pingTool } from '../ping.tool.ts';
+import type { MinimalJob, SessionData } from '../../../../../types.ts';
 
 describe('pingTool', () => {
+  const mockJob: MinimalJob = {
+    data: {
+      prompt: 'test prompt'
+    },
+    id: 'test-job',
+    isFailed: async () => false,
+    name: 'test-job-name'
+  };
+
+  const mockSession: SessionData = {
+    history: [],
+    identities: [],
+    name: 'test-session',
+    timestamp: Date.now()
+  };
+
   const mockContext: any = {
-    job: { session: { metadata: {} } },
+    job: mockJob,
     log: { 
       info: vi.fn(), 
       error: vi.fn() 
     },
+    reportProgress: async () => {},
+    session: mockSession,
   };
 
   beforeEach(() => {
-    mockContext.job.session.metadata = {};
     vi.clearAllMocks();
   });
 

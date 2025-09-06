@@ -2,7 +2,7 @@
 
 This directory contains **agent capability tests** for AgenticForge's AI agent, specifically focusing on validating the agent's ability to create canvases, manage todo lists, forge tools, and execute complex tasks via API.
 
-> **Note**: Development quality checks (lint, TypeScript, format) are handled by the main build system (`./run-v2.sh`) and pnpm scripts, not in this test directory.
+> **Note**: Development quality checks (lint, TypeScript, format) are handled by the main build system (`./run.sh`) and pnpm scripts, not in this test directory.
 
 ## 🧪 Test Scripts
 
@@ -75,7 +75,7 @@ Complete test suite covering:
 
 **Development Quality Checks** are handled separately:
 
-- 🔧 Lint, TypeScript, and formatting via `./run-v2.sh` menu
+- 🔧 Lint, TypeScript, and formatting via `./run.sh` menu
 - ⚙️ Unit tests for code components via pnpm scripts
 - 🛠️ Build system integration tests
 - 📝 Code quality and syntax validation
@@ -89,7 +89,7 @@ Complete test suite covering:
    ```bash
    # From root directory
    cd ..
-   ./run-v2.sh start
+   ./run.sh start
    ```
 
 2. **Run tests from root directory (Recommended):**
@@ -238,8 +238,8 @@ Message: Create a canvas diagram showing web application architecture...
 1. **AgenticForge not running**
 
    ```bash
-   ./run-v2.sh status
-   ./run-v2.sh start
+   ./run.sh status
+   ./run.sh start
    ```
 
 2. **Authentication errors**

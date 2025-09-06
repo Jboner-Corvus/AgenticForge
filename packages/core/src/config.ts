@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename);
 
 const configSchema = z.object({
   AGENT_MAX_ITERATIONS: z.coerce.number().default(15), // 🚨 RÉDUIT: 100 -> 15 pour éviter les boucles infinies
+  ALPHA_VANTAGE_API_KEY: z.string().optional(),
   AUTH_TOKEN: z.string().optional(),
   CODE_EXECUTION_TIMEOUT_MS: z.coerce.number().default(60000),
   CONTAINER_MEMORY_LIMIT: z.string().default('2g'),

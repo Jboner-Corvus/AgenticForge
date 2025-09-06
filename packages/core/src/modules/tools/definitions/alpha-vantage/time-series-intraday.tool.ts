@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getConfig } from '../../../../config.ts';
 import type { Tool } from '../../../../types.ts';
 import {
   makeAlphaVantageRequest,
@@ -53,11 +54,9 @@ export const timeSeriesIntradayTool: Tool<typeof TimeSeriesIntradayParams> = {
       const apiParams: Record<string, string> = {
         symbol: parsedParams.symbol,
         interval: parsedParams.interval,
-        adjusted: parsedParams.adjusted.toString(),
-        extended_hours: parsedParams.extended_hours.toString(),
-        outputsize: parsedParams.outputsize,
-        datatype: parsedParams.datatype,
-        apikey: parsedParams.apikey,
+        outputsize: parsedParams.outputsize || 'compact',
+        datatype: parsedParams.datatype || 'json',
+        apikey: parsedParams.apikey || getConfig().ALPHA_VANTAGE_API_KEY || '',
       };
 
       // Add optional parameters

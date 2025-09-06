@@ -103,8 +103,8 @@ git clone https://github.com/Jboner-Corvus/AgenticForge.git
 cd AgenticForge
 
 # 2. Installation complètement automatisée
-chmod +x run-v2.sh
-./run-v2.sh install
+chmod +x run.sh
+./run.sh install
 ```
 
 **Option 3: Installation interactive**
@@ -115,8 +115,8 @@ git clone https://github.com/Jboner-Corvus/AgenticForge.git
 cd AgenticForge
 
 # 2. Lancer la console de gestion AgentMCP
-chmod +x run-v2.sh
-./run-v2.sh
+chmod +x run.sh
+./run.sh
 ```
 
 **Console de Gestion Production :**
@@ -156,7 +156,7 @@ chmod +x run-v2.sh
 
 Au premier démarrage, le fichier `.env` est créé avec des valeurs par défaut. Vous pouvez y définir votre première clé API pour un démarrage rapide.
 
-```env
+```
 # === CONFIGURATION AgentMCP ===
 
 # Ports d'accès
@@ -212,7 +212,7 @@ Pour utiliser le fournisseur Qwen, vous devez :
 1. Obtenir une clé API depuis [Qwen Portal](https://portal.qwen.ai/)
 2. Configurer les variables d'environnement suivantes :
 
-``env
+```
 LLM_PROVIDER=qwen
 LLM_MODEL_NAME=qwen3-coder-plus
 LLM_API_KEY=votre_cle_api_qwen
@@ -285,7 +285,7 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
 
 ```bash
 # Accéder à toutes les fonctionnalités via la console
-./run-v2.sh
+./run.sh
 ```
 
 ## 🎯 Cas d'Usage et Exemples
@@ -415,12 +415,12 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
 
 | Action               | Commande                     | Utilisation                     |
 | -------------------- | ---------------------------- | ------------------------------- |
-| **Console Complète** | `./run-v2.sh`                | Interface de gestion principale |
-| **Démarrage Rapide** | `./run-v2.sh start`          | Lancement direct du système     |
-| **Monitoring**       | `./run-v2.sh status`         | État des services Docker        |
-| **Logs Live**        | `./run-v2.sh logs`           | Surveillance temps réel         |
-| **Redémarrage**      | `./run-v2.sh restart`        | Après modification config       |
-| **Maintenance**      | `./run-v2.sh` → Options 7-14 | Tests, lint, format, rebuild    |
+| **Console Complète** | `./run.sh`                   | Interface de gestion principale |
+| **Démarrage Rapide** | `./run.sh start`             | Lancement direct du système     |
+| **Monitoring**       | `./run.sh status`            | État des services Docker        |
+| **Logs Live**        | `./run.sh logs`              | Surveillance temps réel         |
+| **Redémarrage**      | `./run.sh restart`           | Après modification config       |
+| **Maintenance**      | `./run.sh` → Options 7-14    | Tests, lint, format, rebuild    |
 
 ---
 
@@ -477,6 +477,6 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour les détails.
 
 _Forgez votre avenir technologique._
 
-[![Commencer](https://img.shields.io/badge/🚀_Commencer-brightgreen?style=for-the-badge)](./run-v2.sh)
+[![Commencer](https://img.shields.io/badge/🚀_Commencer-brightgreen?style=for-the-badge)](./run.sh)
 
 </div>

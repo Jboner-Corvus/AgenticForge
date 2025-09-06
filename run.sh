@@ -428,7 +428,7 @@ start_worker_silent() {
         existing_pid=$(cat "$ROOT_DIR/worker.pid")
         if kill -0 "$existing_pid" 2>/dev/null; then
             echo -e "${COLOR_YELLOW}⚠️ Worker already running (PID: $existing_pid)${NC}"
-            echo -e "${COLOR_YELLOW}💡 Use './run-v2.sh restart-worker' to restart or './run-v2.sh stop' to stop${NC}"
+            echo -e "${COLOR_YELLOW}💡 Use './run.sh restart-worker' to restart or './run.sh stop' to stop${NC}"
             return 1
         else
             # Clean up stale PID file
@@ -441,7 +441,7 @@ start_worker_silent() {
     worker_count=$(pgrep -f "node dist/worker.js" | wc -l)
     if [[ $worker_count -gt 0 ]]; then
         echo -e "${COLOR_YELLOW}⚠️ Another worker process is already running${NC}"
-        echo -e "${COLOR_YELLOW}💡 Use './run-v2.sh restart-worker' to restart or stop all workers first${NC}"
+        echo -e "${COLOR_YELLOW}💡 Use './run.sh restart-worker' to restart or stop all workers first${NC}"
         return 1
     fi
 
@@ -474,13 +474,13 @@ show_post_install_info() {
     echo -e "${COLOR_YELLOW}📋 Next Steps:${NC}"
     echo -e "   1. Open the web interface to configure your LLM API keys"
     echo -e "   2. Test the system with a simple query"
-    echo -e "   3. Check logs if needed: ./run-v2.sh logs"
+    echo -e "   3. Check logs if needed: ./run.sh logs"
     echo ""
     echo -e "${COLOR_CYAN}🔧 Management Commands:${NC}"
-    echo -e "   ./run-v2.sh status    - Check service status"
-    echo -e "   ./run-v2.sh stop      - Stop all services"
-    echo -e "   ./run-v2.sh restart   - Restart all services"
-    echo -e "   ./run-v2.sh menu      - Interactive menu"
+    echo -e "   ./run.sh status    - Check service status"
+    echo -e "   ./run.sh stop      - Stop all services"
+    echo -e "   ./run.sh restart   - Restart all services"
+    echo -e "   ./run.sh menu      - Interactive menu"
     echo ""
 }
 
@@ -560,7 +560,7 @@ first_time_setup() {
     
     read -r -p "Ready to start setup? (Y/n): " start_setup
     if [[ "$start_setup" =~ ^[Nn]$ ]]; then
-        echo -e "${COLOR_YELLOW}Setup cancelled. You can run this again anytime with: ./run-v2.sh${NC}"
+        echo -e "${COLOR_YELLOW}Setup cancelled. You can run this again anytime with: ./run.sh${NC}"
         exit 0
     fi
     
@@ -606,8 +606,8 @@ guided_setup() {
     echo ""
     echo -e "${COLOR_YELLOW}💡 Next steps:${NC}"
     echo -e "   • Configure your LLM API keys in the web interface"
-    echo -e "   • Check the status with: ./run-v2.sh status"
-    echo -e "   • View logs with: ./run-v2.sh logs"
+    echo -e "   • Check the status with: ./run.sh status"
+    echo -e "   • View logs with: ./run.sh logs"
     echo ""
 }
 
@@ -709,7 +709,7 @@ start_services() {
     for port in "${ports_to_check[@]}"; do
         if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
             echo -e "${COLOR_YELLOW}⚠️ Port $port is already in use${NC}"
-            echo -e "${COLOR_YELLOW}💡 Stop existing services first with './run-v2.sh stop'${NC}"
+            echo -e "${COLOR_YELLOW}💡 Stop existing services first with './run.sh stop'${NC}"
             return 1
         fi
     done
@@ -802,8 +802,8 @@ start_services() {
     echo ""
     echo -e "${COLOR_YELLOW}💡 Next steps:${NC}"
     echo -e "   • Open the web interface to configure your LLM API keys"
-    echo -e "   • Check service status: ./run-v2.sh status"
-    echo -e "   • View logs: ./run-v2.sh logs"
+    echo -e "   • Check service status: ./run.sh status"
+    echo -e "   • View logs: ./run.sh logs"
     echo ""
 }
 
@@ -818,7 +818,7 @@ start_worker() {
         existing_pid=$(cat "$ROOT_DIR/worker.pid")
         if kill -0 "$existing_pid" 2>/dev/null; then
             echo -e "${COLOR_YELLOW}⚠️ Worker already running (PID: $existing_pid)${NC}"
-            echo -e "${COLOR_YELLOW}💡 Use './run-v2.sh restart-worker' to restart${NC}"
+            echo -e "${COLOR_YELLOW}💡 Use './run.sh restart-worker' to restart${NC}"
             return 1
         else
             rm -f "$ROOT_DIR/worker.pid"
@@ -830,7 +830,7 @@ start_worker() {
     worker_count=$(pgrep -f "node dist/worker.js" | wc -l)
     if [[ $worker_count -gt 0 ]]; then
         echo -e "${COLOR_YELLOW}⚠️ Another worker process is already running${NC}"
-        echo -e "${COLOR_YELLOW}💡 Use './run-v2.sh restart-worker' to restart${NC}"
+        echo -e "${COLOR_YELLOW}💡 Use './run.sh restart-worker' to restart${NC}"
         return 1
     fi
 
@@ -1377,7 +1377,7 @@ start_dev_server() {
     # Check if port 3003 is already in use
     if lsof -Pi :3003 -sTCP:LISTEN -t >/dev/null 2>&1; then
         echo -e "${COLOR_YELLOW}⚠️ Port 3003 is already in use${NC}"
-        echo -e "${COLOR_YELLOW}💡 Use './run-v2.sh stop-dev' to stop the existing server${NC}"
+        echo -e "${COLOR_YELLOW}💡 Use './run.sh stop-dev' to stop the existing server${NC}"
         return 1
     fi
 
@@ -1532,7 +1532,7 @@ main() {
                     tail -f "$ROOT_DIR/dev-server.log"
                 else
                     echo -e "${COLOR_YELLOW}⚠️ No development server log found${NC}"
-                    echo -e "${COLOR_CYAN}💡 Start the dev server first with: ./run-v2.sh dev${NC}"
+                    echo -e "${COLOR_CYAN}💡 Start the dev server first with: ./run.sh dev${NC}"
                 fi
                 ;;
             install|deploy)

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Tool } from '../../../../types.ts';
+import { getConfig } from '../../../../config.ts';
 import {
   makeAlphaVantageRequest,
   formatAlphaVantageResponse,
@@ -22,16 +23,22 @@ export const globalQuoteTool: Tool<typeof GlobalQuoteParams> = {
   execute: async (params, context) => {
     const { log } = context;
     const parsedParams = GlobalQuoteParams.parse(params);
-    
+
     try {
-      log.info('Fetching global quote data', { 
-        symbol: parsedParams.symbol 
+      log.info('Fetching global quote data', {
+        symbol: parsedParams.symbol
       });
+
+      // Get API key from config if not provided
+      const apiKey = parsedParams.apikey || getConfig().ALPHA_VANTAGE_API_KEY;
+      if (!apiKey) {
+        throw new Error('Alpha Vantage API key is required. Please set ALPHA_VANTAGE_API_KEY in your .env file or provide it as a parameter.');
+      }
 
       // Prepare API parameters
       const apiParams: Record<string, string> = {
         symbol: parsedParams.symbol,
-        apikey: parsedParams.apikey,
+        apikey: apiKey,
       };
 
       // Add optional parameters

@@ -104,6 +104,7 @@ import {
   // Technical analysis
   smaTool,
   rsiTool,
+  indicatorTool,
   
   // Forex
   fxDailyTool,

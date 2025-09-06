@@ -103,8 +103,8 @@ git clone https://github.com/Jboner-Corvus/AgenticForge.git
 cd AgenticForge
 
 # 2. Instalação completamente automatizada
-chmod +x run-v2.sh
-./run-v2.sh install
+chmod +x run.sh
+./run.sh install
 ```
 
 **Opção 3: Instalação interativa**
@@ -115,8 +115,8 @@ git clone https://github.com/Jboner-Corvus/AgenticForge.git
 cd AgenticForge
 
 # 2. Iniciar o console de gerenciamento do AgenticForge
-chmod +x run-v2.sh
-./run-v2.sh
+chmod +x run.sh
+./run.sh
 ```
 
 **Console de Gerenciamento de Produção:**
@@ -257,26 +257,26 @@ O sistema testa as chaves em ordem de confiabilidade e alterna automaticamente s
 
 ```bash
 # Acesse todos os recursos via console
-./run-v2.sh
+./run.sh
 ```
 
 ### Comandos de Produção Rápidos
 
 ```bash
 # Inicialização completa
-./run-v2.sh start
+./run.sh start
 
 # Verificar status dos serviços
-./run-v2.sh status
+./run.sh status
 
 # Visualizar logs do sistema
-./run-v2.sh logs
+./run.sh logs
 
 # Reiniciar após modificação de configuração
-./run-v2.sh restart
+./run.sh restart
 
 # Desligamento limpo do sistema
-./run-v2.sh stop
+./run.sh stop
 ```
 
 ### 🧪 Testes API Completos
@@ -311,7 +311,7 @@ As ferramentas de qualidade de código (lint, TypeScript, formatação) estão i
 
 ```bash
 # Console de gerenciamento completo
-./run-v2.sh
+./run.sh
 
 # Ou diretamente:
 pnpm run lint      # Verificação de qualidade do código
@@ -457,14 +457,14 @@ pnpm run format    # Formatação automática
 
 ### Gerenciamento Avançado do Sistema
 
-| Ação                     | Comando                     | Uso                                    |
-| ------------------------ | --------------------------- | -------------------------------------- |
-| **Console Completo**     | `./run-v2.sh`               | Interface principal de gerenciamento   |
-| **Inicialização Rápida** | `./run-v2.sh start`         | Inicialização direta do sistema        |
-| **Monitoramento**        | `./run-v2.sh status`        | Status dos serviços Docker             |
-| **Logs em Tempo Real**   | `./run-v2.sh logs`          | Monitoramento em tempo real            |
-| **Reinicialização**      | `./run-v2.sh restart`       | Após modificação de configuração       |
-| **Manutenção**           | `./run-v2.sh` → Opções 7-14 | Testes, lint, formatação, reconstrução |
+| Ação                  | Comando                       | Uso                                   |
+| --------------------- | ----------------------------- | ------------------------------------- |
+| **Console Completo**  | `./run.sh`                    | Interface principal de gerenciamento  |
+| **Inicialização Rápida** | `./run.sh start`            | Inicialização direta do sistema       |
+| **Monitoramento**     | `./run.sh status`             | Status dos serviços Docker            |
+| **Logs em Tempo Real**| `./run.sh logs`               | Monitoramento em tempo real           |
+| **Reinicialização**   | `./run.sh restart`            | Após modificação de configuração      |
+| **Manutenção**        | `./run.sh` → Opções 7-14      | Testes, lint, formatação, reconstrução |
 
 ---
 
@@ -521,6 +521,6 @@ Este projeto está licenciado sob a Licença MIT. Veja o arquivo `LICENSE` para 
 
 _Forje seu futuro tecnológico._
 
-[![Começar](https://img.shields.io/badge/🚀_Começar-brightgreen?style=for-the-badge)](./run-v2.sh)
+[![Começar](https://img.shields.io/badge/🚀_Começar-brightgreen?style=for-the-badge)](./run.sh)
 
 </div>

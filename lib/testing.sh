@@ -215,7 +215,7 @@ run_integration_tests_only() {
     # Verify services are running for integration tests
     if ! check_services_for_integration; then
         test_log "ERROR: Required services not running for integration tests"
-        test_log "Please start services first with: ./run-v2.sh start"
+        test_log "Please start services first with: ./run.sh start"
         return 1
     fi
     

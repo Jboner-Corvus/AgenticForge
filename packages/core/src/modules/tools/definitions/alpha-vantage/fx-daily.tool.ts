@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getConfig } from '../../../../config.ts';
 import type { Tool } from '../../../../types.ts';
 import {
   makeAlphaVantageRequest,
@@ -40,9 +41,9 @@ export const fxDailyTool: Tool<typeof FXDailyParams> = {
       const apiParams: Record<string, string> = {
         from_symbol: parsedParams.from_symbol,
         to_symbol: parsedParams.to_symbol,
-        outputsize: parsedParams.outputsize,
-        datatype: parsedParams.datatype,
-        apikey: parsedParams.apikey,
+        outputsize: parsedParams.outputsize || 'compact',
+        datatype: parsedParams.datatype || 'json',
+        apikey: parsedParams.apikey || getConfig().ALPHA_VANTAGE_API_KEY || '',
       };
 
       const data = await makeAlphaVantageRequest('FX_DAILY', apiParams, parsedParams.datatype);

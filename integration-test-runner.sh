@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# =============================================================================
+# =============================================================================  
 # AgenticForge Integration Test Runner
-# =============================================================================
+# =============================================================================  
 # Sequential execution of all integration tests with detailed reporting
-# =============================================================================
+# =============================================================================  
 
 set -eo pipefail
 
@@ -200,6 +200,28 @@ run_e2e_tests() {
     cd "$ROOT_DIR"
 }
 
+# Run trading tools tests
+run_trading_tests() {
+    echo -e "${COLOR_CYAN}💰 Running trading tools tests...${NC}"
+    
+    # Check if core package exists
+    if [[ ! -d "$ROOT_DIR/packages/core" ]]; then
+        log_test_result "Trading tests directory check" "SKIP"
+        return 0
+    fi
+    
+    cd "$ROOT_DIR/packages/core"
+    
+    # Check if trading test script exists
+    if [[ -f "tests/unit/tools/definitions/trading/trading-tools-test.sh" ]]; then
+        run_single_test "Trading Tools Tests" "cd $ROOT_DIR/packages/core && ./tests/unit/tools/definitions/trading/trading-tools-test.sh"
+    else
+        log_test_result "Trading Tools Tests" "SKIP" "0" "Script not found"
+    fi
+    
+    cd "$ROOT_DIR"
+}
+
 # Run script-based integration tests
 run_script_integration_tests() {
     echo -e "${COLOR_CYAN}📜 Running script-based integration tests...${NC}"
@@ -283,16 +305,18 @@ show_usage() {
     echo "  ./integration-test-runner.sh [options]"
     echo ""
     echo "Options:"
-    echo "  -h, --help     Show this help message"
-    echo "  -v, --verbose  Enable verbose output"
-    echo "  --core-only    Run only core package tests"
-    echo "  --ui-only      Run only UI package tests"
-    echo "  --e2e-only     Run only end-to-end tests"
-    echo "  --scripts-only Run only script-based tests"
+    echo "  -h, --help        Show this help message"
+    echo "  -v, --verbose     Enable verbose output"
+    echo "  --core-only       Run only core package tests"
+    echo "  --ui-only         Run only UI package tests"
+    echo "  --e2e-only        Run only end-to-end tests"
+    echo "  --scripts-only    Run only script-based tests"
+    echo "  --trading-only    Run only trading tools tests"
     echo ""
     echo "Examples:"
     echo "  ./integration-test-runner.sh          # Run all integration tests"
     echo "  ./integration-test-runner.sh --core-only  # Run only core tests"
+    echo "  ./integration-test-runner.sh --trading-only  # Run only trading tests"
 }
 
 # Parse command line arguments
@@ -323,6 +347,10 @@ parse_args() {
                 RUN_SCRIPTS_ONLY=true
                 shift
                 ;;
+            --trading-only)
+                RUN_TRADING_ONLY=true
+                shift
+                ;;
             *)
                 echo -e "${COLOR_RED}❌ Unknown option: $1${NC}"
                 show_usage
@@ -338,6 +366,7 @@ main() {
     local RUN_UI_ONLY=false
     local RUN_E2E_ONLY=false
     local RUN_SCRIPTS_ONLY=false
+    local RUN_TRADING_ONLY=false
     
     # Parse command line arguments
     parse_args "$@"
@@ -377,12 +406,15 @@ main() {
         run_e2e_tests
     elif [[ "$RUN_SCRIPTS_ONLY" == true ]]; then
         run_script_integration_tests
+    elif [[ "$RUN_TRADING_ONLY" == true ]]; then
+        run_trading_tests
     else
         # Run all tests
         run_core_integration_tests
         run_ui_integration_tests
         run_e2e_tests
         run_script_integration_tests
+        run_trading_tests
     fi
     
     # Generate final report

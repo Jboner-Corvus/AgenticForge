@@ -1331,8 +1331,9 @@ export const useAgentStream = () => {
                 // Check if content contains debugging JSON with "thought" field, agent interactions, or todos
                 try {
                   const parsed = JSON.parse(data.content);
-                  if (parsed.thought || parsed.command || parsed.interaction || 
-                      parsed.todos || parsed.stats || (parsed.type && parsed.type.includes('todo'))) {
+                  // Only filter if it's clearly agent internal data (not canvas content)
+                  if (parsed.thought && parsed.command && !parsed.content &&
+                      (parsed.todos || parsed.stats || (parsed.type && parsed.type.includes('todo')))) {
                     console.warn(
                       '🚫 [useAgentStream] Filtered out agent thought/interaction/todo from canvas - keeping in chat only',
                     );
@@ -1340,18 +1341,15 @@ export const useAgentStream = () => {
                   }
                 } catch {
                   // Not JSON, check for debugging patterns, agent thought patterns, and todo patterns in text content
+                  // Be more specific to avoid filtering legitimate canvas content
                   if (
-                    data.content.includes('"thought"') ||
-                    data.content.includes('```json') ||
-                    data.content.includes('thinking:') ||
-                    data.content.includes('réflexion:') ||
-                    data.content.includes('"todos"') ||
-                    data.content.includes('"status"') ||
+                    (data.content.includes('"thought"') && data.content.includes('"command"') && !data.content.includes('<')) ||
+                    (data.content.includes('```json') && data.content.includes('"thought"')) ||
+                    (data.content.includes('thinking:') && data.content.length < 200) ||
+                    (data.content.includes('réflexion:') && data.content.length < 200) ||
                     data.content.includes('claude_code_todo') ||
                     data.content.includes('unified_todo') ||
-                    data.content.includes('todo_list') ||
-                    (data.content.includes('{') &&
-                      data.content.includes('"command"'))
+                    (data.content.includes('todo_list') && !data.content.includes('<'))
                   ) {
                     console.warn(
                       '🚫 [useAgentStream] Filtered out agent thought/interaction/todo from canvas - keeping in chat only',

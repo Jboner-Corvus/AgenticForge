@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getConfig } from '../../../../config.ts';
 import type { Tool } from '../../../../types.ts';
 import {
   makeAlphaVantageRequest,
@@ -19,7 +20,7 @@ export const inflationTool: Tool<typeof InflationParams> = {
       log.info('Fetching inflation rates data');
 
       const apiParams: Record<string, string> = {
-        apikey: parsedParams.apikey,
+        apikey: parsedParams.apikey || getConfig().ALPHA_VANTAGE_API_KEY || '',
       };
 
       const data = await makeAlphaVantageRequest('INFLATION', apiParams);

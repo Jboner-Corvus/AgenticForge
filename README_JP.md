@@ -14,12 +14,12 @@
   <a href="README_ES.md">Español</a>
 </p> 
 <h3 align="center">
-      新しい100%自律的で無料のローカルAIエージェント
+      新しい100%自律ので無料のローカルAIエージェント
 </h3>
 
 <p align="center">
   <em>
-    新しい100%自律的で無料のローカルAIエージェントで、完全なプライバシーを確保。MCPプロトコルで完全に設計され、複雑なタスクを実行し、コードを書き、独自のツールを鍛造し、ユーザーインターフェースに直接表示して完全な透明性を実現。設定可能な階層に従うインテリジェントなAPIキールータにより、リクエストを使い果たすことがないように自動的に切り替えます。プライベートAIの未来を探求する準備はできていますか？
+    新しい100%自律ので無料のローカルAIエージェントで、完全なプライバシーを確保。MCPプロトコルで完全に設計され、複雑なタスクを実行し、コードを書き、独自のツールを鍛造し、ユーザーインターフェースに直接表示して完全な透明性を実現。設定可能な階層に従うインテリジェントなAPIキールータにより、リクエストを使い果たすことがないように自動的に切り替えます。プライベートAIの未来を探求する準備はできていますか？
   </em>
 </p>
 <br>
@@ -97,26 +97,26 @@ curl -fsSL https://raw.githubusercontent.com/Jboner-Corvus/AgenticForge/main/ins
 
 **オプション2：クラシックインストール**
 
-```bash
+```
 # 1. プロジェクトをクローン
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
 cd AgenticForge
 
 # 2. 完全自動インストール
-chmod +x run-v2.sh
-./run-v2.sh install
+chmod +x run.sh
+./run.sh install
 ```
 
 **オプション3：インタラクティブインストール**
 
-```bash
+```
 # 1. プロジェクトをクローン
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
 cd AgenticForge
 
 # 2. AgenticForge管理コンソールを起動
-chmod +x run-v2.sh
-./run-v2.sh
+chmod +x run.sh
+./run.sh
 ```
 
 **本番環境管理コンソール：**
@@ -156,7 +156,7 @@ chmod +x run-v2.sh
 
 初回起動時、`.env`ファイルがデフォルト値で作成されます。クイックスタートのために最初のAPIキーをそこで設定できます。
 
-```env
+```
 # === AGENTIC FORGE 設定 ===
 
 # アクセスポート
@@ -255,28 +255,28 @@ AgenticForgeは、Webインターフェースから直接アクセスできる�
 
 ### インタラクティブ管理コンソール
 
-```bash
+```
 # コンソール経由ですべての機能にアクセス
-./run-v2.sh
+./run.sh
 ```
 
 ### クイック本番コマンド
 
-```bash
+```
 # 完全起動
-./run-v2.sh start
+./run.sh start
 
 # サービスステータスの確認
-./run-v2.sh status
+./run.sh status
 
 # システムログの表示
-./run-v2.sh logs
+./run.sh logs
 
 # 設定変更後の再起動
-./run-v2.sh restart
+./run.sh restart
 
 # システムのクリーンシャットダウン
-./run-v2.sh stop
+./run.sh stop
 ```
 
 ### 🧪 完全APIテスト
@@ -311,7 +311,7 @@ AgenticForgeには、API経由でエージェント機能を検証するため�
 
 ```bash
 # 完全管理コンソール
-./run-v2.sh
+./run.sh
 
 # または直接：
 pnpm run lint      # コード品質検証
@@ -459,12 +459,12 @@ pnpm run format    # 自動フォーマット
 
 | 操作               | コマンド                       | 使用法                             |
 | ------------------ | ------------------------------ | ---------------------------------- |
-| **完全コンソール** | `./run-v2.sh`                  | メイン管理インターフェース         |
-| **クイック起動**   | `./run-v2.sh start`            | 直接システム起動                   |
-| **監視**           | `./run-v2.sh status`           | Dockerサービスステータス           |
-| **ライブログ**     | `./run-v2.sh logs`             | リアルタイム監視                   |
-| **再起動**         | `./run-v2.sh restart`          | 設定変更後                         |
-| **メンテナンス**   | `./run-v2.sh` → オプション7-14 | テスト、lint、フォーマット、再構築 |
+| **完全コンソール** | `./run.sh`                  | メイン管理インターフェース         |
+| **クイック起動**   | `./run.sh start`            | 直接システム起動                   |
+| **監視**           | `./run.sh status`           | Dockerサービスステータス           |
+| **ライブログ**     | `./run.sh logs`             | リアルタイム監視                   |
+| **再起動**         | `./run.sh restart`          | 設定変更後                         |
+| **メンテナンス**   | `./run.sh` → オプション7-14 | テスト、lint、フォーマット、再構築 |
 
 ---
 
@@ -521,6 +521,6 @@ pnpm run format    # 自動フォーマット
 
 _テクノロジーの未来を鍛造する。_
 
-[![開始](https://img.shields.io/badge/🚀_開始-brightgreen?style=for-the-badge)](./run-v2.sh)
+[![開始](https://img.shields.io/badge/🚀_開始-brightgreen?style=for-the-badge)](./run.sh)
 
 </div>

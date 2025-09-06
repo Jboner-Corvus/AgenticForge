@@ -20,6 +20,7 @@ import 'http';
 
 declare const configSchema: z.ZodObject<{
     AGENT_MAX_ITERATIONS: z.ZodDefault<z.ZodNumber>;
+    ALPHA_VANTAGE_API_KEY: z.ZodOptional<z.ZodString>;
     AUTH_TOKEN: z.ZodOptional<z.ZodString>;
     CODE_EXECUTION_TIMEOUT_MS: z.ZodDefault<z.ZodNumber>;
     CONTAINER_MEMORY_LIMIT: z.ZodDefault<z.ZodString>;
@@ -118,6 +119,7 @@ declare const configSchema: z.ZodObject<{
     AGENT_MAX_MALFORMED_RESPONSES: number;
     AGENT_MAX_LLM_FAILURES: number;
     AGENT_FALLBACK_ENABLED: boolean;
+    ALPHA_VANTAGE_API_KEY?: string | undefined;
     AUTH_TOKEN?: string | undefined;
     GITHUB_CLIENT_ID?: string | undefined;
     GITHUB_CLIENT_SECRET?: string | undefined;
@@ -140,6 +142,7 @@ declare const configSchema: z.ZodObject<{
     WORKER_WORKSPACE_PATH?: string | undefined;
 }, {
     AGENT_MAX_ITERATIONS?: number | undefined;
+    ALPHA_VANTAGE_API_KEY?: string | undefined;
     AUTH_TOKEN?: string | undefined;
     CODE_EXECUTION_TIMEOUT_MS?: number | undefined;
     CONTAINER_MEMORY_LIMIT?: string | undefined;

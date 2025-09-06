@@ -1,38 +1,37 @@
 // Alpha Vantage MCP Tools for AgenticForge
 // This module provides comprehensive financial data access through Alpha Vantage API
 
-// Core Stock Data Tools
+// Organized Tool Categories (6 main tools)
+export { coreStockApisTool } from './core_stock_apis.tool.ts';
+export { alphaIntelligenceTool } from './alpha_intelligence.tool.ts';
+export { economicIndicatorsTool } from './economic_indicators.tool.ts';
+export { forexTool } from './forex.tool.ts';
+export { technicalIndicatorsTool } from './technical_indicators.tool.ts';
+
+// Legacy individual tools (still available for backward compatibility)
 export { timeSeriesIntradayTool } from './time-series-intraday.tool.ts';
 export { timeSeriesDailyTool } from './time-series-daily.tool.ts';
 export { globalQuoteTool } from './global-quote.tool.ts';
 export { symbolSearchTool } from './symbol-search.tool.ts';
-
-// Fundamental Data Tools
 export { companyOverviewTool } from './company-overview.tool.ts';
-
-// News & Intelligence Tools
 export { newsSentimentTool } from './news-sentiment.tool.ts';
-
-// Technical Analysis Tools
 export { smaTool } from './sma.tool.ts';
 export { rsiTool } from './rsi.tool.ts';
-
-// Foreign Exchange Tools
+export { indicatorTool } from './indicator.tool.ts';
 export { fxDailyTool } from './fx-daily.tool.ts';
-
-// Cryptocurrency Tools
 export { digitalCurrencyDailyTool } from './digital-currency-daily.tool.ts';
-
-// Commodity Tools
 export { wtiTool } from './commodity-wti.tool.ts';
-
-// Economic Indicators Tools
 export { inflationTool } from './inflation.tool.ts';
-
-// Utility Tools
 export { pingTool } from './ping.tool.ts';
 
-// Import tools for array
+// Import organized tools
+import { coreStockApisTool } from './core_stock_apis.tool.ts';
+import { alphaIntelligenceTool } from './alpha_intelligence.tool.ts';
+import { economicIndicatorsTool } from './economic_indicators.tool.ts';
+import { forexTool } from './forex.tool.ts';
+import { technicalIndicatorsTool } from './technical_indicators.tool.ts';
+
+// Import legacy tools for backward compatibility
 import { timeSeriesIntradayTool } from './time-series-intraday.tool.ts';
 import { timeSeriesDailyTool } from './time-series-daily.tool.ts';
 import { globalQuoteTool } from './global-quote.tool.ts';
@@ -50,43 +49,36 @@ import { pingTool } from './ping.tool.ts';
 // Common utilities
 export * from './common.ts';
 
-// Tool categories for organization
+// Tool categories for organization (organized into 6 main categories)
 export const ALPHA_VANTAGE_TOOL_CATEGORIES = {
-  CORE_STOCK: [
-    'time_series_intraday',
-    'time_series_daily', 
-    'global_quote',
-    'symbol_search'
+  CORE_STOCK_APIS: [
+    'core_stock_apis'
   ],
-  FUNDAMENTAL: [
-    'company_overview'
-  ],
-  NEWS_INTELLIGENCE: [
-    'news_sentiment'
-  ],
-  TECHNICAL_ANALYSIS: [
-    'sma',
-    'rsi'
-  ],
-  FOREX: [
-    'fx_daily'
-  ],
-  CRYPTOCURRENCY: [
-    'digital_currency_daily'
-  ],
-  COMMODITIES: [
-    'wti'
+  ALPHA_INTELLIGENCE: [
+    'alpha_intelligence'
   ],
   ECONOMIC_INDICATORS: [
-    'inflation'
+    'economic_indicators'
   ],
-  UTILITIES: [
-    'alpha_vantage_ping'
+  FOREX: [
+    'forex'
+  ],
+  TECHNICAL_INDICATORS: [
+    'technical_indicators'
   ]
 } as const;
 
-// All tools array for convenience
+// All tools array for convenience (organized 6 main tools)
 export const ALL_ALPHA_VANTAGE_TOOLS = [
+  coreStockApisTool,
+  alphaIntelligenceTool,
+  economicIndicatorsTool,
+  forexTool,
+  technicalIndicatorsTool,
+] as const;
+
+// Legacy tools array for backward compatibility
+export const ALL_ALPHA_VANTAGE_LEGACY_TOOLS = [
   timeSeriesIntradayTool,
   timeSeriesDailyTool,
   globalQuoteTool,

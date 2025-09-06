@@ -97,6 +97,17 @@ const result = await globalQuoteTool.execute({
   - `datatype` : "json" ou "csv"
   - `entitlement` : "delayed" ou "realtime" (optionnel)
 
+#### `indicator`
+- **Description** : Indicateur technique unifié (RSI, SMA, EMA, MACD, STOCH, BBANDS)
+- **Paramètres** :
+  - `symbol` : Symbole boursier
+  - `interval` : Intervalle de temps
+  - `indicator_type` : Type d'indicateur ("rsi", "sma", "ema", "macd", "stoch", "bbands")
+  - `time_period` : Période de calcul (défaut: 14 pour RSI, 20 pour SMA)
+  - `series_type` : Type de série ("close", "open", "high", "low")
+  - `datatype` : "json" ou "csv"
+  - `entitlement` : "delayed" ou "realtime" (optionnel)
+
 ### Devises (Forex)
 
 #### `fx_daily`
@@ -137,7 +148,7 @@ const result = await globalQuoteTool.execute({
 ## 🔧 Exemples d'Utilisation
 
 ```typescript
-import { globalQuoteTool, timeSeriesIntradayTool, newsSentimentTool } from './alpha-vantage';
+import { globalQuoteTool, timeSeriesIntradayTool, newsSentimentTool, indicatorTool } from './alpha-vantage';
 
 // Obtenir le prix actuel d'une action
 const quote = await globalQuoteTool.execute({
@@ -156,6 +167,24 @@ const intraday = await timeSeriesIntradayTool.execute({
 const sentiment = await newsSentimentTool.execute({
   tickers: 'AAPL,MSFT',
   limit: 10,
+  apikey: process.env.ALPHA_VANTAGE_API_KEY
+}, context);
+
+// Obtenir un indicateur technique (par exemple, RSI)
+const rsi = await indicatorTool.execute({
+  symbol: 'TSLA',
+  interval: 'daily',
+  indicator_type: 'rsi',
+  time_period: 14,
+  apikey: process.env.ALPHA_VANTAGE_API_KEY
+}, context);
+
+// Obtenir une moyenne mobile simple
+const sma = await indicatorTool.execute({
+  symbol: 'AAPL',
+  interval: 'daily',
+  indicator_type: 'sma',
+  time_period: 20,
   apikey: process.env.ALPHA_VANTAGE_API_KEY
 }, context);
 ```

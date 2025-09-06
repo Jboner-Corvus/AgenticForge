@@ -157,14 +157,14 @@ check_worker_status() {
     # Check if main services are running
     if ! curl -s "$API_BASE_URL/api/health" >/dev/null; then
         echo -e "${COLOR_RED}❌ AgenticForge API not responding${NC}"
-        echo -e "${COLOR_YELLOW}💡 Start services with: ../run-v2.sh start${NC}"
+        echo -e "${COLOR_YELLOW}💡 Start services with: ../run.sh start${NC}"
         return 1
     fi
     
     # Check if worker process is running
     if ! pgrep -f "node dist/worker.js" >/dev/null; then
         echo -e "${COLOR_RED}❌ AgenticForge worker not running${NC}"
-        echo -e "${COLOR_YELLOW}💡 Start worker with: ../run-v2.sh restart-worker${NC}"
+        echo -e "${COLOR_YELLOW}💡 Start worker with: ../run.sh restart-worker${NC}"
         return 1
     fi
     

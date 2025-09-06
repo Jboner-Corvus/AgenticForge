@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getConfig } from '../../../../config.ts';
 import type { Tool } from '../../../../types.ts';
 import {
   makeAlphaVantageRequest,
@@ -51,10 +52,9 @@ export const rsiTool: Tool<typeof RSIParams> = {
       const apiParams: Record<string, string> = {
         symbol: parsedParams.symbol,
         interval: parsedParams.interval,
-        time_period: parsedParams.time_period.toString(),
+        time_period: parsedParams.time_period?.toString() || '60',
         series_type: parsedParams.series_type,
-        datatype: parsedParams.datatype,
-        apikey: parsedParams.apikey,
+        apikey: parsedParams.apikey || getConfig().ALPHA_VANTAGE_API_KEY || '',
       };
 
       // Add optional parameters

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getConfig } from '../../../../config.ts';
 import type { Tool } from '../../../../types.ts';
 import {
   makeAlphaVantageRequest,
@@ -52,28 +53,20 @@ export const newsSentimentTool: Tool<typeof NewsSentimentParams> = {
       });
 
       const apiParams: Record<string, string> = {
-        apikey: parsedParams.apikey,
         sort: parsedParams.sort,
-        limit: parsedParams.limit.toString(),
+        limit: parsedParams.limit?.toString() || '1000',
+        apikey: parsedParams.apikey || getConfig().ALPHA_VANTAGE_API_KEY || '',
       };
-
-      // Add optional parameters
+      
+      // Conditionally add optional parameters
       if (parsedParams.tickers) {
         apiParams.tickers = parsedParams.tickers;
       }
-
+      
       if (parsedParams.topics) {
         apiParams.topics = parsedParams.topics;
       }
-
-      if (parsedParams.time_from) {
-        apiParams.time_from = parsedParams.time_from;
-      }
-
-      if (parsedParams.time_to) {
-        apiParams.time_to = parsedParams.time_to;
-      }
-
+      
       const data = await makeAlphaVantageRequest('NEWS_SENTIMENT', apiParams);
       
       log.info('Successfully fetched news sentiment data', { 

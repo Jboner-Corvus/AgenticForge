@@ -103,8 +103,8 @@ git clone https://github.com/Jboner-Corvus/AgenticForge.git
 cd AgenticForge
 
 # 2. Instalación completamente automatizada
-chmod +x run-v2.sh
-./run-v2.sh install
+chmod +x run.sh
+./run.sh install
 ```
 
 **Opción 3: Instalación interactiva**
@@ -115,8 +115,8 @@ git clone https://github.com/Jboner-Corvus/AgenticForge.git
 cd AgenticForge
 
 # 2. Iniciar la consola de gestión de AgenticForge
-chmod +x run-v2.sh
-./run-v2.sh
+chmod +x run.sh
+./run.sh
 ```
 
 **Consola de Gestión de Producción:**
@@ -257,26 +257,26 @@ El sistema prueba las claves en orden de confiabilidad y cambia automáticamente
 
 ```bash
 # Acceder a todas las funciones mediante consola
-./run-v2.sh
+./run.sh
 ```
 
 ### Comandos de Producción Rápidos
 
 ```bash
 # Inicio completo
-./run-v2.sh start
+./run.sh start
 
 # Verificar estado de servicios
-./run-v2.sh status
+./run.sh status
 
 # Ver registros del sistema
-./run-v2.sh logs
+./run.sh logs
 
 # Reiniciar después de modificación de configuración
-./run-v2.sh restart
+./run.sh restart
 
 # Apagado limpio del sistema
-./run-v2.sh stop
+./run.sh stop
 ```
 
 ### 🧪 Pruebas API Completas
@@ -311,7 +311,7 @@ Las herramientas de calidad de código (lint, TypeScript, formato) están integr
 
 ```bash
 # Consola de gestión completa
-./run-v2.sh
+./run.sh
 
 # O directamente:
 pnpm run lint      # Verificación de calidad de código
@@ -340,7 +340,7 @@ pnpm run format    # Formateo automático
 2. **Probar** la forja de herramientas MCP en tiempo real:
    ```
    "Crea una herramienta MCP personalizada para analizar registros del sistema,
-   códifica en TypeScript, intégrala al worker y pruébala inmediatamente"
+   códifica en TypeScript, integra al worker y pruébala inmediatamente"
    ```
 3. **O probar** la ejecución directa del sistema:
    ```
@@ -400,7 +400,7 @@ pnpm run format    # Formateo automático
 
 #### 📚 Documentación Auto-Generada
 
-```bash
+``bash
 "Escanea recursivamente mi proyecto, analiza el código fuente, genera:
 - README.md detallado con diagramas de arquitectura
 - Documentación API con Swagger/OpenAPI
@@ -457,14 +457,14 @@ pnpm run format    # Formateo automático
 
 ### Gestión Avanzada del Sistema
 
-| Acción                | Comando                       | Uso                                      |
-| --------------------- | ----------------------------- | ---------------------------------------- |
-| **Consola Completa**  | `./run-v2.sh`                 | Interfaz principal de gestión            |
-| **Inicio Rápido**     | `./run-v2.sh start`           | Lanzamiento directo del sistema          |
-| **Monitoreo**         | `./run-v2.sh status`          | Estado de servicios Docker               |
-| **Registros en Vivo** | `./run-v2.sh logs`            | Monitoreo en tiempo real                 |
-| **Reiniciar**         | `./run-v2.sh restart`         | Después de modificación de configuración |
-| **Mantenimiento**     | `./run-v2.sh` → Opciones 7-14 | Pruebas, lint, formato, reconstrucción   |
+| Acción                | Comando                       | Uso                                   |
+| --------------------- | ----------------------------- | ------------------------------------- |
+| **Consola Completa**  | `./run.sh`                    | Interfaz principal de gestión         |
+| **Inicio Rápido**     | `./run.sh start`              | Lanzamiento directo del sistema       |
+| **Monitoreo**         | `./run.sh status`             | Estado de servicios Docker            |
+| **Registros en Vivo** | `./run.sh logs`               | Monitoreo en tiempo real              |
+| **Reiniciar**         | `./run.sh restart`            | Después de modificación de configuración |
+| **Mantenimiento**     | `./run.sh` → Opciones 7-14    | Pruebas, lint, formato, reconstrucción |
 
 ---
 
@@ -521,6 +521,6 @@ Este proyecto está licenciado bajo la Licencia MIT. Consulte el archivo `LICENS
 
 _Forje su futuro tecnológico._
 
-[![Comenzar](https://img.shields.io/badge/🚀_Comenzar-brightgreen?style=for-the-badge)](./run-v2.sh)
+[![Comenzar](https://img.shields.io/badge/🚀_Comenzar-brightgreen?style=for-the-badge)](./run.sh)
 
 </div>

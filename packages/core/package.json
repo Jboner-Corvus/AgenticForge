@@ -1,6 +1,6 @@
 {
   "name": "@gforge/core",
-  "version": "1.0.587",
+  "version": "1.0.601",
   "description": "G-Forge Core Backend",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,6 +21,7 @@
     "test:integration": "vitest run --mode integration",
     "test:tools": "NODE_ENV=development tsx src/test-tools.ts",
     "test:integration:runner": "../../integration-test-runner.sh --core-only",
+    "test:trading": "cd ../../ && ./integration-test-runner.sh --trading-only",
     "test:development-preferences": "NODE_ENV=development tsx test-development-preferences.ts",
     "lint": "eslint --fix --max-warnings 0 --no-warn-ignored src/**/*.ts",
     "typecheck": "tsc --noEmit",

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Tool } from '../../../../types.ts';
+import { getConfig } from '../../../../config.ts';
 import {
   makeAlphaVantageRequest,
   formatAlphaVantageResponse,
@@ -21,9 +22,15 @@ export const wtiTool: Tool<typeof WTIParams> = {
         interval: parsedParams.interval
       });
 
+      // Get API key from config if not provided
+      const apiKey = parsedParams.apikey || getConfig().ALPHA_VANTAGE_API_KEY;
+      if (!apiKey) {
+        throw new Error('Alpha Vantage API key is required. Please set ALPHA_VANTAGE_API_KEY in your .env file or provide it as a parameter.');
+      }
+
       const apiParams: Record<string, string> = {
         interval: parsedParams.interval,
-        apikey: parsedParams.apikey,
+        apikey: apiKey,
       };
 
       const data = await makeAlphaVantageRequest('WTI', apiParams);

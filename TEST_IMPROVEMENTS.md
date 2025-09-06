@@ -24,12 +24,12 @@
 Before running tests, make sure all AgenticForge services are running:
 ```bash
 cd /home/demon/agentforge/AgenticForge2/AgenticForge
-./run-v2.sh status
+./run.sh status
 ```
 
 If services are not running, start them:
 ```bash
-./run-v2.sh start
+./run.sh start
 ```
 
 ### 2. Check Worker Status
@@ -40,7 +40,7 @@ ps aux | grep worker
 
 If the worker is not running or needs to be restarted:
 ```bash
-./run-v2.sh restart-worker
+./run.sh restart-worker
 ```
 
 ### 3. Verify LLM API Keys

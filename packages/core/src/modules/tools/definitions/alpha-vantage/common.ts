@@ -5,7 +5,7 @@ export const ALPHA_VANTAGE_BASE_URL = 'https://www.alphavantage.co/query';
 
 // Common parameter schemas
 export const AlphaVantageBaseParams = z.object({
-  apikey: z.string().describe('Alpha Vantage API key'),
+  apikey: z.string().optional().describe('Alpha Vantage API key (optional if set in config)'),
 });
 
 export const SymbolParam = z.object({

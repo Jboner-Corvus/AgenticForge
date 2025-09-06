@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getConfig } from '../../../../config.ts';
 import type { Tool } from '../../../../types.ts';
 import {
   makeAlphaVantageRequest,
@@ -36,7 +37,7 @@ export const digitalCurrencyDailyTool: Tool<typeof DigitalCurrencyDailyParams> =
       const apiParams: Record<string, string> = {
         symbol: parsedParams.symbol,
         market: parsedParams.market,
-        apikey: parsedParams.apikey,
+        apikey: parsedParams.apikey || getConfig().ALPHA_VANTAGE_API_KEY || '',
       };
 
       const data = await makeAlphaVantageRequest('DIGITAL_CURRENCY_DAILY', apiParams);
