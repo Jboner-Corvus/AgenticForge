@@ -11,7 +11,7 @@ import {
   getMasterPrompt,
   initializeWorker,
   processJob
-} from "./chunk-TOSTBYYR.js";
+} from "./chunk-6HP76FCA.js";
 import {
   getAllTools
 } from "./chunk-RRNU2C2A.js";

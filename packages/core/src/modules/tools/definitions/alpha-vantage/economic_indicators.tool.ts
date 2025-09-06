@@ -25,7 +25,7 @@ const EconomicIndicatorsParams = z.object({
   interval: z.enum(['monthly', 'quarterly', 'annual', 'daily', 'weekly', 'semiannual']).optional().default('monthly').describe('Data interval'),
   maturity: z.enum(['3month', '2year', '5year', '7year', '10year', '30year']).optional().default('10year').describe('Treasury yield maturity - for TREASURY_YIELD'),
   datatype: z.enum(['json', 'csv']).optional().default('json').describe('Response format'),
-  apikey: z.string().optional().describe('Alpha Vantage API key (optional if set in config)'),
+  apikey: z.string().optional().describe('Alpha Vantage API key (automatically loaded from .env)'),
 });
 
 export const economicIndicatorsTool: Tool<typeof EconomicIndicatorsParams> = {

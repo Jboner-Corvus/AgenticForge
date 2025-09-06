@@ -34,7 +34,7 @@ const AlphaIntelligenceParams = z.object({
   calculations: z.string().optional().describe('Comma-separated analytics metrics - for ANALYTICS functions'),
   ohlc: z.enum(['open', 'high', 'low', 'close']).optional().default('close').describe('OHLC field for calculation - for ANALYTICS functions'),
   datatype: z.enum(['json', 'csv']).optional().default('json').describe('Response format'),
-  apikey: z.string().optional().describe('Alpha Vantage API key (optional if set in config)'),
+  apikey: z.string().optional().describe('Alpha Vantage API key (automatically loaded from .env)'),
 });
 
 export const alphaIntelligenceTool: Tool<typeof AlphaIntelligenceParams> = {

@@ -989,6 +989,709 @@ export class Agent {
       return this.generateLocalModeResponse(cleanText);
     }
 
+    // ===== PLAYWRIGHT AUTOMATION COMMANDS (SEPARATE FROM CANVAS) =====
+    // Playwright = Browser automation pour CAPTURER/INTERAGIR
+    // Canvas = UI component pour AFFICHER le contenu capturé
+    // PRIORITY: Check for explicit Playwright commands
+    if (cleanText.toLowerCase().includes('playwright_navigate')) {
+      const urlMatch = cleanText.match(/https?:\/\/[^\s<>"']+/i) || cleanText.match(/vers?\s+([^\s<>"']+)/i);
+      const url = urlMatch ? urlMatch[0] : 'https://example.com';
+      return JSON.stringify({
+        thought: `Navigation vers ${url}`,
+        command: {
+          name: 'playwright_navigate',
+          params: { url: url }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_click')) {
+      const selectorMatch = cleanText.match(/sur\s+(?:le\s+)?(?:lien\s+)?"([^"]+)"/i) || 
+                           cleanText.match(/click\s+(?:on\s+)?(?:the\s+)?"([^"]+)"/i) ||
+                           cleanText.match(/"([^"]+)"/);
+      const selector = selectorMatch ? selectorMatch[1] : 'a[href*="more"]';
+      return JSON.stringify({
+        thought: `Clic sur l'élément ${selector}`,
+        command: {
+          name: 'playwright_click',
+          params: { selector: selector }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_wait_for_selector')) {
+      const selectorMatch = cleanText.match(/attendre\s+(?:un\s+)?([^\s]+)/i) ||
+                           cleanText.match(/wait.*?for.*?([^\s]+)/i) ||
+                           cleanText.match(/h\d+/i);
+      const selector = selectorMatch ? selectorMatch[1] : 'h1';
+      return JSON.stringify({
+        thought: `Attente du sélecteur ${selector}`,
+        command: {
+          name: 'playwright_wait_for_selector',
+          params: { selector: selector }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_get_content')) {
+      return JSON.stringify({
+        thought: 'Extraction du contenu de la page',
+        command: {
+          name: 'playwright_get_content',
+          params: {}
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_type')) {
+      const textMatch = cleanText.match(/dans.*?"([^"]+)"/i) || 
+                       cleanText.match(/type.*?"([^"]+)"/i);
+      const text = textMatch ? textMatch[1] : 'test';
+      return JSON.stringify({
+        thought: `Saisie du texte: ${text}`,
+        command: {
+          name: 'playwright_type',
+          params: { selector: 'input', text: text }
+        }
+      });
+    }
+
+    // Additional Playwright commands
+    if (cleanText.toLowerCase().includes('playwright_screenshot')) {
+      return JSON.stringify({
+        thought: 'Capture d\'écran de la page',
+        command: {
+          name: 'playwright_screenshot',
+          params: { fullPage: true }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_set_viewport')) {
+      const sizeMatch = cleanText.match(/(\d+)x(\d+)/i);
+      const width = sizeMatch ? parseInt(sizeMatch[1]) : 1280;
+      const height = sizeMatch ? parseInt(sizeMatch[2]) : 720;
+      return JSON.stringify({
+        thought: `Configuration de la fenêtre ${width}x${height}`,
+        command: {
+          name: 'playwright_set_viewport',
+          params: { width: width, height: height }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_evaluate')) {
+      const codeMatch = cleanText.match(/console\.log\("([^"]+)"\)/i) ||
+                       cleanText.match(/"([^"]+)"/);
+      const code = codeMatch ? `console.log("${codeMatch[1]}")` : 'console.log("Test Browser Live View")';
+      return JSON.stringify({
+        thought: `Exécution du code JavaScript: ${code}`,
+        command: {
+          name: 'playwright_evaluate',
+          params: { expression: code }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_scroll')) {
+      return JSON.stringify({
+        thought: 'Défilement de la page vers le bas',
+        command: {
+          name: 'playwright_scroll',
+          params: { direction: 'down', amount: 500 }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_get_title')) {
+      return JSON.stringify({
+        thought: 'Récupération du titre de la page',
+        command: {
+          name: 'playwright_get_title',
+          params: {}
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_get_url')) {
+      return JSON.stringify({
+        thought: 'Récupération de l\'URL actuelle',
+        command: {
+          name: 'playwright_get_url',
+          params: {}
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_reload')) {
+      return JSON.stringify({
+        thought: 'Rechargement de la page',
+        command: {
+          name: 'playwright_reload',
+          params: {}
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_go_back')) {
+      return JSON.stringify({
+        thought: 'Retour à la page précédente',
+        command: {
+          name: 'playwright_go_back',
+          params: {}
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_go_forward')) {
+      return JSON.stringify({
+        thought: 'Avancer à la page suivante',
+        command: {
+          name: 'playwright_go_forward',
+          params: {}
+        }
+      });
+    }
+
+    // Console and DevTools commands
+    if (cleanText.toLowerCase().includes('playwright_console_log')) {
+      return JSON.stringify({
+        thought: 'Capture des logs de la console',
+        command: {
+          name: 'playwright_console_log',
+          params: { enable: true }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_console_error')) {
+      return JSON.stringify({
+        thought: 'Détection des erreurs console',
+        command: {
+          name: 'playwright_console_error',
+          params: { enable: true }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_console_warn')) {
+      return JSON.stringify({
+        thought: 'Détection des avertissements console',
+        command: {
+          name: 'playwright_console_warn',
+          params: { enable: true }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_inject_script')) {
+      const scriptMatch = cleanText.match(/injecter\s+(?:du\s+)?code\s+"([^"]+)"/i) ||
+                         cleanText.match(/inject.*?"([^"]+)"/i);
+      const script = scriptMatch ? scriptMatch[1] : 'console.log("Script injecté");';
+      return JSON.stringify({
+        thought: `Injection de script: ${script}`,
+        command: {
+          name: 'playwright_inject_script',
+          params: { script: script }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_evaluate_console')) {
+      const codeMatch = cleanText.match(/console\s+"([^"]+)"/i) ||
+                       cleanText.match(/exécuter.*?"([^"]+)"/i);
+      const code = codeMatch ? codeMatch[1] : 'document.title';
+      return JSON.stringify({
+        thought: `Exécution dans la console: ${code}`,
+        command: {
+          name: 'playwright_evaluate_console',
+          params: { expression: code }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_get_console_messages')) {
+      return JSON.stringify({
+        thought: 'Récupération des messages console',
+        command: {
+          name: 'playwright_get_console_messages',
+          params: {}
+        }
+      });
+    }
+
+    // Advanced interaction commands
+    if (cleanText.toLowerCase().includes('playwright_double_click')) {
+      const selectorMatch = cleanText.match(/sur\s+(?:l'élément\s+)?"?([^"]+)"?/i);
+      const selector = selectorMatch ? selectorMatch[1] : 'button';
+      return JSON.stringify({
+        thought: `Double-clic sur ${selector}`,
+        command: {
+          name: 'playwright_double_click',
+          params: { selector: selector }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_right_click')) {
+      const selectorMatch = cleanText.match(/sur\s+(?:l'élément\s+)?"?([^"]+)"?/i);
+      const selector = selectorMatch ? selectorMatch[1] : 'body';
+      return JSON.stringify({
+        thought: `Clic droit sur ${selector}`,
+        command: {
+          name: 'playwright_right_click',
+          params: { selector: selector }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_drag_and_drop')) {
+      return JSON.stringify({
+        thought: 'Glisser-déposer d\'éléments',
+        command: {
+          name: 'playwright_drag_and_drop',
+          params: { 
+            source: '.draggable-item',
+            target: '.drop-zone'
+          }
+        }
+      });
+    }
+
+    // Search commands
+    if (cleanText.toLowerCase().includes('playwright_search_google')) {
+      const termMatch = cleanText.match(/terme\s+"([^"]+)"/i) ||
+                       cleanText.match(/recherche\s+"([^"]+)"/i);
+      const term = termMatch ? termMatch[1] : 'test search';
+      return JSON.stringify({
+        thought: `Recherche Google: ${term}`,
+        command: {
+          name: 'playwright_search_google',
+          params: { query: term }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_search_youtube')) {
+      const termMatch = cleanText.match(/terme\s+"([^"]+)"/i) ||
+                       cleanText.match(/recherche\s+"([^"]+)"/i);
+      const term = termMatch ? termMatch[1] : 'programming tutorial';
+      return JSON.stringify({
+        thought: `Recherche YouTube: ${term}`,
+        command: {
+          name: 'playwright_search_youtube',
+          params: { query: term }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_search_github')) {
+      const termMatch = cleanText.match(/terme\s+"([^"]+)"/i) ||
+                       cleanText.match(/recherche\s+"([^"]+)"/i);
+      const term = termMatch ? termMatch[1] : 'playwright examples';
+      return JSON.stringify({
+        thought: `Recherche GitHub: ${term}`,
+        command: {
+          name: 'playwright_search_github',
+          params: { query: term }
+        }
+      });
+    }
+
+    // Performance monitoring
+    if (cleanText.toLowerCase().includes('playwright_measure_page_load')) {
+      return JSON.stringify({
+        thought: 'Mesure du temps de chargement de page',
+        command: {
+          name: 'playwright_measure_page_load',
+          params: {}
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_memory_usage')) {
+      return JSON.stringify({
+        thought: 'Monitoring de l\'utilisation mémoire',
+        command: {
+          name: 'playwright_memory_usage',
+          params: {}
+        }
+      });
+    }
+
+    // Network and security
+    if (cleanText.toLowerCase().includes('playwright_network_inspector')) {
+      return JSON.stringify({
+        thought: 'Inspection du trafic réseau',
+        command: {
+          name: 'playwright_network_inspector',
+          params: { enable: true }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_check_security_headers')) {
+      return JSON.stringify({
+        thought: 'Vérification des headers de sécurité',
+        command: {
+          name: 'playwright_check_security_headers',
+          params: {}
+        }
+      });
+    }
+
+    // Anti-detection and stealth commands
+    if (cleanText.toLowerCase().includes('playwright_stealth_mode')) {
+      return JSON.stringify({
+        thought: 'Activation du mode furtif complet',
+        command: {
+          name: 'playwright_stealth_mode',
+          params: { enable: true }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_random_user_agent')) {
+      return JSON.stringify({
+        thought: 'Configuration d\'un user-agent aléatoire réaliste',
+        command: {
+          name: 'playwright_random_user_agent',
+          params: { platform: 'random', browser: 'random' }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_fake_webgl_renderer')) {
+      return JSON.stringify({
+        thought: 'Simulation d\'un GPU différent',
+        command: {
+          name: 'playwright_fake_webgl_renderer',
+          params: { 
+            renderer: 'NVIDIA GeForce GTX 1060',
+            vendor: 'NVIDIA Corporation'
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_spoof_canvas_fingerprint')) {
+      return JSON.stringify({
+        thought: 'Masquage de l\'empreinte canvas',
+        command: {
+          name: 'playwright_spoof_canvas_fingerprint',
+          params: { randomize: true }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_hide_webdriver_property')) {
+      return JSON.stringify({
+        thought: 'Masquage de la propriété webdriver',
+        command: {
+          name: 'playwright_hide_webdriver_property',
+          params: { hide: true }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_fake_plugins')) {
+      return JSON.stringify({
+        thought: 'Simulation de plugins navigateur réalistes',
+        command: {
+          name: 'playwright_fake_plugins',
+          params: { 
+            plugins: ['Chrome PDF Plugin', 'Adobe Flash Player', 'Java Applet Plug-in']
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_randomize_screen_resolution')) {
+      return JSON.stringify({
+        thought: 'Randomisation de la résolution d\'écran',
+        command: {
+          name: 'playwright_randomize_screen_resolution',
+          params: { 
+            common_resolutions: true,
+            avoid_uncommon: true
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_human_mouse_movement')) {
+      return JSON.stringify({
+        thought: 'Simulation de mouvements souris humains réalistes',
+        command: {
+          name: 'playwright_human_mouse_movement',
+          params: { 
+            enable_jitter: true,
+            realistic_curves: true,
+            random_delays: true
+          }
+        }
+      });
+    }
+
+    // Bypass detection systems
+    if (cleanText.toLowerCase().includes('playwright_bypass_cloudflare')) {
+      return JSON.stringify({
+        thought: 'Contournement des protections Cloudflare',
+        command: {
+          name: 'playwright_bypass_cloudflare',
+          params: { 
+            method: 'stealth',
+            challenge_solver: true
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_bypass_recaptcha')) {
+      return JSON.stringify({
+        thought: 'Contournement des reCAPTCHA',
+        command: {
+          name: 'playwright_bypass_recaptcha',
+          params: { 
+            solver: 'ai_based',
+            audio_fallback: true
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_human_typing_speed')) {
+      return JSON.stringify({
+        thought: 'Simulation de vitesse de frappe humaine variable',
+        command: {
+          name: 'playwright_human_typing_speed',
+          params: { 
+            wpm_min: 40,
+            wpm_max: 80,
+            errors: true,
+            corrections: true
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_rotating_proxy')) {
+      return JSON.stringify({
+        thought: 'Rotation automatique de proxies',
+        command: {
+          name: 'playwright_rotating_proxy',
+          params: { 
+            proxy_list: ['residential', 'datacenter'],
+            rotation_interval: 300,
+            country_rotation: true
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_spoof_timezone')) {
+      return JSON.stringify({
+        thought: 'Changement du fuseau horaire',
+        command: {
+          name: 'playwright_spoof_timezone',
+          params: { 
+            timezone: 'random',
+            match_proxy_location: true
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_behavioral_pattern_analysis')) {
+      return JSON.stringify({
+        thought: 'Analyse des patterns comportementaux pour éviter détection',
+        command: {
+          name: 'playwright_behavioral_pattern_analysis',
+          params: { 
+            learn_from_humans: true,
+            adaptive_behavior: true,
+            pattern_randomization: true
+          }
+        }
+      });
+    }
+
+    // ===== CANVAS DISPLAY COMMANDS (SEPARATE FROM PLAYWRIGHT) =====
+    // Canvas = Interface UI pour AFFICHER du contenu
+    // Playwright = Outil pour CAPTURER/AUTOMATISER des sites web
+    // NE JAMAIS CONFONDRE LES DEUX !
+    // Canvas display and rendering commands
+    if (cleanText.toLowerCase().includes('canvas_display_simple_html')) {
+      return JSON.stringify({
+        thought: 'Affichage de HTML basique dans le canvas',
+        command: {
+          name: 'displayCanvas',
+          params: { 
+            contentType: 'html',
+            content: '<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Hello World</h1></body></html>',
+            title: 'HTML Simple'
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_complex_website')) {
+      return JSON.stringify({
+        thought: 'Affichage d\'un site web complexe dans le canvas',
+        command: {
+          name: 'displayCanvas',
+          params: { 
+            contentType: 'website',
+            url: 'https://example.com',
+            title: 'Site Web Complexe',
+            interactive: true
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_interactive_game')) {
+      return JSON.stringify({
+        thought: 'Affichage d\'un jeu HTML5 interactif',
+        command: {
+          name: 'displayCanvas',
+          params: { 
+            contentType: 'game',
+            gameType: 'html5',
+            title: 'Jeu Interactif',
+            interactive: true,
+            fullscreen: true
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_video_content')) {
+      return JSON.stringify({
+        thought: 'Affichage de contenu vidéo dans le canvas',
+        command: {
+          name: 'displayCanvas',
+          params: { 
+            contentType: 'video',
+            controls: true,
+            autoplay: false,
+            title: 'Contenu Vidéo'
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_3d_graphics')) {
+      return JSON.stringify({
+        thought: 'Affichage de graphiques 3D WebGL',
+        command: {
+          name: 'displayCanvas',
+          params: { 
+            contentType: 'webgl',
+            graphics: '3d',
+            interactive: true,
+            title: 'Graphiques 3D'
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_screenshot_full_page')) {
+      return JSON.stringify({
+        thought: 'Capture d\'écran de la page entière',
+        command: {
+          name: 'playwright_screenshot',
+          params: { 
+            fullPage: true,
+            quality: 90,
+            type: 'png'
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_render_real_time_data')) {
+      return JSON.stringify({
+        thought: 'Rendu de données temps réel dans le canvas',
+        command: {
+          name: 'displayCanvas',
+          params: { 
+            contentType: 'data',
+            realTime: true,
+            updateInterval: 1000,
+            title: 'Données Temps Réel',
+            charts: true
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_code_editor')) {
+      return JSON.stringify({
+        thought: 'Affichage d\'un éditeur de code',
+        command: {
+          name: 'displayCanvas',
+          params: { 
+            contentType: 'code',
+            language: 'javascript',
+            theme: 'dark',
+            lineNumbers: true,
+            title: 'Éditeur de Code',
+            interactive: true
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_dashboard_app')) {
+      return JSON.stringify({
+        thought: 'Affichage d\'une application dashboard',
+        command: {
+          name: 'displayCanvas',
+          params: { 
+            contentType: 'dashboard',
+            widgets: ['charts', 'metrics', 'tables'],
+            realTime: true,
+            title: 'Dashboard Application',
+            responsive: true
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_bar_charts')) {
+      return JSON.stringify({
+        thought: 'Affichage de graphiques en barres',
+        command: {
+          name: 'displayCanvas',
+          params: { 
+            contentType: 'chart',
+            chartType: 'bar',
+            data: [10, 20, 30, 40, 50],
+            labels: ['A', 'B', 'C', 'D', 'E'],
+            title: 'Graphique en Barres',
+            animated: true
+          }
+        }
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_live_updates')) {
+      return JSON.stringify({
+        thought: 'Affichage de contenu avec mises à jour en direct',
+        command: {
+          name: 'displayCanvas',
+          params: { 
+            contentType: 'live',
+            updateMethod: 'websocket',
+            refreshRate: 2000,
+            title: 'Mises à Jour en Direct',
+            realTime: true
+          }
+        }
+      });
+    }
+
     // FIRST: Try to extract actual tool calls from the text
     // Support multiple formats:
     // 1. "Tool Call: toolName with params {...}"
@@ -2406,6 +3109,33 @@ export class Agent {
    */
   private detectIfShouldUseLocalMode(text: string): boolean {
     const lowerText = text.toLowerCase();
+
+    // Don't use local mode for playwright commands (browser automation/capture)
+    if (lowerText.includes('playwright_') || lowerText.includes('browser')) {
+      return false;
+    }
+
+    // Don't use local mode for web navigation commands (Playwright)
+    if (lowerText.includes('navigate') || lowerText.includes('click') || lowerText.includes('wait_for_selector') ||
+        lowerText.includes('console') || lowerText.includes('inject') || lowerText.includes('evaluate') ||
+        lowerText.includes('search_google') || lowerText.includes('search_youtube') || lowerText.includes('search_github') ||
+        lowerText.includes('drag_and_drop') || lowerText.includes('double_click') || lowerText.includes('right_click') ||
+        lowerText.includes('measure_page_load') || lowerText.includes('memory_usage') || lowerText.includes('network_inspector') ||
+        lowerText.includes('security_headers') || lowerText.includes('stealth_mode') || lowerText.includes('user_agent') ||
+        lowerText.includes('webgl_renderer') || lowerText.includes('canvas_fingerprint') || lowerText.includes('webdriver_property') ||
+        lowerText.includes('fake_plugins') || lowerText.includes('screen_resolution') || lowerText.includes('mouse_movement') ||
+        lowerText.includes('bypass_cloudflare') || lowerText.includes('bypass_recaptcha') || lowerText.includes('typing_speed') ||
+        lowerText.includes('rotating_proxy') || lowerText.includes('spoof_timezone') || lowerText.includes('behavioral_pattern')) {
+      return false;
+    }
+    
+    // Don't use local mode for Canvas display commands (UI rendering/display)
+    // Canvas = Interface pour AFFICHER du contenu, PAS pour capturer
+    if (lowerText.includes('display_canvas') || lowerText.includes('canvas_display') || 
+        lowerText.includes('canvas_render') || lowerText.includes('canvas_show') ||
+        lowerText.includes('afficher_canvas') || lowerText.includes('affichage_canvas')) {
+      return false;
+    }
 
     // Keywords that indicate local operations
     const localKeywords = [

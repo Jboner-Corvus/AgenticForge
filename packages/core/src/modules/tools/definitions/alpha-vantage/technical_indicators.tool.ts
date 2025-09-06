@@ -49,7 +49,7 @@ const TechnicalIndicatorsParams = z.object({
   maximum: z.number().min(0).max(1).optional().default(0.20).describe('Maximum acceleration for SAR'),
   month: z.string().optional().describe('Month for intraday data (YYYY-MM format)'),
   datatype: z.enum(['json', 'csv']).optional().default('json').describe('Response format'),
-  apikey: z.string().optional().describe('Alpha Vantage API key (optional if set in config)'),
+  apikey: z.string().optional().describe('Alpha Vantage API key (automatically loaded from .env)'),
 });
 
 export const technicalIndicatorsTool: Tool<typeof TechnicalIndicatorsParams> = {

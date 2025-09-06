@@ -23,7 +23,7 @@ const ForexParams = z.object({
   interval: z.enum(['1min', '5min', '15min', '30min', '60min']).optional().describe('Time interval - required for FX_INTRADAY'),
   outputsize: z.enum(['compact', 'full']).optional().default('compact').describe('Data size: compact (100 points) or full (all available)'),
   datatype: z.enum(['json', 'csv']).optional().default('json').describe('Response format'),
-  apikey: z.string().optional().describe('Alpha Vantage API key (optional if set in config)'),
+  apikey: z.string().optional().describe('Alpha Vantage API key (automatically loaded from .env)'),
 });
 
 export const forexTool: Tool<typeof ForexParams> = {

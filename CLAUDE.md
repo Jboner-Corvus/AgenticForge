@@ -83,3 +83,36 @@ AUTH_TOKEN="..." VITE_AUTH_TOKEN="..." VITE_BACKEND_PORT=3001 WEB_PORT=3006 pnpm
 - **Compatibilité**: Les interfaces 3002 et 3006 sont compatibles (même backend)
 - **Singleton**: Un seul serveur et un seul worker peuvent tourner simultanément
 - **Configuration**: Tout est centralisé dans `.env`
+
+---
+
+## 🖼️ CANVAS vs PLAYWRIGHT - DISTINCTION IMPORTANTE
+
+### 📋 Différences Clés
+- **Canvas** = Interface UI pour **AFFICHER** du contenu dans l'application web
+- **Playwright** = Outil pour **CAPTURER/AUTOMATISER** des navigateurs
+- **Live Preview** = Système temps réel qui montre ce que Playwright fait
+
+### 🔧 Architecture Technique
+```
+Playwright (capture) → WebSocket → Canvas (affichage)
+     ↓                    ↓            ↓
+  Screenshots        browser.      BrowserLiveView
+  Automation         screenshot.     component
+  Anti-détection     realtime
+```
+
+### 🚨 Points Critiques Agent
+1. **Jamais confondre** Canvas et Playwright dans `agent.ts`
+2. **Canvas commands**: `displayCanvas`, `canvas_display_*`
+3. **Playwright commands**: `playwright_*`, navigation, clics
+4. **Détection locale** exclut Canvas ET Playwright
+5. **Live Preview** fonctionne via événements WebSocket
+
+### 📊 Tests Complets Ajoutés
+- **273-302**: Tests Canvas (affichage HTML, jeux, code, data, média)
+- **303-332**: Tests Live Preview (capture temps réel, performance)
+- **333-352**: Tests intégration Canvas+Playwright (sync, robustesse)
+- **353-372**: Tests validation agent (intelligence, adaptation)
+- **373-402**: Tests avancés business (e-commerce, sécurité, scaling)
+- **403-492**: Tests TodoList (CRUD, agent, UI, workflows complets)

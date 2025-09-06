@@ -35,7 +35,7 @@ const CoreStockParams = z.object({
   extended_hours: z.boolean().optional().default(true).describe('Whether to include extended hours trading data - for TIME_SERIES_INTRADAY'),
   month: z.string().optional().describe('Query specific month in YYYY-MM format (e.g., 2009-01) - for TIME_SERIES_INTRADAY'),
   entitlement: z.enum(['delayed', 'realtime']).optional().describe('Data entitlement: "delayed" for 15-minute delayed data, "realtime" for real-time data'),
-  apikey: z.string().optional().describe('Alpha Vantage API key (optional if set in config)'),
+  apikey: z.string().optional().describe('Alpha Vantage API key (automatically loaded from .env)'),
 });
 
 export const coreStockApisTool: Tool<typeof CoreStockParams> = {
