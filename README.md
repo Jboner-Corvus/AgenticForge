@@ -218,7 +218,7 @@ LLM_MODEL_NAME=qwen3-coder-plus
 LLM_API_KEY=votre_cle_api_qwen
 QWEN_API_BASE_URL=https://portal.qwen.ai/v1/chat/completions
 
-````
+```
 
 Consultez le fichier [docs/QWEN_PROVIDER.md](docs/QWEN_PROVIDER.md) pour plus de détails sur la configuration et le dépannage du fournisseur Qwen.
 
@@ -231,10 +231,11 @@ Des scripts utilitaires sont disponibles pour diagnostiquer et résoudre les pro
 - `scripts/test-qwen-provider.ts` - Test de base du fournisseur
 
 Pour exécuter ces scripts :
+
 ```bash
 cd /chemin/vers/AgentMCP
 ts-node scripts/diagnose-qwen-connection.ts
-````
+```
 
 Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un résumé complet des améliorations apportées au fournisseur Qwen.
 
@@ -413,14 +414,14 @@ Consultez [QWEN_OPTIMIZATION_SUMMARY.md](QWEN_OPTIMIZATION_SUMMARY.md) pour un r
 
 ### Gestion Système Avancée
 
-| Action               | Commande                     | Utilisation                     |
-| -------------------- | ---------------------------- | ------------------------------- |
-| **Console Complète** | `./run.sh`                   | Interface de gestion principale |
-| **Démarrage Rapide** | `./run.sh start`             | Lancement direct du système     |
-| **Monitoring**       | `./run.sh status`            | État des services Docker        |
-| **Logs Live**        | `./run.sh logs`              | Surveillance temps réel         |
-| **Redémarrage**      | `./run.sh restart`           | Après modification config       |
-| **Maintenance**      | `./run.sh` → Options 7-14    | Tests, lint, format, rebuild    |
+| Action               | Commande                  | Utilisation                     |
+| -------------------- | ------------------------- | ------------------------------- |
+| **Console Complète** | `./run.sh`                | Interface de gestion principale |
+| **Démarrage Rapide** | `./run.sh start`          | Lancement direct du système     |
+| **Monitoring**       | `./run.sh status`         | État des services Docker        |
+| **Logs Live**        | `./run.sh logs`           | Surveillance temps réel         |
+| **Redémarrage**      | `./run.sh restart`        | Après modification config       |
+| **Maintenance**      | `./run.sh` → Options 7-14 | Tests, lint, format, rebuild    |
 
 ---
 

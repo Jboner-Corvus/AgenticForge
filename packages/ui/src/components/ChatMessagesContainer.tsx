@@ -11,7 +11,10 @@ export const ChatMessagesContainer = React.memo(() => {
 
   console.log('📋 [ChatMessagesContainer] Messages from store:', messages);
   console.log('📋 [ChatMessagesContainer] Messages length:', messages.length);
-  console.log('📋 [ChatMessagesContainer] Messages types:', messages.map(m => m.type));
+  console.log(
+    '📋 [ChatMessagesContainer] Messages types:',
+    messages.map((m) => m.type),
+  );
 
   // Auto-scroll déboncé pour éviter les thrashing de layout
   const scrollToBottom = useCallback(() => {

@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import type { AgentResponseMessage, SessionData, Tool, UserMessage } from '../../types.ts';
+import type {
+  AgentResponseMessage,
+  SessionData,
+  Tool,
+  UserMessage,
+} from '../../types.ts';
 
 import { getMockQueue } from '../../test/mockQueue.ts';
 import { Agent } from './agent.ts';
@@ -49,23 +54,23 @@ vi.mock('../../utils/llmProvider.ts', () => {
   // Add the chaining methods that the tests expect
   mockGetLlmResponse.mockResolvedValueOnce = vi.fn(() => mockGetLlmResponse);
   mockGetLlmResponse.mockResolvedValue = vi.fn(() => mockGetLlmResponse);
-  
+
   return {
-    getLlmProvider: vi.fn(() => ({ 
+    getLlmProvider: vi.fn(() => ({
       getLlmResponse: mockGetLlmResponse,
-      getErrorType: vi.fn()
+      getErrorType: vi.fn(),
     })),
   };
 });
 vi.mock('../llm/LlmKeyManager.ts', () => ({
-  LlmKeyManager: { 
+  LlmKeyManager: {
     getNextAvailableKey: vi.fn(),
     getKey: vi.fn(),
     hasAvailableKeys: vi.fn().mockResolvedValue(true),
     invalidateKey: vi.fn(),
     markKeyAsBad: vi.fn(),
     resetKeyStatus: vi.fn(),
-    rotateKey: vi.fn()
+    rotateKey: vi.fn(),
   },
 }));
 vi.mock('../tools/toolRegistry.ts', () => ({
@@ -301,8 +306,12 @@ describe('End-to-End Workflow Integration Tests', () => {
       ];
 
       responses.forEach((response) => {
-        vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValueOnce(response);
-        vi.mocked(mockResponseSchema.parse).mockReturnValueOnce(JSON.parse(response));
+        vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValueOnce(
+          response,
+        );
+        vi.mocked(mockResponseSchema.parse).mockReturnValueOnce(
+          JSON.parse(response),
+        );
       });
 
       const toolRegistryModule = await import('../tools/toolRegistry.ts');
@@ -322,7 +331,9 @@ describe('End-to-End Workflow Integration Tests', () => {
 
       expect(result).toContain('Problem solved');
       expect(result).toContain('multi-step');
-      expect(vi.mocked(mockLlmProvider.getLlmResponse)).toHaveBeenCalledTimes(8);
+      expect(vi.mocked(mockLlmProvider.getLlmResponse)).toHaveBeenCalledTimes(
+        8,
+      );
     });
 
     it('should handle multi-step problem solving with tool chaining', async () => {
@@ -353,7 +364,9 @@ describe('End-to-End Workflow Integration Tests', () => {
       mockGetLlmResponse.mockResolvedValueOnce(responses[5]);
       mockGetLlmResponse.mockResolvedValueOnce(responses[6]);
       mockGetLlmResponse.mockResolvedValueOnce(responses[7]);
-      vi.mocked(mockLlmProvider.getLlmResponse).mockImplementation(mockGetLlmResponse);
+      vi.mocked(mockLlmProvider.getLlmResponse).mockImplementation(
+        mockGetLlmResponse,
+      );
 
       const mockParse = vi.fn();
       mockParse.mockReturnValueOnce(JSON.parse(responses[0]));
@@ -364,7 +377,7 @@ describe('End-to-End Workflow Integration Tests', () => {
       mockParse.mockReturnValueOnce(JSON.parse(responses[5]));
       mockParse.mockReturnValueOnce(JSON.parse(responses[6]));
       mockParse.mockReturnValueOnce(JSON.parse(responses[7]));
-      
+
       vi.mocked(mockResponseSchema.parse).mockImplementation(mockParse);
 
       const toolRegistryModule = await import('../tools/toolRegistry.ts');
@@ -379,7 +392,7 @@ describe('End-to-End Workflow Integration Tests', () => {
       mockExecute.mockResolvedValueOnce(
         '{"validation_result": "success", "fixed_records": 15}',
       );
-      
+
       vi.mocked(mockToolRegistry.execute).mockImplementation(mockExecute);
 
       const result = await agent.run();
@@ -411,7 +424,9 @@ describe('End-to-End Workflow Integration Tests', () => {
       mockGetLlmResponse.mockResolvedValueOnce(
         '{"answer": "Successfully found alternative data source and completed the task."}',
       );
-      vi.mocked(mockLlmProvider.getLlmResponse).mockImplementation(mockGetLlmResponse);
+      vi.mocked(mockLlmProvider.getLlmResponse).mockImplementation(
+        mockGetLlmResponse,
+      );
 
       const mockParse = vi.fn();
       mockParse.mockReturnValueOnce({
@@ -430,7 +445,7 @@ describe('End-to-End Workflow Integration Tests', () => {
         answer:
           'Successfully found alternative data source and completed the task.',
       });
-      
+
       vi.mocked(mockResponseSchema.parse).mockImplementation(mockParse);
 
       const mockExecute = vi.fn();
@@ -438,7 +453,7 @@ describe('End-to-End Workflow Integration Tests', () => {
       mockExecute.mockResolvedValueOnce({
         results: [{ data: 'backup_data', source: 'alternative_api' }],
       });
-      
+
       vi.mocked(mockToolRegistry.execute).mockImplementation(mockExecute);
 
       const result = await agent.run();

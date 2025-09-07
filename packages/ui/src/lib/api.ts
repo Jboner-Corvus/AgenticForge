@@ -1,13 +1,15 @@
 // packages/ui/src/lib/api.ts
 
 // Backend API URL - use environment variables or default to relative path for proxy
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ||
-                 import.meta.env.VITE_BACKEND_URL ||
-                 (typeof window !== 'undefined' ?
-                   (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ?
-                     'http://localhost:3001' :  // Use localhost for local development
-                     'http://192.168.40.28:3001') :  // Use network IP for remote access
-                   'http://localhost:3001');
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_BACKEND_URL ||
+  (typeof window !== 'undefined'
+    ? window.location.origin.includes('localhost') ||
+      window.location.origin.includes('127.0.0.1')
+      ? 'http://localhost:3001' // Use localhost for local development
+      : 'http://192.168.40.28:3001' // Use network IP for remote access
+    : 'http://localhost:3001');
 
 /**
  * Récupère le token d'authentification backend valide.
@@ -16,8 +18,14 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL ||
 function getBackendAuthToken(providedToken?: string | null): string | null {
   console.log('🔍 [getBackendAuthToken] === DIAGNOSTIC TOKEN BACKEND ===');
   console.log('🔍 [getBackendAuthToken] providedToken:', providedToken);
-  console.log('🔍 [getBackendAuthToken] providedToken type:', typeof providedToken);
-  console.log('🔍 [getBackendAuthToken] providedToken length:', providedToken?.length || 0);
+  console.log(
+    '🔍 [getBackendAuthToken] providedToken type:',
+    typeof providedToken,
+  );
+  console.log(
+    '🔍 [getBackendAuthToken] providedToken length:',
+    providedToken?.length || 0,
+  );
 
   // 1. Utiliser le token fourni en paramètre
   if (providedToken) {
@@ -29,8 +37,14 @@ function getBackendAuthToken(providedToken?: string | null): string | null {
   try {
     const storedToken = localStorage.getItem('backendAuthToken');
     console.log('🔍 [getBackendAuthToken] localStorage token:', storedToken);
-    console.log('🔍 [getBackendAuthToken] localStorage token type:', typeof storedToken);
-    console.log('🔍 [getBackendAuthToken] localStorage token length:', storedToken?.length || 0);
+    console.log(
+      '🔍 [getBackendAuthToken] localStorage token type:',
+      typeof storedToken,
+    );
+    console.log(
+      '🔍 [getBackendAuthToken] localStorage token length:',
+      storedToken?.length || 0,
+    );
 
     if (storedToken) {
       console.log('✅ [getBackendAuthToken] Using token from localStorage');
@@ -46,14 +60,25 @@ function getBackendAuthToken(providedToken?: string | null): string | null {
   // 3. Fallback sur la variable d'environnement (pour le développement)
   const envToken =
     import.meta.env.VITE_AUTH_TOKEN || import.meta.env.AUTH_TOKEN;
-  console.log('🔍 [getBackendAuthToken] VITE_AUTH_TOKEN:', import.meta.env.VITE_AUTH_TOKEN);
-  console.log('🔍 [getBackendAuthToken] AUTH_TOKEN:', import.meta.env.AUTH_TOKEN);
+  console.log(
+    '🔍 [getBackendAuthToken] VITE_AUTH_TOKEN:',
+    import.meta.env.VITE_AUTH_TOKEN,
+  );
+  console.log(
+    '🔍 [getBackendAuthToken] AUTH_TOKEN:',
+    import.meta.env.AUTH_TOKEN,
+  );
   console.log('🔍 [getBackendAuthToken] envToken result:', envToken);
   console.log('🔍 [getBackendAuthToken] envToken type:', typeof envToken);
-  console.log('🔍 [getBackendAuthToken] envToken length:', envToken?.length || 0);
+  console.log(
+    '🔍 [getBackendAuthToken] envToken length:',
+    envToken?.length || 0,
+  );
 
   if (envToken) {
-    console.log('✅ [getBackendAuthToken] Using token from environment variables');
+    console.log(
+      '✅ [getBackendAuthToken] Using token from environment variables',
+    );
     return envToken;
   }
 
@@ -222,7 +247,7 @@ export async function sendMessage(
     // Établit la connexion SSE pour les mises à jour en streaming
     // Add authentication token as query parameter since EventSource doesn't support headers
     const baseUrl = buildApiUrl(`/api/chat/stream/${jobId}`);
-    
+
     // Create a more robust EventSource URL with proper error handling
     const urlParams = new URLSearchParams();
     if (authToken) {
@@ -231,14 +256,14 @@ export async function sendMessage(
     if (sessionId) {
       urlParams.append('sessionId', sessionId);
     }
-    
+
     const eventSourceUrl = `${baseUrl}?${urlParams.toString()}`;
     console.log(
       '🔗 [sendMessage] Creating EventSource with URL:',
       eventSourceUrl,
     );
     addDebugLog?.(`[SSE] 🔗 Création EventSource avec URL: ${eventSourceUrl}`);
-    
+
     // Add timeout for EventSource connection
     const connectionTimeout = setTimeout(() => {
       console.warn('⚠️ [EventSource] Connection timeout!');
@@ -251,10 +276,10 @@ export async function sendMessage(
     eventSource.onmessage = (event) => {
       console.log('📨 [EventSource] Message received:', event.data);
       addDebugLog?.(`[SSE] 📨 Message EventSource reçu: ${event.data}`);
-      
+
       // Clear connection timeout on first message
       clearTimeout(connectionTimeout);
-      
+
       onMessage(event);
     };
 
@@ -264,10 +289,10 @@ export async function sendMessage(
       console.error('📊 [EventSource] ReadyState:', eventSource.readyState);
       console.error('🌐 [EventSource] URL:', eventSource.url);
       console.error('🎯 [EventSource] EventSource object:', eventSource);
-      
+
       // Clear connection timeout on error
       clearTimeout(connectionTimeout);
-      
+
       const stateText =
         eventSource.readyState === 0
           ? 'CONNECTING'
@@ -293,10 +318,10 @@ export async function sendMessage(
     // Add event listeners for debugging
     eventSource.onopen = () => {
       console.log('✅ [EventSource] Connection opened successfully!');
-      
+
       // Clear connection timeout on successful connection
       clearTimeout(connectionTimeout);
-      
+
       console.log('📊 [EventSource] ReadyState:', eventSource.readyState);
       console.log('🌐 [EventSource] Connected to URL:', eventSource.url);
       addDebugLog?.(

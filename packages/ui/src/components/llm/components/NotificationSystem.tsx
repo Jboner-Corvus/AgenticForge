@@ -25,10 +25,10 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({
               notification.type === 'success'
                 ? 'bg-green-900/90 border-green-700 text-green-100'
                 : notification.type === 'error'
-                ? 'bg-red-900/90 border-red-700 text-red-100'
-                : notification.type === 'warning'
-                ? 'bg-yellow-900/90 border-yellow-700 text-yellow-100'
-                : 'bg-blue-900/90 border-blue-700 text-blue-100'
+                  ? 'bg-red-900/90 border-red-700 text-red-100'
+                  : notification.type === 'warning'
+                    ? 'bg-yellow-900/90 border-yellow-700 text-yellow-100'
+                    : 'bg-blue-900/90 border-blue-700 text-blue-100'
             }`}
           >
             <div className="flex items-start justify-between">
@@ -46,8 +46,12 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({
                   <Info className="h-5 w-5 mt-0.5 flex-shrink-0" />
                 )}
                 <div>
-                  <h4 className="font-semibold text-sm">{notification.title}</h4>
-                  <p className="text-sm opacity-90 mt-1">{notification.message}</p>
+                  <h4 className="font-semibold text-sm">
+                    {notification.title}
+                  </h4>
+                  <p className="text-sm opacity-90 mt-1">
+                    {notification.message}
+                  </p>
                 </div>
               </div>
               <button

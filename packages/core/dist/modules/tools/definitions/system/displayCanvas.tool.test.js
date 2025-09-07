@@ -2,11 +2,11 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
   displayCanvasTool
-} from "../../../../chunk-KDSBFRCG.js";
-import "../../../../chunk-PBCJIDZB.js";
+} from "../../../../chunk-7OTKGDAZ.js";
+import "../../../../chunk-SOI34MOL.js";
 import {
   sendToCanvas
-} from "../../../../chunk-BDFP23SD.js";
+} from "../../../../chunk-YB7PAKKF.js";
 import {
   beforeEach,
   describe,
@@ -14,9 +14,9 @@ import {
   it,
   vi
 } from "../../../../chunk-AQKYZ7X3.js";
-import "../../../../chunk-S22IAFZZ.js";
-import "../../../../chunk-WUF5ZZ3T.js";
-import "../../../../chunk-LORZP3MC.js";
+import "../../../../chunk-ZLLQWWIP.js";
+import "../../../../chunk-KU7FQUOD.js";
+import "../../../../chunk-7WLI2CKS.js";
 import {
   init_esm_shims
 } from "../../../../chunk-SB7UONON.js";
@@ -90,13 +90,15 @@ describe("displayCanvasTool", () => {
         taskQueue: {}
       }
     );
-    globalExpect(sendToCanvas).toHaveBeenCalledWith("test-job-id", globalExpect.stringContaining(content), "html");
+    globalExpect(sendToCanvas).toHaveBeenCalledWith(
+      "test-job-id",
+      globalExpect.stringContaining(content),
+      "html"
+    );
     globalExpect(mockLog.info).toHaveBeenCalledWith(
       "\u{1F680} \xC9PIQUE CANVAS - Analyse du contenu..."
     );
-    globalExpect(mockLog.info).toHaveBeenCalledWith(
-      "\u{1F527} Fragment HTML extrait"
-    );
+    globalExpect(mockLog.info).toHaveBeenCalledWith("\u{1F527} Fragment HTML extrait");
     globalExpect(mockLog.info).toHaveBeenCalledWith(
       "\u{1F3A8} \u2705 Contenu affich\xE9 dans le canvas (type: html)"
     );
@@ -199,16 +201,16 @@ describe("displayCanvasTool", () => {
         taskQueue: {}
       }
     );
-    globalExpect(sendToCanvas).toHaveBeenCalledWith("test-job-id", globalExpect.stringContaining(content), "html");
+    globalExpect(sendToCanvas).toHaveBeenCalledWith(
+      "test-job-id",
+      globalExpect.stringContaining(content),
+      "html"
+    );
     globalExpect(mockLog.info).toHaveBeenCalledWith(
       "\u{1F680} \xC9PIQUE CANVAS - Analyse du contenu..."
     );
-    globalExpect(mockLog.info).toHaveBeenCalledWith(
-      "\u{1F527} Fragment HTML extrait"
-    );
-    globalExpect(mockLog.info).toHaveBeenCalledWith(
-      "\u{1F3F7}\uFE0F  Titre: Test Title"
-    );
+    globalExpect(mockLog.info).toHaveBeenCalledWith("\u{1F527} Fragment HTML extrait");
+    globalExpect(mockLog.info).toHaveBeenCalledWith("\u{1F3F7}\uFE0F  Titre: Test Title");
     globalExpect(mockLog.info).toHaveBeenCalledWith(
       "\u{1F3A8} \u2705 Contenu affich\xE9 dans le canvas (type: html)"
     );

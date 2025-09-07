@@ -81,8 +81,18 @@ vi.mock('../../logger.ts', async () => {
   const actual = await vi.importActual('../../logger.ts');
   return {
     ...actual,
-    getLoggerInstance: () => ({
-      child: () => ({
+    getLoggerInstance: () =>
+      ({
+        child: () => ({
+          debug: vi.fn(),
+          error: vi.fn(),
+          info: vi.fn(),
+          warn: vi.fn(),
+          level: 'info',
+          fatal: vi.fn(),
+          trace: vi.fn(),
+          silent: vi.fn(),
+        }),
         debug: vi.fn(),
         error: vi.fn(),
         info: vi.fn(),
@@ -91,16 +101,7 @@ vi.mock('../../logger.ts', async () => {
         fatal: vi.fn(),
         trace: vi.fn(),
         silent: vi.fn(),
-      }),
-      debug: vi.fn(),
-      error: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      level: 'info',
-      fatal: vi.fn(),
-      trace: vi.fn(),
-      silent: vi.fn(),
-    } as any),
+      }) as any,
   };
 });
 
@@ -132,7 +133,7 @@ vi.mock('../../utils/llmProvider.ts', async () => {
     ...actual,
     getLlmProvider: vi.fn((providerName: string) => ({
       getLlmResponse: vi.fn(),
-      getErrorType: vi.fn()
+      getErrorType: vi.fn(),
     })),
   };
 });
@@ -345,40 +346,38 @@ describe('WebSocket Real-time Communication Integration Tests', () => {
 
       // Simuler une exécution d'outil avec résultats progressifs
       const mockExecute = vi.fn();
-      mockExecute.mockImplementation(
-        async (toolName: string, params: any) => {
-          // Envoi du début d'exécution
+      mockExecute.mockImplementation(async (toolName: string, params: any) => {
+        // Envoi du début d'exécution
+        mockWebSocket.send(
+          JSON.stringify({
+            params,
+            timestamp: Date.now(),
+            toolName,
+            type: 'tool_execution_start',
+          }),
+        );
+
+        // Simuler des résultats progressifs
+        const partialResults = [
+          { found: 5, status: 'searching' },
+          { found: 12, status: 'processing' },
+          { found: 18, status: 'completed' },
+        ];
+
+        for (const result of partialResults) {
+          await new Promise((resolve) => setTimeout(resolve, 50));
           mockWebSocket.send(
             JSON.stringify({
-              params,
+              data: result,
               timestamp: Date.now(),
               toolName,
-              type: 'tool_execution_start',
+              type: 'tool_execution_progress',
             }),
           );
+        }
 
-          // Simuler des résultats progressifs
-          const partialResults = [
-            { found: 5, status: 'searching' },
-            { found: 12, status: 'processing' },
-            { found: 18, status: 'completed' },
-          ];
-
-          for (const result of partialResults) {
-            await new Promise((resolve) => setTimeout(resolve, 50));
-            mockWebSocket.send(
-              JSON.stringify({
-                data: result,
-                timestamp: Date.now(),
-                toolName,
-                type: 'tool_execution_progress',
-              }),
-            );
-          }
-
-          return { results: ['Result 1', 'Result 2', 'Result 3'] };
-        },
-      );
+        return { results: ['Result 1', 'Result 2', 'Result 3'] };
+      });
       mockToolRegistry.execute = mockExecute;
 
       await agent.run();
@@ -437,9 +436,7 @@ describe('WebSocket Real-time Communication Integration Tests', () => {
         [Symbol.for('pino.mixin')]: vi.fn(),
       };
 
-      vi.mocked(loggerModule.getLoggerInstance).mockReturnValue(
-        mockLogger,
-      );
+      vi.mocked(loggerModule.getLoggerInstance).mockReturnValue(mockLogger);
 
       let interruptHandler: Function;
 
@@ -577,7 +574,7 @@ describe('WebSocket Real-time Communication Integration Tests', () => {
       // Properly mock the LLM provider and response schema
       const mockLlmProvider = {
         getLlmResponse: vi.fn(),
-        getErrorType: vi.fn()
+        getErrorType: vi.fn(),
       };
 
       const mockResponseSchema = {
@@ -586,7 +583,9 @@ describe('WebSocket Real-time Communication Integration Tests', () => {
 
       // Update the mocks
       const llmProviderModule = await import('../../utils/llmProvider.ts');
-      vi.mocked(llmProviderModule.getLlmProvider).mockReturnValue(mockLlmProvider);
+      vi.mocked(llmProviderModule.getLlmProvider).mockReturnValue(
+        mockLlmProvider,
+      );
       const responseSchemaModule = await import('./responseSchema.ts');
       vi.mocked(responseSchemaModule.llmResponseSchema).parse =
         mockResponseSchema.parse;
@@ -768,8 +767,7 @@ describe('WebSocket Real-time Communication Integration Tests', () => {
       await agent.run();
 
       const redisClientModule = await import('../redis/redisClient.ts');
-      const redisClient =
-        redisClientModule.getRedisClientInstance();
+      const redisClient = redisClientModule.getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         'websocket_metrics',
         expect.objectContaining({
@@ -857,8 +855,7 @@ describe('WebSocket Real-time Communication Integration Tests', () => {
       expect(detectedAnomalies).toContain('low_message_rate');
 
       const redisClientModule = await import('../redis/redisClient.ts');
-      const redisClient =
-        redisClientModule.getRedisClientInstance();
+      const redisClient = redisClientModule.getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'alerts:websocket_anomaly',
         expect.stringContaining('high_latency'),
@@ -912,8 +909,7 @@ describe('WebSocket Real-time Communication Integration Tests', () => {
       await agent.run();
 
       const redisClientModule = await import('../redis/redisClient.ts');
-      const redisClient =
-        redisClientModule.getRedisClientInstance();
+      const redisClient = redisClientModule.getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         expect.stringContaining('rate_limit'),
         expect.any(Object),

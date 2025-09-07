@@ -2,29 +2,29 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
   initializeWebServer
-} from "./chunk-ESYE25K6.js";
+} from "./chunk-AQVC6G4E.js";
 import {
   DatabaseCircuitBreaker,
   getPostgresMonitor,
   getPostgresPool
-} from "./chunk-4QZ2CBAT.js";
-import "./chunk-HN4K3WDI.js";
-import "./chunk-EZDVC6XN.js";
+} from "./chunk-3GNHJQRZ.js";
+import "./chunk-Q32PS6QR.js";
+import "./chunk-UKZRGQP6.js";
 import "./chunk-DE5MSL2E.js";
-import "./chunk-VI3DHFIP.js";
-import "./chunk-3VQ5N427.js";
-import "./chunk-3QQWAGP3.js";
+import "./chunk-LHUCLKLS.js";
+import "./chunk-RI2UEEHJ.js";
+import "./chunk-ZFHB2A5O.js";
 import {
   getRedisClientInstance
-} from "./chunk-S22IAFZZ.js";
-import "./chunk-QCP3GSHQ.js";
+} from "./chunk-ZLLQWWIP.js";
+import "./chunk-TGZOLI7G.js";
 import {
   getLoggerInstance
-} from "./chunk-WUF5ZZ3T.js";
+} from "./chunk-KU7FQUOD.js";
 import {
   config,
   loadConfig
-} from "./chunk-LORZP3MC.js";
+} from "./chunk-7WLI2CKS.js";
 import {
   init_esm_shims
 } from "./chunk-SB7UONON.js";
@@ -44,38 +44,62 @@ async function checkServerLock(redisClient) {
   const lockTimeout = 60;
   const processId = `${process.pid}:${Date.now()}`;
   try {
-    const result = await redisClient.set(lockKey, processId, "EX", lockTimeout, "NX");
+    const result = await redisClient.set(
+      lockKey,
+      processId,
+      "EX",
+      lockTimeout,
+      "NX"
+    );
     if (result === "OK") {
-      getLoggerInstance().info(`\u2705 Server lock acquired by process ${process.pid}`);
-      const refreshInterval = setInterval(async () => {
-        try {
-          const currentLock = await redisClient.get(lockKey);
-          if (currentLock === processId) {
-            await redisClient.expire(lockKey, lockTimeout);
-            getLoggerInstance().debug(`\u{1F504} Server lock refreshed by process ${process.pid}`);
-          } else {
-            clearInterval(refreshInterval);
-            getLoggerInstance().warn(`\u26A0\uFE0F Server lock lost by process ${process.pid}, shutting down`);
-            process.exit(0);
+      getLoggerInstance().info(
+        `\u2705 Server lock acquired by process ${process.pid}`
+      );
+      const refreshInterval = setInterval(
+        async () => {
+          try {
+            const currentLock = await redisClient.get(lockKey);
+            if (currentLock === processId) {
+              await redisClient.expire(lockKey, lockTimeout);
+              getLoggerInstance().debug(
+                `\u{1F504} Server lock refreshed by process ${process.pid}`
+              );
+            } else {
+              clearInterval(refreshInterval);
+              getLoggerInstance().warn(
+                `\u26A0\uFE0F Server lock lost by process ${process.pid}, shutting down`
+              );
+              process.exit(0);
+            }
+          } catch (error) {
+            getLoggerInstance().error(
+              { error },
+              "Error refreshing server lock"
+            );
           }
-        } catch (error) {
-          getLoggerInstance().error({ error }, "Error refreshing server lock");
-        }
-      }, lockTimeout / 2 * 1e3);
+        },
+        lockTimeout / 2 * 1e3
+      );
       process.on("SIGTERM", async () => {
         clearInterval(refreshInterval);
         await redisClient.del(lockKey);
-        getLoggerInstance().info(`\u{1F9F9} Server lock released by process ${process.pid}`);
+        getLoggerInstance().info(
+          `\u{1F9F9} Server lock released by process ${process.pid}`
+        );
       });
       process.on("SIGINT", async () => {
         clearInterval(refreshInterval);
         await redisClient.del(lockKey);
-        getLoggerInstance().info(`\u{1F9F9} Server lock released by process ${process.pid}`);
+        getLoggerInstance().info(
+          `\u{1F9F9} Server lock released by process ${process.pid}`
+        );
       });
       return true;
     } else {
       const existingLock = await redisClient.get(lockKey);
-      getLoggerInstance().warn(`\u274C Server already running with lock: ${existingLock}, process ${process.pid} will exit`);
+      getLoggerInstance().warn(
+        `\u274C Server already running with lock: ${existingLock}, process ${process.pid} will exit`
+      );
       return false;
     }
   } catch (error) {
@@ -102,7 +126,9 @@ async function startServer() {
   logger.info(`  Host: ${config.POSTGRES_HOST}`);
   logger.info(`  Port: ${config.POSTGRES_PORT}`);
   logger.info(`  User: ${config.POSTGRES_USER}`);
-  logger.info(`  Password: ${config.POSTGRES_PASSWORD ? "********" : "undefined"}`);
+  logger.info(
+    `  Password: ${config.POSTGRES_PASSWORD ? "********" : "undefined"}`
+  );
   logger.info(`  Pool Config: min=${poolManager.getStats().idleCount}, max=20`);
   let connected = false;
   for (let i = 0; i < 5; i++) {
@@ -124,7 +150,9 @@ async function startServer() {
     }
   }
   if (!connected) {
-    logger.error("Could not initialize PostgreSQL pool after 5 attempts, exiting.");
+    logger.error(
+      "Could not initialize PostgreSQL pool after 5 attempts, exiting."
+    );
     process.exit(1);
   }
   const healthStatus = monitor.getHealthStatus();

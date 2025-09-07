@@ -5,13 +5,17 @@
  * Teste le pool de connexions, le circuit breaker et les métriques
  */
 
-import { getPostgresPool, DatabaseCircuitBreaker, getPostgresMonitor } from './packages/core/src/modules/database/index.ts';
+import {
+  getPostgresPool,
+  DatabaseCircuitBreaker,
+  getPostgresMonitor,
+} from './packages/core/src/modules/database/index.ts';
 import { getLogger } from './packages/core/src/logger.ts';
 
 const logger = getLogger().child({ component: 'PostgresTest' });
 
 async function testPostgresOptimizations() {
-  console.log('🚀 Démarrage des tests d\'optimisation PostgreSQL...\n');
+  console.log("🚀 Démarrage des tests d'optimisation PostgreSQL...\n");
 
   try {
     // Test 1: Initialisation du pool
@@ -27,7 +31,10 @@ async function testPostgresOptimizations() {
     await circuitBreaker.execute(async () => {
       const client = await poolManager.getClient();
       const result = await client.query('SELECT version() as postgres_version');
-      console.log('✅ Connexion réussie - PostgreSQL version:', result.rows[0].postgres_version);
+      console.log(
+        '✅ Connexion réussie - PostgreSQL version:',
+        result.rows[0].postgres_version,
+      );
       client.release();
     });
 
@@ -46,7 +53,9 @@ async function testPostgresOptimizations() {
 
     await Promise.all(concurrentQueries);
     const endTime = Date.now();
-    console.log(`✅ 10 requêtes concurrentes exécutées en ${endTime - startTime}ms`);
+    console.log(
+      `✅ 10 requêtes concurrentes exécutées en ${endTime - startTime}ms`,
+    );
 
     // Test 4: Test des métriques
     console.log('\n📈 Test 4: Métriques du pool');
@@ -74,7 +83,9 @@ async function testPostgresOptimizations() {
     });
 
     const loadTestResults = await Promise.all(loadTestPromises);
-    console.log(`✅ Test de charge réussi - ${loadTestResults.length} requêtes traitées`);
+    console.log(
+      `✅ Test de charge réussi - ${loadTestResults.length} requêtes traitées`,
+    );
 
     // Test 7: Vérification finale des métriques
     console.log('\n📊 Test 7: Métriques finales');
@@ -88,16 +99,17 @@ async function testPostgresOptimizations() {
       breakerState: finalBreakerState.state,
     });
 
-    console.log('\n🎉 Tous les tests d\'optimisation PostgreSQL sont passés avec succès!');
+    console.log(
+      "\n🎉 Tous les tests d'optimisation PostgreSQL sont passés avec succès!",
+    );
     console.log('\n📋 Résumé des améliorations:');
     console.log('• ✅ Pool de connexions opérationnel');
     console.log('• ✅ Circuit breaker fonctionnel');
     console.log('• ✅ Monitoring en temps réel');
     console.log('• ✅ Performance concurrente validée');
     console.log('• ✅ Métriques détaillées disponibles');
-
   } catch (error) {
-    console.error('\n❌ Erreur lors des tests d\'optimisation:', error);
+    console.error("\n❌ Erreur lors des tests d'optimisation:", error);
     process.exit(1);
   }
 }

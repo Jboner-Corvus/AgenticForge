@@ -65,7 +65,7 @@ export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
           .stat(absolutePath)
           .then(() => true)
           .catch(() => false);
-          
+
         if (fileExists) {
           try {
             const currentContent = await fs.readFile(absolutePath, 'utf-8');
@@ -76,7 +76,10 @@ export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
             }
           } catch (readError) {
             // If we can't read the file, we'll just overwrite it
-            ctx.log.warn({ err: readError }, `Could not read existing file ${args.path}, will overwrite`);
+            ctx.log.warn(
+              { err: readError },
+              `Could not read existing file ${args.path}, will overwrite`,
+            );
           }
         }
       }

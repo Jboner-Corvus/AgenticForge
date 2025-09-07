@@ -228,7 +228,6 @@ export const EpicLayoutManager: React.FC = () => {
         >
           <ChatContainer variant="pinned" />
         </PinnableComponent>
-
       </AnimatePresence>
 
       {/* DEBUG INFO (DEV ONLY) */}

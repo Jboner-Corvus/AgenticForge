@@ -14,7 +14,13 @@ import {
   Target,
   Zap,
 } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 import { Switch } from './ui/switch';
 
 // Import des hooks personnalisés
@@ -44,7 +50,8 @@ const PROVIDERS: LlmProviderConfig[] = [
     logo: () => null, // Placeholder
     models: ['gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'],
     baseUrl: 'https://api.openai.com/v1',
-    description: "Modèles GPT d'OpenAI avec des capacités avancées de raisonnement.",
+    description:
+      "Modèles GPT d'OpenAI avec des capacités avancées de raisonnement.",
   },
   {
     id: 'gemini',
@@ -52,7 +59,8 @@ const PROVIDERS: LlmProviderConfig[] = [
     logo: () => null, // Placeholder
     models: ['gemini-2.5-pro', 'gemini-2.5-flash'],
     baseUrl: 'https://generativelanguage.googleapis.com',
-    description: 'Modèles Google Gemini 2.5 Pro. Haute performance avec des capacités avancées.',
+    description:
+      'Modèles Google Gemini 2.5 Pro. Haute performance avec des capacités avancées.',
   },
   {
     id: 'qwen',
@@ -60,7 +68,8 @@ const PROVIDERS: LlmProviderConfig[] = [
     logo: () => null, // Placeholder
     models: ['qwen3-coder-plus'],
     baseUrl: 'https://dashscope.aliyuncs.com/api/v1',
-    description: "Qwen 3 Coder Plus d'Alibaba Cloud. Modèle spécialisé pour le développement logiciel.",
+    description:
+      "Qwen 3 Coder Plus d'Alibaba Cloud. Modèle spécialisé pour le développement logiciel.",
   },
   {
     id: 'openrouter',
@@ -68,7 +77,8 @@ const PROVIDERS: LlmProviderConfig[] = [
     logo: () => null, // Placeholder
     models: ['z-ai/glm-4.5-air:free'],
     baseUrl: 'https://openrouter.ai/api/v1',
-    description: 'OpenRouter avec modèle GLM-4.5 Air gratuit - Fonctionne parfaitement ✅',
+    description:
+      'OpenRouter avec modèle GLM-4.5 Air gratuit - Fonctionne parfaitement ✅',
   },
 ];
 
@@ -91,18 +101,22 @@ const LlmApiKeyManagementPageRefactored: React.FC = () => {
     isTestingKey,
   } = useLlmKeys();
 
-  const { systemHealth, recommendations, isAnalyzing } = useLlmAnalytics(backendKeys);
+  const { systemHealth, recommendations, isAnalyzing } =
+    useLlmAnalytics(backendKeys);
 
-  const { notifications, addNotification, removeNotification } = useNotifications();
+  const { notifications, addNotification, removeNotification } =
+    useNotifications();
 
   // Filtrage des clés
   const filteredKeys = useMemo(() => {
-    return backendKeys.filter(key => {
-      const matchesSearch = searchTerm === '' ||
+    return backendKeys.filter((key) => {
+      const matchesSearch =
+        searchTerm === '' ||
         key.apiProvider.toLowerCase().includes(searchTerm.toLowerCase()) ||
         key.apiModel.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesProvider = selectedProvider === 'all' || key.apiProvider === selectedProvider;
+      const matchesProvider =
+        selectedProvider === 'all' || key.apiProvider === selectedProvider;
       const matchesStatus = showInactive || !key.isPermanentlyDisabled;
 
       return matchesSearch && matchesProvider && matchesStatus;
@@ -142,7 +156,8 @@ const LlmApiKeyManagementPageRefactored: React.FC = () => {
       addNotification({
         type: 'error',
         title: 'Échec du test',
-        message: err instanceof Error ? err.message : 'Erreur inconnue lors du test',
+        message:
+          err instanceof Error ? err.message : 'Erreur inconnue lors du test',
         duration: 5000,
       });
     }
@@ -159,22 +174,28 @@ const LlmApiKeyManagementPageRefactored: React.FC = () => {
       {/* Header avec statistiques */}
       <motion.div
         className={`mb-6 p-6 rounded-xl border-2 backdrop-blur-sm ${
-          backendKeys.length > 0 && recommendations.filter(r => r.priority === 'high').length === 0
+          backendKeys.length > 0 &&
+          recommendations.filter((r) => r.priority === 'high').length === 0
             ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50'
-            : backendKeys.length > 0 && recommendations.filter(r => r.priority === 'high').length > 0
-            ? 'bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border-yellow-700/50'
-            : 'bg-gradient-to-r from-purple-900/30 to-indigo-900/30 border-purple-700/50'
+            : backendKeys.length > 0 &&
+                recommendations.filter((r) => r.priority === 'high').length > 0
+              ? 'bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border-yellow-700/50'
+              : 'bg-gradient-to-r from-purple-900/30 to-indigo-900/30 border-purple-700/50'
         }`}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            {backendKeys.length > 0 && recommendations.filter(r => r.priority === 'high').length === 0 ? (
+            {backendKeys.length > 0 &&
+            recommendations.filter((r) => r.priority === 'high').length ===
+              0 ? (
               <div className="bg-green-900/50 p-3 rounded-full border border-green-700/50">
                 <Brain className="h-12 w-12 text-green-400" />
               </div>
-            ) : backendKeys.length > 0 && recommendations.filter(r => r.priority === 'high').length > 0 ? (
+            ) : backendKeys.length > 0 &&
+              recommendations.filter((r) => r.priority === 'high').length >
+                0 ? (
               <div className="bg-yellow-900/50 p-3 rounded-full border border-yellow-700/50">
                 <Shield className="h-12 w-12 text-yellow-400" />
               </div>
@@ -184,27 +205,43 @@ const LlmApiKeyManagementPageRefactored: React.FC = () => {
               </div>
             )}
             <div>
-              <h1 className={`text-2xl font-bold ${
-                backendKeys.length > 0 && recommendations.filter(r => r.priority === 'high').length === 0
-                  ? 'text-green-300'
-                  : backendKeys.length > 0 && recommendations.filter(r => r.priority === 'high').length > 0
-                  ? 'text-yellow-300'
-                  : 'text-purple-300'
-              }`}>
+              <h1
+                className={`text-2xl font-bold ${
+                  backendKeys.length > 0 &&
+                  recommendations.filter((r) => r.priority === 'high')
+                    .length === 0
+                    ? 'text-green-300'
+                    : backendKeys.length > 0 &&
+                        recommendations.filter((r) => r.priority === 'high')
+                          .length > 0
+                      ? 'text-yellow-300'
+                      : 'text-purple-300'
+                }`}
+              >
                 Gestionnaire LLM Intelligent - {backendKeys.length} clé(s)
               </h1>
-              <p className={`text-sm ${
-                backendKeys.length > 0 && recommendations.filter(r => r.priority === 'high').length === 0
-                  ? 'text-green-400/80'
-                  : backendKeys.length > 0 && recommendations.filter(r => r.priority === 'high').length > 0
-                  ? 'text-yellow-400/80'
-                  : 'text-purple-400/80'
-              }`}>
-                {backendKeys.length > 0 && recommendations.filter(r => r.priority === 'high').length === 0
-                  ? `Système optimal avec ${backendKeys.filter(k => !k.isPermanentlyDisabled).length} clés actives.`
-                  : backendKeys.length > 0 && recommendations.filter(r => r.priority === 'high').length > 0
-                  ? `${recommendations.filter(r => r.priority === 'high').length} problème(s) détecté(s).`
-                  : 'Ajoutez vos clés API pour bénéficier de l\'intelligence artificielle avancée'}
+              <p
+                className={`text-sm ${
+                  backendKeys.length > 0 &&
+                  recommendations.filter((r) => r.priority === 'high')
+                    .length === 0
+                    ? 'text-green-400/80'
+                    : backendKeys.length > 0 &&
+                        recommendations.filter((r) => r.priority === 'high')
+                          .length > 0
+                      ? 'text-yellow-400/80'
+                      : 'text-purple-400/80'
+                }`}
+              >
+                {backendKeys.length > 0 &&
+                recommendations.filter((r) => r.priority === 'high').length ===
+                  0
+                  ? `Système optimal avec ${backendKeys.filter((k) => !k.isPermanentlyDisabled).length} clés actives.`
+                  : backendKeys.length > 0 &&
+                      recommendations.filter((r) => r.priority === 'high')
+                        .length > 0
+                    ? `${recommendations.filter((r) => r.priority === 'high').length} problème(s) détecté(s).`
+                    : "Ajoutez vos clés API pour bénéficier de l'intelligence artificielle avancée"}
               </p>
             </div>
           </div>
@@ -266,7 +303,10 @@ const LlmApiKeyManagementPageRefactored: React.FC = () => {
               />
             </div>
 
-            <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+            <Select
+              value={selectedProvider}
+              onValueChange={setSelectedProvider}
+            >
               <SelectTrigger className="w-48 bg-gray-800 border-gray-600">
                 <SelectValue placeholder="Tous les providers" />
               </SelectTrigger>
@@ -297,8 +337,13 @@ const LlmApiKeyManagementPageRefactored: React.FC = () => {
                 checked={smartRotationEnabled}
                 onCheckedChange={setSmartRotationEnabled}
               />
-              <label htmlFor="smart-rotation" className="text-sm text-gray-300 flex items-center gap-2">
-                <RotateCcw className={`h-4 w-4 ${smartRotationEnabled ? 'text-green-400' : 'text-gray-500'}`} />
+              <label
+                htmlFor="smart-rotation"
+                className="text-sm text-gray-300 flex items-center gap-2"
+              >
+                <RotateCcw
+                  className={`h-4 w-4 ${smartRotationEnabled ? 'text-green-400' : 'text-gray-500'}`}
+                />
                 Rotation intelligente
               </label>
             </div>
@@ -309,8 +354,13 @@ const LlmApiKeyManagementPageRefactored: React.FC = () => {
                 checked={autoOptimizationEnabled}
                 onCheckedChange={setAutoOptimizationEnabled}
               />
-              <label htmlFor="auto-optimization" className="text-sm text-gray-300 flex items-center gap-2">
-                <Target className={`h-4 w-4 ${autoOptimizationEnabled ? 'text-purple-400' : 'text-gray-500'}`} />
+              <label
+                htmlFor="auto-optimization"
+                className="text-sm text-gray-300 flex items-center gap-2"
+              >
+                <Target
+                  className={`h-4 w-4 ${autoOptimizationEnabled ? 'text-purple-400' : 'text-gray-500'}`}
+                />
                 Optimisation auto
               </label>
             </div>
@@ -321,7 +371,9 @@ const LlmApiKeyManagementPageRefactored: React.FC = () => {
               variant="outline"
               className="border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10"
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`}
+              />
               Actualiser
             </Button>
           </div>
@@ -340,7 +392,9 @@ const LlmApiKeyManagementPageRefactored: React.FC = () => {
         <BackendKeysList
           keys={filteredKeys}
           isLoading={isLoading}
-          testingKeyIndex={backendKeys.findIndex((_, index) => isTestingKey(index))}
+          testingKeyIndex={backendKeys.findIndex((_, index) =>
+            isTestingKey(index),
+          )}
           onTestKey={handleTestKey}
         />
       </div>
@@ -354,28 +408,44 @@ const LlmApiKeyManagementPageRefactored: React.FC = () => {
       >
         {/* Smart Features Status */}
         <div className="flex items-center justify-center gap-4">
-          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs ${
-            smartRotationEnabled
-              ? 'bg-green-900/30 text-green-300 border border-green-700/50'
-              : 'bg-gray-800/50 text-gray-400 border border-gray-700/50'
-          }`}>
-            <RotateCcw className={`h-3 w-3 ${smartRotationEnabled ? 'animate-spin' : ''}`} />
+          <div
+            className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs ${
+              smartRotationEnabled
+                ? 'bg-green-900/30 text-green-300 border border-green-700/50'
+                : 'bg-gray-800/50 text-gray-400 border border-gray-700/50'
+            }`}
+          >
+            <RotateCcw
+              className={`h-3 w-3 ${smartRotationEnabled ? 'animate-spin' : ''}`}
+            />
             <span>Rotation Intelligente</span>
-            <div className={`h-2 w-2 rounded-full ${
-              smartRotationEnabled ? 'bg-green-500 animate-pulse' : 'bg-gray-500'
-            }`} />
+            <div
+              className={`h-2 w-2 rounded-full ${
+                smartRotationEnabled
+                  ? 'bg-green-500 animate-pulse'
+                  : 'bg-gray-500'
+              }`}
+            />
           </div>
 
-          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs ${
-            autoOptimizationEnabled
-              ? 'bg-purple-900/30 text-purple-300 border border-purple-700/50'
-              : 'bg-gray-800/50 text-gray-400 border border-gray-700/50'
-          }`}>
-            <Target className={`h-3 w-3 ${autoOptimizationEnabled ? 'animate-pulse' : ''}`} />
+          <div
+            className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs ${
+              autoOptimizationEnabled
+                ? 'bg-purple-900/30 text-purple-300 border border-purple-700/50'
+                : 'bg-gray-800/50 text-gray-400 border border-gray-700/50'
+            }`}
+          >
+            <Target
+              className={`h-3 w-3 ${autoOptimizationEnabled ? 'animate-pulse' : ''}`}
+            />
             <span>Optimisation Auto</span>
-            <div className={`h-2 w-2 rounded-full ${
-              autoOptimizationEnabled ? 'bg-purple-500 animate-pulse' : 'bg-gray-500'
-            }`} />
+            <div
+              className={`h-2 w-2 rounded-full ${
+                autoOptimizationEnabled
+                  ? 'bg-purple-500 animate-pulse'
+                  : 'bg-gray-500'
+              }`}
+            />
           </div>
         </div>
 

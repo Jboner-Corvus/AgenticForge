@@ -27,7 +27,7 @@ export const getAllTools = async (): Promise<
   const allTools = await getTools();
 
   // Filter out redundant tools and keep only essential ones
-  const essentialTools = allTools.filter(tool => {
+  const essentialTools = allTools.filter((tool) => {
     const essentialToolNames = [
       // Core system tools
       'finish',
@@ -36,14 +36,14 @@ export const getAllTools = async (): Promise<
       'listTools',
 
       // New composite tools (prioritize these)
-      'finance',           // Replaces all Alpha Vantage tools
-      'file_manager',      // Replaces individual file tools
-      'web_automation',    // Replaces individual Playwright tools
+      'finance', // Replaces all Alpha Vantage tools
+      'file_manager', // Replaces individual file tools
+      'web_automation', // Replaces individual Playwright tools
 
       // Keep some individual tools for specific use cases
-      'global_quote',      // Keep for quick stock quotes
-      'readFile',          // Keep for simple file reading
-      'writeFile',         // Keep for simple file writing
+      // 'global_quote',   // REMOVED: Duplicate with core_stock_apis (finance)
+      'readFile', // Keep for simple file reading
+      'writeFile', // Keep for simple file writing
       'playwright_navigate', // Keep for simple navigation
 
       // AI tools
@@ -53,15 +53,19 @@ export const getAllTools = async (): Promise<
       'project_planning',
 
       // Code execution
-      'executeShellCommand'
+      'executeShellCommand',
     ];
 
-    return essentialToolNames.includes(tool.name) ||
-           tool.name.startsWith('canvas_console_feedback') ||
-           tool.name.startsWith('finish');
+    return (
+      essentialToolNames.includes(tool.name) ||
+      tool.name.startsWith('canvas_console_feedback') ||
+      tool.name.startsWith('finish')
+    );
   });
 
-  console.log(`[getAllTools] Filtered from ${allTools.length} to ${essentialTools.length} essential tools`);
+  console.log(
+    `[getAllTools] Filtered from ${allTools.length} to ${essentialTools.length} essential tools`,
+  );
 
   return essentialTools;
 };

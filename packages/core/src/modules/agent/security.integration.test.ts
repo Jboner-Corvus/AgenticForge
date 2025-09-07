@@ -8,7 +8,10 @@ import { Agent } from './agent.ts';
 // Mocks globaux simplifiés
 vi.mock('../../config.ts', () => ({
   config: { AGENT_MAX_ITERATIONS: 5, LLM_PROVIDER_HIERARCHY: ['openai'] },
-  getConfig: () => ({ AGENT_MAX_ITERATIONS: 5, LLM_PROVIDER_HIERARCHY: ['openai'] }),
+  getConfig: () => ({
+    AGENT_MAX_ITERATIONS: 5,
+    LLM_PROVIDER_HIERARCHY: ['openai'],
+  }),
 }));
 vi.mock('../../logger.ts', () => ({
   getLoggerInstance: () => ({
@@ -37,8 +40,10 @@ vi.mock('../redis/redisClient.ts', () => ({
 }));
 vi.mock('../../utils/llmProvider.ts', () => ({
   getLlmProvider: () => ({
-    getLlmResponse: vi.fn(() => Promise.resolve('{\"answer\": \"Security test\"}')).mockResolvedValue('{\"answer\": \"Security test\"}'),
-    getErrorType: vi.fn()
+    getLlmResponse: vi
+      .fn(() => Promise.resolve('{\"answer\": \"Security test\"}'))
+      .mockResolvedValue('{\"answer\": \"Security test\"}'),
+    getErrorType: vi.fn(),
   }),
 }));
 vi.mock('../llm/LlmKeyManager.ts', () => ({
@@ -283,7 +288,9 @@ describe('Security and Validation Integration Tests', () => {
     it('should implement secure error logging', async () => {
       const llmProviderModule = await import('../../utils/llmProvider.ts');
       const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
-      vi.mocked(mockLlmProvider.getLlmResponse).mockRejectedValue(new Error('Test error'));
+      vi.mocked(mockLlmProvider.getLlmResponse).mockRejectedValue(
+        new Error('Test error'),
+      );
 
       await agent.run();
 

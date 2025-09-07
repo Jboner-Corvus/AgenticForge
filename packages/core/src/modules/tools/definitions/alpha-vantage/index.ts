@@ -52,21 +52,11 @@ export * from './common.ts';
 
 // Tool categories for organization (organized into 6 main categories)
 export const ALPHA_VANTAGE_TOOL_CATEGORIES = {
-  CORE_STOCK_APIS: [
-    'core_stock_apis'
-  ],
-  ALPHA_INTELLIGENCE: [
-    'alpha_intelligence'
-  ],
-  ECONOMIC_INDICATORS: [
-    'economic_indicators'
-  ],
-  FOREX: [
-    'forex'
-  ],
-  TECHNICAL_INDICATORS: [
-    'technical_indicators'
-  ]
+  CORE_STOCK_APIS: ['core_stock_apis'],
+  ALPHA_INTELLIGENCE: ['alpha_intelligence'],
+  ECONOMIC_INDICATORS: ['economic_indicators'],
+  FOREX: ['forex'],
+  TECHNICAL_INDICATORS: ['technical_indicators'],
 } as const;
 
 // All tools array for convenience (organized 6 main tools)

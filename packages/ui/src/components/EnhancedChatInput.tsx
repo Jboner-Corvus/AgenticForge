@@ -59,13 +59,42 @@ const SMART_SUGGESTIONS = [
 
 // System prompt options - same as UserInput
 const SYSTEM_PROMPT_OPTIONS = [
-  { value: 'architect', label: 'Architect', description: 'System design, architecture planning, and technical specifications' },
-  { value: 'coder', label: 'Coder', description: 'Code implementation, debugging, and development' },
-  { value: 'explain', label: 'Explain', description: 'Code explanation, teaching, and knowledge sharing' },
-  { value: 'debug', label: 'Debug', description: 'Debugging, troubleshooting, and problem solving' },
-  { value: 'orchestrate', label: 'Orchestrate', description: 'Project management, coordination, and workflow optimization' },
-  { value: 'frontend', label: 'FrontEnd', description: 'Frontend development, UI/UX, and user interface design' },
-  { value: 'trader', label: 'Trader', description: 'Trading, financial analysis, and market strategy' }
+  {
+    value: 'architect',
+    label: 'Architect',
+    description:
+      'System design, architecture planning, and technical specifications',
+  },
+  {
+    value: 'coder',
+    label: 'Coder',
+    description: 'Code implementation, debugging, and development',
+  },
+  {
+    value: 'explain',
+    label: 'Explain',
+    description: 'Code explanation, teaching, and knowledge sharing',
+  },
+  {
+    value: 'debug',
+    label: 'Debug',
+    description: 'Debugging, troubleshooting, and problem solving',
+  },
+  {
+    value: 'orchestrate',
+    label: 'Orchestrate',
+    description: 'Project management, coordination, and workflow optimization',
+  },
+  {
+    value: 'frontend',
+    label: 'FrontEnd',
+    description: 'Frontend development, UI/UX, and user interface design',
+  },
+  {
+    value: 'trader',
+    label: 'Trader',
+    description: 'Trading, financial analysis, and market strategy',
+  },
 ];
 
 interface EnhancedChatInputProps {
@@ -80,8 +109,12 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
   const { translations } = useLanguage();
   const inputValue = useMessageInputValue();
   const setInputValue = useUIStore((state) => state.setMessageInputValue);
-  const selectedSystemPrompt = useUIStore((state) => state.selectedSystemPrompt);
-  const setSelectedSystemPrompt = useUIStore((state) => state.setSelectedSystemPrompt);
+  const selectedSystemPrompt = useUIStore(
+    (state) => state.selectedSystemPrompt,
+  );
+  const setSelectedSystemPrompt = useUIStore(
+    (state) => state.setSelectedSystemPrompt,
+  );
   const { startAgent, interruptAgent } = useAgentStream();
   const isProcessing = useIsProcessing();
 
@@ -124,9 +157,11 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
 
   // Debug effect pour surveiller l'état du dropdown
   useEffect(() => {
-    console.log('🔧 [EnhancedChatInput] Dropdown state changed:', isDropdownOpen);
+    console.log(
+      '🔧 [EnhancedChatInput] Dropdown state changed:',
+      isDropdownOpen,
+    );
   }, [isDropdownOpen]);
-
 
   // Fermer le dropdown en cliquant à l'extérieur
   useEffect(() => {
@@ -148,10 +183,15 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
     console.log('🚀 [EnhancedChatInput] handleSendMessage called');
     console.log('📝 [EnhancedChatInput] inputValue:', inputValue);
     console.log('⚙️ [EnhancedChatInput] isProcessing:', isProcessing);
-    console.log('🔧 [EnhancedChatInput] startAgent function:', typeof startAgent);
+    console.log(
+      '🔧 [EnhancedChatInput] startAgent function:',
+      typeof startAgent,
+    );
 
     if (inputValue.trim() && !isProcessing) {
-      console.log('✅ [EnhancedChatInput] Conditions met, proceeding to send message');
+      console.log(
+        '✅ [EnhancedChatInput] Conditions met, proceeding to send message',
+      );
 
       // Ajouter à l'historique
       setInputHistory((prev) => [inputValue, ...prev.slice(0, 9)]); // Garder les 10 derniers
@@ -164,10 +204,15 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
         setInputValue('');
         setAttachedFiles([]); // Clear attachments after sending
       } catch (error) {
-        console.error('❌ [EnhancedChatInput] Error calling startAgent:', error);
+        console.error(
+          '❌ [EnhancedChatInput] Error calling startAgent:',
+          error,
+        );
       }
     } else {
-      console.log('❌ [EnhancedChatInput] Conditions not met for sending message');
+      console.log(
+        '❌ [EnhancedChatInput] Conditions not met for sending message',
+      );
     }
   };
 
@@ -336,7 +381,10 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
           />
 
           {/* Input Actions Bar */}
-          <div data-dropdown-container className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 overflow-visible relative">
+          <div
+            data-dropdown-container
+            className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 overflow-visible relative"
+          >
             {/* System Prompt Selector - Mode Display */}
             <div className="relative">
               <Button
@@ -345,7 +393,10 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('🔧 [EnhancedChatInput] Toggle dropdown clicked, current state:', isDropdownOpen);
+                  console.log(
+                    '🔧 [EnhancedChatInput] Toggle dropdown clicked, current state:',
+                    isDropdownOpen,
+                  );
                   setIsDropdownOpen(!isDropdownOpen);
                 }}
                 disabled={isProcessing}
@@ -353,10 +404,16 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
                 title="Changer le mode de l'agent"
               >
                 <Settings className="h-3 w-3" />
-                <span>{SYSTEM_PROMPT_OPTIONS.find(opt => opt.value === selectedSystemPrompt)?.label || 'Mode'}</span>
-                <ChevronDown className={`h-3 w-3 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                <span>
+                  {SYSTEM_PROMPT_OPTIONS.find(
+                    (opt) => opt.value === selectedSystemPrompt,
+                  )?.label || 'Mode'}
+                </span>
+                <ChevronDown
+                  className={`h-3 w-3 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                />
               </Button>
-              
+
               {/* Dropdown Menu */}
               {isDropdownOpen && (
                 <div className="absolute w-72 bg-background border border-border shadow-xl rounded-lg z-[50] py-2 max-h-80 overflow-y-auto bottom-full mb-1 left-1/2 transform -translate-x-1/4">
@@ -369,24 +426,33 @@ export const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
                         key={option.value}
                         type="button"
                         onClick={() => {
-                          console.log('🔧 [EnhancedChatInput] System prompt changed to:', option.value);
+                          console.log(
+                            '🔧 [EnhancedChatInput] System prompt changed to:',
+                            option.value,
+                          );
                           setSelectedSystemPrompt(option.value);
                           setIsDropdownOpen(false);
                         }}
                         className={`w-full text-left px-3 py-2 hover:bg-muted transition-colors ${
-                          selectedSystemPrompt === option.value 
-                            ? 'bg-primary/10 border-l-2 border-primary' 
+                          selectedSystemPrompt === option.value
+                            ? 'bg-primary/10 border-l-2 border-primary'
                             : ''
                         }`}
                       >
                         <div className="flex flex-col">
                           <div className="flex items-center justify-between">
-                            <span className="font-medium text-sm">{option.label}</span>
+                            <span className="font-medium text-sm">
+                              {option.label}
+                            </span>
                             {selectedSystemPrompt === option.value && (
-                              <span className="text-xs text-primary">✓ Actuel</span>
+                              <span className="text-xs text-primary">
+                                ✓ Actuel
+                              </span>
                             )}
                           </div>
-                          <span className="text-xs text-muted-foreground mt-1">{option.description}</span>
+                          <span className="text-xs text-muted-foreground mt-1">
+                            {option.description}
+                          </span>
                         </div>
                       </button>
                     ))}

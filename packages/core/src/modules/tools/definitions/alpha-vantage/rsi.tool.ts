@@ -10,8 +10,7 @@ import {
   DataTypeParam,
 } from './common.ts';
 
-const RSIParams = AlphaVantageBaseParams
-  .merge(SymbolParam)
+const RSIParams = AlphaVantageBaseParams.merge(SymbolParam)
   .merge(IntervalParam)
   .merge(DataTypeParam)
   .extend({
@@ -22,7 +21,9 @@ const RSIParams = AlphaVantageBaseParams
       .max(200)
       .optional()
       .default(14)
-      .describe('Number of data points used to calculate the RSI (typically 14)'),
+      .describe(
+        'Number of data points used to calculate the RSI (typically 14)',
+      ),
     series_type: z
       .enum(['close', 'open', 'high', 'low'])
       .optional()
@@ -31,21 +32,24 @@ const RSIParams = AlphaVantageBaseParams
     entitlement: z
       .enum(['delayed', 'realtime'])
       .optional()
-      .describe('Data entitlement: "delayed" for 15-minute delayed data, "realtime" for real-time data'),
+      .describe(
+        'Data entitlement: "delayed" for 15-minute delayed data, "realtime" for real-time data',
+      ),
   });
 
 export const rsiTool: Tool<typeof RSIParams> = {
-  description: 'Returns Relative Strength Index (RSI) values for the specified security. RSI is a momentum oscillator that measures the speed and magnitude of price changes, typically used to identify overbought or oversold conditions (values above 70 indicate overbought, below 30 indicate oversold)',
-  
+  description:
+    'Returns Relative Strength Index (RSI) values for the specified security. RSI is a momentum oscillator that measures the speed and magnitude of price changes, typically used to identify overbought or oversold conditions (values above 70 indicate overbought, below 30 indicate oversold)',
+
   execute: async (params, context) => {
     const { log } = context;
     const parsedParams = RSIParams.parse(params);
-    
+
     try {
-      log.info('Fetching Relative Strength Index (RSI) data', { 
+      log.info('Fetching Relative Strength Index (RSI) data', {
         symbol: parsedParams.symbol,
         interval: parsedParams.interval,
-        time_period: parsedParams.time_period
+        time_period: parsedParams.time_period,
       });
 
       // Prepare API parameters
@@ -62,26 +66,32 @@ export const rsiTool: Tool<typeof RSIParams> = {
         apiParams.entitlement = parsedParams.entitlement;
       }
 
-      const data = await makeAlphaVantageRequest('RSI', apiParams, parsedParams.datatype);
-      
-      log.info('Successfully fetched RSI data', { 
+      const data = await makeAlphaVantageRequest(
+        'RSI',
+        apiParams,
+        parsedParams.datatype,
+      );
+
+      log.info('Successfully fetched RSI data', {
         symbol: parsedParams.symbol,
         time_period: parsedParams.time_period,
-        dataType: typeof data
+        dataType: typeof data,
       });
 
       return formatAlphaVantageResponse(data, 'RSI');
-      
     } catch (error) {
-      log.error({ err: error, params: parsedParams }, 'Error fetching RSI data');
+      log.error(
+        { err: error, params: parsedParams },
+        'Error fetching RSI data',
+      );
       throw new Error(
         `Failed to fetch RSI data for ${parsedParams.symbol}: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
     }
   },
-  
+
   name: 'rsi',
   parameters: RSIParams,
 };

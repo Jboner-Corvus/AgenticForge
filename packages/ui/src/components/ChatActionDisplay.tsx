@@ -2,7 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Wrench } from 'lucide-react';
 import { useSessionStore } from '../store/sessionStore';
-import type { ThoughtMessage, ToolCallMessage, ToolResultMessage } from '../types/chat';
+import type {
+  ThoughtMessage,
+  ToolCallMessage,
+  ToolResultMessage,
+} from '../types/chat';
 import { EnhancedAgentThoughtBubble } from './EnhancedAgentThoughtBubble';
 import { ActionStatusBubble } from './ActionStatusBubble';
 
@@ -10,10 +14,24 @@ interface ChatActionDisplayProps {
   className?: string;
 }
 
-export const ChatActionDisplay: React.FC<ChatActionDisplayProps> = ({ className = '' }) => {
+export const ChatActionDisplay: React.FC<ChatActionDisplayProps> = ({
+  className = '',
+}) => {
   const messages = useSessionStore((state) => state.messages);
-  const [currentThought, setCurrentThought] = useState<ThoughtMessage | null>(null);
-  const [actions, setActions] = useState<Array<{id: string, toolName: string, status: string, timestamp: string, params?: Record<string, unknown>, result?: unknown, details?: string}>>([]);
+  const [currentThought, setCurrentThought] = useState<ThoughtMessage | null>(
+    null,
+  );
+  const [actions, setActions] = useState<
+    Array<{
+      id: string;
+      toolName: string;
+      status: string;
+      timestamp: string;
+      params?: Record<string, unknown>;
+      result?: unknown;
+      details?: string;
+    }>
+  >([]);
   const [isVisible, setIsVisible] = useState(false);
 
   // Type guards
@@ -22,7 +40,7 @@ export const ChatActionDisplay: React.FC<ChatActionDisplayProps> = ({ className 
       message &&
         typeof message === 'object' &&
         'type' in message &&
-        message.type === 'agent_thought'
+        message.type === 'agent_thought',
     );
   };
 
@@ -31,16 +49,18 @@ export const ChatActionDisplay: React.FC<ChatActionDisplayProps> = ({ className 
       message &&
         typeof message === 'object' &&
         'type' in message &&
-        message.type === 'tool_call'
+        message.type === 'tool_call',
     );
   };
 
-  const isToolResultMessage = (message: unknown): message is ToolResultMessage => {
+  const isToolResultMessage = (
+    message: unknown,
+  ): message is ToolResultMessage => {
     return Boolean(
       message &&
         typeof message === 'object' &&
         'type' in message &&
-        message.type === 'tool_result'
+        message.type === 'tool_result',
     );
   };
 
@@ -56,18 +76,18 @@ export const ChatActionDisplay: React.FC<ChatActionDisplayProps> = ({ className 
 
     // Extraire les actions
     const toolActionsMap = new Map<string, any>();
-    
+
     messages.forEach((message, index) => {
       if (isToolCallMessage(message)) {
         const toolMsg = message;
         const actionId = toolMsg.id || `${toolMsg.toolName}-${index}`;
-        
+
         toolActionsMap.set(actionId, {
           id: actionId,
           toolName: toolMsg.toolName || 'Unknown Tool',
           status: 'in_progress',
           timestamp: new Date(
-            toolMsg.timestamp || Date.now()
+            toolMsg.timestamp || Date.now(),
           ).toLocaleTimeString('fr-FR', {
             hour: '2-digit',
             minute: '2-digit',
@@ -79,14 +99,14 @@ export const ChatActionDisplay: React.FC<ChatActionDisplayProps> = ({ className 
       } else if (isToolResultMessage(message)) {
         const resultMsg = message;
         const actionId = resultMsg.id || `${resultMsg.toolName}-${index}`;
-        
+
         // Chercher l'action correspondante
         const existingAction = Array.from(toolActionsMap.values()).find(
           (action) =>
             action.toolName === resultMsg.toolName &&
-            action.status === 'in_progress'
+            action.status === 'in_progress',
         );
-        
+
         if (existingAction) {
           toolActionsMap.set(existingAction.id, {
             ...existingAction,
@@ -98,7 +118,7 @@ export const ChatActionDisplay: React.FC<ChatActionDisplayProps> = ({ className 
                 : 'error',
             result: resultMsg.result,
             timestamp: new Date(
-              resultMsg.timestamp || Date.now()
+              resultMsg.timestamp || Date.now(),
             ).toLocaleTimeString('fr-FR', {
               hour: '2-digit',
               minute: '2-digit',
@@ -123,7 +143,7 @@ export const ChatActionDisplay: React.FC<ChatActionDisplayProps> = ({ className 
                 ? 'completed'
                 : 'error',
             timestamp: new Date(
-              resultMsg.timestamp || Date.now()
+              resultMsg.timestamp || Date.now(),
             ).toLocaleTimeString('fr-FR', {
               hour: '2-digit',
               minute: '2-digit',
@@ -140,14 +160,15 @@ export const ChatActionDisplay: React.FC<ChatActionDisplayProps> = ({ className 
         }
       }
     });
-    
+
     // Convertir en array et garder les actions actives
     const recentActions = Array.from(toolActionsMap.values()).filter(
-      action => action.status === 'in_progress' || action.status === 'pending'
+      (action) =>
+        action.status === 'in_progress' || action.status === 'pending',
     );
-    
+
     setActions(recentActions);
-    
+
     // Afficher si on a des pensées ou des actions actives
     if (thoughtMessages.length > 0 || recentActions.length > 0) {
       setIsVisible(true);
@@ -160,9 +181,9 @@ export const ChatActionDisplay: React.FC<ChatActionDisplayProps> = ({ className 
   useEffect(() => {
     if (isVisible) {
       const allCompleted = actions.every(
-        (action) => action.status === 'completed' || action.status === 'error'
+        (action) => action.status === 'completed' || action.status === 'error',
       );
-      
+
       if (allCompleted && !currentThought) {
         const timer = setTimeout(() => {
           setIsVisible(false);
@@ -206,12 +227,22 @@ export const ChatActionDisplay: React.FC<ChatActionDisplayProps> = ({ className 
               onClick={handleClose}
               className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
-          
+
           <div className="space-y-3">
             {currentThought && (
               <motion.div
@@ -225,7 +256,7 @@ export const ChatActionDisplay: React.FC<ChatActionDisplayProps> = ({ className 
                 />
               </motion.div>
             )}
-            
+
             {actions.length > 0 && (
               <div className="space-y-2">
                 {actions.map((action, index) => (

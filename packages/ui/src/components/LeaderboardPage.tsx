@@ -1,4 +1,13 @@
-import { BarChart, Clock, Sparkles, CheckCircle, Shield, TrendingUp, Users, Zap } from 'lucide-react';
+import {
+  BarChart,
+  Clock,
+  Sparkles,
+  CheckCircle,
+  Shield,
+  TrendingUp,
+  Users,
+  Zap,
+} from 'lucide-react';
 import { memo, useState, useEffect } from 'react';
 import { Badge } from './ui/badge';
 import {
@@ -35,7 +44,7 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
 
 const getProviderVisuals = (providerId: string, fallbackName?: string) => {
   const providerKey = providerId?.toLowerCase() || 'unknown';
-  
+
   const visuals: Record<
     string,
     { Logo: React.FC<{ className?: string }>; color: string; name: string }
@@ -47,18 +56,26 @@ const getProviderVisuals = (providerId: string, fallbackName?: string) => {
       name: 'Anthropic Claude',
     },
     google: { Logo: GeminiLogo, color: 'bg-blue-500', name: 'Google Gemini' },
-    'google-flash': { Logo: GeminiLogo, color: 'bg-blue-400', name: 'Google Gemini Flash' },
-    'google-pro': { Logo: GeminiLogo, color: 'bg-blue-600', name: 'Google Gemini Pro' },
-    gemini: { Logo: GeminiLogo, color: 'bg-blue-500', name: 'Google Gemini' },
-    xai: { 
-      Logo: () => <div className="text-green-400 font-bold text-lg">𝕏</div>, 
-      color: 'bg-green-500', 
-      name: 'xAI Grok' 
+    'google-flash': {
+      Logo: GeminiLogo,
+      color: 'bg-blue-400',
+      name: 'Google Gemini Flash',
     },
-    qwen: { 
-      Logo: () => <div className="text-blue-400 font-bold">Q</div>, 
-      color: 'bg-blue-500', 
-      name: 'Qwen3 Coder' 
+    'google-pro': {
+      Logo: GeminiLogo,
+      color: 'bg-blue-600',
+      name: 'Google Gemini Pro',
+    },
+    gemini: { Logo: GeminiLogo, color: 'bg-blue-500', name: 'Google Gemini' },
+    xai: {
+      Logo: () => <div className="text-green-400 font-bold text-lg">𝕏</div>,
+      color: 'bg-green-500',
+      name: 'xAI Grok',
+    },
+    qwen: {
+      Logo: () => <div className="text-blue-400 font-bold">Q</div>,
+      color: 'bg-blue-500',
+      name: 'Qwen3 Coder',
     },
     openrouter: {
       Logo: OpenRouterLogo,
@@ -66,16 +83,21 @@ const getProviderVisuals = (providerId: string, fallbackName?: string) => {
       name: 'OpenRouter',
     },
   };
-  
-  return visuals[providerKey] || {
-    Logo: () => (
-      <div className="w-5 h-5 bg-gray-700 rounded flex items-center justify-center text-xs font-bold text-gray-300">
-        {providerKey.charAt(0).toUpperCase()}
-      </div>
-    ),
-    color: 'bg-gray-500',
-    name: PROVIDER_DISPLAY_NAMES[providerKey] || fallbackName || 'Unknown Provider',
-  };
+
+  return (
+    visuals[providerKey] || {
+      Logo: () => (
+        <div className="w-5 h-5 bg-gray-700 rounded flex items-center justify-center text-xs font-bold text-gray-300">
+          {providerKey.charAt(0).toUpperCase()}
+        </div>
+      ),
+      color: 'bg-gray-500',
+      name:
+        PROVIDER_DISPLAY_NAMES[providerKey] ||
+        fallbackName ||
+        'Unknown Provider',
+    }
+  );
 };
 
 // --- Main Component ---
@@ -91,7 +113,11 @@ export const LeaderboardPage = memo(() => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Use the correct LLM keys store
-  const { keys: llmApiKeys, isLoading: _isLoadingKeys, fetchKeys } = useLLMKeysStore();
+  const {
+    keys: llmApiKeys,
+    isLoading: _isLoadingKeys,
+    fetchKeys,
+  } = useLLMKeysStore();
   const isLoadingLeaderboardStats = useCombinedStore(
     (state) => state.isLoadingLeaderboardStats,
   );
@@ -145,7 +171,7 @@ export const LeaderboardPage = memo(() => {
         // Create leaderboard data based on actual API keys with enhanced masking
         const getMaskedKey = (keyValue: string, providerId: string): string => {
           if (!keyValue) return 'No Key';
-          
+
           const maskingRules: Record<string, { start: number; end: number }> = {
             openai: { start: 7, end: 6 },
             anthropic: { start: 8, end: 6 },
@@ -158,30 +184,38 @@ export const LeaderboardPage = memo(() => {
             openrouter: { start: 8, end: 6 },
             default: { start: 4, end: 4 },
           };
-          
+
           const rule = maskingRules[providerId] || maskingRules.default;
-          
+
           if (keyValue.length <= rule.start + rule.end) {
             return `${keyValue.charAt(0)}${'*'.repeat(Math.max(1, keyValue.length - 2))}${keyValue.charAt(keyValue.length - 1)}`;
           }
-          
+
           const start = keyValue.substring(0, rule.start);
           const end = keyValue.substring(keyValue.length - rule.end);
-          const middle = '*'.repeat(Math.max(3, keyValue.length - rule.start - rule.end));
-          
+          const middle = '*'.repeat(
+            Math.max(3, keyValue.length - rule.start - rule.end),
+          );
+
           return `${start}${middle}${end}`;
         };
 
-        const apiKeyData: ApiKeyUsage[] = llmApiKeys.map((key: LLMKey, index: number) => ({
-          ...key,
-          keyMask: getMaskedKey(key.keyValue || '', key.providerId),
-          rank: index + 1,
-        }));
+        const apiKeyData: ApiKeyUsage[] = llmApiKeys.map(
+          (key: LLMKey, index: number) => ({
+            ...key,
+            keyMask: getMaskedKey(key.keyValue || '', key.providerId),
+            rank: index + 1,
+          }),
+        );
 
         setLeaderboardData(apiKeyData);
       } catch (err) {
         console.error('Failed to fetch leaderboard data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load leaderboard data');
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Failed to load leaderboard data',
+        );
 
         // Fallback to mock data if API fails with enhanced masking
         const getMaskedKeyFallback = (keyValue: string): string => {
@@ -193,11 +227,13 @@ export const LeaderboardPage = memo(() => {
             : `${keyValue.charAt(0)}${'*'.repeat(Math.max(1, keyValue.length - 2))}${keyValue.charAt(keyValue.length - 1)}`;
         };
 
-        const mockData: ApiKeyUsage[] = llmApiKeys.map((key: LLMKey, index: number) => ({
-          ...key,
-          keyMask: getMaskedKeyFallback(key.keyValue || ''),
-          rank: index + 1,
-        }));
+        const mockData: ApiKeyUsage[] = llmApiKeys.map(
+          (key: LLMKey, index: number) => ({
+            ...key,
+            keyMask: getMaskedKeyFallback(key.keyValue || ''),
+            rank: index + 1,
+          }),
+        );
         setLeaderboardData(mockData);
       }
     };
@@ -241,7 +277,9 @@ export const LeaderboardPage = memo(() => {
           <div className="text-red-500 mb-4">
             <Sparkles className="mx-auto h-12 w-12" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">Error Loading Leaderboard</h3>
+          <h3 className="text-xl font-semibold mb-2">
+            Error Loading Leaderboard
+          </h3>
           <p className="text-muted-foreground mb-4">{error}</p>
           <p className="text-sm text-muted-foreground">
             Showing cached data if available, or mock data for demonstration.
@@ -261,27 +299,29 @@ export const LeaderboardPage = memo(() => {
         transition={{ duration: 0.5 }}
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
-           <div className="flex items-center mb-4 sm:mb-0">
-             <BarChart className="mr-3 h-8 w-8 text-primary" />
-             <h2 className="text-3xl font-bold">API Key Leaderboard</h2>
-           </div>
-           <div className="flex items-center gap-4">
-             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-               <Clock className="h-4 w-4" />
-               <span>Resets in: {timeLeft}</span>
-             </div>
-             <Button
-               onClick={refreshLeaderboardData}
-               disabled={isRefreshing || !authToken || !sessionId}
-               variant="outline"
-               size="sm"
-               className="flex items-center gap-2"
-             >
-               <TrendingUp className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-               {isRefreshing ? 'Refreshing...' : 'Refresh'}
-             </Button>
-           </div>
-         </div>
+          <div className="flex items-center mb-4 sm:mb-0">
+            <BarChart className="mr-3 h-8 w-8 text-primary" />
+            <h2 className="text-3xl font-bold">API Key Leaderboard</h2>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              <span>Resets in: {timeLeft}</span>
+            </div>
+            <Button
+              onClick={refreshLeaderboardData}
+              disabled={isRefreshing || !authToken || !sessionId}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <TrendingUp
+                className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
+              />
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          </div>
+        </div>
 
         {/* Statistics Cards */}
         {leaderboardStats && (
@@ -295,8 +335,12 @@ export const LeaderboardPage = memo(() => {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-blue-100 text-sm font-medium">Tokens Saved</p>
-                    <p className="text-2xl font-bold">{leaderboardStats.tokensSaved.toLocaleString()}</p>
+                    <p className="text-blue-100 text-sm font-medium">
+                      Tokens Saved
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {leaderboardStats.tokensSaved.toLocaleString()}
+                    </p>
                   </div>
                   <Zap className="h-8 w-8 text-blue-200" />
                 </div>
@@ -310,8 +354,12 @@ export const LeaderboardPage = memo(() => {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-green-100 text-sm font-medium">Successful Runs</p>
-                    <p className="text-2xl font-bold">{leaderboardStats.successfulRuns.toLocaleString()}</p>
+                    <p className="text-green-100 text-sm font-medium">
+                      Successful Runs
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {leaderboardStats.successfulRuns.toLocaleString()}
+                    </p>
                   </div>
                   <CheckCircle className="h-8 w-8 text-green-200" />
                 </div>
@@ -325,8 +373,12 @@ export const LeaderboardPage = memo(() => {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-purple-100 text-sm font-medium">Sessions Created</p>
-                    <p className="text-2xl font-bold">{leaderboardStats.sessionsCreated.toLocaleString()}</p>
+                    <p className="text-purple-100 text-sm font-medium">
+                      Sessions Created
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {leaderboardStats.sessionsCreated.toLocaleString()}
+                    </p>
                   </div>
                   <Users className="h-8 w-8 text-purple-200" />
                 </div>
@@ -340,8 +392,12 @@ export const LeaderboardPage = memo(() => {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-orange-100 text-sm font-medium">API Keys Added</p>
-                    <p className="text-2xl font-bold">{leaderboardStats.apiKeysAdded.toLocaleString()}</p>
+                    <p className="text-orange-100 text-sm font-medium">
+                      API Keys Added
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {leaderboardStats.apiKeysAdded.toLocaleString()}
+                    </p>
                   </div>
                   <Shield className="h-8 w-8 text-orange-200" />
                 </div>
@@ -354,19 +410,37 @@ export const LeaderboardPage = memo(() => {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <TrendingUp className="h-4 w-4" />
                   <span>
-                    <strong>Performance Insights:</strong> {llmApiKeys.length} API key{llmApiKeys.length !== 1 ? 's' : ''} configured • 
-                    {llmApiKeys.filter(k => k.isActive).length} active
+                    <strong>Performance Insights:</strong> {llmApiKeys.length}{' '}
+                    API key{llmApiKeys.length !== 1 ? 's' : ''} configured •
+                    {llmApiKeys.filter((k) => k.isActive).length} active
                     {leaderboardStats.successfulRuns > 0 && (
                       <span className="ml-2">
-                        • Success rate: {((leaderboardStats.successfulRuns / Math.max(1, leaderboardStats.successfulRuns + leaderboardStats.sessionsCreated)) * 100).toFixed(1)}%
+                        • Success rate:{' '}
+                        {(
+                          (leaderboardStats.successfulRuns /
+                            Math.max(
+                              1,
+                              leaderboardStats.successfulRuns +
+                                leaderboardStats.sessionsCreated,
+                            )) *
+                          100
+                        ).toFixed(1)}
+                        %
                       </span>
                     )}
                   </span>
                 </div>
                 {llmApiKeys.length > 0 && (
                   <div className="text-xs text-muted-foreground">
-                    Providers: {Array.from(new Set(llmApiKeys.map(k => k.providerId))).join(', ')} • 
-                    Total usage: {llmApiKeys.reduce((sum, k) => sum + (k.usageCount || 0), 0).toLocaleString()} requests
+                    Providers:{' '}
+                    {Array.from(
+                      new Set(llmApiKeys.map((k) => k.providerId)),
+                    ).join(', ')}{' '}
+                    • Total usage:{' '}
+                    {llmApiKeys
+                      .reduce((sum, k) => sum + (k.usageCount || 0), 0)
+                      .toLocaleString()}{' '}
+                    requests
                   </div>
                 )}
               </div>
@@ -383,7 +457,7 @@ export const LeaderboardPage = memo(() => {
               leaderboard stats.
             </p>
             <Button
-              onClick={() => window.location.hash = '#llm-keys'}
+              onClick={() => (window.location.hash = '#llm-keys')}
               className="mt-4"
               variant="outline"
             >
@@ -470,7 +544,9 @@ export const LeaderboardPage = memo(() => {
                           </div>
                           <div className="flex flex-col">
                             <span className="font-medium">{name}</span>
-                            <span className="text-xs text-gray-400">ID: {key.providerId}</span>
+                            <span className="text-xs text-gray-400">
+                              ID: {key.providerId}
+                            </span>
                           </div>
                           {isMasterKey && (
                             <Badge className="ml-2 bg-yellow-900/50 text-yellow-300 border border-yellow-700/50">
@@ -483,7 +559,9 @@ export const LeaderboardPage = memo(() => {
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
                         <div className="flex flex-col">
                           <span className="font-medium">{key.keyName}</span>
-                          <span className="text-xs text-gray-400 font-mono">{key.keyMask}</span>
+                          <span className="text-xs text-gray-400 font-mono">
+                            {key.keyMask}
+                          </span>
                           {isMasterKey && (
                             <div className="text-xs text-yellow-500/80 mt-1">
                               From Environment
@@ -494,11 +572,15 @@ export const LeaderboardPage = memo(() => {
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
                         <div className="flex flex-col">
                           <span className="font-medium">
-                            {key.usageStats?.totalRequests?.toLocaleString() || key.usageCount?.toLocaleString() || '0'}
+                            {key.usageStats?.totalRequests?.toLocaleString() ||
+                              key.usageCount?.toLocaleString() ||
+                              '0'}
                           </span>
                           {key.usageStats && (
                             <span className="text-xs text-gray-400">
-                              {key.usageStats.failedRequests > 0 ? `${key.usageStats.failedRequests} failed` : 'All success'}
+                              {key.usageStats.failedRequests > 0
+                                ? `${key.usageStats.failedRequests} failed`
+                                : 'All success'}
                             </span>
                           )}
                         </div>
@@ -506,13 +588,20 @@ export const LeaderboardPage = memo(() => {
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
                         <div className="flex flex-col">
                           <span className="font-medium">
-                            {key.usageStats?.successfulRequests?.toLocaleString() || '0'}
+                            {key.usageStats?.successfulRequests?.toLocaleString() ||
+                              '0'}
                           </span>
-                          {key.usageStats && key.usageStats.totalRequests > 0 && (
-                            <span className="text-xs text-gray-400">
-                              {Math.round((key.usageStats.successfulRequests / key.usageStats.totalRequests) * 100)}% success
-                            </span>
-                          )}
+                          {key.usageStats &&
+                            key.usageStats.totalRequests > 0 && (
+                              <span className="text-xs text-gray-400">
+                                {Math.round(
+                                  (key.usageStats.successfulRequests /
+                                    key.usageStats.totalRequests) *
+                                    100,
+                                )}
+                                % success
+                              </span>
+                            )}
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">

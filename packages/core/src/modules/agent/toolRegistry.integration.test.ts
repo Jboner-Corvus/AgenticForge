@@ -195,10 +195,10 @@ vi.mock('../../utils/llmProvider.ts', () => ({
     // Add the chaining methods that the tests expect
     mockGetLlmResponse.mockResolvedValueOnce = vi.fn(() => mockGetLlmResponse);
     mockGetLlmResponse.mockResolvedValue = vi.fn(() => mockGetLlmResponse);
-    
+
     return {
       getLlmResponse: mockGetLlmResponse,
-      getErrorType: vi.fn()
+      getErrorType: vi.fn(),
     };
   }),
 }));
@@ -285,7 +285,9 @@ describe('Tool Registry Integration Tests', () => {
       vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: { name: 'readFile', params: { path: '/test/file.txt' } },
       });
-      vi.mocked(mockToolRegistry.execute).mockResolvedValue('File content here');
+      vi.mocked(mockToolRegistry.execute).mockResolvedValue(
+        'File content here',
+      );
 
       await agent.run();
 
@@ -756,8 +758,7 @@ describe('Tool Registry Integration Tests', () => {
       const responseSchemaModule = await import('./responseSchema.ts');
       const mockResponseSchema = responseSchemaModule.llmResponseSchema;
       const redisClientModule = await import('../redis/redisClient.ts');
-      const mockRedisClient =
-        redisClientModule.getRedisClientInstance();
+      const mockRedisClient = redisClientModule.getRedisClientInstance();
 
       // Simuler plusieurs appels rapides au même outil
       vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(

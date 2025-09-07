@@ -17,10 +17,12 @@ const { chromium } = require('playwright');
   await Promise.all([
     page1.goto('https://example.com'),
     page2.goto('https://httpbin.org/json'),
-    page3.goto('https://httpbin.org/html')
+    page3.goto('https://httpbin.org/html'),
   ]);
 
-  console.log('Opened example.com, httpbin.org/json, and httpbin.org/html in separate tabs/contexts.');
+  console.log(
+    'Opened example.com, httpbin.org/json, and httpbin.org/html in separate tabs/contexts.',
+  );
 
   // Store pages for later use
   global.page1 = page1;
@@ -34,5 +36,5 @@ const { chromium } = require('playwright');
   // Keep browser open for subsequent actions
   // In a real scenario, you'd perform actions here and then close.
   // For this interactive session, we'll keep it open temporarily.
-  // await browser.close(); 
+  // await browser.close();
 })();

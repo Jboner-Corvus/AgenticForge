@@ -40,7 +40,7 @@ export class WebSocketManager {
       path: '/ws',
       // Permettre toutes les origines pour les WebSocket (géré côté client)
       perMessageDeflate: false,
-      maxPayload: 1024 * 1024 // 1MB max payload
+      maxPayload: 1024 * 1024, // 1MB max payload
     });
 
     this.setupWebSocketServer();
@@ -57,11 +57,13 @@ export class WebSocketManager {
         id: clientId,
         ws,
         subscribedChannels: new Set(),
-        lastPing: Date.now()
+        lastPing: Date.now(),
       };
 
       this.clients.set(clientId, client);
-      logger.info(`📡 Client connected: ${clientId} (${this.clients.size} total clients)`);
+      logger.info(
+        `📡 Client connected: ${clientId} (${this.clients.size} total clients)`,
+      );
 
       // Configurer les listeners pour ce client
       this.setupClientListeners(client);
@@ -70,7 +72,7 @@ export class WebSocketManager {
       this.sendToClient(client, {
         type: 'connection_established',
         data: { clientId },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     });
 
@@ -85,17 +87,25 @@ export class WebSocketManager {
         const message: WebSocketMessage = JSON.parse(data.toString());
         this.handleClientMessage(client, message);
       } catch (error) {
-        logger.error({ err: error, clientId: client.id }, '📡 Failed to parse WebSocket message');
+        logger.error(
+          { err: error, clientId: client.id },
+          '📡 Failed to parse WebSocket message',
+        );
       }
     });
 
     client.ws.on('close', (code, reason) => {
-      logger.info(`📡 Client disconnected: ${client.id} (code: ${code}, reason: ${reason})`);
+      logger.info(
+        `📡 Client disconnected: ${client.id} (code: ${code}, reason: ${reason})`,
+      );
       this.handleClientDisconnect(client);
     });
 
     client.ws.on('error', (error) => {
-      logger.error({ err: error, clientId: client.id }, '📡 WebSocket client error');
+      logger.error(
+        { err: error, clientId: client.id },
+        '📡 WebSocket client error',
+      );
     });
 
     client.ws.on('pong', () => {
@@ -103,66 +113,85 @@ export class WebSocketManager {
     });
   }
 
-  private handleClientMessage(client: WebSocketClient, message: WebSocketMessage): void {
-    logger.info(`📡 Received message from client ${client.id}:`, message.type, message.data);
+  private handleClientMessage(
+    client: WebSocketClient,
+    message: WebSocketMessage,
+  ): void {
+    logger.info(
+      `📡 Received message from client ${client.id}:`,
+      message.type,
+      message.data,
+    );
 
     switch (message.type) {
       case 'ping':
         this.sendToClient(client, {
           type: 'pong',
           data: {},
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
         break;
 
       case 'subscribe_job_events':
-        logger.info(`📡 Processing subscribe_job_events for job: ${message.data?.jobId}`);
+        logger.info(
+          `📡 Processing subscribe_job_events for job: ${message.data?.jobId}`,
+        );
         if (message.data?.jobId) {
           this.subscribeClientToJobEvents(client, message.data.jobId);
         } else {
-          logger.warn(`📡 subscribe_job_events missing jobId from client ${client.id}`);
+          logger.warn(
+            `📡 subscribe_job_events missing jobId from client ${client.id}`,
+          );
         }
         break;
 
       case 'set_session':
         if (message.data?.sessionId) {
           client.sessionId = message.data.sessionId;
-          logger.info(`📡 Client ${client.id} set session: ${client.sessionId}`);
+          logger.info(
+            `📡 Client ${client.id} set session: ${client.sessionId}`,
+          );
         }
         break;
 
       default:
-        logger.warn(`📡 Unknown message type: ${message.type} from client ${client.id}`);
+        logger.warn(
+          `📡 Unknown message type: ${message.type} from client ${client.id}`,
+        );
     }
   }
 
-  private subscribeClientToJobEvents(client: WebSocketClient, jobId: string): void {
+  private subscribeClientToJobEvents(
+    client: WebSocketClient,
+    jobId: string,
+  ): void {
     const channel = `job:${jobId}:events`;
-    
+
     if (!client.subscribedChannels.has(channel)) {
       client.jobId = jobId;
       client.subscribedChannels.add(channel);
-      
+
       // S'assurer que Redis est abonné à ce channel
       this.redisSubscriber.subscribe(channel);
-      
+
       logger.info(`📡 Client ${client.id} subscribed to job events: ${jobId}`);
-      
+
       this.sendToClient(client, {
         type: 'subscribed',
         data: { channel, jobId },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
   }
 
   private handleClientDisconnect(client: WebSocketClient): void {
     // Nettoyer les abonnements
-    client.subscribedChannels.forEach(channel => {
+    client.subscribedChannels.forEach((channel) => {
       // Vérifier si d'autres clients sont abonnés avant de se désabonner de Redis
-      const hasOtherSubscribers = Array.from(this.clients.values())
-        .some(c => c.id !== client.id && c.subscribedChannels.has(channel));
-      
+      const hasOtherSubscribers = Array.from(this.clients.values()).some(
+        (c) => c.id !== client.id && c.subscribedChannels.has(channel),
+      );
+
       if (!hasOtherSubscribers) {
         this.redisSubscriber.unsubscribe(channel);
       }
@@ -176,11 +205,14 @@ export class WebSocketManager {
       try {
         const data = JSON.parse(message);
         logger.info(`📡 Redis message received on ${channel}:`, data.type);
-        
+
         // Distribuer le message aux clients abonnés
         this.distributeMessage(channel, data);
       } catch (error) {
-        logger.error({ err: error, channel }, '📡 Failed to parse Redis message');
+        logger.error(
+          { err: error, channel },
+          '📡 Failed to parse Redis message',
+        );
       }
     });
 
@@ -192,22 +224,31 @@ export class WebSocketManager {
   }
 
   private distributeMessage(channel: string, message: WebSocketMessage): void {
-    const relevantClients = Array.from(this.clients.values())
-      .filter(client => client.subscribedChannels.has(channel));
+    const relevantClients = Array.from(this.clients.values()).filter((client) =>
+      client.subscribedChannels.has(channel),
+    );
 
-    logger.info(`📡 Distributing message to ${relevantClients.length} clients on channel ${channel}`);
+    logger.info(
+      `📡 Distributing message to ${relevantClients.length} clients on channel ${channel}`,
+    );
 
-    relevantClients.forEach(client => {
+    relevantClients.forEach((client) => {
       this.sendToClient(client, message);
     });
   }
 
-  private sendToClient(client: WebSocketClient, message: WebSocketMessage): void {
+  private sendToClient(
+    client: WebSocketClient,
+    message: WebSocketMessage,
+  ): void {
     if (client.ws.readyState === WebSocket.OPEN) {
       try {
         client.ws.send(JSON.stringify(message));
       } catch (error) {
-        logger.error({ err: error, clientId: client.id }, '📡 Failed to send message to client');
+        logger.error(
+          { err: error, clientId: client.id },
+          '📡 Failed to send message to client',
+        );
       }
     }
   }
@@ -217,18 +258,23 @@ export class WebSocketManager {
       const now = Date.now();
       const pingTimeout = 60000; // 1 minute timeout
 
-      this.clients.forEach(client => {
+      this.clients.forEach((client) => {
         if (client.ws.readyState === WebSocket.OPEN) {
           // Envoyer un ping
           try {
             client.ws.ping();
           } catch (error) {
-            logger.error({ err: error, clientId: client.id }, '📡 Failed to ping client');
+            logger.error(
+              { err: error, clientId: client.id },
+              '📡 Failed to ping client',
+            );
           }
 
           // Vérifier le timeout
           if (now - client.lastPing > pingTimeout) {
-            logger.warn(`📡 Client ${client.id} ping timeout, closing connection`);
+            logger.warn(
+              `📡 Client ${client.id} ping timeout, closing connection`,
+            );
             client.ws.close(1000, 'Ping timeout');
           }
         }
@@ -241,16 +287,17 @@ export class WebSocketManager {
   }
 
   public broadcastToAll(message: WebSocketMessage): void {
-    this.clients.forEach(client => {
+    this.clients.forEach((client) => {
       this.sendToClient(client, message);
     });
   }
 
   public broadcastToJob(jobId: string, message: WebSocketMessage): void {
-    const relevantClients = Array.from(this.clients.values())
-      .filter(client => client.jobId === jobId);
+    const relevantClients = Array.from(this.clients.values()).filter(
+      (client) => client.jobId === jobId,
+    );
 
-    relevantClients.forEach(client => {
+    relevantClients.forEach((client) => {
       this.sendToClient(client, message);
     });
   }
@@ -263,12 +310,12 @@ export class WebSocketManager {
     const clientsByJob: Record<string, number> = {};
     const allChannels = new Set<string>();
 
-    this.clients.forEach(client => {
+    this.clients.forEach((client) => {
       if (client.jobId) {
         clientsByJob[client.jobId] = (clientsByJob[client.jobId] || 0) + 1;
       }
-      
-      client.subscribedChannels.forEach(channel => {
+
+      client.subscribedChannels.forEach((channel) => {
         allChannels.add(channel);
       });
     });
@@ -276,11 +323,14 @@ export class WebSocketManager {
     return {
       connectedClients: this.clients.size,
       totalChannels: allChannels.size,
-      clientsByJob
+      clientsByJob,
     };
   }
 
-  public async publishToChannel(channel: string, message: WebSocketMessage): Promise<void> {
+  public async publishToChannel(
+    channel: string,
+    message: WebSocketMessage,
+  ): Promise<void> {
     try {
       await this.redisClient.publish(channel, JSON.stringify(message));
       logger.info(`📡 Published message to channel: ${channel}`);
@@ -295,7 +345,7 @@ export class WebSocketManager {
       clearInterval(this.pingInterval);
     }
 
-    this.clients.forEach(client => {
+    this.clients.forEach((client) => {
       if (client.ws.readyState === WebSocket.OPEN) {
         client.ws.close(1000, 'Server shutdown');
       }
@@ -303,7 +353,7 @@ export class WebSocketManager {
 
     this.wss.close();
     this.redisSubscriber.disconnect();
-    
+
     logger.info('📡 WebSocket server closed');
   }
 }
@@ -311,7 +361,10 @@ export class WebSocketManager {
 // Instance globale (sera initialisée dans webServer.ts)
 let websocketManager: WebSocketManager | null = null;
 
-export function initializeWebSocketManager(server: HttpServer, redisClient: Redis): WebSocketManager {
+export function initializeWebSocketManager(
+  server: HttpServer,
+  redisClient: Redis,
+): WebSocketManager {
   if (websocketManager) {
     logger.warn('📡 WebSocket manager already initialized');
     return websocketManager;

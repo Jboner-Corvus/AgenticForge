@@ -3,12 +3,15 @@
 ## Issue 1: Unhandled Rejection Causing Server Crashes
 
 ### Problem
+
 The server was crashing with "Unhandled rejection caught!" errors when processing user messages. This was causing the process to exit and restart.
 
 ### Root Cause
+
 The worker process was not properly handling all asynchronous operations, leading to unhandled promise rejections that triggered the global error handler in webServer.ts.
 
 ### Solution
+
 1. **Enhanced Error Handling in Worker**:
    - Added try-catch blocks around the process-message job handler in worker.ts
    - Improved error handling in the processJob function with specific try-catch blocks for different operations
@@ -25,12 +28,15 @@ The worker process was not properly handling all asynchronous operations, leadin
 ## Issue 2: GitHub API Network Resilience
 
 ### Problem
+
 The VersionService was failing when the GitHub API was temporarily unavailable, causing update checks to fail.
 
 ### Root Cause
+
 The GitHub API calls had no retry mechanism and could fail due to temporary network issues or API rate limiting.
 
 ### Solution
+
 1. **Added Retry Logic**:
    - Implemented retry mechanism with exponential backoff (up to 3 attempts)
    - Added timeout handling for fetch requests (10 seconds)
@@ -57,6 +63,7 @@ The GitHub API calls had no retry mechanism and could fail due to temporary netw
    - Improved error logging
 
 ## Testing
+
 - Code has been linted and compiled successfully
 - No breaking changes introduced
 - Error handling is more robust and informative

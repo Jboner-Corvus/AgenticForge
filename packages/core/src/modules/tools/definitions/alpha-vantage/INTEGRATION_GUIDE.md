@@ -53,34 +53,43 @@ src/modules/tools/definitions/alpha-vantage/
 ## 🔧 Fonctionnalités Implémentées
 
 ### Outils de Base (Core Stock APIs)
+
 - ✅ `time_series_intraday` - Données OHLCV intrajournalières
 - ✅ `time_series_daily` - Données OHLCV quotidiennes
 - ✅ `global_quote` - Prix et volume actuels
 - ✅ `symbol_search` - Recherche de symboles
 
 ### Données Fondamentales
+
 - ✅ `company_overview` - Vue d'ensemble de l'entreprise
 
 ### Actualités et Intelligence
+
 - ✅ `news_sentiment` - Actualités et sentiment IA
 
 ### Analyse Technique
+
 - ✅ `sma` - Moyenne mobile simple
 - ✅ `rsi` - Indice de force relative
 
 ### Devises (Forex)
+
 - ✅ `fx_daily` - Taux de change quotidiens
 
 ### Cryptomonnaies
+
 - ✅ `digital_currency_daily` - Données crypto quotidiennes
 
 ### Matières Premières
+
 - ✅ `wti` - Prix du pétrole WTI
 
 ### Indicateurs Économiques
+
 - ✅ `inflation` - Données d'inflation US
 
 ### Utilitaires
+
 - ✅ `alpha_vantage_ping` - Test de santé
 
 ## 🚀 Utilisation
@@ -94,36 +103,36 @@ import {
   timeSeriesDailyTool,
   globalQuoteTool,
   symbolSearchTool,
-  
+
   // Fundamental data
   companyOverviewTool,
-  
+
   // News & Intelligence
   newsSentimentTool,
-  
+
   // Technical analysis
   smaTool,
   rsiTool,
   indicatorTool,
-  
+
   // Forex
   fxDailyTool,
-  
+
   // Crypto
   digitalCurrencyDailyTool,
-  
+
   // Commodities
   wtiTool,
-  
+
   // Economic indicators
   inflationTool,
-  
+
   // Utilities
   pingTool,
-  
+
   // All tools array
   ALL_ALPHA_VANTAGE_TOOLS,
-  
+
   // Tool categories
   ALPHA_VANTAGE_TOOL_CATEGORIES,
 } from './alpha-vantage';
@@ -136,57 +145,72 @@ import {
 const pingResult = await pingTool.execute({}, context);
 
 // Obtenir le prix actuel d'une action
-const quote = await globalQuoteTool.execute({
-  symbol: 'AAPL',
-  apikey: process.env.ALPHA_VANTAGE_API_KEY
-}, context);
+const quote = await globalQuoteTool.execute(
+  {
+    symbol: 'AAPL',
+    apikey: process.env.ALPHA_VANTAGE_API_KEY,
+  },
+  context,
+);
 
 // Données intrajournalières
-const intraday = await timeSeriesIntradayTool.execute({
-  symbol: 'TSLA',
-  interval: '5min',
-  outputsize: 'compact',
-  apikey: process.env.ALPHA_VANTAGE_API_KEY
-}, context);
+const intraday = await timeSeriesIntradayTool.execute(
+  {
+    symbol: 'TSLA',
+    interval: '5min',
+    outputsize: 'compact',
+    apikey: process.env.ALPHA_VANTAGE_API_KEY,
+  },
+  context,
+);
 
 // Sentiment des actualités
-const sentiment = await newsSentimentTool.execute({
-  tickers: 'AAPL,MSFT',
-  limit: 10,
-  apikey: process.env.ALPHA_VANTAGE_API_KEY
-}, context);
+const sentiment = await newsSentimentTool.execute(
+  {
+    tickers: 'AAPL,MSFT',
+    limit: 10,
+    apikey: process.env.ALPHA_VANTAGE_API_KEY,
+  },
+  context,
+);
 ```
 
 ## ✅ Tests et Validation
 
 ### Tests Unitaires
+
 - ✅ Tests pour l'outil ping
 - ✅ Tests pour les utilitaires communs
 - ✅ Mock des appels API
 - ✅ Validation des paramètres Zod
 
 ### Tests d'Intégration
+
 - ✅ Compilation TypeScript
 - ✅ Import/export des modules
 - ✅ Validation des types
 
 ### Tests Fonctionnels
+
 - ✅ Outil ping testé avec succès
 - ⚠️ Tests avec vraie API nécessitent une clé valide
 
 ## 🔒 Sécurité et Bonnes Pratiques
 
 ### Gestion des Clés API
+
 - ✅ Paramètre `apikey` obligatoire pour tous les outils API
 - ✅ Pas de clé API hardcodée dans le code
 - ✅ Variables d'environnement recommandées
 
 ### Validation des Données
+
 - ✅ Validation Zod pour tous les paramètres
 - ✅ Types TypeScript stricts
 - ✅ Gestion d'erreurs robuste
 
 ### Gestion d'Erreurs
+
 - ✅ Gestion des erreurs API Alpha Vantage
 - ✅ Gestion des limites de taux
 - ✅ Messages d'erreur informatifs
@@ -195,12 +219,14 @@ const sentiment = await newsSentimentTool.execute({
 ## 📊 Compatibilité avec l'Original
 
 ### Fonctionnalités Portées
+
 - ✅ Toutes les fonctions principales du MCP Python original
 - ✅ Paramètres d'API identiques
 - ✅ Structure de réponse cohérente
 - ✅ Support des données temps réel et différées
 
 ### Améliorations TypeScript
+
 - ✅ Typage strict avec Zod
 - ✅ Interface TypeScript native
 - ✅ Meilleure intégration IDE
@@ -209,6 +235,7 @@ const sentiment = await newsSentimentTool.execute({
 ## 🔄 Prochaines Étapes
 
 ### Outils Additionnels Possibles
+
 - [ ] `time_series_weekly` - Données hebdomadaires
 - [ ] `time_series_monthly` - Données mensuelles
 - [ ] `income_statement` - État des résultats
@@ -220,12 +247,14 @@ const sentiment = await newsSentimentTool.execute({
 - [ ] Plus d'indicateurs économiques (PIB, taux de chômage, etc.)
 
 ### Intégration AgenticForge
+
 1. Ajouter les outils au registre des outils AgenticForge
 2. Configurer les variables d'environnement pour les clés API
 3. Tester dans un flux de travail réel
 4. Documenter les cas d'usage spécifiques
 
 ### Tests Avancés
+
 - [ ] Tests avec vraie API Alpha Vantage
 - [ ] Tests de performance
 - [ ] Tests de limites de taux

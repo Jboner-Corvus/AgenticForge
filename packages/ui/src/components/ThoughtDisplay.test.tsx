@@ -14,7 +14,15 @@ vi.mock('../lib/hooks/useThoughtHighlight', () => ({
 // Mock framer-motion
 vi.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, className, ...props }: { children: React.ReactNode; className?: string; [key: string]: any }) => (
+    div: ({
+      children,
+      className,
+      ...props
+    }: {
+      children: React.ReactNode;
+      className?: string;
+      [key: string]: any;
+    }) => (
       <div className={className} {...props}>
         {children}
       </div>
@@ -34,7 +42,7 @@ describe('ThoughtDisplay', () => {
     render(
       <TestLanguageProvider>
         <ThoughtDisplay thought={mockThought} timestamp="10:30:45" />
-      </TestLanguageProvider>
+      </TestLanguageProvider>,
     );
 
     // Wait for the component to render
@@ -47,7 +55,7 @@ describe('ThoughtDisplay', () => {
     render(
       <TestLanguageProvider>
         <ThoughtDisplay thought={mockThought} />
-      </TestLanguageProvider>
+      </TestLanguageProvider>,
     );
 
     // Wait for the component to render
@@ -65,7 +73,7 @@ describe('ThoughtDisplay', () => {
     render(
       <TestLanguageProvider>
         <ThoughtDisplay thought={importantThought} />
-      </TestLanguageProvider>
+      </TestLanguageProvider>,
     );
 
     // Wait for the component to render

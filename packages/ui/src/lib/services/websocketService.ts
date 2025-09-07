@@ -1,4 +1,3 @@
-
 export interface WebSocketMessage {
   type: string;
   data: any;
@@ -37,7 +36,10 @@ class WebSocketService {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
   private isConnecting = false;
-  private messageListeners: Map<string, Array<(message: WebSocketMessage) => void>> = new Map();
+  private messageListeners: Map<
+    string,
+    Array<(message: WebSocketMessage) => void>
+  > = new Map();
   private connectionListeners: Array<(connected: boolean) => void> = [];
   private heartbeatInterval: NodeJS.Timeout | null = null;
   private jobId: string | null = null;
@@ -57,13 +59,16 @@ class WebSocketService {
   }
 
   public connect(): void {
-    if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
+    if (
+      this.isConnecting ||
+      (this.ws && this.ws.readyState === WebSocket.OPEN)
+    ) {
       return;
     }
 
     this.isConnecting = true;
     const wsUrl = this.getWebSocketUrl();
-    
+
     console.log(`📡 [WebSocket] Connecting to ${wsUrl}...`);
 
     try {
@@ -85,7 +90,7 @@ class WebSocketService {
       this.reconnectAttempts = 0;
       this.startHeartbeat();
       this.notifyConnectionListeners(true);
-      
+
       // S'abonner aux événements de job si on a un jobId
       if (this.jobId) {
         this.subscribeToJobEvents(this.jobId);
@@ -96,7 +101,7 @@ class WebSocketService {
       try {
         const message: WebSocketMessage = JSON.parse(event.data);
         console.log('📡 [WebSocket] Received message:', message.type);
-        
+
         // Distribuer le message aux listeners appropriés
         this.distributeMessage(message);
       } catch (error) {
@@ -109,8 +114,9 @@ class WebSocketService {
       this.isConnecting = false;
       this.stopHeartbeat();
       this.notifyConnectionListeners(false);
-      
-      if (event.code !== 1000) { // Not a normal closure
+
+      if (event.code !== 1000) {
+        // Not a normal closure
         this.scheduleReconnect();
       }
     };
@@ -125,11 +131,14 @@ class WebSocketService {
     // Envoyer aux listeners spécifiques du type de message
     const typeListeners = this.messageListeners.get(message.type);
     if (typeListeners) {
-      typeListeners.forEach(listener => {
+      typeListeners.forEach((listener) => {
         try {
           listener(message);
         } catch (error) {
-          console.error(`📡 [WebSocket] Listener error for ${message.type}:`, error);
+          console.error(
+            `📡 [WebSocket] Listener error for ${message.type}:`,
+            error,
+          );
         }
       });
     }
@@ -137,7 +146,7 @@ class WebSocketService {
     // Envoyer aussi aux listeners génériques
     const generalListeners = this.messageListeners.get('*');
     if (generalListeners) {
-      generalListeners.forEach(listener => {
+      generalListeners.forEach((listener) => {
         try {
           listener(message);
         } catch (error) {
@@ -147,7 +156,11 @@ class WebSocketService {
     }
 
     // Pour compatibilité avec le système existant, envoyer aussi via postMessage
-    if (message.type === 'claude_code_todo' || message.type === 'unified_todo' || message.type === 'todo_list') {
+    if (
+      message.type === 'claude_code_todo' ||
+      message.type === 'unified_todo' ||
+      message.type === 'todo_list'
+    ) {
       window.postMessage(message, '*');
     }
   }
@@ -160,9 +173,11 @@ class WebSocketService {
 
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts);
     this.reconnectAttempts++;
-    
-    console.log(`📡 [WebSocket] Scheduling reconnect attempt ${this.reconnectAttempts} in ${delay}ms`);
-    
+
+    console.log(
+      `📡 [WebSocket] Scheduling reconnect attempt ${this.reconnectAttempts} in ${delay}ms`,
+    );
+
     setTimeout(() => {
       this.connect();
     }, delay);
@@ -174,7 +189,7 @@ class WebSocketService {
         this.send({
           type: 'ping',
           data: {},
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       }
     }, 30000); // Ping every 30 seconds
@@ -188,7 +203,7 @@ class WebSocketService {
   }
 
   private notifyConnectionListeners(connected: boolean): void {
-    this.connectionListeners.forEach(listener => {
+    this.connectionListeners.forEach((listener) => {
       try {
         listener(connected);
       } catch (error) {
@@ -212,13 +227,16 @@ class WebSocketService {
     }
   }
 
-  public subscribe(messageType: string, listener: (message: WebSocketMessage) => void): () => void {
+  public subscribe(
+    messageType: string,
+    listener: (message: WebSocketMessage) => void,
+  ): () => void {
     if (!this.messageListeners.has(messageType)) {
       this.messageListeners.set(messageType, []);
     }
-    
+
     this.messageListeners.get(messageType)!.push(listener);
-    
+
     // Retourner une fonction de désinscription
     return () => {
       const listeners = this.messageListeners.get(messageType);
@@ -231,12 +249,14 @@ class WebSocketService {
     };
   }
 
-  public onConnectionChange(listener: (connected: boolean) => void): () => void {
+  public onConnectionChange(
+    listener: (connected: boolean) => void,
+  ): () => void {
     this.connectionListeners.push(listener);
-    
+
     // Notifier immédiatement de l'état actuel
     listener(this.isConnected());
-    
+
     return () => {
       const index = this.connectionListeners.indexOf(listener);
       if (index > -1) {
@@ -265,19 +285,21 @@ class WebSocketService {
       type: 'subscribe_job_events',
       data: { jobId },
       timestamp: Date.now(),
-      jobId
+      jobId,
     });
   }
 
-  public subscribeToTodos(listener: (message: TodoWebSocketMessage) => void): () => void {
+  public subscribeToTodos(
+    listener: (message: TodoWebSocketMessage) => void,
+  ): () => void {
     const unsubscribes = [
       this.subscribe('claude_code_todo', listener as any),
       this.subscribe('unified_todo', listener as any),
-      this.subscribe('todo_list', listener as any)
+      this.subscribe('todo_list', listener as any),
     ];
-    
+
     return () => {
-      unsubscribes.forEach(unsub => unsub());
+      unsubscribes.forEach((unsub) => unsub());
     };
   }
 

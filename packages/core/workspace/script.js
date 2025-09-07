@@ -1,39 +1,29 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const interactiveButton = document.getElementById('interactiveButton');
-    const contactForm = document.getElementById('contactForm');
-    const formFeedback = document.getElementById('formFeedback');
+  const taskInput = document.getElementById('taskInput');
+  const addButton = document.getElementById('addButton');
+  const taskList = document.getElementById('taskList');
 
-    if (interactiveButton) {
-        interactiveButton.addEventListener('click', () => {
-            alert('Button clicked! You are interacting with AgenticForge.');
-            // Example of a simple animation for the button
-            interactiveButton.style.transform = 'scale(1.1)';
-            setTimeout(() => {
-                interactiveButton.style.transform = 'scale(1)';
-            }, 200);
-        });
+  addButton.addEventListener('click', () => {
+    const taskText = taskInput.value.trim();
+    if (taskText !== '') {
+      addTask(taskText);
+      taskInput.value = '';
+      taskInput.focus();
     }
+  });
 
-    if (contactForm) {
-        contactForm.addEventListener('submit', (event) => {
-            event.preventDefault(); // Prevent default form submission
+  function addTask(taskText) {
+    const li = document.createElement('li');
+    li.textContent = taskText;
 
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const message = document.getElementById('message').value;
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = 'Delete';
+    deleteButton.classList.add('delete-btn');
+    deleteButton.addEventListener('click', () => {
+      taskList.removeChild(li);
+    });
 
-            if (name && email && message) {
-                // Simulate form submission
-                console.log('Form Submitted:', { name, email, message });
-                formFeedback.textContent = 'Thank you for your message, ' + name + '! We will get back to you shortly.';
-                formFeedback.className = 'feedback-message success';
-                formFeedback.style.display = 'block';
-                contactForm.reset(); // Clear the form
-            } else {
-                formFeedback.textContent = 'Please fill in all fields.';
-                formFeedback.className = 'feedback-message error';
-                formFeedback.style.display = 'block';
-            }
-        });
-    }
+    li.appendChild(deleteButton);
+    taskList.appendChild(li);
+  }
 });

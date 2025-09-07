@@ -10,7 +10,7 @@ import {
   AlertCircle,
   Loader2,
   Activity,
-  Eye
+  Eye,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
@@ -29,7 +29,7 @@ export const EnhancedChatInterface: React.FC = () => {
     totalActions: 0,
     successfulActions: 0,
     failedActions: 0,
-    isActive: false
+    isActive: false,
   });
 
   // Track basic metrics from messages
@@ -39,10 +39,17 @@ export const EnhancedChatInterface: React.FC = () => {
     let failedActions = 0;
     let isActive = false;
 
-    messages.forEach(message => {
-      const content = typeof message === 'object' && 'content' in message ? message.content : '';
+    messages.forEach((message) => {
+      const content =
+        typeof message === 'object' && 'content' in message
+          ? message.content
+          : '';
       if (typeof content === 'string') {
-        if (content.includes('navigate') || content.includes('click') || content.includes('screenshot')) {
+        if (
+          content.includes('navigate') ||
+          content.includes('click') ||
+          content.includes('screenshot')
+        ) {
           totalActions++;
           if (content.includes('success') || content.includes('completed')) {
             successfulActions++;
@@ -50,7 +57,11 @@ export const EnhancedChatInterface: React.FC = () => {
           if (content.includes('error') || content.includes('failed')) {
             failedActions++;
           }
-          if (content.includes('navigating') || content.includes('clicking') || content.includes('typing')) {
+          if (
+            content.includes('navigating') ||
+            content.includes('clicking') ||
+            content.includes('typing')
+          ) {
             isActive = true;
           }
         }
@@ -61,39 +72,55 @@ export const EnhancedChatInterface: React.FC = () => {
       totalActions,
       successfulActions,
       failedActions,
-      isActive
+      isActive,
     });
   }, [messages]);
 
   const getMessageIcon = (type: string) => {
     switch (type) {
-      case 'user': return <User className="w-4 h-4" />;
-      case 'agent': return <Bot className="w-4 h-4" />;
-      case 'tool_result': return <CheckCircle className="w-4 h-4" />;
-      case 'error': return <AlertCircle className="w-4 h-4" />;
-      case 'agent_thought': return <Activity className="w-4 h-4" />;
-      default: return <MessageSquare className="w-4 h-4" />;
+      case 'user':
+        return <User className="w-4 h-4" />;
+      case 'agent':
+        return <Bot className="w-4 h-4" />;
+      case 'tool_result':
+        return <CheckCircle className="w-4 h-4" />;
+      case 'error':
+        return <AlertCircle className="w-4 h-4" />;
+      case 'agent_thought':
+        return <Activity className="w-4 h-4" />;
+      default:
+        return <MessageSquare className="w-4 h-4" />;
     }
   };
 
   const getMessageColor = (type: string) => {
     switch (type) {
-      case 'user': return 'bg-blue-500';
-      case 'agent': return 'bg-green-500';
-      case 'tool_result': return 'bg-purple-500';
-      case 'error': return 'bg-red-500';
-      case 'agent_thought': return 'bg-yellow-500';
-      default: return 'bg-gray-500';
+      case 'user':
+        return 'bg-blue-500';
+      case 'agent':
+        return 'bg-green-500';
+      case 'tool_result':
+        return 'bg-purple-500';
+      case 'error':
+        return 'bg-red-500';
+      case 'agent_thought':
+        return 'bg-yellow-500';
+      default:
+        return 'bg-gray-500';
     }
   };
 
   const isPlaywrightRelated = (message: any) => {
-    const content = typeof message === 'object' && 'content' in message ? message.content : '';
-    return typeof content === 'string' && (
-      content.includes('navigate') ||
-      content.includes('click') ||
-      content.includes('screenshot') ||
-      content.includes('browser')
+    const content =
+      typeof message === 'object' && 'content' in message
+        ? message.content
+        : '';
+    return (
+      typeof content === 'string' &&
+      (content.includes('navigate') ||
+        content.includes('click') ||
+        content.includes('screenshot') ||
+        content.includes('browser'))
     );
   };
 
@@ -101,7 +128,7 @@ export const EnhancedChatInterface: React.FC = () => {
     return new Date(timestamp).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
     });
   };
 
@@ -185,12 +212,16 @@ export const EnhancedChatInterface: React.FC = () => {
                     {playwrightMetrics.isActive ? (
                       <>
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm font-medium text-green-600">Active</span>
+                        <span className="text-sm font-medium text-green-600">
+                          Active
+                        </span>
                       </>
                     ) : (
                       <>
                         <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                        <span className="text-sm font-medium text-gray-600">Idle</span>
+                        <span className="text-sm font-medium text-gray-600">
+                          Idle
+                        </span>
                       </>
                     )}
                   </div>
@@ -216,9 +247,18 @@ export const EnhancedChatInterface: React.FC = () => {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message, index) => {
-          const messageType = typeof message === 'object' && 'type' in message ? message.type : 'unknown';
-          const content = typeof message === 'object' && 'content' in message ? message.content : '';
-          const timestamp = typeof message === 'object' && 'timestamp' in message ? message.timestamp : Date.now();
+          const messageType =
+            typeof message === 'object' && 'type' in message
+              ? message.type
+              : 'unknown';
+          const content =
+            typeof message === 'object' && 'content' in message
+              ? message.content
+              : '';
+          const timestamp =
+            typeof message === 'object' && 'timestamp' in message
+              ? message.timestamp
+              : Date.now();
 
           return (
             <motion.div
@@ -229,22 +269,30 @@ export const EnhancedChatInterface: React.FC = () => {
                 messageType === 'user' ? 'justify-end' : 'justify-start'
               }`}
             >
-              <div className={`flex space-x-3 max-w-[80%] ${
-                messageType === 'user' ? 'flex-row-reverse space-x-reverse' : ''
-              }`}>
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${getMessageColor(messageType)}`}>
+              <div
+                className={`flex space-x-3 max-w-[80%] ${
+                  messageType === 'user'
+                    ? 'flex-row-reverse space-x-reverse'
+                    : ''
+                }`}
+              >
+                <div
+                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${getMessageColor(messageType)}`}
+                >
                   {getMessageIcon(messageType)}
                 </div>
 
-                <div className={`rounded-lg p-3 ${
-                  messageType === 'user'
-                    ? 'bg-blue-500 text-white'
-                    : messageType === 'error'
-                    ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
-                    : messageType === 'agent_thought'
-                    ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
-                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700'
-                }`}>
+                <div
+                  className={`rounded-lg p-3 ${
+                    messageType === 'user'
+                      ? 'bg-blue-500 text-white'
+                      : messageType === 'error'
+                        ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                        : messageType === 'agent_thought'
+                          ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
+                          : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700'
+                  }`}
+                >
                   {isPlaywrightRelated(message) && (
                     <div className="flex items-center space-x-2 mb-2">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -254,19 +302,25 @@ export const EnhancedChatInterface: React.FC = () => {
                     </div>
                   )}
 
-                  <div className={`text-sm ${
-                    messageType === 'user'
-                      ? 'text-white'
-                      : 'text-slate-800 dark:text-slate-200'
-                  }`}>
-                    {typeof content === 'string' ? content : JSON.stringify(content)}
+                  <div
+                    className={`text-sm ${
+                      messageType === 'user'
+                        ? 'text-white'
+                        : 'text-slate-800 dark:text-slate-200'
+                    }`}
+                  >
+                    {typeof content === 'string'
+                      ? content
+                      : JSON.stringify(content)}
                   </div>
 
-                  <div className={`text-xs mt-2 ${
-                    messageType === 'user'
-                      ? 'text-blue-100'
-                      : 'text-slate-500 dark:text-slate-400'
-                  }`}>
+                  <div
+                    className={`text-xs mt-2 ${
+                      messageType === 'user'
+                        ? 'text-blue-100'
+                        : 'text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
                     {formatTimestamp(timestamp)}
                   </div>
                 </div>

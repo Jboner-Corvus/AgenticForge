@@ -13,8 +13,8 @@ const keys = [
   process.env.LLM_API_KEY_GEMINI_PRO_3,
   process.env.LLM_API_KEY_GEMINI_FLASH_4,
   process.env.LLM_API_KEY_GEMINI_PRO_4,
-  process.env.GEMINI_API_KEY // Fallback pour compatibilité
-].filter(key => key && key.trim() !== ''); // Filtrer les clés vides ou undefined
+  process.env.GEMINI_API_KEY, // Fallback pour compatibilité
+].filter((key) => key && key.trim() !== ''); // Filtrer les clés vides ou undefined
 
 async function testKey(key) {
   try {
@@ -28,7 +28,9 @@ async function testKey(key) {
     console.log(`✅ Key ${key.substring(0, 10)}... is VALID`);
     return true;
   } catch (error) {
-    console.log(`❌ Key ${key.substring(0, 10)}... is INVALID: ${error.message}`);
+    console.log(
+      `❌ Key ${key.substring(0, 10)}... is INVALID: ${error.message}`,
+    );
     return false;
   }
 }
@@ -39,7 +41,7 @@ async function testAllKeys() {
   for (const key of keys) {
     await testKey(key);
     // Petit délai entre les tests
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
   console.log('\n📝 All keys tested. Invalid keys need to be replaced.');

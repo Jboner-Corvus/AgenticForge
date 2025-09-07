@@ -7,12 +7,14 @@ Les outils Playwright MCP offrent maintenant une **visualisation graphique en te
 ## ✨ Fonctionnalités
 
 ### Visualisation en Temps Réel
+
 - **Captures d'écran automatiques** après chaque action majeure
 - **Annotations visuelles** montrant les éléments ciblés
 - **Feedback visuel immédiat** pour toutes les interactions
 - **Historique visuel** des 5 dernières actions
 
 ### Actions Visualisées
+
 - 🖱️ **Navigation** - Screenshot après chargement de page
 - 👆 **Clics** - Screenshot avant/après avec highlighting
 - ⌨️ **Saisie** - Screenshot avant/après avec focus visible
@@ -23,15 +25,20 @@ Les outils Playwright MCP offrent maintenant une **visualisation graphique en te
 ## 🚀 Comment ça marche
 
 ### 1. Activation Automatique
+
 ```typescript
 // Les screenshots sont automatiquement capturés après chaque action
-await playwrightNavigateTool.execute({
-  url: 'https://example.com'
-}, ctx);
+await playwrightNavigateTool.execute(
+  {
+    url: 'https://example.com',
+  },
+  ctx,
+);
 // → Screenshot envoyé automatiquement à l'UI
 ```
 
 ### 2. Événements en Temps Réel
+
 ```typescript
 // Événements envoyés à l'UI pour chaque action
 {
@@ -46,6 +53,7 @@ await playwrightNavigateTool.execute({
 ```
 
 ### 3. Composants UI
+
 ```tsx
 // BrowserLiveView - Affiche les screenshots en temps réel
 <BrowserLiveView />
@@ -57,12 +65,14 @@ await playwrightNavigateTool.execute({
 ## 📱 Interface Utilisateur
 
 ### BrowserLiveView Component
+
 - **Position**: Coin supérieur droit
 - **Taille**: Adaptative (max 400px)
 - **Auto-hide**: Disparaît après 10s d'inactivité
 - **Historique**: Garde les 5 dernières captures
 
 ### BrowserControls Component
+
 - **Live Visual Feedback**: Active/désactive la visualisation
 - **Auto Screenshots**: Contrôle les captures automatiques
 - **Status Display**: Affiche l'action en cours
@@ -70,6 +80,7 @@ await playwrightNavigateTool.execute({
 ## 🎨 Exemple d'Utilisation
 
 ### Scénario Typique
+
 ```
 Utilisateur: "Va sur Google et recherche 'IA'"
 
@@ -94,6 +105,7 @@ Utilisateur: "Va sur Google et recherche 'IA'"
 ## 🔧 Configuration
 
 ### Variables d'Environnement
+
 ```bash
 # Configuration des screenshots
 PLAYWRIGHT_SCREENSHOT_QUALITY=80
@@ -105,29 +117,38 @@ BROWSER_AUTO_SCREENSHOTS=true
 ```
 
 ### Options des Outils
+
 ```typescript
 // Navigation avec options visuelles
-await playwrightNavigateTool.execute({
-  url: 'https://example.com',
-  waitUntil: 'load'
-}, ctx);
+await playwrightNavigateTool.execute(
+  {
+    url: 'https://example.com',
+    waitUntil: 'load',
+  },
+  ctx,
+);
 
 // Clic avec feedback visuel
-await playwrightClickTool.execute({
-  selector: 'button[type="submit"]',
-  button: 'left'
-}, ctx);
+await playwrightClickTool.execute(
+  {
+    selector: 'button[type="submit"]',
+    button: 'left',
+  },
+  ctx,
+);
 ```
 
 ## 🎯 Avantages
 
 ### Pour les Utilisateurs
+
 - ✅ **Transparence totale** des actions de l'agent
 - ✅ **Débogage visuel** facile
 - ✅ **Confiance** dans les actions automatisées
 - ✅ **Suivi en temps réel** des progrès
 
 ### Pour les Développeurs
+
 - ✅ **Debugging amélioré** avec captures visuelles
 - ✅ **Validation** des sélecteurs et actions
 - ✅ **Monitoring** des performances du navigateur
@@ -136,11 +157,13 @@ await playwrightClickTool.execute({
 ## 🔄 Architecture
 
 ### Flux de Données
+
 ```
 Agent Action → Playwright MCP → Screenshot → Redis Event → UI Hook → BrowserLiveView
 ```
 
 ### Événements Supportés
+
 - `browser.screenshot.realtime` - Screenshots en temps réel
 - `browser.element.click` - Clics avec annotations
 - `browser.element.type` - Saisie avec focus
@@ -150,24 +173,25 @@ Agent Action → Playwright MCP → Screenshot → Redis Event → UI Hook → B
 ## 🚀 Utilisation Avancée
 
 ### Personnalisation des Screenshots
+
 ```typescript
 // Screenshots haute qualité pour le debugging
-const result = await playwrightScreenshotTool.execute({
-  fullPage: true,
-  quality: 100,
-  selector: '.debug-element'
-}, ctx);
+const result = await playwrightScreenshotTool.execute(
+  {
+    fullPage: true,
+    quality: 100,
+    selector: '.debug-element',
+  },
+  ctx,
+);
 ```
 
 ### Intégration Canvas
+
 ```typescript
 // Les screenshots sont automatiquement ajoutés au canvas
 // pour un historique visuel complet
-addCanvasToHistory(
-  'Browser Action - Click',
-  screenshotData,
-  'url'
-);
+addCanvasToHistory('Browser Action - Click', screenshotData, 'url');
 ```
 
 ---

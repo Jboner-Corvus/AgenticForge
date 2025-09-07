@@ -4,6 +4,7 @@ import { sendMessage, interrupt } from '../api';
 import { useSessionStore } from '../../store/sessionStore';
 import { useUIStore } from '../../store/uiStore';
 import { useCanvasStore } from '../../store/canvasStore'; // Import useCanvasStore
+import { useHybridRealTime } from './useHybridRealTime'; // Import hybrid real-time hook
 // System prompt content mapping - hardcoded for now to avoid import issues
 const getSystemPromptContent = (mode: string): string => {
   const prompts: Record<string, string> = {
@@ -373,7 +374,7 @@ You are AgenticForge, a specialized AI assistant focused on frontend development
 
 ## Response JSON Schema
 
-{{RESPONSE_JSON_SCHEMA}}`
+{{RESPONSE_JSON_SCHEMA}}`,
   };
 
   return prompts[mode] || prompts.architect;
@@ -502,23 +503,66 @@ const isBrowserData = (
   data: StreamMessageData | undefined,
 ): data is BrowserData => {
   if (!data) return false;
-  return 'url' in data || 'length' in data || 'message' in data || 'imageData' in data || 'action' in data;
+  return (
+    'url' in data ||
+    'length' in data ||
+    'message' in data ||
+    'imageData' in data ||
+    'action' in data
+  );
 };
 
-export const useAgentStream = () => {
-  console.log('🎣 [useAgentStream] Hook initialized');
+export const useAgentStream = (useHybridMode: boolean = false) => {
+  console.log('🎣 [useAgentStream] Hook initialized', { useHybridMode });
   const eventSourceRef = useRef<EventSource | null>(null);
   const responseCountRef = useRef<number>(0); // Compteur des réponses pour limiter à 5 étapes
+
+  // Always initialize hybrid real-time hook to avoid conditional hook calls
+  const hybridRealTime = useHybridRealTime({
+    onMessage: (event) => {
+      // This will be set up later in the component
+      console.log('📨 [HybridRealTime] Message received:', event.data);
+    },
+    onError: (error) => {
+      console.error('🚨 [HybridRealTime] Error:', error);
+    },
+    onConnectionChange: (connected, method) => {
+      console.log(
+        `🔗 [HybridRealTime] Connection ${connected ? 'established' : 'lost'} via ${method}`,
+      );
+    },
+  });
+
+  // Use hybridRealTime to avoid unused variable warning
+  console.log('🔗 [useAgentStream] Hybrid mode available:', !!hybridRealTime);
 
   // 🚨 IMPORTANT: Obtenir le token d'authentification BACKEND (PAS un token LLM !)
   // Ce token sert à authentifier les requêtes vers l'API AgenticForge
   const backendAuthToken = useUIStore((state) => state.authToken);
-  console.log('🔐 [useAgentStream] backendAuthToken from store:', backendAuthToken);
-  console.log('🔐 [useAgentStream] backendAuthToken type:', typeof backendAuthToken);
-  console.log('🔐 [useAgentStream] backendAuthToken length:', backendAuthToken?.length || 0);
-  console.log('🔐 [useAgentStream] backendAuthToken is empty string?', backendAuthToken === '');
-  console.log('🔐 [useAgentStream] backendAuthToken is null?', backendAuthToken === null);
-  console.log('🔐 [useAgentStream] backendAuthToken is undefined?', backendAuthToken === undefined);
+  console.log(
+    '🔐 [useAgentStream] backendAuthToken from store:',
+    backendAuthToken,
+  );
+  console.log(
+    '🔐 [useAgentStream] backendAuthToken type:',
+    typeof backendAuthToken,
+  );
+  console.log(
+    '🔐 [useAgentStream] backendAuthToken length:',
+    backendAuthToken?.length || 0,
+  );
+  console.log(
+    '🔐 [useAgentStream] backendAuthToken is empty string?',
+    backendAuthToken === '',
+  );
+  console.log(
+    '🔐 [useAgentStream] backendAuthToken is null?',
+    backendAuthToken === null,
+  );
+  console.log(
+    '🔐 [useAgentStream] backendAuthToken is undefined?',
+    backendAuthToken === undefined,
+  );
 
   // Renommer pour plus de clarté - ce n'est PAS un token LLM
   const authToken = backendAuthToken;
@@ -541,7 +585,9 @@ export const useAgentStream = () => {
   const setActiveCliJobId = useUIStore((state) => state.setActiveCliJobId);
   const isProcessing = useUIStore((state) => state.isProcessing);
   const jobIdStore = useUIStore((state) => state.jobId);
-  const selectedSystemPrompt = useUIStore((state) => state.selectedSystemPrompt);
+  const selectedSystemPrompt = useUIStore(
+    (state) => state.selectedSystemPrompt,
+  );
 
   // Get addCanvasToHistory from canvas store
   const addCanvasToHistory = useCanvasStore(
@@ -571,7 +617,8 @@ export const useAgentStream = () => {
         addDebugLog('[CRITICAL] 🚨 No auth token available!');
         addMessage({
           type: 'error',
-          content: '🚨 ERREUR CRITIQUE: Token d\'authentification manquant. Vérifiez la configuration AUTH_TOKEN.',
+          content:
+            "🚨 ERREUR CRITIQUE: Token d'authentification manquant. Vérifiez la configuration AUTH_TOKEN.",
         } as NewChatMessage);
         return;
       }
@@ -586,7 +633,8 @@ export const useAgentStream = () => {
           addDebugLog('[CRITICAL] 🚨 API health check failed!');
           addMessage({
             type: 'error',
-            content: '🚨 ERREUR CRITIQUE: Impossible de contacter l\'API backend.',
+            content:
+              "🚨 ERREUR CRITIQUE: Impossible de contacter l'API backend.",
           } as NewChatMessage);
           return;
         }
@@ -595,7 +643,7 @@ export const useAgentStream = () => {
         addDebugLog(`[CRITICAL] 🚨 API health check error: ${healthError}`);
         addMessage({
           type: 'error',
-          content: '🚨 ERREUR CRITIQUE: Erreur de connexion à l\'API backend.',
+          content: "🚨 ERREUR CRITIQUE: Erreur de connexion à l'API backend.",
         } as NewChatMessage);
         return;
       }
@@ -769,8 +817,14 @@ export const useAgentStream = () => {
       const handleMessage = (content: string) => {
         responseCountRef.current += 1;
 
-        console.log('🎯 [useAgentStream] handleMessage called with content:', content);
-        console.log('🎯 [useAgentStream] responseCount:', responseCountRef.current);
+        console.log(
+          '🎯 [useAgentStream] handleMessage called with content:',
+          content,
+        );
+        console.log(
+          '🎯 [useAgentStream] responseCount:',
+          responseCountRef.current,
+        );
 
         addDebugLog(
           `[${new Date().toLocaleTimeString()}] [INFO] Agent response (${responseCountRef.current}/5): ${content}`,
@@ -781,7 +835,10 @@ export const useAgentStream = () => {
           content,
         };
 
-        console.log('🎯 [useAgentStream] About to add agent message:', agentMessage);
+        console.log(
+          '🎯 [useAgentStream] About to add agent message:',
+          agentMessage,
+        );
         addMessage(agentMessage);
         console.log('🎯 [useAgentStream] Agent message added to store');
 
@@ -1192,7 +1249,7 @@ export const useAgentStream = () => {
                 setBrowserStatus(
                   `Error: ${errorData.message || 'Browser operation failed'}`,
                 );
-                
+
                 // Log error details for debugging
                 console.warn('Browser operation error:', errorData);
               }
@@ -1200,7 +1257,9 @@ export const useAgentStream = () => {
             case 'browser.screenshot.error':
               if (data.data && isBrowserData(data.data)) {
                 const errorData = data.data as any;
-                setBrowserStatus(`📸 Screenshot failed: ${errorData.error || 'Unknown error'}`);
+                setBrowserStatus(
+                  `📸 Screenshot failed: ${errorData.error || 'Unknown error'}`,
+                );
                 console.warn('Screenshot capture error:', errorData);
               }
               break;
@@ -1245,74 +1304,98 @@ export const useAgentStream = () => {
               try {
                 if (data.data && isBrowserData(data.data)) {
                   const realtimeData = data.data as any;
-                  
+
                   // Validate screenshot data before processing
-                    if (realtimeData.imageData && 
-                        typeof realtimeData.imageData === 'string' && 
-                        realtimeData.imageData.length > 0) {
-                      
-                      setBrowserStatus(`📸 Live view: ${realtimeData.action || 'Browser action'}`);
-                      
-                      // Debug log to see the actual data format
-                      console.log('Browser screenshot data format check:', {
-                        startsWithDataImage: realtimeData.imageData.startsWith('data:image/'),
-                        startsWithDataImageBase64: realtimeData.imageData.startsWith('data:image/png;base64,'),
-                        length: realtimeData.imageData.length,
-                        first100Chars: realtimeData.imageData.substring(0, 100)
-                      });
-                      
-                      // Use imageData as received - backend should already provide proper format
-                      const imageData = realtimeData.imageData;
-                      console.log('Received imageData:', {
-                        startsWithDataImage: imageData?.startsWith('data:image/'),
-                        startsWithDataImageBase64: imageData?.startsWith('data:image/png;base64,'),
-                        length: imageData?.length,
-                        first100Chars: imageData?.substring(0, 100) + '...'
-                      });
-                    
+                  if (
+                    realtimeData.imageData &&
+                    typeof realtimeData.imageData === 'string' &&
+                    realtimeData.imageData.length > 0
+                  ) {
+                    setBrowserStatus(
+                      `📸 Live view: ${realtimeData.action || 'Browser action'}`,
+                    );
+
+                    // Debug log to see the actual data format
+                    console.log('Browser screenshot data format check:', {
+                      startsWithDataImage:
+                        realtimeData.imageData.startsWith('data:image/'),
+                      startsWithDataImageBase64:
+                        realtimeData.imageData.startsWith(
+                          'data:image/png;base64,',
+                        ),
+                      length: realtimeData.imageData.length,
+                      first100Chars: realtimeData.imageData.substring(0, 100),
+                    });
+
+                    // Use imageData as received - backend should already provide proper format
+                    const imageData = realtimeData.imageData;
+                    console.log('Received imageData:', {
+                      startsWithDataImage: imageData?.startsWith('data:image/'),
+                      startsWithDataImageBase64: imageData?.startsWith(
+                        'data:image/png;base64,',
+                      ),
+                      length: imageData?.length,
+                      first100Chars: imageData?.substring(0, 100) + '...',
+                    });
+
                     // Dispatch custom event for BrowserLiveView component with validated data
-                      try {
-                        const customEvent = new CustomEvent('browser-live-view', {
-                          detail: {
-                            type: 'browser.screenshot.realtime',
-                            data: {
-                              ...realtimeData,
-                              imageData: imageData,
-                              timestamp: realtimeData.timestamp || Date.now()
-                            }
-                          }
-                        });
-                        window.dispatchEvent(customEvent);
-                        console.log('Dispatched browser-live-view event with data:', {
+                    try {
+                      const customEvent = new CustomEvent('browser-live-view', {
+                        detail: {
+                          type: 'browser.screenshot.realtime',
+                          data: {
+                            ...realtimeData,
+                            imageData: imageData,
+                            timestamp: realtimeData.timestamp || Date.now(),
+                          },
+                        },
+                      });
+                      window.dispatchEvent(customEvent);
+                      console.log(
+                        'Dispatched browser-live-view event with data:',
+                        {
                           type: 'browser.screenshot.realtime',
                           data: {
                             ...realtimeData,
                             imageData: imageData.substring(0, 50) + '...', // Log first 50 characters of image data
-                            timestamp: realtimeData.timestamp || Date.now()
-                          }
-                        });
-                        // Additional debug info
-                        console.log('Image data debug:', {
-                          imageDataStart: imageData.substring(0, 100) + '...',
-                          imageDataLength: imageData.length,
-                          startsWithDataImage: imageData.startsWith('data:image/'),
-                          startsWithDataImageBase64: imageData.startsWith('data:image/png;base64,')
-                        });
-                      } catch (eventError) {
-                      console.error('Failed to dispatch browser live view event:', eventError);
+                            timestamp: realtimeData.timestamp || Date.now(),
+                          },
+                        },
+                      );
+                      // Additional debug info
+                      console.log('Image data debug:', {
+                        imageDataStart: imageData.substring(0, 100) + '...',
+                        imageDataLength: imageData.length,
+                        startsWithDataImage:
+                          imageData.startsWith('data:image/'),
+                        startsWithDataImageBase64: imageData.startsWith(
+                          'data:image/png;base64,',
+                        ),
+                      });
+                    } catch (eventError) {
+                      console.error(
+                        'Failed to dispatch browser live view event:',
+                        eventError,
+                      );
                     }
 
                     // Note: Screenshots are now handled exclusively by the BrowserLiveView component
                     // and should not be sent to the canvas to avoid duplication
                   } else {
-                    console.warn('Invalid screenshot data received:', realtimeData);
+                    console.warn(
+                      'Invalid screenshot data received:',
+                      realtimeData,
+                    );
                     setBrowserStatus('📸 Screenshot failed - invalid data');
                   }
                 } else {
                   console.warn('No browser data in realtime screenshot event');
                 }
               } catch (error) {
-                console.error('Error processing browser.screenshot.realtime:', error);
+                console.error(
+                  'Error processing browser.screenshot.realtime:',
+                  error,
+                );
                 setBrowserStatus('📸 Screenshot processing error');
               }
               break;
@@ -1332,8 +1415,14 @@ export const useAgentStream = () => {
                 try {
                   const parsed = JSON.parse(data.content);
                   // Only filter if it's clearly agent internal data (not canvas content)
-                  if (parsed.thought && parsed.command && !parsed.content &&
-                      (parsed.todos || parsed.stats || (parsed.type && parsed.type.includes('todo')))) {
+                  if (
+                    parsed.thought &&
+                    parsed.command &&
+                    !parsed.content &&
+                    (parsed.todos ||
+                      parsed.stats ||
+                      (parsed.type && parsed.type.includes('todo')))
+                  ) {
                     console.warn(
                       '🚫 [useAgentStream] Filtered out agent thought/interaction/todo from canvas - keeping in chat only',
                     );
@@ -1343,13 +1432,19 @@ export const useAgentStream = () => {
                   // Not JSON, check for debugging patterns, agent thought patterns, and todo patterns in text content
                   // Be more specific to avoid filtering legitimate canvas content
                   if (
-                    (data.content.includes('"thought"') && data.content.includes('"command"') && !data.content.includes('<')) ||
-                    (data.content.includes('```json') && data.content.includes('"thought"')) ||
-                    (data.content.includes('thinking:') && data.content.length < 200) ||
-                    (data.content.includes('réflexion:') && data.content.length < 200) ||
+                    (data.content.includes('"thought"') &&
+                      data.content.includes('"command"') &&
+                      !data.content.includes('<')) ||
+                    (data.content.includes('```json') &&
+                      data.content.includes('"thought"')) ||
+                    (data.content.includes('thinking:') &&
+                      data.content.length < 200) ||
+                    (data.content.includes('réflexion:') &&
+                      data.content.length < 200) ||
                     data.content.includes('claude_code_todo') ||
                     data.content.includes('unified_todo') ||
-                    (data.content.includes('todo_list') && !data.content.includes('<'))
+                    (data.content.includes('todo_list') &&
+                      !data.content.includes('<'))
                   ) {
                     console.warn(
                       '🚫 [useAgentStream] Filtered out agent thought/interaction/todo from canvas - keeping in chat only',
@@ -1433,7 +1528,10 @@ export const useAgentStream = () => {
               }, 500); // Add a small delay to allow UI to update
               break;
             case 'connection':
-              console.log('🔗 [useAgentStream] Connection established:', data.message);
+              console.log(
+                '🔗 [useAgentStream] Connection established:',
+                data.message,
+              );
               addDebugLog(
                 `[${new Date().toLocaleTimeString()}] [INFO] Connection established: ${data.message}`,
               );
@@ -1472,7 +1570,9 @@ export const useAgentStream = () => {
         );
 
         // Get the system prompt content based on selected mode
-        const systemPromptContent = selectedSystemPrompt ? getSystemPromptContent(selectedSystemPrompt) : undefined;
+        const systemPromptContent = selectedSystemPrompt
+          ? getSystemPromptContent(selectedSystemPrompt)
+          : undefined;
 
         const { jobId, eventSource } = await sendMessage(
           goal,

@@ -157,30 +157,37 @@ chmod +x run.sh
 首次启动时，`.env` 文件会使用默认值创建。您可以在那里设置第一个API密钥以快速启动。
 
 ``env
+
 # === AGENTIC FORGE 配置 ===
 
 # 访问端口
-PUBLIC_PORT=8080          # API和主服务器
-WEB_PORT=3002             # 用户界面
+
+PUBLIC_PORT=8080 # API和主服务器
+WEB_PORT=3002 # 用户界面
 
 # 数据库和缓存
+
 REDIS_HOST=localhost
 REDIS_PORT=6379
-REDIS_PASSWORD=""         # 本地使用时留空
+REDIS_PASSWORD="" # 本地使用时留空
 
 # 人工智能 - 启动密钥
+
 LLM_API_KEY="您的首选API密钥"
-LLM_PROVIDER="gemini"          # 或 "openai", "anthropic", "grok" 等
-LLM_MODEL_NAME="gemini-2.5-pro"   # 与提供商对应的模型
-LLM_API_BASE_URL=""            # 可选，如果未提供则自动检测
+LLM_PROVIDER="gemini" # 或 "openai", "anthropic", "grok" 等
+LLM_MODEL_NAME="gemini-2.5-pro" # 与提供商对应的模型
+LLM_API_BASE_URL="" # 可选，如果未提供则自动检测
 
 # 安全
-AUTH_TOKEN="$(openssl rand -hex 32)"     # 自动生成
+
+AUTH_TOKEN="$(openssl rand -hex 32)" # 自动生成
 
 # 环境
+
 NODE_ENV=production
 LOG_LEVEL=info
-```
+
+````
 
 ### 🔑 通过Web界面管理多API密钥
 
@@ -233,7 +240,7 @@ AgenticForge集成了强大的 **LlmKeyManager**，用于集中和动态管理�
    ```bash
    ollama pull deepseek-r1:14b  # 推荐用于大多数任务
    ollama serve
-   ```
+````
 
 #### LM Studio
 
@@ -262,10 +269,12 @@ AgenticForge集成了强大的 **LlmKeyManager**，用于集中和动态管理�
 
 ### 快速生产命令
 
-```
+````
 
 # ```
 "# 简单的MCP工具，返回'Hello, World!'"
+````
+
 ```
 
 ```

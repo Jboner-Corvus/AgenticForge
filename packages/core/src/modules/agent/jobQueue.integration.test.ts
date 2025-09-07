@@ -112,8 +112,10 @@ vi.mock('../redis/redisClient.ts', () => ({
 
 vi.mock('../../utils/llmProvider.ts', () => ({
   getLlmProvider: () => ({
-    getLlmResponse: vi.fn(() => Promise.resolve('{"answer": "Job queue test response"}')).mockResolvedValue('{"answer": "Job queue test response"}'),
-    getErrorType: vi.fn()
+    getLlmResponse: vi
+      .fn(() => Promise.resolve('{"answer": "Job queue test response"}'))
+      .mockResolvedValue('{"answer": "Job queue test response"}'),
+    getErrorType: vi.fn(),
   }),
 }));
 
@@ -297,7 +299,9 @@ describe('Job Queue BullMQ Integration Tests', () => {
 
       const responseSchemaModule = await import('./responseSchema.ts');
       const mockResponseSchema = responseSchemaModule.llmResponseSchema;
-      vi.mocked(mockResponseSchema.parse).mockReturnValue({ answer: 'Retry successful' });
+      vi.mocked(mockResponseSchema.parse).mockReturnValue({
+        answer: 'Retry successful',
+      });
 
       const failingAgent = new Agent(
         failingJob as any,
@@ -311,7 +315,9 @@ describe('Job Queue BullMQ Integration Tests', () => {
       const result = await failingAgent.run();
 
       expect(result).toBe('Retry successful');
-      expect(vi.mocked(mockLlmProvider.getLlmResponse)).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(mockLlmProvider.getLlmResponse)).toHaveBeenCalledTimes(
+        2,
+      );
     });
 
     it('should move job to failed queue after max retries', async () => {
@@ -400,7 +406,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
       vi.mocked(mockLlmProvider.getLlmResponse).mockResolvedValue(
         '{"command": {"name": "testTool", "params": {}}}',
       );
-      
+
       vi.mocked(mockResponseSchema.parse).mockReturnValue({
         command: { name: 'testTool', params: {} },
       });
@@ -450,8 +456,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
 
       // Vérifier que les métriques sont collectées
       const redisClientModule = await import('../redis/redisClient.ts');
-      const redisClient =
-        redisClientModule.getRedisClientInstance();
+      const redisClient = redisClientModule.getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         'queue_metrics',
         expect.objectContaining({
@@ -805,8 +810,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
       await agent.run();
 
       const redisClientModule = await import('../redis/redisClient.ts');
-      const redisClient =
-        redisClientModule.getRedisClientInstance();
+      const redisClient = redisClientModule.getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         'queue_performance',
         expect.objectContaining({
@@ -839,8 +843,7 @@ describe('Job Queue BullMQ Integration Tests', () => {
       await agent.run();
 
       const redisClientModule = await import('../redis/redisClient.ts');
-      const redisClient =
-        redisClientModule.getRedisClientInstance();
+      const redisClient = redisClientModule.getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'alerts:queue_anomaly',
         expect.stringContaining('high_failure_rate'),

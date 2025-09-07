@@ -457,14 +457,14 @@ pnpm run format    # Formatação automática
 
 ### Gerenciamento Avançado do Sistema
 
-| Ação                  | Comando                       | Uso                                   |
-| --------------------- | ----------------------------- | ------------------------------------- |
-| **Console Completo**  | `./run.sh`                    | Interface principal de gerenciamento  |
-| **Inicialização Rápida** | `./run.sh start`            | Inicialização direta do sistema       |
-| **Monitoramento**     | `./run.sh status`             | Status dos serviços Docker            |
-| **Logs em Tempo Real**| `./run.sh logs`               | Monitoramento em tempo real           |
-| **Reinicialização**   | `./run.sh restart`            | Após modificação de configuração      |
-| **Manutenção**        | `./run.sh` → Opções 7-14      | Testes, lint, formatação, reconstrução |
+| Ação                     | Comando                  | Uso                                    |
+| ------------------------ | ------------------------ | -------------------------------------- |
+| **Console Completo**     | `./run.sh`               | Interface principal de gerenciamento   |
+| **Inicialização Rápida** | `./run.sh start`         | Inicialização direta do sistema        |
+| **Monitoramento**        | `./run.sh status`        | Status dos serviços Docker             |
+| **Logs em Tempo Real**   | `./run.sh logs`          | Monitoramento em tempo real            |
+| **Reinicialização**      | `./run.sh restart`       | Após modificação de configuração       |
+| **Manutenção**           | `./run.sh` → Opções 7-14 | Testes, lint, formatação, reconstrução |
 
 ---
 

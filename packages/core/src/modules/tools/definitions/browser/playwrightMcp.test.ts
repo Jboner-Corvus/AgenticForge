@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { playwrightNavigateTool, playwrightClickTool } from './playwrightMcp.tool';
+import {
+  playwrightNavigateTool,
+  playwrightClickTool,
+} from './playwrightMcp.tool';
 
 // Mock the logger
 vi.mock('../../../../logger.ts', () => ({
@@ -65,7 +68,10 @@ describe('Playwright MCP Tools', () => {
       const result = params.safeParse(validParams);
       expect(result.success).toBe(true);
 
-      const validParamsWithButton = { selector: '.button', button: 'right' as const };
+      const validParamsWithButton = {
+        selector: '.button',
+        button: 'right' as const,
+      };
       const resultWithButton = params.safeParse(validParamsWithButton);
       expect(resultWithButton.success).toBe(true);
     });

@@ -10,27 +10,29 @@ import {
   DataTypeParam,
 } from './common.ts';
 
-const TimeSeriesDailyParams = AlphaVantageBaseParams
-  .merge(SymbolParam)
+const TimeSeriesDailyParams = AlphaVantageBaseParams.merge(SymbolParam)
   .merge(OutputSizeParam)
   .merge(DataTypeParam)
   .extend({
     entitlement: z
       .enum(['delayed', 'realtime'])
       .optional()
-      .describe('Data entitlement: "delayed" for 15-minute delayed data, "realtime" for real-time data'),
+      .describe(
+        'Data entitlement: "delayed" for 15-minute delayed data, "realtime" for real-time data',
+      ),
   });
 
 export const timeSeriesDailyTool: Tool<typeof TimeSeriesDailyParams> = {
-  description: 'Returns raw daily time series (OHLCV) data for the specified equity, covering 20+ years of historical data',
-  
+  description:
+    'Returns raw daily time series (OHLCV) data for the specified equity, covering 20+ years of historical data',
+
   execute: async (params, context) => {
     const { log } = context;
     const parsedParams = TimeSeriesDailyParams.parse(params);
-    
+
     try {
-      log.info('Fetching daily time series data', { 
-        symbol: parsedParams.symbol 
+      log.info('Fetching daily time series data', {
+        symbol: parsedParams.symbol,
       });
 
       // Prepare API parameters
@@ -46,25 +48,31 @@ export const timeSeriesDailyTool: Tool<typeof TimeSeriesDailyParams> = {
         apiParams.entitlement = parsedParams.entitlement;
       }
 
-      const data = await makeAlphaVantageRequest('TIME_SERIES_DAILY', apiParams, parsedParams.datatype);
-      
-      log.info('Successfully fetched daily time series data', { 
+      const data = await makeAlphaVantageRequest(
+        'TIME_SERIES_DAILY',
+        apiParams,
+        parsedParams.datatype,
+      );
+
+      log.info('Successfully fetched daily time series data', {
         symbol: parsedParams.symbol,
-        dataType: typeof data
+        dataType: typeof data,
       });
 
       return formatAlphaVantageResponse(data, 'TIME_SERIES_DAILY');
-      
     } catch (error) {
-      log.error({ err: error, params: parsedParams }, 'Error fetching daily time series data');
+      log.error(
+        { err: error, params: parsedParams },
+        'Error fetching daily time series data',
+      );
       throw new Error(
         `Failed to fetch daily time series data for ${parsedParams.symbol}: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
     }
   },
-  
+
   name: 'time_series_daily',
   parameters: TimeSeriesDailyParams,
 };

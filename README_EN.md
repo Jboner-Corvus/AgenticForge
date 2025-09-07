@@ -457,14 +457,14 @@ pnpm run format    # Automatic formatting
 
 ### Advanced System Management
 
-| Action                 | Command                      | Usage                           |
-| ---------------------- | ---------------------------- | ------------------------------- |
-| **Complete Console**   | `./run.sh`                   | Main management interface       |
-| **Quick Startup**      | `./run.sh start`             | Direct system launch            |
-| **Monitoring**         | `./run.sh status`            | Docker service status           |
-| **Live Logs**          | `./run.sh logs`              | Real-time monitoring            |
-| **Restart**            | `./run.sh restart`           | After config modification       |
-| **Maintenance**        | `./run.sh` → Options 7-14    | Tests, lint, format, rebuild    |
+| Action               | Command                   | Usage                        |
+| -------------------- | ------------------------- | ---------------------------- |
+| **Complete Console** | `./run.sh`                | Main management interface    |
+| **Quick Startup**    | `./run.sh start`          | Direct system launch         |
+| **Monitoring**       | `./run.sh status`         | Docker service status        |
+| **Live Logs**        | `./run.sh logs`           | Real-time monitoring         |
+| **Restart**          | `./run.sh restart`        | After config modification    |
+| **Maintenance**      | `./run.sh` → Options 7-14 | Tests, lint, format, rebuild |
 
 ---
 

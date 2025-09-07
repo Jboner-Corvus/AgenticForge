@@ -1,4 +1,3 @@
- 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, Variants } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
@@ -93,7 +92,7 @@ const AgentOutputCanvas: React.FC = () => {
         const logEntry = event.data.data;
         console.log('🎯 [Canvas Console] Log received:', logEntry);
 
-        setCanvasConsoleLogs(prev => [...prev, logEntry]);
+        setCanvasConsoleLogs((prev) => [...prev, logEntry]);
 
         // Optionnel: afficher dans la console du parent aussi
         const prefix = `[CANVAS ${logEntry.level.toUpperCase()}]`;
@@ -141,35 +140,47 @@ const AgentOutputCanvas: React.FC = () => {
           switch (action) {
             case 'get_logs':
               // Demander les logs à l'iframe
-              iframeRef.current.contentWindow.postMessage({
-                type: 'canvas_console_command',
-                command: 'get_logs_request',
-                level,
-                limit,
-                filter
-              }, '*');
+              iframeRef.current.contentWindow.postMessage(
+                {
+                  type: 'canvas_console_command',
+                  command: 'get_logs_request',
+                  level,
+                  limit,
+                  filter,
+                },
+                '*',
+              );
               break;
 
             case 'clear_logs':
               setCanvasConsoleLogs([]);
-              iframeRef.current.contentWindow.postMessage({
-                type: 'canvas_console_command',
-                command: 'clear_logs'
-              }, '*');
+              iframeRef.current.contentWindow.postMessage(
+                {
+                  type: 'canvas_console_command',
+                  command: 'clear_logs',
+                },
+                '*',
+              );
               break;
 
             case 'enable_capture':
-              iframeRef.current.contentWindow.postMessage({
-                type: 'canvas_console_command',
-                command: 'enable_capture'
-              }, '*');
+              iframeRef.current.contentWindow.postMessage(
+                {
+                  type: 'canvas_console_command',
+                  command: 'enable_capture',
+                },
+                '*',
+              );
               break;
 
             case 'disable_capture':
-              iframeRef.current.contentWindow.postMessage({
-                type: 'canvas_console_command',
-                command: 'disable_capture'
-              }, '*');
+              iframeRef.current.contentWindow.postMessage(
+                {
+                  type: 'canvas_console_command',
+                  command: 'disable_capture',
+                },
+                '*',
+              );
               break;
           }
         } catch (error) {
@@ -181,9 +192,15 @@ const AgentOutputCanvas: React.FC = () => {
     // Écouter les événements SSE pour les commandes canvas console feedback
     const eventSource = (window as any).eventSource;
     if (eventSource) {
-      eventSource.addEventListener('canvas_console_feedback', handleCanvasConsoleFeedback);
+      eventSource.addEventListener(
+        'canvas_console_feedback',
+        handleCanvasConsoleFeedback,
+      );
       return () => {
-        eventSource.removeEventListener('canvas_console_feedback', handleCanvasConsoleFeedback);
+        eventSource.removeEventListener(
+          'canvas_console_feedback',
+          handleCanvasConsoleFeedback,
+        );
       };
     }
   }, [canvasConsoleLogs]);
@@ -213,7 +230,9 @@ const AgentOutputCanvas: React.FC = () => {
     const eventSourceUrl = `/api/chat/stream/${jobId}`;
 
     console.log('🎯 [Canvas Console] EventSource URL:', eventSourceUrl);
-    console.log('🎯 [Canvas Console] Auth will be handled by Vite proxy automatically');
+    console.log(
+      '🎯 [Canvas Console] Auth will be handled by Vite proxy automatically',
+    );
 
     const eventSource = new EventSource(eventSourceUrl);
     eventSourceRef.current = eventSource;
@@ -233,7 +252,10 @@ const AgentOutputCanvas: React.FC = () => {
 
         // Gérer les messages canvas_console_feedback
         if (data.type === 'canvas_console_feedback') {
-          console.log('🎯 [Canvas Console] Handling canvas console feedback:', data);
+          console.log(
+            '🎯 [Canvas Console] Handling canvas console feedback:',
+            data,
+          );
 
           // Le message contient déjà les paramètres d'action
           const { action, level, limit, filter } = data;
@@ -247,38 +269,54 @@ const AgentOutputCanvas: React.FC = () => {
             switch (action) {
               case 'get_logs': {
                 const logs = canvasConsoleLogs
-                  .filter(log => !level || log.level === level)
-                  .filter(log => !filter || log.message.toLowerCase().includes(filter.toLowerCase()))
+                  .filter((log) => !level || log.level === level)
+                  .filter(
+                    (log) =>
+                      !filter ||
+                      log.message.toLowerCase().includes(filter.toLowerCase()),
+                  )
                   .slice(-(limit || 50));
 
-                iframeRef.current.contentWindow.postMessage({
-                  type: 'canvas_console_command',
-                  command: 'get_logs_response',
-                  data: logs
-                }, '*');
+                iframeRef.current.contentWindow.postMessage(
+                  {
+                    type: 'canvas_console_command',
+                    command: 'get_logs_response',
+                    data: logs,
+                  },
+                  '*',
+                );
                 break;
               }
 
               case 'clear_logs':
                 setCanvasConsoleLogs([]);
-                iframeRef.current.contentWindow.postMessage({
-                  type: 'canvas_console_command',
-                  command: 'clear_logs'
-                }, '*');
+                iframeRef.current.contentWindow.postMessage(
+                  {
+                    type: 'canvas_console_command',
+                    command: 'clear_logs',
+                  },
+                  '*',
+                );
                 break;
 
               case 'enable_capture':
-                iframeRef.current.contentWindow.postMessage({
-                  type: 'canvas_console_command',
-                  command: 'enable_capture'
-                }, '*');
+                iframeRef.current.contentWindow.postMessage(
+                  {
+                    type: 'canvas_console_command',
+                    command: 'enable_capture',
+                  },
+                  '*',
+                );
                 break;
 
               case 'disable_capture':
-                iframeRef.current.contentWindow.postMessage({
-                  type: 'canvas_console_command',
-                  command: 'disable_capture'
-                }, '*');
+                iframeRef.current.contentWindow.postMessage(
+                  {
+                    type: 'canvas_console_command',
+                    command: 'disable_capture',
+                  },
+                  '*',
+                );
                 break;
             }
           } catch (error) {
@@ -292,7 +330,10 @@ const AgentOutputCanvas: React.FC = () => {
 
     eventSource.onerror = (error) => {
       console.error('🎯 [Canvas Console] EventSource error:', error);
-      console.error('🎯 [Canvas Console] EventSource readyState:', eventSource.readyState);
+      console.error(
+        '🎯 [Canvas Console] EventSource readyState:',
+        eventSource.readyState,
+      );
       console.error('🎯 [Canvas Console] EventSource URL:', eventSource.url);
       eventSource.close();
     };

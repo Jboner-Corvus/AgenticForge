@@ -9,9 +9,9 @@ async function testTeslaQuote() {
           info: console.log,
           error: console.error,
           warn: console.warn,
-          debug: console.debug
-        }
-      }
+          debug: console.debug,
+        },
+      },
     );
     console.log('Tesla Quote Result:', JSON.stringify(result, null, 2));
   } catch (error) {

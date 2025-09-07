@@ -87,7 +87,8 @@ interface SystemAnalytics {
 // ===== SCHÉMAS DE VALIDATION =====
 const apiKeyValidationSchema = z.object({
   provider: z.string().min(1, 'Le provider est requis'),
-  key: z.string()
+  key: z
+    .string()
     .min(8, 'La clé API doit contenir au moins 8 caractères')
     .refine((key) => {
       // Validation basée sur le format du provider
@@ -97,17 +98,23 @@ const apiKeyValidationSchema = z.object({
       const xaiPattern = /^xai-/;
       const openrouterPattern = /^sk-or-/;
 
-      return openaiPattern.test(key) ||
-              anthropicPattern.test(key) ||
-              googlePattern.test(key) ||
-              xaiPattern.test(key) ||
-              openrouterPattern.test(key) ||
-              key.length >= 20; // Longueur minimale pour autres formats
+      return (
+        openaiPattern.test(key) ||
+        anthropicPattern.test(key) ||
+        googlePattern.test(key) ||
+        xaiPattern.test(key) ||
+        openrouterPattern.test(key) ||
+        key.length >= 20
+      ); // Longueur minimale pour autres formats
     }, 'Format de clé API invalide pour ce provider'),
-  nickname: z.string()
+  nickname: z
+    .string()
     .min(1, 'Le surnom est requis')
     .max(50, 'Le surnom ne peut pas dépasser 50 caractères')
-    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Le surnom ne peut contenir que des lettres, chiffres, espaces, tirets et underscores'),
+    .regex(
+      /^[a-zA-Z0-9\s\-_]+$/,
+      'Le surnom ne peut contenir que des lettres, chiffres, espaces, tirets et underscores',
+    ),
   model: z.string().min(1, 'Le modèle est requis'),
 });
 
@@ -119,7 +126,10 @@ interface NotificationProps {
   duration?: number;
 }
 
-const NotificationSystem = ({ notifications, removeNotification }: {
+const NotificationSystem = ({
+  notifications,
+  removeNotification,
+}: {
   notifications: Array<NotificationProps & { id: string }>;
   removeNotification: (id: string) => void;
 }) => (
@@ -132,21 +142,34 @@ const NotificationSystem = ({ notifications, removeNotification }: {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 300 }}
           className={`p-4 rounded-lg shadow-lg border max-w-sm ${
-            notification.type === 'success' ? 'bg-green-900/90 border-green-700 text-green-100' :
-            notification.type === 'error' ? 'bg-red-900/90 border-red-700 text-red-100' :
-            notification.type === 'warning' ? 'bg-yellow-900/90 border-yellow-700 text-yellow-100' :
-            'bg-blue-900/90 border-blue-700 text-blue-100'
+            notification.type === 'success'
+              ? 'bg-green-900/90 border-green-700 text-green-100'
+              : notification.type === 'error'
+                ? 'bg-red-900/90 border-red-700 text-red-100'
+                : notification.type === 'warning'
+                  ? 'bg-yellow-900/90 border-yellow-700 text-yellow-100'
+                  : 'bg-blue-900/90 border-blue-700 text-blue-100'
           }`}
         >
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-3">
-              {notification.type === 'success' && <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />}
-              {notification.type === 'error' && <XCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />}
-              {notification.type === 'warning' && <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />}
-              {notification.type === 'info' && <Info className="h-5 w-5 mt-0.5 flex-shrink-0" />}
+              {notification.type === 'success' && (
+                <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              )}
+              {notification.type === 'error' && (
+                <XCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              )}
+              {notification.type === 'warning' && (
+                <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              )}
+              {notification.type === 'info' && (
+                <Info className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              )}
               <div>
                 <h4 className="font-semibold text-sm">{notification.title}</h4>
-                <p className="text-sm opacity-90 mt-1">{notification.message}</p>
+                <p className="text-sm opacity-90 mt-1">
+                  {notification.message}
+                </p>
               </div>
             </div>
             <button
@@ -164,11 +187,13 @@ const NotificationSystem = ({ notifications, removeNotification }: {
 
 // Hook personnalisé pour les notifications
 const useNotifications = () => {
-  const [notifications, setNotifications] = useState<Array<NotificationProps & { id: string }>>([]);
+  const [notifications, setNotifications] = useState<
+    Array<NotificationProps & { id: string }>
+  >([]);
 
   const addNotification = (notification: NotificationProps) => {
     const id = Math.random().toString(36).substring(2, 9);
-    setNotifications(prev => [...prev, { ...notification, id }]);
+    setNotifications((prev) => [...prev, { ...notification, id }]);
 
     // Auto-remove après la durée spécifiée
     setTimeout(() => {
@@ -177,7 +202,7 @@ const useNotifications = () => {
   };
 
   const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
   return { notifications, addNotification, removeNotification };
@@ -267,12 +292,10 @@ const SmartAnalyticsDashboard: React.FC<{
   backendKeys?: BackendLlmApiKey[];
   systemHealth: SystemAnalytics;
   recommendations: SmartRecommendation[];
-}> = ({
-  backendKeys: _backendKeys,
-  systemHealth,
-  recommendations,
-}) => {
-  const criticalRecommendations = recommendations.filter(r => r.priority === 'high');
+}> = ({ backendKeys: _backendKeys, systemHealth, recommendations }) => {
+  const criticalRecommendations = recommendations.filter(
+    (r) => r.priority === 'high',
+  );
   const hasCriticalIssues = criticalRecommendations.length > 0;
 
   return (
@@ -282,17 +305,26 @@ const SmartAnalyticsDashboard: React.FC<{
       animate={{ opacity: 1, y: 0 }}
     >
       {/* System Health Card */}
-      <Card className={`col-span-1 lg:col-span-2 ${
-        systemHealth.systemHealth > 80 ? 'border-green-500/50 bg-green-900/10' :
-        systemHealth.systemHealth > 60 ? 'border-yellow-500/50 bg-yellow-900/10' :
-        'border-red-500/50 bg-red-900/10'
-      }`}>
+      <Card
+        className={`col-span-1 lg:col-span-2 ${
+          systemHealth.systemHealth > 80
+            ? 'border-green-500/50 bg-green-900/10'
+            : systemHealth.systemHealth > 60
+              ? 'border-yellow-500/50 bg-yellow-900/10'
+              : 'border-red-500/50 bg-red-900/10'
+        }`}
+      >
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Brain className={`h-5 w-5 ${
-              systemHealth.systemHealth > 80 ? 'text-green-400' :
-              systemHealth.systemHealth > 60 ? 'text-yellow-400' : 'text-red-400'
-            }`} />
+            <Brain
+              className={`h-5 w-5 ${
+                systemHealth.systemHealth > 80
+                  ? 'text-green-400'
+                  : systemHealth.systemHealth > 60
+                    ? 'text-yellow-400'
+                    : 'text-red-400'
+              }`}
+            />
             <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
               Intelligence Artificielle du Système
             </span>
@@ -302,22 +334,30 @@ const SmartAnalyticsDashboard: React.FC<{
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-400">Santé Globale</span>
-              <Badge className={`${
-                systemHealth.systemHealth > 80 ? 'bg-green-900/50 text-green-300' :
-                systemHealth.systemHealth > 60 ? 'bg-yellow-900/50 text-yellow-300' :
-                'bg-red-900/50 text-red-300'
-              }`}>
+              <Badge
+                className={`${
+                  systemHealth.systemHealth > 80
+                    ? 'bg-green-900/50 text-green-300'
+                    : systemHealth.systemHealth > 60
+                      ? 'bg-yellow-900/50 text-yellow-300'
+                      : 'bg-red-900/50 text-red-300'
+                }`}
+              >
                 {systemHealth.systemHealth}%
               </Badge>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-cyan-400">{systemHealth.totalRequests.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-cyan-400">
+                  {systemHealth.totalRequests.toLocaleString()}
+                </div>
                 <div className="text-xs text-gray-400">Requêtes Totales</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-400">{systemHealth.successfulRequests.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-green-400">
+                  {systemHealth.successfulRequests.toLocaleString()}
+                </div>
                 <div className="text-xs text-gray-400">Réussites</div>
               </div>
             </div>
@@ -351,7 +391,9 @@ const SmartAnalyticsDashboard: React.FC<{
         <CardContent>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-400">Temps de Réponse Moyen</span>
+              <span className="text-sm text-gray-400">
+                Temps de Réponse Moyen
+              </span>
               <span className="text-lg font-bold text-blue-400">
                 {systemHealth.averageResponseTime}ms
               </span>
@@ -364,9 +406,13 @@ const SmartAnalyticsDashboard: React.FC<{
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-400">Clés Dégradées</span>
-              <span className={`text-lg font-bold ${
-                systemHealth.degradedKeys > 0 ? 'text-red-400' : 'text-green-400'
-              }`}>
+              <span
+                className={`text-lg font-bold ${
+                  systemHealth.degradedKeys > 0
+                    ? 'text-red-400'
+                    : 'text-green-400'
+                }`}
+              >
                 {systemHealth.degradedKeys}
               </span>
             </div>
@@ -391,9 +437,11 @@ const SmartAnalyticsDashboard: React.FC<{
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className={`p-2 rounded text-xs ${
-                  rec.priority === 'high' ? 'bg-red-900/20 border border-red-500/30' :
-                  rec.priority === 'medium' ? 'bg-yellow-900/20 border border-yellow-500/30' :
-                  'bg-green-900/20 border border-green-500/30'
+                  rec.priority === 'high'
+                    ? 'bg-red-900/20 border border-red-500/30'
+                    : rec.priority === 'medium'
+                      ? 'bg-yellow-900/20 border border-yellow-500/30'
+                      : 'bg-green-900/20 border border-green-500/30'
                 }`}
               >
                 <div className="font-medium text-white">{rec.title}</div>
@@ -414,7 +462,9 @@ const SmartAnalyticsDashboard: React.FC<{
 };
 
 // Intelligent Key Health Monitor
-const KeyHealthMonitor: React.FC<{ keyData: BackendLlmApiKey }> = ({ keyData }) => {
+const KeyHealthMonitor: React.FC<{ keyData: BackendLlmApiKey }> = ({
+  keyData,
+}) => {
   const healthScore = useMemo(() => {
     // Calculate health score based on various metrics
     let score = 100;
@@ -459,8 +509,11 @@ const KeyHealthMonitor: React.FC<{ keyData: BackendLlmApiKey }> = ({ keyData }) 
       <div className="w-full bg-gray-700 rounded-full h-2">
         <div
           className={`h-2 rounded-full transition-all duration-300 ${
-            healthScore >= 80 ? 'bg-green-500' :
-            healthScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+            healthScore >= 80
+              ? 'bg-green-500'
+              : healthScore >= 60
+                ? 'bg-yellow-500'
+                : 'bg-red-500'
           }`}
           style={{ width: `${healthScore}%` }}
         />
@@ -479,11 +532,7 @@ const SmartStatusBanner: React.FC<{
   backendKeys?: BackendLlmApiKey[];
   systemHealth: SystemAnalytics;
   recommendations: SmartRecommendation[];
-}> = ({
-  backendKeys,
-  systemHealth: _systemHealth,
-  recommendations,
-}) => {
+}> = ({ backendKeys, systemHealth: _systemHealth, recommendations }) => {
   const llmApiKeys = useCombinedStore(
     (state: CombinedAppState) => state.llmApiKeys,
   );
@@ -494,7 +543,9 @@ const SmartStatusBanner: React.FC<{
     ? backendKeys.filter((k) => !k.isPermanentlyDisabled).length
     : llmApiKeys.filter((k) => k.isActive).length;
 
-  const criticalIssues = recommendations.filter(r => r.priority === 'high').length;
+  const criticalIssues = recommendations.filter(
+    (r) => r.priority === 'high',
+  ).length;
 
   return (
     <motion.div
@@ -502,8 +553,8 @@ const SmartStatusBanner: React.FC<{
         hasKeys && criticalIssues === 0
           ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50'
           : hasKeys && criticalIssues > 0
-          ? 'bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border-yellow-700/50'
-          : 'bg-gradient-to-r from-purple-900/30 to-indigo-900/30 border-purple-700/50'
+            ? 'bg-gradient-to-r from-yellow-900/30 to-orange-900/30 border-yellow-700/50'
+            : 'bg-gradient-to-r from-purple-900/30 to-indigo-900/30 border-purple-700/50'
       }`}
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -524,25 +575,33 @@ const SmartStatusBanner: React.FC<{
             </div>
           )}
           <div>
-            <h1 className={`text-2xl font-bold ${
-              hasKeys && criticalIssues === 0 ? 'text-green-300' :
-              hasKeys && criticalIssues > 0 ? 'text-yellow-300' :
-              'text-purple-300'
-            }`}>
+            <h1
+              className={`text-2xl font-bold ${
+                hasKeys && criticalIssues === 0
+                  ? 'text-green-300'
+                  : hasKeys && criticalIssues > 0
+                    ? 'text-yellow-300'
+                    : 'text-purple-300'
+              }`}
+            >
               {hasKeys
                 ? `Gestionnaire LLM Intelligent - ${totalKeys} clé(s)`
                 : 'Configuration des clés LLM'}
             </h1>
-            <p className={`text-sm ${
-              hasKeys && criticalIssues === 0 ? 'text-green-400/80' :
-              hasKeys && criticalIssues > 0 ? 'text-yellow-400/80' :
-              'text-purple-400/80'
-            }`}>
+            <p
+              className={`text-sm ${
+                hasKeys && criticalIssues === 0
+                  ? 'text-green-400/80'
+                  : hasKeys && criticalIssues > 0
+                    ? 'text-yellow-400/80'
+                    : 'text-purple-400/80'
+              }`}
+            >
               {hasKeys && criticalIssues === 0
                 ? `Système optimal avec ${activeKeys} clés actives. IA surveille automatiquement les performances.`
                 : hasKeys && criticalIssues > 0
-                ? `${criticalIssues} problème(s) détecté(s). L'IA recommande des actions correctives.`
-                : 'Ajoutez vos clés API pour bénéficier de l\'intelligence artificielle avancée'}
+                  ? `${criticalIssues} problème(s) détecté(s). L'IA recommande des actions correctives.`
+                  : "Ajoutez vos clés API pour bénéficier de l'intelligence artificielle avancée"}
             </p>
           </div>
         </div>
@@ -571,7 +630,7 @@ const SmartStatusBanner: React.FC<{
 // Composant Provider avec thème gothique professionnel
 const SimpleProviderCard = ({
   provider,
-  onNotification
+  onNotification,
 }: {
   provider: LlmProviderConfig;
   onNotification: (notification: NotificationProps) => void;
@@ -685,7 +744,10 @@ const SimpleProviderCard = ({
       onNotification({
         type: 'error',
         title: 'Erreur de test',
-        message: error instanceof Error ? error.message : 'Erreur inconnue lors du test',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Erreur inconnue lors du test',
         duration: 5000,
       });
     } finally {
@@ -1033,8 +1095,6 @@ const SimpleProviderCard = ({
   );
 };
 
-
-
 export const LlmApiKeyManagementPage = memo(() => {
   const authToken = useCombinedStore(
     (state: CombinedAppState) => state.authToken,
@@ -1060,10 +1120,13 @@ export const LlmApiKeyManagementPage = memo(() => {
     systemHealth: 100,
   });
 
-  const [recommendations, setRecommendations] = useState<SmartRecommendation[]>([]);
+  const [recommendations, setRecommendations] = useState<SmartRecommendation[]>(
+    [],
+  );
 
   // Système de notifications
-  const { notifications, addNotification, removeNotification } = useNotifications();
+  const { notifications, addNotification, removeNotification } =
+    useNotifications();
 
   // Charger les clés du backend au montage
   useEffect(() => {
@@ -1114,7 +1177,8 @@ export const LlmApiKeyManagementPage = memo(() => {
       addNotification({
         type: 'error',
         title: 'Authentification requise',
-        message: 'Token d\'authentification manquant. Vérifiez votre configuration.',
+        message:
+          "Token d'authentification manquant. Vérifiez votre configuration.",
         duration: 6000,
       });
       return;
@@ -1134,7 +1198,9 @@ export const LlmApiKeyManagementPage = memo(() => {
       });
 
       if (!validation.success) {
-        throw new Error(`Format de clé invalide: ${validation.error.errors[0].message}`);
+        throw new Error(
+          `Format de clé invalide: ${validation.error.errors[0].message}`,
+        );
       }
 
       // Use the existing testLlmApiKey function
@@ -1178,7 +1244,10 @@ export const LlmApiKeyManagementPage = memo(() => {
       addNotification({
         type: 'error',
         title: 'Échec du test',
-        message: error instanceof Error ? error.message : 'Erreur inconnue lors du test',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Erreur inconnue lors du test',
         duration: 6000,
       });
     } finally {
@@ -1240,8 +1309,10 @@ export const LlmApiKeyManagementPage = memo(() => {
     // Calculate system health and recommendations based on backend keys
     const calculateAnalytics = () => {
       const totalKeys = backendKeys.length;
-      const activeKeys = backendKeys.filter(k => !k.isPermanentlyDisabled).length;
-      const degradedKeys = backendKeys.filter(k => k.errorCount > 5).length;
+      const activeKeys = backendKeys.filter(
+        (k) => !k.isPermanentlyDisabled,
+      ).length;
+      const degradedKeys = backendKeys.filter((k) => k.errorCount > 5).length;
 
       // Calculate system health score
       let healthScore = 100;
@@ -1250,9 +1321,18 @@ export const LlmApiKeyManagementPage = memo(() => {
       if (totalKeys === 0) healthScore = 0;
 
       const newSystemHealth: SystemAnalytics = {
-        totalRequests: backendKeys.reduce((sum, k) => sum + (k.errorCount || 0), 0),
-        successfulRequests: backendKeys.reduce((sum, k) => sum + Math.max(0, (k.errorCount || 0) - 2), 0),
-        failedRequests: backendKeys.reduce((sum, k) => sum + (k.errorCount || 0), 0),
+        totalRequests: backendKeys.reduce(
+          (sum, k) => sum + (k.errorCount || 0),
+          0,
+        ),
+        successfulRequests: backendKeys.reduce(
+          (sum, k) => sum + Math.max(0, (k.errorCount || 0) - 2),
+          0,
+        ),
+        failedRequests: backendKeys.reduce(
+          (sum, k) => sum + (k.errorCount || 0),
+          0,
+        ),
         averageResponseTime: 150, // Mock value - would be calculated from real metrics
         activeKeys,
         degradedKeys,
@@ -1295,7 +1375,7 @@ export const LlmApiKeyManagementPage = memo(() => {
       }
 
       // Check for old/unused keys
-      const oldKeys = backendKeys.filter(k => {
+      const oldKeys = backendKeys.filter((k) => {
         const daysSinceLastUse = k.lastUsed
           ? (Date.now() - k.lastUsed) / (1000 * 60 * 60 * 24)
           : 30;
@@ -1320,12 +1400,14 @@ export const LlmApiKeyManagementPage = memo(() => {
 
   // Filtered keys based on search and filters
   const filteredKeys = useMemo(() => {
-    return backendKeys.filter(key => {
-      const matchesSearch = searchTerm === '' ||
+    return backendKeys.filter((key) => {
+      const matchesSearch =
+        searchTerm === '' ||
         key.apiProvider.toLowerCase().includes(searchTerm.toLowerCase()) ||
         key.apiModel.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesProvider = selectedProvider === 'all' || key.apiProvider === selectedProvider;
+      const matchesProvider =
+        selectedProvider === 'all' || key.apiProvider === selectedProvider;
       const matchesStatus = showInactive || !key.isPermanentlyDisabled;
 
       return matchesSearch && matchesProvider && matchesStatus;
@@ -1402,7 +1484,10 @@ export const LlmApiKeyManagementPage = memo(() => {
               />
             </div>
 
-            <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+            <Select
+              value={selectedProvider}
+              onValueChange={setSelectedProvider}
+            >
               <SelectTrigger className="w-48 bg-gray-800 border-gray-600">
                 <SelectValue placeholder="Tous les providers" />
               </SelectTrigger>
@@ -1433,8 +1518,13 @@ export const LlmApiKeyManagementPage = memo(() => {
                 checked={smartRotationEnabled}
                 onCheckedChange={setSmartRotationEnabled}
               />
-              <label htmlFor="smart-rotation" className="text-sm text-gray-300 flex items-center gap-2">
-                <RotateCcw className={`h-4 w-4 ${smartRotationEnabled ? 'text-green-400' : 'text-gray-500'}`} />
+              <label
+                htmlFor="smart-rotation"
+                className="text-sm text-gray-300 flex items-center gap-2"
+              >
+                <RotateCcw
+                  className={`h-4 w-4 ${smartRotationEnabled ? 'text-green-400' : 'text-gray-500'}`}
+                />
                 Rotation intelligente
               </label>
             </div>
@@ -1445,8 +1535,13 @@ export const LlmApiKeyManagementPage = memo(() => {
                 checked={autoOptimizationEnabled}
                 onCheckedChange={setAutoOptimizationEnabled}
               />
-              <label htmlFor="auto-optimization" className="text-sm text-gray-300 flex items-center gap-2">
-                <Target className={`h-4 w-4 ${autoOptimizationEnabled ? 'text-purple-400' : 'text-gray-500'}`} />
+              <label
+                htmlFor="auto-optimization"
+                className="text-sm text-gray-300 flex items-center gap-2"
+              >
+                <Target
+                  className={`h-4 w-4 ${autoOptimizationEnabled ? 'text-purple-400' : 'text-gray-500'}`}
+                />
                 Optimisation auto
               </label>
             </div>
@@ -1457,7 +1552,9 @@ export const LlmApiKeyManagementPage = memo(() => {
               variant="outline"
               className="border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10"
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`}
+              />
               Actualiser
             </Button>
           </div>
@@ -1476,32 +1573,49 @@ export const LlmApiKeyManagementPage = memo(() => {
               transition={{ delay: index * 0.1 }}
               className="h-full"
             >
-              <Card className={`overflow-hidden transition-all duration-300 h-full group hover:scale-105 ${
-                index === 0 ? 'ring-2 ring-green-500/50 shadow-green-500/20 shadow-lg' :
-                key.isPermanentlyDisabled ? 'ring-2 ring-red-500/30 opacity-75' :
-                'ring-1 ring-gray-700/50 hover:ring-purple-500/30'
-              }`}>
+              <Card
+                className={`overflow-hidden transition-all duration-300 h-full group hover:scale-105 ${
+                  index === 0
+                    ? 'ring-2 ring-green-500/50 shadow-green-500/20 shadow-lg'
+                    : key.isPermanentlyDisabled
+                      ? 'ring-2 ring-red-500/30 opacity-75'
+                      : 'ring-1 ring-gray-700/50 hover:ring-purple-500/30'
+                }`}
+              >
                 <CardContent className="p-6 flex flex-col h-full">
                   {/* Enhanced Header with Better Design */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <div className={`p-3 rounded-xl transition-all duration-300 ${
-                        key.isPermanentlyDisabled ? 'bg-red-900/50' :
-                        index === 0 ? 'bg-green-900/50 shadow-green-500/30 shadow-lg' :
-                        'bg-gradient-to-br from-cyan-900/50 to-purple-900/50 group-hover:shadow-lg group-hover:shadow-purple-500/20'
-                      }`}>
-                        {key.apiProvider === 'openai' && <OpenAILogo className="h-7 w-7 text-white" />}
-                        {key.apiProvider === 'gemini' && <GeminiLogo className="h-7 w-7 text-white" />}
-                        {key.apiProvider === 'qwen' && <QwenLogo className="h-7 w-7 text-white" />}
-                        {key.apiProvider === 'openrouter' && <OpenRouterLogo className="h-7 w-7 text-white" />}
-                        {!['openai', 'gemini', 'qwen', 'openrouter'].includes(key.apiProvider) && (
-                          <Key className="h-7 w-7 text-white" />
+                      <div
+                        className={`p-3 rounded-xl transition-all duration-300 ${
+                          key.isPermanentlyDisabled
+                            ? 'bg-red-900/50'
+                            : index === 0
+                              ? 'bg-green-900/50 shadow-green-500/30 shadow-lg'
+                              : 'bg-gradient-to-br from-cyan-900/50 to-purple-900/50 group-hover:shadow-lg group-hover:shadow-purple-500/20'
+                        }`}
+                      >
+                        {key.apiProvider === 'openai' && (
+                          <OpenAILogo className="h-7 w-7 text-white" />
                         )}
+                        {key.apiProvider === 'gemini' && (
+                          <GeminiLogo className="h-7 w-7 text-white" />
+                        )}
+                        {key.apiProvider === 'qwen' && (
+                          <QwenLogo className="h-7 w-7 text-white" />
+                        )}
+                        {key.apiProvider === 'openrouter' && (
+                          <OpenRouterLogo className="h-7 w-7 text-white" />
+                        )}
+                        {!['openai', 'gemini', 'qwen', 'openrouter'].includes(
+                          key.apiProvider,
+                        ) && <Key className="h-7 w-7 text-white" />}
                       </div>
                       <div>
                         <div className="flex items-center space-x-2">
                           <h3 className="text-lg font-bold text-white">
-                            {PROVIDER_DISPLAY_NAMES[key.apiProvider] || key.apiProvider}
+                            {PROVIDER_DISPLAY_NAMES[key.apiProvider] ||
+                              key.apiProvider}
                           </h3>
                           {index === 0 && (
                             <Badge className="bg-green-900/50 text-green-300 border border-green-700/50 animate-pulse">
@@ -1515,24 +1629,31 @@ export const LlmApiKeyManagementPage = memo(() => {
                               DISABLED
                             </Badge>
                           )}
-                          {smartRotationEnabled && !key.isPermanentlyDisabled && (
-                            <Badge className="bg-blue-900/50 text-blue-300 border border-blue-700/50">
-                              <RotateCcw className="h-3 w-3 mr-1" />
-                              SMART
-                            </Badge>
-                          )}
+                          {smartRotationEnabled &&
+                            !key.isPermanentlyDisabled && (
+                              <Badge className="bg-blue-900/50 text-blue-300 border border-blue-700/50">
+                                <RotateCcw className="h-3 w-3 mr-1" />
+                                SMART
+                              </Badge>
+                            )}
                         </div>
                         <p className="text-sm text-gray-400">{key.apiModel}</p>
                         <div className="flex items-center space-x-2 mt-1">
-                          <div className={`h-2 w-2 rounded-full ${
-                            key.isPermanentlyDisabled ? 'bg-red-500' :
-                            index === 0 ? 'bg-green-500 animate-pulse' :
-                            'bg-yellow-500'
-                          }`} />
+                          <div
+                            className={`h-2 w-2 rounded-full ${
+                              key.isPermanentlyDisabled
+                                ? 'bg-red-500'
+                                : index === 0
+                                  ? 'bg-green-500 animate-pulse'
+                                  : 'bg-yellow-500'
+                            }`}
+                          />
                           <span className="text-xs text-gray-500">
-                            {key.isPermanentlyDisabled ? 'Hors service' :
-                             index === 0 ? 'En production' :
-                             'En attente'}
+                            {key.isPermanentlyDisabled
+                              ? 'Hors service'
+                              : index === 0
+                                ? 'En production'
+                                : 'En attente'}
                           </span>
                         </div>
                       </div>
@@ -1540,12 +1661,22 @@ export const LlmApiKeyManagementPage = memo(() => {
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-purple-900/30">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 hover:bg-purple-900/30"
+                        >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
-                        <DropdownMenuItem onClick={() => testKey(index)} className="hover:bg-purple-900/30">
+                      <DropdownMenuContent
+                        align="end"
+                        className="bg-gray-800 border-gray-700"
+                      >
+                        <DropdownMenuItem
+                          onClick={() => testKey(index)}
+                          className="hover:bg-purple-900/30"
+                        >
                           <TestTube className="h-4 w-4 mr-2" />
                           Tester la clé
                         </DropdownMenuItem>
@@ -1575,7 +1706,9 @@ export const LlmApiKeyManagementPage = memo(() => {
 
                     {key.lastUsed && (
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-400">Dernière utilisation:</span>
+                        <span className="text-gray-400">
+                          Dernière utilisation:
+                        </span>
                         <span className="text-white font-medium">
                           {new Date(key.lastUsed).toLocaleDateString()}
                         </span>
@@ -1673,7 +1806,9 @@ export const LlmApiKeyManagementPage = memo(() => {
                       >
                         <div className="flex items-center space-x-2">
                           <RotateCcw className="h-4 w-4 text-purple-400" />
-                          <span className="text-xs text-purple-300">Rotation intelligente active</span>
+                          <span className="text-xs text-purple-300">
+                            Rotation intelligente active
+                          </span>
                         </div>
                         <Badge className="bg-green-900/50 text-green-300 text-xs">
                           <Activity className="h-3 w-3 mr-1" />
@@ -1698,13 +1833,14 @@ export const LlmApiKeyManagementPage = memo(() => {
         >
           <Brain className="h-16 w-16 text-gray-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-300 mb-2">
-            {backendKeys.length === 0 ? 'Aucune clé configurée' : 'Aucun résultat'}
+            {backendKeys.length === 0
+              ? 'Aucune clé configurée'
+              : 'Aucun résultat'}
           </h3>
           <p className="text-gray-400 mb-6">
             {backendKeys.length === 0
-              ? 'Ajoutez votre première clé API pour commencer à utiliser l\'IA intelligente'
-              : 'Aucune clé ne correspond à vos critères de recherche'
-            }
+              ? "Ajoutez votre première clé API pour commencer à utiliser l'IA intelligente"
+              : 'Aucune clé ne correspond à vos critères de recherche'}
           </p>
           {backendKeys.length === 0 && (
             <Button className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500">
@@ -1738,25 +1874,37 @@ export const LlmApiKeyManagementPage = memo(() => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
                     className={`p-4 rounded-lg border ${
-                      rec.priority === 'high' ? 'bg-red-900/20 border-red-500/30' :
-                      rec.priority === 'medium' ? 'bg-yellow-900/20 border-yellow-500/30' :
-                      'bg-green-900/20 border-green-500/30'
+                      rec.priority === 'high'
+                        ? 'bg-red-900/20 border-red-500/30'
+                        : rec.priority === 'medium'
+                          ? 'bg-yellow-900/20 border-yellow-500/30'
+                          : 'bg-green-900/20 border-green-500/30'
                     }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-semibold text-white">{rec.title}</h4>
-                          <Badge className={`${
-                            rec.priority === 'high' ? 'bg-red-900/50 text-red-300' :
-                            rec.priority === 'medium' ? 'bg-yellow-900/50 text-yellow-300' :
-                            'bg-green-900/50 text-green-300'
-                          }`}>
+                          <h4 className="font-semibold text-white">
+                            {rec.title}
+                          </h4>
+                          <Badge
+                            className={`${
+                              rec.priority === 'high'
+                                ? 'bg-red-900/50 text-red-300'
+                                : rec.priority === 'medium'
+                                  ? 'bg-yellow-900/50 text-yellow-300'
+                                  : 'bg-green-900/50 text-green-300'
+                            }`}
+                          >
                             {rec.priority.toUpperCase()}
                           </Badge>
                         </div>
-                        <p className="text-gray-300 text-sm mb-3">{rec.description}</p>
-                        <p className="text-cyan-400 text-sm font-medium">{rec.action}</p>
+                        <p className="text-gray-300 text-sm mb-3">
+                          {rec.description}
+                        </p>
+                        <p className="text-cyan-400 text-sm font-medium">
+                          {rec.action}
+                        </p>
                       </div>
                       <Button
                         size="sm"
@@ -1764,8 +1912,8 @@ export const LlmApiKeyManagementPage = memo(() => {
                           rec.priority === 'high'
                             ? 'bg-red-600 hover:bg-red-500'
                             : rec.priority === 'medium'
-                            ? 'bg-yellow-600 hover:bg-yellow-500'
-                            : 'bg-green-600 hover:bg-green-500'
+                              ? 'bg-yellow-600 hover:bg-yellow-500'
+                              : 'bg-green-600 hover:bg-green-500'
                         }`}
                       >
                         <Lightning className="h-4 w-4 mr-2" />
@@ -1789,28 +1937,44 @@ export const LlmApiKeyManagementPage = memo(() => {
       >
         {/* Smart Features Status */}
         <div className="flex items-center justify-center gap-4">
-          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs ${
-            smartRotationEnabled
-              ? 'bg-green-900/30 text-green-300 border border-green-700/50'
-              : 'bg-gray-800/50 text-gray-400 border border-gray-700/50'
-          }`}>
-            <RotateCcw className={`h-3 w-3 ${smartRotationEnabled ? 'animate-spin' : ''}`} />
+          <div
+            className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs ${
+              smartRotationEnabled
+                ? 'bg-green-900/30 text-green-300 border border-green-700/50'
+                : 'bg-gray-800/50 text-gray-400 border border-gray-700/50'
+            }`}
+          >
+            <RotateCcw
+              className={`h-3 w-3 ${smartRotationEnabled ? 'animate-spin' : ''}`}
+            />
             <span>Rotation Intelligente</span>
-            <div className={`h-2 w-2 rounded-full ${
-              smartRotationEnabled ? 'bg-green-500 animate-pulse' : 'bg-gray-500'
-            }`} />
+            <div
+              className={`h-2 w-2 rounded-full ${
+                smartRotationEnabled
+                  ? 'bg-green-500 animate-pulse'
+                  : 'bg-gray-500'
+              }`}
+            />
           </div>
 
-          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs ${
-            autoOptimizationEnabled
-              ? 'bg-purple-900/30 text-purple-300 border border-purple-700/50'
-              : 'bg-gray-800/50 text-gray-400 border border-gray-700/50'
-          }`}>
-            <Target className={`h-3 w-3 ${autoOptimizationEnabled ? 'animate-pulse' : ''}`} />
+          <div
+            className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs ${
+              autoOptimizationEnabled
+                ? 'bg-purple-900/30 text-purple-300 border border-purple-700/50'
+                : 'bg-gray-800/50 text-gray-400 border border-gray-700/50'
+            }`}
+          >
+            <Target
+              className={`h-3 w-3 ${autoOptimizationEnabled ? 'animate-pulse' : ''}`}
+            />
             <span>Optimisation Auto</span>
-            <div className={`h-2 w-2 rounded-full ${
-              autoOptimizationEnabled ? 'bg-purple-500 animate-pulse' : 'bg-gray-500'
-            }`} />
+            <div
+              className={`h-2 w-2 rounded-full ${
+                autoOptimizationEnabled
+                  ? 'bg-purple-500 animate-pulse'
+                  : 'bg-gray-500'
+              }`}
+            />
           </div>
         </div>
 
@@ -1887,7 +2051,9 @@ export const LlmApiKeyManagementPage = memo(() => {
             size="sm"
             className="flex items-center gap-2 border-purple-500/50 text-purple-400 hover:bg-purple-900/30"
           >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
+            />
             {isRefreshing ? 'Actualisation...' : 'Actualiser'}
           </Button>
         </div>
@@ -2005,14 +2171,14 @@ export const LlmApiKeyManagementPage = memo(() => {
         </h2>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-           {PROVIDERS.map((provider) => (
-             <SimpleProviderCard
-               key={provider.id}
-               provider={provider}
-               onNotification={addNotification}
-             />
-           ))}
-         </div>
+          {PROVIDERS.map((provider) => (
+            <SimpleProviderCard
+              key={provider.id}
+              provider={provider}
+              onNotification={addNotification}
+            />
+          ))}
+        </div>
 
         <div className="mt-8 p-6 bg-gray-800/50 rounded-xl border border-gray-700 backdrop-blur-sm">
           <h3 className="text-lg font-semibold text-gray-200 mb-3 flex items-center">

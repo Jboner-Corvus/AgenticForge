@@ -4,9 +4,10 @@ async function testBrowserLiveView() {
 
     // Create a job that uses Playwright tools
     const jobData = {
-      message: "Navigate to google.ca, type 'Playwright automation test' in the search bar, and click the search button. Show me the live browser events.",
+      message:
+        "Navigate to google.ca, type 'Playwright automation test' in the search bar, and click the search button. Show me the live browser events.",
       tools: ['playwright_navigate', 'playwright_type', 'playwright_click'],
-      sessionId: 'test-session-' + Date.now()
+      sessionId: 'test-session-' + Date.now(),
     };
 
     console.log('📤 Sending job request...');
@@ -14,12 +15,12 @@ async function testBrowserLiveView() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0'
+        Authorization: 'Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0',
       },
       body: JSON.stringify({
         prompt: jobData.message,
-        sessionId: jobData.sessionId
-      })
+        sessionId: jobData.sessionId,
+      }),
     });
 
     if (!response.ok) {
@@ -37,7 +38,6 @@ async function testBrowserLiveView() {
     setTimeout(() => {
       console.log('⏰ Test completed. Check the Browser Live View in the UI.');
     }, 120000);
-
   } catch (error) {
     console.error('❌ Test failed:', error.message);
   }

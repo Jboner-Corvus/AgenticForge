@@ -3,12 +3,15 @@
 ## 🏗️ ARCHITECTURE RÉSEAU
 
 ### Ports et Services
+
 - **Port 3001**: Backend API principal (Node.js/Express)
 - **Port 3002**: Frontend production (Docker + Nginx proxy)
 - **Port ${WEB_PORT}**: Frontend développement (Vite dev server, généralement 3006)
 
 ### Configuration Ports
+
 Les ports sont configurés dans `.env`:
+
 - `PORT=3001` - Backend API
 - `PUBLIC_PORT=3001` - Port public backend
 - `WEB_PORT=3002` - Frontend (variable pour dev server)
@@ -17,16 +20,19 @@ Les ports sont configurés dans `.env`:
 ## 🧩 COMPOSANTS SYSTÈME
 
 ### Backend (packages/core/)
+
 - **Serveur principal**: `server-start.js` (port 3001)
 - **Worker**: `worker.js` (traitement des jobs Redis)
 - **Base de données**: PostgreSQL (localhost)
 - **Cache/Queue**: Redis (localhost:6379)
 
 ### Frontend (packages/ui/)
+
 - **Production**: Docker + Nginx (port 3002)
 - **Développement**: Vite dev server (port ${WEB_PORT})
 
 ### Système de Verrouillage
+
 - **Clés Redis**:
   - `server:singleton:lock` - Empêche multiples serveurs
   - `worker:singleton:lock` - Empêche multiples workers
@@ -34,10 +40,12 @@ Les ports sont configurés dans `.env`:
 ## 🔧 DÉBOGAGE
 
 ### Logs Principaux
+
 - `worker.log` - Logs du worker et traitement des jobs
 - `dev-server.log` - Logs du serveur de développement
 
 ### Commandes Utiles
+
 ```bash
 # Vérifier les ports utilisés
 ss -tlnp | grep -E ":(3001|3002|3006)"
@@ -53,6 +61,7 @@ redis-cli DEL server:singleton:lock worker:singleton:lock
 ```
 
 ### Problèmes Fréquents
+
 1. **Worker utilise `finish` immédiatement**: Vérifier `convertPlainTextToValidJson` dans `agent.ts:1193-1227`
 2. **Multiples processus**: Nettoyer avec `pkill` et vérifier les verrous Redis
 3. **Ports occupés**: Utiliser `lsof -ti:PORT` pour identifier les processus
@@ -60,6 +69,7 @@ redis-cli DEL server:singleton:lock worker:singleton:lock
 ## 🚀 DÉMARRAGE
 
 ### Backend
+
 ```bash
 # Backend principal
 AUTH_TOKEN="..." PORT=3001 node packages/core/dist/server-start.js
@@ -69,6 +79,7 @@ AUTH_TOKEN="..." node packages/core/dist/worker.js
 ```
 
 ### Frontend
+
 ```bash
 # Développement
 AUTH_TOKEN="..." VITE_AUTH_TOKEN="..." VITE_BACKEND_PORT=3001 WEB_PORT=3006 pnpm --filter @gforge/ui run start:web
@@ -89,11 +100,13 @@ AUTH_TOKEN="..." VITE_AUTH_TOKEN="..." VITE_BACKEND_PORT=3001 WEB_PORT=3006 pnpm
 ## 🖼️ CANVAS vs PLAYWRIGHT - DISTINCTION IMPORTANTE
 
 ### 📋 Différences Clés
+
 - **Canvas** = Interface UI pour **AFFICHER** du contenu dans l'application web
 - **Playwright** = Outil pour **CAPTURER/AUTOMATISER** des navigateurs
 - **Live Preview** = Système temps réel qui montre ce que Playwright fait
 
 ### 🔧 Architecture Technique
+
 ```
 Playwright (capture) → WebSocket → Canvas (affichage)
      ↓                    ↓            ↓
@@ -103,6 +116,7 @@ Playwright (capture) → WebSocket → Canvas (affichage)
 ```
 
 ### 🚨 Points Critiques Agent
+
 1. **Jamais confondre** Canvas et Playwright dans `agent.ts`
 2. **Canvas commands**: `displayCanvas`, `canvas_display_*`
 3. **Playwright commands**: `playwright_*`, navigation, clics
@@ -110,6 +124,7 @@ Playwright (capture) → WebSocket → Canvas (affichage)
 5. **Live Preview** fonctionne via événements WebSocket
 
 ### 📊 Tests Complets Ajoutés
+
 - **273-302**: Tests Canvas (affichage HTML, jeux, code, data, média)
 - **303-332**: Tests Live Preview (capture temps réel, performance)
 - **333-352**: Tests intégration Canvas+Playwright (sync, robustesse)

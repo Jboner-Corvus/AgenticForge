@@ -1,0 +1,69 @@
+category: command_execution
+description: Tests d'exécution de commandes
+tasks:
+  basic:
+    - id: 30
+      description: Exécuter une commande shell simple (ls -la)
+      status: completed
+      priority: high
+      difficulty: basic
+      system_prompt: code
+      tags: [shell, execute, basic]
+    - id: 31
+      description: Exécuter une commande shell avec sortie longue
+      status: completed
+      priority: medium
+      difficulty: basic
+      system_prompt: code
+      tags: [shell, execute, output]
+    - id: 32
+      description: Exécuter une commande shell en mode détaché
+      status: pending
+      priority: medium
+      difficulty: intermediate
+      system_prompt: code
+      tags: [shell, execute, detached]
+    - id: 33
+      description: Exécuter une commande shell qui échoue
+      status: completed
+      priority: medium
+      difficulty: basic
+      system_prompt: code
+      tags: [shell, execute, error]
+
+  advanced:
+    - id: 61
+      description: Exécuter une commande avec entrée utilisateur
+      status: pending
+      priority: medium
+      difficulty: advanced
+      system_prompt: code
+      tags: [shell, execute, input]
+    - id: 62
+      description: Exécuter une commande avec gestion d'erreurs personnalisée
+      status: pending
+      priority: high
+      difficulty: advanced
+      system_prompt: code
+      tags: [shell, execute, error-handling]
+    - id: 63
+      description: Exécuter une commande avec redirection de sortie
+      status: pending
+      priority: medium
+      difficulty: intermediate
+      system_prompt: code
+      tags: [shell, execute, redirect]
+    - id: 64
+      description: Exécuter une commande avec variables d'environnement
+      status: pending
+      priority: medium
+      difficulty: intermediate
+      system_prompt: code
+      tags: [shell, execute, environment]
+    - id: 65
+      description: Exécuter une commande avec gestion de signaux (SIGTERM, SIGKILL)
+      status: pending
+      priority: low
+      difficulty: advanced
+      system_prompt: code
+      tags: [shell, execute, signals]

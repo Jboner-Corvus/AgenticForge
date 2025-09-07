@@ -58,6 +58,7 @@ cd packages/core
 ## Test Output
 
 The test script provides colored output:
+
 - ✅ Green: Passed tests
 - ❌ Red: Failed tests
 - ⏳ Yellow: In-progress operations
@@ -66,6 +67,7 @@ The test script provides colored output:
 ## Adding New Tests
 
 To add new tests:
+
 1. Add a new function in `trading-tools-test.sh` following the existing pattern
 2. Call the function in the `main()` function
 3. Update the test count tracking variables
@@ -74,6 +76,7 @@ To add new tests:
 ## Troubleshooting
 
 If tests fail:
+
 1. Verify AgenticForge services are running
 2. Check that your Alpha Vantage API key is valid and configured
 3. Ensure network connectivity to Alpha Vantage API

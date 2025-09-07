@@ -5,18 +5,18 @@ import type { MinimalJob, SessionData } from '../../../../../types.ts';
 describe('Global Quote Tool', () => {
   const mockJob: MinimalJob = {
     data: {
-      prompt: 'test prompt'
+      prompt: 'test prompt',
     },
     id: 'test-job',
     isFailed: async () => false,
-    name: 'test-job-name'
+    name: 'test-job-name',
   };
 
   const mockSession: SessionData = {
     history: [],
     identities: [],
     name: 'test-session',
-    timestamp: Date.now()
+    timestamp: Date.now(),
   };
 
   const mockContext = {

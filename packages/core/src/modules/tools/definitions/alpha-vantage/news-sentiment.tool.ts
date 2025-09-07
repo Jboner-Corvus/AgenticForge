@@ -11,19 +11,27 @@ const NewsSentimentParams = AlphaVantageBaseParams.extend({
   tickers: z
     .string()
     .optional()
-    .describe('Stock tickers separated by commas (e.g., "AAPL,TSLA,MSFT"). If not provided, returns general market news'),
+    .describe(
+      'Stock tickers separated by commas (e.g., "AAPL,TSLA,MSFT"). If not provided, returns general market news',
+    ),
   topics: z
     .string()
     .optional()
-    .describe('News topics separated by commas (e.g., "technology,earnings,ipo"). Available topics: blockchain, earnings, ipo, mergers_and_acquisitions, financial_markets, economy_fiscal, economy_monetary, economy_macro, energy_transportation, finance, life_sciences, manufacturing, real_estate, retail_wholesale, technology'),
+    .describe(
+      'News topics separated by commas (e.g., "technology,earnings,ipo"). Available topics: blockchain, earnings, ipo, mergers_and_acquisitions, financial_markets, economy_fiscal, economy_monetary, economy_macro, energy_transportation, finance, life_sciences, manufacturing, real_estate, retail_wholesale, technology',
+    ),
   time_from: z
     .string()
     .optional()
-    .describe('Start time for news articles in format YYYYMMDDTHHMM (e.g., "20220410T0130")'),
+    .describe(
+      'Start time for news articles in format YYYYMMDDTHHMM (e.g., "20220410T0130")',
+    ),
   time_to: z
     .string()
     .optional()
-    .describe('End time for news articles in format YYYYMMDDTHHMM (e.g., "20220410T0530")'),
+    .describe(
+      'End time for news articles in format YYYYMMDDTHHMM (e.g., "20220410T0530")',
+    ),
   sort: z
     .enum(['LATEST', 'EARLIEST', 'RELEVANCE'])
     .optional()
@@ -40,16 +48,17 @@ const NewsSentimentParams = AlphaVantageBaseParams.extend({
 });
 
 export const newsSentimentTool: Tool<typeof NewsSentimentParams> = {
-  description: 'Returns live and historical market news and sentiment data with AI-powered sentiment scores',
-  
+  description:
+    'Returns live and historical market news and sentiment data with AI-powered sentiment scores',
+
   execute: async (params, context) => {
     const { log } = context;
     const parsedParams = NewsSentimentParams.parse(params);
-    
+
     try {
-      log.info('Fetching news sentiment data', { 
+      log.info('Fetching news sentiment data', {
         tickers: parsedParams.tickers,
-        topics: parsedParams.topics
+        topics: parsedParams.topics,
       });
 
       const apiParams: Record<string, string> = {
@@ -57,35 +66,37 @@ export const newsSentimentTool: Tool<typeof NewsSentimentParams> = {
         limit: parsedParams.limit?.toString() || '1000',
         apikey: parsedParams.apikey || getConfig().ALPHA_VANTAGE_API_KEY || '',
       };
-      
+
       // Conditionally add optional parameters
       if (parsedParams.tickers) {
         apiParams.tickers = parsedParams.tickers;
       }
-      
+
       if (parsedParams.topics) {
         apiParams.topics = parsedParams.topics;
       }
-      
+
       const data = await makeAlphaVantageRequest('NEWS_SENTIMENT', apiParams);
-      
-      log.info('Successfully fetched news sentiment data', { 
+
+      log.info('Successfully fetched news sentiment data', {
         articlesCount: data?.items?.length || 0,
-        overallSentiment: data?.sentiment_score_definition || 'N/A'
+        overallSentiment: data?.sentiment_score_definition || 'N/A',
       });
 
       return formatAlphaVantageResponse(data, 'NEWS_SENTIMENT');
-      
     } catch (error) {
-      log.error({ err: error, params: parsedParams }, 'Error fetching news sentiment data');
+      log.error(
+        { err: error, params: parsedParams },
+        'Error fetching news sentiment data',
+      );
       throw new Error(
         `Failed to fetch news sentiment data: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
     }
   },
-  
+
   name: 'news_sentiment',
   parameters: NewsSentimentParams,
 };

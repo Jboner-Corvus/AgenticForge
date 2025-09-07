@@ -3,6 +3,7 @@
 ## Problème Résolu
 
 Auparavant, le Browser Live View ne capturait des screenshots automatiquement que pour quelques actions spécifiques :
+
 - Navigation (`playwright_navigate`)
 - Clics (`playwright_click`)
 - Saisie de texte (`playwright_type`)
@@ -67,16 +68,19 @@ PLAYWRIGHT_SCREENSHOT_COOLDOWN=3000
 ## Avantages
 
 ### 👁️ Visibilité Complète
+
 - Suivez visuellement **toutes** les actions de l'agent
 - Débogage plus facile des workflows complexes
 - Meilleure compréhension du comportement de l'agent
 
 ### ⚡ Performance Optimisée
+
 - Screenshots compressés en base64
 - Protection contre le spam de captures
 - Captures non-bloquantes (ne ralentissent pas l'agent)
 
 ### 🔧 Configurable
+
 - Ajustez la fréquence selon vos besoins
 - Désactivez complètement si nécessaire
 - Contrôle fin via variables d'environnement
@@ -84,18 +88,24 @@ PLAYWRIGHT_SCREENSHOT_COOLDOWN=3000
 ## Utilisation
 
 ### Test Rapide
+
 ```bash
 node test_auto_screenshots.js
 ```
 
 ### Avec Variables d'Environnement
+
 ```bash
 PLAYWRIGHT_SCREENSHOT_FREQUENCY=major PLAYWRIGHT_MAX_SCREENSHOTS_PER_MINUTE=5 node votre_script.js
 ```
 
 ### Configuration Programmatique
+
 ```typescript
-import { getPlaywrightMcpConfig, updatePlaywrightMcpConfig } from './playwrightMcp.config';
+import {
+  getPlaywrightMcpConfig,
+  updatePlaywrightMcpConfig,
+} from './playwrightMcp.config';
 
 // Obtenir la configuration actuelle
 const config = getPlaywrightMcpConfig();
@@ -104,8 +114,8 @@ const config = getPlaywrightMcpConfig();
 updatePlaywrightMcpConfig({
   screenshots: {
     frequency: 'minimal',
-    maxScreenshotsPerMinute: 3
-  }
+    maxScreenshotsPerMinute: 3,
+  },
 });
 ```
 
@@ -129,7 +139,9 @@ Les screenshots automatiques génèrent des événements Redis avec :
 ## Debugging
 
 ### Logs
+
 Les screenshots automatiques sont tracés dans les logs :
+
 ```
 📸 Automatic screenshot captured: navigate
 📊 Size: 245760 chars
@@ -138,7 +150,9 @@ Les screenshots automatiques sont tracés dans les logs :
 ```
 
 ### Erreurs
+
 Les erreurs de capture sont non-bloquantes :
+
 ```
 ⚠️ Non-critical automatic screenshot failed after navigation
 ```

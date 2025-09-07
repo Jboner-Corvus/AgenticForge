@@ -7,7 +7,7 @@ import { UserInput } from './UserInput';
 vi.mock('../lib/store', async () => {
   const mod = await import('../lib/__mocks__/store');
   const useStore = mod.useStore;
-   
+
   (useStore as any).getState = vi.fn(() => mod.mockState);
   return {
     useStore,

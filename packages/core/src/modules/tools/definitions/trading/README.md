@@ -21,6 +21,7 @@ The trading system is built on top of AgenticForge's existing Playwright integra
 The AgenticForge trading agent operates in multiple specialized modes:
 
 #### **Mode 1: Volume & Volatility Surfing** 🚀
+
 - **Primary Strategy**: Identifies the most volatile assets each day, aiming to capture strong upward movements while avoiding sustained downturns
 - **Execution**: Surfs market waves using leverage for amplified returns on the best opportunities, focusing on assets showing strong positive momentum
 - **Risk Management**: Dynamic position sizing based on volatility levels with strict stop-losses to avoid capturing sustained downturns
@@ -31,17 +32,20 @@ The AgenticForge trading agent operates in multiple specialized modes:
 - **Exit Strategy**: Profit taking at resistance levels, strict stop losses to avoid sustained downturns
 
 #### **Mode 2: Mean Reversion** 🔄
+
 - **Strategy**: Capitalizes on price deviations from moving averages
 - **Execution**: Buys oversold conditions, sells overbought conditions
 - **Timeframes**: 5-minute to 4-hour charts
 - **Indicators**: RSI, Bollinger Bands, MACD divergence
 
 #### **Mode 3: Breakout Trading** 💥
+
 - **Strategy**: Enters positions on confirmed breakouts
 - **Execution**: Uses volume confirmation and retest patterns
 - **Risk Management**: Tight stops below breakout levels
 
 #### **Mode 4: Arbitrage** ⚖️
+
 - **Strategy**: Exploits price differences across platforms
 - **Execution**: Simultaneous buy/sell orders across exchanges
 - **Requirements**: Low latency connections and sufficient liquidity
@@ -106,6 +110,7 @@ Agent IA (LLM)                  Scripts d'Automatisation
 The trading agent utilizes advanced technical analysis to identify key support and resistance levels:
 
 #### **Automated Detection Methods**
+
 - **Pivot Point Analysis**: Calculates daily, weekly, and monthly pivot points with associated support/resistance levels
 - **Moving Average Confluence**: Identifies areas where multiple moving averages intersect to create dynamic support/resistance
 - **Volume Profile Analysis**: Uses volume distribution to find significant price levels where large amounts of trading occurred
@@ -114,7 +119,9 @@ The trading agent utilizes advanced technical analysis to identify key support a
 - **Chart Pattern Recognition**: Identifies classical patterns (double tops/bottoms, triangles, flags) that imply future price behavior
 
 #### **Key Index Monitoring**
+
 The system continuously monitors major market indices to gauge overall market sentiment:
+
 - **S&P 500 (SPX)** - Broad US market health indicator
 - **Dow Jones (DJI)** - Industrial sector performance
 - **Nasdaq (IXIC)** - Technology sector trends
@@ -123,6 +130,7 @@ The system continuously monitors major market indices to gauge overall market se
 - **Sector ETFs** - Monitors leading sectors (XLK, XLF, XLE, etc.)
 
 #### **Integration with Trading Decisions**
+
 - **Confirmation Signals**: Support/resistance levels are used to confirm entry and exit points
 - **Risk Management**: Stop losses are placed below key support levels, take profit targets near resistance
 - **Market Context**: Index performance helps determine if market conditions favor bullish or bearish strategies

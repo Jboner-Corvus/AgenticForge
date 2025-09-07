@@ -3,7 +3,7 @@ import { pingTool } from './packages/core/dist/modules/tools/definitions/alpha-v
 
 async function testPing() {
   console.log('🏓 Test direct du ping Alpha Vantage...');
-  
+
   try {
     const result = await pingTool.execute({}, { log: console.log });
     console.log('✅ Ping result:', JSON.stringify(result, null, 2));

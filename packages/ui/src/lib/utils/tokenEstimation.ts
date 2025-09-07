@@ -23,7 +23,8 @@ export function estimateTokens(text: string): number {
   const baseTokens = Math.ceil(cleanText.length / 4);
 
   // Add tokens for punctuation and special characters
-  const punctuationCount = (cleanText.match(/[.,!?;:()[\]{}"'\-—–]/g) || []).length;
+  const punctuationCount = (cleanText.match(/[.,!?;:()[\]{}"'\-—–]/g) || [])
+    .length;
   const whitespaceCount = (cleanText.match(/\s+/g) || []).length;
 
   // Add small overhead for punctuation and formatting

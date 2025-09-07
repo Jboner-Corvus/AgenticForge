@@ -1,7 +1,11 @@
 import { config, loadConfig } from './config.ts';
 import { getLoggerInstance } from './logger.ts';
 import { getRedisClientInstance } from './modules/redis/redisClient.ts';
-import { getPostgresPool, DatabaseCircuitBreaker, getPostgresMonitor } from './modules/database/index.ts';
+import {
+  getPostgresPool,
+  DatabaseCircuitBreaker,
+  getPostgresMonitor,
+} from './modules/database/index.ts';
 import { initializeWebServer } from './webServer.ts';
 
 // Add handler for unhandled promise rejections
@@ -22,48 +26,72 @@ async function checkServerLock(redisClient: any): Promise<boolean> {
   const lockKey = 'server:singleton:lock';
   const lockTimeout = 60; // 60 seconds
   const processId = `${process.pid}:${Date.now()}`;
-  
+
   try {
     // Try to set lock with expiration
-    const result = await redisClient.set(lockKey, processId, 'EX', lockTimeout, 'NX');
-    
+    const result = await redisClient.set(
+      lockKey,
+      processId,
+      'EX',
+      lockTimeout,
+      'NX',
+    );
+
     if (result === 'OK') {
-      getLoggerInstance().info(`✅ Server lock acquired by process ${process.pid}`);
-      
+      getLoggerInstance().info(
+        `✅ Server lock acquired by process ${process.pid}`,
+      );
+
       // Refresh lock periodically
-      const refreshInterval = setInterval(async () => {
-        try {
-          const currentLock = await redisClient.get(lockKey);
-          if (currentLock === processId) {
-            await redisClient.expire(lockKey, lockTimeout);
-            getLoggerInstance().debug(`🔄 Server lock refreshed by process ${process.pid}`);
-          } else {
-            clearInterval(refreshInterval);
-            getLoggerInstance().warn(`⚠️ Server lock lost by process ${process.pid}, shutting down`);
-            process.exit(0);
+      const refreshInterval = setInterval(
+        async () => {
+          try {
+            const currentLock = await redisClient.get(lockKey);
+            if (currentLock === processId) {
+              await redisClient.expire(lockKey, lockTimeout);
+              getLoggerInstance().debug(
+                `🔄 Server lock refreshed by process ${process.pid}`,
+              );
+            } else {
+              clearInterval(refreshInterval);
+              getLoggerInstance().warn(
+                `⚠️ Server lock lost by process ${process.pid}, shutting down`,
+              );
+              process.exit(0);
+            }
+          } catch (error) {
+            getLoggerInstance().error(
+              { error },
+              'Error refreshing server lock',
+            );
           }
-        } catch (error) {
-          getLoggerInstance().error({ error }, 'Error refreshing server lock');
-        }
-      }, (lockTimeout / 2) * 1000);
-      
+        },
+        (lockTimeout / 2) * 1000,
+      );
+
       // Clean up on exit
       process.on('SIGTERM', async () => {
         clearInterval(refreshInterval);
         await redisClient.del(lockKey);
-        getLoggerInstance().info(`🧹 Server lock released by process ${process.pid}`);
+        getLoggerInstance().info(
+          `🧹 Server lock released by process ${process.pid}`,
+        );
       });
-      
+
       process.on('SIGINT', async () => {
         clearInterval(refreshInterval);
         await redisClient.del(lockKey);
-        getLoggerInstance().info(`🧹 Server lock released by process ${process.pid}`);
+        getLoggerInstance().info(
+          `🧹 Server lock released by process ${process.pid}`,
+        );
       });
-      
+
       return true;
     } else {
       const existingLock = await redisClient.get(lockKey);
-      getLoggerInstance().warn(`❌ Server already running with lock: ${existingLock}, process ${process.pid} will exit`);
+      getLoggerInstance().warn(
+        `❌ Server already running with lock: ${existingLock}, process ${process.pid} will exit`,
+      );
       return false;
     }
   } catch (error) {
@@ -76,16 +104,16 @@ async function startServer() {
   await loadConfig(); // Load configuration
   // Initialize logger after config is loaded
   const logger = getLoggerInstance();
-  
+
   // Check server singleton lock before proceeding
   const redisClient = getRedisClientInstance();
   const canProceed = await checkServerLock(redisClient);
-  
+
   if (!canProceed) {
     logger.info('🚫 [SERVER] Another server is already running, exiting...');
     process.exit(0);
   }
-  
+
   logger.info(`Resolved WORKSPACE_PATH: ${config.WORKSPACE_PATH}`);
   logger.info(`Resolved HOST_PROJECT_PATH: ${config.HOST_PROJECT_PATH}`);
 
@@ -99,7 +127,9 @@ async function startServer() {
   logger.info(`  Host: ${config.POSTGRES_HOST}`);
   logger.info(`  Port: ${config.POSTGRES_PORT}`);
   logger.info(`  User: ${config.POSTGRES_USER}`);
-  logger.info(`  Password: ${config.POSTGRES_PASSWORD ? '********' : 'undefined'}`);
+  logger.info(
+    `  Password: ${config.POSTGRES_PASSWORD ? '********' : 'undefined'}`,
+  );
   logger.info(`  Pool Config: min=${poolManager.getStats().idleCount}, max=20`);
 
   // Test de connexion avec circuit breaker et retry
@@ -125,7 +155,9 @@ async function startServer() {
   }
 
   if (!connected) {
-    logger.error('Could not initialize PostgreSQL pool after 5 attempts, exiting.');
+    logger.error(
+      'Could not initialize PostgreSQL pool after 5 attempts, exiting.',
+    );
     process.exit(1);
   }
 
@@ -150,7 +182,7 @@ async function startServer() {
         // Log errors through circuit breaker
         logger.error('Database wrapper error event');
       }
-    }
+    },
   };
 
   const { server } = await initializeWebServer(dbWrapper as any, redisClient);

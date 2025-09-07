@@ -161,7 +161,9 @@ describe('Qwen LLM Provider Integration Tests', () => {
 
   describe('Qwen Basic Integration', () => {
     it('should successfully get response from Qwen provider', async () => {
-      const { llmResponseSchema: mockResponseSchema } = await import('./responseSchema.ts');
+      const { llmResponseSchema: mockResponseSchema } = await import(
+        './responseSchema.ts'
+      );
 
       mockQwenProvider.getLlmResponse.mockResolvedValue(
         '{"answer": "Qwen successful response"}',
@@ -178,24 +180,30 @@ describe('Qwen LLM Provider Integration Tests', () => {
     });
 
     it('should handle Qwen with valid API key', async () => {
-      const { LlmKeyManager: mockLlmKeyManager } = await import('../llm/LlmKeyManager.ts');
-      const { llmResponseSchema: mockResponseSchema } = await import('./responseSchema.ts');
+      const { LlmKeyManager: mockLlmKeyManager } = await import(
+        '../llm/LlmKeyManager.ts'
+      );
+      const { llmResponseSchema: mockResponseSchema } = await import(
+        './responseSchema.ts'
+      );
 
       // Use vi.mocked to properly reference the existing mock
       const mockHasAvailableKeys = vi.fn();
       mockHasAvailableKeys.mockResolvedValue(true);
-      vi.mocked(mockLlmKeyManager.hasAvailableKeys).mockImplementation(mockHasAvailableKeys);
-      
+      vi.mocked(mockLlmKeyManager.hasAvailableKeys).mockImplementation(
+        mockHasAvailableKeys,
+      );
+
       const mockGetKey = vi.fn();
       mockGetKey.mockResolvedValue('valid-qwen-key');
       mockLlmKeyManager.getNextAvailableKey = mockGetKey;
-      
+
       const mockGetLlmResponse = vi.fn();
-      mockGetLlmResponse.mockResolvedValue(
-        '{"answer": "Qwen with valid key"}',
+      mockGetLlmResponse.mockResolvedValue('{"answer": "Qwen with valid key"}');
+      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(
+        mockGetLlmResponse,
       );
-      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(mockGetLlmResponse);
-      
+
       const mockParse = vi.fn();
       mockParse.mockReturnValueOnce({
         answer: 'Qwen with valid key',
@@ -209,20 +217,26 @@ describe('Qwen LLM Provider Integration Tests', () => {
     });
 
     it('should handle missing Qwen API key gracefully', async () => {
-      const { LlmKeyManager: mockLlmKeyManager } = await import('../llm/LlmKeyManager.ts');
-      const { llmResponseSchema: mockResponseSchema } = await import('./responseSchema.ts');
+      const { LlmKeyManager: mockLlmKeyManager } = await import(
+        '../llm/LlmKeyManager.ts'
+      );
+      const { llmResponseSchema: mockResponseSchema } = await import(
+        './responseSchema.ts'
+      );
 
       // Use vi.mocked to properly reference the existing mock
       const mockHasAvailableKeys = vi.fn();
       mockHasAvailableKeys.mockResolvedValue(false);
-      vi.mocked(mockLlmKeyManager.hasAvailableKeys).mockImplementation(mockHasAvailableKeys);
-      
-      const mockGetLlmResponse = vi.fn();
-      mockGetLlmResponse.mockResolvedValue(
-        '{"answer": "Fallback to Gemini"}',
+      vi.mocked(mockLlmKeyManager.hasAvailableKeys).mockImplementation(
+        mockHasAvailableKeys,
       );
-      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(mockGetLlmResponse);
-      
+
+      const mockGetLlmResponse = vi.fn();
+      mockGetLlmResponse.mockResolvedValue('{"answer": "Fallback to Gemini"}');
+      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(
+        mockGetLlmResponse,
+      );
+
       const mockParse = vi.fn();
       mockParse.mockReturnValueOnce({
         answer: 'Fallback to Gemini',
@@ -238,20 +252,26 @@ describe('Qwen LLM Provider Integration Tests', () => {
 
   describe('Qwen Error Handling', () => {
     it('should handle Qwen rate limiting errors', async () => {
-      const { llmResponseSchema: mockResponseSchema } = await import('./responseSchema.ts');
+      const { llmResponseSchema: mockResponseSchema } = await import(
+        './responseSchema.ts'
+      );
 
       const mockGetLlmResponse = vi.fn();
       mockGetLlmResponse.mockRejectedValue(
         new LlmError('Qwen API rate limit exceeded: 429'),
       );
-      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(mockGetLlmResponse);
-      
+      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(
+        mockGetLlmResponse,
+      );
+
       const mockGeminiGetLlmResponse = vi.fn();
       mockGeminiGetLlmResponse.mockResolvedValue(
         '{"answer": "Gemini after rate limit"}',
       );
-      vi.mocked(mockGeminiProvider.getLlmResponse).mockImplementation(mockGeminiGetLlmResponse);
-      
+      vi.mocked(mockGeminiProvider.getLlmResponse).mockImplementation(
+        mockGeminiGetLlmResponse,
+      );
+
       const mockParse = vi.fn();
       mockParse.mockReturnValueOnce({
         answer: 'Gemini after rate limit',
@@ -265,7 +285,9 @@ describe('Qwen LLM Provider Integration Tests', () => {
     });
 
     it('should handle Qwen timeout errors with retries', async () => {
-      const { llmResponseSchema: mockResponseSchema } = await import('./responseSchema.ts');
+      const { llmResponseSchema: mockResponseSchema } = await import(
+        './responseSchema.ts'
+      );
 
       const qwenTimeoutError = new LlmError(
         'Qwen API request failed with status 504 stream timeout',
@@ -276,8 +298,10 @@ describe('Qwen LLM Provider Integration Tests', () => {
         .mockRejectedValueOnce(qwenTimeoutError)
         .mockRejectedValueOnce(qwenTimeoutError)
         .mockResolvedValueOnce('{"answer": "Qwen timeout retry success"}');
-      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(mockGetLlmResponse);
-      
+      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(
+        mockGetLlmResponse,
+      );
+
       const mockParse = vi.fn();
       mockParse.mockReturnValueOnce({
         answer: 'Qwen timeout retry success',
@@ -291,26 +315,34 @@ describe('Qwen LLM Provider Integration Tests', () => {
     });
 
     it('should handle Qwen API authentication errors', async () => {
-      const { LlmKeyManager: mockLlmKeyManager } = await import('../llm/LlmKeyManager.ts');
-      const { llmResponseSchema: mockResponseSchema } = await import('./responseSchema.ts');
+      const { LlmKeyManager: mockLlmKeyManager } = await import(
+        '../llm/LlmKeyManager.ts'
+      );
+      const { llmResponseSchema: mockResponseSchema } = await import(
+        './responseSchema.ts'
+      );
 
       const mockGetLlmResponse = vi.fn();
       mockGetLlmResponse.mockRejectedValue(
         new LlmError('Qwen authentication failed: Invalid API key'),
       );
-      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(mockGetLlmResponse);
-      
+      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(
+        mockGetLlmResponse,
+      );
+
       // Use vi.mocked to properly reference the existing mock
       const mockRotateKey = vi.fn();
       mockRotateKey.mockResolvedValue('new-qwen-key');
       mockLlmKeyManager.markKeyAsBad = mockRotateKey;
-      
+
       const mockGeminiGetLlmResponse = vi.fn();
       mockGeminiGetLlmResponse.mockResolvedValue(
         '{"answer": "Gemini after auth error"}',
       );
-      vi.mocked(mockGeminiProvider.getLlmResponse).mockImplementation(mockGeminiGetLlmResponse);
-      
+      vi.mocked(mockGeminiProvider.getLlmResponse).mockImplementation(
+        mockGeminiGetLlmResponse,
+      );
+
       const mockParse = vi.fn();
       mockParse.mockReturnValueOnce({
         answer: 'Gemini after auth error',
@@ -319,25 +351,38 @@ describe('Qwen LLM Provider Integration Tests', () => {
 
       await agent.run();
 
-      expect(mockLlmKeyManager.resetKeyStatus).toHaveBeenCalledWith('qwen', expect.any(String));
-      expect(mockRotateKey).toHaveBeenCalledWith('qwen', expect.any(String), 'temporary');
+      expect(mockLlmKeyManager.resetKeyStatus).toHaveBeenCalledWith(
+        'qwen',
+        expect.any(String),
+      );
+      expect(mockRotateKey).toHaveBeenCalledWith(
+        'qwen',
+        expect.any(String),
+        'temporary',
+      );
     });
 
     it('should handle Qwen service unavailable errors', async () => {
-      const { llmResponseSchema: mockResponseSchema } = await import('./responseSchema.ts');
+      const { llmResponseSchema: mockResponseSchema } = await import(
+        './responseSchema.ts'
+      );
 
       const mockGetLlmResponse = vi.fn();
       mockGetLlmResponse.mockRejectedValue(
         new LlmError('Qwen service temporarily unavailable: 503'),
       );
-      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(mockGetLlmResponse);
-      
+      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(
+        mockGetLlmResponse,
+      );
+
       const mockGeminiGetLlmResponse = vi.fn();
       mockGeminiGetLlmResponse.mockResolvedValue(
         '{"answer": "Gemini service backup"}',
       );
-      vi.mocked(mockGeminiProvider.getLlmResponse).mockImplementation(mockGeminiGetLlmResponse);
-      
+      vi.mocked(mockGeminiProvider.getLlmResponse).mockImplementation(
+        mockGeminiGetLlmResponse,
+      );
+
       const mockParse = vi.fn();
       mockParse.mockReturnValueOnce({
         answer: 'Gemini service backup',
@@ -351,8 +396,8 @@ describe('Qwen LLM Provider Integration Tests', () => {
     });
 
     it('should work with different Qwen model variants', async () => {
-      const mockResponseSchema =
-        (await import('./responseSchema.ts')).llmResponseSchema;
+      const mockResponseSchema = (await import('./responseSchema.ts'))
+        .llmResponseSchema;
 
       const models = [
         'qwen2.5-72b-instruct',
@@ -366,8 +411,10 @@ describe('Qwen LLM Provider Integration Tests', () => {
         mockGetLlmResponse.mockResolvedValue(
           `{"answer": "Response from ${model}"}`,
         );
-        vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(mockGetLlmResponse);
-        
+        vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(
+          mockGetLlmResponse,
+        );
+
         const mockParse = vi.fn();
         mockParse.mockReturnValueOnce({
           answer: `Response from ${model}`,
@@ -391,15 +438,17 @@ describe('Qwen LLM Provider Integration Tests', () => {
     });
 
     it('should respect Qwen temperature and token limits', async () => {
-      const mockResponseSchema =
-        (await import('./responseSchema.ts')).llmResponseSchema;
+      const mockResponseSchema = (await import('./responseSchema.ts'))
+        .llmResponseSchema;
 
       const mockGetLlmResponse = vi.fn();
       mockGetLlmResponse.mockResolvedValue(
         '{"answer": "Configured Qwen response"}',
       );
-      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(mockGetLlmResponse);
-      
+      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(
+        mockGetLlmResponse,
+      );
+
       const mockParse = vi.fn();
       mockParse.mockReturnValueOnce({
         answer: 'Configured Qwen response',
@@ -428,8 +477,8 @@ describe('Qwen LLM Provider Integration Tests', () => {
     });
 
     it('should handle Qwen streaming responses', async () => {
-      const mockResponseSchema =
-        (await import('./responseSchema.ts')).llmResponseSchema;
+      const mockResponseSchema = (await import('./responseSchema.ts'))
+        .llmResponseSchema;
 
       // Simuler une réponse en streaming
       const streamChunks = [
@@ -465,8 +514,8 @@ describe('Qwen LLM Provider Integration Tests', () => {
 
   describe('Qwen Performance and Monitoring', () => {
     it('should monitor Qwen response times', async () => {
-      const mockResponseSchema =
-        (await import('./responseSchema.ts')).llmResponseSchema;
+      const mockResponseSchema = (await import('./responseSchema.ts'))
+        .llmResponseSchema;
 
       const mockGetLlmResponse = vi.fn();
       mockGetLlmResponse.mockImplementation(
@@ -475,8 +524,10 @@ describe('Qwen LLM Provider Integration Tests', () => {
             setTimeout(() => resolve('{"answer": "Qwen timing test"}'), 200),
           ),
       );
-      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(mockGetLlmResponse);
-      
+      vi.mocked(mockQwenProvider.getLlmResponse).mockImplementation(
+        mockGetLlmResponse,
+      );
+
       const mockParse = vi.fn();
       mockParse.mockReturnValue({ answer: 'Qwen timing test' });
       vi.mocked(mockResponseSchema.parse).mockImplementation(mockParse);
@@ -489,8 +540,9 @@ describe('Qwen LLM Provider Integration Tests', () => {
       expect(endTime - startTime).toBeLessThan(400);
 
       // Vérifier que les métriques de performance sont publiées
-      const redisClient =
-        (await import('../redis/redisClient.ts')).getRedisClientInstance();
+      const redisClient = (
+        await import('../redis/redisClient.ts')
+      ).getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'metrics:qwen_performance',
         expect.stringContaining('response_time'),
@@ -498,8 +550,8 @@ describe('Qwen LLM Provider Integration Tests', () => {
     });
 
     it('should track Qwen token usage', async () => {
-      const mockResponseSchema =
-        (await import('./responseSchema.ts')).llmResponseSchema;
+      const mockResponseSchema = (await import('./responseSchema.ts'))
+        .llmResponseSchema;
 
       vi.mocked(mockQwenProvider.getLlmResponse).mockResolvedValue(
         '{"answer": "Token usage tracking"}',
@@ -513,8 +565,9 @@ describe('Qwen LLM Provider Integration Tests', () => {
       await agent.run();
 
       // Vérifier que l'usage des tokens est suivi
-      const redisClient =
-        (await import('../redis/redisClient.ts')).getRedisClientInstance();
+      const redisClient = (
+        await import('../redis/redisClient.ts')
+      ).getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'metrics:token_usage',
         expect.stringContaining('qwen'),
@@ -529,8 +582,8 @@ describe('Qwen LLM Provider Integration Tests', () => {
 
   describe('Qwen Context and Memory Management', () => {
     it('should handle long conversation context with Qwen', async () => {
-      const mockResponseSchema =
-        (await import('./responseSchema.ts')).llmResponseSchema;
+      const mockResponseSchema = (await import('./responseSchema.ts'))
+        .llmResponseSchema;
 
       // Créer un historique long
       const longHistory = Array.from({ length: 100 }, (_, i) => ({
@@ -576,8 +629,8 @@ describe('Qwen LLM Provider Integration Tests', () => {
     });
 
     it('should optimize context window for Qwen models', async () => {
-      const mockResponseSchema =
-        (await import('./responseSchema.ts')).llmResponseSchema;
+      const mockResponseSchema = (await import('./responseSchema.ts'))
+        .llmResponseSchema;
 
       // Simuler un contexte qui dépasse la limite
       const oversizedContext = 'A'.repeat(10000); // Contexte très long
@@ -611,8 +664,8 @@ describe('Qwen LLM Provider Integration Tests', () => {
 
   describe('Qwen Cost Optimization', () => {
     it('should track Qwen usage costs', async () => {
-      const mockResponseSchema =
-        (await import('./responseSchema.ts')).llmResponseSchema;
+      const mockResponseSchema = (await import('./responseSchema.ts'))
+        .llmResponseSchema;
 
       vi.mocked(mockQwenProvider.getLlmResponse).mockResolvedValue(
         '{"answer": "Cost tracking test"}',
@@ -624,8 +677,9 @@ describe('Qwen LLM Provider Integration Tests', () => {
       await agent.run();
 
       // Vérifier que les coûts sont suivis
-      const redisClient =
-        (await import('../redis/redisClient.ts')).getRedisClientInstance();
+      const redisClient = (
+        await import('../redis/redisClient.ts')
+      ).getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'metrics:provider_costs',
         expect.stringContaining('qwen'),
@@ -633,8 +687,8 @@ describe('Qwen LLM Provider Integration Tests', () => {
     });
 
     it('should prefer Qwen for cost-effective operations', async () => {
-      const mockResponseSchema =
-        (await import('./responseSchema.ts')).llmResponseSchema;
+      const mockResponseSchema = (await import('./responseSchema.ts'))
+        .llmResponseSchema;
 
       vi.mocked(mockQwenProvider.getLlmResponse).mockResolvedValue(
         '{"answer": "Qwen cost-effective"}',

@@ -54,10 +54,11 @@ export const useWebSocket = (url: string = '/ws'): UseWebSocketReturn => {
           setLastMessage(message);
 
           // Dispatch custom event for components that need it
-          window.dispatchEvent(new CustomEvent('websocket-message', {
-            detail: message
-          }));
-
+          window.dispatchEvent(
+            new CustomEvent('websocket-message', {
+              detail: message,
+            }),
+          );
         } catch (err) {
           console.error('❌ Failed to parse WebSocket message:', err);
         }
@@ -69,9 +70,14 @@ export const useWebSocket = (url: string = '/ws'): UseWebSocketReturn => {
         wsRef.current = null;
 
         // Attempt to reconnect if not a normal closure
-        if (event.code !== 1000 && reconnectAttempts.current < maxReconnectAttempts) {
+        if (
+          event.code !== 1000 &&
+          reconnectAttempts.current < maxReconnectAttempts
+        ) {
           reconnectAttempts.current++;
-          console.log(`🔄 Attempting to reconnect (${reconnectAttempts.current}/${maxReconnectAttempts})...`);
+          console.log(
+            `🔄 Attempting to reconnect (${reconnectAttempts.current}/${maxReconnectAttempts})...`,
+          );
 
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
@@ -83,7 +89,6 @@ export const useWebSocket = (url: string = '/ws'): UseWebSocketReturn => {
         console.error('🔌 WebSocket error:', event);
         setError('WebSocket connection error');
       };
-
     } catch (err) {
       console.error('❌ Failed to create WebSocket connection:', err);
       setError('Failed to create WebSocket connection');
@@ -120,22 +125,28 @@ export const useWebSocket = (url: string = '/ws'): UseWebSocketReturn => {
     }
   }, []);
 
-  const subscribeToJob = useCallback((jobId: string) => {
-    console.log('📡 useWebSocket - Subscribing to job:', jobId);
-    sendMessage({
-      type: 'subscribe_job_events',
-      data: { jobId },
-      timestamp: Date.now()
-    });
-  }, [sendMessage]);
+  const subscribeToJob = useCallback(
+    (jobId: string) => {
+      console.log('📡 useWebSocket - Subscribing to job:', jobId);
+      sendMessage({
+        type: 'subscribe_job_events',
+        data: { jobId },
+        timestamp: Date.now(),
+      });
+    },
+    [sendMessage],
+  );
 
-  const setSession = useCallback((sessionId: string) => {
-    sendMessage({
-      type: 'set_session',
-      data: { sessionId },
-      timestamp: Date.now()
-    });
-  }, [sendMessage]);
+  const setSession = useCallback(
+    (sessionId: string) => {
+      sendMessage({
+        type: 'set_session',
+        data: { sessionId },
+        timestamp: Date.now(),
+      });
+    },
+    [sendMessage],
+  );
 
   useEffect(() => {
     connect();
@@ -160,7 +171,7 @@ export const useWebSocket = (url: string = '/ws'): UseWebSocketReturn => {
     sendMessage,
     subscribeToJob,
     setSession,
-    error
+    error,
   };
 };
 

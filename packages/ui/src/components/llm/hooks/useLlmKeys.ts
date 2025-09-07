@@ -61,7 +61,8 @@ export const useLlmKeys = (): UseLlmKeysReturn => {
         setMasterKey(null);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load keys';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to load keys';
       setError(errorMessage);
       console.error('Failed to load LLM keys:', err);
     } finally {
@@ -73,30 +74,36 @@ export const useLlmKeys = (): UseLlmKeysReturn => {
     await loadKeys();
   }, [loadKeys]);
 
-  const testKey = useCallback(async (keyIndex: number) => {
-    if (!authToken || keyIndex >= backendKeys.length) return;
+  const testKey = useCallback(
+    async (keyIndex: number) => {
+      if (!authToken || keyIndex >= backendKeys.length) return;
 
-    setTestingKeyIndex(keyIndex);
-    try {
-      const keyToTest = backendKeys[keyIndex];
-      // TODO: Implement key testing logic
-      console.log('Testing key:', keyToTest.apiProvider);
+      setTestingKeyIndex(keyIndex);
+      try {
+        const keyToTest = backendKeys[keyIndex];
+        // TODO: Implement key testing logic
+        console.log('Testing key:', keyToTest.apiProvider);
 
-      // Simulate testing delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+        // Simulate testing delay
+        await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // TODO: Update key status based on test result
-      await refreshKeys();
-    } catch (err) {
-      console.error('Failed to test key:', err);
-    } finally {
-      setTestingKeyIndex(null);
-    }
-  }, [authToken, backendKeys, refreshKeys]);
+        // TODO: Update key status based on test result
+        await refreshKeys();
+      } catch (err) {
+        console.error('Failed to test key:', err);
+      } finally {
+        setTestingKeyIndex(null);
+      }
+    },
+    [authToken, backendKeys, refreshKeys],
+  );
 
-  const isTestingKey = useCallback((keyIndex: number) => {
-    return testingKeyIndex === keyIndex;
-  }, [testingKeyIndex]);
+  const isTestingKey = useCallback(
+    (keyIndex: number) => {
+      return testingKeyIndex === keyIndex;
+    },
+    [testingKeyIndex],
+  );
 
   // Load keys on mount and when auth token changes
   useEffect(() => {

@@ -19,39 +19,77 @@ const testCases = [
   {
     mode: 'architect',
     displayName: 'Architect',
-    testMessage: 'Design a microservices architecture for an e-commerce platform',
-    expectedKeywords: ['strategic', 'architecture', 'design', 'system', 'scalability']
+    testMessage:
+      'Design a microservices architecture for an e-commerce platform',
+    expectedKeywords: [
+      'strategic',
+      'architecture',
+      'design',
+      'system',
+      'scalability',
+    ],
   },
   {
     mode: 'coder',
     displayName: 'Coder',
     testMessage: 'Write a React component for a user profile form',
-    expectedKeywords: ['code', 'quality', 'implementation', 'testing', 'documentation']
+    expectedKeywords: [
+      'code',
+      'quality',
+      'implementation',
+      'testing',
+      'documentation',
+    ],
   },
   {
     mode: 'explain',
     displayName: 'Explain',
     testMessage: 'Explain how closures work in JavaScript',
-    expectedKeywords: ['clarity', 'progressive', 'practical', 'patient', 'teaching']
+    expectedKeywords: [
+      'clarity',
+      'progressive',
+      'practical',
+      'patient',
+      'teaching',
+    ],
   },
   {
     mode: 'debug',
     displayName: 'Debug',
-    testMessage: 'Debug this error: TypeError: Cannot read property of undefined',
-    expectedKeywords: ['systematic', 'thorough', 'efficient', 'debugging', 'resolution']
+    testMessage:
+      'Debug this error: TypeError: Cannot read property of undefined',
+    expectedKeywords: [
+      'systematic',
+      'thorough',
+      'efficient',
+      'debugging',
+      'resolution',
+    ],
   },
   {
     mode: 'orchestrate',
     displayName: 'Orchestrate',
     testMessage: 'Plan the development of a new mobile app feature',
-    expectedKeywords: ['organization', 'coordination', 'communication', 'quality', 'planning']
+    expectedKeywords: [
+      'organization',
+      'coordination',
+      'communication',
+      'quality',
+      'planning',
+    ],
   },
   {
     mode: 'frontend',
     displayName: 'FrontEnd',
     testMessage: 'Create a responsive navigation component',
-    expectedKeywords: ['user-centric', 'responsive', 'accessible', 'performance', 'frontend']
-  }
+    expectedKeywords: [
+      'user-centric',
+      'responsive',
+      'accessible',
+      'performance',
+      'frontend',
+    ],
+  },
 ];
 
 // System prompt templates (extracted from the actual implementation)
@@ -196,7 +234,7 @@ You are AgenticForge, a specialized AI assistant focused on frontend development
 - **Visual**: Focus on aesthetics and user experience
 - **Interactive**: Design for engagement and usability
 - **Technical**: Implement modern frontend patterns
-- **Practical**: Provide working, production-ready code`
+- **Practical**: Provide working, production-ready code`,
 };
 
 // Test functions
@@ -206,7 +244,7 @@ function testSystemPromptTemplates() {
   let passed = 0;
   let failed = 0;
 
-  testCases.forEach(testCase => {
+  testCases.forEach((testCase) => {
     const prompt = systemPrompts[testCase.mode];
 
     if (!prompt) {
@@ -216,28 +254,35 @@ function testSystemPromptTemplates() {
     }
 
     // Check if prompt contains expected keywords
-    const hasKeywords = testCase.expectedKeywords.every(keyword =>
-      prompt.toLowerCase().includes(keyword.toLowerCase())
+    const hasKeywords = testCase.expectedKeywords.every((keyword) =>
+      prompt.toLowerCase().includes(keyword.toLowerCase()),
     );
 
     if (hasKeywords) {
-      console.log(`✅ ${testCase.displayName}: Template contains expected keywords`);
+      console.log(
+        `✅ ${testCase.displayName}: Template contains expected keywords`,
+      );
       passed++;
     } else {
-      console.log(`❌ ${testCase.displayName}: Template missing expected keywords`);
+      console.log(
+        `❌ ${testCase.displayName}: Template missing expected keywords`,
+      );
       failed++;
     }
 
     // Check if prompt has proper structure
-    const hasStructure = prompt.includes('# AgenticForge') &&
-                        prompt.includes('## Core Principles') &&
-                        prompt.includes('## Primary Responsibilities');
+    const hasStructure =
+      prompt.includes('# AgenticForge') &&
+      prompt.includes('## Core Principles') &&
+      prompt.includes('## Primary Responsibilities');
 
     if (hasStructure) {
       console.log(`✅ ${testCase.displayName}: Template has proper structure`);
       passed++;
     } else {
-      console.log(`❌ ${testCase.displayName}: Template missing proper structure`);
+      console.log(
+        `❌ ${testCase.displayName}: Template missing proper structure`,
+      );
       failed++;
     }
   });
@@ -251,14 +296,20 @@ function testUIComponent() {
 
   try {
     // Check if UserInput component exists
-    const userInputPath = path.join(__dirname, 'packages/ui/src/components/UserInput.tsx');
+    const userInputPath = path.join(
+      __dirname,
+      'packages/ui/src/components/UserInput.tsx',
+    );
     const userInputContent = fs.readFileSync(userInputPath, 'utf8');
 
     let passed = 0;
     let failed = 0;
 
     // Check for system prompt dropdown (using Settings icon)
-    if (userInputContent.includes('Settings') && userInputContent.includes('SYSTEM_PROMPT_OPTIONS')) {
+    if (
+      userInputContent.includes('Settings') &&
+      userInputContent.includes('SYSTEM_PROMPT_OPTIONS')
+    ) {
       console.log('✅ UserInput: System prompt dropdown found');
       passed++;
     } else {
@@ -267,7 +318,10 @@ function testUIComponent() {
     }
 
     // Check for Select component usage
-    if (userInputContent.includes('Select') && userInputContent.includes('SelectItem')) {
+    if (
+      userInputContent.includes('Select') &&
+      userInputContent.includes('SelectItem')
+    ) {
       console.log('✅ UserInput: Select components properly imported');
       passed++;
     } else {
@@ -276,8 +330,15 @@ function testUIComponent() {
     }
 
     // Check for system prompt options
-    const expectedOptions = ['Architect', 'Coder', 'Explain', 'Debug', 'Orchestrate', 'FrontEnd'];
-    expectedOptions.forEach(option => {
+    const expectedOptions = [
+      'Architect',
+      'Coder',
+      'Explain',
+      'Debug',
+      'Orchestrate',
+      'FrontEnd',
+    ];
+    expectedOptions.forEach((option) => {
       if (userInputContent.includes(option)) {
         console.log(`✅ UserInput: ${option} option found`);
         passed++;
@@ -289,7 +350,6 @@ function testUIComponent() {
 
     console.log(`\n📊 UI Tests: ${passed} passed, ${failed} failed\n`);
     return { passed, failed };
-
   } catch (error) {
     console.log('❌ UI Test Error:', error.message);
     return { passed: 0, failed: 1 };
@@ -300,7 +360,10 @@ function testStateManagement() {
   console.log('🔄 Testing State Management...\n');
 
   try {
-    const uiStorePath = path.join(__dirname, 'packages/ui/src/store/uiStore.ts');
+    const uiStorePath = path.join(
+      __dirname,
+      'packages/ui/src/store/uiStore.ts',
+    );
     const uiStoreContent = fs.readFileSync(uiStorePath, 'utf8');
 
     let passed = 0;
@@ -325,7 +388,11 @@ function testStateManagement() {
     }
 
     // Check for persistence configuration
-    if (uiStoreContent.includes('selectedSystemPrompt: state.selectedSystemPrompt')) {
+    if (
+      uiStoreContent.includes(
+        'selectedSystemPrompt: state.selectedSystemPrompt',
+      )
+    ) {
       console.log('✅ UI Store: System prompt persistence configured');
       passed++;
     } else {
@@ -333,9 +400,10 @@ function testStateManagement() {
       failed++;
     }
 
-    console.log(`\n📊 State Management Tests: ${passed} passed, ${failed} failed\n`);
+    console.log(
+      `\n📊 State Management Tests: ${passed} passed, ${failed} failed\n`,
+    );
     return { passed, failed };
-
   } catch (error) {
     console.log('❌ State Management Test Error:', error.message);
     return { passed: 0, failed: 1 };
@@ -346,7 +414,10 @@ function testBackendIntegration() {
   console.log('🔧 Testing Backend Integration...\n');
 
   try {
-    const useAgentStreamPath = path.join(__dirname, 'packages/ui/src/lib/hooks/useAgentStream.ts');
+    const useAgentStreamPath = path.join(
+      __dirname,
+      'packages/ui/src/lib/hooks/useAgentStream.ts',
+    );
     const useAgentStreamContent = fs.readFileSync(useAgentStreamPath, 'utf8');
 
     let passed = 0;
@@ -357,16 +428,22 @@ function testBackendIntegration() {
       console.log('✅ useAgentStream: getSystemPromptContent function found');
       passed++;
     } else {
-      console.log('❌ useAgentStream: getSystemPromptContent function not found');
+      console.log(
+        '❌ useAgentStream: getSystemPromptContent function not found',
+      );
       failed++;
     }
 
     // Check for system prompt integration in sendMessage
     if (useAgentStreamContent.includes('systemPromptContent')) {
-      console.log('✅ useAgentStream: System prompt integrated with sendMessage');
+      console.log(
+        '✅ useAgentStream: System prompt integrated with sendMessage',
+      );
       passed++;
     } else {
-      console.log('❌ useAgentStream: System prompt not integrated with sendMessage');
+      console.log(
+        '❌ useAgentStream: System prompt not integrated with sendMessage',
+      );
       failed++;
     }
 
@@ -379,9 +456,10 @@ function testBackendIntegration() {
       failed++;
     }
 
-    console.log(`\n📊 Backend Integration Tests: ${passed} passed, ${failed} failed\n`);
+    console.log(
+      `\n📊 Backend Integration Tests: ${passed} passed, ${failed} failed\n`,
+    );
     return { passed, failed };
-
   } catch (error) {
     console.log('❌ Backend Integration Test Error:', error.message);
     return { passed: 0, failed: 1 };
@@ -391,29 +469,41 @@ function testBackendIntegration() {
 // Main test runner
 function runAllTests() {
   console.log('🚀 Starting System Prompt Dropdown Tests\n');
-  console.log('=' .repeat(50));
+  console.log('='.repeat(50));
 
   const results = {
     templates: testSystemPromptTemplates(),
     ui: testUIComponent(),
     state: testStateManagement(),
-    backend: testBackendIntegration()
+    backend: testBackendIntegration(),
   };
 
-  console.log('=' .repeat(50));
+  console.log('='.repeat(50));
   console.log('📋 Test Summary:');
 
-  const totalPassed = Object.values(results).reduce((sum, result) => sum + result.passed, 0);
-  const totalFailed = Object.values(results).reduce((sum, result) => sum + result.failed, 0);
+  const totalPassed = Object.values(results).reduce(
+    (sum, result) => sum + result.passed,
+    0,
+  );
+  const totalFailed = Object.values(results).reduce(
+    (sum, result) => sum + result.failed,
+    0,
+  );
 
   console.log(`✅ Total Passed: ${totalPassed}`);
   console.log(`❌ Total Failed: ${totalFailed}`);
-  console.log(`📊 Success Rate: ${((totalPassed / (totalPassed + totalFailed)) * 100).toFixed(1)}%`);
+  console.log(
+    `📊 Success Rate: ${((totalPassed / (totalPassed + totalFailed)) * 100).toFixed(1)}%`,
+  );
 
   if (totalFailed === 0) {
-    console.log('\n🎉 All tests passed! System prompt functionality is working correctly.');
+    console.log(
+      '\n🎉 All tests passed! System prompt functionality is working correctly.',
+    );
   } else {
-    console.log(`\n⚠️  ${totalFailed} test(s) failed. Please review the issues above.`);
+    console.log(
+      `\n⚠️  ${totalFailed} test(s) failed. Please review the issues above.`,
+    );
   }
 
   return totalFailed === 0;

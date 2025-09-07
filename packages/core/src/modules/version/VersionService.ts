@@ -241,12 +241,12 @@ export class VersionService {
 
       // Add retry logic for network resilience
       let lastError: Error | null = null;
-      
+
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-          
+
           const response = await fetch(`${this.githubApiUrl}/latest`, {
             headers: {
               Accept: 'application/vnd.github.v3+json',
@@ -254,9 +254,9 @@ export class VersionService {
             },
             signal: controller.signal,
           });
-          
+
           clearTimeout(timeoutId);
-          
+
           if (!response.ok) {
             throw new Error(
               `GitHub API returned ${response.status}: ${response.statusText}`,
@@ -284,14 +284,14 @@ export class VersionService {
             { error, attempt },
             `Failed to fetch latest release from GitHub (attempt ${attempt}/3)`,
           );
-          
+
           // Wait before retrying (exponential backoff)
           if (attempt < 3) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
           }
         }
       }
-      
+
       throw lastError || new Error('Unknown error occurred');
     } catch (error) {
       this.logger.error(
@@ -452,12 +452,12 @@ export class VersionService {
     try {
       // Add retry logic for network resilience
       let lastError: Error | null = null;
-      
+
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-          
+
           const response = await fetch(this.githubApiUrl, {
             headers: {
               Accept: 'application/vnd.github.v3+json',
@@ -465,9 +465,9 @@ export class VersionService {
             },
             signal: controller.signal,
           });
-          
+
           clearTimeout(timeoutId);
-          
+
           if (!response.ok) {
             throw new Error(
               `GitHub API returned ${response.status}: ${response.statusText}`,
@@ -492,14 +492,14 @@ export class VersionService {
             { error, attempt },
             `Failed to fetch stable releases from GitHub (attempt ${attempt}/3)`,
           );
-          
+
           // Wait before retrying (exponential backoff)
           if (attempt < 3) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
           }
         }
       }
-      
+
       throw lastError || new Error('Unknown error occurred');
     } catch (error) {
       this.logger.error(

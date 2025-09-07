@@ -36,15 +36,23 @@ child.on('close', (code) => {
   console.log('Code de sortie:', code);
   console.log('Sortie standard:', output);
   if (errorOutput) {
-    console.log('Sortie d\'erreur:', errorOutput);
+    console.log("Sortie d'erreur:", errorOutput);
   }
-  
+
   // Vérifier si la réponse contient une erreur d'API key
-  if (output.includes('API_KEY_INVALID') || output.includes('API key not valid')) {
+  if (
+    output.includes('API_KEY_INVALID') ||
+    output.includes('API key not valid')
+  ) {
     console.log('❌ La clé API est invalide');
-  } else if (output.includes('generatedContent') || output.includes('candidates')) {
+  } else if (
+    output.includes('generatedContent') ||
+    output.includes('candidates')
+  ) {
     console.log('✅ La clé API est valide');
   } else {
-    console.log('❓ Réponse inattendue, impossible de déterminer la validité de la clé');
+    console.log(
+      '❓ Réponse inattendue, impossible de déterminer la validité de la clé',
+    );
   }
 });

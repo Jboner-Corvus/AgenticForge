@@ -71,7 +71,7 @@ const DEFAULT_CONFIG: PlaywrightMcpConfig = {
         '--no-first-run',
         '--no-zygote',
         '--single-process',
-        
+
         // Anti-detection args
         '--disable-blink-features=AutomationControlled',
         '--disable-features=VizDisplayCompositor',
@@ -89,7 +89,7 @@ const DEFAULT_CONFIG: PlaywrightMcpConfig = {
         '--enable-features=NetworkService,NetworkServiceLogging',
         '--memory-pressure-off',
         '--max_old_space_size=4096',
-        
+
         // Hide automation traces
         '--exclude-switches=enable-automation',
         '--disable-automation',
@@ -99,10 +99,10 @@ const DEFAULT_CONFIG: PlaywrightMcpConfig = {
         '--disable-background-networking',
         '--disable-sync',
         '--metrics-recording-only',
-        '--disable-default-apps'
+        '--disable-default-apps',
       ],
-      timeout: 30000
-    }
+      timeout: 30000,
+    },
   },
   screenshots: {
     enabled: true,
@@ -110,7 +110,7 @@ const DEFAULT_CONFIG: PlaywrightMcpConfig = {
     maxScreenshotsPerMinute: 10,
     screenshotCooldown: 2000, // 2 seconds minimum between screenshots
     quality: 80,
-    maxRetries: 2
+    maxRetries: 2,
   },
   stealth: {
     enabled: true,
@@ -124,8 +124,8 @@ const DEFAULT_CONFIG: PlaywrightMcpConfig = {
     humanTyping: true,
     proxyRotation: false, // Disabled by default, enable when needed
     spoofTimezone: true,
-    spoofLanguage: true
-  }
+    spoofLanguage: true,
+  },
 };
 
 /**
@@ -136,30 +136,40 @@ export function getPlaywrightMcpConfig(): PlaywrightMcpConfig {
   // Check for environment variable overrides
   const headless = process.env.PLAYWRIGHT_HEADLESS !== 'false'; // Default to true
   const screenshotEnabled = process.env.PLAYWRIGHT_AUTO_SCREENSHOTS !== 'false'; // Default to true
-  const screenshotFrequency = (process.env.PLAYWRIGHT_SCREENSHOT_FREQUENCY as 'all' | 'major' | 'minimal') || 'all';
-  const maxScreenshots = parseInt(process.env.PLAYWRIGHT_MAX_SCREENSHOTS_PER_MINUTE || '10');
-  const screenshotCooldown = parseInt(process.env.PLAYWRIGHT_SCREENSHOT_COOLDOWN || '2000');
+  const screenshotFrequency =
+    (process.env.PLAYWRIGHT_SCREENSHOT_FREQUENCY as
+      | 'all'
+      | 'major'
+      | 'minimal') || 'all';
+  const maxScreenshots = parseInt(
+    process.env.PLAYWRIGHT_MAX_SCREENSHOTS_PER_MINUTE || '10',
+  );
+  const screenshotCooldown = parseInt(
+    process.env.PLAYWRIGHT_SCREENSHOT_COOLDOWN || '2000',
+  );
 
   return {
     ...DEFAULT_CONFIG,
     browser: {
       ...DEFAULT_CONFIG.browser,
-      headless
+      headless,
     },
     screenshots: {
       ...DEFAULT_CONFIG.screenshots,
       enabled: screenshotEnabled,
       frequency: screenshotFrequency,
       maxScreenshotsPerMinute: maxScreenshots,
-      screenshotCooldown: screenshotCooldown
-    }
+      screenshotCooldown: screenshotCooldown,
+    },
   };
 }
 
 /**
  * Update configuration at runtime (for testing or dynamic changes)
  */
-export function updatePlaywrightMcpConfig(updates: Partial<PlaywrightMcpConfig>): void {
+export function updatePlaywrightMcpConfig(
+  updates: Partial<PlaywrightMcpConfig>,
+): void {
   // This would require modifying the DEFAULT_CONFIG or storing config in a mutable way
   // For now, this is a placeholder for future enhancement
   console.warn('Runtime config updates not yet implemented');
@@ -173,22 +183,22 @@ export function generateRandomUserAgent(): string {
     // Chrome Windows
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-    
+
     // Chrome macOS
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-    
+
     // Firefox Windows
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0',
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:119.0) Gecko/20100101 Firefox/119.0',
-    
+
     // Safari macOS
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
-    
+
     // Edge Windows
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0'
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
   ];
-  
+
   return userAgents[Math.floor(Math.random() * userAgents.length)];
 }
 
@@ -206,7 +216,7 @@ export function generateRandomResolution(): { width: number; height: number } {
     { width: 2560, height: 1440 },
     { width: 1920, height: 1200 },
   ];
-  
+
   return resolutions[Math.floor(Math.random() * resolutions.length)];
 }
 
@@ -224,9 +234,9 @@ export function generateRandomTimezone(): string {
     'Asia/Shanghai',
     'Australia/Sydney',
     'America/Toronto',
-    'Europe/Amsterdam'
+    'Europe/Amsterdam',
   ];
-  
+
   return timezones[Math.floor(Math.random() * timezones.length)];
 }
 
@@ -244,25 +254,40 @@ export function generateRandomLanguage(): string[] {
     ['pt-BR', 'pt'],
     ['ru-RU', 'ru'],
     ['ja-JP', 'ja'],
-    ['zh-CN', 'zh']
+    ['zh-CN', 'zh'],
   ];
-  
+
   return languages[Math.floor(Math.random() * languages.length)];
 }
 
 /**
  * Generate fake WebGL renderer info
  */
-export function generateFakeWebGLRenderer(): { renderer: string; vendor: string } {
+export function generateFakeWebGLRenderer(): {
+  renderer: string;
+  vendor: string;
+} {
   const renderers = [
-    { renderer: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0, D3D11)', vendor: 'Google Inc. (NVIDIA)' },
-    { renderer: 'ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)', vendor: 'Google Inc. (Intel)' },
-    { renderer: 'ANGLE (AMD, AMD Radeon RX 6700 XT Direct3D11 vs_5_0 ps_5_0, D3D11)', vendor: 'Google Inc. (AMD)' },
+    {
+      renderer:
+        'ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Direct3D11 vs_5_0 ps_5_0, D3D11)',
+      vendor: 'Google Inc. (NVIDIA)',
+    },
+    {
+      renderer:
+        'ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)',
+      vendor: 'Google Inc. (Intel)',
+    },
+    {
+      renderer:
+        'ANGLE (AMD, AMD Radeon RX 6700 XT Direct3D11 vs_5_0 ps_5_0, D3D11)',
+      vendor: 'Google Inc. (AMD)',
+    },
     { renderer: 'Apple GPU', vendor: 'Apple Inc.' },
     { renderer: 'NVIDIA GeForce GTX 1660', vendor: 'NVIDIA Corporation' },
-    { renderer: 'Intel Iris Xe Graphics', vendor: 'Intel Inc.' }
+    { renderer: 'Intel Iris Xe Graphics', vendor: 'Intel Inc.' },
   ];
-  
+
   return renderers[Math.floor(Math.random() * renderers.length)];
 }
 
@@ -285,7 +310,7 @@ export function getStealthLaunchArgs(): string[] {
     '--disable-blink-features=AutomationControlled',
     '--exclude-switches=enable-automation',
     '--disable-automation',
-    
+
     // Remove automation indicators
     '--disable-infobars',
     '--disable-web-security',
@@ -293,7 +318,7 @@ export function getStealthLaunchArgs(): string[] {
     '--disable-default-apps',
     '--no-default-browser-check',
     '--no-first-run',
-    
+
     // Performance and stealth
     '--disable-extensions',
     '--disable-plugins',
@@ -307,7 +332,7 @@ export function getStealthLaunchArgs(): string[] {
     '--disable-background-networking',
     '--disable-sync',
     '--metrics-recording-only',
-    
+
     // Memory and performance
     '--memory-pressure-off',
     '--max_old_space_size=4096',
@@ -315,6 +340,6 @@ export function getStealthLaunchArgs(): string[] {
     '--disable-setuid-sandbox',
     '--disable-dev-shm-usage',
     '--disable-accelerated-2d-canvas',
-    '--disable-gpu'
+    '--disable-gpu',
   ];
 }

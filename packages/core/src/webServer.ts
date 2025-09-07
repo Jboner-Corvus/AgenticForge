@@ -80,7 +80,7 @@ export async function initializeWebServer(
 
     const app = express();
     const sessionManager = await SessionManager.create(pgClient);
-    
+
     app.use(express.json());
     // Serve static files from UI dist directory
     const uiDistPath = path.join(
@@ -104,8 +104,8 @@ export async function initializeWebServer(
         'http://localhost:3001',
         'http://127.0.0.1:3001',
         'http://192.168.40.28:3001',
-        'http://localhost:3003',  // Vite dev server default port
-        'http://127.0.0.1:3003'
+        'http://localhost:3003', // Vite dev server default port
+        'http://127.0.0.1:3003',
       ];
 
       const origin = req.headers.origin;
@@ -470,11 +470,9 @@ export async function initializeWebServer(
             },
             'Unauthorized access attempt',
           );
-          return res
-            .status(401)
-            .json({
-              error: 'Unauthorized - Authentication required for this endpoint',
-            });
+          return res.status(401).json({
+            error: 'Unauthorized - Authentication required for this endpoint',
+          });
         }
         console.log('✅ AUTH SUCCESS - Bearer token matched!');
         console.log('🔐🔐🔐 === END BEARER TOKEN ANALYSIS ===');
@@ -483,35 +481,39 @@ export async function initializeWebServer(
     );
 
     // Route pour servir les assets des projets canvas
-    app.get('/api/canvas/assets/:jobId/:filename', async (req: express.Request, res: express.Response) => {
-      try {
-        const { jobId, filename } = req.params;
-        
-        // Importer dynamiquement l'asset manager
-        const { getProjectAssets, getMimeType } = await import('./utils/assetManager.ts');
-        
-        // Récupérer le projet
-        const project = await getProjectAssets(jobId);
-        if (!project) {
-          return res.status(404).json({ error: 'Project not found' });
+    app.get(
+      '/api/canvas/assets/:jobId/:filename',
+      async (req: express.Request, res: express.Response) => {
+        try {
+          const { jobId, filename } = req.params;
+
+          // Importer dynamiquement l'asset manager
+          const { getProjectAssets, getMimeType } = await import(
+            './utils/assetManager.ts'
+          );
+
+          // Récupérer le projet
+          const project = await getProjectAssets(jobId);
+          if (!project) {
+            return res.status(404).json({ error: 'Project not found' });
+          }
+
+          // Trouver l'asset demandé
+          const asset = project.assets.find((a) => a.filename === filename);
+          if (!asset) {
+            return res.status(404).json({ error: 'Asset not found' });
+          }
+
+          // Définir le type de contenu et envoyer l'asset
+          res.setHeader('Content-Type', asset.mimeType);
+          res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache 1 heure
+          res.send(asset.content);
+        } catch (error) {
+          console.error('[CANVAS ASSETS] Error serving asset:', error);
+          res.status(500).json({ error: 'Internal server error' });
         }
-        
-        // Trouver l'asset demandé
-        const asset = project.assets.find(a => a.filename === filename);
-        if (!asset) {
-          return res.status(404).json({ error: 'Asset not found' });
-        }
-        
-        // Définir le type de contenu et envoyer l'asset
-        res.setHeader('Content-Type', asset.mimeType);
-        res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache 1 heure
-        res.send(asset.content);
-        
-      } catch (error) {
-        console.error('[CANVAS ASSETS] Error serving asset:', error);
-        res.status(500).json({ error: 'Internal server error' });
-      }
-    });
+      },
+    );
 
     app.get(
       '/api/tools',
@@ -585,6 +587,7 @@ export async function initializeWebServer(
             llmModelName,
             llmProvider,
             prompt,
+            sessionId,
             sessionName,
           } = req.body;
 
@@ -592,8 +595,10 @@ export async function initializeWebServer(
             throw new AppError('Le prompt est manquant.', { statusCode: 400 });
           }
 
-          // Create a special test session ID
-          const testSessionId = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          let testSessionId = sessionId;
+          if (!testSessionId) {
+            testSessionId = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          }
           const testSessionName =
             sessionName || `🤖 Test Auto - ${new Date().toLocaleTimeString()}`;
 
@@ -602,7 +607,7 @@ export async function initializeWebServer(
             'Test automatique lancé',
           );
 
-          // Create the test session
+          // Create or reuse the test session
           const testSession = await sessionManager.getSession(testSessionId);
           testSession.name = testSessionName;
           await sessionManager.saveSession(testSession, undefined, jobQueue);
@@ -740,16 +745,18 @@ export async function initializeWebServer(
           'http://192.168.40.28:3002',
           'http://localhost:3001',
           'http://127.0.0.1:3001',
-          'http://192.168.40.28:3001'
+          'http://192.168.40.28:3001',
         ];
 
         const origin = req.headers.origin;
-        const corsOrigin = (origin && allowedOrigins.includes(origin)) ? origin : '*';
+        const corsOrigin =
+          origin && allowedOrigins.includes(origin) ? origin : '*';
 
         res.writeHead(200, {
           'Access-Control-Allow-Origin': corsOrigin,
           'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Session-ID',
+          'Access-Control-Allow-Headers':
+            'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Session-ID',
           'Access-Control-Allow-Credentials': 'true',
           'Cache-Control': 'no-cache',
           Connection: 'keep-alive',
@@ -820,13 +827,17 @@ export async function initializeWebServer(
 
               // Filter out agent_thought messages to prevent them from being displayed in the canvas
               if (eventData.type === 'agent_thought') {
-                console.log(`[FILTER] Skipping agent_thought message for job ${jobId}`);
+                console.log(
+                  `[FILTER] Skipping agent_thought message for job ${jobId}`,
+                );
                 return;
               }
 
               // Special handling for chat_header_todo messages - forward them to frontend
               if (eventData.type === 'chat_header_todo') {
-                console.log(`[FORWARD] Forwarding chat_header_todo message for job ${jobId}`);
+                console.log(
+                  `[FORWARD] Forwarding chat_header_todo message for job ${jobId}`,
+                );
                 // Send the event data as-is for chat header todo messages
                 safeWrite(`data: ${JSON.stringify(eventData)}\n\n`);
               } else {
@@ -1084,7 +1095,8 @@ export async function initializeWebServer(
           const apiKeys = await _LlmKeyManager.getKeysForApi();
 
           // Check if master key from environment is missing from Redis keys
-          const masterApiKey = process.env.MASTER_LLM_API_KEY || config.LLM_API_KEY;
+          const masterApiKey =
+            process.env.MASTER_LLM_API_KEY || config.LLM_API_KEY;
           const masterProvider = config.LLM_PROVIDER || 'gemini';
           const masterModel = config.LLM_MODEL_NAME || 'gemini-2.5-pro';
 
@@ -1092,10 +1104,11 @@ export async function initializeWebServer(
 
           // If master key exists in environment but not in Redis keys, add it
           if (masterApiKey && masterApiKey.trim() !== '') {
-            const masterKeyExists = apiKeys.some(key =>
-              key.apiProvider === masterProvider &&
-              key.apiKey === masterApiKey.trim() &&
-              key.apiModel === masterModel
+            const masterKeyExists = apiKeys.some(
+              (key) =>
+                key.apiProvider === masterProvider &&
+                key.apiKey === masterApiKey.trim() &&
+                key.apiModel === masterModel,
             );
 
             if (!masterKeyExists) {
@@ -1206,14 +1219,14 @@ export async function initializeWebServer(
               input_tokens: 0,
               output_tokens: 0,
               total_tokens: 0,
-              timestamp: null
+              timestamp: null,
             });
           } else {
             res.status(200).json({
               input_tokens: parseInt(tokenStats.input_tokens || '0'),
               output_tokens: parseInt(tokenStats.output_tokens || '0'),
               total_tokens: parseInt(tokenStats.total_tokens || '0'),
-              timestamp: parseInt(tokenStats.timestamp || '0')
+              timestamp: parseInt(tokenStats.timestamp || '0'),
             });
           }
         } catch (_error) {
@@ -1588,7 +1601,8 @@ export async function initializeWebServer(
               website: 'https://portal.qwen.ai',
             },
             {
-              description: 'Access to multiple AI models via unified API - GLM-4.5-Air Free',
+              description:
+                'Access to multiple AI models via unified API - GLM-4.5-Air Free',
               displayName: 'OpenRouter',
               id: 'openrouter',
               isActive: true,
@@ -1639,7 +1653,10 @@ export async function initializeWebServer(
 
           const masterKey = {
             apiKey: masterApiKey,
-            apiModel: process.env.LLM_MODEL_NAME || config.LLM_MODEL_NAME || 'qwen3-coder-plus',
+            apiModel:
+              process.env.LLM_MODEL_NAME ||
+              config.LLM_MODEL_NAME ||
+              'qwen3-coder-plus',
             apiProvider: process.env.LLM_PROVIDER || 'qwen',
             errorCount: 0,
           };
@@ -1796,7 +1813,8 @@ export async function initializeWebServer(
               website: 'https://portal.qwen.ai',
             },
             {
-              description: 'Access to multiple AI models via unified API - GLM-4.5-Air Free',
+              description:
+                'Access to multiple AI models via unified API - GLM-4.5-Air Free',
               displayName: 'OpenRouter',
               id: 'openrouter',
               isActive: true,
@@ -2047,21 +2065,17 @@ export async function initializeWebServer(
               },
               'Test de clé API LLM échoué',
             );
-            res
-              .status(200)
-              .json({
-                message: `Clé invalide ou erreur API (status: ${response.status})`,
-                valid: false,
-              });
+            res.status(200).json({
+              message: `Clé invalide ou erreur API (status: ${response.status})`,
+              valid: false,
+            });
           }
         } catch (error) {
           if (error instanceof Error && error.name === 'AbortError') {
-            res
-              .status(200)
-              .json({
-                message: 'Timeout lors du test de la clé API',
-                valid: false,
-              });
+            res.status(200).json({
+              message: 'Timeout lors du test de la clé API',
+              valid: false,
+            });
           } else {
             next(error);
           }
@@ -3142,7 +3156,7 @@ export async function initializeWebServer(
           // Count only LLM-specific keys instead of all Redis keys
           const llmKeys = await redisClient.keys('llm:keys:*');
           const keyCount = llmKeys.length;
-          
+
           // Parse Redis info to get memory usage only
           const lines = info.split('\n');
           let memory = '0K';
@@ -3254,6 +3268,126 @@ export async function initializeWebServer(
           getLoggerInstance().error(
             { error },
             'Error fetching LLM key from Redis',
+          );
+          next(error);
+        }
+      },
+    );
+
+    // LLM Router endpoints for monitoring and management
+    // GET /api/llm-router/stats - Get router statistics
+    app.get(
+      '/api/llm-router/stats',
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { llmRouterService } = await import(
+            './modules/llm/LlmRouterService.js'
+          );
+          const stats = llmRouterService.getProviderStatistics();
+          const healthMetrics = llmRouterService.getHealthMetrics();
+
+          res.status(200).json({
+            statistics: stats,
+            health: healthMetrics,
+            recommendedHierarchy: llmRouterService.getRecommendedHierarchy(),
+          });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error getting LLM router statistics',
+          );
+          next(error);
+        }
+      },
+    );
+
+    // POST /api/llm-router/config - Update router configuration
+    app.post(
+      '/api/llm-router/config',
+      verifyAuthToken,
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { llmRouterService } = await import(
+            './modules/llm/LlmRouterService.js'
+          );
+          const newConfig = req.body;
+
+          llmRouterService.updateRouterConfig(newConfig);
+
+          res.status(200).json({
+            message: 'Router configuration updated successfully',
+            config: newConfig,
+          });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error updating LLM router configuration',
+          );
+          next(error);
+        }
+      },
+    );
+
+    // POST /api/llm-router/reset-stats - Reset router statistics
+    app.post(
+      '/api/llm-router/reset-stats',
+      verifyAuthToken,
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { llmRouterService } = await import(
+            './modules/llm/LlmRouterService.js'
+          );
+          llmRouterService.resetStatistics();
+
+          res.status(200).json({
+            message: 'Router statistics reset successfully',
+          });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error resetting LLM router statistics',
+          );
+          next(error);
+        }
+      },
+    );
+
+    // POST /api/llm-router/health-check - Force health check
+    app.post(
+      '/api/llm-router/health-check',
+      verifyAuthToken,
+      async (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        try {
+          const { llmRouterService } = await import(
+            './modules/llm/LlmRouterService.js'
+          );
+          await llmRouterService.performHealthCheck();
+
+          const healthMetrics = llmRouterService.getHealthMetrics();
+          res.status(200).json({
+            message: 'Health check completed',
+            health: healthMetrics,
+          });
+        } catch (error) {
+          getLoggerInstance().error(
+            { error },
+            'Error performing LLM router health check',
           );
           next(error);
         }
@@ -4284,7 +4418,6 @@ export async function initializeWebServer(
         }
       },
     );
-
 
     app.use(handleError);
 

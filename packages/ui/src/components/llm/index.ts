@@ -12,5 +12,8 @@ export { default as AnalyticsDashboard } from './components/AnalyticsDashboard';
 export { default as LlmApiKeyManagementPageRefactored } from '../LlmApiKeyManagementPageRefactored';
 
 // Types
-export type { SystemAnalytics, SmartRecommendation } from './hooks/useLlmAnalytics';
+export type {
+  SystemAnalytics,
+  SmartRecommendation,
+} from './hooks/useLlmAnalytics';
 export type { NotificationProps } from './hooks/useNotifications';

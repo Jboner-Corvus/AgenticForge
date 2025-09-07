@@ -153,15 +153,17 @@ const generateId = () =>
 const parseExistingMarkdown = async (filePath: string) => {
   try {
     const content = await fs.readFile(filePath, 'utf8');
-    
+
     // Extract project name from first header
     const nameMatch = content.match(/^# (.+)$/m);
-    const projectName = nameMatch ? nameMatch[1] : path.basename(filePath, '_plan.md');
-    
+    const projectName = nameMatch
+      ? nameMatch[1]
+      : path.basename(filePath, '_plan.md');
+
     // Extract description
     const descMatch = content.match(/\*\*Description:\*\* (.+)$/m);
     const projectDescription = descMatch ? descMatch[1] : '';
-    
+
     // Extract tasks (simplified parsing - looks for task patterns)
     const tasks: Array<{
       description: string;
@@ -171,17 +173,21 @@ const parseExistingMarkdown = async (filePath: string) => {
       priority: 'critical' | 'high' | 'low' | 'medium';
       title: string;
     }> = [];
-    
+
     // Parse phases and tasks
     const phaseMatches = [...content.matchAll(/### (.+?)(?=###|$)/gs)];
-    
+
     for (const phaseMatch of phaseMatches) {
       const phaseName = phaseMatch[1].split('\n')[0].trim();
       const phaseContent = phaseMatch[1];
-      
+
       // Extract tasks from this phase
-      const taskMatches = [...phaseContent.matchAll(/#### \d+\. (.+?)\n\n\*\*Description:\*\* (.+?)\n\n\*\*Priorité:\*\* [🔥⚡🔸🌱] ([A-Z]+)\s*\n\*\*Estimation:\*\* ([\d.]+)h/g)];
-      
+      const taskMatches = [
+        ...phaseContent.matchAll(
+          /#### \d+\. (.+?)\n\n\*\*Description:\*\* (.+?)\n\n\*\*Priorité:\*\* [🔥⚡🔸🌱] ([A-Z]+)\s*\n\*\*Estimation:\*\* ([\d.]+)h/g,
+        ),
+      ];
+
       for (const taskMatch of taskMatches) {
         const [, title, description, priority, hours] = taskMatch;
         tasks.push({
@@ -190,18 +196,17 @@ const parseExistingMarkdown = async (filePath: string) => {
           priority: priority.toLowerCase() as any,
           estimatedTime: Math.round(parseFloat(hours) * 60),
           phase: phaseName,
-          id: generateId()
+          id: generateId(),
         });
       }
     }
-    
+
     return {
       projectName,
       projectDescription,
       tasks,
-      found: true
+      found: true,
     };
-    
   } catch (error) {
     return { found: false, tasks: [] };
   }
@@ -220,20 +225,25 @@ const createProjectPlanMarkdown = (
     title: string;
   }>,
 ) => {
-  const totalHours = Math.round(plan.reduce((sum, task) => sum + task.estimatedTime, 0) / 60);
-  const phases = plan.reduce((acc, task) => {
-    if (!acc[task.phase]) {
-      acc[task.phase] = [];
-    }
-    acc[task.phase].push(task);
-    return acc;
-  }, {} as Record<string, typeof plan>);
+  const totalHours = Math.round(
+    plan.reduce((sum, task) => sum + task.estimatedTime, 0) / 60,
+  );
+  const phases = plan.reduce(
+    (acc, task) => {
+      if (!acc[task.phase]) {
+        acc[task.phase] = [];
+      }
+      acc[task.phase].push(task);
+      return acc;
+    },
+    {} as Record<string, typeof plan>,
+  );
 
   const priorityEmojis = {
     critical: '🔥',
     high: '⚡',
     medium: '🔸',
-    low: '🌱'
+    low: '🌱',
   };
 
   let markdown = `# ${projectName}\n\n`;
@@ -246,17 +256,20 @@ const createProjectPlanMarkdown = (
 
   markdown += `## 📋 Plan détaillé\n\n`;
 
-  Object.keys(phases).forEach(phaseName => {
+  Object.keys(phases).forEach((phaseName) => {
     const tasks = phases[phaseName];
-    const phaseHours = Math.round(tasks.reduce((sum, task) => sum + task.estimatedTime, 0) / 60);
-    
+    const phaseHours = Math.round(
+      tasks.reduce((sum, task) => sum + task.estimatedTime, 0) / 60,
+    );
+
     markdown += `### ${phaseName}\n\n`;
     markdown += `*${tasks.length} tâches • ~${phaseHours} heures*\n\n`;
 
     tasks.forEach((task, index) => {
-      const hours = Math.round(task.estimatedTime / 60 * 10) / 10;
-      const priorityText = priorityEmojis[task.priority] + ' ' + task.priority.toUpperCase();
-      
+      const hours = Math.round((task.estimatedTime / 60) * 10) / 10;
+      const priorityText =
+        priorityEmojis[task.priority] + ' ' + task.priority.toUpperCase();
+
       markdown += `#### ${index + 1}. ${task.title}\n\n`;
       markdown += `**Description:** ${task.description}\n\n`;
       markdown += `**Priorité:** ${priorityText}  \n`;
@@ -283,33 +296,40 @@ const createProjectPlanTemplate = (
   }>,
 ) => {
   // Pre-calculate stats
-  const totalHours = Math.round(plan.reduce((sum, task) => sum + task.estimatedTime, 0) / 60);
-  const phases = plan.reduce((acc, task) => {
-    if (!acc[task.phase]) {
-      acc[task.phase] = [];
-    }
-    acc[task.phase].push(task);
-    return acc;
-  }, {} as Record<string, typeof plan>);
-  
+  const totalHours = Math.round(
+    plan.reduce((sum, task) => sum + task.estimatedTime, 0) / 60,
+  );
+  const phases = plan.reduce(
+    (acc, task) => {
+      if (!acc[task.phase]) {
+        acc[task.phase] = [];
+      }
+      acc[task.phase].push(task);
+      return acc;
+    },
+    {} as Record<string, typeof plan>,
+  );
+
   const priorityLabels = {
     critical: '🔥 CRITICAL',
-    high: '⚡ HIGH', 
+    high: '⚡ HIGH',
     medium: '🔸 MEDIUM',
-    low: '🌱 LOW'
+    low: '🌱 LOW',
   };
 
   // Generate phase HTML directly (no JS needed)
   let phasesHtml = '';
-  Object.keys(phases).forEach(phaseName => {
+  Object.keys(phases).forEach((phaseName) => {
     const tasks = phases[phaseName];
-    const phaseHours = Math.round(tasks.reduce((sum, task) => sum + task.estimatedTime, 0) / 60);
-    
+    const phaseHours = Math.round(
+      tasks.reduce((sum, task) => sum + task.estimatedTime, 0) / 60,
+    );
+
     let tasksHtml = '';
-    tasks.forEach(task => {
-      const hours = Math.round(task.estimatedTime / 60 * 10) / 10;
+    tasks.forEach((task) => {
+      const hours = Math.round((task.estimatedTime / 60) * 10) / 10;
       const timeText = hours < 1 ? `${task.estimatedTime}min` : `${hours}h`;
-      
+
       tasksHtml += `
         <div class="task-item priority-${task.priority}">
           <div class="task-title">${task.title}</div>
@@ -320,7 +340,7 @@ const createProjectPlanTemplate = (
           </div>
         </div>`;
     });
-    
+
     phasesHtml += `
       <div class="phase-card">
         <h3 class="phase-title">${phaseName}</h3>
@@ -411,21 +431,24 @@ export const projectPlanningTool: ProjectPlanningTool = {
 
       // Check if project plan already exists
       const existingProject = await parseExistingMarkdown(filePath);
-      
+
       let planWithIds;
       let actualProjectName = args.projectName;
       let actualProjectDescription = args.projectDescription;
-      
+
       if (existingProject.found && existingProject.tasks.length > 0) {
         // Use existing project data
         planWithIds = existingProject.tasks;
         actualProjectName = existingProject.projectName || args.projectName;
-        actualProjectDescription = existingProject.projectDescription || args.projectDescription;
-        ctx.log.info(`Found existing project plan with ${planWithIds.length} tasks. Loading from file.`);
+        actualProjectDescription =
+          existingProject.projectDescription || args.projectDescription;
+        ctx.log.info(
+          `Found existing project plan with ${planWithIds.length} tasks. Loading from file.`,
+        );
       } else {
         // Generate new project plan
         ctx.log.info(`No existing project found. Generating new plan.`);
-        
+
         // Determine which template to use based on project description
         let template = GAME_DEVELOPMENT_TEMPLATE;
 
@@ -462,18 +485,21 @@ export const projectPlanningTool: ProjectPlanningTool = {
           const markdownContent = createProjectPlanMarkdown(
             actualProjectName,
             actualProjectDescription,
-            planWithIds
+            planWithIds,
           );
-          
+
           await fs.writeFile(filePath, markdownContent, 'utf8');
           ctx.log.info(`Project plan automatically saved to: ${filePath}`);
         } catch (saveError) {
-          ctx.log.warn('Failed to auto-save project plan as Markdown:', saveError);
+          ctx.log.warn(
+            'Failed to auto-save project plan as Markdown:',
+            saveError,
+          );
           // Don't fail the whole operation if save fails
         }
       }
 
-      const statusMessage = existingProject.found 
+      const statusMessage = existingProject.found
         ? `Existing project plan loaded for "${actualProjectName}" with ${planWithIds.length} tasks from "${filename}".`
         : `New project plan generated for "${actualProjectName}" with ${planWithIds.length} tasks. Plan automatically saved as "${filename}" in current directory.`;
 

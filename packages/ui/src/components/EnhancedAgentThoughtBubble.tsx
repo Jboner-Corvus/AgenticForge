@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { Brain, Clipboard, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
+import {
+  Brain,
+  Clipboard,
+  Sparkles,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from './ui/button';
 
@@ -14,13 +20,13 @@ export const EnhancedAgentThoughtBubble: React.FC<
 > = ({ content, timestamp, isProminent = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showFullContent, setShowFullContent] = useState(false);
-  
+
   // Tronquer le contenu si trop long
   const isLongContent = content.length > 300;
-  const displayContent = showFullContent 
-    ? content 
-    : isExpanded 
-      ? content 
+  const displayContent = showFullContent
+    ? content
+    : isExpanded
+      ? content
       : content.substring(0, 300) + (content.length > 300 ? '...' : '');
 
   const handleCopy = () => {
@@ -73,7 +79,7 @@ export const EnhancedAgentThoughtBubble: React.FC<
                   <Clipboard className="h-3 w-3" />
                 </Button>
               </motion.div>
-              
+
               {isLongContent && (
                 <Button
                   variant="ghost"

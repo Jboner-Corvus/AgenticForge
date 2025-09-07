@@ -44,14 +44,27 @@ export class LlmKeyManager {
   private static populateApiKeysMap(keys: LlmApiKey[]): void {
     // Clear the existing map
     this.apiKeys.clear();
-    
+
     // Group keys by provider
-    keys.forEach(key => {
+    keys.forEach((key) => {
       if (!this.apiKeys.has(key.apiProvider)) {
         this.apiKeys.set(key.apiProvider, []);
       }
       this.apiKeys.get(key.apiProvider)!.push(key);
     });
+  }
+
+  /**
+   * Synchronize with LLM Router when keys are modified
+   */
+  private static async syncWithRouter(): Promise<void> {
+    try {
+      const { llmRouterService } = await import('./LlmRouterService.js');
+      await llmRouterService.syncWithKeyManager();
+    } catch (error) {
+      // Router service might not be available during initialization
+      getLogger().debug('Router sync skipped during key management operation');
+    }
   }
 
   public static async addKey(
@@ -235,12 +248,12 @@ export class LlmKeyManager {
     provider: string,
   ): Promise<LlmApiKey | null> {
     const log = getLogger().child({ module: 'LlmKeyManager' });
-    
+
     try {
       // First, ensure we have the latest keys from Redis with fallback
       const keys = await this.getKeysWithFallback(provider);
       this.populateApiKeysMap(keys);
-      
+
       const providerKeys = this.apiKeys.get(provider) || [];
 
       if (providerKeys.length === 0) {
@@ -249,7 +262,10 @@ export class LlmKeyManager {
         return this.getEnvironmentFallbackKey(provider);
       }
     } catch (error) {
-      log.error({ error, provider }, 'Error getting keys from Redis, trying fallback');
+      log.error(
+        { error, provider },
+        'Error getting keys from Redis, trying fallback',
+      );
       return this.getEnvironmentFallbackKey(provider);
     }
 
@@ -257,7 +273,8 @@ export class LlmKeyManager {
     const providerKeys = this.apiKeys.get(provider) || [];
     const workingKeys = providerKeys.filter((key) => {
       if (key.isPermanentlyDisabled) return false;
-      if (key.temporaryDisabledUntil && Date.now() < key.temporaryDisabledUntil) return false;
+      if (key.temporaryDisabledUntil && Date.now() < key.temporaryDisabledUntil)
+        return false;
       return key.errorCount < MAX_TEMPORARY_ERROR_COUNT;
     });
 
@@ -265,39 +282,51 @@ export class LlmKeyManager {
     if (workingKeys.length === 0 && providerKeys.length > 0) {
       log.warn({ provider }, 'No working keys found, attempting cleanup');
       const cleanupResult = await this.cleanupFailedKeys(provider);
-      
+
       if (cleanupResult.cleaned > 0) {
         // Refresh keys after cleanup
         const refreshedKeys = await this.getKeys();
         this.populateApiKeysMap(refreshedKeys);
         const refreshedProviderKeys = this.apiKeys.get(provider) || [];
-        
+
         const newWorkingKeys = refreshedProviderKeys.filter((key) => {
           if (key.isPermanentlyDisabled) return false;
-          if (key.temporaryDisabledUntil && Date.now() < key.temporaryDisabledUntil) return false;
+          if (
+            key.temporaryDisabledUntil &&
+            Date.now() < key.temporaryDisabledUntil
+          )
+            return false;
           return key.errorCount < MAX_TEMPORARY_ERROR_COUNT;
         });
-        
+
         if (newWorkingKeys.length > 0) {
-          log.info({ provider, cleanedCount: cleanupResult.cleaned }, 'Keys recovered after cleanup');
+          log.info(
+            { provider, cleanedCount: cleanupResult.cleaned },
+            'Keys recovered after cleanup',
+          );
           // Continue with the cleaned keys - simple round-robin selection
           const selectedIndex = this.lastUsedIndex?.get(provider) ?? -1;
           const nextIndex = (selectedIndex + 1) % newWorkingKeys.length;
           this.lastUsedIndex?.set(provider, nextIndex);
           const selectedKey = newWorkingKeys[nextIndex];
-          log.info(`Selected API key ${selectedKey.apiKey.substring(0, 8)}... for provider ${provider}`);
+          log.info(
+            `Selected API key ${selectedKey.apiKey.substring(0, 8)}... for provider ${provider}`,
+          );
           return selectedKey;
         }
       }
-      
+
       // Still no working keys, try environment fallback
-      log.warn({ provider }, 'No working keys after cleanup, using environment fallback');
+      log.warn(
+        { provider },
+        'No working keys after cleanup, using environment fallback',
+      );
       return this.getEnvironmentFallbackKey(provider);
     }
 
     // Use the working keys we calculated above, or filter normally if we have working keys
     let availableKeys = workingKeys;
-    
+
     if (availableKeys.length === 0) {
       // Filter out permanently disabled keys and temporarily disabled keys
       availableKeys = providerKeys.filter((key) => {
@@ -313,9 +342,12 @@ export class LlmKeyManager {
           );
           return false;
         }
-        
+
         // Check for temporary disable based on temporaryDisabledUntil
-        if (key.temporaryDisabledUntil && Date.now() < key.temporaryDisabledUntil) {
+        if (
+          key.temporaryDisabledUntil &&
+          Date.now() < key.temporaryDisabledUntil
+        ) {
           log.debug(
             `Key ${key.apiKey.substring(0, 8)}... is temporarily disabled until ${new Date(key.temporaryDisabledUntil).toISOString()}`,
           );
@@ -370,13 +402,13 @@ export class LlmKeyManager {
           (!key.isDisabledUntil || key.isDisabledUntil <= now) &&
           (!key.temporaryDisabledUntil || key.temporaryDisabledUntil <= now),
       );
-      
+
       // If no keys in Redis, try environment fallback
       if (availableKeysForProvider.length === 0) {
         const envKey = this.getEnvironmentFallbackKey(providerName);
         return envKey !== null;
       }
-      
+
       return availableKeysForProvider.length > 0;
     } catch (error) {
       // Fallback to environment key if Redis fails
@@ -393,64 +425,79 @@ export class LlmKeyManager {
     total: number;
   }> {
     const log = getLogger().child({ module: 'LlmKeyManager' });
-    
+
     try {
       const keys = await this.getKeys();
       let cleanedCount = 0;
       const currentTime = Date.now();
-      
-      const cleanedKeys = keys.map(key => {
+
+      const cleanedKeys = keys.map((key) => {
         // Clean keys for specific provider or all providers
         if (provider && key.apiProvider !== provider) {
           return key;
         }
-        
+
         // Reset temporarily disabled keys after cooldown period
-        if (key.temporaryDisabledUntil && currentTime > key.temporaryDisabledUntil) {
-          log.info({ 
-            provider: key.apiProvider, 
-            keyPreview: key.apiKey.substring(0, 12) + '...' 
-          }, 'Re-enabling temporarily disabled key');
+        if (
+          key.temporaryDisabledUntil &&
+          currentTime > key.temporaryDisabledUntil
+        ) {
+          log.info(
+            {
+              provider: key.apiProvider,
+              keyPreview: key.apiKey.substring(0, 12) + '...',
+            },
+            'Re-enabling temporarily disabled key',
+          );
           cleanedCount++;
           return {
             ...key,
             errorCount: 0,
             temporaryDisabledUntil: undefined,
             lastError: undefined,
-            isPermanentlyDisabled: false
+            isPermanentlyDisabled: false,
           };
         }
-        
+
         // Reset keys with high error count but not permanently disabled
-        if (key.errorCount >= MAX_TEMPORARY_ERROR_COUNT && !key.isPermanentlyDisabled) {
+        if (
+          key.errorCount >= MAX_TEMPORARY_ERROR_COUNT &&
+          !key.isPermanentlyDisabled
+        ) {
           // Only reset if it's been a while since last error
           const lastUsed = key.lastUsed || 0;
           const timeSinceLastUse = currentTime - lastUsed;
-          
+
           if (timeSinceLastUse > TEMPORARY_DISABLE_DURATION_MS * 2) {
-            log.info({ 
-              provider: key.apiProvider, 
-              keyPreview: key.apiKey.substring(0, 12) + '...',
-              oldErrorCount: key.errorCount
-            }, 'Resetting high-error-count key after cooldown');
+            log.info(
+              {
+                provider: key.apiProvider,
+                keyPreview: key.apiKey.substring(0, 12) + '...',
+                oldErrorCount: key.errorCount,
+              },
+              'Resetting high-error-count key after cooldown',
+            );
             cleanedCount++;
             return {
               ...key,
               errorCount: 0,
               temporaryDisabledUntil: undefined,
-              lastError: undefined
+              lastError: undefined,
             };
           }
         }
-        
+
         return key;
       });
-      
+
       if (cleanedCount > 0) {
         await this.saveKeys(cleanedKeys);
-        log.info({ cleanedCount, total: keys.length }, 'Cleaned up failed keys');
+        log.info(
+          { cleanedCount, total: keys.length },
+          'Cleaned up failed keys',
+        );
       }
-      
+
       return { cleaned: cleanedCount, total: keys.length };
     } catch (error) {
       log.error({ error, provider }, 'Failed to cleanup keys');
@@ -470,11 +517,11 @@ export class LlmKeyManager {
     errorType: LlmKeyErrorType,
   ): Promise<void> {
     const log = getLogger().child({ module: 'LlmKeyManager' });
-    
+
     // First, ensure we have the latest keys from Redis
     const keys = await this.getKeys();
     this.populateApiKeysMap(keys);
-    
+
     const keysForProvider = this.apiKeys.get(provider) || [];
     const keyObj = keysForProvider.find((k) => k.apiKey === apiKey);
 
@@ -549,7 +596,7 @@ export class LlmKeyManager {
     // First, ensure we have the latest keys from Redis
     const keys = await this.getKeys();
     this.populateApiKeysMap(keys);
-    
+
     const keysForProvider = this.apiKeys.get(provider) || [];
     const keyIndex = keysForProvider.findIndex((k) => k.apiKey === key);
 
@@ -870,24 +917,29 @@ export class LlmKeyManager {
   /**
    * Gets keys with robust fallback mechanisms
    */
-  private static async getKeysWithFallback(provider: string): Promise<LlmApiKey[]> {
+  private static async getKeysWithFallback(
+    provider: string,
+  ): Promise<LlmApiKey[]> {
     const log = getLogger().child({ module: 'LlmKeyManager' });
-    
+
     try {
       // Try Redis first
       const keys = await this.getKeys();
-      
+
       // If Redis is empty, try to sync from environment
       if (keys.length === 0) {
         log.warn('Redis is empty, trying to sync from environment variables');
         await this.ensureMasterKeySync();
         return await this.getKeys();
       }
-      
+
       return keys;
     } catch (redisError) {
-      log.error({ redisError, provider }, 'Redis failed, using environment fallback');
-      
+      log.error(
+        { redisError, provider },
+        'Redis failed, using environment fallback',
+      );
+
       // If Redis completely fails, create temporary key from env
       const envKey = this.createEnvironmentKey(provider);
       return envKey ? [envKey] : [];
@@ -903,7 +955,10 @@ export class LlmKeyManager {
     let actualProvider = provider;
 
     // Handle custom Gemini provider names (gemini-flash-1, gemini-pro-1, etc.)
-    if (provider.startsWith('gemini-flash-') || provider.startsWith('gemini-pro-')) {
+    if (
+      provider.startsWith('gemini-flash-') ||
+      provider.startsWith('gemini-pro-')
+    ) {
       actualProvider = 'gemini';
       // Extract the key number from the provider name
       const keyNumber = provider.match(/(\d+)$/)?.[1];
@@ -924,37 +979,48 @@ export class LlmKeyManager {
         apiKey = process.env[envVarName];
 
         // Debug logging
-        getLogger().info({
-          provider,
-          keyNumber,
-          envVarName,
-          hasKey: !!apiKey,
-          keyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'none'
-        }, '🔍 Custom Gemini provider mapping');
+        getLogger().info(
+          {
+            provider,
+            keyNumber,
+            envVarName,
+            hasKey: !!apiKey,
+            keyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'none',
+          },
+          '🔍 Custom Gemini provider mapping',
+        );
 
         // If no key found for this specific provider, try fallback to main key
         if (!apiKey) {
-          getLogger().warn({
-            provider,
-            envVarName,
-            fallbackTo: 'LLM_API_KEY'
-          }, 'No specific key found for custom provider, trying main LLM_API_KEY');
+          getLogger().warn(
+            {
+              provider,
+              envVarName,
+              fallbackTo: 'LLM_API_KEY',
+            },
+            'No specific key found for custom provider, trying main LLM_API_KEY',
+          );
           apiKey = config.LLM_API_KEY;
         }
       } else {
         // If no key number found, fallback to main key
-        getLogger().warn({
-          provider,
-          issue: 'No key number found in provider name'
-        }, 'Invalid custom Gemini provider name format, using main key');
+        getLogger().warn(
+          {
+            provider,
+            issue: 'No key number found in provider name',
+          },
+          'Invalid custom Gemini provider name format, using main key',
+        );
         apiKey = config.LLM_API_KEY;
-        modelName = provider.includes('flash') ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+        modelName = provider.includes('flash')
+          ? 'gemini-2.5-flash'
+          : 'gemini-2.5-pro';
       }
     }
 
     // Handle custom OpenRouter provider names (openrouter-sky, openrouter-dusk)
     if (provider === 'openrouter-sky' || provider === 'openrouter-dusk') {
-      actualProvider = 'openrouter';
+      actualProvider = provider; // Keep the specific provider name instead of generic 'openrouter'
       // Map to the corresponding environment variable based on sky/dusk type
       let envVarName: string;
       if (provider === 'openrouter-sky') {
@@ -971,20 +1037,26 @@ export class LlmKeyManager {
       apiKey = process.env[envVarName];
 
       // Debug logging
-      getLogger().info({
-        provider,
-        envVarName,
-        hasKey: !!apiKey,
-        keyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'none'
-      }, '🔍 Custom OpenRouter provider mapping');
+      getLogger().info(
+        {
+          provider,
+          envVarName,
+          hasKey: !!apiKey,
+          keyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'none',
+        },
+        '🔍 Custom OpenRouter provider mapping',
+      );
 
       // If no key found for this specific provider, try fallback to main key
       if (!apiKey) {
-        getLogger().warn({
-          provider,
-          envVarName,
-          fallbackTo: 'LLM_API_KEY'
-        }, 'No specific key found for custom OpenRouter provider, trying main LLM_API_KEY');
+        getLogger().warn(
+          {
+            provider,
+            envVarName,
+            fallbackTo: 'LLM_API_KEY',
+          },
+          'No specific key found for custom OpenRouter provider, trying main LLM_API_KEY',
+        );
         apiKey = config.LLM_API_KEY;
       }
     }
@@ -994,15 +1066,21 @@ export class LlmKeyManager {
       // Try specific provider keys first, then fallback to generic LLM_API_KEY only if provider matches
       switch (actualProvider.toLowerCase()) {
         case 'gemini':
-          apiKey = process.env.GEMINI_API_KEY || (config.LLM_PROVIDER === 'gemini' ? config.LLM_API_KEY : undefined);
+          apiKey =
+            process.env.GEMINI_API_KEY ||
+            (config.LLM_PROVIDER === 'gemini' ? config.LLM_API_KEY : undefined);
           modelName = modelName || config.LLM_MODEL_NAME || 'gemini-2.5-flash';
           break;
         case 'openai':
-          apiKey = process.env.OPENAI_API_KEY || (config.LLM_PROVIDER === 'openai' ? config.LLM_API_KEY : undefined);
+          apiKey =
+            process.env.OPENAI_API_KEY ||
+            (config.LLM_PROVIDER === 'openai' ? config.LLM_API_KEY : undefined);
           modelName = modelName || 'gpt-4';
           break;
         case 'qwen':
-          apiKey = process.env.QWEN_API_KEY || (config.LLM_PROVIDER === 'qwen' ? config.LLM_API_KEY : undefined);
+          apiKey =
+            process.env.QWEN_API_KEY ||
+            (config.LLM_PROVIDER === 'qwen' ? config.LLM_API_KEY : undefined);
           modelName = modelName || 'qwen-plus';
           break;
         default:
@@ -1027,13 +1105,20 @@ export class LlmKeyManager {
       lastUsed: Date.now(),
     };
 
-    getLogger().info({
-      provider: actualProvider,
-      model: keyInfo.apiModel,
-      hasKey: !!apiKey,
-      keySource: apiKey ? (apiKey === config.LLM_API_KEY ? 'main' : 'custom') : 'none',
-      keyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'none'
-    }, '🔑 Created environment key for provider');
+    getLogger().info(
+      {
+        provider: actualProvider,
+        model: keyInfo.apiModel,
+        hasKey: !!apiKey,
+        keySource: apiKey
+          ? apiKey === config.LLM_API_KEY
+            ? 'main'
+            : 'custom'
+          : 'none',
+        keyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'none',
+      },
+      '🔑 Created environment key for provider',
+    );
 
     return keyInfo;
   }
@@ -1043,13 +1128,16 @@ export class LlmKeyManager {
    */
   private static getEnvironmentFallbackKey(provider: string): LlmApiKey | null {
     const log = getLogger().child({ module: 'LlmKeyManager' });
-    
+
     const envKey = this.createEnvironmentKey(provider);
     if (envKey) {
-      log.info({ provider, hasKey: !!envKey.apiKey }, 'Using environment fallback key');
+      log.info(
+        { provider, hasKey: !!envKey.apiKey },
+        'Using environment fallback key',
+      );
       return envKey;
     }
-    
+
     log.warn({ provider }, 'No environment fallback key available');
     return null;
   }
@@ -1061,25 +1149,70 @@ export class LlmKeyManager {
     const log = getLogger().child({ module: 'LlmKeyManager' });
 
     if (config.LLM_API_KEY && config.LLM_PROVIDER && config.LLM_MODEL_NAME) {
-      log.info({
-        provider: config.LLM_PROVIDER,
-        model: config.LLM_MODEL_NAME,
-        hasKey: !!config.LLM_API_KEY
-      }, 'Syncing master key from environment to Redis');
+      log.info(
+        {
+          provider: config.LLM_PROVIDER,
+          model: config.LLM_MODEL_NAME,
+          hasKey: !!config.LLM_API_KEY,
+        },
+        'Syncing master key from environment to Redis',
+      );
 
       await this.addKey(
         config.LLM_PROVIDER,
         config.LLM_API_KEY,
-        config.LLM_MODEL_NAME
+        config.LLM_MODEL_NAME,
       );
 
       log.info('Master key synced successfully');
     } else {
-      log.warn({
-        hasApiKey: !!config.LLM_API_KEY,
-        hasProvider: !!config.LLM_PROVIDER,
-        hasModel: !!config.LLM_MODEL_NAME
-      }, 'Cannot sync master key - missing configuration');
+      log.warn(
+        {
+          hasApiKey: !!config.LLM_API_KEY,
+          hasProvider: !!config.LLM_PROVIDER,
+          hasModel: !!config.LLM_MODEL_NAME,
+        },
+        'Cannot sync master key - missing configuration',
+      );
+    }
+
+    // Sync OpenRouter keys with specific provider names
+    const openRouterKeys = [
+      {
+        provider: 'openrouter-sky',
+        model: 'openrouter/sonoma-sky-alpha',
+        envVar: 'LLM_API_KEY_OPENROUTER_SKY',
+      },
+      {
+        provider: 'openrouter-dusk',
+        model: 'openrouter/sonoma-dusk-alpha',
+        envVar: 'LLM_API_KEY_OPENROUTER_DUSK',
+      },
+    ];
+
+    for (const keyConfig of openRouterKeys) {
+      const apiKey = process.env[keyConfig.envVar];
+      if (apiKey) {
+        try {
+          await this.addKey(
+            keyConfig.provider, // Use specific provider name
+            apiKey,
+            keyConfig.model,
+          );
+          log.info(
+            `OpenRouter API key for ${keyConfig.provider} (${keyConfig.model}) added to KeyManager.`,
+          );
+        } catch (error) {
+          log.warn(
+            { error, provider: keyConfig.provider },
+            `Failed to add OpenRouter API key for ${keyConfig.provider}`,
+          );
+        }
+      } else {
+        log.debug(
+          `OpenRouter API key for ${keyConfig.provider} not found in environment (${keyConfig.envVar})`,
+        );
+      }
     }
   }
 

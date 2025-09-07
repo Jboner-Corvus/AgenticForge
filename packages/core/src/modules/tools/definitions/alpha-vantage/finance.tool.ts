@@ -8,32 +8,36 @@ import {
   SymbolParam,
 } from './common.ts';
 
-const FinanceParams = AlphaVantageBaseParams
-  .merge(SymbolParam)
-  .extend({
-    action: z.enum([
-      'quote',           // Current price & volume
-      'overview',        // Company information
-      'daily',          // Historical daily data
-      'intraday',       // Intraday data
-      'technical',      // RSI, SMA, etc.
-      'search'          // Symbol search
-    ]).describe('Type of financial data to retrieve'),
-    interval: z.enum(['1min', '5min', '15min', '30min', '60min'])
-      .optional()
-      .default('5min')
-      .describe('Time interval for intraday data'),
-    technical_indicator: z.enum(['rsi', 'sma', 'ema', 'macd', 'stoch', 'bbands'])
-      .optional()
-      .describe('Technical indicator to calculate'),
-    outputsize: z.enum(['compact', 'full'])
-      .optional()
-      .default('compact')
-      .describe('Data size: compact (100 points) or full (all available)'),
-  });
+const FinanceParams = AlphaVantageBaseParams.merge(SymbolParam).extend({
+  action: z
+    .enum([
+      'quote', // Current price & volume
+      'overview', // Company information
+      'daily', // Historical daily data
+      'intraday', // Intraday data
+      'technical', // RSI, SMA, etc.
+      'search', // Symbol search
+    ])
+    .describe('Type of financial data to retrieve'),
+  interval: z
+    .enum(['1min', '5min', '15min', '30min', '60min'])
+    .optional()
+    .default('5min')
+    .describe('Time interval for intraday data'),
+  technical_indicator: z
+    .enum(['rsi', 'sma', 'ema', 'macd', 'stoch', 'bbands'])
+    .optional()
+    .describe('Technical indicator to calculate'),
+  outputsize: z
+    .enum(['compact', 'full'])
+    .optional()
+    .default('compact')
+    .describe('Data size: compact (100 points) or full (all available)'),
+});
 
 export const financeTool: Tool<typeof FinanceParams> = {
-  description: 'Comprehensive financial data tool - get quotes, company info, historical data, and technical analysis',
+  description:
+    'Comprehensive financial data tool - get quotes, company info, historical data, and technical analysis',
 
   execute: async (params, context) => {
     const { log } = context;
@@ -42,13 +46,15 @@ export const financeTool: Tool<typeof FinanceParams> = {
     try {
       log.info('Fetching financial data', {
         symbol: parsedParams.symbol,
-        action: parsedParams.action
+        action: parsedParams.action,
       });
 
       // Get API key from config if not provided
       const apiKey = parsedParams.apikey || getConfig().ALPHA_VANTAGE_API_KEY;
       if (!apiKey) {
-        throw new Error('Alpha Vantage API key is required. Please set ALPHA_VANTAGE_API_KEY in your .env file or provide it as a parameter.');
+        throw new Error(
+          'Alpha Vantage API key is required. Please set ALPHA_VANTAGE_API_KEY in your .env file or provide it as a parameter.',
+        );
       }
 
       let functionName: string;
@@ -76,7 +82,9 @@ export const financeTool: Tool<typeof FinanceParams> = {
           break;
         case 'technical':
           if (!parsedParams.technical_indicator) {
-            throw new Error('technical_indicator is required when action is "technical"');
+            throw new Error(
+              'technical_indicator is required when action is "technical"',
+            );
           }
           switch (parsedParams.technical_indicator) {
             case 'rsi':
@@ -98,7 +106,9 @@ export const financeTool: Tool<typeof FinanceParams> = {
               functionName = 'BBANDS';
               break;
             default:
-              throw new Error(`Unsupported technical indicator: ${parsedParams.technical_indicator}`);
+              throw new Error(
+                `Unsupported technical indicator: ${parsedParams.technical_indicator}`,
+              );
           }
           apiParams.interval = parsedParams.interval;
           apiParams.time_period = '14'; // Default period
@@ -115,17 +125,19 @@ export const financeTool: Tool<typeof FinanceParams> = {
       log.info('Successfully fetched financial data', {
         symbol: parsedParams.symbol,
         action: parsedParams.action,
-        function: functionName
+        function: functionName,
       });
 
       return formatAlphaVantageResponse(data, functionName);
-
     } catch (error) {
-      log.error({ err: error, params: parsedParams }, 'Error fetching financial data');
+      log.error(
+        { err: error, params: parsedParams },
+        'Error fetching financial data',
+      );
       throw new Error(
         `Failed to fetch financial data for ${parsedParams.symbol}: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
     }
   },

@@ -1,17 +1,13 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  ArrowDown,
-} from 'lucide-react';
+import { ArrowDown } from 'lucide-react';
 import { ChatMessagesContainer } from './ChatMessagesContainer';
 import { EnhancedChatInput } from './EnhancedChatInput';
 import { PinnedBrowserView } from './PinnedBrowserView';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { useMessages } from '../store/hooks';
-import {
-  TooltipProvider,
-} from './ui/tooltip';
+import { TooltipProvider } from './ui/tooltip';
 
 interface EnhancedChatContainerProps {
   className?: string;
@@ -90,7 +86,7 @@ export const EnhancedChatContainer: React.FC<EnhancedChatContainerProps> = ({
         <div className="shrink-0">
           <PinnedBrowserView />
         </div>
-        
+
         {/* Zone de messages avec scroll personnalisé - prend tout l'espace sauf le bas */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <div

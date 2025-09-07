@@ -1,38 +1,38 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
+  <head>
     <title>Test EventSource Connection</title>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Test EventSource Connection</h1>
     <div id="messages"></div>
     <script>
-        // Test EventSource connection
-        const authToken = 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0';
-        const sessionId = 'test-session';
-        const jobId = '365'; // Use the jobId we just created
-        
-        // Create EventSource connection
-        const eventSourceUrl = `http://localhost:3002/api/chat/stream/${jobId}?auth=${encodeURIComponent(authToken)}&sessionId=${encodeURIComponent(sessionId)}`;
-        console.log('Connecting to:', eventSourceUrl);
-        
-        const eventSource = new EventSource(eventSourceUrl);
-        
-        eventSource.onmessage = function(event) {
-            console.log('Message received:', event.data);
-            const messagesDiv = document.getElementById('messages');
-            const messageElement = document.createElement('div');
-            messageElement.textContent = event.data;
-            messagesDiv.appendChild(messageElement);
-        };
-        
-        eventSource.onerror = function(error) {
-            console.error('Error occurred:', error);
-        };
-        
-        eventSource.onopen = function() {
-            console.log('Connection opened successfully!');
-        };
+      // Test EventSource connection
+      const authToken = 'Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0';
+      const sessionId = 'test-session';
+      const jobId = '365'; // Use the jobId we just created
+
+      // Create EventSource connection
+      const eventSourceUrl = `http://localhost:3002/api/chat/stream/${jobId}?auth=${encodeURIComponent(authToken)}&sessionId=${encodeURIComponent(sessionId)}`;
+      console.log('Connecting to:', eventSourceUrl);
+
+      const eventSource = new EventSource(eventSourceUrl);
+
+      eventSource.onmessage = function (event) {
+        console.log('Message received:', event.data);
+        const messagesDiv = document.getElementById('messages');
+        const messageElement = document.createElement('div');
+        messageElement.textContent = event.data;
+        messagesDiv.appendChild(messageElement);
+      };
+
+      eventSource.onerror = function (error) {
+        console.error('Error occurred:', error);
+      };
+
+      eventSource.onopen = function () {
+        console.log('Connection opened successfully!');
+      };
     </script>
-</body>
+  </body>
 </html>

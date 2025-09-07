@@ -162,7 +162,6 @@ export default function App() {
                   <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                     {renderMainContent()}
                   </div>
-
                 </div>
 
                 {/* Section du Canvas CLASSIQUE - masquée si pinnée */}

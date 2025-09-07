@@ -45,7 +45,7 @@ function loadConfig() {
 
   // Afficher la configuration WORKSPACE_PATH
   console.log('WORKSPACE_PATH from process.env:', process.env.WORKSPACE_PATH);
-  
+
   return process.env;
 }
 

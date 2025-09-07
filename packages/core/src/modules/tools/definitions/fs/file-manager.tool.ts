@@ -1,24 +1,28 @@
 import { z } from 'zod';
-import { readFile as fsReadFile, writeFile as fsWriteFile, readdir, stat } from 'fs/promises';
+import {
+  readFile as fsReadFile,
+  writeFile as fsWriteFile,
+  readdir,
+  stat,
+} from 'fs/promises';
 import { join, dirname } from 'path';
 import type { Tool } from '../../../../types.ts';
 
 const FileManagerParams = z.object({
-  action: z.enum(['read', 'write', 'list', 'edit', 'delete'])
+  action: z
+    .enum(['read', 'write', 'list', 'edit', 'delete'])
     .describe('File operation to perform'),
-  path: z.string()
-    .describe('File or directory path'),
-  content: z.string()
+  path: z.string().describe('File or directory path'),
+  content: z
+    .string()
     .optional()
     .describe('Content to write (required for write/edit actions)'),
-  encoding: z.string()
-    .optional()
-    .default('utf8')
-    .describe('File encoding'),
+  encoding: z.string().optional().default('utf8').describe('File encoding'),
 });
 
 export const fileManagerTool: Tool<typeof FileManagerParams> = {
-  description: 'Comprehensive file management tool - read, write, edit, list, and delete files',
+  description:
+    'Comprehensive file management tool - read, write, edit, list, and delete files',
 
   execute: async (params, context) => {
     const { log } = context;
@@ -27,7 +31,7 @@ export const fileManagerTool: Tool<typeof FileManagerParams> = {
     try {
       log.info('File operation', {
         action: parsedParams.action,
-        path: parsedParams.path
+        path: parsedParams.path,
       });
 
       switch (parsedParams.action) {
@@ -35,25 +39,37 @@ export const fileManagerTool: Tool<typeof FileManagerParams> = {
           if (!parsedParams.path) {
             throw new Error('Path is required for read operation');
           }
-          const content = await fsReadFile(parsedParams.path, parsedParams.encoding as BufferEncoding);
+          const content = await fsReadFile(
+            parsedParams.path,
+            parsedParams.encoding as BufferEncoding,
+          );
           return {
             success: true,
             action: 'read',
             path: parsedParams.path,
             content: content.toString(),
-            encoding: parsedParams.encoding
+            encoding: parsedParams.encoding,
           };
 
         case 'write':
           if (!parsedParams.path || parsedParams.content === undefined) {
-            throw new Error('Path and content are required for write operation');
+            throw new Error(
+              'Path and content are required for write operation',
+            );
           }
-          await fsWriteFile(parsedParams.path, parsedParams.content, parsedParams.encoding as BufferEncoding);
+          await fsWriteFile(
+            parsedParams.path,
+            parsedParams.content,
+            parsedParams.encoding as BufferEncoding,
+          );
           return {
             success: true,
             action: 'write',
             path: parsedParams.path,
-            bytesWritten: Buffer.byteLength(parsedParams.content, parsedParams.encoding as BufferEncoding)
+            bytesWritten: Buffer.byteLength(
+              parsedParams.content,
+              parsedParams.encoding as BufferEncoding,
+            ),
           };
 
         case 'edit':
@@ -61,12 +77,19 @@ export const fileManagerTool: Tool<typeof FileManagerParams> = {
             throw new Error('Path and content are required for edit operation');
           }
           // For edit, we replace the entire file content
-          await fsWriteFile(parsedParams.path, parsedParams.content, parsedParams.encoding as BufferEncoding);
+          await fsWriteFile(
+            parsedParams.path,
+            parsedParams.content,
+            parsedParams.encoding as BufferEncoding,
+          );
           return {
             success: true,
             action: 'edit',
             path: parsedParams.path,
-            bytesWritten: Buffer.byteLength(parsedParams.content, parsedParams.encoding as BufferEncoding)
+            bytesWritten: Buffer.byteLength(
+              parsedParams.content,
+              parsedParams.encoding as BufferEncoding,
+            ),
           };
 
         case 'list':
@@ -81,15 +104,15 @@ export const fileManagerTool: Tool<typeof FileManagerParams> = {
                 type: entry.isDirectory() ? 'directory' : 'file',
                 size: stats.size,
                 modified: stats.mtime.toISOString(),
-                path: fullPath
+                path: fullPath,
               };
-            })
+            }),
           );
           return {
             success: true,
             action: 'list',
             path: targetPath,
-            files: files
+            files: files,
           };
 
         case 'delete':
@@ -99,17 +122,16 @@ export const fileManagerTool: Tool<typeof FileManagerParams> = {
           return {
             success: true,
             action: 'delete',
-            path: parsedParams.path
+            path: parsedParams.path,
           };
 
         default:
           throw new Error(`Unsupported action: ${parsedParams.action}`);
       }
-
     } catch (error) {
       log.error({ err: error, params: parsedParams }, 'File operation error');
       throw new Error(
-        `File operation failed: ${error instanceof Error ? error.message : String(error)}`
+        `File operation failed: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   },

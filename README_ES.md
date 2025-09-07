@@ -402,12 +402,14 @@ pnpm run format    # Formateo automático
 
 ``bash
 "Escanea recursivamente mi proyecto, analiza el código fuente, genera:
+
 - README.md detallado con diagramas de arquitectura
 - Documentación API con Swagger/OpenAPI
 - Diagramas de clases UML (con PlantUML)
 - Guía de instalación probada en esta máquina
 - Publica todo en un servidor local con docsify"
-```
+
+````
 
 ### 🔧 Gestión de Proyectos
 
@@ -420,7 +422,7 @@ pnpm run format    # Formateo automático
 - Configura GitHub Actions o GitLab CI localmente
 - Script de despliegue que construye, prueba y reinicia servicios
 - Prueba el flujo de trabajo completo con una rama de características"
-```
+````
 
 ### 🎯 Proyectos Especializados
 
@@ -457,14 +459,14 @@ pnpm run format    # Formateo automático
 
 ### Gestión Avanzada del Sistema
 
-| Acción                | Comando                       | Uso                                   |
-| --------------------- | ----------------------------- | ------------------------------------- |
-| **Consola Completa**  | `./run.sh`                    | Interfaz principal de gestión         |
-| **Inicio Rápido**     | `./run.sh start`              | Lanzamiento directo del sistema       |
-| **Monitoreo**         | `./run.sh status`             | Estado de servicios Docker            |
-| **Registros en Vivo** | `./run.sh logs`               | Monitoreo en tiempo real              |
-| **Reiniciar**         | `./run.sh restart`            | Después de modificación de configuración |
-| **Mantenimiento**     | `./run.sh` → Opciones 7-14    | Pruebas, lint, formato, reconstrucción |
+| Acción                | Comando                    | Uso                                      |
+| --------------------- | -------------------------- | ---------------------------------------- |
+| **Consola Completa**  | `./run.sh`                 | Interfaz principal de gestión            |
+| **Inicio Rápido**     | `./run.sh start`           | Lanzamiento directo del sistema          |
+| **Monitoreo**         | `./run.sh status`          | Estado de servicios Docker               |
+| **Registros en Vivo** | `./run.sh logs`            | Monitoreo en tiempo real                 |
+| **Reiniciar**         | `./run.sh restart`         | Después de modificación de configuración |
+| **Mantenimiento**     | `./run.sh` → Opciones 7-14 | Pruebas, lint, formato, reconstrucción   |
 
 ---
 

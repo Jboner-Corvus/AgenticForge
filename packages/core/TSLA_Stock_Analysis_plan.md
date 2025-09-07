@@ -13,7 +13,7 @@
 
 ### Pre-Production
 
-*3 tâches • ~9 heures*
+_3 tâches • ~9 heures_
 
 #### 1. Project Setup & Planning
 
@@ -38,7 +38,7 @@
 
 ### Production
 
-*6 tâches • ~33 heures*
+_6 tâches • ~33 heures_
 
 #### 1. Art Asset Creation
 
@@ -84,7 +84,7 @@
 
 ### Post-Production
 
-*3 tâches • ~12 heures*
+_3 tâches • ~12 heures_
 
 #### 1. Testing & QA
 
@@ -109,4 +109,4 @@
 
 ---
 
-*Plan généré automatiquement par AgenticForge*
+_Plan généré automatiquement par AgenticForge_

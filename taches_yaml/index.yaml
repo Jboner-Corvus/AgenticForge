@@ -1,0 +1,59 @@
+# Index of all task categories
+project: AgenticForge
+version: 1.0
+last_updated: 2025-09-06
+
+categories:
+  - file: file_operations.yaml
+    name: Opérations sur les fichiers
+    description: Tests basiques et avancés des opérations sur les fichiers
+    subcategories:
+      - basic
+      - advanced
+
+  - file: todo_lists.yaml
+    name: Gestion des Todo Lists
+    description: Tests basiques et avancés de gestion de todo lists
+    subcategories:
+      - basic
+      - advanced
+
+  - file: canvas_display.yaml
+    name: Affichage Canvas
+    description: Tests de l'affichage dans le canvas
+    subcategories:
+      - basic
+      - advanced_visualization
+      - html_web
+      - games_interactivity
+
+  - file: ai_tools.yaml
+    name: Outils d'IA
+    description: Tests des outils d'IA
+    subcategories:
+      - basic
+      - advanced
+
+  - file: session_management.yaml
+    name: Gestion des Sessions
+    description: Tests de gestion de session
+    subcategories:
+      - basic
+      - advanced
+
+  - file: command_execution.yaml
+    name: Exécution de Commandes
+    description: Tests d'exécution de commandes
+    subcategories:
+      - basic
+      - advanced
+
+  - file: browser_automation.yaml
+    name: Automatisation Navigateur (Playwright)
+    description: Tests Browser Live (Playwright)
+    subcategories:
+      - basic
+      - navigation_sites
+      - advanced_interactions
+# Note: Additional categories like security, performance, llm_providers,
+# alpha_vantage, trading_analysis, etc. would be added here

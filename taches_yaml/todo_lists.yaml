@@ -1,0 +1,76 @@
+category: todo_lists
+description: Tests de gestion de todo lists
+tasks:
+  basic:
+    - id: 11
+      description: Créer une todo list simple
+      status: completed
+      priority: high
+      difficulty: basic
+      system_prompt: orchestrator
+      tags: [todo, create]
+    - id: 12
+      description: Ajouter un élément à une todo list
+      status: completed
+      priority: high
+      difficulty: basic
+      system_prompt: orchestrator
+      tags: [todo, add]
+    - id: 13
+      description: Marquer un élément comme terminé
+      status: completed
+      priority: high
+      difficulty: basic
+      system_prompt: orchestrator
+      tags: [todo, complete]
+    - id: 14
+      description: Supprimer un élément de la todo list
+      status: completed
+      priority: high
+      difficulty: basic
+      system_prompt: orchestrator
+      tags: [todo, delete]
+    - id: 15
+      description: Créer une todo list avec priorités et dates d'échéance
+      status: completed
+      priority: medium
+      difficulty: intermediate
+      system_prompt: orchestrator
+      tags: [todo, priority, deadline]
+
+  advanced:
+    - id: 56
+      description: Créer plusieurs sessions simultanément
+      status: pending
+      priority: medium
+      difficulty: advanced
+      system_prompt: orchestrator
+      tags: [todo, session, multiple]
+    - id: 57
+      description: Basculer entre différentes sessions
+      status: pending
+      priority: medium
+      difficulty: intermediate
+      system_prompt: orchestrator
+      tags: [todo, session, switch]
+    - id: 58
+      description: Exporter l'historique d'une session
+      status: pending
+      priority: low
+      difficulty: advanced
+      system_prompt: orchestrator
+      tags: [todo, session, export]
+    - id: 59
+      description: Importer et continuer une session existante
+      status: pending
+      priority: low
+      difficulty: advanced
+      system_prompt: orchestrator
+      tags: [todo, session, import]
+    - id: 60
+      description: Fusionner deux sessions différentes
+      status: pending
+      priority: low
+      difficulty: advanced
+      system_prompt: orchestrator
+      tags: [todo, session, merge]

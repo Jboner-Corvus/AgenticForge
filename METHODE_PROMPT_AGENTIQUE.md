@@ -1,4 +1,4 @@
-# Méthode pour Rendre un Prompt Ordinaire Agentique - 
+# Méthode pour Rendre un Prompt Ordinaire Agentique -
 
 ## 🎯 Introduction
 
@@ -13,12 +13,24 @@ AgentMCP utilise un système de prompts modulaires avec des templates spécialis
 ```typescript
 // packages/core/src/modules/agent/system-prompts.ts
 export const SYSTEM_PROMPT_TEMPLATES: Record<string, SystemPromptTemplate> = {
-  architect: { /* Conception système et architecture */ },
-  coder: { /* Implémentation et débogage de code */ },
-  explain: { /* Explication et enseignement */ },
-  debug: { /* Débogage et résolution de problèmes */ },
-  orchestrate: { /* Gestion de projet et coordination */ },
-  frontend: { /* Développement frontend et UI/UX */ }
+  architect: {
+    /* Conception système et architecture */
+  },
+  coder: {
+    /* Implémentation et débogage de code */
+  },
+  explain: {
+    /* Explication et enseignement */
+  },
+  debug: {
+    /* Débogage et résolution de problèmes */
+  },
+  orchestrate: {
+    /* Gestion de projet et coordination */
+  },
+  frontend: {
+    /* Développement frontend et UI/UX */
+  },
 };
 ```
 
@@ -27,13 +39,15 @@ export const SYSTEM_PROMPT_TEMPLATES: Record<string, SystemPromptTemplate> = {
 **Principe fondamental** : Chaque template de prompt contrôle un ensemble spécialisé de 4-5 outils maximum pour éviter la surcharge cognitive et optimiser les performances.
 
 #### **Template `architect`** → Outils de Conception
+
 - `projectPlanning` - Planification de projets
 - `getDevelopmentPreferences` - Récupération des préférences
-- `setDevelopmentPreferences` - Configuration des préférences 
+- `setDevelopmentPreferences` - Configuration des préférences
 - `delegateTask` - Délégation de tâches
 - `listTools` - Inspection des outils disponibles
 
-#### **Template `coder`** → Outils de Développement  
+#### **Template `coder`** → Outils de Développement
+
 - `writeFile` - Création de fichiers
 - `editFile` - Modification de fichiers
 - `readFile` - Lecture de fichiers
@@ -41,6 +55,7 @@ export const SYSTEM_PROMPT_TEMPLATES: Record<string, SystemPromptTemplate> = {
 - `listDirectory` - Navigation dans les dossiers
 
 #### **Template `frontend`** → Outils d'Interface
+
 - `playwright_navigate` - Navigation web
 - `playwright_click` - Interaction avec éléments
 - `playwright_screenshot` - Capture d'écran
@@ -48,6 +63,7 @@ export const SYSTEM_PROMPT_TEMPLATES: Record<string, SystemPromptTemplate> = {
 - `displayCanvas` - Affichage visuel
 
 #### **Template `debug`** → Outils de Débogage
+
 - `executeShellCommand` - Tests et diagnostics
 - `readFile` - Analyse de logs
 - `canvasConsoleFeedback` - Feedback console
@@ -55,6 +71,7 @@ export const SYSTEM_PROMPT_TEMPLATES: Record<string, SystemPromptTemplate> = {
 - `summarize` - Analyse de problèmes
 
 #### **Template `orchestrate`** → Outils de Coordination
+
 - `todoWrite` - Gestion de tâches
 - `delegateTask` - Coordination d'équipe
 - `finish` - Finalisation de workflows
@@ -62,6 +79,7 @@ export const SYSTEM_PROMPT_TEMPLATES: Record<string, SystemPromptTemplate> = {
 - `projectPlanning` - Orchestration de projets
 
 #### **Template `explain`** → Outils Pédagogiques
+
 - `readFile` - Lecture de code
 - `listDirectory` - Exploration de structure
 - `summarize` - Synthèse de concepts
@@ -74,7 +92,10 @@ Le prompt final est construit par assemblage de plusieurs sections :
 
 ```typescript
 // packages/core/src/modules/agent/orchestrator.prompt.ts
-export const getMasterPrompt = (session: AgentSession, tools: Tool[]): string => {
+export const getMasterPrompt = (
+  session: AgentSession,
+  tools: Tool[],
+): string => {
   return `${getPreamble()}\n\n${workingContextSection}${toolsSection}\n\n${historySection}\n\nASSISTANT's turn. Your response:`;
 };
 ```
@@ -87,15 +108,53 @@ Le système filtre dynamiquement les outils selon le template de prompt actif :
 // Logique de filtrage selon le template prompt
 const getToolsForTemplate = (template: string): Tool[] => {
   const toolMappings = {
-    architect: ['projectPlanning', 'getDevelopmentPreferences', 'setDevelopmentPreferences', 'delegateTask', 'listTools'],
-    coder: ['writeFile', 'editFile', 'readFile', 'executeShellCommand', 'listDirectory'],
-    frontend: ['playwright_navigate', 'playwright_click', 'playwright_screenshot', 'playwright_type', 'displayCanvas'],
-    debug: ['executeShellCommand', 'readFile', 'canvasConsoleFeedback', 'listDirectory', 'summarize'],
-    orchestrate: ['todoWrite', 'delegateTask', 'finish', 'createTool', 'projectPlanning'],
-    explain: ['readFile', 'listDirectory', 'summarize', 'displayCanvas', 'finish']
+    architect: [
+      'projectPlanning',
+      'getDevelopmentPreferences',
+      'setDevelopmentPreferences',
+      'delegateTask',
+      'listTools',
+    ],
+    coder: [
+      'writeFile',
+      'editFile',
+      'readFile',
+      'executeShellCommand',
+      'listDirectory',
+    ],
+    frontend: [
+      'playwright_navigate',
+      'playwright_click',
+      'playwright_screenshot',
+      'playwright_type',
+      'displayCanvas',
+    ],
+    debug: [
+      'executeShellCommand',
+      'readFile',
+      'canvasConsoleFeedback',
+      'listDirectory',
+      'summarize',
+    ],
+    orchestrate: [
+      'todoWrite',
+      'delegateTask',
+      'finish',
+      'createTool',
+      'projectPlanning',
+    ],
+    explain: [
+      'readFile',
+      'listDirectory',
+      'summarize',
+      'displayCanvas',
+      'finish',
+    ],
   };
-  
-  return getAllTools().filter(tool => toolMappings[template]?.includes(tool.name));
+
+  return getAllTools().filter((tool) =>
+    toolMappings[template]?.includes(tool.name),
+  );
 };
 ```
 
@@ -108,21 +167,24 @@ Chaque outil est défini avec un schéma Zod pour la validation des paramètres 
 ```typescript
 // Exemple: packages/core/src/modules/tools/definitions/fs/writeFile.tool.ts
 export const writeFileParams = z.object({
-  content: z.string()
+  content: z
+    .string()
     .max(50 * 1024 * 1024, 'Le contenu ne peut pas dépasser 50MB')
     .describe('The full content to write to the file.'),
-  path: z.string()
+  path: z
+    .string()
     .min(1, 'Le chemin ne peut pas être vide')
-    .describe('The path to the file within the workspace.')
+    .describe('The path to the file within the workspace.'),
 });
 
 export const writeFile: Tool<typeof writeFileParams, typeof writeFileOutput> = {
   name: 'writeFile',
-  description: 'Writes content to a file, overwriting it. Creates the file and directories if they do not exist.',
+  description:
+    'Writes content to a file, overwriting it. Creates the file and directories if they do not exist.',
   parameters: writeFileParams,
   execute: async (args: z.infer<typeof writeFileParams>, ctx: Ctx) => {
     // Implémentation de l'outil
-  }
+  },
 };
 ```
 
@@ -134,9 +196,11 @@ Le système convertit automatiquement les schémas Zod en JSON Schema pour le pr
 // packages/core/src/modules/agent/orchestrator.prompt.ts (lignes 66-185)
 const zodToJsonSchema = (_schema: any): any => {
   switch (_schema._def.typeName) {
-    case 'ZodString': return { type: 'string' };
-    case 'ZodNumber': return { type: 'number' };
-    case 'ZodObject': 
+    case 'ZodString':
+      return { type: 'string' };
+    case 'ZodNumber':
+      return { type: 'number' };
+    case 'ZodObject':
       // Construction du schéma JSON avec propriétés et champs requis
       break;
     case 'ZodDefault':
@@ -156,19 +220,31 @@ Le LLM doit répondre dans un format JSON strict défini par Zod :
 ```typescript
 // packages/core/src/modules/agent/responseSchema.ts
 export const llmResponseSchema = z.object({
-  thought: z.string().optional()
+  thought: z
+    .string()
+    .optional()
     .describe('Your internal monologue and reasoning'),
-  command: z.object({
-    name: z.string().describe('The name of the tool to execute'),
-    params: z.record(z.string(), z.any()).optional()
-      .describe('The parameters for the tool, as a JSON object')
-  }).optional().describe('The command to execute'),
-  answer: z.string().optional()
-    .describe('The final answer to the user\'s request'),
-  canvas: z.object({
-    content: z.string(),
-    contentType: z.enum(['html', 'markdown', 'text', 'url'])
-  }).optional().describe('The canvas is a visual workspace')
+  command: z
+    .object({
+      name: z.string().describe('The name of the tool to execute'),
+      params: z
+        .record(z.string(), z.any())
+        .optional()
+        .describe('The parameters for the tool, as a JSON object'),
+    })
+    .optional()
+    .describe('The command to execute'),
+  answer: z
+    .string()
+    .optional()
+    .describe("The final answer to the user's request"),
+  canvas: z
+    .object({
+      content: z.string(),
+      contentType: z.enum(['html', 'markdown', 'text', 'url']),
+    })
+    .optional()
+    .describe('The canvas is a visual workspace'),
 });
 ```
 
@@ -186,6 +262,7 @@ export function getResponseJsonSchema() {
 ## 🚀 Méthodologie : De Prompt Ordinaire à Agentique
 
 ### Étape 1 : Prompt Ordinaire
+
 ```
 "Écris un fichier Python qui calcule 2+2"
 ```
@@ -209,23 +286,24 @@ Le système AgentMCP transforme ce prompt en :
 ### Available Tools:
 
 ### writeFile
+
 Description: Writes content to a file, overwriting it
 Parameters (JSON Schema):
 {
-  "type": "object",
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "additionalProperties": false,
-  "properties": {
-    "content": {
-      "type": "string",
-      "description": "The full content to write to the file."
-    },
-    "path": {
-      "type": "string", 
-      "description": "The path to the file within the workspace."
-    }
-  },
-  "required": ["content", "path"]
+"type": "object",
+"$schema": "http://json-schema.org/draft-07/schema#",
+"additionalProperties": false,
+"properties": {
+"content": {
+"type": "string",
+"description": "The full content to write to the file."
+},
+"path": {
+"type": "string",
+"description": "The path to the file within the workspace."
+}
+},
+"required": ["content", "path"]
 }
 
 ## 🔄 RESPONSE FORMAT (ABSOLUTE REQUIREMENT)
@@ -233,14 +311,14 @@ Parameters (JSON Schema):
 Your response MUST BE VALID JSON ONLY:
 
 {
-  "thought": "Je vais créer un fichier Python pour calculer 2+2",
-  "command": {
-    "name": "writeFile",
-    "params": {
-      "path": "calcul.py",
-      "content": "result = 2 + 2\nprint(f'2 + 2 = {result}')"
-    }
-  }
+"thought": "Je vais créer un fichier Python pour calculer 2+2",
+"command": {
+"name": "writeFile",
+"params": {
+"path": "calcul.py",
+"content": "result = 2 + 2\nprint(f'2 + 2 = {result}')"
+}
+}
 }
 
 ## Conversation History:
@@ -283,7 +361,7 @@ export const playwrightNavigateTool: Tool<typeof navigateParams, any> = {
     // Implémentation avec événements Redis pour la UI
     await sendEvent(ctx, 'browser.navigating', { url: params.url });
     // ... logique d'exécution
-  }
+  },
 };
 ```
 
@@ -313,8 +391,10 @@ export const playwrightNavigateTool: Tool<typeof navigateParams, any> = {
 ```typescript
 canvas: z.object({
   content: z.string().describe('The content to display on the canvas'),
-  contentType: z.enum(['html', 'markdown', 'text', 'url'])
-}).optional().describe('The canvas is a visual workspace')
+  contentType: z.enum(['html', 'markdown', 'text', 'url']),
+})
+  .optional()
+  .describe('The canvas is a visual workspace');
 ```
 
 ### 2. Événements Redis pour UI en Temps Réel
@@ -324,8 +404,11 @@ const sendEvent = async (ctx: Ctx, type: string, data: unknown) => {
   if (ctx.job?.id) {
     const channel = `job:${ctx.job.id}:events`;
     const event = JSON.stringify({
-      type, data, timestamp: Date.now(),
-      jobId: ctx.job.id, sessionId: ctx.session?.id
+      type,
+      data,
+      timestamp: Date.now(),
+      jobId: ctx.job.id,
+      sessionId: ctx.session?.id,
     });
     await getRedisClientInstance().publish(channel, event);
   }
@@ -342,7 +425,11 @@ class ToolRegistry {
   private static instance: ToolRegistry;
   private readonly tools = new Map<string, Tool<z.AnyZodObject, ZodTypeAny>>();
 
-  public async execute(name: string, params: unknown, ctx: Ctx): Promise<unknown> {
+  public async execute(
+    name: string,
+    params: unknown,
+    ctx: Ctx,
+  ): Promise<unknown> {
     const tool = this.get(name);
     let parsedParams: Record<string, unknown>;
     try {
@@ -363,7 +450,7 @@ class ToolRegistry {
 // Utilisation pour les projets multi-étapes uniquement
 {
   "command": {
-    "name": "todoWrite", 
+    "name": "todoWrite",
     "params": {
       "todos": [
         {"id": "1", "content": "Créer structure HTML", "status": "pending"},
@@ -378,6 +465,7 @@ class ToolRegistry {
 ## 🎯 Transformation Complète : Exemple Pratique
 
 ### Prompt Ordinaire :
+
 ```
 "Crée un jeu de Snake en HTML"
 ```
@@ -387,6 +475,7 @@ class ToolRegistry {
 Le système sélectionne automatiquement le template `frontend` car il s'agit de création d'interface :
 
 **Template `frontend`** active ses 5 outils spécialisés :
+
 - `writeFile` - Création des fichiers HTML/CSS/JS
 - `playwright_navigate` - Test de navigation
 - `playwright_screenshot` - Captures d'écran de validation
@@ -401,22 +490,27 @@ Le système sélectionne automatiquement le template `frontend` car il s'agit de
 ## Available Tools:
 
 ### writeFile
+
 Description: Writes content to a file, overwriting it
 Parameters: {"path": "string", "content": "string"}
 
-### playwright_navigate  
+### playwright_navigate
+
 Description: Navigate to a URL using Playwright browser automation
 Parameters: {"url": "string", "waitUntil": "load|domcontentloaded|networkidle"}
 
 ### playwright_screenshot
+
 Description: Take a screenshot using Playwright browser automation  
 Parameters: {"fullPage": "boolean", "selector": "string?"}
 
 ### displayCanvas
+
 Description: Display rich content on the visual canvas
 Parameters: {"content": "string", "contentType": "html|markdown|text"}
 
 ### executeShellCommand
+
 Description: Execute shell commands for development tasks
 Parameters: {"command": "string", "workingDirectory": "string?"}
 
@@ -448,7 +542,7 @@ Avec seulement 5 outils spécialisés, le LLM peut se concentrer efficacement :
 {
   "thought": "Jeu créé, maintenant je l'affiche sur le canvas pour validation visuelle",
   "command": {
-    "name": "displayCanvas", 
+    "name": "displayCanvas",
     "params": {
       "content": "file://snake.html",
       "contentType": "url"
@@ -460,23 +554,28 @@ Avec seulement 5 outils spécialisés, le LLM peut se concentrer efficacement :
 ## 🚀 Avantages de cette Méthode
 
 ### 1. **Déterminisme**
+
 - Format JSON strict élimine l'ambiguïté
 - Validation Zod garantit la cohérence des paramètres
 
-### 2. **Spécialisation Cognitive** 
+### 2. **Spécialisation Cognitive**
+
 - Limitation à 4-5 outils par template évite la surcharge
 - Focus sur des domaines d'expertise spécifiques
 - Réduction drastique de l'espace de décision pour le LLM
 
 ### 3. **Modularité**
+
 - Outils réutilisables et composables
 - Templates de prompts spécialisés par domaine
 
 ### 4. **Observabilité**
+
 - Événements Redis pour feedback temps réel
 - Historique complet des actions
 
 ### 5. **Robustesse**
+
 - Gestion d'erreurs intégrée
 - Mécanismes anti-boucles
 - Validation systématique
@@ -484,10 +583,10 @@ Avec seulement 5 outils spécialisés, le LLM peut se concentrer efficacement :
 ## 🔄 Flux de Transformation
 
 ```
-Prompt Ordinaire 
+Prompt Ordinaire
     ↓
 System Prompt Template (selon le mode)
-    ↓  
+    ↓
 + Outils Disponibles (avec JSON Schema)
     ↓
 + Historique de Conversation
@@ -506,50 +605,57 @@ Mise à Jour de l'État et Feedback UI
 ## 📦 Composants Clés
 
 ### 1. **Prompt Builder** (`orchestrator.prompt.ts`)
+
 - Assemblage dynamique du prompt final
 - Injection des outils et de l'historique
 
-### 2. **Tool Registry** (`toolRegistry.ts`) 
+### 2. **Tool Registry** (`toolRegistry.ts`)
+
 - Gestion centralisée des outils
 - Validation et exécution sécurisée
 
 ### 3. **Response Schema** (`responseSchema.ts`)
+
 - Structure JSON obligatoire pour les réponses LLM
 - Validation automatique
 
 ### 4. **Fast MCP Integration**
+
 - Protocole standardisé pour les outils
 - Context enrichi avec job, session, logging
 
 ## 🎨 Cas d'Usage Spécialisés
 
 ### Développement Web
+
 ```json
 {
   "command": {
-    "name": "playwright_navigate", 
-    "params": {"url": "https://example.com"}
+    "name": "playwright_navigate",
+    "params": { "url": "https://example.com" }
   }
 }
 ```
 
 ### Gestion de Fichiers
+
 ```json
 {
   "command": {
     "name": "writeFile",
-    "params": {"path": "app.js", "content": "console.log('Hello')"}
+    "params": { "path": "app.js", "content": "console.log('Hello')" }
   }
 }
 ```
 
 ### Feedback Visuel
+
 ```json
 {
   "command": {
     "name": "displayCanvas",
     "params": {
-      "content": "<html>...</html>", 
+      "content": "<html>...</html>",
       "contentType": "html"
     }
   }
@@ -559,42 +665,48 @@ Mise à Jour de l'État et Feedback UI
 ## 🎮 Exemples de Spécialisation par Template
 
 ### Template `coder` + 5 Outils de Développement
+
 ```
 Prompt: "Répare le bug dans login.js"
-→ Template: coder  
+→ Template: coder
 → Outils: [readFile, editFile, executeShellCommand, listDirectory, writeFile]
 → Focus: Analyse, modification, test de code
 ```
 
 ### Template `frontend` + 5 Outils d'Interface
+
 ```
-Prompt: "Teste l'interface utilisateur"  
+Prompt: "Teste l'interface utilisateur"
 → Template: frontend
 → Outils: [playwright_navigate, playwright_click, playwright_screenshot, playwright_type, displayCanvas]
 → Focus: Interaction web, validation visuelle
 ```
 
 ### Template `architect` + 5 Outils de Conception
+
 ```
 Prompt: "Conçois l'architecture de l'application"
 → Template: architect
-→ Outils: [projectPlanning, getDevelopmentPreferences, setDevelopmentPreferences, delegateTask, listTools] 
+→ Outils: [projectPlanning, getDevelopmentPreferences, setDevelopmentPreferences, delegateTask, listTools]
 → Focus: Planification, architecture, coordination
 ```
 
 ## 📊 Avantages de la Spécialisation (1 Prompt = ~5 Outils)
 
 ### 1. **Performance Cognitive**
+
 - **Réduction de complexité** : 5 outils vs 15+ outils globaux
 - **Spécialisation** : Outils cohérents pour un domaine
 - **Précision** : Moins de confusion dans le choix d'outils
 
 ### 2. **Optimisation des Tokens**
+
 - **Prompts plus courts** : Seulement les outils pertinents
 - **Descriptions ciblées** : Instructions spécialisées par domaine
 - **Contexte réduit** : Élimination du bruit informationnel
 
 ### 3. **Qualité d'Exécution**
+
 - **Expertise focalisée** : Maîtrise d'un ensemble restreint d'outils
 - **Workflows optimisés** : Enchaînements logiques d'outils spécialisés
 - **Cohérence** : Actions alignées avec l'objectif du template
@@ -605,7 +717,7 @@ Cette méthode de **spécialisation cognitive par domaine** transforme un simple
 
 - **Se spécialiser** automatiquement selon le domaine (1 template = ~5 outils)
 - **Planifier** avec des outils de coordination
-- **Exécuter** avec des outils domain-specific 
+- **Exécuter** avec des outils domain-specific
 - **Communiquer** via JSON structuré et validé
 - **Visualiser** avec des outils de feedback adaptés
 - **Monitorer** via événements Redis temps réel

@@ -9,7 +9,10 @@ import {
   Target,
   CheckCircle,
 } from 'lucide-react';
-import type { SystemAnalytics, SmartRecommendation } from '../hooks/useLlmAnalytics';
+import type {
+  SystemAnalytics,
+  SmartRecommendation,
+} from '../hooks/useLlmAnalytics';
 
 interface AnalyticsDashboardProps {
   systemHealth: SystemAnalytics;
@@ -22,7 +25,9 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   recommendations,
   isAnalyzing,
 }) => {
-  const criticalRecommendations = recommendations.filter(r => r.priority === 'high');
+  const criticalRecommendations = recommendations.filter(
+    (r) => r.priority === 'high',
+  );
   const hasCriticalIssues = criticalRecommendations.length > 0;
 
   return (
@@ -32,22 +37,26 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       animate={{ opacity: 1, y: 0 }}
     >
       {/* System Health Card */}
-      <Card className={`col-span-1 lg:col-span-2 ${
-        systemHealth.systemHealth > 80
-          ? 'border-green-500/50 bg-green-900/10'
-          : systemHealth.systemHealth > 60
-          ? 'border-yellow-500/50 bg-yellow-900/10'
-          : 'border-red-500/50 bg-red-900/10'
-      }`}>
+      <Card
+        className={`col-span-1 lg:col-span-2 ${
+          systemHealth.systemHealth > 80
+            ? 'border-green-500/50 bg-green-900/10'
+            : systemHealth.systemHealth > 60
+              ? 'border-yellow-500/50 bg-yellow-900/10'
+              : 'border-red-500/50 bg-red-900/10'
+        }`}
+      >
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center text-lg">
-            <Brain className={`h-5 w-5 mr-2 ${
-              systemHealth.systemHealth > 80
-                ? 'text-green-400'
-                : systemHealth.systemHealth > 60
-                ? 'text-yellow-400'
-                : 'text-red-400'
-            }`} />
+            <Brain
+              className={`h-5 w-5 mr-2 ${
+                systemHealth.systemHealth > 80
+                  ? 'text-green-400'
+                  : systemHealth.systemHealth > 60
+                    ? 'text-yellow-400'
+                    : 'text-red-400'
+              }`}
+            />
             <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
               Intelligence Artificielle du Système
             </span>
@@ -60,13 +69,15 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-400">Santé Globale</span>
-              <Badge className={`${
-                systemHealth.systemHealth > 80
-                  ? 'bg-green-900/50 text-green-300'
-                  : systemHealth.systemHealth > 60
-                  ? 'bg-yellow-900/50 text-yellow-300'
-                  : 'bg-red-900/50 text-red-300'
-              }`}>
+              <Badge
+                className={`${
+                  systemHealth.systemHealth > 80
+                    ? 'bg-green-900/50 text-green-300'
+                    : systemHealth.systemHealth > 60
+                      ? 'bg-yellow-900/50 text-yellow-300'
+                      : 'bg-red-900/50 text-red-300'
+                }`}
+              >
                 {systemHealth.systemHealth}%
               </Badge>
             </div>
@@ -115,7 +126,9 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         <CardContent>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-400">Temps de Réponse Moyen</span>
+              <span className="text-sm text-gray-400">
+                Temps de Réponse Moyen
+              </span>
               <span className="text-lg font-bold text-blue-400">
                 {systemHealth.averageResponseTime}ms
               </span>
@@ -128,9 +141,13 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-400">Clés Dégradées</span>
-              <span className={`text-lg font-bold ${
-                systemHealth.degradedKeys > 0 ? 'text-red-400' : 'text-green-400'
-              }`}>
+              <span
+                className={`text-lg font-bold ${
+                  systemHealth.degradedKeys > 0
+                    ? 'text-red-400'
+                    : 'text-green-400'
+                }`}
+              >
                 {systemHealth.degradedKeys}
               </span>
             </div>
@@ -158,8 +175,8 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                   rec.priority === 'high'
                     ? 'bg-red-900/20 border border-red-500/30'
                     : rec.priority === 'medium'
-                    ? 'bg-yellow-900/20 border border-yellow-500/30'
-                    : 'bg-green-900/20 border border-green-500/30'
+                      ? 'bg-yellow-900/20 border border-yellow-500/30'
+                      : 'bg-green-900/20 border border-green-500/30'
                 }`}
               >
                 <div className="font-medium text-white">{rec.title}</div>

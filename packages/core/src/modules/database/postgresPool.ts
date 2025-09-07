@@ -12,9 +12,9 @@ const poolConfig: PoolConfig = {
   password: config.POSTGRES_PASSWORD,
 
   // Configuration optimisée du pool
-  min: 2,              // Minimum de connexions maintenues
-  max: 20,             // Maximum de connexions (ajustable selon charge)
-  idleTimeoutMillis: 30000,  // Fermer les connexions idle après 30s
+  min: 2, // Minimum de connexions maintenues
+  max: 20, // Maximum de connexions (ajustable selon charge)
+  idleTimeoutMillis: 30000, // Fermer les connexions idle après 30s
   connectionTimeoutMillis: 2000, // Timeout de connexion 2s
 
   // Gestion d'erreurs améliorée

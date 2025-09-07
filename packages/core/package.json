@@ -1,6 +1,6 @@
 {
   "name": "@gforge/core",
-  "version": "1.0.612",
+  "version": "1.0.637",
   "description": "G-Forge Core Backend",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,8 +14,6 @@
     "dev": "NODE_ENV=development nodemon --exec tsx src/server-start.ts",
     "build": "node ../../scripts/increment-version.cjs && NODE_OPTIONS=--max-old-space-size=12288 pnpm exec tsup && node scripts/copy-assets.js",
     "clean": "rm -rf dist",
-    "start:worker:dev": "NODE_ENV=development node --loader ts-node/esm src/worker.ts",
-    "start:worker": "node dist/worker.js",
     "test": "vitest run",
     "test:unit": "vitest run --mode unit --reporter=verbose",
     "test:integration": "vitest run --mode integration",

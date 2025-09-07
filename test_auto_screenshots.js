@@ -5,7 +5,7 @@ const redis = new Redis({
   host: 'localhost',
   port: 6379,
   retryDelayOnFailover: 100,
-  maxRetriesPerRequest: 3
+  maxRetriesPerRequest: 3,
 });
 
 console.log('🧪 Testing automatic screenshots...');
@@ -14,8 +14,9 @@ async function testAutoScreenshots() {
   try {
     // Create a test job
     const jobData = {
-      message: "Navigate to httpbin.org/html, wait for an element, extract some content, and evaluate JavaScript. This should trigger automatic screenshots for each action.",
-      sessionId: 'auto-screenshot-test-' + Date.now()
+      message:
+        'Navigate to httpbin.org/html, wait for an element, extract some content, and evaluate JavaScript. This should trigger automatic screenshots for each action.',
+      sessionId: 'auto-screenshot-test-' + Date.now(),
     };
 
     console.log('📤 Creating test job...');
@@ -23,12 +24,12 @@ async function testAutoScreenshots() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0'
+        Authorization: 'Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0',
       },
       body: JSON.stringify({
         prompt: jobData.message,
-        sessionId: jobData.sessionId
-      })
+        sessionId: jobData.sessionId,
+      }),
     });
 
     if (!response.ok) {
@@ -45,7 +46,7 @@ async function testAutoScreenshots() {
     // Listen for browser events on Redis
     const subscriber = new Redis({
       host: 'localhost',
-      port: 6379
+      port: 6379,
     });
 
     subscriber.subscribe(`job:${jobId}:events`, (err, count) => {
@@ -59,11 +60,16 @@ async function testAutoScreenshots() {
     subscriber.on('message', (channel, message) => {
       try {
         const event = JSON.parse(message);
-        if (event.type === 'browser.screenshot.realtime' && event.data.automatic) {
+        if (
+          event.type === 'browser.screenshot.realtime' &&
+          event.data.automatic
+        ) {
           console.log(`📸 Automatic screenshot captured: ${event.data.action}`);
           console.log(`   📊 Size: ${event.data.imageData?.length || 0} chars`);
           console.log(`   🎯 Selector: ${event.data.selector || 'N/A'}`);
-          console.log(`   ⏰ Timestamp: ${new Date(event.timestamp).toLocaleTimeString()}`);
+          console.log(
+            `   ⏰ Timestamp: ${new Date(event.timestamp).toLocaleTimeString()}`,
+          );
         } else if (event.type === 'browser.screenshot.error') {
           console.log(`❌ Screenshot error: ${event.data.message}`);
         } else if (event.type?.startsWith('browser.')) {
@@ -76,12 +82,13 @@ async function testAutoScreenshots() {
 
     // Wait for the job to complete
     setTimeout(() => {
-      console.log('⏰ Test completed. Check the logs above for automatic screenshots.');
+      console.log(
+        '⏰ Test completed. Check the logs above for automatic screenshots.',
+      );
       subscriber.disconnect();
       redis.disconnect();
       process.exit(0);
     }, 60000); // 1 minute timeout
-
   } catch (error) {
     console.error('❌ Test failed:', error.message);
     redis.disconnect();

@@ -2,7 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Clock, Target, X, Check, ListTodo } from 'lucide-react';
 import { useUIStore } from '../store/uiStore';
-import { websocketService, type TodoWebSocketMessage } from '../lib/services/websocketService';
+import {
+  websocketService,
+  type TodoWebSocketMessage,
+} from '../lib/services/websocketService';
 
 // Interface améliorée avec validation et métadonnées
 interface TodoItem {
@@ -73,7 +76,7 @@ export const UnifiedTodoListPanel: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(true); // Développé par défaut
 
   const lastMessageRef = useRef<string>('');
-  
+
   // Utiliser le store UI pour la visibilité et le jobId
   const isVisible = useUIStore((state) => state.isUnifiedTodoListVisible);
   const setIsVisible = useUIStore((state) => state.setIsUnifiedTodoListVisible);
@@ -105,25 +108,31 @@ export const UnifiedTodoListPanel: React.FC = () => {
   }, []);
 
   // Fonction de synchronisation avec retry
-  const syncWithBackend = useCallback(async (data: TodoData): Promise<boolean> => {
-    try {
-      // Ici vous pouvez implémenter la vraie synchronisation avec le backend
-      console.log('🔄 Syncing todo data with backend...', data);
-      // Simulation d'une requête API
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return true;
-    } catch (error) {
-      console.error('Failed to sync with backend:', error);
-      // Échec de la synchronisation avec le serveur
-      return false;
-    }
-  }, []);
+  const syncWithBackend = useCallback(
+    async (data: TodoData): Promise<boolean> => {
+      try {
+        // Ici vous pouvez implémenter la vraie synchronisation avec le backend
+        console.log('🔄 Syncing todo data with backend...', data);
+        // Simulation d'une requête API
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return true;
+      } catch (error) {
+        console.error('Failed to sync with backend:', error);
+        // Échec de la synchronisation avec le serveur
+        return false;
+      }
+    },
+    [],
+  );
 
   // Synchroniser le jobId avec le WebSocket service
   useEffect(() => {
     const currentJobId = activeCliJobId || jobId;
     if (currentJobId) {
-      console.log('📋 [TodoPanel] Setting jobId in WebSocket service:', currentJobId);
+      console.log(
+        '📋 [TodoPanel] Setting jobId in WebSocket service:',
+        currentJobId,
+      );
       websocketService.setJobId(currentJobId);
     }
   }, [jobId, activeCliJobId]);
@@ -132,97 +141,130 @@ export const UnifiedTodoListPanel: React.FC = () => {
   useEffect(() => {
     console.log('📋 [TodoPanel] Setting up WebSocket listener...');
 
-    const unsubscribe = websocketService.subscribeToTodos(async (message: TodoWebSocketMessage) => {
-      const messageString = JSON.stringify(message);
+    const unsubscribe = websocketService.subscribeToTodos(
+      async (message: TodoWebSocketMessage) => {
+        const messageString = JSON.stringify(message);
 
-      if (messageString === lastMessageRef.current) {
-        return; // Éviter les doublons
-      }
+        if (messageString === lastMessageRef.current) {
+          return; // Éviter les doublons
+        }
 
-      lastMessageRef.current = messageString;
-      const backendData = message.data;
+        lastMessageRef.current = messageString;
+        const backendData = message.data;
 
-      console.log('📋 [TodoPanel] Received todo message:', message.type, backendData);
+        console.log(
+          '📋 [TodoPanel] Received todo message:',
+          message.type,
+          backendData,
+        );
 
-      try {
-        if (backendData) {
-          // Extraire les todos en fonction du type de données avec validation
-          let todos: TodoItem[] = [];
-          
-          if (backendData.todos && Array.isArray(backendData.todos)) {
-            todos = backendData.todos.map((task: any, index: number) => ({
-              id: task.id || `task-${index}`,
-              content: task.content || task.description || task.title || 'Tâche sans titre',
-              status: task.status || 'pending',
-              priority: task.priority || 'medium',
-              createdAt: task.createdAt || Date.now(),
-              updatedAt: task.updatedAt || Date.now(),
-              dueDate: task.dueDate,
-              tags: task.tags || [],
-              assignee: task.assignee,
-              estimatedTime: task.estimatedTime,
-              actualTime: task.actualTime,
-            }));
-          // Note: WebSocket message type only defines 'todos', not 'tasks'
+        try {
+          if (backendData) {
+            // Extraire les todos en fonction du type de données avec validation
+            let todos: TodoItem[] = [];
+
+            if (backendData.todos && Array.isArray(backendData.todos)) {
+              todos = backendData.todos.map((task: any, index: number) => ({
+                id: task.id || `task-${index}`,
+                content:
+                  task.content ||
+                  task.description ||
+                  task.title ||
+                  'Tâche sans titre',
+                status: task.status || 'pending',
+                priority: task.priority || 'medium',
+                createdAt: task.createdAt || Date.now(),
+                updatedAt: task.updatedAt || Date.now(),
+                dueDate: task.dueDate,
+                tags: task.tags || [],
+                assignee: task.assignee,
+                estimatedTime: task.estimatedTime,
+                actualTime: task.actualTime,
+              }));
+              // Note: WebSocket message type only defines 'todos', not 'tasks'
+            }
+
+            const enhancedData: TodoData = {
+              type: message.type,
+              title: backendData.title || 'Liste de tâches',
+              timestamp: backendData.timestamp || Date.now(),
+              todos: todos,
+              stats: {
+                pending:
+                  backendData.stats?.pending ||
+                  todos.filter((t) => t.status === 'pending').length ||
+                  0,
+                in_progress:
+                  backendData.stats?.in_progress ||
+                  todos.filter((t) => t.status === 'in_progress').length ||
+                  0,
+                completed:
+                  backendData.stats?.completed ||
+                  todos.filter((t) => t.status === 'completed').length ||
+                  0,
+                total: backendData.stats?.total || todos.length || 0,
+                overdue:
+                  todos.filter(
+                    (t) =>
+                      t.dueDate &&
+                      t.dueDate < Date.now() &&
+                      t.status !== 'completed',
+                  ).length || 0,
+                highPriority:
+                  todos.filter((t) => t.priority === 'high').length || 0,
+              },
+              metadata: {
+                version: '2.0',
+                lastSync: Date.now(),
+                source: message.type,
+              },
+            };
+
+            // Sauvegarder en localStorage
+            saveToLocalStorage(enhancedData);
+
+            // Tenter la synchronisation avec le backend
+            await syncWithBackend(enhancedData);
+
+            setTodoData(enhancedData);
+            setIsVisible(true);
           }
+        } catch (error) {
+          console.error('Error processing todo message:', error);
 
-          const enhancedData: TodoData = {
-            type: message.type,
-            title: backendData.title || 'Liste de tâches',
-            timestamp: backendData.timestamp || Date.now(),
-            todos: todos,
-            stats: {
-              pending: backendData.stats?.pending || todos.filter(t => t.status === 'pending').length || 0,
-              in_progress: backendData.stats?.in_progress || todos.filter(t => t.status === 'in_progress').length || 0,
-              completed: backendData.stats?.completed || todos.filter(t => t.status === 'completed').length || 0,
-              total: backendData.stats?.total || todos.length || 0,
-              overdue: todos.filter(t => t.dueDate && t.dueDate < Date.now() && t.status !== 'completed').length || 0,
-              highPriority: todos.filter(t => t.priority === 'high').length || 0,
-            },
-            metadata: {
-              version: '2.0',
-              lastSync: Date.now(),
-              source: message.type,
-            },
-          };
-
-          // Sauvegarder en localStorage
-          saveToLocalStorage(enhancedData);
-
-          // Tenter la synchronisation avec le backend
-          await syncWithBackend(enhancedData);
-
-          setTodoData(enhancedData);
-          setIsVisible(true);
+          // Charger depuis le localStorage en cas d'erreur
+          const cachedData = loadFromLocalStorage();
+          if (cachedData) {
+            setTodoData(cachedData);
+            setIsVisible(true);
+          }
         }
-      } catch (error) {
-        console.error('Error processing todo message:', error);
-
-        // Charger depuis le localStorage en cas d'erreur
-        const cachedData = loadFromLocalStorage();
-        if (cachedData) {
-          setTodoData(cachedData);
-          setIsVisible(true);
-        }
-      }
-    });
+      },
+    );
 
     // Écouter aussi les anciens messages window.postMessage pour la compatibilité
     const handleWindowMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'toggle_chat_todo_list') {
-        const newVisibility = event.data.show !== undefined ? event.data.show : !isVisible;
+        const newVisibility =
+          event.data.show !== undefined ? event.data.show : !isVisible;
         setIsVisible(newVisibility);
       }
     };
 
     window.addEventListener('message', handleWindowMessage);
-    
+
     return () => {
       console.log('📋 [TodoPanel] Cleaning up WebSocket listener...');
       unsubscribe();
       window.removeEventListener('message', handleWindowMessage);
     };
-  }, [isVisible, setIsVisible, saveToLocalStorage, syncWithBackend, loadFromLocalStorage]);
+  }, [
+    isVisible,
+    setIsVisible,
+    saveToLocalStorage,
+    syncWithBackend,
+    loadFromLocalStorage,
+  ]);
 
   // Ne pas afficher si pas visible
   if (!isVisible) {
@@ -246,8 +288,14 @@ export const UnifiedTodoListPanel: React.FC = () => {
             <h3 className="text-sm font-medium text-white">Tasks</h3>
             <div className="flex items-center space-x-1">
               <div className="w-1 h-1 bg-gray-500 rounded-full animate-pulse" />
-              <div className="w-1 h-1 bg-gray-500 rounded-full animate-pulse" style={{animationDelay: '0.2s'}} />
-              <div className="w-1 h-1 bg-gray-500 rounded-full animate-pulse" style={{animationDelay: '0.4s'}} />
+              <div
+                className="w-1 h-1 bg-gray-500 rounded-full animate-pulse"
+                style={{ animationDelay: '0.2s' }}
+              />
+              <div
+                className="w-1 h-1 bg-gray-500 rounded-full animate-pulse"
+                style={{ animationDelay: '0.4s' }}
+              />
             </div>
           </div>
         </div>
@@ -275,9 +323,7 @@ export const UnifiedTodoListPanel: React.FC = () => {
             <ListTodo className="h-4 w-4 text-blue-400" />
           </div>
           <div className="flex items-center space-x-4">
-            <h3 className="text-sm font-medium text-white">
-              Tasks
-            </h3>
+            <h3 className="text-sm font-medium text-white">Tasks</h3>
             <div className="flex items-center space-x-3">
               {/* Compact status indicators */}
               <div className="flex items-center space-x-2">
@@ -349,12 +395,21 @@ export const UnifiedTodoListPanel: React.FC = () => {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-4 text-xs">
                     {Object.entries(STATUS_CONFIG).map(([status, config]) => {
-                      const count = todoData.stats[status as keyof typeof todoData.stats] || 0;
+                      const count =
+                        todoData.stats[status as keyof typeof todoData.stats] ||
+                        0;
                       if (count === 0) return null;
                       return (
-                        <div key={status} className="flex items-center space-x-1.5">
-                          <div className={`w-1.5 h-1.5 ${config.dot} rounded-full`} />
-                          <span className={`${config.color} font-medium`}>{count}</span>
+                        <div
+                          key={status}
+                          className="flex items-center space-x-1.5"
+                        >
+                          <div
+                            className={`w-1.5 h-1.5 ${config.dot} rounded-full`}
+                          />
+                          <span className={`${config.color} font-medium`}>
+                            {count}
+                          </span>
                           <span className="text-gray-500 uppercase tracking-wide font-medium">
                             {config.label}
                           </span>
@@ -364,16 +419,21 @@ export const UnifiedTodoListPanel: React.FC = () => {
                   </div>
                   {todoData.stats.total > 0 && (
                     <span className="text-xs text-gray-400 font-mono">
-                      {Math.round((todoData.stats.completed / todoData.stats.total) * 100)}%
+                      {Math.round(
+                        (todoData.stats.completed / todoData.stats.total) * 100,
+                      )}
+                      %
                     </span>
                   )}
                 </div>
                 {/* Barre de progression */}
                 {todoData.stats.total > 0 && (
                   <div className="w-full bg-gray-800/50 rounded-full h-1">
-                    <div 
-                      className="bg-green-500/80 h-1 rounded-full transition-all duration-300" 
-                      style={{ width: `${(todoData.stats.completed / todoData.stats.total) * 100}%` }}
+                    <div
+                      className="bg-green-500/80 h-1 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${(todoData.stats.completed / todoData.stats.total) * 100}%`,
+                      }}
                     />
                   </div>
                 )}
@@ -400,23 +460,33 @@ export const UnifiedTodoListPanel: React.FC = () => {
                         transition={{ duration: 0.15 }}
                         className={`flex items-center space-x-3 px-3 py-2 rounded-md ${statusConfig.bg} ${statusConfig.border} border hover:bg-opacity-80 transition-all duration-150 group`}
                       >
-                        <div className={`w-2 h-2 ${statusConfig.dot} rounded-full ${
-                          todo.status === 'in_progress' ? 'animate-pulse' : ''
-                        }`} />
-                        
+                        <div
+                          className={`w-2 h-2 ${statusConfig.dot} rounded-full ${
+                            todo.status === 'in_progress' ? 'animate-pulse' : ''
+                          }`}
+                        />
+
                         <div className="flex-1 min-w-0">
-                          <p className={`text-xs leading-relaxed ${
-                            todo.status === 'completed'
-                              ? 'line-through text-gray-500'
-                              : 'text-gray-200'
-                          } truncate group-hover:text-white transition-colors`}>
+                          <p
+                            className={`text-xs leading-relaxed ${
+                              todo.status === 'completed'
+                                ? 'line-through text-gray-500'
+                                : 'text-gray-200'
+                            } truncate group-hover:text-white transition-colors`}
+                          >
                             {todo.content}
                           </p>
                         </div>
-                        
+
                         <div className="flex items-center opacity-70 group-hover:opacity-100 transition-opacity">
-                          <span className={`text-xs font-medium ${statusConfig.color} uppercase tracking-wider`}>
-                            {todo.status === 'in_progress' ? 'DOING' : todo.status === 'pending' ? 'TODO' : 'DONE'}
+                          <span
+                            className={`text-xs font-medium ${statusConfig.color} uppercase tracking-wider`}
+                          >
+                            {todo.status === 'in_progress'
+                              ? 'DOING'
+                              : todo.status === 'pending'
+                                ? 'TODO'
+                                : 'DONE'}
                           </span>
                         </div>
                       </motion.div>

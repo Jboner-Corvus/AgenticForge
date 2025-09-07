@@ -10,7 +10,7 @@ import {
   getPlaywrightMcpConfig,
   getStealthLaunchArgs,
   updatePlaywrightMcpConfig
-} from "../../../../chunk-KB4PA6IY.js";
+} from "../../../../chunk-CCOK3BPH.js";
 import "../../../../chunk-SB7UONON.js";
 export {
   generateFakeWebGLRenderer,

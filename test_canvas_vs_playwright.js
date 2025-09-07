@@ -15,66 +15,66 @@ const testCommands = [
     name: 'Canvas HTML simple',
     command: 'canvas_display_simple_html',
     expected: 'displayCanvas',
-    description: 'Afficher HTML dans Canvas'
+    description: 'Afficher HTML dans Canvas',
   },
   {
     name: 'Canvas jeu interactif',
     command: 'canvas_display_interactive_game',
-    expected: 'displayCanvas', 
-    description: 'Afficher jeu dans Canvas'
+    expected: 'displayCanvas',
+    description: 'Afficher jeu dans Canvas',
   },
   {
     name: 'Canvas code source',
     command: 'canvas_display_code_editor',
     expected: 'displayCanvas',
-    description: 'Afficher code dans Canvas'
+    description: 'Afficher code dans Canvas',
   },
-  
+
   // Tests Playwright (automation)
   {
     name: 'Playwright navigation',
     command: 'playwright_navigate',
     expected: 'playwright_navigate',
-    description: 'Naviguer avec Playwright'
+    description: 'Naviguer avec Playwright',
   },
   {
     name: 'Playwright clic',
     command: 'playwright_click',
-    expected: 'playwright_click', 
-    description: 'Cliquer avec Playwright'
+    expected: 'playwright_click',
+    description: 'Cliquer avec Playwright',
   },
   {
     name: 'Playwright screenshot',
     command: 'playwright_screenshot',
     expected: 'playwright_screenshot',
-    description: 'Capturer avec Playwright'
-  }
+    description: 'Capturer avec Playwright',
+  },
 ];
 
 // Test avec l'API AgenticForge
 async function runApiTests() {
   console.log('🧪 Tests de validation Agent...\n');
-  
+
   for (const test of testCommands) {
     console.log(`📝 Test: ${test.name}`);
     console.log(`   Commande: ${test.command}`);
     console.log(`   Attendu: ${test.expected}`);
     console.log(`   Description: ${test.description}`);
-    
+
     try {
       const response = await fetch('http://localhost:3001/api/test-chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0'
+          Authorization: 'Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0',
         },
         body: JSON.stringify({
           prompt: `Test command: ${test.command}`,
           sessionName: `Test ${test.name}`,
-          systemPrompt: 'coder'
-        })
+          systemPrompt: 'coder',
+        }),
       });
-      
+
       if (response.ok) {
         console.log(`   ✅ API disponible`);
       } else {
@@ -83,7 +83,7 @@ async function runApiTests() {
     } catch (error) {
       console.log(`   ❌ Erreur connexion: ${error.message.split(' ')[0]}`);
     }
-    
+
     console.log('');
   }
 }
@@ -107,7 +107,7 @@ console.log('   - 323-330: Tests validation agent\n');
 if (process.argv.includes('--api')) {
   runApiTests();
 } else {
-  console.log('💡 Utilise --api pour tester l\'API AgenticForge');
+  console.log("💡 Utilise --api pour tester l'API AgenticForge");
 }
 
 console.log('=== Test terminé ===');

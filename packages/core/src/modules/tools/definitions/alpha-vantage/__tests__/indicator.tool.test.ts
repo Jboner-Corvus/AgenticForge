@@ -11,22 +11,22 @@ vi.mock('../common.ts', () => ({
       merge: vi.fn().mockReturnValue({
         merge: vi.fn().mockReturnValue({
           extend: vi.fn().mockReturnValue({
-            parse: vi.fn((params) => params)
-          })
-        })
-      })
-    })
+            parse: vi.fn((params) => params),
+          }),
+        }),
+      }),
+    }),
   },
   SymbolParam: {
-    merge: vi.fn().mockReturnThis()
+    merge: vi.fn().mockReturnThis(),
   },
   IntervalParam: {
-    merge: vi.fn().mockReturnThis()
+    merge: vi.fn().mockReturnThis(),
   },
   DataTypeParam: {
-    merge: vi.fn().mockReturnThis()
+    merge: vi.fn().mockReturnThis(),
   },
-  getConfig: vi.fn().mockReturnValue({ ALPHA_VANTAGE_API_KEY: 'test-key' })
+  getConfig: vi.fn().mockReturnValue({ ALPHA_VANTAGE_API_KEY: 'test-key' }),
 }));
 
 describe('indicatorTool', () => {
@@ -45,30 +45,30 @@ describe('indicatorTool', () => {
 
   it('should execute without errors when valid parameters are provided', async () => {
     // Mock the API response
-    const mockResponse = { 
-      'Technical Analysis: RSI': { 
-        '2023-01-01': { 'RSI': '70.50' } 
-      } 
+    const mockResponse = {
+      'Technical Analysis: RSI': {
+        '2023-01-01': { RSI: '70.50' },
+      },
     };
-    
+
     vi.mocked(makeAlphaVantageRequest).mockResolvedValue(mockResponse);
-    
+
     const params = {
       symbol: 'AAPL',
       interval: '1min' as const,
       indicator_type: 'rsi' as const,
       time_period: 14,
       datatype: 'json' as const,
-      series_type: 'close' as const
+      series_type: 'close' as const,
     };
-    
+
     const context = {
       log: {
         info: vi.fn(),
-        error: vi.fn()
-      }
+        error: vi.fn(),
+      },
     } as any;
-    
+
     const result = await indicatorTool.execute(params, context);
     expect(result).toEqual(mockResponse);
   });

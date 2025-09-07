@@ -70,9 +70,9 @@ vi.mock('../redis/redisClient.ts', () => ({
 vi.mock('../../utils/llmProvider.ts', () => ({
   getLlmProvider: (providerName: string) => ({
     getLlmResponse: vi.fn().mockResolvedValue('{"answer": "Monitoring test"}'),
-    getErrorType: vi.fn()
+    getErrorType: vi.fn(),
   }),
-}))
+}));
 vi.mock('../llm/LlmKeyManager.ts', () => ({
   LlmKeyManager: {
     getNextAvailableKey: vi.fn(),
@@ -198,8 +198,7 @@ describe('Monitoring and Observability Integration Tests', () => {
 
     it('should trace cross-service communications', async () => {
       const redisClientModule = await import('../redis/redisClient.ts');
-      const mockRedisClient =
-        redisClientModule.getRedisClientInstance();
+      const mockRedisClient = redisClientModule.getRedisClientInstance();
 
       await agent.run();
 
@@ -290,13 +289,14 @@ describe('Monitoring and Observability Integration Tests', () => {
       const criticalError = new Error('Critical system failure');
       const llmProviderModule = await import('../../utils/llmProvider.ts');
       const mockLlmProvider = llmProviderModule.getLlmProvider('openai');
-      vi.mocked(mockLlmProvider.getLlmResponse).mockRejectedValue(criticalError);
+      vi.mocked(mockLlmProvider.getLlmResponse).mockRejectedValue(
+        criticalError,
+      );
 
       await agent.run();
 
       const redisClientModule = await import('../redis/redisClient.ts');
-      const redisClient =
-        redisClientModule.getRedisClientInstance();
+      const redisClient = redisClientModule.getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalled();
     });
 
@@ -330,8 +330,7 @@ describe('Monitoring and Observability Integration Tests', () => {
       await agent.run();
 
       const redisClientModule = await import('../redis/redisClient.ts');
-      const redisClient =
-        redisClientModule.getRedisClientInstance();
+      const redisClient = redisClientModule.getRedisClientInstance();
       expect(redisClient.hset).toHaveBeenCalledWith(
         expect.stringContaining('quality_metrics'),
         expect.any(Object),
@@ -386,8 +385,7 @@ describe('Monitoring and Observability Integration Tests', () => {
       await agent.run();
 
       const redisClientModule = await import('../redis/redisClient.ts');
-      const redisClient =
-        redisClientModule.getRedisClientInstance();
+      const redisClient = redisClientModule.getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         expect.stringContaining('dashboard_update'),
         expect.any(String),
@@ -409,8 +407,7 @@ describe('Monitoring and Observability Integration Tests', () => {
       await agent.run();
 
       const redisClientModule = await import('../redis/redisClient.ts');
-      const redisClient =
-        redisClientModule.getRedisClientInstance();
+      const redisClient = redisClientModule.getRedisClientInstance();
       expect(redisClient.publish).toHaveBeenCalledWith(
         'metrics_stream',
         expect.stringContaining('executionTime'),

@@ -13,14 +13,16 @@ Le compteur de tokens de session dans le panneau de contrôle affichait toujours
 ## Solution Implémentée
 
 ### 1. Fonction d'Estimation de Tokens
+
 ```typescript
 // packages/ui/src/lib/utils/tokenEstimation.ts
-export function estimateTokens(text: string): number
-export function estimateMessageTokens(message: any): number
-export function estimateConversationTokens(messages: any[]): number
+export function estimateTokens(text: string): number;
+export function estimateMessageTokens(message: any): number;
+export function estimateConversationTokens(messages: any[]): number;
 ```
 
 **Algorithme d'estimation :**
+
 - ~4 caractères par token (approximation standard)
 - Overhead pour ponctuation et espaces
 - Minimum 1 token par message
@@ -28,6 +30,7 @@ export function estimateConversationTokens(messages: any[]): number
 ### 2. Intégration Automatique dans le Store
 
 **Modification de `addMessage` :**
+
 ```typescript
 addMessage: (messageData) => {
   // ... existing code ...
@@ -36,10 +39,11 @@ addMessage: (messageData) => {
     messages: [...state.messages, newMessage],
     sessionTokensUsed: state.sessionTokensUsed + messageTokens,
   }));
-}
+};
 ```
 
 **Modification de `loadSession` :**
+
 ```typescript
 loadSession: async (id: string) => {
   const sessionData = await loadSessionApi(id);
@@ -52,7 +56,7 @@ loadSession: async (id: string) => {
     // ... other fields ...
     sessionTokensUsed: totalTokens,
   });
-}
+};
 ```
 
 ### 3. Gestion des États Spéciaux
@@ -64,12 +68,14 @@ loadSession: async (id: string) => {
 ## Fonctionnalités Ajoutées
 
 ### Comptage Automatique
+
 - ✅ **Messages utilisateur** : Tokens estimés et ajoutés
 - ✅ **Messages assistant** : Tokens estimés et ajoutés
 - ✅ **Messages tool** : Tokens des appels d'outils comptés
 - ✅ **Chargement de session** : Recalcul automatique des tokens
 
 ### Affichage dans l'Interface
+
 ```typescript
 // Dans ControlPanel.tsx
 <div className="flex justify-between items-center p-2 rounded hover:bg-accent">
@@ -81,25 +87,33 @@ loadSession: async (id: string) => {
 ```
 
 ### Logging Détaillé
+
 ```typescript
 console.log('🔥 [SessionStore] Estimated tokens for message:', messageTokens);
-console.log('🔥 [SessionStore] Updated session tokens:', newState.sessionTokensUsed);
+console.log(
+  '🔥 [SessionStore] Updated session tokens:',
+  newState.sessionTokensUsed,
+);
 ```
 
 ## Utilisation
 
 ### Affichage Automatique
+
 Les tokens s'affichent maintenant automatiquement dans le panneau de contrôle :
+
 - **Format** : Nombre formaté avec séparateurs (1,234)
 - **Mise à jour** : En temps réel lors des conversations
 - **Persistance** : Sauvegardé avec les sessions
 
 ### Test Manuel
+
 ```bash
 node test_session_tokens.js
 ```
 
 ### Vérification Programmatique
+
 ```typescript
 import { useSessionTokensUsed } from '../store/hooks';
 
@@ -110,11 +124,13 @@ const tokens = useSessionTokensUsed();
 ## Avantages
 
 ### Utilisateur
+
 - **Visibilité** : Voit l'utilisation des tokens en temps réel
 - **Suivi** : Peut monitorer la consommation par session
 - **Planification** : Meilleure estimation des coûts
 
 ### Développeur
+
 - **Debugging** : Logs détaillés pour le débogage
 - **Testabilité** : Fonctions d'estimation isolées
 - **Extensibilité** : Facilement modifiable pour d'autres modèles
@@ -122,11 +138,13 @@ const tokens = useSessionTokensUsed();
 ## Limitations
 
 ### Estimation Approximative
+
 - Basée sur des moyennes (~4 chars/token)
 - Ne reflète pas exactement les tokens réels des modèles
 - Varie selon le modèle utilisé (GPT-4 vs GPT-3.5)
 
 ### Performance
+
 - Calcul à chaque message (négligeable)
 - Recalcul complet lors du chargement de session
 

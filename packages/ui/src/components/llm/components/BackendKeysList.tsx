@@ -71,8 +71,8 @@ const BackendKeysList: React.FC<BackendKeysListProps> = ({
             Aucune clé API ajoutée
           </h3>
           <p className="mt-2 text-gray-500">
-            Ajoutez votre première clé API pour commencer à utiliser
-            différents fournisseurs LLM.
+            Ajoutez votre première clé API pour commencer à utiliser différents
+            fournisseurs LLM.
           </p>
         </CardContent>
       </Card>
@@ -177,7 +177,10 @@ const BackendKeysList: React.FC<BackendKeysListProps> = ({
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
+              <DropdownMenuContent
+                align="end"
+                className="bg-gray-800 border-gray-700"
+              >
                 {onCopyKey && (
                   <DropdownMenuItem
                     onClick={() => onCopyKey(key)}

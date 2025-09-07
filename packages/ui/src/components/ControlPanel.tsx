@@ -1,4 +1,3 @@
- 
 import {
   Key,
   Server,
@@ -59,8 +58,13 @@ export const ControlPanel = memo(() => {
   // const setToolCreationEnabled = useStore((state) => state.setToolCreationEnabled); // Supprimé: never used
   const sessions = useSessions();
   const activeSessionId = useActiveSessionId();
-  const { saveSession, loadSession, deleteSession, renameSession, createNewSession } =
-    useSessionStore();
+  const {
+    saveSession,
+    loadSession,
+    deleteSession,
+    renameSession,
+    createNewSession,
+  } = useSessionStore();
   const tokenStatus = useTokenStatus();
   const sessionTokensUsed = useSessionTokensUsed();
 

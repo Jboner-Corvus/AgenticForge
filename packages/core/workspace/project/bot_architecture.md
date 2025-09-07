@@ -5,6 +5,7 @@
 The bot will be designed with a modular architecture to ensure adaptability, maintainability, and extensibility. Each core functionality will be encapsulated in its own module.
 
 ### Core Modules:
+
 - **Navigation Module:** Handles page loading, URL management, and basic interaction (clicks, typing).
 - **Page Analysis Module:** Responsible for parsing DOM, identifying elements, and understanding page structure.
 - **Form Handling Module:** Detects forms, identifies input fields, and intelligently fills them.

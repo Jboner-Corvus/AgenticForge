@@ -471,8 +471,8 @@ start_worker_silent() {
         return 1
     fi
 
-    # Start worker with FULL system access (no restrictions)
-    nohup node dist/worker.js > "$ROOT_DIR/worker.log" 2>&1 &
+    # Start worker with FULL system access (no restrictions) and flag to indicate it's started from run.sh
+    nohup env STARTED_FROM_RUN_SCRIPT=true node dist/worker.js > "$ROOT_DIR/worker.log" 2>&1 &
     echo $! > "$ROOT_DIR/worker.pid"
 
     # Verify worker started
@@ -656,23 +656,22 @@ show_guided_menu() {
     printf "    7) \033[0;34m🔨 Rebuild All\033[0m        - Full rebuild (use if issues)\n"
     printf "    8) \033[0;34m⚡ Rebuild Rapid\033[0m       - Fast rebuild with cache\n"
     printf "    9) \033[0;34m🌐 Rebuild Web\033[0m        - Rebuild frontend only (faster)\n"
-    printf "   10) \033[0;34m🐳 Docker Logs\033[0m        - View all container logs\n"
     printf "   10) \033[1;33m🔄 Restart Worker\033[0m     - Restart worker only\n"
+    printf "   11) \033[0;31m🧨 Clean All\033[0m          - Remove ALL containers, volumes, and builds\n"
     echo ""
     echo -e "    ${COLOR_CYAN}🔧 Development${NC}"
-    printf "   11) \033[0;34m💻 Dev Server (3003)\033[0m  - Start development server on port 3003\n"
-    printf "   12) \033[0;31m🛑 Stop Dev Server\033[0m     - Stop development server\n"
-    printf "   13) \033[0;34m📋 Dev Server Logs\033[0m    - View development server logs\n"
+    printf "   12) \033[0;34m💻 Dev Server (3003)\033[0m  - Start development server on port 3003\n"
+    printf "   13) \033[0;31m🛑 Stop Dev Server\033[0m     - Stop development server\n"
+    printf "   14) \033[0;34m📋 Dev Server Logs\033[0m    - View development server logs\n"
     echo ""
     echo -e "    ${COLOR_CYAN}🧪 Testing & Quality${NC}"
-    printf "   14) \033[0;34m🔬 Unit Tests\033[0m          - Run unit tests only\n"
-    printf "   15) \033[0;34m🔗 Integration Tests\033[0m   - Test service integration\n"
-    printf "   16) \033[0;34m🧪 All Tests\033[0m          - Run complete test suite\n"
-    printf "   17) \033[0;34m🎯 Quality Check\033[0m       - Lint + TypeCheck + Unit Tests\n"
-    printf "   18) \033[0;34m🔍 Lint Code\033[0m          - Check code quality\n"
-    printf "   19) \033[0;34m✨ Format Code\033[0m        - Auto-format source code\n"
-    printf "   20) \033[0;34m📘 Type Check\033[0m         - Verify TypeScript types\n"
-    printf "   21) \033[0;34m🔄 Integration Test Runner\033[0m - Run comprehensive integration tests\n"
+    printf "   15) \033[0;34m🔬 Unit Tests\033[0m          - Run unit tests only\n"
+    printf "   16) \033[0;34m🔗 Integration Tests\033[0m   - Test service integration\n"
+    printf "   17) \033[0;34m🧪 All Tests\033[0m          - Run complete test suite\n"
+    printf "   18) \033[0;34m🎯 Quality Check\033[0m       - Lint + TypeCheck + Unit Tests\n"
+    printf "   19) \033[0;34m🔍 Lint Code\033[0m          - Check code quality\n"
+    printf "   20) \033[0;34m✨ Format Code\033[0m        - Auto-format source code\n"
+    printf "   21) \033[0;34m📘 Type Check\033[0m         - Verify TypeScript types\n"
     printf "   22) \033[0;34m🔍 Check Workers\033[0m       - Monitor worker processes\n"
     printf "   23) \033[0;31m🗑️ Kill Workers\033[0m        - Kill multiple worker processes\n"
     echo ""
@@ -866,8 +865,8 @@ start_worker() {
         pnpm run build
     fi
 
-    # Start worker with FULL system access (no restrictions)
-    nohup node dist/worker.js > "$ROOT_DIR/worker.log" 2>&1 &
+    # Start worker with FULL system access (no restrictions) and flag to indicate it's started from run.sh
+    nohup env STARTED_FROM_RUN_SCRIPT=true node dist/worker.js > "$ROOT_DIR/worker.log" 2>&1 &
     echo $! > "$ROOT_DIR/worker.pid"
 
     echo -e "${COLOR_GREEN}✅ Worker started${NC}"
@@ -908,8 +907,8 @@ restart_worker() {
         pnpm run build
     fi
 
-    # Start fresh worker with FULL system access (no restrictions)
-    nohup node dist/worker.js > "$ROOT_DIR/worker.log" 2>&1 &
+    # Start fresh worker with FULL system access (no restrictions) and flag to indicate it's started from run.sh
+    nohup env STARTED_FROM_RUN_SCRIPT=true node dist/worker.js > "$ROOT_DIR/worker.log" 2>&1 &
     echo $! > "$ROOT_DIR/worker.pid"
 
     # Verify worker started
@@ -1194,6 +1193,73 @@ rebuild_rapid() {
     echo -e "${COLOR_GREEN}🎉 Rapid rebuild finished!${NC}"
     echo -e "${COLOR_CYAN}💡 System prompt and configuration changes have been applied.${NC}"
     echo -e "${COLOR_YELLOW}⚡ This was faster than a full rebuild because Docker cache was used!${NC}"
+}
+
+# Complete clean function - stops everything, removes containers, volumes, and build artifacts
+clean_all() {
+    echo -e "${COLOR_BLUE}🧨 Starting complete cleanup...${NC}"
+    
+    start_timer "clean_all"
+    
+    # Stop all services first
+    echo -e "${COLOR_YELLOW}🛑 Stopping all services...${NC}"
+    stop_services
+    
+    # Give services time to fully stop
+    sleep 3
+    
+    # Force kill any remaining worker processes that might have been started outside of run.sh
+    echo -e "${COLOR_YELLOW}🔪 Force killing any remaining worker processes...${NC}"
+    pkill -f "node dist/worker.js" 2>/dev/null || true
+    pkill -9 -f "node dist/worker.js" 2>/dev/null || true
+    echo -e "${COLOR_GREEN}✅ Any remaining worker processes killed${NC}"
+    
+    # Remove all Docker containers
+    echo -e "${COLOR_YELLOW}🗑️ Removing all Docker containers...${NC}"
+    if docker compose down -v --remove-orphans; then
+        echo -e "${COLOR_GREEN}✅ All containers removed${NC}"
+    else
+        echo -e "${COLOR_YELLOW}⚠️ Some containers may not have been removed${NC}"
+    fi
+    
+    # Remove Docker volumes
+    echo -e "${COLOR_YELLOW}🧨 Removing Docker volumes...${NC}"
+    if docker volume rm g_forge_postgres_data g_forge_redis_data 2>/dev/null; then
+        echo -e "${COLOR_GREEN}✅ Docker volumes removed${NC}"
+    else
+        echo -e "${COLOR_YELLOW}ℹ️ No Docker volumes to remove or already removed${NC}"
+    fi
+    
+    # Clean build directories
+    echo -e "${COLOR_YELLOW}🧹 Cleaning build directories...${NC}"
+    rm -rf packages/core/dist 2>/dev/null || true
+    rm -rf packages/core/build 2>/dev/null || true
+    rm -rf packages/ui/dist 2>/dev/null || true
+    rm -rf packages/ui/build 2>/dev/null || true
+    rm -rf packages/ui/.vite 2>/dev/null || true
+    echo -e "${COLOR_GREEN}✅ Build directories cleaned${NC}"
+    
+    # Clean Docker cache
+    echo -e "${COLOR_YELLOW}🧼 Cleaning Docker cache...${NC}"
+    docker system prune -af 2>/dev/null || true
+    echo -e "${COLOR_GREEN}✅ Docker cache cleaned${NC}"
+    
+    # Remove PID files
+    echo -e "${COLOR_YELLOW}📝 Removing PID files...${NC}"
+    rm -f "$ROOT_DIR/worker.pid" 2>/dev/null || true
+    rm -f "$ROOT_DIR/dev-server.pid" 2>/dev/null || true
+    echo -e "${COLOR_GREEN}✅ PID files removed${NC}"
+    
+    # Remove log files
+    echo -e "${COLOR_YELLOW}📝 Removing log files...${NC}"
+    rm -f "$ROOT_DIR/worker.log" 2>/dev/null || true
+    rm -f "$ROOT_DIR/dev-server.log" 2>/dev/null || true
+    echo -e "${COLOR_GREEN}✅ Log files removed${NC}"
+    
+    end_timer "clean_all"
+    echo -e "${COLOR_GREEN}🎉 Complete cleanup finished!${NC}"
+    echo -e "${COLOR_CYAN}💡 All Docker containers, volumes, and build artifacts have been removed.${NC}"
+    echo -e "${COLOR_YELLOW}🚀 You can now run './run.sh install' to start fresh${NC}"
 }
 
 # =============================================================================
@@ -1544,6 +1610,10 @@ main() {
                 echo -e "${COLOR_YELLOW}🔄 Restarting worker...${NC}"
                 restart_worker 
                 ;;
+            clean-all)
+                echo -e "${COLOR_RED}🧨 Starting complete cleanup...${NC}"
+                clean_all
+                ;;
             dev)
                 echo -e "${COLOR_BLUE}🚀 Starting development server on port 3003...${NC}"
                 start_dev_server
@@ -1598,7 +1668,7 @@ main() {
             *) 
                 echo -e "${COLOR_RED}Unknown command: $1${NC}"
                 echo ""
-                echo "Usage: $0 {start|stop|restart|status|rebuild-all|rebuild-rapid|rebuild-web|restart-worker|install|deploy|setup|test:unit|test:integration|test:all|quality-check|kill-workers|check-workers|help|menu|dev|stop-dev|dev-logs}"
+                echo "Usage: $0 {start|stop|restart|status|rebuild-all|rebuild-rapid|rebuild-web|restart-worker|clean-all|install|deploy|setup|test:unit|test:integration|test:all|quality-check|kill-workers|check-workers|help|menu|dev|stop-dev|dev-logs}"
                 echo ""
                 echo -e "${COLOR_CYAN}Available commands:${NC}"
                 echo -e "  ${COLOR_GREEN}install/deploy${NC}   - Fully automated installation (no prompts)"
@@ -1606,6 +1676,7 @@ main() {
                 echo -e "  ${COLOR_RED}stop${NC}             - Stop all services"
                 echo -e "  ${COLOR_YELLOW}restart${NC}          - Restart all services"
                 echo -e "  ${COLOR_YELLOW}restart-worker${NC}   - Restart worker only"
+                echo -e "  ${COLOR_RED}clean-all${NC}        - Complete cleanup (containers, volumes, builds)"
                 echo -e "  ${COLOR_CYAN}status${NC}           - Show service status"
                 echo -e "  ${COLOR_BLUE}rebuild-all${NC}      - Complete rebuild (all services)"
                 echo -e "  ${COLOR_BLUE}rebuild-rapid${NC}    - Fast rebuild with Docker cache"
@@ -1676,57 +1747,53 @@ main() {
                 echo -e "${COLOR_BLUE}🌐 Starting frontend rebuild...${NC}"
                 rebuild_web
                 ;;
-            9)
-                echo -e "${COLOR_BLUE}🐳 Showing Docker logs (Ctrl+C to exit):${NC}"
-                docker compose logs -f
-                ;;
             10)
                 echo -e "${COLOR_YELLOW}🔄 Restarting worker...${NC}"
                 restart_worker
                 ;;
             11)
+                echo -e "${COLOR_RED}🧨 Starting complete cleanup...${NC}"
+                clean_all
+                ;;
+            12)
                 echo -e "${COLOR_BLUE}💻 Starting development server on port 3003...${NC}"
                 start_dev_server
                 ;;
-            12)
+            13)
                 echo -e "${COLOR_RED}🛑 Stopping development server...${NC}"
                 stop_dev_server
                 ;;
-            13)
+            14)
                 echo -e "${COLOR_BLUE}📋 Showing development server logs (Ctrl+C to exit):${NC}"
                 tail -f "$ROOT_DIR/dev-server.log" 2>/dev/null || echo "No development server log found"
                 ;;
-            14)
+            15)
                 echo -e "${COLOR_BLUE}🔬 Running unit tests...${NC}"
                 run_unit_tests
                 ;;
-            15)
+            16)
                 echo -e "${COLOR_BLUE}🔗 Running integration tests...${NC}"
                 run_integration_tests
                 ;;
-            16)
+            17)
                 echo -e "${COLOR_BLUE}🧪 Running all tests...${NC}"
                 run_all_tests
                 ;;
-            17)
+            18)
                 echo -e "${COLOR_BLUE}🎯 Running quality check...${NC}"
                 run_quality_check
                 ;;
-            18)
+            19)
                 echo -e "${COLOR_BLUE}🔍 Running code linting...${NC}"
                 cd "$ROOT_DIR" && pnpm run lint
                 ;;
-            19)
+            20)
                 echo -e "${COLOR_BLUE}✨ Formatting code...${NC}"
                 cd "$ROOT_DIR" && pnpm run format
                 ;;
-            20)
+            21)
                 echo -e "${COLOR_BLUE}📘 Checking TypeScript types...${NC}"
                 cd "$ROOT_DIR" && pnpm run typecheck
-                ;;
-            21)
-                echo -e "${COLOR_BLUE}🔄 Running integration test runner...${NC}"
-                cd "$ROOT_DIR" && ./integration-test-runner.sh
                 ;;
             22)
                 echo -e "${COLOR_BLUE}🔍 Running worker check...${NC}"
