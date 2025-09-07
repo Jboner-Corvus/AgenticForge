@@ -267,3 +267,142 @@ it('should stream formatted SSE data', async () => {
 - Response time monitoring
 - Memory usage tracking
 - Concurrent connection limits
+
+## 11. How to Use the API Stream
+
+### 11.1 Prerequisites
+
+Before using the API stream, ensure you have:
+- A running instance of the AgenticForge system
+- Valid authentication token (AUTH_TOKEN)
+- Session ID for tracking conversations
+- Job ID from the initial chat request
+
+### 11.2 API Stream Usage
+
+#### JavaScript/TypeScript Implementation
+
+```javascript
+// Submit a chat request to get a jobId
+const response = await fetch('/api/chat', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${AUTH_TOKEN}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    prompt: 'Your request here',
+    sessionId: 'your-session-id'
+  })
+});
+
+const { jobId } = await response.json();
+
+// Connect to the streaming endpoint
+const eventSource = new EventSource(`/api/chat/stream/${jobId}?auth=${AUTH_TOKEN}&sessionId=your-session-id`);
+
+eventSource.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  
+  // Handle different event types
+  switch (data.type) {
+    case 'agent_response':
+      console.log('Agent response:', data.content);
+      break;
+    case 'tool_use':
+      console.log('Tool being used:', data.content);
+      break;
+    case 'tool_result':
+      console.log('Tool result:', data.content);
+      break;
+    case 'completed':
+      console.log('Task completed');
+      eventSource.close();
+      break;
+    case 'error':
+      console.error('Error occurred:', data.content);
+      eventSource.close();
+      break;
+  }
+};
+
+eventSource.onerror = (error) => {
+  console.error('Stream error:', error);
+};
+```
+
+#### Python Implementation
+
+```python
+import requests
+import json
+
+# Submit a chat request to get a jobId
+response = requests.post(
+    'http://localhost:3002/api/chat',
+    headers={
+        'Authorization': f'Bearer {AUTH_TOKEN}',
+        'Content-Type': 'application/json'
+    },
+    json={
+        'prompt': 'Your request here',
+        'sessionId': 'your-session-id'
+    }
+)
+
+job_data = response.json()
+job_id = job_data['jobId']
+
+# Connect to the streaming endpoint using requests
+stream_url = f'http://localhost:3002/api/chat/stream/{job_id}?auth={AUTH_TOKEN}&sessionId=your-session-id'
+with requests.get(stream_url, stream=True) as r:
+    for line in r.iter_lines():
+        if line:
+            decoded_line = line.decode('utf-8')
+            if decoded_line.startswith('data: '):
+                data = json.loads(decoded_line[6:])  # Remove 'data: ' prefix
+                
+                # Handle different event types
+                if data['type'] == 'agent_response':
+                    print(f'Agent response: {data["content"]}')
+                elif data['type'] == 'tool_use':
+                    print(f'Tool being used: {data["content"]}')
+                elif data['type'] == 'tool_result':
+                    print(f'Tool result: {data["content"]}')
+                elif data['type'] == 'completed':
+                    print('Task completed')
+                    break
+                elif data['type'] == 'error':
+                    print(f'Error occurred: {data["content"]}')
+                    break
+```
+
+### 11.3 Event Types
+
+The API stream provides several types of events that inform you about the worker's activities:
+
+| Event Type | Description | Display Recommendation |
+|------------|-------------|----------------------|
+| `agent_response` | Agent's response content | Display to user |
+| `agent_thought` | Agent's internal thinking process | Filter out (not displayed) |
+| `tool_use` | Tool execution details | Show as system message |
+| `tool_result` | Results from tool execution | Show as system message |
+| `browser.*` | Browser automation events | Show as system message |
+| `completed` | Job completion notification | Indicate task finished |
+| `error` | Error messages | Display error to user |
+| `chat_header_todo` | Todo list updates | Update UI elements |
+
+### 11.4 Best Practices
+
+1. **Error Handling**: Always implement proper error handling for network issues and authentication failures
+2. **Resource Cleanup**: Close EventSource connections when no longer needed
+3. **Rate Limiting**: Implement client-side rate limiting to prevent overwhelming the server
+4. **Authentication**: Keep AUTH_TOKEN secure and don't expose it in client-side code
+5. **Session Management**: Use consistent session IDs to maintain conversation context
+
+### 11.5 Common Issues and Troubleshooting
+
+1. **Connection Failures**: Verify the API server is running and accessible
+2. **Authentication Errors**: Ensure AUTH_TOKEN is valid and properly formatted
+3. **No Events Received**: Check if the worker is properly processing the job
+4. **Stream Timeout**: Implement reconnection logic for long-running tasks

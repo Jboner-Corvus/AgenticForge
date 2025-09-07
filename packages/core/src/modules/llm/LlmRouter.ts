@@ -271,10 +271,21 @@ export class LlmRouter {
     );
 
     // Utiliser uniquement le PREMIER provider dans la liste (pas de fallback)
-    const provider = orderedProviders[0];
+    let provider = orderedProviders[0];
 
     if (!provider) {
       throw new LlmError('No provider configured in hierarchy');
+    }
+
+    // Fix model-provider mismatch: if model name contains 'dusk' but provider is 'sky', switch to dusk provider
+    if (modelName && modelName.includes('dusk') && provider === 'openrouter-sky') {
+      provider = 'openrouter-dusk';
+      log.info(`🔄 Switching provider from openrouter-sky to openrouter-dusk to match model ${modelName}`);
+    }
+    // Similarly, if model name contains 'sky' but provider is 'dusk', switch to sky provider
+    else if (modelName && modelName.includes('sky') && provider === 'openrouter-dusk') {
+      provider = 'openrouter-sky';
+      log.info(`🔄 Switching provider from openrouter-dusk to openrouter-sky to match model ${modelName}`);
     }
 
     log.info(

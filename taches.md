@@ -43,6 +43,13 @@ curl -X POST http://localhost:3002/api/test-chat \
   }'
 ```
 
+
+# Connect to the streaming endpoint using requests
+stream_url = f'http://localhost:3002/api/chat/stream/{job_id}?auth={AUTH_TOKEN}&sessionId=your-session-id'
+
+
+
+
 ## 🎯 GUIDE DE SÉLECTION DES PROMPTS SYSTÈME
 
 ### 📋 **Prompts Système Disponibles**

@@ -863,6 +863,9 @@ class OpenAIProvider implements ILlmProvider {
 }
 
 class OpenRouterProvider implements ILlmProvider {
+  private static readonly MAX_RETRIES = 3;
+  private static readonly RETRY_DELAYS = [2000, 4000, 8000]; // Exponential backoff
+
   public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
     if (statusCode === 401 || statusCode === 403) {
       // Unauthorized, Forbidden - likely invalid API key
@@ -897,6 +900,22 @@ class OpenRouterProvider implements ILlmProvider {
     apiKey?: string,
     modelName?: string,
   ): Promise<string> {
+    return this.getLlmResponseWithRetry(
+      messages,
+      systemPrompt,
+      apiKey,
+      modelName,
+      0,
+    );
+  }
+
+  private async getLlmResponseWithRetry(
+    messages: LLMContent[],
+    systemPrompt?: string,
+    apiKey?: string,
+    modelName?: string,
+    retryCount: number = 0,
+  ): Promise<string> {
     const log = getLogger().child({ module: 'OpenRouterProvider' });
 
     let activeKey: LlmApiKey | null;
@@ -909,10 +928,18 @@ class OpenRouterProvider implements ILlmProvider {
         isPermanentlyDisabled: false,
       };
     } else {
-      // Try openrouter-sky first, then openrouter-dusk as fallback
-      activeKey = await LlmKeyManager.getNextAvailableKey('openrouter-sky');
-      if (!activeKey) {
+      // For dusk models, prefer openrouter-dusk provider
+      if (modelName && (modelName.includes('sonoma-dusk-alpha') || modelName.includes('dusk'))) {
         activeKey = await LlmKeyManager.getNextAvailableKey('openrouter-dusk');
+        if (!activeKey) {
+          activeKey = await LlmKeyManager.getNextAvailableKey('openrouter-sky');
+        }
+      } else {
+        // For other models, try openrouter-sky first, then openrouter-dusk as fallback
+        activeKey = await LlmKeyManager.getNextAvailableKey('openrouter-sky');
+        if (!activeKey) {
+          activeKey = await LlmKeyManager.getNextAvailableKey('openrouter-dusk');
+        }
       }
     }
 
@@ -924,15 +951,6 @@ class OpenRouterProvider implements ILlmProvider {
 
     const apiUrl =
       activeKey.baseUrl || 'https://openrouter.ai/api/v1/chat/completions';
-
-    const openRouterMessages = messages.map((msg) => ({
-      content: msg.parts.map((part) => part.text).join(''),
-      role: msg.role === 'user' ? 'user' : 'assistant',
-    }));
-
-    if (systemPrompt) {
-      openRouterMessages.unshift({ content: systemPrompt, role: 'system' });
-    }
 
     // Determine the correct model name based on provider
     let finalModelName = modelName;
@@ -954,10 +972,82 @@ class OpenRouterProvider implements ILlmProvider {
       }
     }
 
-    const requestBody = {
-      messages: openRouterMessages,
-      model: finalModelName,
-    };
+    // CRITICAL FIX: Simplify request for Sonoma models to prevent empty responses
+    let useSimplifiedRequest = false;
+    if (finalModelName && (finalModelName.includes('sonoma') || finalModelName.includes('dusk'))) {
+      useSimplifiedRequest = true;
+      log.info('🎯 Using simplified request format for Sonoma/Dusk model to prevent empty responses');
+    }
+
+    // Process messages - use simplified format for Sonoma models
+    let openRouterMessages: Array<{content: string, role: string}>;
+
+    if (useSimplifiedRequest) {
+      // CRITICAL FIX: For Sonoma models, use only user messages (no system message)
+      // This matches the curl format that works
+      openRouterMessages = messages
+        .filter((msg) => msg.role === 'user') // Only user messages
+        .map((msg) => ({
+          content: msg.parts.map((part) => part.text).join(''),
+          role: 'user',
+        }));
+
+      // If no user messages found, create a simple one
+      if (openRouterMessages.length === 0) {
+        openRouterMessages = [{
+          content: 'Hello, can you help me?',
+          role: 'user'
+        }];
+      }
+
+      log.info(`🎯 Using simplified message format for Sonoma model: ${openRouterMessages.length} user messages only`);
+    } else {
+      // Standard message processing for other models
+      openRouterMessages = messages.map((msg) => ({
+        content: msg.parts.map((part) => part.text).join(''),
+        role: msg.role === 'user' ? 'user' : 'assistant',
+      }));
+
+      if (systemPrompt) {
+        openRouterMessages.unshift({ content: systemPrompt, role: 'system' });
+      }
+    }
+
+
+
+    // Adjust parameters based on model
+    let temperature = 0.7;
+    let maxTokens = 4096;
+    let topP = 0.9;
+
+    if (finalModelName && (finalModelName.includes('sonoma-dusk-alpha') || finalModelName.includes('dusk'))) {
+      // Dusk models need different parameters
+      temperature = 0.3; // Lower temperature for more consistent responses
+      maxTokens = 2048; // Shorter responses to avoid issues
+      topP = 0.7; // More focused sampling
+    }
+
+    // Create request body - use simplified format for Sonoma models
+    let requestBody: any;
+    if (useSimplifiedRequest) {
+      // CRITICAL FIX: Minimal request format for Sonoma models (like curl works)
+      requestBody = {
+        messages: openRouterMessages,
+        model: finalModelName
+      };
+      log.info('🎯 Using minimal request body for Sonoma model (no extra parameters)');
+    } else {
+      // Standard request format for other models
+      requestBody = {
+        messages: openRouterMessages,
+        model: finalModelName,
+        temperature: temperature,
+        max_tokens: maxTokens,
+        top_p: topP,
+        frequency_penalty: 0.1,
+        presence_penalty: 0.1,
+      };
+    }
 
     const body = JSON.stringify(requestBody);
 
@@ -971,14 +1061,42 @@ class OpenRouterProvider implements ILlmProvider {
       log.info(
         `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
       );
+
+      // Debug: Log request details
+      const debugInfo = {
+        model: finalModelName,
+        messageCount: openRouterMessages.length,
+        systemPromptLength: systemPrompt?.length || 0,
+        requestBodySize: body.length,
+        retryCount,
+        provider: activeKey.apiProvider,
+        temperature,
+        maxTokens,
+        topP
+      };
+
+      if (finalModelName && (finalModelName.includes('sonoma-dusk-alpha') || finalModelName.includes('dusk'))) {
+        log.info(debugInfo, '🔍 Dusk Model - Request details');
+      } else {
+        log.debug(debugInfo, 'OpenRouter request details');
+      }
+      // Use simplified headers for Sonoma models to match curl behavior
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${activeKey.apiKey}`,
+        'Content-Type': 'application/json',
+      };
+
+      if (!useSimplifiedRequest) {
+        // Add extra headers only for non-Sonoma models
+        headers['HTTP-Referer'] = 'http://localhost:3001';
+        headers['X-Title'] = 'AgenticForge';
+      } else {
+        log.info('🎯 Using minimal headers for Sonoma model (no extra headers)');
+      }
+
       const response = await fetch(apiUrl, {
         body,
-        headers: {
-          Authorization: `Bearer ${activeKey.apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'http://localhost:3001',
-          'X-Title': 'AgenticForge',
-        },
+        headers,
         method: 'POST',
       });
 
@@ -997,11 +1115,92 @@ class OpenRouterProvider implements ILlmProvider {
 
       const data = await response.json();
 
+      // Debug: Log full response structure
+      log.debug({
+        responseStatus: response.status,
+        responseHeaders: Object.fromEntries(response.headers.entries()),
+        dataKeys: Object.keys(data),
+        hasChoices: !!data.choices,
+        choicesLength: data.choices?.length,
+        firstChoice: data.choices?.[0],
+        usage: data.usage,
+        retryCount
+      }, 'OpenRouter response analysis');
+
       const content = data.choices?.[0]?.message?.content;
       if (content === undefined || content === null || content.trim() === '') {
+        log.warn(
+          {
+            response: data,
+            content,
+            contentType: typeof content,
+            contentLength: content?.length,
+            retryCount
+          },
+          'OpenRouter API returned empty content',
+        );
+
+        // Check if we should retry for empty responses
+        if (retryCount < OpenRouterProvider.MAX_RETRIES) {
+          // For Dusk models, use much shorter delays to fail fast and fallback quickly
+          const isDuskModel = finalModelName && (finalModelName.includes('sonoma') || finalModelName.includes('dusk'));
+          const delay = isDuskModel
+            ? Math.min(500, OpenRouterProvider.RETRY_DELAYS[retryCount] || 500) // Max 500ms for Dusk
+            : OpenRouterProvider.RETRY_DELAYS[Math.min(retryCount, OpenRouterProvider.RETRY_DELAYS.length - 1)];
+
+          log.info(
+            `Retrying OpenRouter API call in ${delay}ms due to empty content (attempt ${retryCount + 1}/${OpenRouterProvider.MAX_RETRIES})${isDuskModel ? ' [DUSK FAST FAIL]' : ''}`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          return this.getLlmResponseWithRetry(
+            messages,
+            systemPrompt,
+            apiKey,
+            modelName,
+            retryCount + 1,
+          );
+        }
+
+        // For Dusk models, prioritize Gemini fallback over trying other OpenRouter models
+        const isDuskModel = finalModelName && (finalModelName.includes('sonoma') || finalModelName.includes('dusk'));
+
+        if (isDuskModel) {
+          log.warn('Dusk model failed, prioritizing Gemini fallback over other OpenRouter models');
+        } else {
+          // If all retries exhausted, try switching to the other OpenRouter model
+          if (activeKey.apiProvider === 'openrouter-sky' && !apiKey) {
+            log.warn('OpenRouter Sky failed, trying OpenRouter Dusk as fallback');
+            const fallbackKey = await LlmKeyManager.getNextAvailableKey('openrouter-dusk');
+            if (fallbackKey) {
+              log.info('Switching to OpenRouter Dusk for this request');
+              return this.getLlmResponseWithRetry(
+                messages,
+                systemPrompt,
+                apiKey,
+                'openrouter/sonoma-dusk-alpha', // Force dusk model
+                0, // Reset retry count for new model
+              );
+            }
+          } else if (activeKey.apiProvider === 'openrouter-dusk' && !apiKey) {
+            log.warn('OpenRouter Dusk failed, trying OpenRouter Sky as fallback');
+            const fallbackKey = await LlmKeyManager.getNextAvailableKey('openrouter-sky');
+            if (fallbackKey) {
+              log.info('Switching to OpenRouter Sky for this request');
+              return this.getLlmResponseWithRetry(
+                messages,
+                systemPrompt,
+                apiKey,
+                'openrouter/sonoma-sky-alpha', // Force sky model
+                0, // Reset retry count for new model
+              );
+            }
+          }
+        }
+
+        // If all retries and fallbacks exhausted, mark key as bad and throw error
         log.error(
           { response: data },
-          'Invalid response structure from OpenRouter API - empty or missing content',
+          'Invalid response structure from OpenRouter API - empty content after all retries and fallbacks',
         );
         const errorType = this.getErrorType(
           response.status,
@@ -1012,8 +1211,19 @@ class OpenRouterProvider implements ILlmProvider {
           activeKey.apiKey,
           errorType,
         );
+        // Final fallback: Try Gemini if OpenRouter completely fails
+        if (!apiKey) {
+          log.warn('All OpenRouter models failed, attempting fallback to Gemini');
+          try {
+            const geminiProvider = new GeminiProvider();
+            return await geminiProvider.getLlmResponse(messages, systemPrompt);
+          } catch (geminiError) {
+            log.error({ geminiError }, 'Gemini fallback also failed');
+          }
+        }
+
         throw new LlmError(
-          'Invalid response structure from OpenRouter API. The model returned an empty response.',
+          'Invalid response structure from OpenRouter API. All models and fallbacks returned empty responses after multiple attempts.',
         );
       }
 
@@ -1048,16 +1258,56 @@ class OpenRouterProvider implements ILlmProvider {
       if (_error instanceof LlmError) {
         throw _error;
       }
-      log.error({ _error }, 'Failed to get response from LLM');
+
+      const error = _error instanceof Error ? _error : new Error(String(_error));
+      log.error({ error, retryCount }, 'Failed to get response from OpenRouter API');
+
+      // Enhanced error classification for retry logic
+      const isRetryableError =
+        error.message.includes('network') ||
+        error.message.includes('timeout') ||
+        error.message.includes('503') ||
+        error.message.includes('502') ||
+        error.message.includes('504') ||
+        error.message.includes('rate limit') ||
+        error.message.includes('temporarily unavailable') ||
+        error.message.includes('fetch failed');
+
+      // Retry for retryable errors
+      if (isRetryableError && retryCount < OpenRouterProvider.MAX_RETRIES) {
+        const delay = OpenRouterProvider.RETRY_DELAYS[
+          Math.min(retryCount, OpenRouterProvider.RETRY_DELAYS.length - 1)
+        ];
+        log.warn(
+          `Retryable error detected. Retrying in ${delay}ms (attempt ${retryCount + 1}/${OpenRouterProvider.MAX_RETRIES})`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return this.getLlmResponseWithRetry(
+          messages,
+          systemPrompt,
+          apiKey,
+          modelName,
+          retryCount + 1,
+        );
+      }
+
+      // If not retryable or max retries reached, handle the error
       if (activeKey) {
-        // Assume network errors or unhandled exceptions are temporary
+        let errorType: LlmKeyErrorType = 'temporary';
+        if (
+          error.message.includes('authentication') ||
+          error.message.includes('unauthorized') ||
+          error.message.includes('invalid api key')
+        ) {
+          errorType = 'permanent';
+        }
         await LlmKeyManager.markKeyAsBad(
           activeKey.apiProvider,
           activeKey.apiKey,
-          LlmKeyErrorType.TEMPORARY,
+          errorType,
         );
       }
-      throw new LlmError('Failed to communicate with the LLM.');
+      throw new LlmError(`Failed to communicate with OpenRouter API after ${retryCount + 1} attempts: ${error.message}`);
     }
   }
 }
@@ -1307,7 +1557,7 @@ export class GeminiProvider implements ILlmProvider {
       '🔗 Gemini API URL construction',
     );
 
-    // Optimize messages for Gemini - limit history to prevent memory issues and timeouts
+    // Optimize messages for all providers - limit history to prevent memory issues and timeouts
     const maxMessages = getConfig().GEMINI_MAX_HISTORY_LENGTH || 30; // Increased for better context
     const maxMessageLength = 8000; // Increased message length limit
     const maxTotalLength = 50000; // Increased total request size limit
