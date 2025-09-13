@@ -135,33 +135,33 @@ export const EnhancedChatInterface: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       {/* Header with metrics toggle */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-        <div className="flex items-center space-x-3">
-          <MessageSquare className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
+      <div className="flex items-center justify-between p-2 sm:p-4 border-b border-slate-200 dark:border-slate-700">
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600 dark:text-slate-400" />
+          <h2 className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-200">
             Agent Chat
           </h2>
           {isProcessing && (
-            <div className="flex items-center space-x-2">
-              <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-              <span className="text-sm text-blue-600 dark:text-blue-400">
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin text-blue-500" />
+              <span className="text-xs sm:text-sm text-blue-600 dark:text-blue-400">
                 Agent is thinking...
               </span>
             </div>
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
           {playwrightMetrics.totalActions > 0 && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowMetrics(!showMetrics)}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm"
             >
-              <Activity className="w-4 h-4" />
+              <Activity className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>Playwright Metrics</span>
-              <Badge variant="secondary" className="ml-1">
+              <Badge variant="secondary" className="ml-1 text-xs">
                 {playwrightMetrics.totalActions}
               </Badge>
             </Button>
@@ -176,8 +176,8 @@ export const EnhancedChatInterface: React.FC = () => {
           animate={{ height: 'auto', opacity: 1 }}
           className="border-b border-slate-200 dark:border-slate-700 bg-blue-50 dark:bg-blue-900/20"
         >
-          <div className="p-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-2 sm:p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
               <Card>
                 <CardContent className="p-3">
                   <div className="flex items-center space-x-2">
@@ -245,7 +245,7 @@ export const EnhancedChatInterface: React.FC = () => {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-4">
         {messages.map((message, index) => {
           const messageType =
             typeof message === 'object' && 'type' in message
@@ -265,25 +265,25 @@ export const EnhancedChatInterface: React.FC = () => {
               key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`flex space-x-3 ${
+              className={`flex space-x-2 sm:space-x-3 ${
                 messageType === 'user' ? 'justify-end' : 'justify-start'
               }`}
             >
               <div
-                className={`flex space-x-3 max-w-[80%] ${
+                className={`flex space-x-2 sm:space-x-3 max-w-[95%] sm:max-w-[80%] ${
                   messageType === 'user'
                     ? 'flex-row-reverse space-x-reverse'
                     : ''
                 }`}
               >
                 <div
-                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${getMessageColor(messageType)}`}
+                  className={`flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center ${getMessageColor(messageType)}`}
                 >
                   {getMessageIcon(messageType)}
                 </div>
 
                 <div
-                  className={`rounded-lg p-3 ${
+                  className={`rounded-lg p-2 sm:p-3 ${
                     messageType === 'user'
                       ? 'bg-blue-500 text-white'
                       : messageType === 'error'
@@ -294,8 +294,8 @@ export const EnhancedChatInterface: React.FC = () => {
                   }`}
                 >
                   {isPlaywrightRelated(message) && (
-                    <div className="flex items-center space-x-2 mb-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div className="flex items-center space-x-1 sm:space-x-2 mb-1 sm:mb-2">
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full"></div>
                       <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
                         Playwright
                       </span>
@@ -303,7 +303,7 @@ export const EnhancedChatInterface: React.FC = () => {
                   )}
 
                   <div
-                    className={`text-sm ${
+                    className={`text-xs sm:text-sm ${
                       messageType === 'user'
                         ? 'text-white'
                         : 'text-slate-800 dark:text-slate-200'
@@ -315,7 +315,7 @@ export const EnhancedChatInterface: React.FC = () => {
                   </div>
 
                   <div
-                    className={`text-xs mt-2 ${
+                    className={`text-xs mt-1 sm:mt-2 ${
                       messageType === 'user'
                         ? 'text-blue-100'
                         : 'text-slate-500 dark:text-slate-400'
@@ -332,10 +332,10 @@ export const EnhancedChatInterface: React.FC = () => {
 
       {/* Processing indicator */}
       {isProcessing && (
-        <div className="p-4 border-t border-slate-200 dark:border-slate-700">
-          <div className="flex items-center space-x-3">
-            <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-            <span className="text-sm text-slate-600 dark:text-slate-400">
+        <div className="p-2 sm:p-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin text-blue-500" />
+            <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
               Agent is processing your request...
             </span>
           </div>

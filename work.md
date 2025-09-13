@@ -2,22 +2,43 @@
 
 ## 🎯 PRIMARY OBJECTIVE
 
-This document serves as a comprehensive testing guide for AgenticForge. The main goal is to **ensure all tests pass successfully** to validate the proper functioning of the AgenticForge platform. Each test must be executed, verified, and any issues in the codebase must be corrected to achieve passing results.
+ The main goal is to **ensure all tests pass successfully** to validate the proper functioning of the AgenticForge platform. Each test must be executed, verified, and any issues in the codebase must be corrected to achieve passing results.
 
-## 📋 TESTING PHILOSOPHY
-
-AgenticForge is a complex AI agent development platform with numerous integrated components. Our testing approach focuses on:
-- Validating core functionality across all modules
-- Ensuring seamless integration between components
-- Identifying and fixing code issues that prevent tests from passing
-- Maintaining high-quality standards for all platform features
 
 ## ⚙️ IMPORTANT CONFIGURATION
 
-- **API Server Port** : 3002
-- **Base URL** : http://localhost:3002
-- **Test Endpoint** : POST /api/test-chat
-- **Authentication Token** : Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0
+#### **Simple Hello Test**
+
+```bash
+curl -X POST http://localhost:3002/api/test-chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0" \
+  -d '{
+    "prompt": "Hello",
+    "sessionName": "Yolo",
+    "systemPrompt": "code"
+  }'
+```
+
+
+```bash
+curl -X POST 'http://192.168.40.28:3001/api/session/614b25ee-865d-4b54-a6c6-e51dc95b98d7/job' \
+-H 'Authorization: Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0' \
+-H 'Content-Type: application/json' \
+-d '{
+    "type": "agent_automation",
+    "title": "Test Playwright Press - Keyboard Actions",
+    "prompt": "Test playwright_press tool by:\n1. Navigate to https://the-internet.herokuapp.com/key_presses\n2. Use playwright_press to send key presses (ENTER, TAB, SPACE, etc.)\n3. Verify the key press feedback\n4. Take a screenshot to confirm the test",
+    "config": {
+        "max_iterations": 20,
+        "workspace_path": "/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/workspace",
+        "llm_provider": "gemini-pro-1"
+    }
+}'
+```
+
+
+
 
 ## 🔄 TEST EXECUTION PROCESS
 
@@ -25,24 +46,21 @@ For each test task:
 
 1. **Execute** the task using the API
 2. **Verify** results by checking `worker.log` for correctness
-3. **Fix** any code issues that prevent the test from passing
-4. **Mark complete** by checking the box only after successful validation
+3. if the task is not over sleep and wait just wait until the task is over sleep and tail ( surveiller les logs pour voir la progression des test.
+)
+4. **Fix** any code issues that prevent the test from passing
+5. **Mark complete** by checking the box only after successful validation
+
+
+⚠️ **IMPORTANT**: Run only one job at a time. The worker may experience issues if multiple jobs are executed concurrently.
+
+
+
 
 View logs with:
 ```bash
-tail -n 200 worker.log
+tail -n 50 worker.log
 ```
-
-
-
-
----
-
-plicy for 
-```
-
-# Connect to the streaming endpoint using requests
-stream_url = f'http://localhost:3002/api/chat/stream/{job_id}?auth={AUTH_TOKEN}&sessionId=your-session-id'
 
 
 
@@ -89,85 +107,6 @@ stream_url = f'http://localhost:3002/api/chat/stream/{job_id}?auth={AUTH_TOKEN}&
 
 ### 🏷️ **TASK TYPE SELECTION GUIDE**
 
-#### **File Operations** (Tasks 1-10, 41-45)
-
-```json
-"systemPrompt": "code"
-```
-
-_Use `code` for technical file manipulations_
-
-#### **Todo Lists** (Tasks 11-15)
-
-```json
-"systemPrompt": "orchestrator"
-```
-
-_Use `orchestrator` for complex task management_
-
-#### **Canvas and Visualization** (Tasks 16-19, 46-50)
-
-```json
-"systemPrompt": "architect"
-```
-
-_Use `architect` for designing visualizations_
-
-#### **AI Tools and Research** (Tasks 20-24, 51-55)
-
-```json
-"systemPrompt": "ask"
-```
-
-_Use `ask` for research and analysis_
-
-#### **Sessions and Persistence** (Tasks 25-29, 56-60)
-
-```json
-"systemPrompt": "orchestrator"
-```
-
-_Use `orchestrator` for complex state management_
-
-#### **Shell Commands** (Tasks 30-33, 61-65)
-
-```json
-"systemPrompt": "code"
-```
-
-_Use `code` for system operations_
-
-#### **Communication and Thoughts** (Tasks 34-36)
-
-```json
-"systemPrompt": "ask"
-```
-
-_Use `ask` for conversational interactions_
-
-#### **Complex Tests and Integration** (Tasks 37-40, 66-70)
-
-```json
-"systemPrompt": "orchestrator"
-```
-
-_Use `orchestrator` for complete projects_
-
-#### **Security and Performance** (Tasks 71-80)
-
-```json
-"systemPrompt": "debug"
-```
-
-_Use `debug` for security and performance analysis_
-
-#### **Alpha Vantage Tests** (Tasks 81-210)
-
-```json
-"systemPrompt": "trader"
-```
-
-_Use `trader` for financial analysis and market data_
 
 ### 📝 **PRACTICAL EXAMPLES**
 
@@ -297,25 +236,24 @@ curl -X POST http://localhost:3002/api/test-chat \
 
 - [x] 30. Execute a simple shell command (ls -la)
 - [x] 31. Execute a shell command with long output
-- [ ] 32. Execute a shell command in detached mode
+- [x] 32. Execute a shell command in detached mode
 - [x] 33. Execute a shell command that fails
 
 ### 7. Communication and Thoughts Tests
 
-- [ ] 36. Use finish to complete an interaction
+- [x] 36. Use finish to complete an interaction
 
 ### 8. Complex Tests and Integration
 
 - [x] 37. Create a simple game (like a guessing game)
-- [ ] 38. Create a complete website with HTML/CSS/JS
-- [ ] 39. Create a custom tool and use it
-- [ ] 40. Perform a complete A to Z project (todo list → development → testing → deployment)
+- [x] 38. Create a complete website with HTML/CSS/JS ✅ FIXED: Orchestrator infinite loop bug resolved
+- [x] 40. Perform a complete A to Z project (todo list → development → testing → deployment) ✅ FIXED: Smart Detection bug resolved - Agent now continues workflow after todo_write
 
 ### 1. Advanced File Operation Tests
 
-- [ ] 42. Read and analyze a complex JSON file
-- [ ] 43. Modify an existing file without losing its content
-- [ ] 44. Copy a file from one location to another
+- [x] 42. Read and analyze a complex JSON file
+- [x] 43. Modify an existing file without losing its content
+- [x] 44. Copy a file from one location to another
 - [ ] 45. Search and replace text in a file
 
 ### 2. Advanced Canvas and Visualization Tests

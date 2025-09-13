@@ -184,7 +184,17 @@ export default defineConfig(({ mode }) => {
           secure: false,
           ws: true, // Support WebSockets pour SSE
           configure: (proxy) => {
+            // Debug logging for proxy target
+            console.log('🔧 [Proxy] Target set to:', `http://localhost:${rootEnv.PUBLIC_PORT || rootEnv.PORT || '3001'}`);
+            console.log('🔧 [Proxy] Root env PUBLIC_PORT:', rootEnv.PUBLIC_PORT);
+            console.log('🔧 [Proxy] Root env PORT:', rootEnv.PORT);
+
             proxy.on('proxyReq', (proxyReq, req, res) => {
+              console.log('🔄 [Proxy] Proxying request:', req.url);
+
+              // Remove any existing Authorization header first
+              proxyReq.removeHeader('Authorization');
+
               // Forcer l'auth header sur toutes les requêtes proxy
               // Priorité: local .env > root .env > process.env
               const authToken =
@@ -192,17 +202,36 @@ export default defineConfig(({ mode }) => {
                 rootEnv.AUTH_TOKEN ||
                 process.env.AUTH_TOKEN ||
                 '';
+
               console.log(
                 '🔐 [Proxy] Setting Authorization header with token:',
                 authToken ? 'PRÉSENT' : 'ABSENT',
               );
+
               if (authToken) {
                 console.log(
                   '🔐 [Proxy] Token value (first 20 chars):',
                   authToken.substring(0, 20),
                 );
+                proxyReq.setHeader('Authorization', 'Bearer ' + authToken);
+                console.log('✅ [Proxy] Authorization header set successfully');
+              } else {
+                console.log('❌ [Proxy] No auth token available');
               }
-              proxyReq.setHeader('Authorization', 'Bearer ' + authToken);
+
+              // Ensure Content-Type is set
+              if (!proxyReq.getHeader('Content-Type')) {
+                proxyReq.setHeader('Content-Type', 'application/json');
+              }
+            });
+            proxy.on('proxyRes', (proxyRes, req, res) => {
+              console.log('✅ [Proxy] Proxy response received:', proxyRes.statusCode);
+              console.log('📋 [Proxy] Response headers:', Object.keys(proxyRes.headers));
+              if (proxyRes.statusCode !== 200) {
+                console.log('❌ [Proxy] Error response details:');
+                console.log('   Status:', proxyRes.statusCode);
+                console.log('   Status Message:', proxyRes.statusMessage);
+              }
             });
             proxy.on('error', (err, req, res) => {
               console.error('🚨 [Proxy] Proxy error:', err);

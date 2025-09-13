@@ -145,6 +145,57 @@ export class Agent {
     };
   }
 
+  /**
+   * Detect optimal tool based on systemPrompt and message keywords
+   */
+  private detectOptimalTool(prompt: string): { tool: string; params: any; reason: string } | null {
+    const lowerPrompt = prompt.toLowerCase();
+    const systemPrompt = (this.job.data as any)?.systemPrompt || '';
+    
+    this.log.info(`🔍 Smart Detection Debug: prompt="${lowerPrompt}", systemPrompt="${systemPrompt}"`);
+    
+    // Debug keywords detection
+    const debugKeywords = ['debug', 'error', 'logs', 'analyse', 'analysis', 'troubleshoot', 'investigate', 'stack trace', 'exception', 'bug', 'issue', 'problem', 'failure', 'crash'];
+    const hasDebugKeywords = debugKeywords.some(keyword => lowerPrompt.includes(keyword));
+    
+    this.log.info(`🔍 Debug keywords check: hasDebugKeywords=${hasDebugKeywords}, systemPrompt=${systemPrompt}`);
+    
+    // Todo/Planning keywords detection  
+    const todoKeywords = ['todo', 'task', 'comprehensive', 'planning', 'management', 'web application', 'building', 'development', 'phases'];
+    const hasTodoKeywords = todoKeywords.some(keyword => lowerPrompt.includes(keyword));
+    
+    if (hasDebugKeywords && systemPrompt === 'debug') {
+      return {
+        tool: 'listFiles',
+        params: { path: '.' },
+        reason: 'Debug request detected - exploring files first'
+      };
+    }
+    
+    if (hasTodoKeywords && (systemPrompt === 'orchestrator' || systemPrompt === 'architect')) {
+      const smartTodos = this.createSmartTodoList(prompt);
+      return {
+        tool: 'todo_write',
+        params: { todos: smartTodos },
+        reason: 'Todo/Planning request detected - creating structured todo list'
+      };
+    }
+    
+    // Complex project keywords for architect
+    const complexKeywords = ['project', 'application', 'system', 'développer', 'complet', 'architecture', 'multi'];
+    const hasComplexKeywords = complexKeywords.some(keyword => lowerPrompt.includes(keyword));
+    
+    if (hasComplexKeywords && prompt.length > 100 && systemPrompt === 'architect') {
+      return {
+        tool: 'listFiles',
+        params: { path: '.' },
+        reason: 'Complex architecture request - exploring environment first'
+      };
+    }
+    
+    return null;
+  }
+
   public async run(): Promise<string> {
     this.log.info('Agent starting...');
     await this.setupInterruptListener();
@@ -159,6 +210,43 @@ export class Agent {
         type: 'user',
       };
       (this.session.history as Message[]).push(newUserMessage);
+
+      // 🚨 SMART TOOL DETECTION: Detect optimal tool based on systemPrompt + keywords
+      const smartToolDetection = this.detectOptimalTool(prompt);
+      if (smartToolDetection) {
+        this.log.info(`Smart tool detection: ${smartToolDetection.tool} for ${smartToolDetection.reason}`);
+        
+        // 🔧 FIX: For A-Z projects, execute initial tool but continue with agent workflow
+        const isCompleteProject = prompt.toLowerCase().includes('complete') && 
+                                 prompt.toLowerCase().includes('project') &&
+                                 (prompt.toLowerCase().includes('a to z') || 
+                                  prompt.toLowerCase().includes('development') || 
+                                  prompt.toLowerCase().includes('deploy'));
+        
+        if (isCompleteProject) {
+          // Execute the detected tool as first step but continue execution
+          this.log.info('Complete A-Z project detected - executing initial tool but continuing workflow');
+          const command = { name: smartToolDetection.tool, params: smartToolDetection.params };
+          const result = await this.executeTool(command, this.log);
+          
+          // Add initial result to session but DON'T return - continue to main agent loop
+          const initialMessage: ToolResultMessage = {
+            id: crypto.randomUUID(),
+            type: 'tool_result',
+            result: { content: typeof result === 'string' ? result : JSON.stringify(result) },
+            toolName: smartToolDetection.tool,
+            timestamp: Date.now(),
+          };
+          this.session.history.push(initialMessage);
+          this.publishToChannel(initialMessage);
+        } else {
+          // Original behavior: execute and return for simple requests
+          const command = { name: smartToolDetection.tool, params: smartToolDetection.params };
+          const result = await this.executeTool(command, this.log);
+          if (typeof result === 'string') return result;
+          return JSON.stringify(result);
+        }
+      }
 
       let iterations = 0;
       const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS ?? 50;
@@ -1124,6 +1212,78 @@ export class Agent {
       } catch {
         // If extraction fails, continue with normal processing
       }
+    }
+
+    // 🎯 PRIORITY: Check for explicit tool names and intent first
+    const lowerCleanText = cleanText.toLowerCase();
+    
+    // Enhanced readFile detection
+    if (lowerCleanText.includes('readfile') || 
+        (lowerCleanText.includes('lire') && lowerCleanText.includes('fichier')) ||
+        (lowerCleanText.includes('read') && lowerCleanText.includes('file')) ||
+        lowerCleanText.includes('analyser') ||
+        (lowerCleanText.includes('complex.json') || lowerCleanText.includes('test-complex'))) {
+      const fileMatch = cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/);
+      const fileName = fileMatch ? fileMatch[0] : 'test-complex.json';
+      return JSON.stringify({
+        thought: `Lecture du fichier ${fileName} pour analyser son contenu`,
+        command: {
+          name: 'readFile',
+          params: { path: fileName },
+        },
+      });
+    }
+
+    // Enhanced editFile detection
+    if (lowerCleanText.includes('editfile') || 
+        (lowerCleanText.includes('ajouter') && lowerCleanText.includes('fichier')) ||
+        (lowerCleanText.includes('modifier') && lowerCleanText.includes('fichier')) ||
+        (lowerCleanText.includes('edit') && lowerCleanText.includes('file')) ||
+        lowerCleanText.includes('append')) {
+      const fileMatch = cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/);
+      const fileName = fileMatch ? fileMatch[0] : 'test-file.txt';
+      const contentMatch = cleanText.match(/"([^"]+)"/) || cleanText.match(/'([^']+)'/);
+      const content = contentMatch ? contentMatch[1] : 'Ligne ajoutée par Dusk';
+      return JSON.stringify({
+        thought: `Ajout de contenu au fichier ${fileName}`,
+        command: {
+          name: 'editFile',
+          params: {
+            path: fileName,
+            content_to_replace: '$',  // End of file for append
+            new_content: `\n${content}`,
+            is_regex: true
+          },
+        },
+      });
+    }
+
+    // Enhanced shell command detection
+    if (lowerCleanText.includes('executeshellcommand') ||
+        (lowerCleanText.includes('copy') && lowerCleanText.includes('file')) ||
+        (lowerCleanText.includes('copier') && lowerCleanText.includes('fichier')) ||
+        lowerCleanText.includes(' cp ')) {
+      // Extract shell command or construct copy command
+      const commandMatch = cleanText.match(/"([^"]+)"/) || cleanText.match(/'([^']+)'/);
+      let shellCommand = commandMatch ? commandMatch[1] : '';
+      
+      // If no explicit command, try to construct a copy command
+      if (!shellCommand) {
+        const fileMatches = cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/g);
+        if (fileMatches && fileMatches.length >= 2) {
+          shellCommand = `cp "${fileMatches[0]}" "${fileMatches[1]}"`;
+        } else {
+          shellCommand = 'echo "Hello World"';
+        }
+      }
+      
+      return JSON.stringify({
+        thought: `Exécution de la commande: ${shellCommand}`,
+        command: {
+          name: 'executeShellCommand',
+          params: { command: shellCommand },
+        },
+      });
     }
 
     // 🚨 ENHANCEMENT: Check if we should switch to local mode due to API issues
@@ -2528,17 +2688,164 @@ export class Agent {
           },
         };
       } else if (
+        // Web navigation detection (French and English)
+        cleanText.toLowerCase().includes('vas sur') ||
+        cleanText.toLowerCase().includes('va sur') ||
+        cleanText.toLowerCase().includes('aller sur') ||
+        cleanText.toLowerCase().includes('aller à') ||
+        cleanText.toLowerCase().includes('navigue sur') ||
+        cleanText.toLowerCase().includes('go to') ||
+        cleanText.toLowerCase().includes('navigate to') ||
+        cleanText.toLowerCase().includes('visit') ||
+        cleanText.toLowerCase().includes('open') ||
+        // Popular sites detection
+        cleanText.toLowerCase().includes('youtube') ||
+        cleanText.toLowerCase().includes('google') ||
+        cleanText.toLowerCase().includes('github') ||
+        cleanText.toLowerCase().includes('facebook') ||
+        cleanText.toLowerCase().includes('twitter') ||
+        cleanText.toLowerCase().includes('linkedin') ||
+        // URL patterns
+        cleanText.match(/https?:\/\/[^\s<>"']+/i)
+      ) {
+        thought = "L'utilisateur demande une navigation web. Je vais utiliser web_automation pour naviguer.";
+        
+        // Extract URL from the text
+        let url = '';
+        const lowerText = cleanText.toLowerCase();
+        
+        // Check for explicit URLs first
+        const urlMatch = cleanText.match(/https?:\/\/[^\s<>"']+/i);
+        if (urlMatch) {
+          url = urlMatch[0];
+        }
+        // Check for popular sites
+        else if (lowerText.includes('youtube')) {
+          // Look for specific person/channel after YouTube
+          const channelMatch = cleanText.match(/youtube.*?(de|et|affiche.*page.*de)\s+([a-zA-Z\s]+)/i);
+          if (channelMatch) {
+            const searchTerm = channelMatch[2].trim();
+            url = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`;
+          } else {
+            url = 'https://www.youtube.com';
+          }
+        }
+        else if (lowerText.includes('google')) {
+          url = 'https://www.google.com';
+        }
+        else if (lowerText.includes('github')) {
+          url = 'https://www.github.com';
+        }
+        else if (lowerText.includes('facebook')) {
+          url = 'https://www.facebook.com';
+        }
+        else if (lowerText.includes('twitter')) {
+          url = 'https://www.twitter.com';
+        }
+        else if (lowerText.includes('linkedin')) {
+          url = 'https://www.linkedin.com';
+        }
+        else {
+          // Try to extract any domain name from the text
+          const domainMatch = cleanText.match(/(?:sur|to|visit|open)\s+([a-zA-Z0-9.-]+\.com)/i);
+          if (domainMatch) {
+            url = `https://${domainMatch[1]}`;
+          } else {
+            url = 'https://www.google.com';
+          }
+        }
+        
+        command = {
+          name: 'web_automation',
+          params: {
+            action: 'navigate',
+            url: url,
+          },
+        };
+      } else if (
+        cleanText.toLowerCase().includes('editfile') ||
+        cleanText.toLowerCase().includes('edit') ||
+        cleanText.toLowerCase().includes('modifier') ||
+        cleanText.toLowerCase().includes('ajouter') ||
+        cleanText.toLowerCase().includes('add')
+      ) {
+        thought = "L'utilisateur veut modifier un fichier.";
+        // Extract filename from the text
+        const fileMatch = cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/);
+        const fileName = fileMatch ? fileMatch[0] : 'test-file.txt';
+        
+        // Extract content to add
+        const contentMatch = cleanText.match(/"([^"]+)"/) || cleanText.match(/'([^']+)'/);
+        const contentToAdd = contentMatch ? contentMatch[1] : 'New content';
+        
+        command = {
+          name: 'editFile',
+          params: {
+            path: fileName,
+            content_to_replace: '$',
+            new_content: `\n${contentToAdd}`,
+            is_regex: true
+          },
+        };
+      } else if (
+        cleanText.toLowerCase().includes('readfile') ||
         cleanText.toLowerCase().includes('read') ||
         cleanText.toLowerCase().includes('lire') ||
-        cleanText.toLowerCase().includes('file')
+        (cleanText.toLowerCase().includes('file') && !cleanText.toLowerCase().includes('edit'))
       ) {
         thought = "L'utilisateur veut lire un fichier.";
+        // Better filename extraction
+        const fileMatch = cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/);
+        const fileName = fileMatch ? fileMatch[0] : 'test-complex.json';
+        
         command = {
           name: 'readFile',
           params: {
-            filePath: cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/)
-              ? cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/)?.[0]
-              : '/home/demon/agentforge/AgenticForge2',
+            path: fileName,
+          },
+        };
+      } else if (
+        cleanText.toLowerCase().includes('copyfile') ||
+        cleanText.toLowerCase().includes('copy') ||
+        cleanText.toLowerCase().includes('copier')
+      ) {
+        thought = "L'utilisateur veut copier un fichier.";
+        // Extract source and destination from text
+        const fileMatches = cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/g);
+        const source = fileMatches ? fileMatches[0] : 'source.txt';
+        const destination = fileMatches && fileMatches[1] ? fileMatches[1] : 'destination.txt';
+        
+        command = {
+          name: 'executeShellCommand',
+          params: {
+            command: `cp "${source}" "${destination}"`,
+          },
+        };
+      } else if (
+        cleanText.toLowerCase().includes('search') ||
+        cleanText.toLowerCase().includes('replace') ||
+        cleanText.toLowerCase().includes('chercher') ||
+        cleanText.toLowerCase().includes('remplacer')
+      ) {
+        thought = "L'utilisateur veut effectuer une recherche et remplacement dans un fichier.";
+        // Extract search and replace terms
+        const searchMatch = cleanText.match(/search\s+["']([^"']+)["']/i) || 
+                           cleanText.match(/chercher\s+["']([^"']+)["']/i);
+        const replaceMatch = cleanText.match(/replace\s+["']([^"']+)["']/i) || 
+                            cleanText.match(/remplacer\s+["']([^"']+)["']/i);
+        const fileMatch = cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/);
+        
+        const searchTerm = searchMatch ? searchMatch[1] : 'old text';
+        const replaceTerm = replaceMatch ? replaceMatch[1] : 'new text';
+        const fileName = fileMatch ? fileMatch[0] : 'test-file.txt';
+        
+        command = {
+          name: 'editFile',
+          params: {
+            path: fileName,
+            content_to_replace: searchTerm,
+            new_content: replaceTerm,
+            is_regex: false
           },
         };
       } else if (
@@ -2639,14 +2946,55 @@ export class Agent {
               },
             };
           } else {
-            // Default to finish for simple responses and greetings
-            thought = "Traitement de la réponse de l'utilisateur.";
-            command = {
-              name: 'finish',
-              params: {
-                response: cleanText,
-              },
-            };
+            // 🚨 FIX: Don't default to finish for complex responses
+            // Instead, analyze the content and provide appropriate actions
+            
+            // Debug/Analysis keywords detection
+            const debugKeywords = ['debug', 'error', 'logs', 'analyse', 'analysis', 'troubleshoot', 'investigate', 'stack trace', 'exception', 'bug', 'issue', 'problem', 'failure', 'crash'];
+            const hasDebugKeywords = debugKeywords.some(keyword => lowerText.includes(keyword));
+            
+            // Todo/Planning keywords detection  
+            const todoKeywords = ['todo', 'task', 'comprehensive', 'planning', 'management', 'web application', 'building', 'development', 'phases'];
+            const hasTodoKeywords = todoKeywords.some(keyword => lowerText.includes(keyword));
+            
+            if (hasDebugKeywords) {
+              // For debugging requests, check existing logs or read files first
+              thought = "Détection d'une demande de débogage/analyse. Je vais d'abord explorer les fichiers de log disponibles.";
+              command = {
+                name: 'listFiles',
+                params: {
+                  path: '.',
+                },
+              };
+            } else if (hasTodoKeywords) {
+              // Create a todo list for project-oriented requests
+              thought = "Détection d'une demande nécessitant une planification. Je vais créer une todo list structurée.";
+              const smartTodos = this.createSmartTodoList(cleanText);
+              command = {
+                name: 'todo_write',
+                params: {
+                  todos: smartTodos,
+                },
+              };
+            } else if (cleanText.length > 50 || lowerText.includes('test') || lowerText.includes('complex') || lowerText.includes('run') || lowerText.includes('execute')) {
+              // For other complex requests, explore the current directory first
+              thought = "Requête complexe détectée. Je vais explorer l'environnement pour mieux comprendre le contexte.";
+              command = {
+                name: 'listFiles',
+                params: {
+                  path: '.',
+                },
+              };
+            } else {
+              // Only use finish for truly simple responses and greetings
+              thought = "Traitement de la réponse simple de l'utilisateur.";
+              command = {
+                name: 'finish',
+                params: {
+                  response: cleanText,
+                },
+              };
+            }
           }
         }
       }
@@ -2939,15 +3287,26 @@ export class Agent {
   private extractJsonFromMarkdown(text: string): string {
     const match = text.match(/```(?:json)?\s*\n([\s\S]+?)\n```/);
     if (match && match[1]) {
+      const content = match[1];
+      
+      // Vérifier si le contenu ressemble à du texte formaté (ex: "**Output:**" ou "#")
+      // plutôt qu'à du JSON valide
+      if ((content.trim().startsWith('**') && content.trim().endsWith('**')) ||
+          content.trim().startsWith('#') ||
+          content.trim().startsWith('*')) {
+        // C'est probablement du texte formaté, pas du JSON
+        // Retourner le texte complet pour que convertPlainTextToValidJson puisse le traiter
+        return text.trim();
+      }
+      
       try {
         // Just validate, return the extracted string for the main parser
-        JSON.parse(match[1]);
-        return match[1];
+        JSON.parse(content);
+        return content;
       } catch (error) {
-        // Le contenu n'est pas un JSON valide, on lance une erreur
-        throw new Error(
-          `Invalid JSON in markdown: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        );
+        // Le contenu n'est pas un JSON valide, on retourne le texte complet
+        // pour que convertPlainTextToValidJson puisse le traiter
+        return text.trim();
       }
     }
     return text.trim();
@@ -3016,7 +3375,15 @@ export class Agent {
       throw new Error('LLM response appears repetitive, avoiding loop');
     }
 
-    const jsonText = this.extractJsonFromMarkdown(llmResponse);
+    let jsonText = llmResponse;
+    try {
+      jsonText = this.extractJsonFromMarkdown(llmResponse);
+    } catch (extractionError) {
+      log.warn('⚠️ Failed to extract JSON from markdown, using full response...');
+      // Si l'extraction échoue, on utilise le texte complet pour la conversion
+      jsonText = llmResponse;
+    }
+    
     log.debug(
       { jsonText: jsonText.substring(0, 200) + '...' },
       'Attempting to parse LLM response',

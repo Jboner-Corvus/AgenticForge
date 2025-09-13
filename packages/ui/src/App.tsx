@@ -93,7 +93,14 @@ export default function App() {
   useEffect(() => {
     const handleResize = () => {
       if (typeof window !== 'undefined') {
-        const maxCanvasWidth = Math.min(800, window.innerWidth * 0.6);
+        // Responsive max width: smaller on mobile
+        const screenWidth = window.innerWidth;
+        let maxCanvasWidth;
+        if (screenWidth < 1024) {
+          maxCanvasWidth = screenWidth * 0.9; // Almost full on mobile
+        } else {
+          maxCanvasWidth = Math.min(800, screenWidth * 0.6);
+        }
         const currentCanvasWidth = canvasWidth;
         if (currentCanvasWidth > maxCanvasWidth) {
           setCanvasWidthStore(maxCanvasWidth);
@@ -103,6 +110,7 @@ export default function App() {
 
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', handleResize);
+      handleResize(); // Initial call
       return () => window.removeEventListener('resize', handleResize);
     }
   }, [canvasWidth, setCanvasWidthStore]);
@@ -140,14 +148,12 @@ export default function App() {
           {/* SYSTÈME ÉPIQUE DE PINNING - Affiché si des composants sont pinnés */}
           {hasPinnedComponents && <LazyLayoutManager />}
           {/* LAYOUT CLASSIQUE - Masqué si en mode battlefield */}
-          <div className="flex flex-1 overflow-hidden">
+          <div className="flex flex-1 overflow-hidden flex-col lg:flex-row">
             {isControlPanelVisible && (
               <div
-                className="flex-shrink-0 overflow-hidden relative"
+                className="w-full lg:flex-shrink-0 overflow-hidden relative lg:min-w-[250px] lg:max-w-[400px] order-2 lg:order-1"
                 style={{
                   width: controlPanelWidth,
-                  minWidth: '250px',
-                  maxWidth: '400px',
                 }}
               >
                 <ControlPanel />
@@ -155,8 +161,8 @@ export default function App() {
             )}
 
             {/* Conteneur principal pour la discussion et le canevas */}
-            <main className="flex-1 flex flex-col overflow-hidden">
-              <div className="flex-1 flex overflow-hidden">
+            <main className="flex-1 flex flex-col overflow-hidden order-1 lg:order-2">
+              <div className="flex-1 flex overflow-hidden flex-col lg:flex-row">
                 <div className="flex-1 min-w-0 flex flex-col">
                   {/* Main content area with flex layout */}
                   <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -170,16 +176,15 @@ export default function App() {
                   !isCanvasFullscreen &&
                   !components.canvas?.isPinned && (
                     <div
-                      className="flex-shrink-0 h-full relative border-l-2 border-cyan-500/20"
+                      className="w-full lg:flex-shrink-0 h-full relative border-l-2 border-cyan-500/20 lg:border-l-2"
                       style={{
                         width: canvasWidth,
-                        minWidth: '300px',
-                        maxWidth: `${Math.min(800, typeof window !== 'undefined' ? window.innerWidth * 0.6 : 600)}px`,
                       }}
                     >
                       <AnimatePresence>
                         <LazyAgentCanvas />
                       </AnimatePresence>
+                      {/* Hide divider on mobile */}
                       <div
                         id="canvas-divider"
                         role={translations.separator}
@@ -209,7 +214,7 @@ export default function App() {
                             setCanvasWidth(newWidth);
                           }
                         }}
-                        className="absolute top-0 left-0 w-2 h-full cursor-ew-resize bg-border hover:bg-primary transition-colors duration-200 z-10"
+                        className="hidden lg:block absolute top-0 left-0 w-2 h-full cursor-ew-resize bg-border hover:bg-primary transition-colors duration-200 z-10"
                       />
                     </div>
                   )}

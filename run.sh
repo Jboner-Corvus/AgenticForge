@@ -1312,36 +1312,40 @@ run_unit_tests() {
 
 run_integration_tests() {
     echo -e "${COLOR_BLUE}🔗 Running integration tests...${NC}"
-    
+
     # Check if services are running
     if ! docker compose ps | grep -q "Up"; then
         echo -e "${COLOR_RED}❌ Services not running. Please start services first.${NC}"
         echo -e "${COLOR_YELLOW}Run: $0 start${NC}"
         return 1
     fi
-    
+
     local total_failures=0
     local test_start_time
     test_start_time=$(date +%s)
-    
+
     # Test core integration
     echo -e "${COLOR_CYAN}Testing core integration...${NC}"
     cd "$ROOT_DIR/packages/core"
-    if pnpm run test:integration 2>/dev/null || pnpm run test; then
+
+    # Run integration tests and capture exit code properly
+    local test_result=0
+    if pnpm run test:integration; then
         echo -e "${COLOR_GREEN}✅ Core integration tests passed${NC}"
     else
+        test_result=$?
         echo -e "${COLOR_RED}❌ Core integration tests failed${NC}"
         ((total_failures++))
     fi
-    
+
     # Summary
     local test_end_time
     test_end_time=$(date +%s)
     local test_duration=$((test_end_time - test_start_time))
-    
+
     echo -e "\n${COLOR_CYAN}=== Integration Test Summary ===${NC}"
     echo -e "Duration: ${test_duration}s"
-    
+
     if [ $total_failures -eq 0 ]; then
         echo -e "${COLOR_GREEN}🎉 All integration tests passed!${NC}"
         return 0

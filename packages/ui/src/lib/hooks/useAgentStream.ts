@@ -62,64 +62,47 @@ You are AgenticForge, a specialized AI assistant focused on system design, archi
 ## Response JSON Schema
 
 {{RESPONSE_JSON_SCHEMA}}`,
-    coder: `# AgenticForge - Code Specialist
+    coder: `# AgenticForge - Code Mode
 
-You are AgenticForge, a specialized AI assistant focused on code implementation, debugging, and software development.
+You are AgenticForge. Be extremely concise. Act immediately.
 
-## Core Principles
+## Core Rules
 
-- **Code Quality**: Write clean, maintainable, and efficient code
-- **Best Practices**: Follow industry standards and conventions
-- **Testing**: Implement comprehensive test coverage
-- **Documentation**: Write clear code comments and documentation
+- **Direct action**: Web requests → \`web_automation\` immediately
+- **Code tasks**: Complex coding → \`todo_write\` then implement  
+- **File operations**: Use \`read_file/write_file/edit_file\` directly
+- **Simple chat**: Only use \`finish\` for basic conversation
+- **JSON only**: Always valid JSON format
 
-## Primary Responsibilities
+## Tools
 
-- **Code Implementation**: Write production-ready code
-- **Bug Fixing**: Debug and resolve software issues
-- **Code Review**: Analyze and improve existing code
-- **Refactoring**: Optimize and modernize codebases
-- **Testing**: Write unit and integration tests
-- **Performance**: Optimize code for speed and efficiency
-
-## Tool Usage Guidelines
-
-- **read_file**: Understand existing code structure
-- **write_file**: Create new files and components
-- **edit_file**: Modify existing code safely
-- **execute_shell_command**: Run builds, tests, and deployments
-- **list_directory**: Navigate project structure
-- **todo_write**: Plan development tasks and milestones
-
-## Development Standards
-
-- **Language**: TypeScript/JavaScript preferred
-- **Framework**: React, Node.js, Express
-- **Styling**: Tailwind CSS, CSS-in-JS
-- **Testing**: Jest, Vitest, React Testing Library
-- **Quality**: ESLint, Prettier, TypeScript strict mode
-
-## Response Style
-
-- **Technical**: Use precise technical terminology
-- **Practical**: Provide working code examples
-- **Educational**: Explain implementation decisions
-- **Efficient**: Focus on solutions over explanations
-
-## Available Tools
-
-**Code Operations:**
-- \`read_file\` - Code analysis and understanding
-- \`write_file\` - New file creation
-- \`edit_file\` - Code modifications
-- \`execute_shell_command\` - Build and test execution
-
-**Project Management:**
+- \`finish\` - Code delivery and simple responses
+- \`todo_write\` - All code implementation requests
+- \`read_file/write_file/edit_file\` - File operations
+- \`execute_shell_command\` - Build/test commands
 - \`list_directory\` - Project navigation
-- \`todo_write\` - Development planning
+- \`web_automation\` - Navigate websites, click elements, take screenshots, extract content
+- \`playwright_navigate\` - Navigate to URLs with Playwright
+- \`playwright_click\` - Click elements on web pages
+- \`playwright_screenshot\` - Take screenshots of web pages
+- \`playwright_type\` - Type text into web forms
+- \`playwright_evaluate\` - Execute JavaScript on pages
 
-**Communication:**
-- \`finish\` - Code delivery and explanations
+## Examples
+
+**Web automation "go to YouTube":**
+
+\`\`\`json
+{
+  "command": {
+    "name": "web_automation",
+    "params": {
+      "action": "navigate",
+      "url": "https://www.youtube.com"
+    }
+  }
+}
+\`\`\`
 
 ## Response JSON Schema
 
@@ -515,7 +498,8 @@ const isBrowserData = (
 export const useAgentStream = (useHybridMode: boolean = false) => {
   console.log('🎣 [useAgentStream] Hook initialized', { useHybridMode });
   const eventSourceRef = useRef<EventSource | null>(null);
-  const responseCountRef = useRef<number>(0); // Compteur des réponses pour limiter à 5 étapes
+  const responseCountRef = useRef<number>(0); // Compteur des réponses
+  const inactivityTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout pour inactivité
 
   // Always initialize hybrid real-time hook to avoid conditional hook calls
   const hybridRealTime = useHybridRealTime({
@@ -746,6 +730,25 @@ export const useAgentStream = (useHybridMode: boolean = false) => {
         }
 
         setAgentStatus(null);
+
+        // Clear inactivity timeout
+        if (inactivityTimeoutRef.current) {
+          clearTimeout(inactivityTimeoutRef.current);
+          inactivityTimeoutRef.current = null;
+        }
+      };
+
+      // Reset inactivity timeout whenever a message is received
+      const _resetInactivityTimeout = () => {
+        if (inactivityTimeoutRef.current) {
+          clearTimeout(inactivityTimeoutRef.current);
+        }
+        inactivityTimeoutRef.current = setTimeout(() => {
+          addDebugLog(
+            `[${new Date().toLocaleTimeString()}] [WARNING] ⏰ Inactivity timeout reached - closing connection`,
+          );
+          handleClose();
+        }, 30000); // 30 seconds of inactivity
       };
 
       const handleError = (error: Error) => {
@@ -827,7 +830,7 @@ export const useAgentStream = (useHybridMode: boolean = false) => {
         );
 
         addDebugLog(
-          `[${new Date().toLocaleTimeString()}] [INFO] Agent response (${responseCountRef.current}/5): ${content}`,
+          `[${new Date().toLocaleTimeString()}] [INFO] Agent response (${responseCountRef.current}): ${content}`,
         );
 
         const agentMessage: NewChatMessage = {
@@ -842,26 +845,28 @@ export const useAgentStream = (useHybridMode: boolean = false) => {
         addMessage(agentMessage);
         console.log('🎯 [useAgentStream] Agent message added to store');
 
-        // Calculer le progrès basé sur le nombre d'étapes (20% par étape)
-        const progressIncrement = Math.min(99, responseCountRef.current * 20);
+        // Calculer le progrès basé sur le nombre d'étapes (20% par étape, max 80%)
+        const progressIncrement = Math.min(80, responseCountRef.current * 20);
         setAgentProgress(progressIncrement);
 
-        // Arrêter après 5 étapes automatiquement
-        if (responseCountRef.current >= 5) {
+        // Check if this response indicates completion (contains final answer patterns)
+        const isCompletionResponse = content.toLowerCase().includes('final answer') ||
+                                    content.toLowerCase().includes('i have completed') ||
+                                    content.toLowerCase().includes('task completed') ||
+                                    content.toLowerCase().includes('finished') ||
+                                    content.length > 100; // Long responses often indicate completion
+
+        if (isCompletionResponse) {
           addDebugLog(
-            `[${new Date().toLocaleTimeString()}] [INFO] 🛑 Limite de 5 étapes atteinte - Arrêt automatique`,
+            `[${new Date().toLocaleTimeString()}] [INFO] 🎉 Detected completion response - setting progress to 100%`,
           );
-          setTimeout(() => {
-            handleClose();
-            setAgentProgress(100);
-            setIsProcessing(false);
-            setAgentStatus(null);
-            // Fetch token stats after processing is complete
-            if (useUIStore.getState().fetchLatestTokenStats) {
-              useUIStore.getState().fetchLatestTokenStats();
-            }
-          }, 1000);
+          setAgentProgress(100);
+          // Don't close immediately - wait for backend's close message or timeout
         }
+
+        // Don't auto-close after 5 steps - let the backend control when to close
+        // The connection will be closed when the backend sends a 'close' message
+        // or when the agent finishes naturally
       };
 
       const handleThought = (thought: string) => {
@@ -914,6 +919,9 @@ export const useAgentStream = (useHybridMode: boolean = false) => {
       };
 
       const onMessage = (event: MessageEvent) => {
+        // Reset inactivity timeout whenever a message is received
+        _resetInactivityTimeout();
+
         try {
           console.log(
             '📨 [useAgentStream] Raw SSE message received:',
@@ -985,6 +993,7 @@ export const useAgentStream = (useHybridMode: boolean = false) => {
 
           switch (data.type) {
             case 'tool_stream':
+              console.log('🎯 [useAgentStream] Processing tool_stream message');
               if (
                 data.data &&
                 isToolStartData(data.data) &&
@@ -1039,6 +1048,7 @@ export const useAgentStream = (useHybridMode: boolean = false) => {
               }
               break;
             case 'agent_thought':
+              console.log('🧠 [useAgentStream] Processing agent_thought message:', data.content);
               if (data.content) handleThought(data.content);
               break;
             case 'tool_call': {
@@ -1047,6 +1057,7 @@ export const useAgentStream = (useHybridMode: boolean = false) => {
               break;
             }
             case 'tool.start': {
+              console.log('🔧 [useAgentStream] Processing tool.start message:', data.data);
               // New case for backend's tool.start event
               if (data.data && isToolStartData(data.data)) {
                 const toolName = (data.data as ToolStartData).name;
@@ -1161,21 +1172,25 @@ export const useAgentStream = (useHybridMode: boolean = false) => {
             case 'agent_response':
               console.log('🤖 [useAgentStream] AGENT_RESPONSE received!');
               console.log('🤖 [useAgentStream] Content:', data.content);
+              console.log('🤖 [useAgentStream] Full data object:', JSON.stringify(data, null, 2));
               addDebugLog(
-                `[${new Date().toLocaleTimeString()}] [STREAM] 🤖 RÉPONSE AGENT reçue !`,
+                `[${new Date().toLocaleTimeString()}] [STREAM] 🤖 RÉPONSE AGENT reçue ! Content: "${data.content?.substring(0, 100)}..."`,
               );
               if (data.content) {
                 console.log('✅ [useAgentStream] Processing agent response...');
+                console.log('✅ [useAgentStream] Content length:', data.content.length);
                 addDebugLog(
-                  `[${new Date().toLocaleTimeString()}] [SUCCESS] 🎉 Traitement de la réponse agent: "${data.content.substring(0, 100)}..."`,
+                  `[${new Date().toLocaleTimeString()}] [SUCCESS] 🎉 Traitement de la réponse agent: "${data.content.substring(0, 100)}..." (length: ${data.content.length})`,
                 );
                 handleMessage(data.content);
+                console.log('✅ [useAgentStream] handleMessage called successfully');
               } else {
                 console.warn(
                   '⚠️ [useAgentStream] Agent response has no content!',
                 );
+                console.warn('⚠️ [useAgentStream] Full data object:', data);
                 addDebugLog(
-                  `[${new Date().toLocaleTimeString()}] [WARNING] 🚨 Réponse agent sans contenu !`,
+                  `[${new Date().toLocaleTimeString()}] [WARNING] 🚨 Réponse agent sans contenu ! Data: ${JSON.stringify(data)}`,
                 );
               }
               break;
@@ -1525,6 +1540,12 @@ export const useAgentStream = (useHybridMode: boolean = false) => {
               setTimeout(() => {
                 handleClose();
                 setAgentProgress(100);
+                setIsProcessing(false);
+                setAgentStatus(null);
+                // Fetch token stats after processing is complete
+                if (useUIStore.getState().fetchLatestTokenStats) {
+                  useUIStore.getState().fetchLatestTokenStats();
+                }
               }, 500); // Add a small delay to allow UI to update
               break;
             case 'connection':

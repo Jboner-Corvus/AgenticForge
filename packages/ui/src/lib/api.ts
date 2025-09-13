@@ -6,10 +6,11 @@ const BASE_URL =
   import.meta.env.VITE_BACKEND_URL ||
   (typeof window !== 'undefined'
     ? window.location.origin.includes('localhost') ||
-      window.location.origin.includes('127.0.0.1')
-      ? 'http://localhost:3001' // Use localhost for local development
+      window.location.origin.includes('127.0.0.1') ||
+      window.location.origin.includes('192.168.40.28')
+      ? '' // Use empty string for relative URLs to enable Vite proxy in dev
       : 'http://192.168.40.28:3001' // Use network IP for remote access
-    : 'http://localhost:3001');
+    : '');
 
 /**
  * Récupère le token d'authentification backend valide.
@@ -275,11 +276,32 @@ export async function sendMessage(
 
     eventSource.onmessage = (event) => {
       console.log('📨 [EventSource] Message received:', event.data);
+      console.log('📨 [EventSource] Message type check - looking for agent_response...');
       addDebugLog?.(`[SSE] 📨 Message EventSource reçu: ${event.data}`);
 
       // Clear connection timeout on first message
       clearTimeout(connectionTimeout);
 
+      // Add specific logging for agent_response detection
+      try {
+        const parsedData = JSON.parse(event.data);
+        console.log('📨 [EventSource] Parsed message type:', parsedData.type);
+        if (parsedData.type === 'agent_response') {
+          console.log('🎯 [EventSource] AGENT_RESPONSE DETECTED in raw EventSource message!');
+          console.log('🎯 [EventSource] Content:', parsedData.content);
+          console.log('🎯 [EventSource] Content length:', parsedData.content?.length || 0);
+          console.log('🎯 [EventSource] Full parsed data:', JSON.stringify(parsedData, null, 2));
+        } else if (parsedData.type === 'close') {
+          console.log('🔚 [EventSource] CLOSE message detected - stream ending');
+        } else {
+          console.log(`📨 [EventSource] Other message type: ${parsedData.type}`);
+        }
+      } catch (e) {
+        console.log('📨 [EventSource] Could not parse message as JSON (might be heartbeat):', event.data);
+        // Ignore parse errors for non-JSON messages (like heartbeats)
+      }
+
+      // Reset inactivity timeout on each message (this will be handled by the hook)
       onMessage(event);
     };
 

@@ -1,125 +1,39 @@
-# Interface Utilisateur AgenticForge
+# UI Package - Responsive Frontend Updates
 
-## Description
+## Overview
+This package contains the React-based frontend for the AI agent system, built with Vite, Tailwind CSS, and shadcn/ui components.
 
-Cette interface utilisateur est le frontend de l'application AgenticForge, construit avec React, TypeScript et Vite. Elle fournit une interface riche pour interagir avec les agents AI.
+## Recent Changes for Responsiveness
+To make the frontend responsive to different screen sizes (mobile, tablet, desktop):
 
-## Composants Principaux
+1. **App.tsx Layout**:
+   - Main layout now uses `flex-col lg:flex-row` to stack control panel and main content vertically on small screens.
+   - Canvas and control panel widths are full-width on mobile (`w-full lg:flex-shrink-0`) with min/max widths only on large screens.
+   - Resize divider hidden on mobile (`hidden lg:block`).
+   - Updated resize handler to use smaller max widths on mobile (90% of screen).
 
-### 🎨 AgentOutputCanvas
+2. **Global CSS (index.css)**:
+   - Added media queries for mobile-first adjustments:
+     - Smaller font sizes and padding on screens <640px.
+     - Reduced spacing for typing indicators and scrollbars.
+     - Thinner scrollbars on mobile.
 
-Le composant **AgentOutputCanvas** est conçu pour afficher le contenu généré par l'agent. Il supporte plusieurs types de contenu :
+3. **EnhancedChatInterface.tsx**:
+   - Header padding: `p-2 sm:p-4`.
+   - Icons and text scale down on mobile (e.g., `w-4 h-4 sm:w-5 sm:h-5`).
+   - Metrics grid: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`.
+   - Message bubbles: `max-w-[95%] sm:max-w-[80%]`, reduced padding (`p-2 sm:p-3`), smaller spacing.
 
-- **Markdown** : Rendu avec syntaxe étendue (remark-gfm)
-- **HTML** : Affichage sécurisé dans une iframe sandboxée
-- **URL** : Chargement de pages web externes
-- **Texte brut** : Pour les contenus simples
+4. **Header.tsx Navigation**:
+   - Added hamburger menu (`<Menu />` icon) visible only on mobile (`lg:hidden`).
+   - Desktop buttons hidden on mobile (`hidden lg:flex`), shown in a vertical dropdown menu when hamburger is clicked.
+   - Reduced padding and icon sizes on mobile.
 
-#### Fonctionnalités
+## Development
+- Run `npm run dev` to start the server at http://localhost:3003.
+- Test responsiveness by resizing the browser or using dev tools device emulation.
 
-- Historique de navigation
-- Mode plein écran
-- Épinglage du canvas
-- Copie du contenu dans le presse-papiers
-- Téléchargement du contenu
-- Redimensionnement
+## Dependencies
+- React, Tailwind CSS, framer-motion, lucide-react, etc. (see package.json).
 
-### 📋 TodoList
-
-Le composant **TodoList** permet de gérer les tâches de l'utilisateur. Il est complètement indépendant du canvas.
-
-#### Fonctionnalités
-
-- Ajout de nouvelles tâches avec priorité (basse, moyenne, haute)
-- Modification du statut des tâches (À faire, En cours, Terminé)
-- Suppression des tâches
-- Statistiques en temps réel
-- Tri automatique par statut
-- Catégorisation des tâches
-
-### 🔧 Indépendance des Composants
-
-Les deux composants (canvas et todolist) sont maintenant complètement indépendants l'un de l'autre :
-
-- **Canvas** : Affiche le contenu généré par l'agent
-- **TodoList** : Gère les tâches de l'utilisateur
-
-Cette séparation permet une meilleure organisation et une utilisation plus flexible de chaque composant.
-
-## Technologies Utilisées
-
-- React 18 avec Hooks
-- TypeScript
-- Vite (bundler)
-- Tailwind CSS (styling)
-- Framer Motion (animations)
-- Zustand (gestion d'état)
-- Lucide React (icônes)
-- React Markdown (rendu Markdown)
-
-## Développement
-
-### Installation
-
-```bash
-pnpm install
-```
-
-### Lancement en mode développement
-
-```bash
-pnpm dev
-```
-
-### Build pour la production
-
-```bash
-pnpm build
-```
-
-### Linting
-
-```bash
-pnpm lint
-```
-
-### Tests
-
-```bash
-pnpm test
-```
-
-## Structure du Projet
-
-```
-src/
-├── components/
-│   ├── AgentOutputCanvas/     # Composant canvas
-│   ├── TodoList/              # Composant todolist
-│   └── ui/                    # Composants UI réutilisables
-├── lib/
-│   ├── store.ts               # Zustand store
-│   └── hooks/                 # Hooks personnalisés
-└── types/                     # Définitions de types
-```
-
-## Configuration
-
-Le projet utilise :
-
-- ESLint pour le linting
-- Prettier pour le formatage
-- TypeScript pour le typage
-- Tailwind CSS pour le styling
-
-## Contribution
-
-1. Fork le projet
-2. Créez une branche pour votre fonctionnalité (`git checkout -b feature/ma-fonctionnalité`)
-3. Commitez vos changements (`git commit -m 'Ajout d'une nouvelle fonctionnalité'`)
-4. Poussez la branche (`git push origin feature/ma-fonctionnalité`)
-5. Ouvrez une Pull Request
-
-## License
-
-MIT
+For full project docs, see the root README.md.

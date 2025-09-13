@@ -540,7 +540,7 @@ export async function initializeWebServer(
         next: express.NextFunction,
       ) => {
         try {
-          const { apiKey, llmApiKey, llmModelName, llmProvider, prompt } =
+          const { apiKey, llmApiKey, llmModelName, llmProvider, prompt, systemPrompt } =
             req.body;
 
           if (!prompt) {
@@ -548,7 +548,7 @@ export async function initializeWebServer(
           }
 
           getLoggerInstance().info(
-            { prompt, sessionId: req.sessionId },
+            { prompt, systemPrompt, sessionId: req.sessionId },
             'Nouveau message reçu',
           );
 
@@ -558,6 +558,7 @@ export async function initializeWebServer(
             llmModelName,
             llmProvider,
             prompt,
+            systemPrompt,
             sessionId: req.sessionId,
           });
           req.job = _job;
@@ -589,6 +590,7 @@ export async function initializeWebServer(
             prompt,
             sessionId,
             sessionName,
+            systemPrompt,
           } = req.body;
 
           if (!prompt) {
@@ -603,7 +605,7 @@ export async function initializeWebServer(
             sessionName || `🤖 Test Auto - ${new Date().toLocaleTimeString()}`;
 
           getLoggerInstance().info(
-            { prompt, sessionId: testSessionId, sessionName: testSessionName },
+            { prompt, systemPrompt, sessionId: testSessionId, sessionName: testSessionName },
             'Test automatique lancé',
           );
 
@@ -618,6 +620,7 @@ export async function initializeWebServer(
             llmModelName,
             llmProvider,
             prompt,
+            systemPrompt,
             sessionId: testSessionId,
           });
 

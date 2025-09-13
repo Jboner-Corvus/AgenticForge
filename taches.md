@@ -315,7 +315,7 @@ tail -n 200 worker.log
 
 - [x] 30. Exécuter une commande shell simple (ls -la)
 - [x] 31. Exécuter une commande shell avec sortie longue
-- [ ] 32. Exécuter une commande shell en mode détaché
+- [ ] 32. Exécuter une commande shell en mode détaché - **Échoué**: Le mode détaché ne semble pas fonctionner. Les commandes ne sont pas exécutées.
 - [x] 33. Exécuter une commande shell qui échoue
 
 ### 7. Tests de communication et pensées

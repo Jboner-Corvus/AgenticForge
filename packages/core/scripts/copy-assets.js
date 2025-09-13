@@ -8,13 +8,35 @@ if (!existsSync(distDir)) {
   console.log('Created dist directory');
 }
 
-// Copy system.prompt.md to dist directory
+// Copy all system.prompt.*.md files to dist directory
+import { readdirSync } from 'fs';
+
+const agentDestDir = resolve('./dist/modules/agent');
+mkdirSync(agentDestDir, { recursive: true });
+
+const sourceDir = resolve('./src/modules/agent');
+const allFiles = readdirSync(sourceDir);
+const promptFiles = allFiles.filter(file => file.startsWith('system.prompt.') && file.endsWith('.md'));
+console.log(`Found ${promptFiles.length} system prompt files to copy`);
+
+for (const fileName of promptFiles) {
+  const sourcePath = resolve(sourceDir, fileName);
+  const destPath = resolve(agentDestDir, fileName);
+  try {
+    copyFileSync(sourcePath, destPath);
+    console.log(`Copied ${fileName} to dist directory`);
+  } catch (error) {
+    console.error(`Error copying ${fileName}:`, error);
+  }
+}
+
+// Also copy the main system.prompt.md to root of dist for backward compatibility
 const sourcePath = resolve('./src/modules/agent/system.prompt.md');
 const destPath = resolve('./dist/system.prompt.md');
 
 try {
   copyFileSync(sourcePath, destPath);
-  console.log('Copied system.prompt.md to dist directory');
+  console.log('Copied system.prompt.md to dist directory (backward compatibility)');
 } catch (error) {
   console.error('Error copying system.prompt.md:', error);
 }

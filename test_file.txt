@@ -1,0 +1,1 @@
+Voici un fichier de test avec du texte à remplacer. Le mot 'nouveau' doit être remplacé par 'nouveau'.

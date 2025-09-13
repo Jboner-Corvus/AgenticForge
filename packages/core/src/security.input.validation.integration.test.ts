@@ -369,7 +369,22 @@ describe('Security Input Validation Integration Tests', () => {
     it('should validate file uploads securely', async () => {
       const FileUploadSchema = z.object({
         content: z.string(), // base64 encoded
-        filename: z.string().regex(/^[a-zA-Z0-9\-_\.]+$/),
+        filename: z.string()
+          .regex(/^[a-zA-Z0-9\-_\.]+$/, {
+            message: 'Filename contains invalid characters'
+          })
+          .refine((filename) => {
+            // Prevent path traversal attacks and other security issues
+            return !filename.includes('..') &&
+                   !filename.includes('/') &&
+                   !filename.includes('\\') &&
+                   !filename.includes(' ') &&
+                   !filename.startsWith('.') &&
+                   !filename.endsWith('.') &&
+                   !/\.(exe|bat|cmd|com|scr|pif|jar|js|vb|vbs|wsf|wsh)$/i.test(filename);
+          }, {
+            message: 'Filename contains path traversal attempts or dangerous extensions'
+          }),
         mimeType: z.enum([
           'image/jpeg',
           'image/png',

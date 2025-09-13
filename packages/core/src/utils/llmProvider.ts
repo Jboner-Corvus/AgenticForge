@@ -1039,13 +1039,13 @@ class OpenRouterProvider implements ILlmProvider {
     } else {
       // Standard request format for other models
       requestBody = {
+        frequency_penalty: 0.1,
+        max_tokens: maxTokens,
         messages: openRouterMessages,
         model: finalModelName,
-        temperature: temperature,
-        max_tokens: maxTokens,
-        top_p: topP,
-        frequency_penalty: 0.1,
         presence_penalty: 0.1,
+        temperature: temperature,
+        top_p: topP,
       };
     }
 
@@ -1064,14 +1064,14 @@ class OpenRouterProvider implements ILlmProvider {
 
       // Debug: Log request details
       const debugInfo = {
-        model: finalModelName,
+        maxTokens,
         messageCount: openRouterMessages.length,
-        systemPromptLength: systemPrompt?.length || 0,
+        model: finalModelName,
+        provider: activeKey.apiProvider,
         requestBodySize: body.length,
         retryCount,
-        provider: activeKey.apiProvider,
+        systemPromptLength: systemPrompt?.length || 0,
         temperature,
-        maxTokens,
         topP
       };
 
@@ -1117,24 +1117,24 @@ class OpenRouterProvider implements ILlmProvider {
 
       // Debug: Log full response structure
       log.debug({
-        responseStatus: response.status,
-        responseHeaders: Object.fromEntries(response.headers.entries()),
-        dataKeys: Object.keys(data),
-        hasChoices: !!data.choices,
         choicesLength: data.choices?.length,
+        dataKeys: Object.keys(data),
         firstChoice: data.choices?.[0],
-        usage: data.usage,
-        retryCount
+        hasChoices: !!data.choices,
+        responseHeaders: Object.fromEntries(response.headers.entries()),
+        responseStatus: response.status,
+        retryCount,
+        usage: data.usage
       }, 'OpenRouter response analysis');
 
       const content = data.choices?.[0]?.message?.content;
       if (content === undefined || content === null || content.trim() === '') {
         log.warn(
           {
-            response: data,
             content,
-            contentType: typeof content,
             contentLength: content?.length,
+            contentType: typeof content,
+            response: data,
             retryCount
           },
           'OpenRouter API returned empty content',

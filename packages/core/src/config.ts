@@ -62,7 +62,7 @@ const configSchema = z.object({
   PORT: z.coerce.number().default(3001),
   POSTGRES_DB: z.string().default('gforge'),
   POSTGRES_HOST: z.string().default('postgres'),
-  POSTGRES_PASSWORD: z.string().default('secure_password'),
+  POSTGRES_PASSWORD: z.string().default('password'),
 
   POSTGRES_PORT: z.coerce.number().default(5432),
   POSTGRES_USER: z.string().default('user'),
