@@ -1,21 +1,21 @@
 body {
-    margin: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background-color: #222;
-    color: #eee;
-    font-family: sans-serif;
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #222;
+  color: #eee;
+  font-family: sans-serif;
 }
 
 h1 {
-    margin-bottom: 20px;
+  margin-bottom: 20px;
 }
 
 canvas {
-    background-color: #000;
-    border: 2px solid #0f0;
+  background-color: #000;
+  border: 2px solid #0f0;
 }

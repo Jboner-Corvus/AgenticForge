@@ -27,6 +27,15 @@ COPY packages/ui/ ./packages/ui/
 # Nettoyer et construire le core
 RUN rm -rf packages/core/dist && cd packages/core && pnpm build
 
+# Construire l'UI si le répertoire dist n'existe pas
+RUN if [ ! -d "packages/ui/dist" ]; then \
+      echo "Building UI in container..." && \
+      cd packages/ui && \
+      NODE_ENV=production pnpm run build; \
+    else \
+      echo "Using pre-built UI from host"; \
+    fi
+
 # Stage 2: Production
 FROM node:20-alpine
 
@@ -45,9 +54,9 @@ COPY --from=builder /usr/src/app/packages/core/node_modules ./packages/core/node
 COPY --from=builder /usr/src/app/packages/core/dist ./packages/core/dist
 COPY --from=builder /usr/src/app/packages/core/package.json ./packages/core/package.json
 
-# Copier les fichiers UI depuis l'host (built locally)
-COPY packages/ui/dist ./packages/ui/dist
-COPY packages/ui/package.json ./packages/ui/package.json
+# Copier les fichiers UI depuis le builder
+COPY --from=builder /usr/src/app/packages/ui/dist ./packages/ui/dist
+COPY --from=builder /usr/src/app/packages/ui/package.json ./packages/ui/package.json
 
 # Copier les fichiers racine
 COPY package.json ./

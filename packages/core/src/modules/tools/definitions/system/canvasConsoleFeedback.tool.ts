@@ -6,7 +6,10 @@ const CanvasConsoleFeedbackParams = z.object({
   /**
    * Action à effectuer (get_logs, clear_logs, enable_capture, disable_capture)
    */
-  action: z.enum(['get_logs', 'clear_logs', 'enable_capture', 'disable_capture']).optional().default('get_logs'),
+  action: z
+    .enum(['get_logs', 'clear_logs', 'enable_capture', 'disable_capture'])
+    .optional()
+    .default('get_logs'),
 
   /**
    * Filtre par niveau de log (log, error, warn, info, debug)
@@ -24,7 +27,9 @@ const CanvasConsoleFeedbackParams = z.object({
   filter: z.string().optional(),
 });
 
-export const canvasConsoleFeedbackTool: Tool<typeof CanvasConsoleFeedbackParams> = {
+export const canvasConsoleFeedbackTool: Tool<
+  typeof CanvasConsoleFeedbackParams
+> = {
   description:
     '🔍 CANVAS CONSOLE FEEDBACK - Obtient les logs console du canvas pour debugging frontend. Permet de récupérer, filtrer et gérer les logs console du contenu affiché dans le canvas.',
   execute: async (params, context) => {
@@ -49,7 +54,7 @@ export const canvasConsoleFeedbackTool: Tool<typeof CanvasConsoleFeedbackParams>
         limit,
         filter,
         timestamp: Date.now(),
-        toolName: 'canvas_console_feedback'
+        toolName: 'canvas_console_feedback',
       });
 
       // Envoyer la commande au frontend via Redis
@@ -81,14 +86,13 @@ export const canvasConsoleFeedbackTool: Tool<typeof CanvasConsoleFeedbackParams>
           action,
           level,
           limit,
-          filter
-        }
+          filter,
+        },
       };
-
     } catch (error) {
       log.error({ err: error }, '💥 Erreur canvas console feedback');
       throw new Error(
-        `Canvas console feedback failed: ${error instanceof Error ? error.message : String(error)}`
+        `Canvas console feedback failed: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   },

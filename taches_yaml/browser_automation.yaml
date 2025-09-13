@@ -1,0 +1,134 @@
+category: browser_automation
+description: Tests Browser Live (Playwright)
+tasks:
+  basic:
+    - id: 1
+      description: playwright_navigate vers https://example.com
+      status: completed
+      priority: high
+      difficulty: basic
+      system_prompt: ask
+      tags: [playwright, navigate, basic]
+    - id: 2
+      description: playwright_click sur le lien "More information..."
+      status: completed
+      priority: high
+      difficulty: basic
+      system_prompt: ask
+      tags: [playwright, click, basic]
+    - id: 3
+      description: playwright_wait_for_selector pour attendre h1
+      status: completed
+      priority: high
+      difficulty: basic
+      system_prompt: ask
+      tags: [playwright, wait, selector]
+    - id: 4
+      description: playwright_get_content pour extraire le texte
+      status: completed
+      priority: high
+      difficulty: basic
+      system_prompt: ask
+      tags: [playwright, get, content]
+    - id: 5
+      description: playwright_type dans un champ de recherche s'il existe
+      status: completed
+      priority: medium
+      difficulty: basic
+      system_prompt: ask
+      tags: [playwright, type, input]
+    - id: 6
+      description: playwright_set_viewport à 1280x720
+      status: pending
+      priority: medium
+      difficulty: intermediate
+      system_prompt: ask
+      tags: [playwright, viewport, size]
+    - id: 7
+      description: playwright_evaluate pour exécuter console.log("Test Browser Live View")
+      status: pending
+      priority: medium
+      difficulty: intermediate
+      system_prompt: ask
+      tags: [playwright, evaluate, console]
+
+  navigation_sites:
+    - id: 8
+      description: playwright_navigate vers https://youtube.com
+      status: pending
+      priority: low
+      difficulty: basic
+      system_prompt: ask
+      tags: [playwright, navigate, youtube]
+    - id: 9
+      description: playwright_navigate vers https://github.com
+      status: pending
+      priority: high
+      difficulty: basic
+      system_prompt: ask
+      tags: [playwright, navigate, github]
+    - id: 10
+      description: playwright_navigate vers https://stackoverflow.com
+      status: pending
+      priority: high
+      difficulty: basic
+      system_prompt: ask
+      tags: [playwright, navigate, stackoverflow]
+    - id: 11
+      description: playwright_navigate vers https://wikipedia.org
+      status: pending
+      priority: medium
+      difficulty: basic
+      system_prompt: ask
+      tags: [playwright, navigate, wikipedia]
+    - id: 12
+      description: playwright_navigate vers https://google.com
+      status: pending
+      priority: high
+      difficulty: basic
+      system_prompt: ask
+      tags: [playwright, navigate, google]
+
+  advanced_interactions:
+    - id: 13
+      description: playwright_screenshot pour capturer une page entière
+      status: pending
+      priority: high
+      difficulty: intermediate
+      system_prompt: ask
+      tags: [playwright, screenshot, full-page]
+    - id: 14
+      description: playwright_scroll pour défiler vers le bas
+      status: pending
+      priority: medium
+      difficulty: basic
+      system_prompt: ask
+      tags: [playwright, scroll, down]
+    - id: 15
+      description: playwright_hover sur un élément spécifique
+      status: pending
+      priority: medium
+      difficulty: basic
+      system_prompt: ask
+      tags: [playwright, hover, element]
+    - id: 16
+      description: playwright_press pour appuyer sur une touche (Enter, Escape)
+      status: pending
+      priority: medium
+      difficulty: basic
+      system_prompt: ask
+      tags: [playwright, press, key]
+    - id: 17
+      description: playwright_select_option dans une liste déroulante
+      status: pending
+      priority: medium
+      difficulty: intermediate
+      system_prompt: ask
+      tags: [playwright, select, option]
+    - id: 18
+      description: playwright_fill pour remplir un formulaire complet
+      status: pending
+      priority: high
+      difficulty: intermediate
+      system_prompt: ask
+      tags: [playwright, fill, form]

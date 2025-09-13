@@ -306,8 +306,12 @@ describe('User Interaction Tests', () => {
 
     it('should show send button when not processing', async () => {
       // Mock the hooks to provide a non-empty input value
-      (useMessageInputValue as unknown as ReturnType<typeof vi.fn>).mockReturnValue('Test message');
-      (useIsProcessing as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
+      (
+        useMessageInputValue as unknown as ReturnType<typeof vi.fn>
+      ).mockReturnValue('Test message');
+      (useIsProcessing as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+        false,
+      );
 
       render(
         <TestLanguageProvider>

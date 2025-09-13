@@ -11,7 +11,7 @@ import {
   Type,
   Eye,
   Clock,
-  Zap
+  Zap,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -36,8 +36,11 @@ interface BrowserAction {
 }
 
 export const PinnedBrowserView: React.FC = () => {
-  const [currentScreenshot, setCurrentScreenshot] = useState<LiveScreenshot | null>(null);
-  const [currentAction, setCurrentAction] = useState<BrowserAction | null>(null);
+  const [currentScreenshot, setCurrentScreenshot] =
+    useState<LiveScreenshot | null>(null);
+  const [currentAction, setCurrentAction] = useState<BrowserAction | null>(
+    null,
+  );
   const [isVisible, setIsVisible] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [currentUrl, setCurrentUrl] = useState<string>('');
@@ -59,14 +62,17 @@ export const PinnedBrowserView: React.FC = () => {
         setIsVisible(true);
 
         // Handle screenshots
-        if (data.type === 'browser.screenshot.realtime' && data.data?.imageData) {
+        if (
+          data.type === 'browser.screenshot.realtime' &&
+          data.data?.imageData
+        ) {
           console.log('PinnedBrowserView handling screenshot data');
           setCurrentScreenshot({
             imageData: data.data.imageData,
             action: data.data.action,
             selector: data.data.selector,
             timestamp: data.data.timestamp || Date.now(),
-            url: data.data.url
+            url: data.data.url,
           });
         }
 
@@ -76,34 +82,41 @@ export const PinnedBrowserView: React.FC = () => {
         }
 
         // Handle actions
-        if (data.type === 'browser.element.click' ||
-            data.type === 'browser.element.type' ||
-            data.type === 'browser.content.extracting') {
+        if (
+          data.type === 'browser.element.click' ||
+          data.type === 'browser.element.type' ||
+          data.type === 'browser.content.extracting'
+        ) {
           const action: BrowserAction = {
             type: mapEventTypeToAction(data.type),
             selector: data.data?.selector,
             value: data.data?.text || data.data?.value,
             url: data.data?.url,
             timestamp: data.timestamp || Date.now(),
-            status: 'running'
+            status: 'running',
           };
           setCurrentAction(action);
-          setActionHistory(prev => [action, ...prev].slice(0, 10)); // Keep last 10 actions
+          setActionHistory((prev) => [action, ...prev].slice(0, 10)); // Keep last 10 actions
         }
 
         // Handle action completion
-        if (data.type === 'browser.screenshot.captured' ||
-            data.type === 'browser.content.extracted') {
-          setCurrentAction(prev => prev ? { ...prev, status: 'completed' } : null);
+        if (
+          data.type === 'browser.screenshot.captured' ||
+          data.type === 'browser.content.extracted'
+        ) {
+          setCurrentAction((prev) =>
+            prev ? { ...prev, status: 'completed' } : null,
+          );
         }
 
         // Handle errors
         if (data.type === 'browser.error') {
-          setCurrentAction(prev => prev ? { ...prev, status: 'error' } : null);
+          setCurrentAction((prev) =>
+            prev ? { ...prev, status: 'error' } : null,
+          );
         }
       }
     };
-
 
     // Listen for browser events from postMessage (legacy)
     window.addEventListener('browser-event' as any, handleBrowserEvent as any);
@@ -112,22 +125,36 @@ export const PinnedBrowserView: React.FC = () => {
     // Listen for browser events from WebSocket (new way)
     window.addEventListener('message', (event) => {
       if (event.data?.type?.startsWith('browser.')) {
-        console.log('PinnedBrowserView received message event:', event.data?.type);
-        handleBrowserEvent(new CustomEvent('browser-event', {
-          detail: event.data
-        }));
+        console.log(
+          'PinnedBrowserView received message event:',
+          event.data?.type,
+        );
+        handleBrowserEvent(
+          new CustomEvent('browser-event', {
+            detail: event.data,
+          }),
+        );
       }
     });
     console.log('PinnedBrowserView listening for message events');
 
     // Also listen for browser-live-view events (new approach)
-    window.addEventListener('browser-live-view' as any, handleBrowserEvent as any);
+    window.addEventListener(
+      'browser-live-view' as any,
+      handleBrowserEvent as any,
+    );
     console.log('PinnedBrowserView listening for browser-live-view events');
 
     return () => {
-      window.removeEventListener('browser-event' as any, handleBrowserEvent as any);
+      window.removeEventListener(
+        'browser-event' as any,
+        handleBrowserEvent as any,
+      );
       window.removeEventListener('message', handleBrowserEvent as any);
-      window.removeEventListener('browser-live-view' as any, handleBrowserEvent as any);
+      window.removeEventListener(
+        'browser-live-view' as any,
+        handleBrowserEvent as any,
+      );
       console.log('PinnedBrowserView event listeners removed');
     };
   }, []);
@@ -137,18 +164,24 @@ export const PinnedBrowserView: React.FC = () => {
     console.log('PinnedBrowserView received WebSocket message:', lastMessage);
 
     if (lastMessage && lastMessage.type?.startsWith('browser.')) {
-      console.log('🎯 PinnedBrowserView processing WebSocket browser event:', lastMessage.type);
+      console.log(
+        '🎯 PinnedBrowserView processing WebSocket browser event:',
+        lastMessage.type,
+      );
       setIsVisible(true);
 
       // Handle screenshots from WebSocket
-      if (lastMessage.type === 'browser.screenshot.realtime' && lastMessage.data?.imageData) {
+      if (
+        lastMessage.type === 'browser.screenshot.realtime' &&
+        lastMessage.data?.imageData
+      ) {
         console.log('📸 PinnedBrowserView handling WebSocket screenshot data');
         setCurrentScreenshot({
           imageData: lastMessage.data.imageData,
           action: lastMessage.data.action || 'Screenshot',
           selector: lastMessage.data.selector,
           timestamp: lastMessage.data.timestamp || Date.now(),
-          url: lastMessage.data.url
+          url: lastMessage.data.url,
         });
       }
 
@@ -158,30 +191,38 @@ export const PinnedBrowserView: React.FC = () => {
       }
 
       // Handle actions from WebSocket
-      if (lastMessage.type === 'browser.element.click' ||
-          lastMessage.type === 'browser.element.type' ||
-          lastMessage.type === 'browser.content.extracting') {
+      if (
+        lastMessage.type === 'browser.element.click' ||
+        lastMessage.type === 'browser.element.type' ||
+        lastMessage.type === 'browser.content.extracting'
+      ) {
         const action: BrowserAction = {
           type: mapEventTypeToAction(lastMessage.type),
           selector: lastMessage.data?.selector,
           value: lastMessage.data?.text || lastMessage.data?.value,
           url: lastMessage.data?.url,
           timestamp: Date.now(),
-          status: 'running'
+          status: 'running',
         };
         setCurrentAction(action);
-        setActionHistory(prev => [action, ...prev].slice(0, 10));
+        setActionHistory((prev) => [action, ...prev].slice(0, 10));
       }
 
       // Handle action completion from WebSocket
-      if (lastMessage.type === 'browser.screenshot.captured' ||
-          lastMessage.type === 'browser.content.extracted') {
-        setCurrentAction(prev => prev ? { ...prev, status: 'completed' } : null);
+      if (
+        lastMessage.type === 'browser.screenshot.captured' ||
+        lastMessage.type === 'browser.content.extracted'
+      ) {
+        setCurrentAction((prev) =>
+          prev ? { ...prev, status: 'completed' } : null,
+        );
       }
 
       // Handle errors from WebSocket
       if (lastMessage.type === 'browser.error') {
-        setCurrentAction(prev => prev ? { ...prev, status: 'error' } : null);
+        setCurrentAction((prev) =>
+          prev ? { ...prev, status: 'error' } : null,
+        );
       }
     }
   }, [lastMessage]);
@@ -200,22 +241,33 @@ export const PinnedBrowserView: React.FC = () => {
 
   const getActionIcon = (type: BrowserAction['type']) => {
     switch (type) {
-      case 'navigate': return <Globe className="w-4 h-4" />;
-      case 'click': return <MousePointer className="w-4 h-4" />;
-      case 'type': return <Type className="w-4 h-4" />;
-      case 'screenshot': return <Camera className="w-4 h-4" />;
-      case 'wait': return <Clock className="w-4 h-4" />;
-      case 'extract': return <Eye className="w-4 h-4" />;
-      default: return <Zap className="w-4 h-4" />;
+      case 'navigate':
+        return <Globe className="w-4 h-4" />;
+      case 'click':
+        return <MousePointer className="w-4 h-4" />;
+      case 'type':
+        return <Type className="w-4 h-4" />;
+      case 'screenshot':
+        return <Camera className="w-4 h-4" />;
+      case 'wait':
+        return <Clock className="w-4 h-4" />;
+      case 'extract':
+        return <Eye className="w-4 h-4" />;
+      default:
+        return <Zap className="w-4 h-4" />;
     }
   };
 
   const getActionColor = (status: BrowserAction['status']) => {
     switch (status) {
-      case 'running': return 'text-blue-500 bg-blue-500/10';
-      case 'completed': return 'text-green-500 bg-green-500/10';
-      case 'error': return 'text-red-500 bg-red-500/10';
-      default: return 'text-gray-500 bg-gray-500/10';
+      case 'running':
+        return 'text-blue-500 bg-blue-500/10';
+      case 'completed':
+        return 'text-green-500 bg-green-500/10';
+      case 'error':
+        return 'text-red-500 bg-red-500/10';
+      default:
+        return 'text-gray-500 bg-gray-500/10';
     }
   };
 
@@ -229,7 +281,7 @@ export const PinnedBrowserView: React.FC = () => {
         initial={{ opacity: 0, height: 0 }}
         animate={{
           opacity: 1,
-          height: isMinimized ? 'auto' : '320px'
+          height: isMinimized ? 'auto' : '320px',
         }}
         exit={{ opacity: 0, height: 0 }}
         className="w-full mb-4 relative z-10"
@@ -254,7 +306,9 @@ export const PinnedBrowserView: React.FC = () => {
 
               {/* Current Action */}
               {currentAction && (
-                <div className={`flex items-center space-x-2 px-2 py-1 rounded-full text-xs ${getActionColor(currentAction.status)}`}>
+                <div
+                  className={`flex items-center space-x-2 px-2 py-1 rounded-full text-xs ${getActionColor(currentAction.status)}`}
+                >
                   {getActionIcon(currentAction.type)}
                   <span className="capitalize">{currentAction.type}</span>
                   {currentAction.status === 'running' && (
@@ -271,7 +325,11 @@ export const PinnedBrowserView: React.FC = () => {
                 onClick={() => setIsMinimized(!isMinimized)}
                 className="h-7 w-7 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
               >
-                {isMinimized ? <Maximize2 className="w-3 h-3" /> : <Minimize2 className="w-3 h-3" />}
+                {isMinimized ? (
+                  <Maximize2 className="w-3 h-3" />
+                ) : (
+                  <Minimize2 className="w-3 h-3" />
+                )}
               </Button>
               <Button
                 variant="ghost"
@@ -308,12 +366,22 @@ export const PinnedBrowserView: React.FC = () => {
                             <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-200 to-purple-200 dark:from-blue-800 dark:to-purple-800 rounded-lg flex items-center justify-center">
                               <Monitor className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                             </div>
-                            <p className="text-sm font-medium">Browser Live View</p>
-                            <p className="text-xs mt-1">Waiting for Playwright activity...</p>
+                            <p className="text-sm font-medium">
+                              Browser Live View
+                            </p>
+                            <p className="text-xs mt-1">
+                              Waiting for Playwright activity...
+                            </p>
                             <div className="mt-3 flex justify-center space-x-1">
                               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                              <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                              <div
+                                className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"
+                                style={{ animationDelay: '0.2s' }}
+                              ></div>
+                              <div
+                                className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
+                                style={{ animationDelay: '0.4s' }}
+                              ></div>
                             </div>
                           </div>
                         </div>
@@ -334,11 +402,16 @@ export const PinnedBrowserView: React.FC = () => {
                             <div className="flex items-center space-x-2">
                               {getActionIcon(currentAction.type)}
                               <span>
-                                {currentAction.type === 'click' && `Clicking: ${currentAction.selector || 'element'}`}
-                                {currentAction.type === 'type' && `Typing: "${currentAction.value}"`}
-                                {currentAction.type === 'navigate' && `Navigating to: ${currentAction.url}`}
-                                {currentAction.type === 'extract' && `Extracting content`}
-                                {currentAction.type === 'screenshot' && `Taking screenshot`}
+                                {currentAction.type === 'click' &&
+                                  `Clicking: ${currentAction.selector || 'element'}`}
+                                {currentAction.type === 'type' &&
+                                  `Typing: "${currentAction.value}"`}
+                                {currentAction.type === 'navigate' &&
+                                  `Navigating to: ${currentAction.url}`}
+                                {currentAction.type === 'extract' &&
+                                  `Extracting content`}
+                                {currentAction.type === 'screenshot' &&
+                                  `Taking screenshot`}
                               </span>
                             </div>
                           </div>
@@ -347,14 +420,18 @@ export const PinnedBrowserView: React.FC = () => {
 
                       {/* Timestamp */}
                       <div className="absolute top-2 right-2 bg-black/80 text-white px-2 py-1 rounded text-xs">
-                        {new Date(currentScreenshot.timestamp).toLocaleTimeString()}
+                        {new Date(
+                          currentScreenshot.timestamp,
+                        ).toLocaleTimeString()}
                       </div>
                     </div>
                   ) : (
                     <div className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
                       <div className="text-center text-gray-500 dark:text-gray-400">
                         <Monitor className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">Waiting for browser activity...</p>
+                        <p className="text-sm">
+                          Waiting for browser activity...
+                        </p>
                       </div>
                     </div>
                   )}
@@ -379,7 +456,9 @@ export const PinnedBrowserView: React.FC = () => {
                         >
                           {getActionIcon(action.type)}
                           <div className="flex-1 min-w-0">
-                            <div className="capitalize font-medium">{action.type}</div>
+                            <div className="capitalize font-medium">
+                              {action.type}
+                            </div>
                             {action.selector && (
                               <div className="text-gray-600 dark:text-gray-400 truncate">
                                 {action.selector}

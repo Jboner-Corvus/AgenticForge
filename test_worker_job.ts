@@ -10,7 +10,7 @@ async function sendTestJob() {
       host: 'localhost',
       port: 6379,
     });
-    
+
     const jobQueue = new Queue('tasks', { connection: redisConnection });
 
     // Create a test job
@@ -18,17 +18,20 @@ async function sendTestJob() {
       message: 'Hello, this is a test message for the worker.',
       sessionId: 'test-session-' + Date.now(),
       llmProvider: 'gemini',
-      llmModelName: 'gemini-2.5-pro'
+      llmModelName: 'gemini-2.5-pro',
     });
 
     console.log(`✅ Job queued successfully with ID: ${job.id}`);
 
     await jobQueue.close();
     await redisConnection.quit();
-    
+
     console.log('Job sent to worker. Check the worker logs to see the result.');
   } catch (error) {
-    console.error('❌ Job failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.error(
+      '❌ Job failed:',
+      error instanceof Error ? error.message : 'Unknown error',
+    );
   }
 }
 

@@ -28,7 +28,6 @@ export const BrowserIntegrationExample: React.FC = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
           {/* Left Column - Chat/Agent Interface */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -63,7 +62,8 @@ export const BrowserIntegrationExample: React.FC = () => {
                   <div className="flex-1">
                     <div className="space-y-2">
                       <p className="text-sm text-gray-900">
-                        Je vais naviguer vers Google et effectuer une recherche...
+                        Je vais naviguer vers Google et effectuer une
+                        recherche...
                       </p>
                       <div className="bg-blue-50 border border-blue-200 rounded p-3">
                         <div className="flex items-center space-x-2">
@@ -85,8 +85,9 @@ export const BrowserIntegrationExample: React.FC = () => {
                 Visual History
               </h3>
               <div className="text-sm text-gray-600">
-                Les screenshots capturés par l'agent apparaîtront automatiquement ici
-                pour créer un historique visuel des actions effectuées.
+                Les screenshots capturés par l'agent apparaîtront
+                automatiquement ici pour créer un historique visuel des actions
+                effectuées.
               </div>
             </div>
           </div>
@@ -98,9 +99,13 @@ export const BrowserIntegrationExample: React.FC = () => {
                 Live Browser View
               </h3>
               <div className="text-sm text-gray-600 mb-4">
-                Cette zone affiche les actions du navigateur en temps réel.
-                Le composant <code className="bg-gray-100 px-1 rounded">BrowserLiveView</code> apparaît
-                automatiquement quand l'agent utilise des outils de navigation.
+                Cette zone affiche les actions du navigateur en temps réel. Le
+                composant{' '}
+                <code className="bg-gray-100 px-1 rounded">
+                  BrowserLiveView
+                </code>{' '}
+                apparaît automatiquement quand l'agent utilise des outils de
+                navigation.
               </div>
 
               {/* Zone où BrowserLiveView apparaîtra */}
@@ -132,9 +137,15 @@ export const BrowserIntegrationExample: React.FC = () => {
                 <div>
                   <strong>Composants UI:</strong>
                   <ul className="list-disc list-inside mt-1 space-y-1">
-                    <li><code>BrowserLiveView</code> - Visualisation temps réel</li>
-                    <li><code>BrowserControls</code> - Contrôles utilisateur</li>
-                    <li><code>useAgentStream</code> - Gestion des événements</li>
+                    <li>
+                      <code>BrowserLiveView</code> - Visualisation temps réel
+                    </li>
+                    <li>
+                      <code>BrowserControls</code> - Contrôles utilisateur
+                    </li>
+                    <li>
+                      <code>useAgentStream</code> - Gestion des événements
+                    </li>
                   </ul>
                 </div>
 

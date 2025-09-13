@@ -15,10 +15,13 @@ Tous les outils nécessitent une clé API Alpha Vantage. Passez-la via le param�
 
 ```typescript
 // Exemple d'utilisation
-const result = await globalQuoteTool.execute({
-  symbol: 'AAPL',
-  apikey: 'VOTRE_CLE_API'
-}, context);
+const result = await globalQuoteTool.execute(
+  {
+    symbol: 'AAPL',
+    apikey: 'VOTRE_CLE_API',
+  },
+  context,
+);
 ```
 
 ## 📊 Outils Disponibles
@@ -26,6 +29,7 @@ const result = await globalQuoteTool.execute({
 ### Données Boursières de Base
 
 #### `time_series_intraday`
+
 - **Description** : Données OHLCV intrajournalières courantes et historiques (20+ ans)
 - **Paramètres** :
   - `symbol` : Symbole boursier (ex: AAPL, IBM)
@@ -38,6 +42,7 @@ const result = await globalQuoteTool.execute({
   - `entitlement` : "delayed" ou "realtime" (optionnel)
 
 #### `time_series_daily`
+
 - **Description** : Données OHLCV quotidiennes historiques (20+ ans)
 - **Paramètres** :
   - `symbol` : Symbole boursier
@@ -46,12 +51,14 @@ const result = await globalQuoteTool.execute({
   - `entitlement` : "delayed" ou "realtime" (optionnel)
 
 #### `global_quote`
+
 - **Description** : Prix et volume actuels pour un titre
 - **Paramètres** :
   - `symbol` : Symbole boursier
   - `entitlement` : "delayed" ou "realtime" (optionnel)
 
 #### `symbol_search`
+
 - **Description** : Recherche de symboles par mots-clés
 - **Paramètres** :
   - `keywords` : Mots-clés de recherche (ex: "microsoft", "tech")
@@ -59,6 +66,7 @@ const result = await globalQuoteTool.execute({
 ### Données Fondamentales
 
 #### `company_overview`
+
 - **Description** : Informations complètes sur l'entreprise, ratios financiers et métriques clés
 - **Paramètres** :
   - `symbol` : Symbole boursier
@@ -66,6 +74,7 @@ const result = await globalQuoteTool.execute({
 ### Actualités et Intelligence
 
 #### `news_sentiment`
+
 - **Description** : Actualités et sentiment du marché en temps réel avec scores d'IA
 - **Paramètres** :
   - `tickers` : Symboles séparés par virgules (optionnel)
@@ -78,6 +87,7 @@ const result = await globalQuoteTool.execute({
 ### Analyse Technique
 
 #### `sma`
+
 - **Description** : Moyenne mobile simple (SMA)
 - **Paramètres** :
   - `symbol` : Symbole boursier
@@ -88,6 +98,7 @@ const result = await globalQuoteTool.execute({
   - `entitlement` : "delayed" ou "realtime" (optionnel)
 
 #### `rsi`
+
 - **Description** : Indice de Force Relative (RSI)
 - **Paramètres** :
   - `symbol` : Symbole boursier
@@ -97,9 +108,22 @@ const result = await globalQuoteTool.execute({
   - `datatype` : "json" ou "csv"
   - `entitlement` : "delayed" ou "realtime" (optionnel)
 
+#### `indicator`
+
+- **Description** : Indicateur technique unifié (RSI, SMA, EMA, MACD, STOCH, BBANDS)
+- **Paramètres** :
+  - `symbol` : Symbole boursier
+  - `interval` : Intervalle de temps
+  - `indicator_type` : Type d'indicateur ("rsi", "sma", "ema", "macd", "stoch", "bbands")
+  - `time_period` : Période de calcul (défaut: 14 pour RSI, 20 pour SMA)
+  - `series_type` : Type de série ("close", "open", "high", "low")
+  - `datatype` : "json" ou "csv"
+  - `entitlement` : "delayed" ou "realtime" (optionnel)
+
 ### Devises (Forex)
 
 #### `fx_daily`
+
 - **Description** : Taux de change quotidiens
 - **Paramètres** :
   - `from_symbol` : Devise source (code ISO 3 lettres)
@@ -110,6 +134,7 @@ const result = await globalQuoteTool.execute({
 ### Cryptomonnaies
 
 #### `digital_currency_daily`
+
 - **Description** : Données quotidiennes des cryptomonnaies
 - **Paramètres** :
   - `symbol` : Symbole crypto (ex: BTC, ETH)
@@ -118,6 +143,7 @@ const result = await globalQuoteTool.execute({
 ### Matières Premières
 
 #### `wti`
+
 - **Description** : Prix du pétrole West Texas Intermediate (WTI)
 - **Paramètres** :
   - `interval` : Intervalle de temps
@@ -125,39 +151,79 @@ const result = await globalQuoteTool.execute({
 ### Indicateurs Économiques
 
 #### `inflation`
+
 - **Description** : Données d'inflation des États-Unis
 - **Paramètres** : Aucun paramètre requis (sauf apikey)
 
 ### Utilitaires
 
 #### `alpha_vantage_ping`
+
 - **Description** : Outil de vérification de santé
 - **Paramètres** : Aucun
 
 ## 🔧 Exemples d'Utilisation
 
 ```typescript
-import { globalQuoteTool, timeSeriesIntradayTool, newsSentimentTool } from './alpha-vantage';
+import {
+  globalQuoteTool,
+  timeSeriesIntradayTool,
+  newsSentimentTool,
+  indicatorTool,
+} from './alpha-vantage';
 
 // Obtenir le prix actuel d'une action
-const quote = await globalQuoteTool.execute({
-  symbol: 'AAPL',
-  apikey: process.env.ALPHA_VANTAGE_API_KEY
-}, context);
+const quote = await globalQuoteTool.execute(
+  {
+    symbol: 'AAPL',
+    apikey: process.env.ALPHA_VANTAGE_API_KEY,
+  },
+  context,
+);
 
 // Obtenir des données intrajournalières
-const intraday = await timeSeriesIntradayTool.execute({
-  symbol: 'TSLA',
-  interval: '5min',
-  apikey: process.env.ALPHA_VANTAGE_API_KEY
-}, context);
+const intraday = await timeSeriesIntradayTool.execute(
+  {
+    symbol: 'TSLA',
+    interval: '5min',
+    apikey: process.env.ALPHA_VANTAGE_API_KEY,
+  },
+  context,
+);
 
 // Analyser le sentiment des actualités
-const sentiment = await newsSentimentTool.execute({
-  tickers: 'AAPL,MSFT',
-  limit: 10,
-  apikey: process.env.ALPHA_VANTAGE_API_KEY
-}, context);
+const sentiment = await newsSentimentTool.execute(
+  {
+    tickers: 'AAPL,MSFT',
+    limit: 10,
+    apikey: process.env.ALPHA_VANTAGE_API_KEY,
+  },
+  context,
+);
+
+// Obtenir un indicateur technique (par exemple, RSI)
+const rsi = await indicatorTool.execute(
+  {
+    symbol: 'TSLA',
+    interval: 'daily',
+    indicator_type: 'rsi',
+    time_period: 14,
+    apikey: process.env.ALPHA_VANTAGE_API_KEY,
+  },
+  context,
+);
+
+// Obtenir une moyenne mobile simple
+const sma = await indicatorTool.execute(
+  {
+    symbol: 'AAPL',
+    interval: 'daily',
+    indicator_type: 'sma',
+    time_period: 20,
+    apikey: process.env.ALPHA_VANTAGE_API_KEY,
+  },
+  context,
+);
 ```
 
 ## 📋 Catégories d'Outils

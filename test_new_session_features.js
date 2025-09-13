@@ -14,12 +14,17 @@ console.log('🧪 Testing New Session Features...\n');
 console.log('1. Testing ControlPanel component structure...');
 
 try {
-  const controlPanelPath = path.join(__dirname, 'packages/ui/src/components/ControlPanel.tsx');
+  const controlPanelPath = path.join(
+    __dirname,
+    'packages/ui/src/components/ControlPanel.tsx',
+  );
   const controlPanelContent = fs.readFileSync(controlPanelPath, 'utf8');
 
   // Check for New Session button
   const hasNewSessionButton = controlPanelContent.includes('New Session');
-  console.log(`   ✅ New Session button: ${hasNewSessionButton ? 'FOUND' : 'MISSING'}`);
+  console.log(
+    `   ✅ New Session button: ${hasNewSessionButton ? 'FOUND' : 'MISSING'}`,
+  );
 
   // Check for token counter
   const hasTokenCounter = controlPanelContent.includes('Session Tokens');
@@ -32,7 +37,6 @@ try {
   // Check for Coins icon import
   const hasCoinsIcon = controlPanelContent.includes('Coins');
   console.log(`   ✅ Coins icon import: ${hasCoinsIcon ? 'FOUND' : 'MISSING'}`);
-
 } catch (error) {
   console.log('   ❌ Error reading ControlPanel:', error.message);
 }
@@ -40,21 +44,30 @@ try {
 // Test 2: Check if sessionStore has new functions
 console.log('\n2. Testing sessionStore updates...');
 try {
-  const sessionStorePath = path.join(__dirname, 'packages/ui/src/store/sessionStore.ts');
+  const sessionStorePath = path.join(
+    __dirname,
+    'packages/ui/src/store/sessionStore.ts',
+  );
   const sessionStoreContent = fs.readFileSync(sessionStorePath, 'utf8');
 
   // Check for sessionTokensUsed state
-  const hasSessionTokensUsed = sessionStoreContent.includes('sessionTokensUsed');
-  console.log(`   ✅ sessionTokensUsed state: ${hasSessionTokensUsed ? 'FOUND' : 'MISSING'}`);
+  const hasSessionTokensUsed =
+    sessionStoreContent.includes('sessionTokensUsed');
+  console.log(
+    `   ✅ sessionTokensUsed state: ${hasSessionTokensUsed ? 'FOUND' : 'MISSING'}`,
+  );
 
   // Check for createNewSession function
   const hasCreateNewSession = sessionStoreContent.includes('createNewSession');
-  console.log(`   ✅ createNewSession function: ${hasCreateNewSession ? 'FOUND' : 'MISSING'}`);
+  console.log(
+    `   ✅ createNewSession function: ${hasCreateNewSession ? 'FOUND' : 'MISSING'}`,
+  );
 
   // Check for addTokensUsed function
   const hasAddTokensUsed = sessionStoreContent.includes('addTokensUsed');
-  console.log(`   ✅ addTokensUsed function: ${hasAddTokensUsed ? 'FOUND' : 'MISSING'}`);
-
+  console.log(
+    `   ✅ addTokensUsed function: ${hasAddTokensUsed ? 'FOUND' : 'MISSING'}`,
+  );
 } catch (error) {
   console.log('   ❌ Error reading sessionStore:', error.message);
 }
@@ -67,8 +80,9 @@ try {
 
   // Check for useSessionTokensUsed hook
   const hasUseSessionTokensUsed = hooksContent.includes('useSessionTokensUsed');
-  console.log(`   ✅ useSessionTokensUsed hook: ${hasUseSessionTokensUsed ? 'FOUND' : 'MISSING'}`);
-
+  console.log(
+    `   ✅ useSessionTokensUsed hook: ${hasUseSessionTokensUsed ? 'FOUND' : 'MISSING'}`,
+  );
 } catch (error) {
   console.log('   ❌ Error reading hooks:', error.message);
 }

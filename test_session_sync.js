@@ -14,7 +14,7 @@ const redis = new Redis({
   host: 'localhost',
   port: 6379,
   retryDelayOnFailover: 100,
-  maxRetriesPerRequest: 3
+  maxRetriesPerRequest: 3,
 });
 
 // WebSocket client for monitoring
@@ -31,7 +31,7 @@ async function setupWebSocket() {
       const sessionMessage = {
         type: 'set_session',
         data: { sessionId: OLD_SESSION_ID },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       ws.send(JSON.stringify(sessionMessage));
@@ -43,7 +43,9 @@ async function setupWebSocket() {
     ws.on('message', (data) => {
       try {
         const message = JSON.parse(data.toString());
-        console.log(`📨 [${new Date().toISOString()}] Received: ${message.type}`);
+        console.log(
+          `📨 [${new Date().toISOString()}] Received: ${message.type}`,
+        );
 
         if (message.type === 'connection_established') {
           console.log('✅ Connection established');
@@ -73,12 +75,12 @@ async function publishEvent(type, data, sessionId) {
   const event = JSON.stringify({
     type,
     data: { ...data, jobId: JOB_ID, sessionId },
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
 
   await redis.publish(channel, event);
   console.log(`📤 Published ${type} to ${channel} (session: ${sessionId})`);
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 500));
 }
 
 async function testSessionSync() {
@@ -89,45 +91,66 @@ async function testSessionSync() {
     const subscribeMessage = {
       type: 'subscribe_job_events',
       data: { jobId: JOB_ID },
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     ws.send(JSON.stringify(subscribeMessage));
     console.log('📡 Subscribed to job events');
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Step 2: Send some events with old session
     console.log('📤 Sending events with OLD session...');
-    await publishEvent('browser.navigating', { url: 'https://example.com' }, OLD_SESSION_ID);
-    await publishEvent('browser.page.loaded', { url: 'https://example.com' }, OLD_SESSION_ID);
+    await publishEvent(
+      'browser.navigating',
+      { url: 'https://example.com' },
+      OLD_SESSION_ID,
+    );
+    await publishEvent(
+      'browser.page.loaded',
+      { url: 'https://example.com' },
+      OLD_SESSION_ID,
+    );
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Step 3: Change session (simulate clicking "New Session")
     console.log('🔄 Changing to NEW session...');
     const newSessionMessage = {
       type: 'set_session',
       data: { sessionId: NEW_SESSION_ID },
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     ws.send(JSON.stringify(newSessionMessage));
     console.log('📤 Changed session to:', NEW_SESSION_ID);
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Step 4: Send events with new session
     console.log('📤 Sending events with NEW session...');
-    await publishEvent('browser.navigating', { url: 'https://httpbin.org' }, NEW_SESSION_ID);
-    await publishEvent('browser.page.loaded', { url: 'https://httpbin.org' }, NEW_SESSION_ID);
-    await publishEvent('browser.element.click', { selector: 'button' }, NEW_SESSION_ID);
+    await publishEvent(
+      'browser.navigating',
+      { url: 'https://httpbin.org' },
+      NEW_SESSION_ID,
+    );
+    await publishEvent(
+      'browser.page.loaded',
+      { url: 'https://httpbin.org' },
+      NEW_SESSION_ID,
+    );
+    await publishEvent(
+      'browser.element.click',
+      { selector: 'button' },
+      NEW_SESSION_ID,
+    );
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     console.log('✅ Session synchronization test completed');
-    console.log('🔍 Check that events switched from old to new session properly');
-
+    console.log(
+      '🔍 Check that events switched from old to new session properly',
+    );
   } catch (error) {
     console.error('❌ Session sync test failed:', error);
   } finally {
@@ -141,7 +164,7 @@ async function testSessionSync() {
 async function runTest() {
   try {
     await setupWebSocket();
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     await testSessionSync();
   } catch (error) {
     console.error('❌ Test failed:', error);

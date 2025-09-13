@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename);
 
 const configSchema = z.object({
   AGENT_MAX_ITERATIONS: z.coerce.number().default(15), // 🚨 RÉDUIT: 100 -> 15 pour éviter les boucles infinies
+  ALPHA_VANTAGE_API_KEY: z.string().optional(),
   AUTH_TOKEN: z.string().optional(),
   CODE_EXECUTION_TIMEOUT_MS: z.coerce.number().default(60000),
   CONTAINER_MEMORY_LIMIT: z.string().default('2g'),
@@ -25,6 +26,8 @@ const configSchema = z.object({
   JWT_SECRET: z.string().optional(),
   LLM_API_KEY: z.string().optional(), // Added LLM_API_KEY
   LLM_MODEL_NAME: z.string().default('gemini-2.5-pro'),
+  LLM_MODEL_NAME_OPENROUTER_SKY: z.string().optional(),
+  LLM_MODEL_NAME_OPENROUTER_DUSK: z.string().optional(),
   LLM_PROVIDER: z
     .enum([
       'gemini',
@@ -38,9 +41,19 @@ const configSchema = z.object({
     .default('gemini'),
   LLM_PROVIDER_HIERARCHY: z
     .string()
-    .default('huggingface,grok,gemini,google-flash,openai,mistral,openrouter,qwen')
+    .default('openrouter-sky,openrouter-dusk')
     .transform((str) => str.split(',').map((s) => s.trim())),
   LLM_REQUEST_DELAY_MS: z.coerce.number().default(1000), // Reduced delay for better performance
+
+  // LLM Router Configuration - Smart routing system
+  LLM_ROUTER_MAX_RETRIES: z.coerce.number().default(3),
+  LLM_ROUTER_RETRY_DELAY_MS: z.coerce.number().default(1000),
+  LLM_ROUTER_MAX_FAILURES_PER_PROVIDER: z.coerce.number().default(5),
+  LLM_ROUTER_CIRCUIT_BREAKER_THRESHOLD: z.coerce.number().default(0.7),
+  LLM_ROUTER_CIRCUIT_BREAKER_RESET_TIME: z.coerce.number().default(60000),
+  LLM_ROUTER_HEALTH_CHECK_INTERVAL: z.coerce.number().default(300000),
+  LLM_ROUTER_ENABLE_ADAPTIVE_ROUTING: z.coerce.boolean().default(true),
+  LLM_ROUTER_ENABLE_CIRCUIT_BREAKER: z.coerce.boolean().default(true),
   LOG_LEVEL: z.string().default('debug'),
   MAX_FILE_SIZE_BYTES: z.coerce.number().default(10 * 1024 * 1024), // 10 MB
   MCP_API_KEY: z.string().optional(),
@@ -49,7 +62,7 @@ const configSchema = z.object({
   PORT: z.coerce.number().default(3001),
   POSTGRES_DB: z.string().default('gforge'),
   POSTGRES_HOST: z.string().default('postgres'),
-  POSTGRES_PASSWORD: z.string().default('secure_password'),
+  POSTGRES_PASSWORD: z.string().default('password'),
 
   POSTGRES_PORT: z.coerce.number().default(5432),
   POSTGRES_USER: z.string().default('user'),
@@ -73,24 +86,28 @@ const configSchema = z.object({
   WORKER_STALLED_INTERVAL_MS: z.coerce.number().default(30000), // 30 seconds
   WORKER_WORKSPACE_PATH: z.string().optional(),
   // Standardized workspace path - unified for all tools
-  WORKSPACE_PATH: z.string().default(`${process.env.HOME}/agentforge/AgenticForge2/AgenticForge/packages/core/workspace`),
+  WORKSPACE_PATH: z
+    .string()
+    .default(
+      `${process.env.HOME}/agentforge/AgenticForge2/AgenticForge/packages/core/workspace`,
+    ),
   // Gemini-specific optimizations
   GEMINI_MAX_HISTORY_LENGTH: z.coerce.number().default(50), // Limit history length for Gemini
   GEMINI_REQUEST_TIMEOUT_MS: z.coerce.number().default(30000), // 30 second timeout for Gemini requests
   GEMINI_AUTO_REENABLE_KEYS: z.boolean().default(true), // Automatically re-enable temporarily disabled keys
   GEMINI_ITERATION_DELAY_MS: z.coerce.number().default(2000), // Delay between iterations for Gemini
   AGENT_ITERATION_DELAY_MS: z.coerce.number().default(1000), // Delay between iterations for other providers
-  
+
   // Global timeout settings for robustness
   LLM_REQUEST_TIMEOUT_MS: z.coerce.number().default(45000), // Global timeout for all LLM requests
   LLM_CONNECTION_TIMEOUT_MS: z.coerce.number().default(10000), // Connection timeout
   LLM_MAX_RETRIES: z.coerce.number().default(3), // Maximum retry attempts for all providers
   LLM_RETRY_DELAY_BASE_MS: z.coerce.number().default(1000), // Base delay for exponential backoff
-  
+
   // Agent resilience settings
   AGENT_MAX_MALFORMED_RESPONSES: z.coerce.number().default(3), // 🚨 RÉDUIT: 5 -> 3 pour éviter les boucles
   AGENT_MAX_LLM_FAILURES: z.coerce.number().default(3), // Max consecutive LLM failures
-  AGENT_FALLBACK_ENABLED: z.boolean().default(true) // Enable fallback responses
+  AGENT_FALLBACK_ENABLED: z.boolean().default(true), // Enable fallback responses
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -102,10 +119,11 @@ export function getConfig(): Config {
   if (!config || Object.keys(config).length === 0) {
     try {
       // Try multiple possible .env file locations to handle different execution contexts
-      let envPath = path.resolve(__dirname, '..', '..', '..', '.env');
+      // First try the correct path for this project structure
+      let envPath = path.resolve(process.cwd(), '..', '.env');
       if (!existsSync(envPath)) {
-        // If running from dist/, try going up one more level
-        envPath = path.resolve(__dirname, '..', '..', '..', '..', '.env');
+        // If not found, try hardcoded path for this specific project
+        envPath = '/home/demon/agentforge/AgenticForge2/AgenticForge/.env';
       }
       if (!existsSync(envPath)) {
         // If still not found, try from current working directory
@@ -141,10 +159,11 @@ export async function loadConfig() {
   console.log('DEBUG: process.cwd():', process.cwd());
 
   // Try multiple possible .env file locations to handle different execution contexts
-  let envPath = path.resolve(__dirname, '..', '..', '..', '.env');
+  // First try the correct path for this project structure
+  let envPath = path.resolve(process.cwd(), '..', '.env');
   if (!existsSync(envPath)) {
-    // If running from dist/, try going up one more level
-    envPath = path.resolve(__dirname, '..', '..', '..', '..', '.env');
+    // If not found, try hardcoded path for this specific project
+    envPath = '/home/demon/agentforge/AgenticForge2/AgenticForge/.env';
   }
   if (!existsSync(envPath)) {
     // If still not found, try from current working directory

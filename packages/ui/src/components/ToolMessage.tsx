@@ -117,7 +117,7 @@ const truncateResult = (result: unknown, maxLength: number = 500): string => {
   if (result === null || result === undefined) {
     return '';
   }
-  
+
   let resultString: string;
   if (typeof result === 'string') {
     resultString = result;
@@ -128,11 +128,11 @@ const truncateResult = (result: unknown, maxLength: number = 500): string => {
       resultString = String(result);
     }
   }
-  
+
   if (resultString.length <= maxLength) {
     return resultString;
   }
-  
+
   return resultString.substring(0, maxLength) + '...';
 };
 
@@ -154,14 +154,15 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({ message }) => {
     status,
   } = getStatusInfo(isToolCall, isToolCall ? undefined : message.result);
   const ToolIcon = getToolIcon(toolName);
-  
+
   // Tronquer le résultat si trop long
-  const resultString = !isToolCall && message.result ? 
-    JSON.stringify(message.result, null, 2) : 
-    '';
+  const resultString =
+    !isToolCall && message.result
+      ? JSON.stringify(message.result, null, 2)
+      : '';
   const isLongResult = resultString.length > 500;
-  const displayResult = showFullResult 
-    ? resultString 
+  const displayResult = showFullResult
+    ? resultString
     : truncateResult(!isToolCall && message.result ? message.result : ''); // Fix the type error
 
   return (
@@ -180,7 +181,9 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({ message }) => {
               <div className="bg-background/50 rounded-md p-1 flex-shrink-0">
                 <ToolIcon className="h-3 w-3 text-foreground/70" />
               </div>
-              <span className="text-foreground/90 truncate text-sm">{description}</span>
+              <span className="text-foreground/90 truncate text-sm">
+                {description}
+              </span>
               <StatusIcon className={`h-3 w-3 ${statusColor} flex-shrink-0`} />
               <span
                 className={`text-xs ${statusColor} font-medium flex-shrink-0`}

@@ -2,7 +2,7 @@
 
 /**
  * Single External Worker for Agentic Forge
- * 
+ *
  * This worker runs outside of Docker containers and connects to Redis
  * using the host network interface.
  */
@@ -17,12 +17,12 @@ const logger = getLogger();
 
 async function startExternalWorker() {
   logger.info('🚀 Starting Single External Worker...');
-  
+
   try {
     // Load configuration
     await loadConfig();
     logger.info('✅ Configuration loaded successfully');
-    
+
     // Create Redis connection for external worker
     // Connect to localhost since we're running outside Docker
     const redisConnection = new IORedis({
@@ -31,9 +31,11 @@ async function startExternalWorker() {
       maxRetriesPerRequest: null,
       retryStrategy(times) {
         const delay = Math.min(times * 50, 2000);
-        logger.warn(`Redis connection retry attempt ${times}, delaying ${delay}ms`);
+        logger.warn(
+          `Redis connection retry attempt ${times}, delaying ${delay}ms`,
+        );
         return delay;
-      }
+      },
     });
 
     redisConnection.on('connect', () => {
@@ -54,9 +56,11 @@ async function startExternalWorker() {
 
     // Initialize the worker with our Redis connection
     const worker = await initializeWorker(redisConnection);
-    
-    logger.info(`✅ Worker started with concurrency: ${config.WORKER_CONCURRENCY}`);
-    
+
+    logger.info(
+      `✅ Worker started with concurrency: ${config.WORKER_CONCURRENCY}`,
+    );
+
     // Graceful shutdown handling
     const shutdown = async () => {
       logger.info('🛑 Shutting down worker...');
@@ -73,9 +77,8 @@ async function startExternalWorker() {
 
     process.on('SIGTERM', shutdown);
     process.on('SIGINT', shutdown);
-    
+
     logger.info('✅ External worker is now running and waiting for jobs...');
-    
   } catch (error) {
     logger.error({ error }, '❌ Failed to start external worker');
     process.exit(1);

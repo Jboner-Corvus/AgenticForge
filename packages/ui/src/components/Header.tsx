@@ -6,6 +6,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from './ui/tooltip';
+import { useState } from 'react';
+import {
+  Menu,
+} from 'lucide-react';
 
 import { Logo } from './Logo';
 import { ConnectionStatus } from './ConnectionStatus';
@@ -45,6 +49,7 @@ export function Header({
   setCurrentPage,
   toggleDebugLogVisibility,
 }: HeaderProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isCanvasVisible = useCanvasStore((state) => state.isCanvasVisible);
   const setIsCanvasVisible = useCanvasStore(
     (state) => state.setIsCanvasVisible,
@@ -60,6 +65,10 @@ export function Header({
 
   const handleToggleCanvas = () => {
     setIsCanvasVisible(!isCanvasVisible);
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
   };
 
   // Configuration des boutons avec des styles améliorés
@@ -149,15 +158,16 @@ export function Header({
   ];
 
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between p-4 bg-gradient-to-r from-gray-900 to-gray-800 border-b border-gray-700 shadow-2xl backdrop-blur-sm">
-      <div className="flex items-center space-x-4">
+    <header className="sticky top-0 z-50 flex items-center justify-between p-2 sm:p-4 bg-gradient-to-r from-gray-900 to-gray-800 border-b border-gray-700 shadow-2xl backdrop-blur-sm">
+      <div className="flex items-center space-x-2 sm:space-x-4">
         <Button
           aria-label="Toggle Control Panel"
           onClick={() => setIsControlPanelVisible(!isControlPanelVisible)}
           type="button"
           className="bg-gray-800/50 hover:bg-gray-700/50 text-gray-200 border border-gray-700 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
+          size="sm"
         >
-          <PanelLeft className="h-5 w-5" />
+          <PanelLeft className="h-4 w-4 sm:h-5 sm:w-5" />
         </Button>
         <Logo size="sm" showText={true} />
         <ConnectionStatus />
@@ -165,7 +175,16 @@ export function Header({
 
       <div className="flex items-center space-x-2">
         <VersionDisplay position="header" />
-        <div className="flex items-center space-x-1">
+        {/* Hamburger menu for mobile */}
+        <Button
+          aria-label="Open menu"
+          onClick={toggleMobileMenu}
+          className="lg:hidden bg-gray-800/50 hover:bg-gray-700/50 text-gray-200 border border-gray-700 rounded-xl p-2"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        {/* Desktop buttons */}
+        <div className="hidden lg:flex items-center space-x-1">
           <TooltipProvider delayDuration={0}>
             {buttonConfig.map((button, index) => {
               const Icon = button.icon;
@@ -177,7 +196,7 @@ export function Header({
                       onClick={button.onClick}
                       type="button"
                       className={`
-                        relative transition-all duration-300 hover:scale-110 
+                        relative transition-all duration-300 hover:scale-110
                         h-10 w-10 p-0 mx-1 rounded-xl
                         ${
                           button.active
@@ -206,6 +225,44 @@ export function Header({
             })}
           </TooltipProvider>
         </div>
+        {/* Mobile menu dropdown */}
+        {mobileMenuOpen && (
+          <div className="absolute top-full right-0 lg:hidden mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50">
+            <TooltipProvider delayDuration={0}>
+              {buttonConfig.map((button, index) => {
+                const Icon = button.icon;
+                return (
+                  <div key={index} className="p-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          aria-label={button.ariaLabel}
+                          onClick={() => {
+                            button.onClick();
+                            setMobileMenuOpen(false);
+                          }}
+                          type="button"
+                          variant="ghost"
+                          className={`
+                            w-full justify-start text-left
+                            ${
+                              button.active
+                                ? 'bg-purple-900/50 text-purple-300'
+                                : 'text-gray-300 hover:bg-gray-700/50'
+                            }
+                          `}
+                        >
+                          <Icon size={16} className="mr-2" />
+                          <span>{button.label}</span>
+                        </Button>
+                      </TooltipTrigger>
+                    </Tooltip>
+                  </div>
+                );
+              })}
+            </TooltipProvider>
+          </div>
+        )}
       </div>
     </header>
   );

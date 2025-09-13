@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse Technique NVDA - Sonoma AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-green-400 mb-2">Analyse Technique Complète NVIDIA (NVDA)</h1>
+            <p class="text-gray-300">Générée par Sonoma AI - Données simulées au <span id="currentDate"></span></p>
+        </div>
+
+        <!-- Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Prix Actuel</p>
+                        <p class="text-2xl font-bold text-green-400">$145.23</p>
+                    </div>
+                    <i class="fas fa-chart-line text-3xl text-green-400"></i>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Changement 24h</p>
+                        <p class="text-2xl font-bold text-green-400">+2.45%</p>
+                    </div>
+                    <i class="fas fa-arrow-up text-3xl text-green-400"></i>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Volume</p>
+                        <p class="text-2xl font-bold text-blue-400">45.2M</p>
+                    </div>
+                    <i class="fas fa-exchange-alt text-3xl text-blue-400"></i>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Volatilité</p>
+                        <p class="text-2xl font-bold text-yellow-400">3.2%</p>
+                    </div>
+                    <i class="fas fa-chart-bar text-3xl text-yellow-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical Indicators Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Chart Container -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4 text-center">Graphique NVDA avec Indicateurs Techniques</h2>
+                <canvas id="nvdaChart" width="400" height="300"></canvas>
+            </div>
+
+            <!-- Indicators Summary -->
+            <div class="bg-gray-800 rounded-lg p-6 space-y-4">
+                <h2 class="text-xl font-semibold mb-4 text-center">Résumé des Indicateurs</h2>
+                
+                <div class="indicator-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-semibold">RSI (14)</h3>
+                            <p class="text-sm text-gray-400">Relative Strength Index</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-2xl font-bold text-yellow-400">68.5</span>
+                            <p class="text-sm text-gray-300">Neutre</p>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                        <div class="bg-yellow-400 h-2 rounded-full" style="width: 68.5%"></div>
+                    </div>
+                </div>
+
+                <div class="indicator-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-semibold">MACD</h3>
+                            <p class="text-sm text-gray-400">Moving Average Convergence</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-2xl font-bold text-green-400">0.85</span>
+                            <p class="text-sm text-gray-300">Signal: Acheter</p>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                        <div class="bg-green-400 h-2 rounded-full" style="width: 65%"></div>
+                    </div>
+                </div>
+
+                <div class="indicator-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-semibold">SMA 50</h3>
+                            <p class="text-sm text-gray-400">Simple Moving Average</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-2xl font-bold text-blue-400">$142.15</span>
+                            <p class="text-sm text-gray-300">Au-dessus</p>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                        <div class="bg-blue-400 h-2 rounded-full" style="width: 75%"></div>
+                    </div>
+                </div>
+
+                <div class="indicator-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-semibold">EMA 20</h3>
+                            <p class="text-sm text-gray-400">Exponential Moving Average</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-2xl font-bold text-purple-400">$144.80</span>
+                            <p class="text-sm text-gray-300">Au-dessus</p>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                        <div class="bg-purple-400 h-2 rounded-full" style="width: 80%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Support and Resistance Section -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-center">Supports et Résistances Clés</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-green-400 mb-3">Niveaux de Support</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center p-3 bg-gray-700 rounded">
+                            <span class="font-semibold">Support 1</span>
+                            <span class="text-green-400">$140.50</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-700 rounded">
+                            <span class="font-semibold">Support 2</span>
+                            <span class="text-green-400">$135.20</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-700 rounded">
+                            <span class="font-semibold">Support 3</span>
+                            <span class="text-green-400">$130.00</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-red-400 mb-3">Niveaux de Résistance</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center p-3 bg-gray-700 rounded">
+                            <span class="font-semibold">Résistance 1</span>
+                            <span class="text-red-400">$150.00</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-700 rounded">
+                            <span class="font-semibold">Résistance 2</span>
+                            <span class="text-red-400">$155.80</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-700 rounded">
+                            <span class="font-semibold">Résistance 3</span>
+                            <span class="text-red-400">$160.50</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trading Opportunities Section -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-center">Opportunités de Trading</h2>
+            
+            <!-- Long Opportunity -->
+            <div class="opportunity-card bg-green-900/20 border border-green-500 rounded-lg p-6 mb-6">
+                <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-arrow-up text-3xl text-green-400"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-green-400">Position LONG - Acheter</h3>
+                        <p class="text-gray-300 mb-2">Signal haussier confirmé par les indicateurs techniques</p>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <p class="text-sm text-gray-400">Entrée</p>
+                                <p class="font-semibold text-green-300">$145.50</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400">Stop Loss</p>
+                                <p class="font-semibold text-red-300">$140.00</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400">Take Profit 1</p>
+                                <p class="font-semibold text-green-300">$150.00</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400">Take Profit 2</p>
+                                <p class="font-semibold text-green-300">$155.00</p>
+                            </div>
+                        </div>
+                        <div class="bg-gray-700 p-3 rounded mb-3">
+                            <p class="text-sm text-gray-300"><strong>Risque/Récompense:</strong> 1:2.5</p>
+                            <p class="text-sm text-gray-300"><strong>Levier recommandé:</strong> 3x</p>
+                        </div>
+                        <p class="text-sm text-gray-400">Raison: MACD haussier, prix au-dessus des moyennes mobiles, RSI dans zone neutre avec momentum positif.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Short Opportunity -->
+            <div class="opportunity-card bg-red-900/20 border border-red-500 rounded-lg p-6">
+                <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-arrow-down text-3xl text-red-400"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-red-400">Position SHORT - Vendre</h3>
+                        <p class="text-gray-300 mb-2">Signal baissier en cas de rejet sur résistance</p>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <p class="text-sm text-gray-400">Entrée</p>
+                                <p class="font-semibold text-red-300">$149.50</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400">Stop Loss</p>
+                                <p class="font-semibold text-green-300">$155.00</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400">Take Profit 1</p>
+                                <p class="font-semibold text-red-300">$145.00</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400">Take Profit 2</p>
+                                <p class="font-semibold text-red-300">$140.00</p>
+                            </div>
+                        </div>
+                        <div class="bg-gray-700 p-3 rounded mb-3">
+                            <p class="text-sm text-gray-300"><strong>Risque/Récompense:</strong> 1:2.0</p>
+                            <p class="text-sm text-gray-300"><strong>Levier recommandé:</strong> 2x</p>
+                        </div>
+                        <p class="text-sm text-gray-400">Raison: Approche de résistance majeure, possible rejet avec RSI approchant la zone de surachat.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Warning -->
+            <div class="bg-yellow-900/20 border border-yellow-500 rounded-lg p-4 mt-6">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                    <div>
+                        <p class="font-semibold text-yellow-300">⚠️ Avertissement de Risque</p>
+                        <p class="text-sm text-yellow-200">Le trading avec levier comporte des risques importants de perte de capital. N'investissez que ce que vous pouvez vous permettre de perdre. Cette analyse est à titre informatif uniquement.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Analysis -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="font-semibold mb-3">Analyse Bollinger Bands</h3>
+                <p class="text-gray-300">Les bandes de Bollinger montrent une volatilité modérée. Le prix se trouve dans la bande supérieure, indiquant une force haussière mais avec risque de retour vers la moyenne.</p>
+                <div class="mt-4 space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span>Bande Supérieure:</span>
+                        <span class="text-green-400">$148.20</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span>Moyenne Mobile:</span>
+                        <span class="text-blue-400">$143.50</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span>Bande Inférieure:</span>
+                        <span class="text-red-400">$138.80</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="font-semibold mb-3">Tendances de Volume</h3>
+                <p class="text-gray-300">Le volume confirme la tendance haussière avec des volumes croissants sur les mouvements haussiers et décroissants sur les corrections.</p>
+                <div class="mt-4 text-center">
+                    <div class="w-full bg-gray-700 rounded-full h-3 mb-2">
+                        <div class="bg-green-500 h-3 rounded-full" style="width: 70%"></div>
+                    </div>
+                    <p class="text-sm text-gray-400">Volume moyen sur 20 jours: 42.8M</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="font-semibold mb-3">Sentiment du Marché</h3>
+                <p class="text-gray-300">Sentiment globalement positif pour NVDA avec des catalyseurs liés à l'IA et aux semi-conducteurs.</p>
+                <div class="mt-4 space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span>Analystes:</span>
+                        <span class="text-green-400">85% Acheter</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span>Objectif moyen:</span>
+                        <span class="text-green-400">$162.30</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span>Actualités récentes:</span>
+                        <span class="text-yellow-400">Positives</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-gray-500 text-sm mt-12">
+            <p>Analyse générée par Sonoma AI | Données simulées pour démonstration | Ne constitue pas un conseil d'investissement</p>
+            <p class="mt-2">Dernière mise à jour: <span id="updateTime"></span></p>
+        </div>
+    </div>
+
+    <script>
+        // Set current date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('fr-FR');
+        document.getElementById('updateTime').textContent = new Date().toLocaleTimeString('fr-FR');
+
+        // Chart.js configuration
+        const ctx = document.getElementById('nvdaChart').getContext('2d');
+        const nvdaChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'],
+                datasets: [{
+                    label: 'NVDA Prix ($)',
+                    data: [120, 125, 130, 135, 128, 132, 140, 145, 142, 148, 144, 145.23],
+                    borderColor: 'rgb(34, 197, 94)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1
+                }, {
+                    label: 'SMA 50',
+                    data: [118, 120, 122, 125, 127, 129, 131, 133, 135, 137, 139, 142.15],
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                    fill: false
+                }, {
+                    label: 'EMA 20',
+                    data: [122, 123, 125, 127, 128, 130, 132, 134, 136, 138, 140, 144.80],
+                    borderColor: 'rgb(168, 85, 247)',
+                    backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                    borderWidth: 1,
+                    borderDash: [3, 3],
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'NVDA - Performance Mensuelle avec Moyennes Mobiles'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Add interactivity
+        document.querySelectorAll('.indicator-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.transition = 'transform 0.2s ease';
+            });
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Add click effects to opportunity cards
+        document.querySelectorAll('.opportunity-card').forEach(card => {
+            card.addEventListener('click', function() {
+                this.style.transform = 'scale(1.02)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 150);
+            });
+        });
+
+        // Auto-refresh simulation
+        setInterval(() => {
+            // Simulate price update
+            const currentPrice = document.querySelector('.bg-gray-800.p-6.rounded-lg.shadow-lg .text-2xl.font-bold.text-green-400');
+            if (currentPrice) {
+                const currentValue = parseFloat(currentPrice.textContent.replace('$', '').replace(',', ''));
+                const change = (Math.random() - 0.5) * 2;
+                const newPrice = Math.max(130, Math.min(160, currentValue + change));
+                currentPrice.textContent = `$${newPrice.toFixed(2)}`;
+                
+                // Update change percentage
+                const changePercent = ((newPrice - currentValue) / currentValue * 100).toFixed(2);
+                const changeElement = document.querySelector('.bg-gray-800.p-6.rounded-lg.shadow-lg:nth-child(2) .text-2xl.font-bold.text-green-400');
+                if (changeElement) {
+                    changeElement.textContent = `${changePercent > 0 ? '+' : ''}${changePercent}%`;
+                    changeElement.className = changePercent > 0 ? 'text-2xl font-bold text-green-400' : 'text-2xl font-bold text-red-400';
+                }
+            }
+        }, 30000); // Update every 30 seconds
+
+        // Initialize Lucide icons if needed
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    </script>
+
+    <style>
+        .indicator-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid #f59e0b;
+        }
+        .indicator-card:hover {
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+        }
+        .opportunity-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .opportunity-card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            transform: translateY(-4px);
+        }
+        #nvdaChart {
+            height: 400px !important;
+        }
+    </style>
+</body>
+</html>

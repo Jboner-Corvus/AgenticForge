@@ -14,7 +14,7 @@ ws.on('open', () => {
   const subscribeMessage = {
     type: 'subscribe_job_events',
     data: { jobId: '23' },
-    timestamp: Date.now()
+    timestamp: Date.now(),
   };
 
   ws.send(JSON.stringify(subscribeMessage));
@@ -24,7 +24,7 @@ ws.on('open', () => {
   const sessionMessage = {
     type: 'set_session',
     data: { sessionId: 'test-session-123' },
-    timestamp: Date.now()
+    timestamp: Date.now(),
   };
 
   ws.send(JSON.stringify(sessionMessage));

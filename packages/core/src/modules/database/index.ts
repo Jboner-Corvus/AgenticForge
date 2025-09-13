@@ -1,7 +1,15 @@
 // Export des modules de base de données
-export { PostgresPoolManager, getPostgresPool, closePostgresPool } from './postgresPool.ts';
+export {
+  PostgresPoolManager,
+  getPostgresPool,
+  closePostgresPool,
+} from './postgresPool.ts';
 export { DatabaseCircuitBreaker } from './circuitBreaker.ts';
-export { PostgresMonitor, getPostgresMonitor, stopPostgresMonitoring } from './postgresMonitor.ts';
+export {
+  PostgresMonitor,
+  getPostgresMonitor,
+  stopPostgresMonitoring,
+} from './postgresMonitor.ts';
 
 // Types communs
 export interface DatabaseConfig {

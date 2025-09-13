@@ -84,8 +84,15 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
 };
 
 // FUNCTION TO GET PROPER PROVIDER NAME
-const getProviderDisplayName = (providerId: string, fallbackName?: string): string => {
-  return PROVIDER_DISPLAY_NAMES[providerId] || fallbackName || PROVIDER_DISPLAY_NAMES.unknown;
+const getProviderDisplayName = (
+  providerId: string,
+  fallbackName?: string,
+): string => {
+  return (
+    PROVIDER_DISPLAY_NAMES[providerId] ||
+    fallbackName ||
+    PROVIDER_DISPLAY_NAMES.unknown
+  );
 };
 
 // KEY PERFORMANCE STATS COMPONENT
@@ -411,11 +418,13 @@ const SortableKeyItem = ({
   };
 
   // Get proper logo with fallback
-  const Logo = PROVIDER_LOGOS[keyData.providerId] || (() => (
-    <div className="w-5 h-5 bg-gray-700 rounded flex items-center justify-center text-xs font-bold text-gray-300">
-      {keyData.providerId.charAt(0).toUpperCase()}
-    </div>
-  ));
+  const Logo =
+    PROVIDER_LOGOS[keyData.providerId] ||
+    (() => (
+      <div className="w-5 h-5 bg-gray-700 rounded flex items-center justify-center text-xs font-bold text-gray-300">
+        {keyData.providerId.charAt(0).toUpperCase()}
+      </div>
+    ));
 
   return (
     <div
@@ -686,12 +695,14 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
     isActive: true,
     priority: 5,
   });
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
 
   // Validate key format based on provider
   const validateKeyFormat = (providerId: string, keyValue: string): boolean => {
     if (!keyValue) return false;
-    
+
     const formatPatterns: Record<string, RegExp> = {
       openai: /^sk-[a-zA-Z0-9-_]{32,}$/,
       anthropic: /^sk-ant-[a-zA-Z0-9-_]{32,}$/,
@@ -702,7 +713,7 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
       xai: /^xai-[a-zA-Z0-9-_]{32,}$/,
       openrouter: /^sk-or-[a-zA-Z0-9-_]{32,}$/,
     };
-    
+
     const pattern = formatPatterns[providerId];
     return pattern ? pattern.test(keyValue) : keyValue.length >= 10;
   };
@@ -710,7 +721,7 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
   // Real-time validation
   useEffect(() => {
     const errors: Record<string, string> = {};
-    
+
     if (formData.keyValue && formData.providerId) {
       if (!validateKeyFormat(formData.providerId, formData.keyValue)) {
         const expectedFormats: Record<string, string> = {
@@ -726,11 +737,11 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
         errors.keyValue = `Expected format: ${expectedFormats[formData.providerId] || 'Valid API key'}`;
       }
     }
-    
+
     if (formData.keyName && formData.keyName.length < 3) {
       errors.keyName = 'Key name must be at least 3 characters';
     }
-    
+
     setValidationErrors(errors);
   }, [formData.keyValue, formData.providerId, formData.keyName]);
 
@@ -743,8 +754,10 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
     try {
       await addKey({
         providerId: formData.providerId,
-        providerName:
-          getProviderDisplayName(formData.providerId, selectedProvider.displayName),
+        providerName: getProviderDisplayName(
+          formData.providerId,
+          selectedProvider.displayName,
+        ),
         keyName: formData.keyName,
         keyValue: formData.keyValue,
         isEncrypted: false,
@@ -833,7 +846,10 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                         </div>
                       )}
                       <span>
-                        {getProviderDisplayName(selectedProvider.id, selectedProvider.displayName)}
+                        {getProviderDisplayName(
+                          selectedProvider.id,
+                          selectedProvider.displayName,
+                        )}
                       </span>
                     </div>
                   )}
@@ -855,7 +871,10 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                         </div>
                       )}
                       <span>
-                        {getProviderDisplayName(provider.id, provider.displayName)}
+                        {getProviderDisplayName(
+                          provider.id,
+                          provider.displayName,
+                        )}
                       </span>
                     </div>
                   </SelectItem>
@@ -889,7 +908,9 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
               required
             />
             {validationErrors.keyName && (
-              <p className="text-red-400 text-xs mt-1">{validationErrors.keyName}</p>
+              <p className="text-red-400 text-xs mt-1">
+                {validationErrors.keyName}
+              </p>
             )}
           </div>
 
@@ -919,12 +940,16 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                 }`}
                 required
               />
-              <Key className={`absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${
-                validationErrors.keyValue ? 'text-red-400' : 'text-gray-400'
-              }`} />
+              <Key
+                className={`absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${
+                  validationErrors.keyValue ? 'text-red-400' : 'text-gray-400'
+                }`}
+              />
             </div>
             {validationErrors.keyValue && (
-              <p className="text-red-400 text-xs mt-1">{validationErrors.keyValue}</p>
+              <p className="text-red-400 text-xs mt-1">
+                {validationErrors.keyValue}
+              </p>
             )}
           </div>
 
@@ -990,7 +1015,9 @@ const AddKeyModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
             <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-3">
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className="h-4 w-4 text-red-400" />
-                <span className="text-red-300 text-sm font-semibold">Validation Errors</span>
+                <span className="text-red-300 text-sm font-semibold">
+                  Validation Errors
+                </span>
               </div>
               <ul className="text-red-300 text-xs space-y-1">
                 {Object.entries(validationErrors).map(([field, error]) => (
@@ -1048,11 +1075,13 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
   const [testResult, setTestResult] = useState<boolean | null>(null);
 
   // Get proper logo with fallback
-  const Logo = PROVIDER_LOGOS[keyData.providerId] || (() => (
-    <div className="w-6 h-6 bg-gray-700 rounded flex items-center justify-center text-xs font-bold text-gray-300">
-      {keyData.providerId.charAt(0).toUpperCase()}
-    </div>
-  ));
+  const Logo =
+    PROVIDER_LOGOS[keyData.providerId] ||
+    (() => (
+      <div className="w-6 h-6 bg-gray-700 rounded flex items-center justify-center text-xs font-bold text-gray-300">
+        {keyData.providerId.charAt(0).toUpperCase()}
+      </div>
+    ));
 
   const handleTest = async () => {
     setTesting(true);
@@ -1071,33 +1100,35 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
   // Enhanced key masking based on provider type
   const getMaskedKey = (keyValue: string, providerId: string): string => {
     if (!keyValue) return 'No Key';
-    
+
     const maskingRules: Record<string, { start: number; end: number }> = {
-      openai: { start: 7, end: 6 },        // sk-proj-***...***
-      anthropic: { start: 8, end: 6 },     // sk-ant-***...***
-      google: { start: 6, end: 6 },        // AI****...****
+      openai: { start: 7, end: 6 }, // sk-proj-***...***
+      anthropic: { start: 8, end: 6 }, // sk-ant-***...***
+      google: { start: 6, end: 6 }, // AI****...****
       'google-flash': { start: 6, end: 6 },
       'google-pro': { start: 6, end: 6 },
       gemini: { start: 6, end: 6 },
-      xai: { start: 8, end: 6 },           // xai-****...****
-      qwen: { start: 4, end: 4 },          // ****...****
-      openrouter: { start: 8, end: 6 },    // sk-or-***...***
+      xai: { start: 8, end: 6 }, // xai-****...****
+      qwen: { start: 4, end: 4 }, // ****...****
+      openrouter: { start: 8, end: 6 }, // sk-or-***...***
       default: { start: 4, end: 4 },
     };
-    
+
     const rule = maskingRules[providerId] || maskingRules.default;
-    
+
     if (keyValue.length <= rule.start + rule.end) {
       return `${keyValue.charAt(0)}${'*'.repeat(Math.max(1, keyValue.length - 2))}${keyValue.charAt(keyValue.length - 1)}`;
     }
-    
+
     const start = keyValue.substring(0, rule.start);
     const end = keyValue.substring(keyValue.length - rule.end);
-    const middle = '*'.repeat(Math.max(3, keyValue.length - rule.start - rule.end));
-    
+    const middle = '*'.repeat(
+      Math.max(3, keyValue.length - rule.start - rule.end),
+    );
+
     return `${start}${middle}${end}`;
   };
-  
+
   const maskedKey = getMaskedKey(keyData.keyValue || '', keyData.providerId);
 
   return (
@@ -1121,7 +1152,10 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
             <div>
               <h3 className="font-semibold text-white">{keyData.keyName}</h3>
               <p className="text-sm text-gray-400">
-                {getProviderDisplayName(keyData.providerId, keyData.providerName)}
+                {getProviderDisplayName(
+                  keyData.providerId,
+                  keyData.providerName,
+                )}
               </p>
             </div>
           </div>
@@ -1140,7 +1174,13 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
             <Badge
               className={`border ${keyData.priority <= 3 ? 'border-red-500/50 text-red-400 bg-red-900/20' : keyData.priority <= 6 ? 'border-yellow-500/50 text-yellow-400 bg-yellow-900/20' : 'border-green-500/50 text-green-400 bg-green-900/20'}`}
             >
-              P{keyData.priority} ({keyData.priority <= 3 ? 'High' : keyData.priority <= 6 ? 'Med' : 'Low'})
+              P{keyData.priority} (
+              {keyData.priority <= 3
+                ? 'High'
+                : keyData.priority <= 6
+                  ? 'Med'
+                  : 'Low'}
+              )
             </Badge>
           </div>
         </div>
@@ -1153,19 +1193,20 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
             </div>
             <div className="flex items-center gap-2">
               {keyData.keyValue && (
-                <div className={`text-xs px-2 py-1 rounded ${
-                  keyData.keyValue.startsWith('sk-') 
-                    ? 'bg-green-900/30 text-green-300'
-                    : keyData.keyValue.startsWith('xai-')
-                      ? 'bg-blue-900/30 text-blue-300'
-                      : 'bg-gray-700/50 text-gray-300'
-                }`}>
-                  {keyData.keyValue.startsWith('sk-') 
+                <div
+                  className={`text-xs px-2 py-1 rounded ${
+                    keyData.keyValue.startsWith('sk-')
+                      ? 'bg-green-900/30 text-green-300'
+                      : keyData.keyValue.startsWith('xai-')
+                        ? 'bg-blue-900/30 text-blue-300'
+                        : 'bg-gray-700/50 text-gray-300'
+                  }`}
+                >
+                  {keyData.keyValue.startsWith('sk-')
                     ? 'Standard'
                     : keyData.keyValue.startsWith('xai-')
                       ? 'xAI Format'
-                      : 'Custom Format'
-                  }
+                      : 'Custom Format'}
                 </div>
               )}
               <Button
@@ -1205,23 +1246,31 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
                 Priority Level
               </div>
               <div className="flex items-center gap-2">
-                <div className={`text-lg font-semibold ${
-                  keyData.priority <= 3 
-                    ? 'text-red-400' 
-                    : keyData.priority <= 6 
-                      ? 'text-yellow-400' 
-                      : 'text-green-400'
-                }`}>
+                <div
+                  className={`text-lg font-semibold ${
+                    keyData.priority <= 3
+                      ? 'text-red-400'
+                      : keyData.priority <= 6
+                        ? 'text-yellow-400'
+                        : 'text-green-400'
+                  }`}
+                >
                   {keyData.priority}
                 </div>
-                <div className={`text-xs px-2 py-1 rounded ${
-                  keyData.priority <= 3 
-                    ? 'bg-red-900/30 text-red-300' 
-                    : keyData.priority <= 6 
-                      ? 'bg-yellow-900/30 text-yellow-300' 
-                      : 'bg-green-900/30 text-green-300'
-                }`}>
-                  {keyData.priority <= 3 ? 'High' : keyData.priority <= 6 ? 'Medium' : 'Low'}
+                <div
+                  className={`text-xs px-2 py-1 rounded ${
+                    keyData.priority <= 3
+                      ? 'bg-red-900/30 text-red-300'
+                      : keyData.priority <= 6
+                        ? 'bg-yellow-900/30 text-yellow-300'
+                        : 'bg-green-900/30 text-green-300'
+                  }`}
+                >
+                  {keyData.priority <= 3
+                    ? 'High'
+                    : keyData.priority <= 6
+                      ? 'Medium'
+                      : 'Low'}
                 </div>
               </div>
             </div>
@@ -1231,15 +1280,25 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
                   <div className="text-gray-400 uppercase tracking-wider mb-1">
                     Success Rate
                   </div>
-                  <div className={`font-semibold text-lg ${
-                    keyData.usageStats.totalRequests > 0
-                      ? Math.round((keyData.usageStats.successfulRequests / keyData.usageStats.totalRequests) * 100) >= 90
-                        ? 'text-green-400'
-                        : Math.round((keyData.usageStats.successfulRequests / keyData.usageStats.totalRequests) * 100) >= 70
-                          ? 'text-yellow-400'
-                          : 'text-red-400'
-                      : 'text-gray-400'
-                  }`}>
+                  <div
+                    className={`font-semibold text-lg ${
+                      keyData.usageStats.totalRequests > 0
+                        ? Math.round(
+                            (keyData.usageStats.successfulRequests /
+                              keyData.usageStats.totalRequests) *
+                              100,
+                          ) >= 90
+                          ? 'text-green-400'
+                          : Math.round(
+                                (keyData.usageStats.successfulRequests /
+                                  keyData.usageStats.totalRequests) *
+                                  100,
+                              ) >= 70
+                            ? 'text-yellow-400'
+                            : 'text-red-400'
+                        : 'text-gray-400'
+                    }`}
+                  >
                     {keyData.usageStats.totalRequests > 0
                       ? `${Math.round((keyData.usageStats.successfulRequests / keyData.usageStats.totalRequests) * 100)}%`
                       : '0%'}
@@ -1249,13 +1308,15 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
                   <div className="text-gray-400 uppercase tracking-wider mb-1">
                     Error Rate
                   </div>
-                  <div className={`font-semibold text-lg ${
-                    keyData.usageStats.errorRate <= 0.1 
-                      ? 'text-green-400' 
-                      : keyData.usageStats.errorRate <= 0.3 
-                        ? 'text-yellow-400' 
-                        : 'text-red-400'
-                  }`}>
+                  <div
+                    className={`font-semibold text-lg ${
+                      keyData.usageStats.errorRate <= 0.1
+                        ? 'text-green-400'
+                        : keyData.usageStats.errorRate <= 0.3
+                          ? 'text-yellow-400'
+                          : 'text-red-400'
+                    }`}
+                  >
                     {Math.round(keyData.usageStats.errorRate * 100)}%
                   </div>
                 </div>
@@ -1273,16 +1334,25 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-400">Provider ID:</span>
-                <span className="text-gray-300 font-mono text-sm">{keyData.providerId}</span>
+                <span className="text-gray-300 font-mono text-sm">
+                  {keyData.providerId}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Display Name:</span>
-                <span className="text-gray-300">{getProviderDisplayName(keyData.providerId, keyData.providerName)}</span>
+                <span className="text-gray-300">
+                  {getProviderDisplayName(
+                    keyData.providerId,
+                    keyData.providerName,
+                  )}
+                </span>
               </div>
               {keyData.metadata?.description && (
                 <div className="pt-2 border-t border-gray-700">
                   <span className="text-gray-400">Description:</span>
-                  <p className="text-gray-300 text-sm mt-1">{keyData.metadata.description}</p>
+                  <p className="text-gray-300 text-sm mt-1">
+                    {keyData.metadata.description}
+                  </p>
                 </div>
               )}
             </div>
@@ -1356,7 +1426,15 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
                     ? 'border-red-500/50 text-red-400 bg-red-500/10'
                     : ''
               }`}
-              title={testing ? 'Testing key...' : testResult === true ? 'Key is valid' : testResult === false ? 'Key test failed' : 'Test this API key'}
+              title={
+                testing
+                  ? 'Testing key...'
+                  : testResult === true
+                    ? 'Key is valid'
+                    : testResult === false
+                      ? 'Key test failed'
+                      : 'Test this API key'
+              }
             >
               {testing ? (
                 <LoadingSpinner className="h-4 w-4" />
@@ -1368,10 +1446,16 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
                 <TestTube className="h-4 w-4" />
               )}
               <span className="ml-1 text-xs hidden sm:inline">
-                {testing ? 'Testing' : testResult === true ? 'Valid' : testResult === false ? 'Failed' : 'Test'}
+                {testing
+                  ? 'Testing'
+                  : testResult === true
+                    ? 'Valid'
+                    : testResult === false
+                      ? 'Failed'
+                      : 'Test'}
               </span>
             </Button>
-            
+
             {/* Toggle Status Button */}
             <Button
               variant="outline"
@@ -1394,13 +1478,17 @@ const KeyCard: React.FC<{ keyData: LLMKey }> = ({ keyData }) => {
               </span>
             </Button>
           </div>
-          
+
           {/* Delete Button */}
           <Button
             variant="outline"
             size="sm"
             onClick={() => {
-              if (window.confirm(`Are you sure you want to delete "${keyData.keyName}"?`)) {
+              if (
+                window.confirm(
+                  `Are you sure you want to delete "${keyData.keyName}"?`,
+                )
+              ) {
                 deleteKey(keyData.id);
               }
             }}
@@ -1553,7 +1641,10 @@ export const EpicLlmKeyManager: React.FC = () => {
                   <SelectItem value="all">All Providers</SelectItem>
                   {providers.map((provider) => (
                     <SelectItem key={provider.id} value={provider.id}>
-                      {getProviderDisplayName(provider.id, provider.displayName)}
+                      {getProviderDisplayName(
+                        provider.id,
+                        provider.displayName,
+                      )}
                     </SelectItem>
                   ))}
                 </SelectContent>

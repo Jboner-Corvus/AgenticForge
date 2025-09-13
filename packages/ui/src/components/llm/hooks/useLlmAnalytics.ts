@@ -29,7 +29,9 @@ export interface UseLlmAnalyticsReturn {
 /**
  * Hook pour analyser l'état des clés LLM et générer des recommandations
  */
-export const useLlmAnalytics = (backendKeys: BackendLlmApiKey[]): UseLlmAnalyticsReturn => {
+export const useLlmAnalytics = (
+  backendKeys: BackendLlmApiKey[],
+): UseLlmAnalyticsReturn => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const systemHealth = useMemo((): SystemAnalytics => {
@@ -46,8 +48,10 @@ export const useLlmAnalytics = (backendKeys: BackendLlmApiKey[]): UseLlmAnalytic
     }
 
     const totalKeys = backendKeys.length;
-    const activeKeys = backendKeys.filter(k => !k.isPermanentlyDisabled).length;
-    const degradedKeys = backendKeys.filter(k => k.errorCount > 5).length;
+    const activeKeys = backendKeys.filter(
+      (k) => !k.isPermanentlyDisabled,
+    ).length;
+    const degradedKeys = backendKeys.filter((k) => k.errorCount > 5).length;
 
     // Calculate system health score
     let healthScore = 100;
@@ -55,12 +59,18 @@ export const useLlmAnalytics = (backendKeys: BackendLlmApiKey[]): UseLlmAnalytic
     if (activeKeys === 0 && totalKeys > 0) healthScore = 20;
     if (totalKeys === 0) healthScore = 0;
 
-    const totalRequests = backendKeys.reduce((sum, k) => sum + (k.errorCount || 0), 0);
+    const totalRequests = backendKeys.reduce(
+      (sum, k) => sum + (k.errorCount || 0),
+      0,
+    );
 
     return {
       totalRequests,
       successfulRequests: Math.max(0, totalRequests - degradedKeys),
-      failedRequests: backendKeys.reduce((sum, k) => sum + (k.errorCount || 0), 0),
+      failedRequests: backendKeys.reduce(
+        (sum, k) => sum + (k.errorCount || 0),
+        0,
+      ),
       averageResponseTime: 150, // Mock value - would be calculated from real metrics
       activeKeys,
       degradedKeys,
@@ -71,8 +81,10 @@ export const useLlmAnalytics = (backendKeys: BackendLlmApiKey[]): UseLlmAnalytic
   const recommendations = useMemo((): SmartRecommendation[] => {
     const recs: SmartRecommendation[] = [];
     const totalKeys = backendKeys.length;
-    const activeKeys = backendKeys.filter(k => !k.isPermanentlyDisabled).length;
-    const degradedKeys = backendKeys.filter(k => k.errorCount > 5).length;
+    const activeKeys = backendKeys.filter(
+      (k) => !k.isPermanentlyDisabled,
+    ).length;
+    const degradedKeys = backendKeys.filter((k) => k.errorCount > 5).length;
 
     // High priority recommendations
     if (degradedKeys > 0) {
@@ -107,7 +119,7 @@ export const useLlmAnalytics = (backendKeys: BackendLlmApiKey[]): UseLlmAnalytic
     }
 
     // Low priority recommendations
-    const oldKeys = backendKeys.filter(k => {
+    const oldKeys = backendKeys.filter((k) => {
       const daysSinceLastUse = k.lastUsed
         ? (Date.now() - k.lastUsed) / (1000 * 60 * 60 * 24)
         : 30;

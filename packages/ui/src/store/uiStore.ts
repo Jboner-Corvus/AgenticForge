@@ -81,12 +81,14 @@ export interface UIState {
   setSelectedSystemPrompt: (prompt: string) => void;
 
   // Token stats
-  setLatestTokenStats: (stats: {
-    input_tokens: number;
-    output_tokens: number;
-    total_tokens: number;
-    timestamp: number | null;
-  } | null) => void;
+  setLatestTokenStats: (
+    stats: {
+      input_tokens: number;
+      output_tokens: number;
+      total_tokens: number;
+      timestamp: number | null;
+    } | null,
+  ) => void;
   fetchLatestTokenStats: () => Promise<void>;
 
   // Status
@@ -145,7 +147,10 @@ export const useUIStore = create<UIState>()(
       toolCount: 0,
       toolCreationEnabled: false,
       codeExecutionEnabled: true,
-      authToken: clientConfig.AUTH_TOKEN && clientConfig.AUTH_TOKEN.trim() !== '' ? clientConfig.AUTH_TOKEN : null, // Token backend depuis config
+      authToken:
+        clientConfig.AUTH_TOKEN && clientConfig.AUTH_TOKEN.trim() !== ''
+          ? clientConfig.AUTH_TOKEN
+          : null, // Token backend depuis config
       jobId: null,
       activeCliJobId: null,
       streamCloseFunc: null,
@@ -231,7 +236,10 @@ export const useUIStore = create<UIState>()(
               authToken: storedToken,
               isAuthenticated: true,
             });
-          } else if (clientConfig.AUTH_TOKEN && clientConfig.AUTH_TOKEN.trim() !== '') {
+          } else if (
+            clientConfig.AUTH_TOKEN &&
+            clientConfig.AUTH_TOKEN.trim() !== ''
+          ) {
             // Fallback to the default token from config
             console.log('✅ [UIStore] Using backend token from config');
             set({
@@ -333,7 +341,8 @@ export const useUIStore = create<UIState>()(
 
       // Form
       setMessageInputValue: (messageInputValue) => set({ messageInputValue }),
-      setSelectedSystemPrompt: (selectedSystemPrompt) => set({ selectedSystemPrompt }),
+      setSelectedSystemPrompt: (selectedSystemPrompt) =>
+        set({ selectedSystemPrompt }),
 
       // Token stats
       setLatestTokenStats: (latestTokenStats) => set({ latestTokenStats }),

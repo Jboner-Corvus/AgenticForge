@@ -19,7 +19,9 @@ export const editFileParams = z.object({
     .describe('The new content that will replace the old content.'),
   path: z
     .string()
-    .describe('The path to the file to edit inside the workspace. Use absolute paths (starting with /) for global access.'),
+    .describe(
+      'The path to the file to edit inside the workspace. Use absolute paths (starting with /) for global access.',
+    ),
 });
 
 // Le schéma de sortie structuré pour le frontend

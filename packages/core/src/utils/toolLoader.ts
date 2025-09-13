@@ -9,6 +9,8 @@ import { toolRegistry } from '../modules/tools/toolRegistry.ts';
 import { Tool } from '../types.ts';
 import { getErrDetails } from './errorUtils.ts';
 
+const logger = getLogger();
+
 // Schéma Zod pour valider la structure d'un outil
 const toolSchema = z.object({
   description: z.string(),
@@ -61,7 +63,7 @@ export async function _internalLoadTools(): Promise<void> {
         continue;
       }
 
-      console.log(`[GEMINI-DEBUG] Loading tool file: ${file}`);
+      logger.debug(`[GEMINI-DEBUG] Loading tool file: ${file}`);
       await loadToolFile(file);
       console.log(
         `[_internalLoadTools] Successfully loaded tool file: ${file}`,
@@ -180,11 +182,13 @@ async function findToolFiles(
   console.log(`[findToolFiles] Looking for files with extension: ${extension}`);
   try {
     const entries = await fs.readdir(dir, { withFileTypes: true });
-    console.log(`[findToolFiles] Found ${entries.length} entries in directory`);
+    logger.debug(
+      `[findToolFiles] Found ${entries.length} entries in directory`,
+    );
 
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
-      console.log(
+      logger.debug(
         `[findToolFiles] Processing entry: ${entry.name}, isDirectory: ${entry.isDirectory()}, isFile: ${entry.isFile()}`,
       );
 
@@ -194,8 +198,12 @@ async function findToolFiles(
         console.log(`[findToolFiles] Found matching file: ${fullPath}`);
         // Special logging for Playwright/browser tools
         if (fullPath.includes('playwright') || fullPath.includes('browser')) {
-          console.log(`[findToolFiles] [PLAYWRIGHT/BROWSER] Found tool file: ${fullPath}`);
-          getLogger().info(`[findToolFiles] [PLAYWRIGHT/BROWSER] Found tool file: ${fullPath}`);
+          logger.debug(
+            `[findToolFiles] [PLAYWRIGHT/BROWSER] Found tool file: ${fullPath}`,
+          );
+          logger.info(
+            `[findToolFiles] [PLAYWRIGHT/BROWSER] Found tool file: ${fullPath}`,
+          );
         }
         files.push(fullPath);
       }
@@ -212,14 +220,14 @@ async function findToolFiles(
     throw error; // Re-throw to ensure the error is propagated
   }
 
-  console.log(`[findToolFiles] Returning files: ${files.join(', ')}`);
+  logger.debug(`[findToolFiles] Returning files: ${files.join(', ')}`);
   return files;
 }
 
 async function loadToolFile(file: string): Promise<void> {
   const logger = getLogger();
   logger.debug({ file }, `[loadToolFile] Attempting to load tool file.`);
-  console.log(`[loadToolFile] Attempting to load tool file: ${file}`);
+  logger.debug(`[loadToolFile] Attempting to load tool file: ${file}`);
 
   try {
     const module = await import(`${path.resolve(file)}?v=${Date.now()}`); // Cache-busting
@@ -227,8 +235,10 @@ async function loadToolFile(file: string): Promise<void> {
       { file, moduleExports: Object.keys(module) },
       `[loadToolFile] Successfully imported module.`,
     );
-    console.log(`[loadToolFile] Successfully imported module from ${file}`);
-    console.log(`[loadToolFile] Module exports: ${Object.keys(module).join(', ')}`);
+    logger.debug(`[loadToolFile] Successfully imported module from ${file}`);
+    logger.debug(
+      `[loadToolFile] Module exports: ${Object.keys(module).join(', ')}`,
+    );
 
     for (const exportName in module) {
       const exportedItem = module[exportName];
@@ -242,7 +252,9 @@ async function loadToolFile(file: string): Promise<void> {
           { exportName, file },
           `[loadToolFile] Found potential tool export.`,
         );
-        console.log(`[loadToolFile] Found potential tool export: ${exportName} in ${file}`);
+        logger.debug(
+          `[loadToolFile] Found potential tool export: ${exportName} in ${file}`,
+        );
 
         // Valider l'objet avec Zod mais ne pas afficher les détails verbeux
         const parsedTool = toolSchema.safeParse(exportedItem);
@@ -256,7 +268,9 @@ async function loadToolFile(file: string): Promise<void> {
               { file, toolName: tool.name },
               `[loadToolFile] Tool with name ${tool.name} already registered, skipping.`,
             );
-            console.log(`[loadToolFile] Tool ${tool.name} already registered, skipping.`);
+            logger.debug(
+              `[loadToolFile] Tool ${tool.name} already registered, skipping.`,
+            );
             continue;
           }
 
@@ -267,7 +281,9 @@ async function loadToolFile(file: string): Promise<void> {
             { file, toolName: tool.name },
             `[loadToolFile] Successfully registered tool.`,
           );
-          console.log(`[loadToolFile] Successfully registered tool: ${tool.name} from ${file}`);
+          logger.info(
+            `[loadToolFile] Successfully registered tool: ${tool.name} from ${file}`,
+          );
         } else {
           logger.warn(
             {
@@ -280,14 +296,18 @@ async function loadToolFile(file: string): Promise<void> {
             },
             `[loadToolFile] Skipping invalid tool export due to Zod schema mismatch.`,
           );
-          console.log(`[loadToolFile] Skipping invalid tool export ${exportName} from ${file} due to Zod schema mismatch`);
+          logger.debug(
+            `[loadToolFile] Skipping invalid tool export ${exportName} from ${file} due to Zod schema mismatch`,
+          );
         }
       } else {
         logger.debug(
           { exportName, file },
           `[loadToolFile] Skipping non-tool export.`,
         );
-        console.log(`[loadToolFile] Skipping non-tool export: ${exportName} from ${file}`);
+        logger.debug(
+          `[loadToolFile] Skipping non-tool export: ${exportName} from ${file}`,
+        );
       }
     }
   } catch (error) {
@@ -298,7 +318,10 @@ async function loadToolFile(file: string): Promise<void> {
         file,
         logContext: `[loadToolFile] Failed to load browser tool (likely due to Playwright issues). This tool will be skipped.`,
       });
-      console.log(`[loadToolFile] [BROWSER TOOL WARNING] Failed to load browser tool from ${file}:`, error);
+      logger.warn(
+        `[loadToolFile] [BROWSER TOOL WARNING] Failed to load browser tool from ${file}:`,
+        error,
+      );
       return; // Skip this tool but continue loading others
     }
 
@@ -307,7 +330,10 @@ async function loadToolFile(file: string): Promise<void> {
       file,
       logContext: `[loadToolFile] Failed to dynamically load or process tool file.`,
     });
-    console.log(`[loadToolFile] ERROR Failed to load tool file ${file}:`, error);
+    logger.error(
+      `[loadToolFile] ERROR Failed to load tool file ${file}:`,
+      error,
+    );
   }
 }
 
@@ -320,8 +346,8 @@ function watchTools() {
       : 'packages/core/src/tools/generated',
   );
 
-  getLogger().info(`[watchTools] Watching for tool changes in: ${toolsDir}`);
-  getLogger().info(
+  logger.info(`[watchTools] Watching for tool changes in: ${toolsDir}`);
+  logger.info(
     `[watchTools] Also watching generated tools in: ${generatedToolsDir}`,
   );
 
@@ -339,32 +365,32 @@ function watchTools() {
   );
 
   watcher.on('add', async (filePath) => {
-    getLogger().info(`[watchTools] New tool file added: ${filePath}`);
+    logger.info(`[watchTools] New tool file added: ${filePath}`);
     await loadToolFile(filePath);
   });
 
   watcher.on('change', async (filePath) => {
-    getLogger().info(`[watchTools] Tool file changed: ${filePath}`);
+    logger.info(`[watchTools] Tool file changed: ${filePath}`);
 
     await loadToolFile(filePath);
   });
 
   watcher.on('unlink', (filePath) => {
-    getLogger().info(`[watchTools] Tool file removed: ${filePath}`);
+    logger.info(`[watchTools] Tool file removed: ${filePath}`);
     const toolName = fileToToolNameMap.get(filePath);
     if (toolName) {
       toolRegistry.unregister(toolName);
       loadedToolFiles.delete(filePath);
       fileToToolNameMap.delete(filePath);
-      getLogger().info(`[watchTools] Unregistered tool: ${toolName}`);
+      logger.info(`[watchTools] Unregistered tool: ${toolName}`);
     }
   });
 
   watcher.on('error', (error) => {
-    getLogger().error({ error }, '[watchTools] Watcher error');
+    logger.error({ error }, '[watchTools] Watcher error');
   });
 
   watcher.on('ready', () => {
-    getLogger().info('[watchTools] Initial scan complete. Ready for changes.');
+    logger.info('[watchTools] Initial scan complete. Ready for changes.');
   });
 }

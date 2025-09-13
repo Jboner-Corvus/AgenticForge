@@ -26,25 +26,28 @@ const sendEvent = async (ctx: Ctx, type: string, data: unknown) => {
       data,
       timestamp: Date.now(),
       jobId: ctx.job.id,
-      sessionId: ctx.session?.id
+      sessionId: ctx.session?.id,
     });
     await getRedisClientInstance().publish(channel, event);
     ctx.log.info({ channel, type, data }, 'Published event to Redis');
-    
+
     // Also send browser events with a standardized format for the frontend
     if (type.startsWith('browser.')) {
       const browserEvent = JSON.stringify({
         type: 'browser.event',
         data: {
           type,
-          data: data
+          data: data,
         },
         timestamp: Date.now(),
         jobId: ctx.job.id,
-        sessionId: ctx.session?.id
+        sessionId: ctx.session?.id,
       });
       await getRedisClientInstance().publish(channel, browserEvent);
-      ctx.log.info({ channel, type: 'browser.event', data }, 'Published browser event to Redis');
+      ctx.log.info(
+        { channel, type: 'browser.event', data },
+        'Published browser event to Redis',
+      );
     }
   }
 };
@@ -71,7 +74,9 @@ const shouldTakeScreenshot = (action: string): boolean => {
   }
 
   // Check rate limiting
-  if (screenshotCountThisMinute >= AUTO_SCREENSHOT_CONFIG.maxScreenshotsPerMinute) {
+  if (
+    screenshotCountThisMinute >= AUTO_SCREENSHOT_CONFIG.maxScreenshotsPerMinute
+  ) {
     return false;
   }
 
@@ -92,10 +97,18 @@ const shouldTakeScreenshot = (action: string): boolean => {
 };
 
 // Helper function to capture screenshot and send to UI with enhanced robustness
-const captureAndSendScreenshot = async (ctx: Ctx, action: string, selector?: string, retries = 3) => {
+const captureAndSendScreenshot = async (
+  ctx: Ctx,
+  action: string,
+  selector?: string,
+  retries = 3,
+) => {
   // Check if we should take a screenshot
   if (!shouldTakeScreenshot(action)) {
-    logger.debug({ action }, 'Screenshot skipped due to rate limiting or configuration');
+    logger.debug(
+      { action },
+      'Screenshot skipped due to rate limiting or configuration',
+    );
     return false;
   }
 
@@ -116,7 +129,7 @@ const captureAndSendScreenshot = async (ctx: Ctx, action: string, selector?: str
       // Take screenshot with error handling (no quality option for PNG)
       const screenshotResult = await executePlaywrightAction('screenshot', {
         fullPage: false,
-        timeout: 10000
+        timeout: 10000,
       });
 
       let screenshotBuffer: Buffer | null = null;
@@ -124,9 +137,11 @@ const captureAndSendScreenshot = async (ctx: Ctx, action: string, selector?: str
       if (screenshotResult?.result) {
         if (Buffer.isBuffer(screenshotResult.result)) {
           screenshotBuffer = screenshotResult.result;
-        } else if (typeof screenshotResult.result === 'object' &&
-                   screenshotResult.result.type === 'Buffer' &&
-                   Array.isArray(screenshotResult.result.data)) {
+        } else if (
+          typeof screenshotResult.result === 'object' &&
+          screenshotResult.result.type === 'Buffer' &&
+          Array.isArray(screenshotResult.result.data)
+        ) {
           // Handle serialized Buffer from MCP
           screenshotBuffer = Buffer.from(screenshotResult.result.data);
         }
@@ -148,18 +163,28 @@ const captureAndSendScreenshot = async (ctx: Ctx, action: string, selector?: str
             selector: selector,
             timestamp: Date.now(),
             attempt: attempt,
-            automatic: true
+            automatic: true,
           });
 
-          logger.info({ action, selector, attempt, bufferSize: screenshotBuffer.length }, 'Automatic screenshot captured and sent successfully');
+          logger.info(
+            { action, selector, attempt, bufferSize: screenshotBuffer.length },
+            'Automatic screenshot captured and sent successfully',
+          );
           return true;
         }
       }
 
       throw new Error('Invalid screenshot data received');
-
     } catch (error) {
-      logger.warn({ error: error instanceof Error ? error.message : String(error), action, selector, attempt }, `Screenshot attempt ${attempt}/${retries} failed`);
+      logger.warn(
+        {
+          error: error instanceof Error ? error.message : String(error),
+          action,
+          selector,
+          attempt,
+        },
+        `Screenshot attempt ${attempt}/${retries} failed`,
+      );
 
       if (attempt === retries) {
         // Send error event instead of failing silently
@@ -168,13 +193,13 @@ const captureAndSendScreenshot = async (ctx: Ctx, action: string, selector?: str
           selector: selector,
           error: error instanceof Error ? error.message : String(error),
           timestamp: Date.now(),
-          automatic: true
+          automatic: true,
         });
         return false;
       }
 
       // Wait before retry
-      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
     }
   }
   return false;
@@ -182,91 +207,102 @@ const captureAndSendScreenshot = async (ctx: Ctx, action: string, selector?: str
 
 // Initialize Playwright Browser with enhanced robustness
 async function initializeBrowser(): Promise<void> {
-   // Check if browser is still alive and functional
-   if (isInitialized && browser && context && page && !page.isClosed()) {
-     try {
-       // Test if page is responsive
-       await page.evaluate('() => document.readyState', { timeout: 1000 });
-       return;
-     } catch (error) {
-       logger.warn({ error }, 'Existing browser instance is unresponsive, reinitializing');
-       await cleanupBrowser();
-     }
-   }
+  // Check if browser is still alive and functional
+  if (isInitialized && browser && context && page && !page.isClosed()) {
+    try {
+      // Test if page is responsive
+      await page.evaluate('() => document.readyState', { timeout: 1000 });
+      return;
+    } catch (error) {
+      logger.warn(
+        { error },
+        'Existing browser instance is unresponsive, reinitializing',
+      );
+      await cleanupBrowser();
+    }
+  }
 
-   try {
-     logger.info('Initializing Playwright Browser...');
+  try {
+    logger.info('Initializing Playwright Browser...');
 
-     // Cleanup any existing instances
-     await cleanupBrowser();
+    // Cleanup any existing instances
+    await cleanupBrowser();
 
-     // Get configuration
-     const config = getPlaywrightMcpConfig();
+    // Get configuration
+    const config = getPlaywrightMcpConfig();
 
-     // Enhanced browser launch arguments for better stability
-     const launchArgs = [
-       '--no-sandbox',
-       '--disable-setuid-sandbox',
-       '--disable-dev-shm-usage',
-       '--disable-accelerated-2d-canvas',
-       '--disable-gpu',
-       '--no-first-run',
-       '--no-zygote',
-       '--single-process',
-       '--disable-extensions',
-       '--disable-plugins',
-       '--disable-background-timer-throttling',
-       '--disable-backgrounding-occluded-windows',
-       '--disable-renderer-backgrounding',
-       '--disable-web-security',
-       '--disable-features=VizDisplayCompositor',
-       '--memory-pressure-off',
-       ...(config.browser.launchOptions?.args || [])
-     ];
+    // Enhanced browser launch arguments for better stability
+    const launchArgs = [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--disable-gpu',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process',
+      '--disable-extensions',
+      '--disable-plugins',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
+      '--disable-web-security',
+      '--disable-features=VizDisplayCompositor',
+      '--memory-pressure-off',
+      ...(config.browser.launchOptions?.args || []),
+    ];
 
-     // Launch browser with timeout and error handling
-     browser = await chromium.launch({
-       headless: config.browser.headless,
-       args: launchArgs,
-       timeout: 30000,
-       ...config.browser.launchOptions,
-     });
+    // Launch browser with timeout and error handling
+    browser = await chromium.launch({
+      headless: config.browser.headless,
+      args: launchArgs,
+      timeout: 30000,
+      ...config.browser.launchOptions,
+    });
 
-     // Create context with enhanced settings
-     context = await browser.newContext({
-       viewport: { width: 1280, height: 720 },
-       userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-       acceptDownloads: false,
-       ignoreHTTPSErrors: true,
-       javaScriptEnabled: true,
-       deviceScaleFactor: 1
-     });
+    // Create context with enhanced settings
+    context = await browser.newContext({
+      viewport: { width: 1280, height: 720 },
+      userAgent:
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      acceptDownloads: false,
+      ignoreHTTPSErrors: true,
+      javaScriptEnabled: true,
+      deviceScaleFactor: 1,
+    });
 
-     // Create page with error handlers
-     page = await context.newPage();
-     
-     // Set page timeouts
-     page.setDefaultTimeout(30000);
-     page.setDefaultNavigationTimeout(30000);
-     
-     // Add error handlers
-     page.on('crash', () => {
-       logger.error('Page crashed, marking for reinitialization');
-       isInitialized = false;
-     });
-     
-     page.on('close', () => {
-       logger.info('Page closed, marking for reinitialization');
-       isInitialized = false;
-     });
+    // Create page with error handlers
+    page = await context.newPage();
 
-     isInitialized = true;
-     logger.info('Playwright Browser initialized successfully with enhanced settings');
-   } catch (error) {
-     logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Failed to initialize Playwright Browser');
-     await cleanupBrowser();
-     throw new Error(`Browser initialization failed: ${error instanceof Error ? error.message : String(error)}`);
-   }
+    // Set page timeouts
+    page.setDefaultTimeout(30000);
+    page.setDefaultNavigationTimeout(30000);
+
+    // Add error handlers
+    page.on('crash', () => {
+      logger.error('Page crashed, marking for reinitialization');
+      isInitialized = false;
+    });
+
+    page.on('close', () => {
+      logger.info('Page closed, marking for reinitialization');
+      isInitialized = false;
+    });
+
+    isInitialized = true;
+    logger.info(
+      'Playwright Browser initialized successfully with enhanced settings',
+    );
+  } catch (error) {
+    logger.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      'Failed to initialize Playwright Browser',
+    );
+    await cleanupBrowser();
+    throw new Error(
+      `Browser initialization failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
 
 // Helper function to cleanup browser instances
@@ -282,7 +318,10 @@ async function cleanupBrowser(): Promise<void> {
       await browser.close().catch(() => {}); // Ignore errors
     }
   } catch (error) {
-    logger.warn({ error: error instanceof Error ? error.message : String(error) }, 'Error during browser cleanup');
+    logger.warn(
+      { error: error instanceof Error ? error.message : String(error) },
+      'Error during browser cleanup',
+    );
   } finally {
     page = null;
     context = null;
@@ -292,10 +331,13 @@ async function cleanupBrowser(): Promise<void> {
 }
 
 // Helper function to execute Playwright actions with enhanced robustness
-async function executePlaywrightAction(action: string, args: any): Promise<any> {
+async function executePlaywrightAction(
+  action: string,
+  args: any,
+): Promise<any> {
   const maxRetries = 3;
   const retryDelay = 1000;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       await initializeBrowser();
@@ -313,15 +355,18 @@ async function executePlaywrightAction(action: string, args: any): Promise<any> 
         case 'navigate':
           // Enhanced navigation with better error handling
           try {
-            result = await page.goto(args.url, { 
-              waitUntil: args.waitUntil || 'domcontentloaded', 
-              timeout: timeout 
+            result = await page.goto(args.url, {
+              waitUntil: args.waitUntil || 'domcontentloaded',
+              timeout: timeout,
             });
-            
+
             // Wait for page to be truly ready
             await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
           } catch (navError) {
-            logger.warn({ navError, url: args.url, attempt }, 'Navigation attempt failed');
+            logger.warn(
+              { navError, url: args.url, attempt },
+              'Navigation attempt failed',
+            );
             if (attempt === maxRetries) throw navError;
             continue;
           }
@@ -330,13 +375,19 @@ async function executePlaywrightAction(action: string, args: any): Promise<any> 
         case 'click':
           // Enhanced click with element verification
           try {
-            await page.waitForSelector(args.selector, { timeout: 10000, state: 'visible' });
-            result = await page.click(args.selector, { 
+            await page.waitForSelector(args.selector, {
+              timeout: 10000,
+              state: 'visible',
+            });
+            result = await page.click(args.selector, {
               button: args.button || 'left',
-              timeout: timeout
+              timeout: timeout,
             });
           } catch (clickError) {
-            logger.warn({ clickError, selector: args.selector, attempt }, 'Click attempt failed');
+            logger.warn(
+              { clickError, selector: args.selector, attempt },
+              'Click attempt failed',
+            );
             if (attempt === maxRetries) throw clickError;
             continue;
           }
@@ -345,13 +396,21 @@ async function executePlaywrightAction(action: string, args: any): Promise<any> 
         case 'type':
           // Enhanced typing with element verification
           try {
-            await page.waitForSelector(args.selector, { timeout: 10000, state: 'visible' });
+            await page.waitForSelector(args.selector, {
+              timeout: 10000,
+              state: 'visible',
+            });
             if (args.clear) {
               await page.fill(args.selector, '');
             }
-            result = await page.fill(args.selector, args.text, { timeout: timeout });
+            result = await page.fill(args.selector, args.text, {
+              timeout: timeout,
+            });
           } catch (typeError) {
-            logger.warn({ typeError, selector: args.selector, attempt }, 'Type attempt failed');
+            logger.warn(
+              { typeError, selector: args.selector, attempt },
+              'Type attempt failed',
+            );
             if (attempt === maxRetries) throw typeError;
             continue;
           }
@@ -361,28 +420,38 @@ async function executePlaywrightAction(action: string, args: any): Promise<any> 
           // Enhanced screenshot with robust error handling
           try {
             // Ensure page is ready for screenshot
-            await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {
-              logger.debug('Network idle timeout, proceeding with screenshot');
-            });
-            
+            await page
+              .waitForLoadState('networkidle', { timeout: 5000 })
+              .catch(() => {
+                logger.debug(
+                  'Network idle timeout, proceeding with screenshot',
+                );
+              });
+
             const screenshotOptions: any = {
               type: 'png',
               timeout: timeout,
-              animations: 'disabled' // Disable animations for consistent screenshots
+              animations: 'disabled', // Disable animations for consistent screenshots
             };
-            
+
             // Only add quality for JPEG screenshots
             if (args.format === 'jpeg') {
               screenshotOptions.type = 'jpeg';
-              screenshotOptions.quality = Math.max(50, Math.min(100, args.quality || 80));
+              screenshotOptions.quality = Math.max(
+                50,
+                Math.min(100, args.quality || 80),
+              );
             }
-            
+
             if (args.fullPage) {
               screenshotOptions.fullPage = true;
             }
-            
+
             if (args.selector) {
-              await page.waitForSelector(args.selector, { timeout: 5000, state: 'visible' });
+              await page.waitForSelector(args.selector, {
+                timeout: 5000,
+                state: 'visible',
+              });
               const element = await page.locator(args.selector).first();
               const isVisible = await element.isVisible();
               if (!isVisible) {
@@ -392,14 +461,16 @@ async function executePlaywrightAction(action: string, args: any): Promise<any> 
             } else {
               result = await page.screenshot(screenshotOptions);
             }
-            
+
             // Validate screenshot result
             if (!Buffer.isBuffer(result) || result.length === 0) {
               throw new Error('Invalid screenshot data: empty or not a buffer');
             }
-            
           } catch (screenshotError) {
-            logger.warn({ screenshotError, selector: args.selector, attempt }, 'Screenshot attempt failed');
+            logger.warn(
+              { screenshotError, selector: args.selector, attempt },
+              'Screenshot attempt failed',
+            );
             if (attempt === maxRetries) throw screenshotError;
             continue;
           }
@@ -419,10 +490,13 @@ async function executePlaywrightAction(action: string, args: any): Promise<any> 
           try {
             result = await page.waitForSelector(args.selector, {
               timeout: args.timeout || 30000,
-              state: args.state || 'visible'
+              state: args.state || 'visible',
             });
           } catch (waitError) {
-            logger.warn({ waitError, selector: args.selector, attempt }, 'Wait for selector attempt failed');
+            logger.warn(
+              { waitError, selector: args.selector, attempt },
+              'Wait for selector attempt failed',
+            );
             if (attempt === maxRetries) throw waitError;
             continue;
           }
@@ -431,11 +505,18 @@ async function executePlaywrightAction(action: string, args: any): Promise<any> 
         case 'getContent':
           try {
             if (args.selector) {
-              await page.waitForSelector(args.selector, { timeout: 10000, state: 'attached' });
+              await page.waitForSelector(args.selector, {
+                timeout: 10000,
+                state: 'attached',
+              });
               const element = await page.locator(args.selector).first();
               if (args.property) {
-                result = await element.getAttribute(args.property) ||
-                         await element.evaluate((el, prop) => (el as any)[prop], args.property);
+                result =
+                  (await element.getAttribute(args.property)) ||
+                  (await element.evaluate(
+                    (el, prop) => (el as any)[prop],
+                    args.property,
+                  ));
               } else {
                 result = await element.textContent();
               }
@@ -443,7 +524,10 @@ async function executePlaywrightAction(action: string, args: any): Promise<any> 
               result = await page.content();
             }
           } catch (contentError) {
-            logger.warn({ contentError, selector: args.selector, attempt }, 'Get content attempt failed');
+            logger.warn(
+              { contentError, selector: args.selector, attempt },
+              'Get content attempt failed',
+            );
             if (attempt === maxRetries) throw contentError;
             continue;
           }
@@ -453,10 +537,13 @@ async function executePlaywrightAction(action: string, args: any): Promise<any> 
           try {
             result = await page.setViewportSize({
               width: Math.max(320, Math.min(4096, args.width)),
-              height: Math.max(240, Math.min(4096, args.height))
+              height: Math.max(240, Math.min(4096, args.height)),
             });
           } catch (viewportError) {
-            logger.warn({ viewportError, attempt }, 'Set viewport attempt failed');
+            logger.warn(
+              { viewportError, attempt },
+              'Set viewport attempt failed',
+            );
             if (attempt === maxRetries) throw viewportError;
             continue;
           }
@@ -466,22 +553,39 @@ async function executePlaywrightAction(action: string, args: any): Promise<any> 
           throw new Error(`Unknown action: ${action}`);
       }
 
-      logger.debug({ action, resultType: typeof result, attempt }, 'Playwright action completed successfully');
+      logger.debug(
+        { action, resultType: typeof result, attempt },
+        'Playwright action completed successfully',
+      );
       return {
-        content: [{ type: 'text', text: result || `Action ${action} completed successfully` }],
+        content: [
+          {
+            type: 'text',
+            text: result || `Action ${action} completed successfully`,
+          },
+        ],
         isError: false,
-        result: result
+        result: result,
       };
-      
     } catch (error) {
-      logger.error({ error: error instanceof Error ? error.message : String(error), action, args, attempt }, `Playwright action attempt ${attempt}/${maxRetries} failed`);
-      
+      logger.error(
+        {
+          error: error instanceof Error ? error.message : String(error),
+          action,
+          args,
+          attempt,
+        },
+        `Playwright action attempt ${attempt}/${maxRetries} failed`,
+      );
+
       if (attempt === maxRetries) {
-        throw new Error(`Playwright action '${action}' failed after ${maxRetries} attempts: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(
+          `Playwright action '${action}' failed after ${maxRetries} attempts: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
-      
+
       // Wait before retry with exponential backoff
-      await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+      await new Promise((resolve) => setTimeout(resolve, retryDelay * attempt));
     }
   }
 }
@@ -489,70 +593,118 @@ async function executePlaywrightAction(action: string, args: any): Promise<any> 
 // Tool parameters schema
 const navigateParams = z.object({
   url: z.string().url().describe('The URL to navigate to'),
-  waitUntil: z.enum(['load', 'domcontentloaded', 'networkidle']).optional()
+  waitUntil: z
+    .enum(['load', 'domcontentloaded', 'networkidle'])
+    .optional()
     .describe('When to consider navigation complete'),
 });
 
 const clickParams = z.object({
   selector: z.string().describe('CSS selector for the element to click'),
-  button: z.enum(['left', 'right', 'middle']).optional().default('left')
+  button: z
+    .enum(['left', 'right', 'middle'])
+    .optional()
+    .default('left')
     .describe('Mouse button to use for clicking'),
 });
 
 const typeParams = z.object({
   selector: z.string().describe('CSS selector for the input element'),
   text: z.string().describe('Text to type into the element'),
-  clear: z.boolean().optional().default(false)
+  clear: z
+    .boolean()
+    .optional()
+    .default(false)
     .describe('Whether to clear the field before typing'),
 });
 
 const screenshotParams = z.object({
-  fullPage: z.boolean().optional().default(false)
+  fullPage: z
+    .boolean()
+    .optional()
+    .default(false)
     .describe('Whether to capture the full page or just the viewport'),
-  selector: z.string().optional()
+  selector: z
+    .string()
+    .optional()
     .describe('CSS selector to capture only a specific element'),
-  format: z.enum(['png', 'jpeg']).optional().default('png')
+  format: z
+    .enum(['png', 'jpeg'])
+    .optional()
+    .default('png')
     .describe('Image format (png or jpeg)'),
-  quality: z.number().min(0).max(100).optional()
+  quality: z
+    .number()
+    .min(0)
+    .max(100)
+    .optional()
     .describe('Image quality (0-100, only for JPEG format)'),
 });
 
 const evaluateParams = z.object({
-  script: z.string().describe('JavaScript code to execute in the browser context'),
-  returnByValue: z.boolean().optional().default(true)
+  script: z
+    .string()
+    .describe('JavaScript code to execute in the browser context'),
+  returnByValue: z
+    .boolean()
+    .optional()
+    .default(true)
     .describe('Whether to return the result by value or by reference'),
 });
 
 const waitForSelectorParams = z.object({
   selector: z.string().describe('CSS selector to wait for'),
-  timeout: z.number().optional().default(30000)
+  timeout: z
+    .number()
+    .optional()
+    .default(30000)
     .describe('Maximum time to wait in milliseconds'),
-  state: z.enum(['attached', 'detached', 'visible', 'hidden']).optional().default('visible')
+  state: z
+    .enum(['attached', 'detached', 'visible', 'hidden'])
+    .optional()
+    .default('visible')
     .describe('Element state to wait for'),
 });
 
 const getContentParams = z.object({
-  selector: z.string().optional()
-    .describe('CSS selector to get content from (if not provided, gets entire page)'),
-  property: z.string().optional()
-    .describe('Property to get from the element (e.g., "textContent", "innerHTML", "value")'),
+  selector: z
+    .string()
+    .optional()
+    .describe(
+      'CSS selector to get content from (if not provided, gets entire page)',
+    ),
+  property: z
+    .string()
+    .optional()
+    .describe(
+      'Property to get from the element (e.g., "textContent", "innerHTML", "value")',
+    ),
 });
 
 const setViewportParams = z.object({
   width: z.number().min(1).describe('Viewport width in pixels'),
   height: z.number().min(1).describe('Viewport height in pixels'),
-  deviceScaleFactor: z.number().min(0.1).max(5).optional().default(1)
+  deviceScaleFactor: z
+    .number()
+    .min(0.1)
+    .max(5)
+    .optional()
+    .default(1)
     .describe('Device scale factor'),
 });
 
 // Navigate tool
 export const playwrightNavigateTool: Tool<typeof navigateParams, any> = {
   name: 'playwright_navigate',
-  description: 'Navigate to a URL using Playwright browser automation. This tool provides reliable web navigation with proper wait conditions.',
+  description:
+    'Navigate to a URL using Playwright browser automation. This tool provides reliable web navigation with proper wait conditions.',
   parameters: navigateParams,
   execute: async (params: z.infer<typeof navigateParams>, ctx: Ctx) => {
     try {
-      logger.info({ url: params.url, waitUntil: params.waitUntil }, 'Navigating to URL');
+      logger.info(
+        { url: params.url, waitUntil: params.waitUntil },
+        'Navigating to URL',
+      );
 
       // Send navigation event to UI
       await sendEvent(ctx, 'browser.navigating', { url: params.url });
@@ -567,8 +719,11 @@ export const playwrightNavigateTool: Tool<typeof navigateParams, any> = {
       await sendEvent(ctx, 'browser.page.loaded', { url: params.url });
 
       // Capture screenshot after navigation for visual feedback (non-blocking)
-      captureAndSendScreenshot(ctx, 'navigation', params.url).catch(error => {
-        logger.warn({ error }, 'Non-critical screenshot capture failed after navigation');
+      captureAndSendScreenshot(ctx, 'navigation', params.url).catch((error) => {
+        logger.warn(
+          { error },
+          'Non-critical screenshot capture failed after navigation',
+        );
       });
 
       logger.info({ url: params.url }, 'Navigation completed successfully');
@@ -576,12 +731,15 @@ export const playwrightNavigateTool: Tool<typeof navigateParams, any> = {
       return {
         success: true,
         url: params.url,
-        result: result.content?.[0]?.text || 'Navigation completed'
+        result: result.content?.[0]?.text || 'Navigation completed',
       };
     } catch (error) {
       logger.error({ error, url: params.url }, 'Navigation failed');
       // Send error event to UI
-      await sendEvent(ctx, 'browser.error', { message: `Navigation failed: ${error}`, url: params.url });
+      await sendEvent(ctx, 'browser.error', {
+        message: `Navigation failed: ${error}`,
+        url: params.url,
+      });
       throw new Error(`Failed to navigate to ${params.url}: ${error}`);
     }
   },
@@ -590,48 +748,65 @@ export const playwrightNavigateTool: Tool<typeof navigateParams, any> = {
 // Click tool
 export const playwrightClickTool: Tool<typeof clickParams, any> = {
   name: 'playwright_click',
-  description: 'Click on an element using Playwright browser automation. Supports different mouse buttons and precise element targeting.',
+  description:
+    'Click on an element using Playwright browser automation. Supports different mouse buttons and precise element targeting.',
   parameters: clickParams,
   execute: async (params: z.infer<typeof clickParams>, ctx: Ctx) => {
     try {
-      logger.info({ selector: params.selector, button: params.button }, 'Clicking element');
+      logger.info(
+        { selector: params.selector, button: params.button },
+        'Clicking element',
+      );
 
       // Send click event to UI with visual annotation
       await sendEvent(ctx, 'browser.element.click', {
         selector: params.selector,
         button: params.button,
-        action: 'highlighting element for click'
+        action: 'highlighting element for click',
       });
 
       // Capture screenshot before click to show element highlighting (non-blocking)
-      captureAndSendScreenshot(ctx, 'before_click', params.selector).catch(error => {
-        logger.warn({ error }, 'Non-critical screenshot capture failed before click');
-      });
+      captureAndSendScreenshot(ctx, 'before_click', params.selector).catch(
+        (error) => {
+          logger.warn(
+            { error },
+            'Non-critical screenshot capture failed before click',
+          );
+        },
+      );
 
       const result = await executePlaywrightAction('click', {
         selector: params.selector,
         button: params.button,
       });
 
-      logger.info({ selector: params.selector }, 'Click completed successfully');
+      logger.info(
+        { selector: params.selector },
+        'Click completed successfully',
+      );
 
       // Capture screenshot after click to show result (non-blocking)
-      captureAndSendScreenshot(ctx, 'after_click', params.selector).catch(error => {
-        logger.warn({ error }, 'Non-critical screenshot capture failed after click');
-      });
+      captureAndSendScreenshot(ctx, 'after_click', params.selector).catch(
+        (error) => {
+          logger.warn(
+            { error },
+            'Non-critical screenshot capture failed after click',
+          );
+        },
+      );
 
       return {
         success: true,
         selector: params.selector,
         button: params.button,
-        result: result.content?.[0]?.text || 'Click completed'
+        result: result.content?.[0]?.text || 'Click completed',
       };
     } catch (error) {
       logger.error({ error, selector: params.selector }, 'Click failed');
       // Send error event to UI
       await sendEvent(ctx, 'browser.error', {
         message: `Click failed: ${error}`,
-        selector: params.selector
+        selector: params.selector,
       });
       throw new Error(`Failed to click element ${params.selector}: ${error}`);
     }
@@ -641,24 +816,33 @@ export const playwrightClickTool: Tool<typeof clickParams, any> = {
 // Type tool
 export const playwrightTypeTool: Tool<typeof typeParams, any> = {
   name: 'playwright_type',
-  description: 'Type text into an input element using Playwright browser automation. Supports clearing the field before typing.',
+  description:
+    'Type text into an input element using Playwright browser automation. Supports clearing the field before typing.',
   parameters: typeParams,
   execute: async (params: z.infer<typeof typeParams>, ctx: Ctx) => {
     try {
-      logger.info({ selector: params.selector, textLength: params.text.length }, 'Typing text');
+      logger.info(
+        { selector: params.selector, textLength: params.text.length },
+        'Typing text',
+      );
 
       // Send typing event to UI with visual feedback
       await sendEvent(ctx, 'browser.element.type', {
         selector: params.selector,
         textLength: params.text.length,
         cleared: params.clear,
-        action: 'preparing to type text'
+        action: 'preparing to type text',
       });
 
       // Capture screenshot before typing to show focused element (non-blocking)
-      captureAndSendScreenshot(ctx, 'before_type', params.selector).catch(error => {
-        logger.warn({ error }, 'Non-critical screenshot capture failed before type');
-      });
+      captureAndSendScreenshot(ctx, 'before_type', params.selector).catch(
+        (error) => {
+          logger.warn(
+            { error },
+            'Non-critical screenshot capture failed before type',
+          );
+        },
+      );
 
       const result = await executePlaywrightAction('type', {
         selector: params.selector,
@@ -666,28 +850,38 @@ export const playwrightTypeTool: Tool<typeof typeParams, any> = {
         clear: params.clear,
       });
 
-      logger.info({ selector: params.selector }, 'Typing completed successfully');
+      logger.info(
+        { selector: params.selector },
+        'Typing completed successfully',
+      );
 
       // Capture screenshot after typing to show result (non-blocking)
-      captureAndSendScreenshot(ctx, 'after_type', params.selector).catch(error => {
-        logger.warn({ error }, 'Non-critical screenshot capture failed after type');
-      });
+      captureAndSendScreenshot(ctx, 'after_type', params.selector).catch(
+        (error) => {
+          logger.warn(
+            { error },
+            'Non-critical screenshot capture failed after type',
+          );
+        },
+      );
 
       return {
         success: true,
         selector: params.selector,
         textLength: params.text.length,
         cleared: params.clear,
-        result: result.content?.[0]?.text || 'Typing completed'
+        result: result.content?.[0]?.text || 'Typing completed',
       };
     } catch (error) {
       logger.error({ error, selector: params.selector }, 'Typing failed');
       // Send error event to UI
       await sendEvent(ctx, 'browser.error', {
         message: `Typing failed: ${error}`,
-        selector: params.selector
+        selector: params.selector,
       });
-      throw new Error(`Failed to type into element ${params.selector}: ${error}`);
+      throw new Error(
+        `Failed to type into element ${params.selector}: ${error}`,
+      );
     }
   },
 };
@@ -695,21 +889,25 @@ export const playwrightTypeTool: Tool<typeof typeParams, any> = {
 // Screenshot tool
 export const playwrightScreenshotTool: Tool<typeof screenshotParams, any> = {
   name: 'playwright_screenshot',
-  description: 'Take a screenshot using Playwright browser automation. Supports full page, element-specific, and quality settings.',
+  description:
+    'Take a screenshot using Playwright browser automation. Supports full page, element-specific, and quality settings.',
   parameters: screenshotParams,
   execute: async (params: z.infer<typeof screenshotParams>, ctx: Ctx) => {
     try {
-      logger.info({
-        fullPage: params.fullPage,
-        selector: params.selector,
-        quality: params.quality
-      }, 'Taking screenshot');
+      logger.info(
+        {
+          fullPage: params.fullPage,
+          selector: params.selector,
+          quality: params.quality,
+        },
+        'Taking screenshot',
+      );
 
       // Send screenshot event to UI
       await sendEvent(ctx, 'browser.screenshot.capturing', {
         fullPage: params.fullPage,
         selector: params.selector,
-        quality: params.quality
+        quality: params.quality,
       });
 
       const result = await executePlaywrightAction('screenshot', {
@@ -724,7 +922,7 @@ export const playwrightScreenshotTool: Tool<typeof screenshotParams, any> = {
       await sendEvent(ctx, 'browser.screenshot.captured', {
         fullPage: params.fullPage,
         selector: params.selector,
-        format: 'png'
+        format: 'png',
       });
 
       // Send screenshot data to UI for display
@@ -735,7 +933,7 @@ export const playwrightScreenshotTool: Tool<typeof screenshotParams, any> = {
             imageData: base64Data,
             action: 'screenshot',
             selector: params.selector,
-            timestamp: Date.now()
+            timestamp: Date.now(),
           });
           logger.info('Screenshot data sent to UI for display');
         }
@@ -747,7 +945,7 @@ export const playwrightScreenshotTool: Tool<typeof screenshotParams, any> = {
         format: 'png',
         fullPage: params.fullPage,
         selector: params.selector,
-        result: result.content?.[0]?.text || 'Screenshot captured'
+        result: result.content?.[0]?.text || 'Screenshot captured',
       };
     } catch (error) {
       logger.error({ error }, 'Screenshot failed');
@@ -755,7 +953,7 @@ export const playwrightScreenshotTool: Tool<typeof screenshotParams, any> = {
       await sendEvent(ctx, 'browser.error', {
         message: `Screenshot failed: ${error}`,
         fullPage: params.fullPage,
-        selector: params.selector
+        selector: params.selector,
       });
       throw new Error(`Failed to take screenshot: ${error}`);
     }
@@ -765,15 +963,19 @@ export const playwrightScreenshotTool: Tool<typeof screenshotParams, any> = {
 // Evaluate JavaScript tool
 export const playwrightEvaluateTool: Tool<typeof evaluateParams, any> = {
   name: 'playwright_evaluate',
-  description: 'Execute JavaScript code in the browser context using Playwright. Allows dynamic interaction with web pages.',
+  description:
+    'Execute JavaScript code in the browser context using Playwright. Allows dynamic interaction with web pages.',
   parameters: evaluateParams,
   execute: async (params: z.infer<typeof evaluateParams>, ctx: Ctx) => {
     try {
-      logger.info({ scriptLength: params.script.length }, 'Evaluating JavaScript');
+      logger.info(
+        { scriptLength: params.script.length },
+        'Evaluating JavaScript',
+      );
 
       // Send JavaScript evaluation event to UI
       await sendEvent(ctx, 'browser.javascript.evaluating', {
-        scriptLength: params.script.length
+        scriptLength: params.script.length,
       });
 
       const result = await executePlaywrightAction('evaluate', {
@@ -784,21 +986,29 @@ export const playwrightEvaluateTool: Tool<typeof evaluateParams, any> = {
       logger.info('JavaScript evaluation completed successfully');
 
       // Capture automatic screenshot after JavaScript execution
-      captureAndSendScreenshot(ctx, 'evaluate', undefined, AUTO_SCREENSHOT_CONFIG.maxRetries).catch(error => {
-        logger.warn({ error }, 'Non-critical automatic screenshot failed after JavaScript evaluation');
+      captureAndSendScreenshot(
+        ctx,
+        'evaluate',
+        undefined,
+        AUTO_SCREENSHOT_CONFIG.maxRetries,
+      ).catch((error) => {
+        logger.warn(
+          { error },
+          'Non-critical automatic screenshot failed after JavaScript evaluation',
+        );
       });
 
       return {
         success: true,
         result: result.content?.[0]?.text || 'JavaScript executed',
-        scriptLength: params.script.length
+        scriptLength: params.script.length,
       };
     } catch (error) {
       logger.error({ error }, 'JavaScript evaluation failed');
       // Send error event to UI
       await sendEvent(ctx, 'browser.error', {
         message: `JavaScript evaluation failed: ${error}`,
-        scriptLength: params.script.length
+        scriptLength: params.script.length,
       });
       throw new Error(`Failed to evaluate JavaScript: ${error}`);
     }
@@ -806,23 +1016,30 @@ export const playwrightEvaluateTool: Tool<typeof evaluateParams, any> = {
 };
 
 // Wait for selector tool
-export const playwrightWaitForSelectorTool: Tool<typeof waitForSelectorParams, any> = {
+export const playwrightWaitForSelectorTool: Tool<
+  typeof waitForSelectorParams,
+  any
+> = {
   name: 'playwright_wait_for_selector',
-  description: 'Wait for an element to reach a specific state using Playwright. Useful for handling dynamic content loading.',
+  description:
+    'Wait for an element to reach a specific state using Playwright. Useful for handling dynamic content loading.',
   parameters: waitForSelectorParams,
   execute: async (params: z.infer<typeof waitForSelectorParams>, ctx: Ctx) => {
     try {
-      logger.info({
-        selector: params.selector,
-        timeout: params.timeout,
-        state: params.state
-      }, 'Waiting for selector');
+      logger.info(
+        {
+          selector: params.selector,
+          timeout: params.timeout,
+          state: params.state,
+        },
+        'Waiting for selector',
+      );
 
       // Send wait event to UI
       await sendEvent(ctx, 'browser.element.waiting', {
         selector: params.selector,
         timeout: params.timeout,
-        state: params.state
+        state: params.state,
       });
 
       const result = await executePlaywrightAction('waitForSelector', {
@@ -831,11 +1048,22 @@ export const playwrightWaitForSelectorTool: Tool<typeof waitForSelectorParams, a
         state: params.state,
       });
 
-      logger.info({ selector: params.selector }, 'Selector wait completed successfully');
+      logger.info(
+        { selector: params.selector },
+        'Selector wait completed successfully',
+      );
 
       // Capture automatic screenshot after waiting for selector
-      captureAndSendScreenshot(ctx, 'waitForSelector', params.selector, AUTO_SCREENSHOT_CONFIG.maxRetries).catch(error => {
-        logger.warn({ error }, 'Non-critical automatic screenshot failed after wait for selector');
+      captureAndSendScreenshot(
+        ctx,
+        'waitForSelector',
+        params.selector,
+        AUTO_SCREENSHOT_CONFIG.maxRetries,
+      ).catch((error) => {
+        logger.warn(
+          { error },
+          'Non-critical automatic screenshot failed after wait for selector',
+        );
       });
 
       return {
@@ -843,17 +1071,22 @@ export const playwrightWaitForSelectorTool: Tool<typeof waitForSelectorParams, a
         selector: params.selector,
         state: params.state,
         timeout: params.timeout,
-        result: result.content?.[0]?.text || 'Wait completed'
+        result: result.content?.[0]?.text || 'Wait completed',
       };
     } catch (error) {
-      logger.error({ error, selector: params.selector }, 'Wait for selector failed');
+      logger.error(
+        { error, selector: params.selector },
+        'Wait for selector failed',
+      );
       // Send error event to UI
       await sendEvent(ctx, 'browser.error', {
         message: `Wait for selector failed: ${error}`,
         selector: params.selector,
-        timeout: params.timeout
+        timeout: params.timeout,
       });
-      throw new Error(`Failed to wait for selector ${params.selector}: ${error}`);
+      throw new Error(
+        `Failed to wait for selector ${params.selector}: ${error}`,
+      );
     }
   },
 };
@@ -861,16 +1094,20 @@ export const playwrightWaitForSelectorTool: Tool<typeof waitForSelectorParams, a
 // Get content tool
 export const playwrightGetContentTool: Tool<typeof getContentParams, any> = {
   name: 'playwright_get_content',
-  description: 'Get content from web page elements using Playwright. Can extract text, HTML, or element properties.',
+  description:
+    'Get content from web page elements using Playwright. Can extract text, HTML, or element properties.',
   parameters: getContentParams,
   execute: async (params: z.infer<typeof getContentParams>, ctx: Ctx) => {
     try {
-      logger.info({ selector: params.selector, property: params.property }, 'Getting content');
+      logger.info(
+        { selector: params.selector, property: params.property },
+        'Getting content',
+      );
 
       // Send content extraction event to UI
       await sendEvent(ctx, 'browser.content.extracting', {
         selector: params.selector,
-        property: params.property
+        property: params.property,
       });
 
       const result = await executePlaywrightAction('getContent', {
@@ -885,26 +1122,34 @@ export const playwrightGetContentTool: Tool<typeof getContentParams, any> = {
       await sendEvent(ctx, 'browser.content.extracted', {
         length: contentLength,
         selector: params.selector,
-        property: params.property
+        property: params.property,
       });
 
       // Capture automatic screenshot after content extraction
-      captureAndSendScreenshot(ctx, 'getContent', params.selector, AUTO_SCREENSHOT_CONFIG.maxRetries).catch(error => {
-        logger.warn({ error }, 'Non-critical automatic screenshot failed after content extraction');
+      captureAndSendScreenshot(
+        ctx,
+        'getContent',
+        params.selector,
+        AUTO_SCREENSHOT_CONFIG.maxRetries,
+      ).catch((error) => {
+        logger.warn(
+          { error },
+          'Non-critical automatic screenshot failed after content extraction',
+        );
       });
 
       return {
         success: true,
         content: result.content?.[0]?.text || 'Page content retrieved',
         selector: params.selector,
-        property: params.property
+        property: params.property,
       };
     } catch (error) {
       logger.error({ error }, 'Content retrieval failed');
       // Send error event to UI
       await sendEvent(ctx, 'browser.error', {
         message: `Content retrieval failed: ${error}`,
-        selector: params.selector
+        selector: params.selector,
       });
       throw new Error(`Failed to get content: ${error}`);
     }
@@ -914,21 +1159,25 @@ export const playwrightGetContentTool: Tool<typeof getContentParams, any> = {
 // Set viewport tool
 export const playwrightSetViewportTool: Tool<typeof setViewportParams, any> = {
   name: 'playwright_set_viewport',
-  description: 'Set the browser viewport size using Playwright. Useful for responsive testing and mobile emulation.',
+  description:
+    'Set the browser viewport size using Playwright. Useful for responsive testing and mobile emulation.',
   parameters: setViewportParams,
   execute: async (params: z.infer<typeof setViewportParams>, ctx: Ctx) => {
     try {
-      logger.info({
-        width: params.width,
-        height: params.height,
-        deviceScaleFactor: params.deviceScaleFactor
-      }, 'Setting viewport');
+      logger.info(
+        {
+          width: params.width,
+          height: params.height,
+          deviceScaleFactor: params.deviceScaleFactor,
+        },
+        'Setting viewport',
+      );
 
       // Send viewport change event to UI
       await sendEvent(ctx, 'browser.viewport.changing', {
         width: params.width,
         height: params.height,
-        deviceScaleFactor: params.deviceScaleFactor
+        deviceScaleFactor: params.deviceScaleFactor,
       });
 
       const result = await executePlaywrightAction('setViewport', {
@@ -940,8 +1189,16 @@ export const playwrightSetViewportTool: Tool<typeof setViewportParams, any> = {
       logger.info('Viewport set successfully');
 
       // Capture automatic screenshot after viewport change
-      captureAndSendScreenshot(ctx, 'setViewport', undefined, AUTO_SCREENSHOT_CONFIG.maxRetries).catch(error => {
-        logger.warn({ error }, 'Non-critical automatic screenshot failed after viewport change');
+      captureAndSendScreenshot(
+        ctx,
+        'setViewport',
+        undefined,
+        AUTO_SCREENSHOT_CONFIG.maxRetries,
+      ).catch((error) => {
+        logger.warn(
+          { error },
+          'Non-critical automatic screenshot failed after viewport change',
+        );
       });
 
       return {
@@ -949,7 +1206,7 @@ export const playwrightSetViewportTool: Tool<typeof setViewportParams, any> = {
         width: params.width,
         height: params.height,
         deviceScaleFactor: params.deviceScaleFactor,
-        result: result.content?.[0]?.text || 'Viewport set'
+        result: result.content?.[0]?.text || 'Viewport set',
       };
     } catch (error) {
       logger.error({ error }, 'Set viewport failed');
@@ -957,7 +1214,7 @@ export const playwrightSetViewportTool: Tool<typeof setViewportParams, any> = {
       await sendEvent(ctx, 'browser.error', {
         message: `Set viewport failed: ${error}`,
         width: params.width,
-        height: params.height
+        height: params.height,
       });
       throw new Error(`Failed to set viewport: ${error}`);
     }
@@ -975,4 +1232,6 @@ export const playwrightMcpTools = [
   playwrightSetViewportTool,
 ];
 
-logger.info(`Playwright MCP tools initialized: ${playwrightMcpTools.length} tools available`);
+logger.info(
+  `Playwright MCP tools initialized: ${playwrightMcpTools.length} tools available`,
+);

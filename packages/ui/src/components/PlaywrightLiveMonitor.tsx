@@ -11,7 +11,7 @@ import {
   Maximize2,
   Minimize2,
   Activity,
-  Clock
+  Clock,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -20,7 +20,14 @@ import { useSessionStore } from '../store/sessionStore';
 
 interface PlaywrightAction {
   id: string;
-  type: 'navigate' | 'click' | 'type' | 'screenshot' | 'wait' | 'extract' | 'error';
+  type:
+    | 'navigate'
+    | 'click'
+    | 'type'
+    | 'screenshot'
+    | 'wait'
+    | 'extract'
+    | 'error';
   selector?: string;
   value?: string;
   url?: string;
@@ -44,8 +51,11 @@ interface PlaywrightLiveMonitorProps {
   jobId?: string;
 }
 
-export const PlaywrightLiveMonitor: React.FC<PlaywrightLiveMonitorProps> = ({ jobId }) => {
-  const [currentSession, setCurrentSession] = useState<PlaywrightSession | null>(null);
+export const PlaywrightLiveMonitor: React.FC<PlaywrightLiveMonitorProps> = ({
+  jobId,
+}) => {
+  const [currentSession, setCurrentSession] =
+    useState<PlaywrightSession | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -55,24 +65,38 @@ export const PlaywrightLiveMonitor: React.FC<PlaywrightLiveMonitorProps> = ({ jo
   const sessionId = useSessionStore((state) => state.sessionId);
 
   // WebSocket connection
-  const { isConnected, lastMessage, subscribeToJob, setSession } = useWebSocket();
+  const { isConnected, lastMessage, subscribeToJob, setSession } =
+    useWebSocket();
 
   // Subscribe to job events when component mounts, jobId changes, or sessionId changes
   useEffect(() => {
-    console.log('🔍 PlaywrightLiveMonitor - Received jobId prop:', jobId, 'sessionId:', sessionId);
+    console.log(
+      '🔍 PlaywrightLiveMonitor - Received jobId prop:',
+      jobId,
+      'sessionId:',
+      sessionId,
+    );
 
     if (jobId) {
-      console.log('🔌 PlaywrightLiveMonitor - Subscribing to job events:', jobId);
+      console.log(
+        '🔌 PlaywrightLiveMonitor - Subscribing to job events:',
+        jobId,
+      );
       subscribeToJob(jobId);
     } else {
-      console.log('⚠️ PlaywrightLiveMonitor - No job ID provided, will wait for browser events');
+      console.log(
+        '⚠️ PlaywrightLiveMonitor - No job ID provided, will wait for browser events',
+      );
     }
   }, [jobId, sessionId, subscribeToJob]);
 
   // Set session when component mounts or sessionId changes
   useEffect(() => {
     if (sessionId) {
-      console.log('🔄 PlaywrightLiveMonitor - Session changed, updating WebSocket:', sessionId);
+      console.log(
+        '🔄 PlaywrightLiveMonitor - Session changed, updating WebSocket:',
+        sessionId,
+      );
       setSession(sessionId);
 
       // Clear current session data when session changes
@@ -86,7 +110,10 @@ export const PlaywrightLiveMonitor: React.FC<PlaywrightLiveMonitorProps> = ({ jo
     console.log('🔍 PlaywrightLiveMonitor - Received message:', lastMessage);
 
     if (lastMessage && lastMessage.type?.startsWith('browser.')) {
-      console.log('🎯 PlaywrightLiveMonitor - Processing browser event:', lastMessage.type);
+      console.log(
+        '🎯 PlaywrightLiveMonitor - Processing browser event:',
+        lastMessage.type,
+      );
       setIsVisible(true);
 
       // Create or update session
@@ -96,7 +123,7 @@ export const PlaywrightLiveMonitor: React.FC<PlaywrightLiveMonitorProps> = ({ jo
           startTime: Date.now(),
           actions: [],
           isActive: true,
-          totalDuration: 0
+          totalDuration: 0,
         };
 
         // Add new action
@@ -108,10 +135,14 @@ export const PlaywrightLiveMonitor: React.FC<PlaywrightLiveMonitorProps> = ({ jo
           url: lastMessage.data?.url,
           timestamp: Date.now(),
           status: 'running',
-          screenshot: lastMessage.data?.imageData
+          screenshot: lastMessage.data?.imageData,
         };
 
-        console.log('📝 PlaywrightLiveMonitor - Added action:', newAction.type, newAction.selector);
+        console.log(
+          '📝 PlaywrightLiveMonitor - Added action:',
+          newAction.type,
+          newAction.selector,
+        );
 
         session.actions.push(newAction);
         session.currentUrl = lastMessage.data?.url || session.currentUrl;
@@ -119,7 +150,10 @@ export const PlaywrightLiveMonitor: React.FC<PlaywrightLiveMonitorProps> = ({ jo
         return { ...session };
       });
     } else if (lastMessage) {
-      console.log('⚠️ PlaywrightLiveMonitor - Ignoring non-browser event:', lastMessage.type);
+      console.log(
+        '⚠️ PlaywrightLiveMonitor - Ignoring non-browser event:',
+        lastMessage.type,
+      );
     }
   }, [lastMessage]);
 
@@ -130,7 +164,9 @@ export const PlaywrightLiveMonitor: React.FC<PlaywrightLiveMonitorProps> = ({ jo
     }
   }, [currentSession?.actions, autoScroll]);
 
-  const mapBrowserEventToAction = (eventType: string): PlaywrightAction['type'] => {
+  const mapBrowserEventToAction = (
+    eventType: string,
+  ): PlaywrightAction['type'] => {
     if (eventType.includes('navigating')) return 'navigate';
     if (eventType.includes('click')) return 'click';
     if (eventType.includes('type')) return 'type';
@@ -143,24 +179,37 @@ export const PlaywrightLiveMonitor: React.FC<PlaywrightLiveMonitorProps> = ({ jo
 
   const getActionIcon = (type: PlaywrightAction['type']) => {
     switch (type) {
-      case 'navigate': return '🌐';
-      case 'click': return '👆';
-      case 'type': return '⌨️';
-      case 'screenshot': return '📸';
-      case 'wait': return '⏳';
-      case 'extract': return '📄';
-      case 'error': return '❌';
-      default: return '⚡';
+      case 'navigate':
+        return '🌐';
+      case 'click':
+        return '👆';
+      case 'type':
+        return '⌨️';
+      case 'screenshot':
+        return '📸';
+      case 'wait':
+        return '⏳';
+      case 'extract':
+        return '📄';
+      case 'error':
+        return '❌';
+      default:
+        return '⚡';
     }
   };
 
   const getActionColor = (status: PlaywrightAction['status']) => {
     switch (status) {
-      case 'pending': return 'text-yellow-500';
-      case 'running': return 'text-blue-500';
-      case 'completed': return 'text-green-500';
-      case 'error': return 'text-red-500';
-      default: return 'text-gray-500';
+      case 'pending':
+        return 'text-yellow-500';
+      case 'running':
+        return 'text-blue-500';
+      case 'completed':
+        return 'text-green-500';
+      case 'error':
+        return 'text-red-500';
+      default:
+        return 'text-gray-500';
     }
   };
 
@@ -194,7 +243,9 @@ export const PlaywrightLiveMonitor: React.FC<PlaywrightLiveMonitorProps> = ({ jo
             <Monitor className="w-4 h-4" />
             <span className="font-medium text-sm">Playwright Live Monitor</span>
             <div className="flex items-center space-x-1 text-xs">
-              <span className={`inline-block w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}></span>
+              <span
+                className={`inline-block w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}
+              ></span>
               <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
             </div>
             <Badge variant="secondary" className="text-xs">
@@ -208,7 +259,11 @@ export const PlaywrightLiveMonitor: React.FC<PlaywrightLiveMonitorProps> = ({ jo
               onClick={() => setIsMinimized(!isMinimized)}
               className="h-6 w-6 p-0 text-white hover:bg-white/20"
             >
-              {isMinimized ? <Maximize2 className="w-3 h-3" /> : <Minimize2 className="w-3 h-3" />}
+              {isMinimized ? (
+                <Maximize2 className="w-3 h-3" />
+              ) : (
+                <Minimize2 className="w-3 h-3" />
+              )}
             </Button>
             <Button
               variant="ghost"
@@ -275,7 +330,10 @@ export const PlaywrightLiveMonitor: React.FC<PlaywrightLiveMonitorProps> = ({ jo
 
                     {action.selector && (
                       <div className="text-xs text-gray-500 mt-1">
-                        Selector: <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">{action.selector}</code>
+                        Selector:{' '}
+                        <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">
+                          {action.selector}
+                        </code>
                       </div>
                     )}
 
@@ -336,7 +394,11 @@ export const PlaywrightLiveMonitor: React.FC<PlaywrightLiveMonitorProps> = ({ jo
                     onClick={() => setAutoScroll(!autoScroll)}
                     className={`h-6 px-2 text-xs ${autoScroll ? 'bg-blue-100 text-blue-700' : ''}`}
                   >
-                    {autoScroll ? <Eye className="w-3 h-3 mr-1" /> : <EyeOff className="w-3 h-3 mr-1" />}
+                    {autoScroll ? (
+                      <Eye className="w-3 h-3 mr-1" />
+                    ) : (
+                      <EyeOff className="w-3 h-3 mr-1" />
+                    )}
                     Auto-scroll
                   </Button>
                 </div>

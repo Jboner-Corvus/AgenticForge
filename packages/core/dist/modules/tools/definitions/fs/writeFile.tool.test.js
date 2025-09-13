@@ -2,7 +2,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import {
   writeFile
-} from "../../../../chunk-PPGNL7MB.js";
+} from "../../../../chunk-WDTGNWK2.js";
 import {
   describe,
   globalExpect,
@@ -11,8 +11,8 @@ import {
 } from "../../../../chunk-AQKYZ7X3.js";
 import {
   getLoggerInstance
-} from "../../../../chunk-BINOZDZV.js";
-import "../../../../chunk-J2EL6RJU.js";
+} from "../../../../chunk-AGIO4OHP.js";
+import "../../../../chunk-6VZJ5SGS.js";
 import {
   init_esm_shims
 } from "../../../../chunk-SB7UONON.js";
@@ -66,10 +66,9 @@ describe("writeFileTool", () => {
       mockCtx
     );
     const absolutePath = path.resolve(filePath);
-    globalExpect(fs.mkdir).toHaveBeenCalledWith(
-      "/tmp/workspace",
-      { recursive: true }
-    );
+    globalExpect(fs.mkdir).toHaveBeenCalledWith("/tmp/workspace", {
+      recursive: true
+    });
     globalExpect(fs.writeFile).toHaveBeenCalledWith(
       "/tmp/workspace/newfile.txt",
       content,

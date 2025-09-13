@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 vi.mock('../../src/config.ts', () => ({
   config: {
     AGENT_MAX_ITERATIONS: 10,
+    ALPHA_VANTAGE_API_KEY: 'LEPFMXTORDARJC7D',
     CODE_EXECUTION_TIMEOUT_MS: 60000,
     CONTAINER_MEMORY_LIMIT: '2g',
     HISTORY_LOAD_LENGTH: 50,
@@ -29,6 +30,7 @@ vi.mock('../../src/config.ts', () => ({
   },
   getConfig: vi.fn(() => ({
     AGENT_MAX_ITERATIONS: 10,
+    ALPHA_VANTAGE_API_KEY: 'LEPFMXTORDARJC7D',
     CODE_EXECUTION_TIMEOUT_MS: 60000,
     CONTAINER_MEMORY_LIMIT: '2g',
     HISTORY_LOAD_LENGTH: 50,

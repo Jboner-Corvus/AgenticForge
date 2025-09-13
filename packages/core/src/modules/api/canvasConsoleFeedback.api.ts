@@ -32,7 +32,9 @@ router.post(
 
       if (filter) {
         const regex = new RegExp(filter, 'i');
-        filteredLogs = filteredLogs.filter((log: any) => regex.test(log.message));
+        filteredLogs = filteredLogs.filter((log: any) =>
+          regex.test(log.message),
+        );
       }
 
       if (limit) {
@@ -47,7 +49,7 @@ router.post(
           count: filteredLogs.length,
           level,
           filter,
-          limit
+          limit,
         },
         toolName: 'canvas_console_feedback',
         type: 'tool_result',
@@ -57,7 +59,7 @@ router.post(
 
       res.status(200).json({
         message: 'Canvas console logs received.',
-        count: filteredLogs.length
+        count: filteredLogs.length,
       });
     } catch (error) {
       getLoggerInstance().error(
@@ -89,7 +91,7 @@ router.post(
           command,
           result,
           error,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         toolName: 'canvas_console_feedback',
         type: 'tool_result',

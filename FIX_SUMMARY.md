@@ -1,64 +1,78 @@
-# Fixes for Unhandled Rejection and GitHub API Issues
+# AgenticForge Worker Issues - Fix Summary
 
-## Issue 1: Unhandled Rejection Causing Server Crashes
+## Issues Identified
 
-### Problem
-The server was crashing with "Unhandled rejection caught!" errors when processing user messages. This was causing the process to exit and restart.
+1. **Redis Connection Issues**: Workers running on the host were experiencing intermittent connection problems with Redis running in a Docker container.
 
-### Root Cause
-The worker process was not properly handling all asynchronous operations, leading to unhandled promise rejections that triggered the global error handler in webServer.ts.
+2. **Invalid API Keys**: Multiple "API key not valid" errors were found in the logs for Gemini API calls.
 
-### Solution
-1. **Enhanced Error Handling in Worker**:
-   - Added try-catch blocks around the process-message job handler in worker.ts
-   - Improved error handling in the processJob function with specific try-catch blocks for different operations
-   - Added better error handling for Redis publish operations in the finally block
+3. **PostgreSQL Connection Interruptions**: "terminating connection due to administrator command" errors were occurring, indicating connection stability issues.
 
-2. **Improved Error Handling in Web Server**:
-   - Added try-catch around job queue operations in the /api/chat endpoint
-   - Modified global error handlers to allow for graceful shutdown with a small delay
+## Root Causes
 
-3. **Better Error Propagation**:
-   - Ensured errors are properly logged with context before being re-thrown
-   - Added specific error handling for known error types (AppError, UserError)
+1. **Redis Connection**: The Redis connection configuration was mostly correct, using `localhost` to connect to the Docker container from the host. However, there were intermittent connection issues likely due to worker processes not being properly managed.
 
-## Issue 2: GitHub API Network Resilience
+2. **API Keys**: Some of the Gemini API keys in the `.env` file were invalid or expired, causing the LLM requests to fail.
 
-### Problem
-The VersionService was failing when the GitHub API was temporarily unavailable, causing update checks to fail.
+3. **PostgreSQL Connections**: The PostgreSQL connection errors were likely due to connection limits being exceeded or improper connection management in the worker processes.
 
-### Root Cause
-The GitHub API calls had no retry mechanism and could fail due to temporary network issues or API rate limiting.
+## Fixes Implemented
 
-### Solution
-1. **Added Retry Logic**:
-   - Implemented retry mechanism with exponential backoff (up to 3 attempts)
-   - Added timeout handling for fetch requests (10 seconds)
-   - Improved error logging to show attempt numbers and specific errors
+### 1. Redis Connection Fix
+- Created scripts to properly manage worker processes
+- Ensured clean startup and shutdown of workers
+- Added proper connection handling in the Redis client configuration
 
-2. **Enhanced Error Handling**:
-   - Added better error messages for failed API calls
-   - Maintained backward compatibility by still throwing AppError when all retries fail
+### 2. API Key Validation
+- Created a script to test all Gemini API keys
+- Identified which keys are invalid
+- Provided guidance on how to obtain new API keys from Google AI Studio
 
-## Files Modified
+### 3. PostgreSQL Connection Stability
+- Created a script to test PostgreSQL connections
+- Implemented proper connection pooling
+- Added connection lifecycle management
 
-1. `packages/core/src/worker.ts`:
-   - Added try-catch around job processing
-   - Improved error handling in processJob function
-   - Added specific error handling for summarization and Redis operations
+### 4. Worker Process Management
+- Created a comprehensive fix script that:
+  - Checks Docker service status
+  - Restarts services if needed
+  - Kills existing worker processes cleanly
+  - Starts new worker processes with proper configuration
+- Created test scripts to verify all fixes are working
 
-2. `packages/core/src/webServer.ts`:
-   - Added try-catch around job queue operations in /api/chat endpoint
-   - Modified global error handlers for graceful shutdown
+## How to Use the Fix Scripts
 
-3. `packages/core/src/modules/version/VersionService.ts`:
-   - Added retry logic with exponential backoff for GitHub API calls
-   - Added timeout handling for fetch requests
-   - Improved error logging
+1. **Test API Keys**:
+   ```bash
+   cd /home/demon/agentforge/AgenticForge2/AgenticForge
+   npx ts-node test_api_keys.ts
+   ```
 
-## Testing
-- Code has been linted and compiled successfully
-- No breaking changes introduced
-- Error handling is more robust and informative
+2. **Test PostgreSQL Connection**:
+   ```bash
+   npx ts-node test_postgres.ts
+   ```
 
-These changes should prevent the server from crashing due to unhandled rejections and make the application more resilient to temporary network issues with the GitHub API.
+3. **Apply All Fixes**:
+   ```bash
+   npx ts-node fix_worker_issues.ts
+   ```
+
+4. **Verify Fixes**:
+   ```bash
+   ./test_fixes.sh
+   ```
+
+## Recommendations
+
+1. **Update Invalid API Keys**: Replace any invalid Gemini API keys in the `.env` file with valid ones from https://aistudio.google.com/app/apikey
+
+2. **Monitor Worker Logs**: Regularly check `worker.log` for any recurring issues:
+   ```bash
+   tail -f worker.log
+   ```
+
+3. **Use Proper Worker Management**: Always use the provided scripts to manage worker processes rather than manually starting/stopping them.
+
+4. **Regular Maintenance**: Periodically run the test scripts to ensure all services are functioning correctly.

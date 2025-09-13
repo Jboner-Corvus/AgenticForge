@@ -14,7 +14,9 @@ vi.mock('../packages/core/src/logger.ts', () => ({
 // Mock the file system
 vi.mock('fs', () => ({
   default: {
-    statSync: () => ({ mtime: { toISOString: () => '2023-01-01T00:00:00.000Z' } }),
+    statSync: () => ({
+      mtime: { toISOString: () => '2023-01-01T00:00:00.000Z' },
+    }),
     readFileSync: () => JSON.stringify({ version: '1.0.0' }),
   },
 }));
@@ -33,7 +35,8 @@ describe('VersionService', () => {
   it('should handle GitHub API errors gracefully with retry logic', async () => {
     // Mock fetch to simulate network errors
     const originalFetch = global.fetch;
-    global.fetch = vi.fn()
+    global.fetch = vi
+      .fn()
       .mockRejectedValueOnce(new Error('Network error'))
       .mockRejectedValueOnce(new Error('Network error'))
       .mockRejectedValueOnce(new Error('Network error'));

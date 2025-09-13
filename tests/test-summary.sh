@@ -150,7 +150,7 @@ show_usage_instructions() {
     echo ""
     
     echo -e "${COLOR_CYAN}1. Start AgenticForge:${NC}"
-    echo "   ./run-v2.sh start"
+    echo "   ./run.sh start"
     echo ""
     
     echo -e "${COLOR_CYAN}2. Run Interactive Tests:${NC}"
@@ -174,7 +174,7 @@ show_troubleshooting() {
     echo ""
     
     echo -e "${COLOR_YELLOW}Common Issues:${NC}"
-    echo "• AgenticForge not running → ./run-v2.sh status"
+    echo "• AgenticForge not running → ./run.sh status"
     echo "• Authentication errors → Check .env AUTH_TOKEN"
     echo "• API timeouts → Complex requests take 30+ seconds"
     echo "• Missing jq → sudo apt-get install jq"

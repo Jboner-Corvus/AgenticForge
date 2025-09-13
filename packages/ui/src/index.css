@@ -78,6 +78,38 @@ body {
   @apply bg-background text-foreground font-sans;
 }
 
+/* Mobile-first responsive adjustments */
+@media (max-width: 640px) {
+  body {
+    font-size: 0.875rem; /* Smaller base font on mobile */
+    padding: 0; /* Ensure no extra padding */
+  }
+  
+  .p-4, .px-4, .py-4 {
+    @apply p-2 px-2 py-2; /* Reduce default padding on mobile */
+  }
+  
+  .space-y-4 > * + * {
+    @apply mt-2; /* Reduce vertical spacing */
+  }
+  
+  .typing-indicator span {
+    width: 4px;
+    height: 4px;
+    margin: 0 0.5px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  body {
+    font-size: 0.9375rem;
+  }
+  
+  .p-4, .px-4, .py-4 {
+    @apply p-3 px-3 py-3;
+  }
+}
+
 * {
   transition: all 0.2s ease-in-out;
 }
@@ -112,10 +144,17 @@ body {
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Responsive */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 4px; /* Thinner on mobile */
+  height: 4px;
+}
+
+@media (min-width: 641px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
 }
 
 ::-webkit-scrollbar-track {

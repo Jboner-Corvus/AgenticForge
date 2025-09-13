@@ -3,6 +3,7 @@
 ## Problème Résolu
 
 **Avant** : Quand l'utilisateur cliquait sur "New Session", le problème suivant se produisait :
+
 - ✅ Frontend créait une nouvelle session dans le store
 - ❌ WebSocket continuait d'utiliser l'ancienne session
 - ❌ Worker n'était pas informé du changement de session
@@ -43,6 +44,7 @@ sequenceDiagram
 ### 🔧 Code Modifié
 
 #### `PlaywrightLiveMonitor.tsx`
+
 ```typescript
 // Écoute les changements de session du store
 const sessionId = useSessionStore((state) => state.sessionId);
@@ -63,16 +65,19 @@ useEffect(() => {
 ## ✅ Avantages de la Solution
 
 ### 🔄 Synchronisation Transparente
+
 - **Automatique** : Pas besoin d'action manuelle
 - **Instantanée** : Changement immédiat lors du clic "New Session"
 - **Fiable** : Utilise les mécanismes React existants
 
 ### 🧹 Nettoyage Automatique
+
 - **Données obsolètes** : Suppression des données de l'ancienne session
 - **État propre** : Interface remise à zéro pour la nouvelle session
 - **Mémoire optimisée** : Évite l'accumulation de données anciennes
 
 ### 🔍 Debugging Amélioré
+
 - **Logs détaillés** : Suivi des changements de session
 - **Visibilité** : Changements tracés dans la console
 - **Monitoring** : Événements WebSocket monitorés
@@ -80,11 +85,13 @@ useEffect(() => {
 ## 🧪 Test de la Solution
 
 ### Test Automatique
+
 ```bash
 node test_session_sync.js
 ```
 
 ### Test Manuel
+
 1. Ouvrir l'interface web
 2. Observer les logs du navigateur (F12 → Console)
 3. Cliquer sur "New Session"
@@ -97,6 +104,7 @@ node test_session_sync.js
 ## 📊 Événements Monitorés
 
 ### Avant la Correction
+
 ```
 Session Store: ✅ Nouvelle session créée
 WebSocket: ❌ Ancienne session utilisée
@@ -104,6 +112,7 @@ Worker: ❌ Événements dans mauvaise session
 ```
 
 ### Après la Correction
+
 ```
 Session Store: ✅ Nouvelle session créée
 WebSocket: ✅ Session mise à jour automatiquement
@@ -113,13 +122,16 @@ Worker: ✅ Événements dans bonne session
 ## 🔧 Configuration
 
 ### Variables d'Environnement (Optionnel)
+
 ```bash
 # Activer les logs détaillés de synchronisation
 DEBUG_SESSION_SYNC=true
 ```
 
 ### Personnalisation
+
 Le comportement peut être étendu pour :
+
 - Nettoyer d'autres données lors du changement de session
 - Envoyer des notifications à l'utilisateur
 - Synchroniser avec d'autres composants
@@ -127,6 +139,7 @@ Le comportement peut être étendu pour :
 ## 🚀 Impact
 
 Cette correction assure que :
+
 - **Clic "New Session"** = Changement complet de session
 - **Worker isolé** par session (sécurité)
 - **Données organisées** par session dans Redis

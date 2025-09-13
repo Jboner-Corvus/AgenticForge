@@ -89,34 +89,34 @@
 
 ### 🤖 超簡單安裝（100% 自動）
 
-**選項 1：一行安裝**
+**選項1：一行安裝**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Jboner-Corvus/AgenticForge/main/install.sh | bash
 ```
 
-**選項 2：經典安裝**
+**選項2：經典安裝**
 
 ```bash
-# 1. 複製專案
+# 1. 複製項目
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
 cd AgenticForge
 
-# 2. 完全自動安裝
-chmod +x run-v2.sh
-./run-v2.sh install
+# 2. 完全自動化安裝
+chmod +x run.sh
+./run.sh install
 ```
 
-**選項 3：互動式安裝**
+**選項3：互動式安裝**
 
 ```bash
-# 1. 複製專案
+# 1. 複製項目
 git clone https://github.com/Jboner-Corvus/AgenticForge.git
 cd AgenticForge
 
-# 2. 啟動 AgenticForge 管理控制台
-chmod +x run-v2.sh
-./run-v2.sh
+# 2. 啟動AgenticForge管理控制台
+chmod +x run.sh
+./run.sh
 ```
 
 **生產管理控制台：**
@@ -140,7 +140,7 @@ chmod +x run-v2.sh
    15) 🚪 退出
 ```
 
-**選擇 "1) 🟢 啟動服務" 進行自動安裝**
+**選擇"1) 🟢 啟動服務"進行自動安裝**
 
 **🔧 首次啟動時，系統：**
 
@@ -256,27 +256,27 @@ AgenticForge整合了強大的 **LlmKeyManager**，用於集中和動態管理�
 ### 互動式管理控制台
 
 ```bash
-# 透過控制台存取所有功能
-./run-v2.sh
+# 通過控制台訪問所有功能
+./run.sh
 ```
 
 ### 快速生產命令
 
 ```bash
 # 完整啟動
-./run-v2.sh start
+./run.sh start
 
 # 檢查服務狀態
-./run-v2.sh status
+./run.sh status
 
 # 查看系統日誌
-./run-v2.sh logs
+./run.sh logs
 
 # 設定修改後重啟
-./run-v2.sh restart
+./run.sh restart
 
 # 幹淨關閉系統
-./run-v2.sh stop
+./run.sh stop
 ```
 
 ### 🧪 完整API測試
@@ -311,7 +311,7 @@ AgenticForge包含完整的測試套件，透過API驗證代理功能：
 
 ```bash
 # 完整管理控制台
-./run-v2.sh
+./run.sh
 
 # 或直接：
 pnpm run lint      # 程式碼品質驗證
@@ -400,14 +400,16 @@ pnpm run format    # 自動格式化
 
 #### 📚 自動產生文件
 
-```bash
+``bash
 "遞迴掃描我的專案，分析原始碼，產生：
+
 - 帶架構圖的詳細README.md
 - 帶Swagger/OpenAPI的API文件
 - UML類別圖（使用PlantUML）
 - 在此機器上測試的安裝指南
 - 使用docsify在本地伺服器上發布所有內容"
-```
+
+````
 
 ### 🔧 專案管理
 
@@ -420,7 +422,7 @@ pnpm run format    # 自動格式化
 - 在本地設定GitHub Actions或GitLab CI
 - 部署腳本，建置、測試和重啟服務
 - 使用功能分支測試完整工作流"
-```
+````
 
 ### 🎯 專業化專案
 
@@ -457,14 +459,14 @@ pnpm run format    # 自動格式化
 
 ### 高級系統管理
 
-| 操作           | 命令                      | 用途                     |
-| -------------- | ------------------------- | ------------------------ |
-| **完整控制台** | `./run-v2.sh`             | 主管理介面               |
-| **快速啟動**   | `./run-v2.sh start`       | 直接系統啟動             |
-| **監控**       | `./run-v2.sh status`      | Docker服務狀態           |
-| **即時日誌**   | `./run-v2.sh logs`        | 即時監控                 |
-| **重啟**       | `./run-v2.sh restart`     | 設定修改後               |
-| **維護**       | `./run-v2.sh` → 選項 7-14 | 測試、lint、格式化、重建 |
+| 操作           | 命令                   | 用途                     |
+| -------------- | ---------------------- | ------------------------ |
+| **完整控制台** | `./run.sh`             | 主管理界面               |
+| **快速啟動**   | `./run.sh start`       | 直接系統啟動             |
+| **監控**       | `./run.sh status`      | Docker服務狀態           |
+| **即時日誌**   | `./run.sh logs`        | 即時監控                 |
+| **重啟**       | `./run.sh restart`     | 配置修改後               |
+| **維護**       | `./run.sh` → 選項 7-14 | 測試、lint、格式化、重建 |
 
 ---
 
@@ -517,10 +519,10 @@ pnpm run format    # 自動格式化
 
 <div align="center">
 
-**🔨 鐵匠鍛造他的錘子。** **🤖 AgenticForge鍛造自己的能力。**
+**🔨 鐳匠鍛造他的錘子。** **🤖 AgenticForge鍛造自己的能力。**
 
 _鍛造您的技術未來。_
 
-[![開始](https://img.shields.io/badge/🚀_開始-brightgreen?style=for-the-badge)](./run-v2.sh)
+[![開始](https://img.shields.io/badge/🚀_開始-brightgreen?style=for-the-badge)](./run.sh)
 
 </div>

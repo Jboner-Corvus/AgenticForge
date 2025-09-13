@@ -14,13 +14,13 @@ export const AgentThoughtBubble: React.FC<ThoughtBubbleProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showFullContent, setShowFullContent] = useState(false);
-  
+
   // Tronquer le contenu si trop long
   const isLongContent = content.length > 300;
-  const displayContent = showFullContent 
-    ? content 
-    : isExpanded 
-      ? content 
+  const displayContent = showFullContent
+    ? content
+    : isExpanded
+      ? content
       : content.substring(0, 300) + (content.length > 300 ? '...' : '');
 
   const handleCopy = () => {
@@ -58,7 +58,7 @@ export const AgentThoughtBubble: React.FC<ThoughtBubbleProps> = ({
                   <Clipboard className="h-3 w-3" />
                 </Button>
               </motion.div>
-              
+
               {isLongContent && (
                 <Button
                   variant="ghost"

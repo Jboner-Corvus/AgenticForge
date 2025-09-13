@@ -48,7 +48,9 @@ vi.mock('../lib/hooks/useResizablePanel', () => ({
 }));
 
 vi.mock('../lib/contexts/LanguageProvider', () => ({
-  LanguageProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  LanguageProvider: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 vi.mock('../lib/contexts/LanguageContext', () => ({
@@ -60,7 +62,9 @@ vi.mock('../lib/contexts/LanguageContext', () => ({
 }));
 
 vi.mock('../components/SessionIdProvider', () => ({
-  SessionIdProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SessionIdProvider: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 vi.mock('../components/AuthManager', () => ({
@@ -68,7 +72,9 @@ vi.mock('../components/AuthManager', () => ({
 }));
 
 vi.mock('../components/AppInitializer', () => ({
-  AppInitializer: () => <div data-testid="app-initializer">App Initializer</div>,
+  AppInitializer: () => (
+    <div data-testid="app-initializer">App Initializer</div>
+  ),
 }));
 
 vi.mock('../components/HeaderContainer', () => ({
@@ -80,7 +86,9 @@ vi.mock('../components/UnifiedTodoListPanel', () => ({
 }));
 
 vi.mock('../components/SettingsModalContainer', () => ({
-  SettingsModalContainer: () => <div data-testid="settings-modal">Settings</div>,
+  SettingsModalContainer: () => (
+    <div data-testid="settings-modal">Settings</div>
+  ),
 }));
 
 vi.mock('../components/ControlPanel', () => ({
@@ -96,10 +104,16 @@ vi.mock('../components/LoginModal', () => ({
 }));
 
 vi.mock('../components/optimized/LazyComponents', () => ({
-  LazyLeaderboardPage: () => <div data-testid="leaderboard-page">Leaderboard</div>,
-  LazyLlmKeyManager: () => <div data-testid="llm-key-manager">LLM Key Manager</div>,
+  LazyLeaderboardPage: () => (
+    <div data-testid="leaderboard-page">Leaderboard</div>
+  ),
+  LazyLlmKeyManager: () => (
+    <div data-testid="llm-key-manager">LLM Key Manager</div>
+  ),
   LazyOAuthPage: () => <div data-testid="oauth-page">OAuth Page</div>,
-  LazyLayoutManager: () => <div data-testid="layout-manager">Layout Manager</div>,
+  LazyLayoutManager: () => (
+    <div data-testid="layout-manager">Layout Manager</div>
+  ),
   LazyCanvas: () => <div data-testid="canvas">Canvas</div>,
   LazyAgentCanvas: () => <div data-testid="agent-canvas">Agent Canvas</div>,
   LazyDebugLogContainer: () => <div data-testid="debug-log">Debug Log</div>,
@@ -108,7 +122,9 @@ vi.mock('../components/optimized/LazyComponents', () => ({
 
 // Mock framer-motion
 vi.mock('framer-motion', () => ({
-  AnimatePresence: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 const renderApp = () => {
@@ -140,7 +156,9 @@ describe('App - Critical Frontend Tests', () => {
     renderApp();
 
     // Login modal should be closed by default
-    expect(screen.getByTestId('login-modal')).toHaveTextContent('Login Modal Closed');
+    expect(screen.getByTestId('login-modal')).toHaveTextContent(
+      'Login Modal Closed',
+    );
   });
 
   it('should render all lazy-loaded components correctly', () => {

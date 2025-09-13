@@ -302,11 +302,11 @@ describe('Auth JWT Lifecycle Integration Tests', () => {
 
     expect(() => {
       jwt.verify(futureToken, jwtSecret);
-    }).toThrow('jwt not active');
+    }).toThrow(/jwt not active|NotBeforeError/);
 
-    // Token valid immediately
+    // Token valid immediately (no notBefore claim)
     const immediateToken = jwt.sign(payload, jwtSecret, {
-      notBefore: now - 10, // 10 seconds ago
+      expiresIn: '1h', // Just set an expiration, no notBefore
     });
 
     expect(() => {

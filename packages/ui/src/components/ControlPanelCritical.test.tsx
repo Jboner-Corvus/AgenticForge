@@ -40,7 +40,9 @@ vi.mock('../lib/hooks/useToast', () => ({
 }));
 
 vi.mock('../lib/contexts/LanguageProvider', () => ({
-  LanguageProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  LanguageProvider: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 vi.mock('../lib/contexts/LanguageContext', () => ({
@@ -80,7 +82,9 @@ vi.mock('../lib/contexts/LanguageContext', () => ({
 }));
 
 vi.mock('../components/SettingsModalContainer', () => ({
-  SettingsModalContainer: () => <div data-testid="settings-modal">Settings Modal</div>,
+  SettingsModalContainer: () => (
+    <div data-testid="settings-modal">Settings Modal</div>
+  ),
 }));
 
 vi.mock('../components/DebugLogContainer', () => ({
@@ -92,11 +96,15 @@ vi.mock('../components/TaskCounter', () => ({
 }));
 
 vi.mock('../components/ConnectionStatus', () => ({
-  ConnectionStatus: () => <div data-testid="connection-status">Connection Status</div>,
+  ConnectionStatus: () => (
+    <div data-testid="connection-status">Connection Status</div>
+  ),
 }));
 
 vi.mock('../components/VersionDisplay', () => ({
-  VersionDisplay: () => <div data-testid="version-display">Version Display</div>,
+  VersionDisplay: () => (
+    <div data-testid="version-display">Version Display</div>
+  ),
 }));
 
 vi.mock('../components/UserMenu', () => ({
@@ -104,7 +112,11 @@ vi.mock('../components/UserMenu', () => ({
 }));
 
 // Import the mocked hooks
-import { useCurrentPage, useIsControlPanelVisible, useIsProcessing } from '../store/hooks';
+import {
+  useCurrentPage,
+  useIsControlPanelVisible,
+  useIsProcessing,
+} from '../store/hooks';
 
 const renderControlPanel = () => {
   return render(<ControlPanel />);
@@ -212,7 +224,8 @@ describe('ControlPanel - Critical Frontend Tests', () => {
   it('should handle keyboard navigation', () => {
     renderControlPanel();
 
-    const controlPanel = screen.getByText(/online|offline/i).parentElement?.parentElement;
+    const controlPanel =
+      screen.getByText(/online|offline/i).parentElement?.parentElement;
 
     if (controlPanel) {
       // Test keyboard navigation

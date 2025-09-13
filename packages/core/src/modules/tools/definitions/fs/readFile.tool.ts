@@ -16,9 +16,7 @@ export const readFileParams = z.object({
   path: z
     .string()
     .min(1, 'Le chemin ne peut pas être vide')
-    .describe(
-      'The path to the file (FULL SYSTEM ACCESS - any path allowed).',
-    ),
+    .describe('The path to the file (FULL SYSTEM ACCESS - any path allowed).'),
   filePath: z
     .string()
     .min(1, 'Le chemin ne peut pas être vide')
@@ -49,11 +47,12 @@ export const readFileTool: Tool<typeof readFileParams, typeof readFileOutput> =
     execute: async (args: z.infer<typeof readFileParams>, ctx: Ctx) => {
       // Gérer les deux paramètres possibles (path ou filePath)
       const filePath = args.path || args.filePath;
-      
+
       // Vérifier qu'au moins un des deux paramètres est fourni
       if (!filePath) {
         return {
-          erreur: 'Le chemin du fichier est requis (paramètre "path" ou "filePath")',
+          erreur:
+            'Le chemin du fichier est requis (paramètre "path" ou "filePath")',
         };
       }
 

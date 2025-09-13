@@ -4,6 +4,7 @@ import { sendMessage, interrupt } from '../api';
 import { useSessionStore } from '../../store/sessionStore';
 import { useUIStore } from '../../store/uiStore';
 import { useCanvasStore } from '../../store/canvasStore'; // Import useCanvasStore
+import { useHybridRealTime } from './useHybridRealTime'; // Import hybrid real-time hook
 // System prompt content mapping - hardcoded for now to avoid import issues
 const getSystemPromptContent = (mode: string): string => {
   const prompts: Record<string, string> = {
@@ -61,64 +62,47 @@ You are AgenticForge, a specialized AI assistant focused on system design, archi
 ## Response JSON Schema
 
 {{RESPONSE_JSON_SCHEMA}}`,
-    coder: `# AgenticForge - Code Specialist
+    coder: `# AgenticForge - Code Mode
 
-You are AgenticForge, a specialized AI assistant focused on code implementation, debugging, and software development.
+You are AgenticForge. Be extremely concise. Act immediately.
 
-## Core Principles
+## Core Rules
 
-- **Code Quality**: Write clean, maintainable, and efficient code
-- **Best Practices**: Follow industry standards and conventions
-- **Testing**: Implement comprehensive test coverage
-- **Documentation**: Write clear code comments and documentation
+- **Direct action**: Web requests → \`web_automation\` immediately
+- **Code tasks**: Complex coding → \`todo_write\` then implement  
+- **File operations**: Use \`read_file/write_file/edit_file\` directly
+- **Simple chat**: Only use \`finish\` for basic conversation
+- **JSON only**: Always valid JSON format
 
-## Primary Responsibilities
+## Tools
 
-- **Code Implementation**: Write production-ready code
-- **Bug Fixing**: Debug and resolve software issues
-- **Code Review**: Analyze and improve existing code
-- **Refactoring**: Optimize and modernize codebases
-- **Testing**: Write unit and integration tests
-- **Performance**: Optimize code for speed and efficiency
-
-## Tool Usage Guidelines
-
-- **read_file**: Understand existing code structure
-- **write_file**: Create new files and components
-- **edit_file**: Modify existing code safely
-- **execute_shell_command**: Run builds, tests, and deployments
-- **list_directory**: Navigate project structure
-- **todo_write**: Plan development tasks and milestones
-
-## Development Standards
-
-- **Language**: TypeScript/JavaScript preferred
-- **Framework**: React, Node.js, Express
-- **Styling**: Tailwind CSS, CSS-in-JS
-- **Testing**: Jest, Vitest, React Testing Library
-- **Quality**: ESLint, Prettier, TypeScript strict mode
-
-## Response Style
-
-- **Technical**: Use precise technical terminology
-- **Practical**: Provide working code examples
-- **Educational**: Explain implementation decisions
-- **Efficient**: Focus on solutions over explanations
-
-## Available Tools
-
-**Code Operations:**
-- \`read_file\` - Code analysis and understanding
-- \`write_file\` - New file creation
-- \`edit_file\` - Code modifications
-- \`execute_shell_command\` - Build and test execution
-
-**Project Management:**
+- \`finish\` - Code delivery and simple responses
+- \`todo_write\` - All code implementation requests
+- \`read_file/write_file/edit_file\` - File operations
+- \`execute_shell_command\` - Build/test commands
 - \`list_directory\` - Project navigation
-- \`todo_write\` - Development planning
+- \`web_automation\` - Navigate websites, click elements, take screenshots, extract content
+- \`playwright_navigate\` - Navigate to URLs with Playwright
+- \`playwright_click\` - Click elements on web pages
+- \`playwright_screenshot\` - Take screenshots of web pages
+- \`playwright_type\` - Type text into web forms
+- \`playwright_evaluate\` - Execute JavaScript on pages
 
-**Communication:**
-- \`finish\` - Code delivery and explanations
+## Examples
+
+**Web automation "go to YouTube":**
+
+\`\`\`json
+{
+  "command": {
+    "name": "web_automation",
+    "params": {
+      "action": "navigate",
+      "url": "https://www.youtube.com"
+    }
+  }
+}
+\`\`\`
 
 ## Response JSON Schema
 
@@ -373,7 +357,7 @@ You are AgenticForge, a specialized AI assistant focused on frontend development
 
 ## Response JSON Schema
 
-{{RESPONSE_JSON_SCHEMA}}`
+{{RESPONSE_JSON_SCHEMA}}`,
   };
 
   return prompts[mode] || prompts.architect;
@@ -502,23 +486,67 @@ const isBrowserData = (
   data: StreamMessageData | undefined,
 ): data is BrowserData => {
   if (!data) return false;
-  return 'url' in data || 'length' in data || 'message' in data || 'imageData' in data || 'action' in data;
+  return (
+    'url' in data ||
+    'length' in data ||
+    'message' in data ||
+    'imageData' in data ||
+    'action' in data
+  );
 };
 
-export const useAgentStream = () => {
-  console.log('🎣 [useAgentStream] Hook initialized');
+export const useAgentStream = (useHybridMode: boolean = false) => {
+  console.log('🎣 [useAgentStream] Hook initialized', { useHybridMode });
   const eventSourceRef = useRef<EventSource | null>(null);
-  const responseCountRef = useRef<number>(0); // Compteur des réponses pour limiter à 5 étapes
+  const responseCountRef = useRef<number>(0); // Compteur des réponses
+  const inactivityTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout pour inactivité
+
+  // Always initialize hybrid real-time hook to avoid conditional hook calls
+  const hybridRealTime = useHybridRealTime({
+    onMessage: (event) => {
+      // This will be set up later in the component
+      console.log('📨 [HybridRealTime] Message received:', event.data);
+    },
+    onError: (error) => {
+      console.error('🚨 [HybridRealTime] Error:', error);
+    },
+    onConnectionChange: (connected, method) => {
+      console.log(
+        `🔗 [HybridRealTime] Connection ${connected ? 'established' : 'lost'} via ${method}`,
+      );
+    },
+  });
+
+  // Use hybridRealTime to avoid unused variable warning
+  console.log('🔗 [useAgentStream] Hybrid mode available:', !!hybridRealTime);
 
   // 🚨 IMPORTANT: Obtenir le token d'authentification BACKEND (PAS un token LLM !)
   // Ce token sert à authentifier les requêtes vers l'API AgenticForge
   const backendAuthToken = useUIStore((state) => state.authToken);
-  console.log('🔐 [useAgentStream] backendAuthToken from store:', backendAuthToken);
-  console.log('🔐 [useAgentStream] backendAuthToken type:', typeof backendAuthToken);
-  console.log('🔐 [useAgentStream] backendAuthToken length:', backendAuthToken?.length || 0);
-  console.log('🔐 [useAgentStream] backendAuthToken is empty string?', backendAuthToken === '');
-  console.log('🔐 [useAgentStream] backendAuthToken is null?', backendAuthToken === null);
-  console.log('🔐 [useAgentStream] backendAuthToken is undefined?', backendAuthToken === undefined);
+  console.log(
+    '🔐 [useAgentStream] backendAuthToken from store:',
+    backendAuthToken,
+  );
+  console.log(
+    '🔐 [useAgentStream] backendAuthToken type:',
+    typeof backendAuthToken,
+  );
+  console.log(
+    '🔐 [useAgentStream] backendAuthToken length:',
+    backendAuthToken?.length || 0,
+  );
+  console.log(
+    '🔐 [useAgentStream] backendAuthToken is empty string?',
+    backendAuthToken === '',
+  );
+  console.log(
+    '🔐 [useAgentStream] backendAuthToken is null?',
+    backendAuthToken === null,
+  );
+  console.log(
+    '🔐 [useAgentStream] backendAuthToken is undefined?',
+    backendAuthToken === undefined,
+  );
 
   // Renommer pour plus de clarté - ce n'est PAS un token LLM
   const authToken = backendAuthToken;
@@ -541,7 +569,9 @@ export const useAgentStream = () => {
   const setActiveCliJobId = useUIStore((state) => state.setActiveCliJobId);
   const isProcessing = useUIStore((state) => state.isProcessing);
   const jobIdStore = useUIStore((state) => state.jobId);
-  const selectedSystemPrompt = useUIStore((state) => state.selectedSystemPrompt);
+  const selectedSystemPrompt = useUIStore(
+    (state) => state.selectedSystemPrompt,
+  );
 
   // Get addCanvasToHistory from canvas store
   const addCanvasToHistory = useCanvasStore(
@@ -571,7 +601,8 @@ export const useAgentStream = () => {
         addDebugLog('[CRITICAL] 🚨 No auth token available!');
         addMessage({
           type: 'error',
-          content: '🚨 ERREUR CRITIQUE: Token d\'authentification manquant. Vérifiez la configuration AUTH_TOKEN.',
+          content:
+            "🚨 ERREUR CRITIQUE: Token d'authentification manquant. Vérifiez la configuration AUTH_TOKEN.",
         } as NewChatMessage);
         return;
       }
@@ -586,7 +617,8 @@ export const useAgentStream = () => {
           addDebugLog('[CRITICAL] 🚨 API health check failed!');
           addMessage({
             type: 'error',
-            content: '🚨 ERREUR CRITIQUE: Impossible de contacter l\'API backend.',
+            content:
+              "🚨 ERREUR CRITIQUE: Impossible de contacter l'API backend.",
           } as NewChatMessage);
           return;
         }
@@ -595,7 +627,7 @@ export const useAgentStream = () => {
         addDebugLog(`[CRITICAL] 🚨 API health check error: ${healthError}`);
         addMessage({
           type: 'error',
-          content: '🚨 ERREUR CRITIQUE: Erreur de connexion à l\'API backend.',
+          content: "🚨 ERREUR CRITIQUE: Erreur de connexion à l'API backend.",
         } as NewChatMessage);
         return;
       }
@@ -698,6 +730,25 @@ export const useAgentStream = () => {
         }
 
         setAgentStatus(null);
+
+        // Clear inactivity timeout
+        if (inactivityTimeoutRef.current) {
+          clearTimeout(inactivityTimeoutRef.current);
+          inactivityTimeoutRef.current = null;
+        }
+      };
+
+      // Reset inactivity timeout whenever a message is received
+      const _resetInactivityTimeout = () => {
+        if (inactivityTimeoutRef.current) {
+          clearTimeout(inactivityTimeoutRef.current);
+        }
+        inactivityTimeoutRef.current = setTimeout(() => {
+          addDebugLog(
+            `[${new Date().toLocaleTimeString()}] [WARNING] ⏰ Inactivity timeout reached - closing connection`,
+          );
+          handleClose();
+        }, 30000); // 30 seconds of inactivity
       };
 
       const handleError = (error: Error) => {
@@ -769,11 +820,17 @@ export const useAgentStream = () => {
       const handleMessage = (content: string) => {
         responseCountRef.current += 1;
 
-        console.log('🎯 [useAgentStream] handleMessage called with content:', content);
-        console.log('🎯 [useAgentStream] responseCount:', responseCountRef.current);
+        console.log(
+          '🎯 [useAgentStream] handleMessage called with content:',
+          content,
+        );
+        console.log(
+          '🎯 [useAgentStream] responseCount:',
+          responseCountRef.current,
+        );
 
         addDebugLog(
-          `[${new Date().toLocaleTimeString()}] [INFO] Agent response (${responseCountRef.current}/5): ${content}`,
+          `[${new Date().toLocaleTimeString()}] [INFO] Agent response (${responseCountRef.current}): ${content}`,
         );
 
         const agentMessage: NewChatMessage = {
@@ -781,30 +838,35 @@ export const useAgentStream = () => {
           content,
         };
 
-        console.log('🎯 [useAgentStream] About to add agent message:', agentMessage);
+        console.log(
+          '🎯 [useAgentStream] About to add agent message:',
+          agentMessage,
+        );
         addMessage(agentMessage);
         console.log('🎯 [useAgentStream] Agent message added to store');
 
-        // Calculer le progrès basé sur le nombre d'étapes (20% par étape)
-        const progressIncrement = Math.min(99, responseCountRef.current * 20);
+        // Calculer le progrès basé sur le nombre d'étapes (20% par étape, max 80%)
+        const progressIncrement = Math.min(80, responseCountRef.current * 20);
         setAgentProgress(progressIncrement);
 
-        // Arrêter après 5 étapes automatiquement
-        if (responseCountRef.current >= 5) {
+        // Check if this response indicates completion (contains final answer patterns)
+        const isCompletionResponse = content.toLowerCase().includes('final answer') ||
+                                    content.toLowerCase().includes('i have completed') ||
+                                    content.toLowerCase().includes('task completed') ||
+                                    content.toLowerCase().includes('finished') ||
+                                    content.length > 100; // Long responses often indicate completion
+
+        if (isCompletionResponse) {
           addDebugLog(
-            `[${new Date().toLocaleTimeString()}] [INFO] 🛑 Limite de 5 étapes atteinte - Arrêt automatique`,
+            `[${new Date().toLocaleTimeString()}] [INFO] 🎉 Detected completion response - setting progress to 100%`,
           );
-          setTimeout(() => {
-            handleClose();
-            setAgentProgress(100);
-            setIsProcessing(false);
-            setAgentStatus(null);
-            // Fetch token stats after processing is complete
-            if (useUIStore.getState().fetchLatestTokenStats) {
-              useUIStore.getState().fetchLatestTokenStats();
-            }
-          }, 1000);
+          setAgentProgress(100);
+          // Don't close immediately - wait for backend's close message or timeout
         }
+
+        // Don't auto-close after 5 steps - let the backend control when to close
+        // The connection will be closed when the backend sends a 'close' message
+        // or when the agent finishes naturally
       };
 
       const handleThought = (thought: string) => {
@@ -857,6 +919,9 @@ export const useAgentStream = () => {
       };
 
       const onMessage = (event: MessageEvent) => {
+        // Reset inactivity timeout whenever a message is received
+        _resetInactivityTimeout();
+
         try {
           console.log(
             '📨 [useAgentStream] Raw SSE message received:',
@@ -928,6 +993,7 @@ export const useAgentStream = () => {
 
           switch (data.type) {
             case 'tool_stream':
+              console.log('🎯 [useAgentStream] Processing tool_stream message');
               if (
                 data.data &&
                 isToolStartData(data.data) &&
@@ -982,6 +1048,7 @@ export const useAgentStream = () => {
               }
               break;
             case 'agent_thought':
+              console.log('🧠 [useAgentStream] Processing agent_thought message:', data.content);
               if (data.content) handleThought(data.content);
               break;
             case 'tool_call': {
@@ -990,6 +1057,7 @@ export const useAgentStream = () => {
               break;
             }
             case 'tool.start': {
+              console.log('🔧 [useAgentStream] Processing tool.start message:', data.data);
               // New case for backend's tool.start event
               if (data.data && isToolStartData(data.data)) {
                 const toolName = (data.data as ToolStartData).name;
@@ -1104,21 +1172,25 @@ export const useAgentStream = () => {
             case 'agent_response':
               console.log('🤖 [useAgentStream] AGENT_RESPONSE received!');
               console.log('🤖 [useAgentStream] Content:', data.content);
+              console.log('🤖 [useAgentStream] Full data object:', JSON.stringify(data, null, 2));
               addDebugLog(
-                `[${new Date().toLocaleTimeString()}] [STREAM] 🤖 RÉPONSE AGENT reçue !`,
+                `[${new Date().toLocaleTimeString()}] [STREAM] 🤖 RÉPONSE AGENT reçue ! Content: "${data.content?.substring(0, 100)}..."`,
               );
               if (data.content) {
                 console.log('✅ [useAgentStream] Processing agent response...');
+                console.log('✅ [useAgentStream] Content length:', data.content.length);
                 addDebugLog(
-                  `[${new Date().toLocaleTimeString()}] [SUCCESS] 🎉 Traitement de la réponse agent: "${data.content.substring(0, 100)}..."`,
+                  `[${new Date().toLocaleTimeString()}] [SUCCESS] 🎉 Traitement de la réponse agent: "${data.content.substring(0, 100)}..." (length: ${data.content.length})`,
                 );
                 handleMessage(data.content);
+                console.log('✅ [useAgentStream] handleMessage called successfully');
               } else {
                 console.warn(
                   '⚠️ [useAgentStream] Agent response has no content!',
                 );
+                console.warn('⚠️ [useAgentStream] Full data object:', data);
                 addDebugLog(
-                  `[${new Date().toLocaleTimeString()}] [WARNING] 🚨 Réponse agent sans contenu !`,
+                  `[${new Date().toLocaleTimeString()}] [WARNING] 🚨 Réponse agent sans contenu ! Data: ${JSON.stringify(data)}`,
                 );
               }
               break;
@@ -1192,7 +1264,7 @@ export const useAgentStream = () => {
                 setBrowserStatus(
                   `Error: ${errorData.message || 'Browser operation failed'}`,
                 );
-                
+
                 // Log error details for debugging
                 console.warn('Browser operation error:', errorData);
               }
@@ -1200,7 +1272,9 @@ export const useAgentStream = () => {
             case 'browser.screenshot.error':
               if (data.data && isBrowserData(data.data)) {
                 const errorData = data.data as any;
-                setBrowserStatus(`📸 Screenshot failed: ${errorData.error || 'Unknown error'}`);
+                setBrowserStatus(
+                  `📸 Screenshot failed: ${errorData.error || 'Unknown error'}`,
+                );
                 console.warn('Screenshot capture error:', errorData);
               }
               break;
@@ -1245,74 +1319,98 @@ export const useAgentStream = () => {
               try {
                 if (data.data && isBrowserData(data.data)) {
                   const realtimeData = data.data as any;
-                  
+
                   // Validate screenshot data before processing
-                    if (realtimeData.imageData && 
-                        typeof realtimeData.imageData === 'string' && 
-                        realtimeData.imageData.length > 0) {
-                      
-                      setBrowserStatus(`📸 Live view: ${realtimeData.action || 'Browser action'}`);
-                      
-                      // Debug log to see the actual data format
-                      console.log('Browser screenshot data format check:', {
-                        startsWithDataImage: realtimeData.imageData.startsWith('data:image/'),
-                        startsWithDataImageBase64: realtimeData.imageData.startsWith('data:image/png;base64,'),
-                        length: realtimeData.imageData.length,
-                        first100Chars: realtimeData.imageData.substring(0, 100)
-                      });
-                      
-                      // Use imageData as received - backend should already provide proper format
-                      const imageData = realtimeData.imageData;
-                      console.log('Received imageData:', {
-                        startsWithDataImage: imageData?.startsWith('data:image/'),
-                        startsWithDataImageBase64: imageData?.startsWith('data:image/png;base64,'),
-                        length: imageData?.length,
-                        first100Chars: imageData?.substring(0, 100) + '...'
-                      });
-                    
+                  if (
+                    realtimeData.imageData &&
+                    typeof realtimeData.imageData === 'string' &&
+                    realtimeData.imageData.length > 0
+                  ) {
+                    setBrowserStatus(
+                      `📸 Live view: ${realtimeData.action || 'Browser action'}`,
+                    );
+
+                    // Debug log to see the actual data format
+                    console.log('Browser screenshot data format check:', {
+                      startsWithDataImage:
+                        realtimeData.imageData.startsWith('data:image/'),
+                      startsWithDataImageBase64:
+                        realtimeData.imageData.startsWith(
+                          'data:image/png;base64,',
+                        ),
+                      length: realtimeData.imageData.length,
+                      first100Chars: realtimeData.imageData.substring(0, 100),
+                    });
+
+                    // Use imageData as received - backend should already provide proper format
+                    const imageData = realtimeData.imageData;
+                    console.log('Received imageData:', {
+                      startsWithDataImage: imageData?.startsWith('data:image/'),
+                      startsWithDataImageBase64: imageData?.startsWith(
+                        'data:image/png;base64,',
+                      ),
+                      length: imageData?.length,
+                      first100Chars: imageData?.substring(0, 100) + '...',
+                    });
+
                     // Dispatch custom event for BrowserLiveView component with validated data
-                      try {
-                        const customEvent = new CustomEvent('browser-live-view', {
-                          detail: {
-                            type: 'browser.screenshot.realtime',
-                            data: {
-                              ...realtimeData,
-                              imageData: imageData,
-                              timestamp: realtimeData.timestamp || Date.now()
-                            }
-                          }
-                        });
-                        window.dispatchEvent(customEvent);
-                        console.log('Dispatched browser-live-view event with data:', {
+                    try {
+                      const customEvent = new CustomEvent('browser-live-view', {
+                        detail: {
+                          type: 'browser.screenshot.realtime',
+                          data: {
+                            ...realtimeData,
+                            imageData: imageData,
+                            timestamp: realtimeData.timestamp || Date.now(),
+                          },
+                        },
+                      });
+                      window.dispatchEvent(customEvent);
+                      console.log(
+                        'Dispatched browser-live-view event with data:',
+                        {
                           type: 'browser.screenshot.realtime',
                           data: {
                             ...realtimeData,
                             imageData: imageData.substring(0, 50) + '...', // Log first 50 characters of image data
-                            timestamp: realtimeData.timestamp || Date.now()
-                          }
-                        });
-                        // Additional debug info
-                        console.log('Image data debug:', {
-                          imageDataStart: imageData.substring(0, 100) + '...',
-                          imageDataLength: imageData.length,
-                          startsWithDataImage: imageData.startsWith('data:image/'),
-                          startsWithDataImageBase64: imageData.startsWith('data:image/png;base64,')
-                        });
-                      } catch (eventError) {
-                      console.error('Failed to dispatch browser live view event:', eventError);
+                            timestamp: realtimeData.timestamp || Date.now(),
+                          },
+                        },
+                      );
+                      // Additional debug info
+                      console.log('Image data debug:', {
+                        imageDataStart: imageData.substring(0, 100) + '...',
+                        imageDataLength: imageData.length,
+                        startsWithDataImage:
+                          imageData.startsWith('data:image/'),
+                        startsWithDataImageBase64: imageData.startsWith(
+                          'data:image/png;base64,',
+                        ),
+                      });
+                    } catch (eventError) {
+                      console.error(
+                        'Failed to dispatch browser live view event:',
+                        eventError,
+                      );
                     }
 
                     // Note: Screenshots are now handled exclusively by the BrowserLiveView component
                     // and should not be sent to the canvas to avoid duplication
                   } else {
-                    console.warn('Invalid screenshot data received:', realtimeData);
+                    console.warn(
+                      'Invalid screenshot data received:',
+                      realtimeData,
+                    );
                     setBrowserStatus('📸 Screenshot failed - invalid data');
                   }
                 } else {
                   console.warn('No browser data in realtime screenshot event');
                 }
               } catch (error) {
-                console.error('Error processing browser.screenshot.realtime:', error);
+                console.error(
+                  'Error processing browser.screenshot.realtime:',
+                  error,
+                );
                 setBrowserStatus('📸 Screenshot processing error');
               }
               break;
@@ -1331,8 +1429,15 @@ export const useAgentStream = () => {
                 // Check if content contains debugging JSON with "thought" field, agent interactions, or todos
                 try {
                   const parsed = JSON.parse(data.content);
-                  if (parsed.thought || parsed.command || parsed.interaction || 
-                      parsed.todos || parsed.stats || (parsed.type && parsed.type.includes('todo'))) {
+                  // Only filter if it's clearly agent internal data (not canvas content)
+                  if (
+                    parsed.thought &&
+                    parsed.command &&
+                    !parsed.content &&
+                    (parsed.todos ||
+                      parsed.stats ||
+                      (parsed.type && parsed.type.includes('todo')))
+                  ) {
                     console.warn(
                       '🚫 [useAgentStream] Filtered out agent thought/interaction/todo from canvas - keeping in chat only',
                     );
@@ -1340,18 +1445,21 @@ export const useAgentStream = () => {
                   }
                 } catch {
                   // Not JSON, check for debugging patterns, agent thought patterns, and todo patterns in text content
+                  // Be more specific to avoid filtering legitimate canvas content
                   if (
-                    data.content.includes('"thought"') ||
-                    data.content.includes('```json') ||
-                    data.content.includes('thinking:') ||
-                    data.content.includes('réflexion:') ||
-                    data.content.includes('"todos"') ||
-                    data.content.includes('"status"') ||
+                    (data.content.includes('"thought"') &&
+                      data.content.includes('"command"') &&
+                      !data.content.includes('<')) ||
+                    (data.content.includes('```json') &&
+                      data.content.includes('"thought"')) ||
+                    (data.content.includes('thinking:') &&
+                      data.content.length < 200) ||
+                    (data.content.includes('réflexion:') &&
+                      data.content.length < 200) ||
                     data.content.includes('claude_code_todo') ||
                     data.content.includes('unified_todo') ||
-                    data.content.includes('todo_list') ||
-                    (data.content.includes('{') &&
-                      data.content.includes('"command"'))
+                    (data.content.includes('todo_list') &&
+                      !data.content.includes('<'))
                   ) {
                     console.warn(
                       '🚫 [useAgentStream] Filtered out agent thought/interaction/todo from canvas - keeping in chat only',
@@ -1432,10 +1540,19 @@ export const useAgentStream = () => {
               setTimeout(() => {
                 handleClose();
                 setAgentProgress(100);
+                setIsProcessing(false);
+                setAgentStatus(null);
+                // Fetch token stats after processing is complete
+                if (useUIStore.getState().fetchLatestTokenStats) {
+                  useUIStore.getState().fetchLatestTokenStats();
+                }
               }, 500); // Add a small delay to allow UI to update
               break;
             case 'connection':
-              console.log('🔗 [useAgentStream] Connection established:', data.message);
+              console.log(
+                '🔗 [useAgentStream] Connection established:',
+                data.message,
+              );
               addDebugLog(
                 `[${new Date().toLocaleTimeString()}] [INFO] Connection established: ${data.message}`,
               );
@@ -1474,7 +1591,9 @@ export const useAgentStream = () => {
         );
 
         // Get the system prompt content based on selected mode
-        const systemPromptContent = selectedSystemPrompt ? getSystemPromptContent(selectedSystemPrompt) : undefined;
+        const systemPromptContent = selectedSystemPrompt
+          ? getSystemPromptContent(selectedSystemPrompt)
+          : undefined;
 
         const { jobId, eventSource } = await sendMessage(
           goal,

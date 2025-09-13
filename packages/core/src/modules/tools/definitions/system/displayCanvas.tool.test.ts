@@ -17,7 +17,7 @@ describe('displayCanvasTool', () => {
   it('should have correct name and description', () => {
     expect(displayCanvasTool.name).toBe('display_canvas');
     expect(displayCanvasTool.description).toBe(
-      "🚀 CANVAS ÉPIQUE - Affiche TOUT dans le canvas ! HTML, Markdown, texte, URLs, jeux complets, apps React, projets multi-fichiers avec JS/CSS/images/sons. Détection automatique des assets externes et gestion intelligente des projets complexes. Support automatique des références de fichiers.",
+      '🚀 CANVAS ÉPIQUE - Affiche TOUT dans le canvas ! HTML, Markdown, texte, URLs, jeux complets, apps React, projets multi-fichiers avec JS/CSS/images/sons. Détection automatique des assets externes et gestion intelligente des projets complexes. Support automatique des références de fichiers.',
     );
   });
 
@@ -77,13 +77,15 @@ describe('displayCanvasTool', () => {
       },
     );
 
-    expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', expect.stringContaining(content), 'html');
+    expect(sendToCanvas).toHaveBeenCalledWith(
+      'test-job-id',
+      expect.stringContaining(content),
+      'html',
+    );
     expect(mockLog.info).toHaveBeenCalledWith(
       '🚀 ÉPIQUE CANVAS - Analyse du contenu...',
     );
-    expect(mockLog.info).toHaveBeenCalledWith(
-      '🔧 Fragment HTML extrait',
-    );
+    expect(mockLog.info).toHaveBeenCalledWith('🔧 Fragment HTML extrait');
     expect(mockLog.info).toHaveBeenCalledWith(
       '🎨 ✅ Contenu affiché dans le canvas (type: html)',
     );
@@ -192,16 +194,16 @@ describe('displayCanvasTool', () => {
       },
     );
 
-    expect(sendToCanvas).toHaveBeenCalledWith('test-job-id', expect.stringContaining(content), 'html');
+    expect(sendToCanvas).toHaveBeenCalledWith(
+      'test-job-id',
+      expect.stringContaining(content),
+      'html',
+    );
     expect(mockLog.info).toHaveBeenCalledWith(
       '🚀 ÉPIQUE CANVAS - Analyse du contenu...',
     );
-    expect(mockLog.info).toHaveBeenCalledWith(
-      '🔧 Fragment HTML extrait',
-    );
-    expect(mockLog.info).toHaveBeenCalledWith(
-      '🏷️  Titre: Test Title',
-    );
+    expect(mockLog.info).toHaveBeenCalledWith('🔧 Fragment HTML extrait');
+    expect(mockLog.info).toHaveBeenCalledWith('🏷️  Titre: Test Title');
     expect(mockLog.info).toHaveBeenCalledWith(
       '🎨 ✅ Contenu affiché dans le canvas (type: html)',
     );

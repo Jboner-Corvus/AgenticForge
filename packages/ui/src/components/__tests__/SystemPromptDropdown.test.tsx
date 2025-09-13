@@ -7,7 +7,7 @@ import * as hooks from '../../store/hooks';
 
 // Mock des dépendances
 vi.mock('../../store/uiStore', () => ({
-  useUIStore: vi.fn()
+  useUIStore: vi.fn(),
 }));
 
 // Mock functions
@@ -113,11 +113,11 @@ vi.mock('../../store/hooks', () => ({
   useDebugLog: vi.fn(),
   useIsSettingsModalOpen: vi.fn(),
   useSessionTokensUsed: vi.fn(),
-  useLatestTokenStats: vi.fn()
+  useLatestTokenStats: vi.fn(),
 }));
 
 vi.mock('../../lib/hooks/useAgentStream', () => ({
-  useAgentStream: vi.fn()
+  useAgentStream: vi.fn(),
 }));
 
 vi.mock('../../lib/contexts/LanguageContext', () => ({
@@ -125,9 +125,9 @@ vi.mock('../../lib/contexts/LanguageContext', () => ({
     translations: {
       typeYourMessage: 'Tapez votre message...',
       sendMessage: 'Send message',
-      stop: 'Stop'
-    }
-  })
+      stop: 'Stop',
+    },
+  }),
 }));
 
 // Mock des composants UI
@@ -136,13 +136,13 @@ vi.mock('../ui/button', () => ({
     <button onClick={onClick} disabled={disabled} {...props}>
       {children}
     </button>
-  )
+  ),
 }));
 
 vi.mock('../ui/textarea', () => ({
   Textarea: ({ value, onChange, ...props }: any) => (
     <textarea value={value} onChange={onChange} {...props} />
-  )
+  ),
 }));
 
 vi.mock('../ui/select', () => ({
@@ -165,7 +165,7 @@ vi.mock('../ui/select', () => ({
   SelectItem: ({ value, children }: any) => (
     <option value={value}>{children}</option>
   ),
-  SelectTrigger: ({ children }: any) => <div>{children}</div>
+  SelectTrigger: ({ children }: any) => <div>{children}</div>,
 }));
 
 describe('System Prompt Dropdown Integration Tests', () => {
@@ -185,7 +185,7 @@ describe('System Prompt Dropdown Integration Tests', () => {
     // Mock du hook useAgentStream
     (useAgentStream as any).mockReturnValue({
       startAgent: mockStartAgent,
-      interruptAgent: mockInterruptAgent
+      interruptAgent: mockInterruptAgent,
     });
   });
 
@@ -212,9 +212,16 @@ describe('System Prompt Dropdown Integration Tests', () => {
   describe('System Prompt Mode Switching', () => {
     it('should render different system prompt modes', () => {
       // Test that the component can render with different modes
-      const modes = ['architect', 'coder', 'explain', 'debug', 'orchestrate', 'frontend'];
+      const modes = [
+        'architect',
+        'coder',
+        'explain',
+        'debug',
+        'orchestrate',
+        'frontend',
+      ];
 
-      modes.forEach(mode => {
+      modes.forEach((mode) => {
         vi.mocked(useUIStore).mockImplementation((selector) => {
           const mockState = {
             selectedSystemPrompt: mode,
@@ -271,7 +278,7 @@ describe('System Prompt Dropdown Integration Tests', () => {
             setAuthTokenAndValidate: vi.fn(),
             refreshAuthToken: vi.fn(),
             getValidAuthToken: vi.fn(),
-            getSystemStatus: vi.fn()
+            getSystemStatus: vi.fn(),
           } as any;
           if (typeof selector === 'function') {
             return selector(mockState);
@@ -280,7 +287,9 @@ describe('System Prompt Dropdown Integration Tests', () => {
         });
 
         const { unmount } = render(<UserInput />);
-        expect(screen.getByTestId('system-prompt-dropdown')).toBeInTheDocument();
+        expect(
+          screen.getByTestId('system-prompt-dropdown'),
+        ).toBeInTheDocument();
         unmount();
       });
     });
@@ -291,7 +300,7 @@ describe('System Prompt Dropdown Integration Tests', () => {
       // Test that the component renders correctly with different system prompt modes
       const modes = ['architect', 'coder', 'explain'];
 
-      modes.forEach(mode => {
+      modes.forEach((mode) => {
         vi.mocked(useUIStore).mockImplementation((selector) => {
           const mockState = {
             messageInputValue: 'Test input',
@@ -348,7 +357,7 @@ describe('System Prompt Dropdown Integration Tests', () => {
             setAuthTokenAndValidate: vi.fn(),
             refreshAuthToken: vi.fn(),
             getValidAuthToken: vi.fn(),
-            getSystemStatus: vi.fn()
+            getSystemStatus: vi.fn(),
           } as any;
           if (typeof selector === 'function') {
             return selector(mockState);
@@ -357,7 +366,9 @@ describe('System Prompt Dropdown Integration Tests', () => {
         });
 
         const { unmount } = render(<UserInput />);
-        expect(screen.getByTestId('system-prompt-dropdown')).toBeInTheDocument();
+        expect(
+          screen.getByTestId('system-prompt-dropdown'),
+        ).toBeInTheDocument();
         expect(screen.getByRole('textbox')).toBeInTheDocument();
         unmount();
       });
@@ -439,7 +450,7 @@ describe('System Prompt Dropdown Integration Tests', () => {
           setAuthTokenAndValidate: vi.fn(),
           refreshAuthToken: vi.fn(),
           getValidAuthToken: vi.fn(),
-          getSystemStatus: vi.fn()
+          getSystemStatus: vi.fn(),
         } as any;
         if (typeof selector === 'function') {
           return selector(mockState);

@@ -6,13 +6,23 @@ import { TestLanguageProvider } from '../lib/__mocks__/TestLanguageProvider';
 // Mock all external dependencies
 vi.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, className, ...props }: { children: React.ReactNode; className?: string; [key: string]: any }) => (
+    div: ({
+      children,
+      className,
+      ...props
+    }: {
+      children: React.ReactNode;
+      className?: string;
+      [key: string]: any;
+    }) => (
       <div className={className} {...props}>
         {children}
       </div>
     ),
   },
-  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }));
 
 vi.mock('lucide-react', () => ({
@@ -22,8 +32,18 @@ vi.mock('lucide-react', () => ({
 }));
 
 vi.mock('./ui/button', () => ({
-  Button: ({ children, className, ...props }: { children: React.ReactNode; className?: string; [key: string]: any }) => (
-    <button className={className} {...props}>{children}</button>
+  Button: ({
+    children,
+    className,
+    ...props
+  }: {
+    children: React.ReactNode;
+    className?: string;
+    [key: string]: any;
+  }) => (
+    <button className={className} {...props}>
+      {children}
+    </button>
   ),
 }));
 
@@ -37,7 +57,7 @@ describe('EnhancedAgentThoughtBubble', () => {
     render(
       <TestLanguageProvider>
         <EnhancedAgentThoughtBubble {...defaultProps} />
-      </TestLanguageProvider>
+      </TestLanguageProvider>,
     );
 
     // Wait for the component to render
@@ -50,7 +70,7 @@ describe('EnhancedAgentThoughtBubble', () => {
     render(
       <TestLanguageProvider>
         <EnhancedAgentThoughtBubble {...defaultProps} isProminent={false} />
-      </TestLanguageProvider>
+      </TestLanguageProvider>,
     );
 
     // Wait for the component to render
@@ -65,7 +85,7 @@ describe('EnhancedAgentThoughtBubble', () => {
     render(
       <TestLanguageProvider>
         <EnhancedAgentThoughtBubble {...defaultProps} isProminent={true} />
-      </TestLanguageProvider>
+      </TestLanguageProvider>,
     );
 
     // Wait for the component to render
@@ -80,7 +100,7 @@ describe('EnhancedAgentThoughtBubble', () => {
     render(
       <TestLanguageProvider>
         <EnhancedAgentThoughtBubble content="Test content" />
-      </TestLanguageProvider>
+      </TestLanguageProvider>,
     );
 
     // Wait for the component to render

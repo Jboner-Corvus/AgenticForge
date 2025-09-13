@@ -24,12 +24,50 @@ export const getAllTools = async (): Promise<
   Tool<z.AnyZodObject, z.ZodTypeAny>[]
 > => {
   console.log('[getAllTools] function called');
-  const tools = await getTools();
-  tools.push(finishTool as unknown as Tool<z.AnyZodObject, z.ZodTypeAny>);
-  tools.push(
-    canvasConsoleFeedbackTool as unknown as Tool<z.AnyZodObject, z.ZodTypeAny>,
+  const allTools = await getTools();
+
+  // Filter out redundant tools and keep only essential ones
+  const essentialTools = allTools.filter((tool) => {
+    const essentialToolNames = [
+      // Core system tools
+      'finish',
+      'display_canvas',
+      'todo_write',
+      'listTools',
+
+      // New composite tools (prioritize these)
+      'finance', // Replaces all Alpha Vantage tools
+      'file_manager', // Replaces individual file tools
+      'web_automation', // Replaces individual Playwright tools
+
+      // Keep some individual tools for specific use cases
+      // 'global_quote',   // REMOVED: Duplicate with core_stock_apis (finance)
+      'readFile', // Keep for simple file reading
+      'writeFile', // Keep for simple file writing
+      'playwright_navigate', // Keep for simple navigation
+
+      // AI tools
+      'summarize',
+
+      // Planning
+      'project_planning',
+
+      // Code execution
+      'executeShellCommand',
+    ];
+
+    return (
+      essentialToolNames.includes(tool.name) ||
+      tool.name.startsWith('canvas_console_feedback') ||
+      tool.name.startsWith('finish')
+    );
+  });
+
+  console.log(
+    `[getAllTools] Filtered from ${allTools.length} to ${essentialTools.length} essential tools`,
   );
-  return tools;
+
+  return essentialTools;
 };
 
 export { FinishToolSignal };

@@ -39,6 +39,11 @@ vi.mock('../../config.ts', () => ({
     LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
     REDIS_URL: 'redis://localhost:6379',
   },
+  getConfig: () => ({
+    AGENT_MAX_ITERATIONS: 5,
+    LLM_PROVIDER_HIERARCHY: ['openai', 'anthropic'],
+    REDIS_URL: 'redis://localhost:6379',
+  }),
 }));
 
 // Correction du mock du logger

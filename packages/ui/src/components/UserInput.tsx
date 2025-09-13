@@ -6,16 +6,48 @@ import { useAgentStream } from '../lib/hooks/useAgentStream';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger } from './ui/select';
-import { Send, Paperclip, Mic, Square, Settings, ChevronDown } from 'lucide-react';
+import {
+  Send,
+  Paperclip,
+  Mic,
+  Square,
+  Settings,
+  ChevronDown,
+} from 'lucide-react';
 import { useLanguage } from '../lib/contexts/LanguageContext';
 // System prompt options - hardcoded for now, will be imported from core later
 const SYSTEM_PROMPT_OPTIONS = [
-  { value: 'architect', label: 'Architect', description: 'System design, architecture planning, and technical specifications' },
-  { value: 'coder', label: 'Coder', description: 'Code implementation, debugging, and development' },
-  { value: 'explain', label: 'Explain', description: 'Code explanation, teaching, and knowledge sharing' },
-  { value: 'debug', label: 'Debug', description: 'Debugging, troubleshooting, and problem solving' },
-  { value: 'orchestrate', label: 'Orchestrate', description: 'Project management, coordination, and workflow optimization' },
-  { value: 'frontend', label: 'FrontEnd', description: 'Frontend development, UI/UX, and user interface design' }
+  {
+    value: 'architect',
+    label: 'Architect',
+    description:
+      'System design, architecture planning, and technical specifications',
+  },
+  {
+    value: 'coder',
+    label: 'Coder',
+    description: 'Code implementation, debugging, and development',
+  },
+  {
+    value: 'explain',
+    label: 'Explain',
+    description: 'Code explanation, teaching, and knowledge sharing',
+  },
+  {
+    value: 'debug',
+    label: 'Debug',
+    description: 'Debugging, troubleshooting, and problem solving',
+  },
+  {
+    value: 'orchestrate',
+    label: 'Orchestrate',
+    description: 'Project management, coordination, and workflow optimization',
+  },
+  {
+    value: 'frontend',
+    label: 'FrontEnd',
+    description: 'Frontend development, UI/UX, and user interface design',
+  },
 ];
 // LoadingSpinner component is imported but not currently used
 // import { LoadingSpinner } from './LoadingSpinner';
@@ -30,19 +62,26 @@ export const UserInput = () => {
   const { translations } = useLanguage();
   const inputValue = useMessageInputValue();
   const setInputValue = useUIStore((state) => state.setMessageInputValue);
-  const selectedSystemPrompt = useUIStore((state) => state.selectedSystemPrompt);
-  const setSelectedSystemPrompt = useUIStore((state) => state.setSelectedSystemPrompt);
+  const selectedSystemPrompt = useUIStore(
+    (state) => state.selectedSystemPrompt,
+  );
+  const setSelectedSystemPrompt = useUIStore(
+    (state) => state.setSelectedSystemPrompt,
+  );
   const { startAgent, interruptAgent } = useAgentStream();
   const isProcessing = useIsProcessing();
 
   // Debug log pour vérifier que le composant se rend
-  console.log('🔧 UserInput rendered with selectedSystemPrompt:', selectedSystemPrompt);
+  console.log(
+    '🔧 UserInput rendered with selectedSystemPrompt:',
+    selectedSystemPrompt,
+  );
 
   // Debug effect pour surveiller les changements
   useEffect(() => {
     console.log('🎯 System prompt state changed:', {
       selectedSystemPrompt,
-      availableOptions: SYSTEM_PROMPT_OPTIONS.map(opt => opt.label)
+      availableOptions: SYSTEM_PROMPT_OPTIONS.map((opt) => opt.label),
     });
   }, [selectedSystemPrompt]);
 
@@ -94,16 +133,16 @@ export const UserInput = () => {
     setIsDragOver(false);
 
     const files = Array.from(e.dataTransfer.files);
-    const validFiles = files.filter((file): file is File =>
-      file.type !== undefined && (
-        file.type.startsWith('image/') ||
-        file.type.startsWith('text/') ||
-        file.type === 'application/pdf'
-      )
+    const validFiles = files.filter(
+      (file): file is File =>
+        file.type !== undefined &&
+        (file.type.startsWith('image/') ||
+          file.type.startsWith('text/') ||
+          file.type === 'application/pdf'),
     );
 
     if (validFiles.length > 0) {
-      setAttachments(prev => [...prev, ...validFiles].slice(0, 5)); // Max 5 fichiers
+      setAttachments((prev) => [...prev, ...validFiles].slice(0, 5)); // Max 5 fichiers
     }
   }, []);
 
@@ -113,7 +152,7 @@ export const UserInput = () => {
     setRecordingTime(0);
 
     recordingIntervalRef.current = setInterval(() => {
-      setRecordingTime(prev => prev + 1);
+      setRecordingTime((prev) => prev + 1);
     }, 1000);
 
     // Ici vous pouvez intégrer une vraie API de reconnaissance vocale
@@ -134,13 +173,16 @@ export const UserInput = () => {
   }, [recordingTime]);
 
   // Gestion des pièces jointes
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setAttachments(prev => [...prev, ...files].slice(0, 5) as File[]);
-  }, []);
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      setAttachments((prev) => [...prev, ...files].slice(0, 5) as File[]);
+    },
+    [],
+  );
 
   const removeAttachment = useCallback((index: number) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   // Validation et envoi du message
@@ -163,12 +205,15 @@ export const UserInput = () => {
     console.log('🚀 Sending message:', {
       text: trimmedValue,
       attachments: attachments.length,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     // Ici vous pouvez traiter les pièces jointes
     if (attachments.length > 0) {
-      console.log('📎 Processing attachments:', attachments.map(f => f.name));
+      console.log(
+        '📎 Processing attachments:',
+        attachments.map((f) => f.name),
+      );
     }
 
     startAgent(trimmedValue);
@@ -184,23 +229,26 @@ export const UserInput = () => {
   }, [isProcessing, interruptAgent]);
 
   // Gestion des raccourcis clavier améliorés
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Ctrl/Cmd + Enter pour nouvelle ligne
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      return; // Permettre la nouvelle ligne
-    }
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      // Ctrl/Cmd + Enter pour nouvelle ligne
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        return; // Permettre la nouvelle ligne
+      }
 
-    // Enter seul pour envoyer
-    if (e.key === 'Enter' && !e.shiftKey && !isProcessing) {
-      e.preventDefault();
-      validateAndSendMessage();
-    }
+      // Enter seul pour envoyer
+      if (e.key === 'Enter' && !e.shiftKey && !isProcessing) {
+        e.preventDefault();
+        validateAndSendMessage();
+      }
 
-    // Échap pour annuler l'enregistrement
-    if (e.key === 'Escape' && isRecording) {
-      stopRecording();
-    }
-  }, [isProcessing, isRecording, validateAndSendMessage, stopRecording]);
+      // Échap pour annuler l'enregistrement
+      if (e.key === 'Escape' && isRecording) {
+        stopRecording();
+      }
+    },
+    [isProcessing, isRecording, validateAndSendMessage, stopRecording],
+  );
 
   // Formatage du temps d'enregistrement
   const formatRecordingTime = (seconds: number) => {
@@ -265,7 +313,8 @@ export const UserInput = () => {
           placeholder={
             isRecording
               ? `🎤 Enregistrement... ${formatRecordingTime(recordingTime)}`
-              : translations?.typeYourMessage || 'Tapez votre message... (Ctrl+Enter pour une nouvelle ligne)'
+              : translations?.typeYourMessage ||
+                'Tapez votre message... (Ctrl+Enter pour une nouvelle ligne)'
           }
           className={`flex-1 resize-none rounded-2xl py-3 px-4 pr-32 shadow-sm border-border focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 ease-in-out ${
             isRecording ? 'border-red-500 bg-red-50/10' : ''
@@ -275,15 +324,17 @@ export const UserInput = () => {
           style={{
             minHeight: MIN_HEIGHT,
             maxHeight: MAX_HEIGHT,
-            borderRadius: '16px'
+            borderRadius: '16px',
           }}
         />
 
         {/* Indicateur de limite de caractères */}
         {isNearLimit && (
-          <div className={`absolute bottom-2 left-4 text-xs ${
-            remainingChars < 0 ? 'text-destructive' : 'text-muted-foreground'
-          }`}>
+          <div
+            className={`absolute bottom-2 left-4 text-xs ${
+              remainingChars < 0 ? 'text-destructive' : 'text-muted-foreground'
+            }`}
+          >
             {remainingChars} caractères restants
           </div>
         )}
@@ -305,16 +356,27 @@ export const UserInput = () => {
             <SelectTrigger className="h-8 w-32 px-2 border border-border bg-background hover:bg-muted/50 rounded-md transition-colors shadow-sm flex items-center gap-1 relative z-10">
               <Settings className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs font-medium text-muted-foreground">
-                {SYSTEM_PROMPT_OPTIONS.find(opt => opt.value === selectedSystemPrompt)?.label || 'Mode'}
+                {SYSTEM_PROMPT_OPTIONS.find(
+                  (opt) => opt.value === selectedSystemPrompt,
+                )?.label || 'Mode'}
               </span>
               <ChevronDown className="h-3 w-3 text-muted-foreground" />
             </SelectTrigger>
-            <SelectContent align="end" className="w-64 z-[9999] bg-popover border border-border shadow-lg">
+            <SelectContent
+              align="end"
+              className="w-64 z-[9999] bg-popover border border-border shadow-lg"
+            >
               {SYSTEM_PROMPT_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value} className="cursor-pointer">
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                  className="cursor-pointer"
+                >
                   <div className="flex flex-col">
                     <span className="font-medium">{option.label}</span>
-                    <span className="text-xs text-muted-foreground">{option.description}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {option.description}
+                    </span>
                   </div>
                 </SelectItem>
               ))}
@@ -346,9 +408,15 @@ export const UserInput = () => {
                 ? 'text-red-500 hover:text-red-600'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
-            title={isRecording ? 'Arrêter l\'enregistrement' : 'Enregistrement vocal'}
+            title={
+              isRecording ? "Arrêter l'enregistrement" : 'Enregistrement vocal'
+            }
           >
-            {isRecording ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            {isRecording ? (
+              <Square className="h-4 w-4" />
+            ) : (
+              <Mic className="h-4 w-4" />
+            )}
           </Button>
 
           {/* Bouton d'envoi ou d'arrêt */}
@@ -357,7 +425,7 @@ export const UserInput = () => {
               onClick={handleStopAgent}
               size="icon"
               className="h-8 w-8 rounded-full bg-red-500 hover:bg-red-600"
-              title={translations?.stop || "Arrêter"}
+              title={translations?.stop || 'Arrêter'}
             >
               <Square className="h-4 w-4" />
             </Button>
@@ -367,7 +435,7 @@ export const UserInput = () => {
               size="icon"
               disabled={!inputValue.trim() && attachments.length === 0}
               className="h-8 w-8 rounded-full bg-primary hover:bg-primary/90"
-              title={translations?.sendMessage || "Envoyer le message (Enter)"}
+              title={translations?.sendMessage || 'Envoyer le message (Enter)'}
             >
               <Send className="h-4 w-4" />
             </Button>

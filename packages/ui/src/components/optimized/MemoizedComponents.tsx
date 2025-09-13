@@ -73,7 +73,7 @@ const deepEqual = (a: unknown, b: unknown): boolean => {
 
 // Memoized ChatMessagesContainer with message comparison
 export const MemoizedChatMessages = memo<MemoizedChatProps>(
-  ({ className }) => {
+  ({ messages: _messages, isProcessing: _isProcessing, className }) => {
     return (
       <div className={className}>
         <ChatMessagesContainer />
@@ -81,8 +81,12 @@ export const MemoizedChatMessages = memo<MemoizedChatProps>(
     );
   },
   (prevProps, nextProps) => {
-    // Custom comparison for messages array
-    return prevProps.className === nextProps.className;
+    // Custom comparison for messages array and processing state
+    return (
+      prevProps.className === nextProps.className &&
+      prevProps.isProcessing === nextProps.isProcessing &&
+      deepEqual(prevProps.messages, nextProps.messages)
+    );
   },
 );
 

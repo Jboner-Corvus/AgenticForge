@@ -17,9 +17,7 @@ export const BrowserControls: React.FC = () => {
           <span className="mr-2">🌐</span>
           Browser Controls
         </h3>
-        <div className="text-xs text-gray-500">
-          Status: {browserStatus}
-        </div>
+        <div className="text-xs text-gray-500">Status: {browserStatus}</div>
       </div>
 
       <div className="space-y-3">
@@ -36,7 +34,9 @@ export const BrowserControls: React.FC = () => {
               Live Visual Feedback
             </label>
           </div>
-          <span className="text-xs text-gray-500">Real-time browser screenshots</span>
+          <span className="text-xs text-gray-500">
+            Real-time browser screenshots
+          </span>
         </div>
 
         <div className="flex items-center justify-between">
@@ -52,7 +52,9 @@ export const BrowserControls: React.FC = () => {
               Auto Screenshots
             </label>
           </div>
-          <span className="text-xs text-gray-500">Capture screenshots after actions</span>
+          <span className="text-xs text-gray-500">
+            Capture screenshots after actions
+          </span>
         </div>
 
         <div className="pt-2 border-t border-gray-200">

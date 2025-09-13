@@ -18,24 +18,29 @@ export interface UseNotificationsReturn {
  * Hook pour gérer les notifications dans l'application
  */
 export const useNotifications = (): UseNotificationsReturn => {
-  const [notifications, setNotifications] = useState<Array<NotificationProps & { id: string }>>([]);
+  const [notifications, setNotifications] = useState<
+    Array<NotificationProps & { id: string }>
+  >([]);
 
   const removeNotification = useCallback((id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
-  const addNotification = useCallback((notification: NotificationProps) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    const notificationWithId = { ...notification, id };
+  const addNotification = useCallback(
+    (notification: NotificationProps) => {
+      const id = Math.random().toString(36).substring(2, 9);
+      const notificationWithId = { ...notification, id };
 
-    setNotifications(prev => [...prev, notificationWithId]);
+      setNotifications((prev) => [...prev, notificationWithId]);
 
-    // Auto-remove après la durée spécifiée
-    const duration = notification.duration || 5000;
-    setTimeout(() => {
-      removeNotification(id);
-    }, duration);
-  }, [removeNotification]);
+      // Auto-remove après la durée spécifiée
+      const duration = notification.duration || 5000;
+      setTimeout(() => {
+        removeNotification(id);
+      }, duration);
+    },
+    [removeNotification],
+  );
 
   const clearAllNotifications = useCallback(() => {
     setNotifications([]);

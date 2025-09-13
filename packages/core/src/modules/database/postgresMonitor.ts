@@ -85,7 +85,12 @@ export class PostgresMonitor {
 
       // Mettre à jour les métriques
       this.metrics.health = {
-        status: responseTime < 1000 ? 'healthy' : responseTime < 5000 ? 'degraded' : 'unhealthy',
+        status:
+          responseTime < 1000
+            ? 'healthy'
+            : responseTime < 5000
+              ? 'degraded'
+              : 'unhealthy',
         lastCheck: new Date().toISOString(),
         responseTime,
         errorCount: 0, // Reset on success
@@ -95,13 +100,15 @@ export class PostgresMonitor {
 
       // Log si dégradé ou unhealthy
       if (this.metrics.health.status !== 'healthy') {
-        logger.warn({
-          status: this.metrics.health.status,
-          responseTime,
-          queryTime
-        }, 'PostgreSQL health check degraded');
+        logger.warn(
+          {
+            status: this.metrics.health.status,
+            responseTime,
+            queryTime,
+          },
+          'PostgreSQL health check degraded',
+        );
       }
-
     } catch (error) {
       this.metrics.health.errorCount++;
       this.metrics.health.status = 'unhealthy';
@@ -123,8 +130,12 @@ export class PostgresMonitor {
       idleConnections: poolStats.idleCount,
       waitingClients: poolStats.waitingCount,
       totalConnections: poolStats.totalCount,
-      utilizationRate: poolStats.totalCount > 0 ?
-        ((poolStats.totalCount - poolStats.idleCount) / poolStats.totalCount) * 100 : 0,
+      utilizationRate:
+        poolStats.totalCount > 0
+          ? ((poolStats.totalCount - poolStats.idleCount) /
+              poolStats.totalCount) *
+            100
+          : 0,
     };
   }
 
@@ -176,7 +187,9 @@ export class PostgresMonitor {
 // Singleton pour l'application
 let monitor: PostgresMonitor | null = null;
 
-export function getPostgresMonitor(poolManager: PostgresPoolManager): PostgresMonitor {
+export function getPostgresMonitor(
+  poolManager: PostgresPoolManager,
+): PostgresMonitor {
   if (!monitor) {
     monitor = new PostgresMonitor(poolManager);
   }

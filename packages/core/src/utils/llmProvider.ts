@@ -151,7 +151,9 @@ class AnthropicProvider implements ILlmProvider {
       const outputTokens = data.usage?.output_tokens || 0;
       const totalTokens = inputTokens + outputTokens;
 
-      log.info(`Token usage - Input: ${inputTokens}, Output: ${outputTokens}, Total: ${totalTokens}`);
+      log.info(
+        `Token usage - Input: ${inputTokens}, Output: ${outputTokens}, Total: ${totalTokens}`,
+      );
 
       // Store token usage in Redis for tracking
       getRedisClientInstance()
@@ -166,10 +168,10 @@ class AnthropicProvider implements ILlmProvider {
       // Store detailed token stats for the session
       getRedisClientInstance()
         .hset('session:tokens:latest', {
-          'input_tokens': inputTokens,
-          'output_tokens': outputTokens,
-          'timestamp': Date.now(),
-          'total_tokens': totalTokens
+          input_tokens: inputTokens,
+          output_tokens: outputTokens,
+          timestamp: Date.now(),
+          total_tokens: totalTokens,
         })
         .catch((_error: unknown) => {
           getLogger().error(
@@ -861,6 +863,9 @@ class OpenAIProvider implements ILlmProvider {
 }
 
 class OpenRouterProvider implements ILlmProvider {
+  private static readonly MAX_RETRIES = 3;
+  private static readonly RETRY_DELAYS = [2000, 4000, 8000]; // Exponential backoff
+
   public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
     if (statusCode === 401 || statusCode === 403) {
       // Unauthorized, Forbidden - likely invalid API key
@@ -895,6 +900,22 @@ class OpenRouterProvider implements ILlmProvider {
     apiKey?: string,
     modelName?: string,
   ): Promise<string> {
+    return this.getLlmResponseWithRetry(
+      messages,
+      systemPrompt,
+      apiKey,
+      modelName,
+      0,
+    );
+  }
+
+  private async getLlmResponseWithRetry(
+    messages: LLMContent[],
+    systemPrompt?: string,
+    apiKey?: string,
+    modelName?: string,
+    retryCount: number = 0,
+  ): Promise<string> {
     const log = getLogger().child({ module: 'OpenRouterProvider' });
 
     let activeKey: LlmApiKey | null;
@@ -902,12 +923,24 @@ class OpenRouterProvider implements ILlmProvider {
       activeKey = {
         apiKey: apiKey,
         apiModel: modelName || getConfig().LLM_MODEL_NAME,
-        apiProvider: 'openrouter', // Assuming provider based on the class
+        apiProvider: 'openrouter-sky', // Use specific OpenRouter provider name
         errorCount: 0,
         isPermanentlyDisabled: false,
       };
     } else {
-      activeKey = await LlmKeyManager.getNextAvailableKey('openrouter');
+      // For dusk models, prefer openrouter-dusk provider
+      if (modelName && (modelName.includes('sonoma-dusk-alpha') || modelName.includes('dusk'))) {
+        activeKey = await LlmKeyManager.getNextAvailableKey('openrouter-dusk');
+        if (!activeKey) {
+          activeKey = await LlmKeyManager.getNextAvailableKey('openrouter-sky');
+        }
+      } else {
+        // For other models, try openrouter-sky first, then openrouter-dusk as fallback
+        activeKey = await LlmKeyManager.getNextAvailableKey('openrouter-sky');
+        if (!activeKey) {
+          activeKey = await LlmKeyManager.getNextAvailableKey('openrouter-dusk');
+        }
+      }
     }
 
     if (!activeKey) {
@@ -919,19 +952,102 @@ class OpenRouterProvider implements ILlmProvider {
     const apiUrl =
       activeKey.baseUrl || 'https://openrouter.ai/api/v1/chat/completions';
 
-    const openRouterMessages = messages.map((msg) => ({
-      content: msg.parts.map((part) => part.text).join(''),
-      role: msg.role === 'user' ? 'user' : 'model',
-    }));
-
-    if (systemPrompt) {
-      openRouterMessages.unshift({ content: systemPrompt, role: 'system' });
+    // Determine the correct model name based on provider
+    let finalModelName = modelName;
+    if (
+      !finalModelName ||
+      finalModelName.startsWith('gemini-') ||
+      finalModelName.startsWith('gpt-')
+    ) {
+      if (activeKey.apiProvider === 'openrouter-sky') {
+        finalModelName =
+          getConfig().LLM_MODEL_NAME_OPENROUTER_SKY ||
+          'openrouter/sonoma-sky-alpha';
+      } else if (activeKey.apiProvider === 'openrouter-dusk') {
+        finalModelName =
+          getConfig().LLM_MODEL_NAME_OPENROUTER_DUSK ||
+          'openrouter/sonoma-dusk-alpha';
+      } else {
+        finalModelName = getConfig().LLM_MODEL_NAME;
+      }
     }
 
-    const requestBody = {
-      messages: openRouterMessages,
-      model: modelName || getConfig().LLM_MODEL_NAME, // Use modelName if provided, else fallback to config
-    };
+    // CRITICAL FIX: Simplify request for Sonoma models to prevent empty responses
+    let useSimplifiedRequest = false;
+    if (finalModelName && (finalModelName.includes('sonoma') || finalModelName.includes('dusk'))) {
+      useSimplifiedRequest = true;
+      log.info('🎯 Using simplified request format for Sonoma/Dusk model to prevent empty responses');
+    }
+
+    // Process messages - use simplified format for Sonoma models
+    let openRouterMessages: Array<{content: string, role: string}>;
+
+    if (useSimplifiedRequest) {
+      // CRITICAL FIX: For Sonoma models, use only user messages (no system message)
+      // This matches the curl format that works
+      openRouterMessages = messages
+        .filter((msg) => msg.role === 'user') // Only user messages
+        .map((msg) => ({
+          content: msg.parts.map((part) => part.text).join(''),
+          role: 'user',
+        }));
+
+      // If no user messages found, create a simple one
+      if (openRouterMessages.length === 0) {
+        openRouterMessages = [{
+          content: 'Hello, can you help me?',
+          role: 'user'
+        }];
+      }
+
+      log.info(`🎯 Using simplified message format for Sonoma model: ${openRouterMessages.length} user messages only`);
+    } else {
+      // Standard message processing for other models
+      openRouterMessages = messages.map((msg) => ({
+        content: msg.parts.map((part) => part.text).join(''),
+        role: msg.role === 'user' ? 'user' : 'assistant',
+      }));
+
+      if (systemPrompt) {
+        openRouterMessages.unshift({ content: systemPrompt, role: 'system' });
+      }
+    }
+
+
+
+    // Adjust parameters based on model
+    let temperature = 0.7;
+    let maxTokens = 4096;
+    let topP = 0.9;
+
+    if (finalModelName && (finalModelName.includes('sonoma-dusk-alpha') || finalModelName.includes('dusk'))) {
+      // Dusk models need different parameters
+      temperature = 0.3; // Lower temperature for more consistent responses
+      maxTokens = 2048; // Shorter responses to avoid issues
+      topP = 0.7; // More focused sampling
+    }
+
+    // Create request body - use simplified format for Sonoma models
+    let requestBody: any;
+    if (useSimplifiedRequest) {
+      // CRITICAL FIX: Minimal request format for Sonoma models (like curl works)
+      requestBody = {
+        messages: openRouterMessages,
+        model: finalModelName
+      };
+      log.info('🎯 Using minimal request body for Sonoma model (no extra parameters)');
+    } else {
+      // Standard request format for other models
+      requestBody = {
+        frequency_penalty: 0.1,
+        max_tokens: maxTokens,
+        messages: openRouterMessages,
+        model: finalModelName,
+        presence_penalty: 0.1,
+        temperature: temperature,
+        top_p: topP,
+      };
+    }
 
     const body = JSON.stringify(requestBody);
 
@@ -945,12 +1061,42 @@ class OpenRouterProvider implements ILlmProvider {
       log.info(
         `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
       );
+
+      // Debug: Log request details
+      const debugInfo = {
+        maxTokens,
+        messageCount: openRouterMessages.length,
+        model: finalModelName,
+        provider: activeKey.apiProvider,
+        requestBodySize: body.length,
+        retryCount,
+        systemPromptLength: systemPrompt?.length || 0,
+        temperature,
+        topP
+      };
+
+      if (finalModelName && (finalModelName.includes('sonoma-dusk-alpha') || finalModelName.includes('dusk'))) {
+        log.info(debugInfo, '🔍 Dusk Model - Request details');
+      } else {
+        log.debug(debugInfo, 'OpenRouter request details');
+      }
+      // Use simplified headers for Sonoma models to match curl behavior
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${activeKey.apiKey}`,
+        'Content-Type': 'application/json',
+      };
+
+      if (!useSimplifiedRequest) {
+        // Add extra headers only for non-Sonoma models
+        headers['HTTP-Referer'] = 'http://localhost:3001';
+        headers['X-Title'] = 'AgenticForge';
+      } else {
+        log.info('🎯 Using minimal headers for Sonoma model (no extra headers)');
+      }
+
       const response = await fetch(apiUrl, {
         body,
-        headers: {
-          Authorization: `Bearer ${activeKey.apiKey}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         method: 'POST',
       });
 
@@ -969,11 +1115,92 @@ class OpenRouterProvider implements ILlmProvider {
 
       const data = await response.json();
 
+      // Debug: Log full response structure
+      log.debug({
+        choicesLength: data.choices?.length,
+        dataKeys: Object.keys(data),
+        firstChoice: data.choices?.[0],
+        hasChoices: !!data.choices,
+        responseHeaders: Object.fromEntries(response.headers.entries()),
+        responseStatus: response.status,
+        retryCount,
+        usage: data.usage
+      }, 'OpenRouter response analysis');
+
       const content = data.choices?.[0]?.message?.content;
-      if (content === undefined || content === null) {
+      if (content === undefined || content === null || content.trim() === '') {
+        log.warn(
+          {
+            content,
+            contentLength: content?.length,
+            contentType: typeof content,
+            response: data,
+            retryCount
+          },
+          'OpenRouter API returned empty content',
+        );
+
+        // Check if we should retry for empty responses
+        if (retryCount < OpenRouterProvider.MAX_RETRIES) {
+          // For Dusk models, use much shorter delays to fail fast and fallback quickly
+          const isDuskModel = finalModelName && (finalModelName.includes('sonoma') || finalModelName.includes('dusk'));
+          const delay = isDuskModel
+            ? Math.min(500, OpenRouterProvider.RETRY_DELAYS[retryCount] || 500) // Max 500ms for Dusk
+            : OpenRouterProvider.RETRY_DELAYS[Math.min(retryCount, OpenRouterProvider.RETRY_DELAYS.length - 1)];
+
+          log.info(
+            `Retrying OpenRouter API call in ${delay}ms due to empty content (attempt ${retryCount + 1}/${OpenRouterProvider.MAX_RETRIES})${isDuskModel ? ' [DUSK FAST FAIL]' : ''}`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          return this.getLlmResponseWithRetry(
+            messages,
+            systemPrompt,
+            apiKey,
+            modelName,
+            retryCount + 1,
+          );
+        }
+
+        // For Dusk models, prioritize Gemini fallback over trying other OpenRouter models
+        const isDuskModel = finalModelName && (finalModelName.includes('sonoma') || finalModelName.includes('dusk'));
+
+        if (isDuskModel) {
+          log.warn('Dusk model failed, prioritizing Gemini fallback over other OpenRouter models');
+        } else {
+          // If all retries exhausted, try switching to the other OpenRouter model
+          if (activeKey.apiProvider === 'openrouter-sky' && !apiKey) {
+            log.warn('OpenRouter Sky failed, trying OpenRouter Dusk as fallback');
+            const fallbackKey = await LlmKeyManager.getNextAvailableKey('openrouter-dusk');
+            if (fallbackKey) {
+              log.info('Switching to OpenRouter Dusk for this request');
+              return this.getLlmResponseWithRetry(
+                messages,
+                systemPrompt,
+                apiKey,
+                'openrouter/sonoma-dusk-alpha', // Force dusk model
+                0, // Reset retry count for new model
+              );
+            }
+          } else if (activeKey.apiProvider === 'openrouter-dusk' && !apiKey) {
+            log.warn('OpenRouter Dusk failed, trying OpenRouter Sky as fallback');
+            const fallbackKey = await LlmKeyManager.getNextAvailableKey('openrouter-sky');
+            if (fallbackKey) {
+              log.info('Switching to OpenRouter Sky for this request');
+              return this.getLlmResponseWithRetry(
+                messages,
+                systemPrompt,
+                apiKey,
+                'openrouter/sonoma-sky-alpha', // Force sky model
+                0, // Reset retry count for new model
+              );
+            }
+          }
+        }
+
+        // If all retries and fallbacks exhausted, mark key as bad and throw error
         log.error(
           { response: data },
-          'Invalid response structure from OpenRouter API',
+          'Invalid response structure from OpenRouter API - empty content after all retries and fallbacks',
         );
         const errorType = this.getErrorType(
           response.status,
@@ -984,8 +1211,19 @@ class OpenRouterProvider implements ILlmProvider {
           activeKey.apiKey,
           errorType,
         );
+        // Final fallback: Try Gemini if OpenRouter completely fails
+        if (!apiKey) {
+          log.warn('All OpenRouter models failed, attempting fallback to Gemini');
+          try {
+            const geminiProvider = new GeminiProvider();
+            return await geminiProvider.getLlmResponse(messages, systemPrompt);
+          } catch (geminiError) {
+            log.error({ geminiError }, 'Gemini fallback also failed');
+          }
+        }
+
         throw new LlmError(
-          'Invalid response structure from OpenRouter API. The model may have returned an empty response.',
+          'Invalid response structure from OpenRouter API. All models and fallbacks returned empty responses after multiple attempts.',
         );
       }
 
@@ -1020,16 +1258,56 @@ class OpenRouterProvider implements ILlmProvider {
       if (_error instanceof LlmError) {
         throw _error;
       }
-      log.error({ _error }, 'Failed to get response from LLM');
+
+      const error = _error instanceof Error ? _error : new Error(String(_error));
+      log.error({ error, retryCount }, 'Failed to get response from OpenRouter API');
+
+      // Enhanced error classification for retry logic
+      const isRetryableError =
+        error.message.includes('network') ||
+        error.message.includes('timeout') ||
+        error.message.includes('503') ||
+        error.message.includes('502') ||
+        error.message.includes('504') ||
+        error.message.includes('rate limit') ||
+        error.message.includes('temporarily unavailable') ||
+        error.message.includes('fetch failed');
+
+      // Retry for retryable errors
+      if (isRetryableError && retryCount < OpenRouterProvider.MAX_RETRIES) {
+        const delay = OpenRouterProvider.RETRY_DELAYS[
+          Math.min(retryCount, OpenRouterProvider.RETRY_DELAYS.length - 1)
+        ];
+        log.warn(
+          `Retryable error detected. Retrying in ${delay}ms (attempt ${retryCount + 1}/${OpenRouterProvider.MAX_RETRIES})`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return this.getLlmResponseWithRetry(
+          messages,
+          systemPrompt,
+          apiKey,
+          modelName,
+          retryCount + 1,
+        );
+      }
+
+      // If not retryable or max retries reached, handle the error
       if (activeKey) {
-        // Assume network errors or unhandled exceptions are temporary
+        let errorType: LlmKeyErrorType = 'temporary';
+        if (
+          error.message.includes('authentication') ||
+          error.message.includes('unauthorized') ||
+          error.message.includes('invalid api key')
+        ) {
+          errorType = 'permanent';
+        }
         await LlmKeyManager.markKeyAsBad(
           activeKey.apiProvider,
           activeKey.apiKey,
-          LlmKeyErrorType.TEMPORARY,
+          errorType,
         );
       }
-      throw new LlmError('Failed to communicate with the LLM.');
+      throw new LlmError(`Failed to communicate with OpenRouter API after ${retryCount + 1} attempts: ${error.message}`);
     }
   }
 }
@@ -1037,26 +1315,41 @@ class OpenRouterProvider implements ILlmProvider {
 // Fallback provider tracking for automatic switching on persistent failures
 class ProviderFallbackManager {
   private static failureCounts: Map<string, number> = new Map();
-  private static readonly FALLBACK_PROVIDERS = ['openai', 'anthropic', 'openrouter', 'mistral', 'grok'];
+  private static readonly FALLBACK_PROVIDERS = [
+    'openai',
+    'anthropic',
+    'openrouter',
+    'mistral',
+    'grok',
+  ];
   private static readonly MAX_FAILURES_BEFORE_FALLBACK = 5;
 
-  static getFallbackProvider(originalProvider: string, _modelName?: string): string {
+  static getFallbackProvider(
+    originalProvider: string,
+    _modelName?: string,
+  ): string {
     // Try fallback providers in order of preference
     for (const fallbackProvider of this.FALLBACK_PROVIDERS) {
       if (fallbackProvider !== originalProvider) {
         // Check if the fallback provider has available keys
         try {
           // This is a simple check - in a real implementation you'd check key availability
-          getLogger().info(`Attempting to fallback from ${originalProvider} to ${fallbackProvider}`);
+          getLogger().info(
+            `Attempting to fallback from ${originalProvider} to ${fallbackProvider}`,
+          );
           return fallbackProvider;
         } catch (error) {
-          getLogger().warn(`Fallback provider ${fallbackProvider} not available: ${error}`);
+          getLogger().warn(
+            `Fallback provider ${fallbackProvider} not available: ${error}`,
+          );
         }
       }
     }
 
     // If no fallback available, return original provider
-    getLogger().warn(`No suitable fallback provider found for ${originalProvider}`);
+    getLogger().warn(
+      `No suitable fallback provider found for ${originalProvider}`,
+    );
     return originalProvider;
   }
 
@@ -1067,14 +1360,18 @@ class ProviderFallbackManager {
   static recordFailure(providerName: string): void {
     const currentCount = this.failureCounts.get(providerName) || 0;
     this.failureCounts.set(providerName, currentCount + 1);
-    getLogger().debug(`Provider ${providerName} failure count: ${currentCount + 1}`);
+    getLogger().debug(
+      `Provider ${providerName} failure count: ${currentCount + 1}`,
+    );
   }
 
   static recordSuccess(providerName: string): void {
     // Reset failure count on successful call
     if (this.failureCounts.has(providerName)) {
       this.failureCounts.set(providerName, 0);
-      getLogger().debug(`Reset failure count for provider ${providerName} after successful call`);
+      getLogger().debug(
+        `Reset failure count for provider ${providerName} after successful call`,
+      );
     }
   }
 
@@ -1091,17 +1388,17 @@ export class GeminiProvider implements ILlmProvider {
     'quota.*exceeded',
     'free-tier quota',
     'Please try again once the quota has reset',
-    'I can\'t provide',
+    "I can't provide",
     'I cannot assist',
-    'I\'m unable to help',
+    "I'm unable to help",
     'I apologize, but I cannot',
-    'I don\'t have the ability',
+    "I don't have the ability",
     'As an AI language model',
-    'I\'m just an AI',
-    'I\'m an AI assistant',
-    'I can\'t do that',
-    'I\'m not able to',
-    'I don\'t have access to',
+    "I'm just an AI",
+    "I'm an AI assistant",
+    "I can't do that",
+    "I'm not able to",
+    "I don't have access to",
     'I cannot generate',
     'I cannot create',
     'ERROR:',
@@ -1110,7 +1407,7 @@ export class GeminiProvider implements ILlmProvider {
     '502 Bad Gateway',
     '500 Internal Server Error',
     'Connection timeout',
-    'Request timeout'
+    'Request timeout',
   ];
   // Add rate limiting tracking
   private static lastRequestTime: number = 0;
@@ -1119,7 +1416,7 @@ export class GeminiProvider implements ILlmProvider {
   private static requestCount: number = 0;
 
   private static readonly RETRY_DELAYS = [2000, 4000, 8000, 15000, 30000]; // Exponential backoff plus long
-  
+
   public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
     if (statusCode === 401 || statusCode === 403) {
       // Unauthorized, Forbidden - likely invalid API key
@@ -1146,7 +1443,13 @@ export class GeminiProvider implements ILlmProvider {
     apiKey?: string,
     modelName?: string,
   ): Promise<string> {
-    return this.getLlmResponseWithRetry(messages, systemPrompt, apiKey, modelName, 0);
+    return this.getLlmResponseWithRetry(
+      messages,
+      systemPrompt,
+      apiKey,
+      modelName,
+      0,
+    );
   }
 
   private async getLlmResponseWithRetry(
@@ -1192,7 +1495,9 @@ export class GeminiProvider implements ILlmProvider {
     const MAX_REQUESTS_PER_MINUTE = 30;
     if (GeminiProvider.requestCount >= MAX_REQUESTS_PER_MINUTE) {
       const waitTime = 60000 - timeSinceLastReset;
-      log.warn(`Rate limit exceeded (${GeminiProvider.requestCount}/${MAX_REQUESTS_PER_MINUTE}). Waiting ${waitTime}ms`);
+      log.warn(
+        `Rate limit exceeded (${GeminiProvider.requestCount}/${MAX_REQUESTS_PER_MINUTE}). Waiting ${waitTime}ms`,
+      );
       await new Promise((resolve) => setTimeout(resolve, waitTime));
       // Reset after waiting
       GeminiProvider.requestCount = 0;
@@ -1213,60 +1518,88 @@ export class GeminiProvider implements ILlmProvider {
     GeminiProvider.lastRequestTime = Date.now();
 
     // Log request rate with warning if approaching limit
-    const rateStatus = GeminiProvider.requestCount >= MAX_REQUESTS_PER_MINUTE * 0.8 ? '⚠️ HIGH' : '✅ OK';
+    const rateStatus =
+      GeminiProvider.requestCount >= MAX_REQUESTS_PER_MINUTE * 0.8
+        ? '⚠️ HIGH'
+        : '✅ OK';
     log.info(
       `Gemini API request #${GeminiProvider.requestCount}/${MAX_REQUESTS_PER_MINUTE} in current minute ${rateStatus}`,
     );
 
     const baseUrl =
       activeKey.baseUrl || 'https://generativelanguage.googleapis.com/v1beta';
-    const apiUrl = `${baseUrl}/models/${modelName || getConfig().LLM_MODEL_NAME}:generateContent`;
 
-    log.info({
-      apiUrl,
-      baseUrl,
-      hasBaseUrl: !!activeKey.baseUrl,
-      keyProvider: activeKey.apiProvider,
-      modelName: modelName || getConfig().LLM_MODEL_NAME
-    }, '🔗 Gemini API URL construction');
+    // Map OpenRouter model names to Gemini model names when falling back
+    let geminiModelName = modelName || getConfig().LLM_MODEL_NAME;
+    if (geminiModelName && geminiModelName.includes('openrouter/')) {
+      // Map OpenRouter models to equivalent Gemini models
+      if (geminiModelName.includes('dusk') || geminiModelName.includes('pro')) {
+        geminiModelName = 'gemini-2.5-pro';
+      } else if (geminiModelName.includes('sky') || geminiModelName.includes('flash')) {
+        geminiModelName = 'gemini-2.5-flash';
+      } else {
+        // Default fallback
+        geminiModelName = 'gemini-2.5-flash';
+      }
+      log.info(`Mapped OpenRouter model ${modelName} to Gemini model ${geminiModelName} for fallback`);
+    }
 
-    // Optimize messages for Gemini - limit history to prevent memory issues and timeouts
+    const apiUrl = `${baseUrl}/models/${geminiModelName}:generateContent`;
+
+    log.info(
+      {
+        apiUrl,
+        baseUrl,
+        hasBaseUrl: !!activeKey.baseUrl,
+        keyProvider: activeKey.apiProvider,
+        modelName: modelName || getConfig().LLM_MODEL_NAME,
+      },
+      '🔗 Gemini API URL construction',
+    );
+
+    // Optimize messages for all providers - limit history to prevent memory issues and timeouts
     const maxMessages = getConfig().GEMINI_MAX_HISTORY_LENGTH || 30; // Increased for better context
     const maxMessageLength = 8000; // Increased message length limit
     const maxTotalLength = 50000; // Increased total request size limit
     let currentTotalLength = 0;
 
-    const geminiMessages = messages.slice(-maxMessages).map((msg) => {
-      // Tronquer les messages trop longs
-      const messageText = msg.parts.map((p: { text: string }) => p.text).join('');
-      const truncatedText = messageText.length > maxMessageLength
-        ? messageText.substring(0, maxMessageLength) + '...[truncated]'
-        : messageText;
+    const geminiMessages = messages
+      .slice(-maxMessages)
+      .map((msg) => {
+        // Tronquer les messages trop longs
+        const messageText = msg.parts
+          .map((p: { text: string }) => p.text)
+          .join('');
+        const truncatedText =
+          messageText.length > maxMessageLength
+            ? messageText.substring(0, maxMessageLength) + '...[truncated]'
+            : messageText;
 
-      // Check if adding this message would exceed total limit
-      if (currentTotalLength + truncatedText.length > maxTotalLength) {
-        // Skip this message if it would exceed the limit
-        return null;
-      }
+        // Check if adding this message would exceed total limit
+        if (currentTotalLength + truncatedText.length > maxTotalLength) {
+          // Skip this message if it would exceed the limit
+          return null;
+        }
 
-      currentTotalLength += truncatedText.length;
+        currentTotalLength += truncatedText.length;
 
-      let role = msg.role;
-      let parts = [{ text: truncatedText }];
+        let role = msg.role;
+        let parts = [{ text: truncatedText }];
 
-      if (role === 'tool') {
-        // Gemini API does not directly support 'tool' role in 'contents'.
-        // Convert tool outputs to user messages.
-        role = 'user';
-        parts = [
-          {
-            text: `Tool output: ${truncatedText}`,
-          },
-        ];
-      }
+        if (role === 'tool') {
+          // Gemini API does not directly support 'tool' role in 'contents'.
+          // Convert tool outputs to user messages.
+          role = 'user';
+          parts = [
+            {
+              text: `Tool output: ${truncatedText}`,
+            },
+          ];
+        }
 
-      return { parts, role };
-    }).filter(msg => msg !== null); // Remove null messages
+        return { parts, role };
+      })
+      .filter((msg) => msg !== null); // Remove null messages
 
     if (systemPrompt) {
       // Prepend system prompt to the first user message, as Gemini API does not have a dedicated system role.
@@ -1290,29 +1623,32 @@ export class GeminiProvider implements ILlmProvider {
 
     const body = JSON.stringify(requestBody);
 
-    log.info({
-      bodySize: body.length,
-      maxMessageLength,
-      maxMessages,
-      maxTotalLength,
-      messageCount: geminiMessages.length,
-      totalCharacters: currentTotalLength
-    }, '📊 Gemini request size analysis');
+    log.info(
+      {
+        bodySize: body.length,
+        maxMessageLength,
+        maxMessages,
+        maxTotalLength,
+        messageCount: geminiMessages.length,
+        totalCharacters: currentTotalLength,
+      },
+      '📊 Gemini request size analysis',
+    );
 
     try {
       // Log with retry information
-      const retryInfo = retryCount > 0 ? ` (retry ${retryCount}/${GeminiProvider.MAX_RETRIES})` : '';
+      const retryInfo =
+        retryCount > 0
+          ? ` (retry ${retryCount}/${GeminiProvider.MAX_RETRIES})`
+          : '';
       log.info(
-        `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}${retryInfo}`,
+        `[LLM CALL] Envoi de la requête au modèle : ${geminiModelName} via ${activeKey.apiProvider}${retryInfo}`,
       );
 
       // Add timeout to prevent hanging requests
       const controller = new AbortController();
       const timeoutMs = getConfig().GEMINI_REQUEST_TIMEOUT_MS || 45000; // Timeout plus long par défaut
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        timeoutMs,
-      );
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
       log.info(`Setting timeout to ${timeoutMs}ms for Gemini API call`);
 
       const response = await fetch(apiUrl, {
@@ -1341,32 +1677,46 @@ export class GeminiProvider implements ILlmProvider {
       }
 
       const data = await response.json();
-      log.debug({ 
-        headers: Object.fromEntries(response.headers.entries()),
-        response: data,
-        status: response.status,
-        statusText: response.statusText 
-      }, 'Raw Gemini API response');
+      log.debug(
+        {
+          headers: Object.fromEntries(response.headers.entries()),
+          response: data,
+          status: response.status,
+          statusText: response.statusText,
+        },
+        'Raw Gemini API response',
+      );
 
       // Handle different response structures
       let content: string | undefined;
-      
+
       // Log the structure of the response for debugging
-      log.debug({ 
-        candidates: data.candidates, 
-        candidatesType: typeof data.candidates,
-        hasCandidates: !!data.candidates,
-        hasPromptFeedback: !!data.promptFeedback,
-        keys: Object.keys(data || {})
-      }, 'Response structure analysis');
+      log.debug(
+        {
+          candidates: data.candidates,
+          candidatesType: typeof data.candidates,
+          hasCandidates: !!data.candidates,
+          hasPromptFeedback: !!data.promptFeedback,
+          keys: Object.keys(data || {}),
+        },
+        'Response structure analysis',
+      );
 
       // Check if we have candidates array with at least one element
-      if (data.candidates && Array.isArray(data.candidates) && data.candidates.length > 0) {
+      if (
+        data.candidates &&
+        Array.isArray(data.candidates) &&
+        data.candidates.length > 0
+      ) {
         const firstCandidate = data.candidates[0];
         log.debug({ firstCandidate }, 'First candidate structure');
 
         // Check if the first candidate has content with parts
-        if (firstCandidate.content?.parts && Array.isArray(firstCandidate.content.parts) && firstCandidate.content.parts.length > 0) {
+        if (
+          firstCandidate.content?.parts &&
+          Array.isArray(firstCandidate.content.parts) &&
+          firstCandidate.content.parts.length > 0
+        ) {
           // Extract all text parts and join them
           content = firstCandidate.content.parts
             .map((part: { text?: string }) => part.text || '')
@@ -1376,25 +1726,40 @@ export class GeminiProvider implements ILlmProvider {
 
           // If content is still empty after filtering, this might be an empty response
           if (!content || content.trim().length === 0) {
-            log.warn('All content parts were empty, treating as empty response');
+            log.warn(
+              'All content parts were empty, treating as empty response',
+            );
             content = undefined; // Will trigger retry logic below
           }
         }
         // Handle UNEXPECTED_TOOL_CALL finish reason with content
-        else if (firstCandidate.finishReason === 'UNEXPECTED_TOOL_CALL' && firstCandidate.content?.parts?.[0]?.text) {
+        else if (
+          firstCandidate.finishReason === 'UNEXPECTED_TOOL_CALL' &&
+          firstCandidate.content?.parts?.[0]?.text
+        ) {
           content = firstCandidate.content.parts[0].text;
-          log.warn('UNEXPECTED_TOOL_CALL finish reason encountered, but content is available');
+          log.warn(
+            'UNEXPECTED_TOOL_CALL finish reason encountered, but content is available',
+          );
         }
         // Handle UNEXPECTED_TOOL_CALL without content
         else if (firstCandidate.finishReason === 'UNEXPECTED_TOOL_CALL') {
-          log.warn('UNEXPECTED_TOOL_CALL finish reason encountered without content. This may indicate the model attempted to make tool calls directly.');
-          content = "The model attempted to make tool calls directly, which is not supported in this context. Please try rephrasing your request or using available tools explicitly.";
+          log.warn(
+            'UNEXPECTED_TOOL_CALL finish reason encountered without content. This may indicate the model attempted to make tool calls directly.',
+          );
+          content =
+            'The model attempted to make tool calls directly, which is not supported in this context. Please try rephrasing your request or using available tools explicitly.';
         }
         // Handle other finish reasons with no content
         else {
-          log.warn(`Candidate has no valid content. Finish reason: ${firstCandidate.finishReason || 'undefined'}`);
+          log.warn(
+            `Candidate has no valid content. Finish reason: ${firstCandidate.finishReason || 'undefined'}`,
+          );
           // Try to extract alternative content if available
-          if (firstCandidate.content && typeof firstCandidate.content === 'object') {
+          if (
+            firstCandidate.content &&
+            typeof firstCandidate.content === 'object'
+          ) {
             const altContent = JSON.stringify(firstCandidate.content);
             if (altContent.length > 10) {
               content = `Model response (raw): ${altContent}`;
@@ -1408,36 +1773,57 @@ export class GeminiProvider implements ILlmProvider {
         }
       }
       // Handle case where candidates array exists but is empty
-      else if (data.candidates && Array.isArray(data.candidates) && data.candidates.length === 0) {
+      else if (
+        data.candidates &&
+        Array.isArray(data.candidates) &&
+        data.candidates.length === 0
+      ) {
         log.warn('Gemini API returned empty candidates array');
         content = undefined; // Will trigger retry logic
       }
       // Handle cases where there are no candidates but we have a promptFeedback field
       else if (data.promptFeedback) {
-        log.warn('Gemini API returned promptFeedback instead of candidates. This may indicate content safety issues.');
-        content = "The request was blocked due to safety concerns. Please try rephrasing your request with different content.";
+        log.warn(
+          'Gemini API returned promptFeedback instead of candidates. This may indicate content safety issues.',
+        );
+        content =
+          'The request was blocked due to safety concerns. Please try rephrasing your request with different content.';
       }
       // Handle cases where there are no candidates and no promptFeedback
       else {
         log.warn('Gemini API returned response without candidates field.');
         // Try to extract any possible content from the response
         if (data.candidates) {
-          log.debug({ candidates: data.candidates }, 'Candidates field exists but is not an array or is empty');
+          log.debug(
+            { candidates: data.candidates },
+            'Candidates field exists but is not an array or is empty',
+          );
         }
 
         // Enhanced retry logic for empty responses from stable Gemini API
         const maxRetries = getConfig().LLM_MAX_RETRIES || 5;
         if (retryCount < maxRetries) {
           const baseRetryDelay = getConfig().LLM_RETRY_DELAY_BASE_MS || 2000;
-          log.warn(`Gemini returned empty response, retrying (${retryCount + 1}/${maxRetries})`);
+          log.warn(
+            `Gemini returned empty response, retrying (${retryCount + 1}/${maxRetries})`,
+          );
 
           // Add exponential backoff with jitter to avoid thundering herd
           const jitter = Math.random() * 1000; // Add up to 1 second of random jitter
-          const exponentialDelay = baseRetryDelay * Math.pow(2, retryCount) + jitter;
+          const exponentialDelay =
+            baseRetryDelay * Math.pow(2, retryCount) + jitter;
 
-          log.info(`Retrying Gemini API call in ${Math.round(exponentialDelay)}ms with exponential backoff`);
-          await new Promise(resolve => setTimeout(resolve, exponentialDelay));
-          return this.getLlmResponseWithRetry(messages, systemPrompt, apiKey, modelName, retryCount + 1);
+          log.info(
+            `Retrying Gemini API call in ${Math.round(exponentialDelay)}ms with exponential backoff`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, exponentialDelay));
+          return this.getLlmResponseWithRetry(
+            messages,
+            systemPrompt,
+            apiKey,
+            modelName,
+            retryCount + 1,
+          );
         }
 
         // If all retries exhausted, try to provide a fallback response
@@ -1448,14 +1834,20 @@ export class GeminiProvider implements ILlmProvider {
             content = `Model response (fallback): ${responseStr.substring(0, 500)}...`;
             log.info('Using fallback content extraction from empty response');
           } else {
-            content = "The model did not return a valid response after multiple attempts. Please try again or rephrase your request.";
+            content =
+              'The model did not return a valid response after multiple attempts. Please try again or rephrase your request.';
           }
         } else {
-          content = "The model did not return a valid response after multiple attempts. Please try again or rephrase your request.";
+          content =
+            'The model did not return a valid response after multiple attempts. Please try again or rephrase your request.';
         }
       }
 
-      if (content === undefined || content === null || (content && content.trim() === '')) {
+      if (
+        content === undefined ||
+        content === null ||
+        (content && content.trim() === '')
+      ) {
         log.error(
           { response: data },
           'Invalid response structure from Gemini API - empty or undefined content',
@@ -1465,15 +1857,26 @@ export class GeminiProvider implements ILlmProvider {
         const maxRetries = getConfig().LLM_MAX_RETRIES || 5;
         if (retryCount < maxRetries) {
           const baseRetryDelay = getConfig().LLM_RETRY_DELAY_BASE_MS || 2000;
-          log.warn(`Gemini returned invalid/empty content, retrying (${retryCount + 1}/${maxRetries})`);
+          log.warn(
+            `Gemini returned invalid/empty content, retrying (${retryCount + 1}/${maxRetries})`,
+          );
 
           // Add exponential backoff with jitter
           const jitter = Math.random() * 1000;
-          const exponentialDelay = baseRetryDelay * Math.pow(2, retryCount) + jitter;
+          const exponentialDelay =
+            baseRetryDelay * Math.pow(2, retryCount) + jitter;
 
-          log.info(`Retrying Gemini API call in ${Math.round(exponentialDelay)}ms due to empty content`);
-          await new Promise(resolve => setTimeout(resolve, exponentialDelay));
-          return this.getLlmResponseWithRetry(messages, systemPrompt, apiKey, modelName, retryCount + 1);
+          log.info(
+            `Retrying Gemini API call in ${Math.round(exponentialDelay)}ms due to empty content`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, exponentialDelay));
+          return this.getLlmResponseWithRetry(
+            messages,
+            systemPrompt,
+            apiKey,
+            modelName,
+            retryCount + 1,
+          );
         }
 
         // If all retries exhausted, mark key as bad and throw error
@@ -1490,7 +1893,7 @@ export class GeminiProvider implements ILlmProvider {
           'Invalid response structure from Gemini API after multiple retries. The model consistently returned empty responses.',
         );
       }
-      
+
       // Enhanced validation of content quality with better parsing
       let processedContent = content;
 
@@ -1505,20 +1908,30 @@ export class GeminiProvider implements ILlmProvider {
               log.info('Successfully extracted JSON from mixed response');
             }
           } catch (parseError) {
-            log.warn({ parseError }, 'Failed to parse extracted JSON, using original content');
+            log.warn(
+              { parseError },
+              'Failed to parse extracted JSON, using original content',
+            );
           }
         }
       }
 
       if (this.isInvalidResponse(processedContent)) {
-        log.error({ content: processedContent }, 'Gemini API returned invalid/error content');
-        const errorType = processedContent.includes('quota') ? LlmKeyErrorType.TEMPORARY : LlmKeyErrorType.TEMPORARY;
+        log.error(
+          { content: processedContent },
+          'Gemini API returned invalid/error content',
+        );
+        const errorType = processedContent.includes('quota')
+          ? LlmKeyErrorType.TEMPORARY
+          : LlmKeyErrorType.TEMPORARY;
         await LlmKeyManager.markKeyAsBad(
           activeKey.apiProvider,
           activeKey.apiKey,
           errorType,
         );
-        throw new LlmError(`Gemini API returned invalid response: ${processedContent.substring(0, 200)}...`);
+        throw new LlmError(
+          `Gemini API returned invalid response: ${processedContent.substring(0, 200)}...`,
+        );
       }
 
       content = processedContent;
@@ -1559,73 +1972,86 @@ export class GeminiProvider implements ILlmProvider {
         throw _error;
       }
 
-      const error = _error instanceof Error ? _error : new Error(String(_error));
+      const error =
+        _error instanceof Error ? _error : new Error(String(_error));
       log.error({ error, retryCount }, 'Failed to get response from LLM');
 
       // Enhanced error classification with more comprehensive detection
-      const isTimeoutError = error.message.includes('AbortError') ||
-                            error.message.includes('timeout') ||
-                            error.message.includes('TIMEOUT') ||
-                            error.name === 'AbortError' ||
-                            error.message.includes('Request timeout') ||
-                            error.message.includes('Connection timed out') ||
-                            error.message.includes('Request timed out') ||
-                            error.message.includes('ETIMEDOUT');
+      const isTimeoutError =
+        error.message.includes('AbortError') ||
+        error.message.includes('timeout') ||
+        error.message.includes('TIMEOUT') ||
+        error.name === 'AbortError' ||
+        error.message.includes('Request timeout') ||
+        error.message.includes('Connection timed out') ||
+        error.message.includes('Request timed out') ||
+        error.message.includes('ETIMEDOUT');
 
-      const isNetworkError = error.message.includes('network') ||
-                            error.message.includes('ECONNRESET') ||
-                            error.message.includes('ETIMEDOUT') ||
-                            error.message.includes('ENOTFOUND') ||
-                            error.message.includes('ECONNREFUSED') ||
-                            error.message.includes('fetch failed') ||
-                            error.message.includes('Failed to fetch') ||
-                            error.message.includes('NetworkError') ||
-                            error.message.includes('connection') ||
-                            error.message.includes('socket hang up') ||
-                            error.message.includes('DNS') ||
-                            error.message.includes('SSL') ||
-                            error.message.includes('certificate');
+      const isNetworkError =
+        error.message.includes('network') ||
+        error.message.includes('ECONNRESET') ||
+        error.message.includes('ETIMEDOUT') ||
+        error.message.includes('ENOTFOUND') ||
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('fetch failed') ||
+        error.message.includes('Failed to fetch') ||
+        error.message.includes('NetworkError') ||
+        error.message.includes('connection') ||
+        error.message.includes('socket hang up') ||
+        error.message.includes('DNS') ||
+        error.message.includes('SSL') ||
+        error.message.includes('certificate');
 
-      const isRetryableApiError = error.message.includes('503') ||
-                                error.message.includes('502') ||
-                                error.message.includes('504') ||
-                                error.message.includes('rate limit') ||
-                                error.message.includes('temporarily unavailable') ||
-                                error.message.includes('Internal server error') ||
-                                error.message.includes('Service Unavailable') ||
-                                error.message.includes('Bad Gateway') ||
-                                error.message.includes('Gateway Timeout') ||
-                                error.message.includes('Too Many Requests') ||
-                                error.message.includes('Server Error') ||
-                                error.message.includes('Temporary failure');
+      const isRetryableApiError =
+        error.message.includes('503') ||
+        error.message.includes('502') ||
+        error.message.includes('504') ||
+        error.message.includes('rate limit') ||
+        error.message.includes('temporarily unavailable') ||
+        error.message.includes('Internal server error') ||
+        error.message.includes('Service Unavailable') ||
+        error.message.includes('Bad Gateway') ||
+        error.message.includes('Gateway Timeout') ||
+        error.message.includes('Too Many Requests') ||
+        error.message.includes('Server Error') ||
+        error.message.includes('Temporary failure');
 
-      const isInvalidResponseError = error.message.includes('invalid response') ||
-                                   error.message.includes('parsing failed') ||
-                                   error.message.includes('JSON') ||
-                                   error.message.includes('malformed') ||
-                                   error.message.includes('Unexpected token') ||
-                                   error.message.includes('SyntaxError');
+      const isInvalidResponseError =
+        error.message.includes('invalid response') ||
+        error.message.includes('parsing failed') ||
+        error.message.includes('JSON') ||
+        error.message.includes('malformed') ||
+        error.message.includes('Unexpected token') ||
+        error.message.includes('SyntaxError');
 
-      const isQuotaError = error.message.includes('quota') ||
-                          error.message.includes('limit exceeded') ||
-                          error.message.includes('billing') ||
-                          error.message.includes('insufficient funds') ||
-                          error.message.includes('payment required');
+      const isQuotaError =
+        error.message.includes('quota') ||
+        error.message.includes('limit exceeded') ||
+        error.message.includes('billing') ||
+        error.message.includes('insufficient funds') ||
+        error.message.includes('payment required');
 
-      const isAuthError = error.message.includes('unauthorized') ||
-                         error.message.includes('authentication') ||
-                         error.message.includes('invalid api key') ||
-                         error.message.includes('forbidden') ||
-                         error.message.includes('403') ||
-                         error.message.includes('401');
+      const isAuthError =
+        error.message.includes('unauthorized') ||
+        error.message.includes('authentication') ||
+        error.message.includes('invalid api key') ||
+        error.message.includes('forbidden') ||
+        error.message.includes('403') ||
+        error.message.includes('401');
 
       // Enhanced retry logic with better backoff strategy
-      const shouldRetry = (isTimeoutError || isNetworkError || isRetryableApiError) && retryCount < GeminiProvider.MAX_RETRIES;
-      const shouldNotRetry = isInvalidResponseError || isQuotaError || isAuthError;
+      const shouldRetry =
+        (isTimeoutError || isNetworkError || isRetryableApiError) &&
+        retryCount < GeminiProvider.MAX_RETRIES;
+      const shouldNotRetry =
+        isInvalidResponseError || isQuotaError || isAuthError;
 
       if (shouldRetry && !shouldNotRetry) {
         // Use exponential backoff with jitter for better distribution
-        const baseDelay = GeminiProvider.RETRY_DELAYS[Math.min(retryCount, GeminiProvider.RETRY_DELAYS.length - 1)];
+        const baseDelay =
+          GeminiProvider.RETRY_DELAYS[
+            Math.min(retryCount, GeminiProvider.RETRY_DELAYS.length - 1)
+          ];
         const jitter = Math.random() * 1000; // Add up to 1 second of random jitter
         const delay = baseDelay + jitter;
 
@@ -1634,39 +2060,66 @@ export class GeminiProvider implements ILlmProvider {
         else if (isNetworkError) errorType = 'network';
         else if (isRetryableApiError) errorType = 'API';
 
-        log.warn(`${errorType} error detected. Retrying in ${Math.round(delay)}ms (attempt ${retryCount + 1}/${GeminiProvider.MAX_RETRIES})`);
-        log.debug({
-          error: error.message,
-          errorType,
-          maxRetries: GeminiProvider.MAX_RETRIES,
-          retryCount: retryCount + 1
-        }, 'Retry details');
+        log.warn(
+          `${errorType} error detected. Retrying in ${Math.round(delay)}ms (attempt ${retryCount + 1}/${GeminiProvider.MAX_RETRIES})`,
+        );
+        log.debug(
+          {
+            error: error.message,
+            errorType,
+            maxRetries: GeminiProvider.MAX_RETRIES,
+            retryCount: retryCount + 1,
+          },
+          'Retry details',
+        );
 
         // Add progressive delay increase for persistent failures
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return this.getLlmResponseWithRetry(messages, systemPrompt, apiKey, modelName, retryCount + 1);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return this.getLlmResponseWithRetry(
+          messages,
+          systemPrompt,
+          apiKey,
+          modelName,
+          retryCount + 1,
+        );
       }
 
       // Handle different error types appropriately
       if (isInvalidResponseError) {
-        log.warn('Invalid response error detected - not retrying as this is likely a permanent issue');
+        log.warn(
+          'Invalid response error detected - not retrying as this is likely a permanent issue',
+        );
         if (activeKey) {
           ProviderFallbackManager.recordFailure(activeKey.apiProvider);
         }
       } else if (isQuotaError) {
-        log.error('Quota/billing error detected - marking key as permanently disabled');
+        log.error(
+          'Quota/billing error detected - marking key as permanently disabled',
+        );
         if (activeKey) {
-          await LlmKeyManager.markKeyAsBad(activeKey.apiProvider, activeKey.apiKey, LlmKeyErrorType.PERMANENT);
+          await LlmKeyManager.markKeyAsBad(
+            activeKey.apiProvider,
+            activeKey.apiKey,
+            LlmKeyErrorType.PERMANENT,
+          );
           ProviderFallbackManager.recordFailure(activeKey.apiProvider);
         }
       } else if (isAuthError) {
-        log.error('Authentication error detected - marking key as permanently disabled');
+        log.error(
+          'Authentication error detected - marking key as permanently disabled',
+        );
         if (activeKey) {
-          await LlmKeyManager.markKeyAsBad(activeKey.apiProvider, activeKey.apiKey, LlmKeyErrorType.PERMANENT);
+          await LlmKeyManager.markKeyAsBad(
+            activeKey.apiProvider,
+            activeKey.apiKey,
+            LlmKeyErrorType.PERMANENT,
+          );
           ProviderFallbackManager.recordFailure(activeKey.apiProvider);
         }
       } else if (retryCount >= GeminiProvider.MAX_RETRIES) {
-        log.error(`Maximum retry attempts (${GeminiProvider.MAX_RETRIES}) exceeded. Recording failure for fallback consideration.`);
+        log.error(
+          `Maximum retry attempts (${GeminiProvider.MAX_RETRIES}) exceeded. Recording failure for fallback consideration.`,
+        );
         if (activeKey) {
           ProviderFallbackManager.recordFailure(activeKey.apiProvider);
         }
@@ -1682,9 +2135,15 @@ export class GeminiProvider implements ILlmProvider {
         let errorType: LlmKeyErrorType = LlmKeyErrorType.TEMPORARY;
         if (isInvalidResponseError) {
           errorType = LlmKeyErrorType.PERMANENT; // Don't retry invalid responses
-        } else if (error.message.includes('quota') || error.message.includes('billing')) {
+        } else if (
+          error.message.includes('quota') ||
+          error.message.includes('billing')
+        ) {
           errorType = LlmKeyErrorType.PERMANENT; // Quota/billing issues are permanent
-        } else if (error.message.includes('authentication') || error.message.includes('unauthorized')) {
+        } else if (
+          error.message.includes('authentication') ||
+          error.message.includes('unauthorized')
+        ) {
           errorType = LlmKeyErrorType.PERMANENT; // Auth issues are permanent
         }
 
@@ -1714,10 +2173,10 @@ export class GeminiProvider implements ILlmProvider {
     if (content.trim().length < 10) {
       return true;
     }
-    
+
     // Check against known invalid patterns
     const lowerContent = content.toLowerCase();
-    return GeminiProvider.INVALID_RESPONSE_PATTERNS.some(pattern => {
+    return GeminiProvider.INVALID_RESPONSE_PATTERNS.some((pattern) => {
       const regex = new RegExp(pattern, 'i');
       return regex.test(lowerContent);
     });
@@ -1738,7 +2197,10 @@ export function getLlmProvider(
 
   // Check if we should fallback from the requested provider
   if (ProviderFallbackManager.shouldFallback(providerName)) {
-    const fallbackProvider = ProviderFallbackManager.getFallbackProvider(providerName, modelName);
+    const fallbackProvider = ProviderFallbackManager.getFallbackProvider(
+      providerName,
+      modelName,
+    );
     if (fallbackProvider !== providerName) {
       getLogger().warn(
         `Provider ${providerName} has failed ${ProviderFallbackManager.getMaxFailuresBeforeFallback()} times. Falling back to ${fallbackProvider}.`,
@@ -1751,7 +2213,10 @@ export function getLlmProvider(
   let resolvedProviderName = actualProviderName;
   let resolvedModelName = modelName;
 
-  if (actualProviderName.startsWith('gemini-flash-') || actualProviderName.startsWith('gemini-pro-')) {
+  if (
+    actualProviderName.startsWith('gemini-flash-') ||
+    actualProviderName.startsWith('gemini-pro-')
+  ) {
     resolvedProviderName = 'gemini';
     // Extract the model type from the provider name
     if (actualProviderName.includes('flash')) {
@@ -1759,7 +2224,9 @@ export function getLlmProvider(
     } else if (actualProviderName.includes('pro')) {
       resolvedModelName = 'gemini-2.5-pro';
     }
-    getLogger().info(`Resolved custom provider ${actualProviderName} to ${resolvedProviderName} with model ${resolvedModelName}`);
+    getLogger().info(
+      `Resolved custom provider ${actualProviderName} to ${resolvedProviderName} with model ${resolvedModelName}`,
+    );
   }
 
   switch (resolvedProviderName) {
@@ -1784,6 +2251,12 @@ export function getLlmProvider(
     case 'openrouter':
       currentLlmProvider = new OpenRouterProvider();
       break;
+    case 'openrouter-dusk':
+      currentLlmProvider = new OpenRouterProvider();
+      break;
+    case 'openrouter-sky':
+      currentLlmProvider = new OpenRouterProvider();
+      break;
     case 'qwen':
       currentLlmProvider = new QwenProvider();
       break;
@@ -1797,7 +2270,9 @@ export function getLlmProvider(
 
   // Log the provider being used
   if (actualProviderName !== providerName) {
-    getLogger().info(`Using fallback provider: ${actualProviderName} (requested: ${providerName})`);
+    getLogger().info(
+      `Using fallback provider: ${actualProviderName} (requested: ${providerName})`,
+    );
   }
 
   return currentLlmProvider;

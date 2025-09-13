@@ -54,12 +54,7 @@ export const ChatContainer: React.FC<{
 
   // Si enhanced est activé, utilise le nouveau composant
   if (enhanced) {
-    return (
-      <EnhancedChatContainer
-        className={className}
-        variant={variant}
-      />
-    );
+    return <EnhancedChatContainer className={className} variant={variant} />;
   }
 
   // Fallback vers l'ancienne version pour compatibilité

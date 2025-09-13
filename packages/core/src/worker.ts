@@ -10,7 +10,10 @@ import { getLoggerInstance } from './logger.ts';
 import { Agent } from './modules/agent/agent.ts';
 import { LlmKeyManager } from './modules/llm/LlmKeyManager.ts';
 import { getRedisClientInstance } from './modules/redis/redisClient.ts';
-import { getPostgresPool, DatabaseCircuitBreaker } from './modules/database/index.ts';
+import {
+  getPostgresPool,
+  DatabaseCircuitBreaker,
+} from './modules/database/index.ts';
 import { SessionManager } from './modules/session/sessionManager.ts';
 import { summarizeTool } from './modules/tools/definitions/ai/summarize.tool.ts';
 import { AppError, getErrDetails, UserError } from './utils/errorUtils.ts';
@@ -38,7 +41,7 @@ function logMemoryUsage(label: string, log: any) {
 // Start periodic key cleanup to maintain healthy key pool
 function startPeriodicKeyCleanup() {
   const log = getLoggerInstance().child({ module: 'KeyCleanup' });
-  
+
   // Run initial cleanup after 30 seconds
   setTimeout(async () => {
     try {
@@ -50,38 +53,39 @@ function startPeriodicKeyCleanup() {
       log.error({ error }, 'Failed to run initial key cleanup');
     }
   }, 30000);
-  
+
   // Run periodic cleanup every 15 minutes
-  const cleanupInterval = setInterval(async () => {
-    try {
-      const result = await LlmKeyManager.cleanupFailedKeys();
-      if (result.cleaned > 0) {
-        log.info(result, 'Periodic key cleanup completed');
-      } else {
-        log.debug({ total: result.total }, 'No keys needed cleanup');
+  const cleanupInterval = setInterval(
+    async () => {
+      try {
+        const result = await LlmKeyManager.cleanupFailedKeys();
+        if (result.cleaned > 0) {
+          log.info(result, 'Periodic key cleanup completed');
+        } else {
+          log.debug({ total: result.total }, 'No keys needed cleanup');
+        }
+      } catch (error) {
+        log.error({ error }, 'Failed to run periodic key cleanup');
       }
-    } catch (error) {
-      log.error({ error }, 'Failed to run periodic key cleanup');
-    }
-  }, 15 * 60 * 1000); // 15 minutes
-  
+    },
+    15 * 60 * 1000,
+  ); // 15 minutes
+
   // Cleanup on process exit
   process.on('SIGTERM', () => {
     clearInterval(cleanupInterval);
     log.info('Key cleanup task stopped');
   });
-  
+
   process.on('SIGINT', () => {
     clearInterval(cleanupInterval);
     log.info('Key cleanup task stopped');
   });
-  
+
   log.info('Periodic key cleanup task started (every 15 minutes)');
 }
 
-export async function initializeWorker(
-  redisConnection: Redis,
-) {
+export async function initializeWorker(redisConnection: Redis) {
   getLoggerInstance().info(
     { path: process.env.PATH },
     'Worker process.env.PATH at startup:',
@@ -108,9 +112,17 @@ export async function initializeWorker(
     async (_job) => {
       if (_job.name === 'process-message') {
         try {
-          return await processJob(_job, _jobQueue, sessionManager, redisConnection);
+          return await processJob(
+            _job,
+            _jobQueue,
+            sessionManager,
+            redisConnection,
+          );
         } catch (error) {
-          getLoggerInstance().error({ err: error, jobId: _job.id }, 'Error processing job');
+          getLoggerInstance().error(
+            { err: error, jobId: _job.id },
+            'Error processing job',
+          );
           throw error;
         }
       }
@@ -207,7 +219,7 @@ ${finalMessage}`,
     },
     {
       autorun: true,
-      concurrency: config.WORKER_CONCURRENCY, // Now optimized for memory usage
+      concurrency: 1, // Forcer un seul job à la fois pour éviter les conflits
       connection: redisConnection,
       maxStalledCount: config.WORKER_MAX_STALLED_COUNT,
       stalledInterval: config.WORKER_STALLED_INTERVAL_MS,
@@ -254,30 +266,33 @@ export async function processJob(
 
   try {
     const tools = await getTools();
-      const session = await _sessionManager.getSession(_job.data.sessionId);
-      const activeLlmProvider = session.activeLlmProvider || config.LLM_PROVIDER; // Use configured provider as default
-      const { llmApiKey, llmModelName, llmProvider } = _job.data;
- 
-      // Debug provider selection
-      log.info('🔍 PROVIDER DEBUG:', {
-        session_active_provider: session.activeLlmProvider,
-        config_default_provider: config.LLM_PROVIDER,
-        job_llm_provider: llmProvider,
-        final_provider: llmProvider || activeLlmProvider,
-        config_hierarchy: config.LLM_PROVIDER_HIERARCHY
-      });
- 
-      log.info(`Agent starting with ${tools.length} tools available`);
-      const agent = new Agent(
-        _job,
-        session,
-        _jobQueue,
-        tools,
-        llmProvider || activeLlmProvider,
-        _sessionManager,
-        llmApiKey,
-        llmModelName,
-      );
+    const session = await _sessionManager.getSession(_job.data.sessionId);
+    const activeLlmProvider = session.activeLlmProvider || config.LLM_PROVIDER; // Use configured provider as default
+    const { llmApiKey, llmModelName, llmProvider } = _job.data;
+  
+    // Debug provider selection
+    log.info('🔍 PROVIDER DEBUG:', {
+      session_active_provider: session.activeLlmProvider,
+      config_default_provider: config.LLM_PROVIDER,
+      job_llm_provider: llmProvider,
+      final_provider: llmProvider || activeLlmProvider,
+      config_hierarchy: config.LLM_PROVIDER_HIERARCHY,
+    });
+  
+    // Fix: Use configured model name if not provided in job data
+    const finalModelName = llmModelName || config.LLM_MODEL_NAME;
+  
+    log.info(`Agent starting with ${tools.length} tools available`);
+    const agent = new Agent(
+      _job,
+      session,
+      _jobQueue,
+      tools,
+      llmProvider || activeLlmProvider,
+      _sessionManager,
+      llmApiKey,
+      finalModelName,
+    );
     log.info(`Agent execution starting...`);
     const finalResponse = await agent.run();
     log.info(`Agent execution completed successfully`);
@@ -313,11 +328,14 @@ export async function processJob(
               // Ne pas publier les données de type tool_code dans le canal principal
               // car elles peuvent être mal interprétées comme du contenu canvas
               // Les todos doivent utiliser le système claude_code_todo dédié
-              if (data.type === 'tool_code_image' || data.type === 'tool_code') {
+              if (
+                data.type === 'tool_code_image' ||
+                data.type === 'tool_code'
+              ) {
                 // Ignorer ces types pour éviter l'affichage dans le canvas
                 return;
               }
-              
+
               // Publier seulement les autres types de contenu
               redisConnection.publish(
                 channel,
@@ -339,7 +357,10 @@ export async function processJob(
           },
         ];
       } catch (summarizeError) {
-        log.error({ err: summarizeError }, "Erreur dans la summarization de l'historique");
+        log.error(
+          { err: summarizeError },
+          "Erreur dans la summarization de l'historique",
+        );
         // Continue without summarizing if it fails
       }
     }
@@ -377,9 +398,12 @@ export async function processJob(
         JSON.stringify({ message: errorMessage, type: eventType }),
       );
     } catch (publishError) {
-      log.error({ err: publishError }, "Erreur dans la publication du message d'erreur");
+      log.error(
+        { err: publishError },
+        "Erreur dans la publication du message d'erreur",
+      );
     }
-    
+
     throw error;
   } finally {
     try {
@@ -388,12 +412,52 @@ export async function processJob(
         JSON.stringify({ content: 'Stream terminé.', type: 'close' }),
       );
     } catch (publishError) {
-      log.error({ err: publishError }, "Erreur dans la publication du message de fermeture");
+      log.error(
+        { err: publishError },
+        'Erreur dans la publication du message de fermeture',
+      );
     }
     log.info(`Traitement du job ${_job.id} terminé`);
     // Attendre un peu pour s'assurer que le message 'close' est envoyé
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
+}
+
+async function checkExistingWorkers(): Promise<number[]> {
+  const { spawn } = require('child_process');
+  return new Promise((resolve) => {
+    const ps = spawn('ps', ['aux'], { stdio: ['pipe', 'pipe', 'pipe'] });
+    let output = '';
+
+    ps.stdout.on('data', (data: Buffer) => {
+      output += data.toString();
+    });
+
+    ps.on('close', () => {
+      const lines = output.split('\n');
+      const workerPids: number[] = [];
+
+      for (const line of lines) {
+        // Chercher les processus node worker (éviter les kworker du kernel)
+        if (line.includes('node') && (line.includes('dist/worker') || (line.includes('worker') && !line.includes('kworker')))) {
+          const parts = line.trim().split(/\s+/);
+          if (parts.length > 1) {
+            const pid = parseInt(parts[1]);
+            if (!isNaN(pid) && pid !== process.pid) {
+              workerPids.push(pid);
+            }
+          }
+        }
+      }
+
+      resolve(workerPids);
+    });
+
+    ps.on('error', () => {
+      // En cas d'erreur, retourner un tableau vide
+      resolve([]);
+    });
+  });
 }
 
 async function checkWorkerLock(redisClient: Redis): Promise<boolean> {
@@ -412,43 +476,55 @@ async function checkWorkerLock(redisClient: Redis): Promise<boolean> {
       try {
         process.kill(parseInt(existingPid), 0); // Signal 0 pour vérifier si le processus existe
         // Si on arrive ici, le processus existe encore
-        if (lockAge < 60000) { // Lock récent (< 1 minute)
-          getLoggerInstance().warn(`❌ Worker already running (PID: ${existingPid}, age: ${lockAge}ms), process ${process.pid} will exit`);
-          return false;
-        } else {
-          // Lock plus ancien mais processus encore actif - forcer l'arrêt de l'ancien
-          getLoggerInstance().warn(`⚠️ Found old but active worker (PID: ${existingPid}), attempting to kill it`);
-          try {
-            process.kill(parseInt(existingPid), 'SIGTERM');
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Attendre 2 secondes
-            // Vérifier si le processus est mort
-            try {
-              process.kill(parseInt(existingPid), 0);
-              // Si on arrive ici, le processus est encore vivant, utiliser SIGKILL
-              getLoggerInstance().warn(`🔪 Force killing stubborn worker PID: ${existingPid}`);
-              process.kill(parseInt(existingPid), 'SIGKILL');
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            } catch {
-              // Processus mort, c'est bon
-              getLoggerInstance().info(`✅ Successfully killed old worker PID: ${existingPid}`);
-            }
-          } catch (killError) {
-            getLoggerInstance().error({ killError }, `Failed to kill old worker PID: ${existingPid}`);
-          }
+        getLoggerInstance().warn(
+          `❌ Worker already running (PID: ${existingPid}, age: ${lockAge}ms), process ${process.pid} will exit`,
+        );
+
+        // Toujours tuer l'ancien processus, même s'il est récent
+        getLoggerInstance().warn(
+          `🔪 Force killing existing worker PID: ${existingPid}`,
+        );
+        try {
+          process.kill(parseInt(existingPid), 'SIGKILL');
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          getLoggerInstance().info(
+            `✅ Successfully killed old worker PID: ${existingPid}`,
+          );
+        } catch (killError) {
+          getLoggerInstance().error(
+            { killError },
+            `Failed to kill old worker PID: ${existingPid}`,
+          );
         }
+
+        // Supprimer le lock existant
+        await redisClient.del(lockKey);
+        getLoggerInstance().info(
+          `🗑️ Cleared stale lock from dead worker PID: ${existingPid}`,
+        );
       } catch {
         // Le processus n'existe plus, on peut prendre le lock
-        getLoggerInstance().info(`🔄 Taking over lock from dead worker (PID: ${existingPid}, age: ${lockAge}ms)`);
+        getLoggerInstance().info(
+          `🔄 Taking over lock from dead worker (PID: ${existingPid}, age: ${lockAge}ms)`,
+        );
         // Delete the stale lock so we can acquire a new one
         await redisClient.del(lockKey);
       }
     }
 
     // Try to set lock with expiration
-    const result = await redisClient.set(lockKey, processId, 'EX', lockTimeout, 'NX');
+    const result = await redisClient.set(
+      lockKey,
+      processId,
+      'EX',
+      lockTimeout,
+      'NX',
+    );
 
     if (result === 'OK') {
-      getLoggerInstance().info(`✅ Worker lock acquired by process ${process.pid}`);
+      getLoggerInstance().info(
+        `✅ Worker lock acquired by process ${process.pid}`,
+      );
 
       // Refresh lock periodically (plus fréquemment)
       const refreshInterval = setInterval(async () => {
@@ -456,10 +532,14 @@ async function checkWorkerLock(redisClient: Redis): Promise<boolean> {
           const currentLock = await redisClient.get(lockKey);
           if (currentLock === processId) {
             await redisClient.expire(lockKey, lockTimeout);
-            getLoggerInstance().debug(`🔄 Worker lock refreshed by process ${process.pid}`);
+            getLoggerInstance().debug(
+              `🔄 Worker lock refreshed by process ${process.pid}`,
+            );
           } else {
             clearInterval(refreshInterval);
-            getLoggerInstance().error(`⚠️ Worker lock stolen by another process, shutting down ${process.pid}`);
+            getLoggerInstance().error(
+              `⚠️ Worker lock stolen by another process, shutting down ${process.pid}`,
+            );
             process.exit(1);
           }
         } catch (error) {
@@ -474,7 +554,9 @@ async function checkWorkerLock(redisClient: Redis): Promise<boolean> {
           const currentLock = await redisClient.get(lockKey);
           if (currentLock === processId) {
             await redisClient.del(lockKey);
-            getLoggerInstance().info(`🧹 Worker lock released by process ${process.pid}`);
+            getLoggerInstance().info(
+              `🧹 Worker lock released by process ${process.pid}`,
+            );
           }
         } catch (error) {
           getLoggerInstance().error({ error }, 'Error during lock cleanup');
@@ -487,19 +569,27 @@ async function checkWorkerLock(redisClient: Redis): Promise<boolean> {
 
       // Handler spécial pour les erreurs non gérées
       process.on('uncaughtException', (error) => {
-        getLoggerInstance().error({ error }, 'Uncaught exception in worker, cleaning up');
+        getLoggerInstance().error(
+          { error },
+          'Uncaught exception in worker, cleaning up',
+        );
         cleanup().finally(() => process.exit(1));
       });
 
       process.on('unhandledRejection', (reason) => {
-        getLoggerInstance().error({ reason }, 'Unhandled rejection in worker, cleaning up');
+        getLoggerInstance().error(
+          { reason },
+          'Unhandled rejection in worker, cleaning up',
+        );
         cleanup().finally(() => process.exit(1));
       });
 
       return true;
     } else {
       const finalLock = await redisClient.get(lockKey);
-      getLoggerInstance().warn(`❌ Failed to acquire worker lock, existing: ${finalLock}, process ${process.pid} will exit`);
+      getLoggerInstance().warn(
+        `❌ Failed to acquire worker lock, existing: ${finalLock}, process ${process.pid} will exit`,
+      );
       return false;
     }
   } catch (error) {
@@ -509,17 +599,50 @@ async function checkWorkerLock(redisClient: Redis): Promise<boolean> {
 }
 
 if (process.env.NODE_ENV !== 'test') {
+  // Check if the worker is being started from run.sh script
+  const startedFromRunScript = process.env.STARTED_FROM_RUN_SCRIPT === 'true';
+  
+  // If not started from run.sh, exit with an error
+  if (!startedFromRunScript) {
+    getLoggerInstance().error(
+      '❌ Worker can only be started from the run.sh script. ' +
+      'Please use "./run.sh start" or "./run.sh restart-worker" to start the worker.',
+    );
+    process.exit(1);
+  }
+
+  // Vérifier d'abord s'il y a déjà des workers en cours d'exécution
+  const existingWorkers = await checkExistingWorkers();
+  if (existingWorkers.length > 0) {
+    getLoggerInstance().warn(
+      `🚨 Found ${existingWorkers.length} existing worker processes: ${existingWorkers.join(', ')}`,
+    );
+    getLoggerInstance().info('🛑 Killing existing workers before starting...');
+    for (const pid of existingWorkers) {
+      try {
+        process.kill(pid, 'SIGKILL');
+        getLoggerInstance().info(`✅ Killed existing worker PID: ${pid}`);
+      } catch (error) {
+        getLoggerInstance().warn(`⚠️ Failed to kill worker PID: ${pid}`, { error });
+      }
+    }
+    // Attendre un peu que les processus se terminent
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+
   // Load configuration for the worker process
   getLoggerInstance().info('🔧 [WORKER] Starting configuration load...');
   await loadConfig();
   getLoggerInstance().info('✅ [WORKER] Configuration loaded successfully');
-  
+
   // Check worker singleton lock before proceeding
   const redisConnection = getRedisClientInstance();
   const canProceed = await checkWorkerLock(redisConnection);
-  
+
   if (!canProceed) {
-    getLoggerInstance().info('🚫 [WORKER] Another worker is already running, exiting...');
+    getLoggerInstance().info(
+      '🚫 [WORKER] Another worker is already running, exiting...',
+    );
     process.exit(0);
   }
 
@@ -529,7 +652,7 @@ if (process.env.NODE_ENV !== 'test') {
     LLM_MODEL_NAME: config.LLM_MODEL_NAME,
     LLM_API_KEY_first_20: config.LLM_API_KEY?.substring(0, 20),
     current_working_directory: process.cwd(),
-    NODE_ENV: process.env.NODE_ENV
+    NODE_ENV: process.env.NODE_ENV,
   });
 
   // Load main LLM key
@@ -550,12 +673,36 @@ if (process.env.NODE_ENV !== 'test') {
 
   // Load all Gemini provider keys from environment
   const geminiKeys = [
-    { provider: 'gemini-pro-2', model: 'gemini-2.5-pro', envVar: 'LLM_API_KEY_GEMINI_PRO_2' },
-    { provider: 'gemini-pro-3', model: 'gemini-2.5-pro', envVar: 'LLM_API_KEY_GEMINI_PRO_3' },
-    { provider: 'gemini-pro-4', model: 'gemini-2.5-pro', envVar: 'LLM_API_KEY_GEMINI_PRO_4' },
-    { provider: 'gemini-flash-2', model: 'gemini-2.5-flash', envVar: 'LLM_API_KEY_GEMINI_FLASH_2' },
-    { provider: 'gemini-flash-3', model: 'gemini-2.5-flash', envVar: 'LLM_API_KEY_GEMINI_FLASH_3' },
-    { provider: 'gemini-flash-4', model: 'gemini-2.5-flash', envVar: 'LLM_API_KEY_GEMINI_FLASH_4' },
+    {
+      provider: 'gemini-pro-2',
+      model: 'gemini-2.5-pro',
+      envVar: 'LLM_API_KEY_GEMINI_PRO_2',
+    },
+    {
+      provider: 'gemini-pro-3',
+      model: 'gemini-2.5-pro',
+      envVar: 'LLM_API_KEY_GEMINI_PRO_3',
+    },
+    {
+      provider: 'gemini-pro-4',
+      model: 'gemini-2.5-pro',
+      envVar: 'LLM_API_KEY_GEMINI_PRO_4',
+    },
+    {
+      provider: 'gemini-flash-2',
+      model: 'gemini-2.5-flash',
+      envVar: 'LLM_API_KEY_GEMINI_FLASH_2',
+    },
+    {
+      provider: 'gemini-flash-3',
+      model: 'gemini-2.5-flash',
+      envVar: 'LLM_API_KEY_GEMINI_FLASH_3',
+    },
+    {
+      provider: 'gemini-flash-4',
+      model: 'gemini-2.5-flash',
+      envVar: 'LLM_API_KEY_GEMINI_FLASH_4',
+    },
   ];
 
   for (const keyConfig of geminiKeys) {
@@ -576,6 +723,45 @@ if (process.env.NODE_ENV !== 'test') {
           `Failed to add Gemini API key for ${keyConfig.provider}`,
         );
       }
+    }
+  }
+
+  // Load all OpenRouter provider keys from environment
+  const openRouterKeys = [
+    {
+      provider: 'openrouter-sky',
+      model: 'openrouter/sonoma-sky-alpha',
+      envVar: 'LLM_API_KEY_OPENROUTER_SKY',
+    },
+    {
+      provider: 'openrouter-dusk',
+      model: 'openrouter/sonoma-dusk-alpha',
+      envVar: 'LLM_API_KEY_OPENROUTER_DUSK',
+    },
+  ];
+
+  for (const keyConfig of openRouterKeys) {
+    const apiKey = process.env[keyConfig.envVar];
+    if (apiKey) {
+      try {
+        await LlmKeyManager.addKey(
+          keyConfig.provider, // Use specific provider name (openrouter-sky, openrouter-dusk)
+          apiKey,
+          keyConfig.model,
+        );
+        getLoggerInstance().info(
+          `OpenRouter API key for ${keyConfig.provider} (${keyConfig.model}) added to KeyManager.`,
+        );
+      } catch (error) {
+        getLoggerInstance().warn(
+          { error, provider: keyConfig.provider },
+          `Failed to add OpenRouter API key for ${keyConfig.provider}`,
+        );
+      }
+    } else {
+      getLoggerInstance().debug(
+        `OpenRouter API key for ${keyConfig.provider} not found in environment (${keyConfig.envVar})`,
+      );
     }
   }
 
@@ -601,7 +787,9 @@ if (process.env.NODE_ENV !== 'test') {
       await client.query('SELECT 1 as worker_health_check');
       client.release();
     });
-    getLoggerInstance().info('PostgreSQL pool initialized successfully for worker');
+    getLoggerInstance().info(
+      'PostgreSQL pool initialized successfully for worker',
+    );
   } catch (err) {
     getLoggerInstance().error(
       { err },

@@ -1,0 +1,88 @@
+{
+  "project": {
+    "name": "AgenticForge Complex Test",
+    "version": "1.0.0",
+    "description": "A complex JSON file for testing nested structures",
+    "authors": [
+      {
+        "name": "Alice Johnson",
+        "role": "Lead Developer",
+        "contact": {
+          "email": "alice@example.com",
+          "phone": "+1-555-0123"
+        },
+        "skills": ["JavaScript", "Python", "AI"]
+      },
+      {
+        "name": "Bob Smith",
+        "role": "DevOps Engineer",
+        "contact": {
+          "email": "bob@example.com",
+          "slack": "@bob.smith"
+        },
+        "skills": ["Docker", "Kubernetes", "AWS"]
+      }
+    ]
+  },
+  "configuration": {
+    "database": {
+      "type": "PostgreSQL",
+      "host": "localhost",
+      "port": 5432,
+      "credentials": {
+        "username": "admin",
+        "password": "encrypted_password_hash"
+      },
+      "settings": {
+        "max_connections": 100,
+        "timeout": 30000,
+        "ssl": true
+      }
+    },
+    "api": {
+      "base_url": "https://api.example.com/v1",
+      "endpoints": {
+        "users": "/users",
+        "projects": "/projects",
+        "analytics": "/analytics"
+      },
+      "rate_limits": {
+        "requests_per_minute": 60,
+        "burst_limit": 100
+      }
+    }
+  },
+  "data": {
+    "metrics": {
+      "performance": [
+        {"timestamp": "2024-01-01T00:00:00Z", "cpu": 45.2, "memory": 78.1, "disk": 23.5},
+        {"timestamp": "2024-01-01T01:00:00Z", "cpu": 52.1, "memory": 81.3, "disk": 24.1},
+        {"timestamp": "2024-01-01T02:00:00Z", "cpu": 48.7, "memory": 79.8, "disk": 23.9}
+      ],
+      "user_activity": {
+        "daily_active_users": [1250, 1340, 1180, 1420, 1380],
+        "session_duration_avg": 342.5,
+        "bounce_rate": 0.23
+      }
+    },
+    "features": {
+      "enabled": ["authentication", "logging", "monitoring", "caching"],
+      "experimental": ["ai_assistant", "real_time_sync"],
+      "deprecated": ["legacy_api_v0"]
+    }
+  },
+  "meta": {
+    "created_at": "2024-01-01T10:00:00Z",
+    "updated_at": "2024-01-15T14:30:00Z",
+    "schema_version": "2.1.0",
+    "tags": ["production", "critical", "monitored"],
+    "flags": {
+      "maintenance_mode": false,
+      "debug_enabled": true,
+      "feature_flags": {
+        "new_ui": true,
+        "beta_features": false
+      }
+    }
+  }
+}

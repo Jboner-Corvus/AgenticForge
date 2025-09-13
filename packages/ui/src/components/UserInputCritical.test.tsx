@@ -37,7 +37,9 @@ vi.mock('../lib/hooks/useDraggablePane', () => ({
 }));
 
 vi.mock('../lib/contexts/LanguageProvider', () => ({
-  LanguageProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  LanguageProvider: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 vi.mock('../lib/contexts/LanguageContext', () => ({
@@ -59,13 +61,16 @@ vi.mock('../lib/hooks/useAgentStream', () => ({
 }));
 
 // Import the mocked hooks
-import { useCurrentPage, useIsProcessing, useMessages, useMessageInputValue } from '../store/hooks';
+import {
+  useCurrentPage,
+  useIsProcessing,
+  useMessages,
+  useMessageInputValue,
+} from '../store/hooks';
 import { useUIStore } from '../store/uiStore';
 
 const renderUserInput = () => {
-  return render(
-    <UserInput />
-  );
+  return render(<UserInput />);
 };
 
 describe('UserInput - Critical Frontend Tests', () => {
@@ -74,15 +79,15 @@ describe('UserInput - Critical Frontend Tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Initialize the mock message input value
     mockMessageInputValue = '';
-    
+
     // Create a mock function for setMessageInputValue that updates the mock value
     mockSetMessageInputValue = vi.fn().mockImplementation((value) => {
       mockMessageInputValue = value;
     });
-    
+
     // Mock the useUIStore hook to properly handle selectors
     (useUIStore as any).mockImplementation((selector: any) => {
       if (typeof selector === 'function') {
@@ -98,10 +103,12 @@ describe('UserInput - Critical Frontend Tests', () => {
       // If selector is not a function, return undefined or handle as needed
       return undefined;
     });
-    
+
     // Mock useMessageInputValue to return the current mock value
-    (useMessageInputValue as any).mockImplementation(() => mockMessageInputValue);
-    
+    (useMessageInputValue as any).mockImplementation(
+      () => mockMessageInputValue,
+    );
+
     // Set up default mock implementations
     (useCurrentPage as any).mockReturnValue('chat');
     (useIsProcessing as any).mockReturnValue(false);
@@ -111,8 +118,12 @@ describe('UserInput - Critical Frontend Tests', () => {
   it('should render input field and buttons', () => {
     renderUserInput();
 
-    expect(screen.getByPlaceholderText('Type your message...')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Send Message/i })).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Type your message...'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Send Message/i }),
+    ).toBeInTheDocument();
   });
 
   it('should handle text input', async () => {
@@ -120,7 +131,7 @@ describe('UserInput - Critical Frontend Tests', () => {
 
     const textarea = screen.getByPlaceholderText('Type your message...');
     fireEvent.change(textarea, { target: { value: 'Hello, world!' } });
-    
+
     // Wait for the mock function to be called
     await waitFor(() => {
       expect(mockSetMessageInputValue).toHaveBeenCalledWith('Hello, world!');
@@ -130,7 +141,7 @@ describe('UserInput - Critical Frontend Tests', () => {
   it('should handle Enter key press', () => {
     // Set the mock message input value
     mockMessageInputValue = 'Test message';
-    
+
     renderUserInput();
 
     const textarea = screen.getByPlaceholderText('Type your message...');
@@ -146,7 +157,7 @@ describe('UserInput - Critical Frontend Tests', () => {
   it('should handle Shift+Enter for new line', () => {
     // Set the mock message input value
     mockMessageInputValue = 'Test message';
-    
+
     renderUserInput();
 
     const textarea = screen.getByPlaceholderText('Type your message...');
@@ -171,12 +182,14 @@ describe('UserInput - Critical Frontend Tests', () => {
   it('should show stop button when processing', () => {
     // Mock isProcessing to return true
     (useIsProcessing as any).mockReturnValue(true);
-    
+
     renderUserInput();
 
     // Should show stop button and hide send button when processing
     expect(screen.getByRole('button', { name: /Stop/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Send Message/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Send Message/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('should handle very long messages', async () => {
@@ -194,24 +207,24 @@ describe('UserInput - Critical Frontend Tests', () => {
 
   it('should handle special characters in messages', async () => {
     const specialMessage = 'Hello! @#$%^&*()_+{}|:<>?[]\\;\'",./';
-    
+
     renderUserInput();
 
     const textarea = screen.getByPlaceholderText('Type your message...');
     fireEvent.change(textarea, { target: { value: specialMessage } });
-    
+
     // The component should update the input value
     expect(mockSetMessageInputValue).toHaveBeenCalledWith(specialMessage);
   });
 
   it('should handle multiline messages', async () => {
     const multilineMessage = 'Line 1\nLine 2\nLine 3';
-    
+
     renderUserInput();
 
     const textarea = screen.getByPlaceholderText('Type your message...');
     fireEvent.change(textarea, { target: { value: multilineMessage } });
-    
+
     // The component should update the input value
     expect(mockSetMessageInputValue).toHaveBeenCalledWith(multilineMessage);
   });
@@ -231,7 +244,7 @@ describe('UserInput - Critical Frontend Tests', () => {
 
   it('should handle rapid clicking of send button', () => {
     (useMessageInputValue as any).mockReturnValue('Test message');
-    
+
     renderUserInput();
 
     const textarea = screen.getByPlaceholderText('Type your message...');

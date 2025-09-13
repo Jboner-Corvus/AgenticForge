@@ -40,20 +40,22 @@ export function getMimeType(filename: string): string {
     '.svg': 'image/svg+xml',
     '.wav': 'audio/wav',
   };
-  
+
   return mimeTypes[ext] || 'text/plain';
 }
 
 /**
  * Récupère un projet multi-fichiers depuis Redis
  */
-export async function getProjectAssets(jobId: string): Promise<MultiFileProject | null> {
+export async function getProjectAssets(
+  jobId: string,
+): Promise<MultiFileProject | null> {
   const projectKey = `project:${jobId}:assets`;
   const redis = getRedisClientInstance();
-  
+
   const data = await redis.get(projectKey);
   if (!data) return null;
-  
+
   return JSON.parse(data) as MultiFileProject;
 }
 
@@ -62,16 +64,16 @@ export async function getProjectAssets(jobId: string): Promise<MultiFileProject 
  * par des URLs virtuelles
  */
 export function processHtmlWithAssets(
-  html: string, 
-  jobId: string, 
-  assets: Asset[]
+  html: string,
+  jobId: string,
+  assets: Asset[],
 ): string {
   let processedHtml = html;
-  
+
   // Remplacer les références aux fichiers par des URLs virtuelles
-  assets.forEach(asset => {
+  assets.forEach((asset) => {
     const virtualUrl = generateAssetUrl(jobId, asset.filename);
-    
+
     // Remplacer les différents types de références
     const patterns = [
       new RegExp(`src=["']${asset.filename}["']`, 'g'),
@@ -79,14 +81,14 @@ export function processHtmlWithAssets(
       new RegExp(`url\\(['"]${asset.filename}['"]\\)`, 'g'),
       new RegExp(`"${asset.filename}"`, 'g'),
     ];
-    
-    patterns.forEach(pattern => {
+
+    patterns.forEach((pattern) => {
       processedHtml = processedHtml.replace(pattern, (match) => {
         return match.replace(asset.filename, virtualUrl);
       });
     });
   });
-  
+
   return processedHtml;
 }
 
@@ -94,19 +96,17 @@ export function processHtmlWithAssets(
  * Stocke un projet multi-fichiers dans Redis avec un TTL
  */
 export async function storeProjectAssets(
-  jobId: string, 
-  project: MultiFileProject
+  jobId: string,
+  project: MultiFileProject,
 ): Promise<string> {
   const projectKey = `project:${jobId}:assets`;
   const redis = getRedisClientInstance();
-  
+
   // Stocker le projet avec un TTL de 1 heure
-  await redis.setex(
-    projectKey, 
-    3600, 
-    JSON.stringify(project)
+  await redis.setex(projectKey, 3600, JSON.stringify(project));
+
+  console.log(
+    `[ASSETS] Stored project for job ${jobId} with ${project.assets.length} assets`,
   );
-  
-  console.log(`[ASSETS] Stored project for job ${jobId} with ${project.assets.length} assets`);
   return projectKey;
 }

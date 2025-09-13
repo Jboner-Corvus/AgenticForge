@@ -1,0 +1,67 @@
+project_info:
+  port: 3002
+  base_url: http://localhost:3002
+  endpoint: POST /api/test-chat
+  auth_token: Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0
+
+categories:
+  - name: file_operations
+    description: Tests basiques et avancés des opérations sur les fichiers
+    total_tasks: 18
+    completed_tasks: 10
+  - name: todo_lists
+    description: Tests basiques et avancés de gestion de todo lists
+    total_tasks: 15
+    completed_tasks: 5
+  - name: canvas_display
+    description: Tests de l'affichage dans le canvas
+    total_tasks: 30
+    completed_tasks: 3
+  - name: ai_tools
+    description: Tests des outils d'IA
+    total_tasks: 20
+    completed_tasks: 5
+  - name: session_management
+    description: Tests de gestion de session
+    total_tasks: 25
+    completed_tasks: 5
+  - name: command_execution
+    description: Tests d'exécution de commandes
+    total_tasks: 15
+    completed_tasks: 3
+  - name: communication
+    description: Tests de communication et pensées
+    total_tasks: 5
+    completed_tasks: 1
+  - name: integration
+    description: Tests complexes et intégration
+    total_tasks: 20
+    completed_tasks: 5
+  - name: security
+    description: Tests de sécurité
+    total_tasks: 15
+    completed_tasks: 5
+  - name: performance
+    description: Tests de performance et de charge
+    total_tasks: 15
+    completed_tasks: 5
+  - name: llm_providers
+    description: Tests de basculement et gestion des providers LLM
+    total_tasks: 25
+    completed_tasks: 10
+  - name: browser_automation
+    description: Tests Browser Live (Playwright)
+    total_tasks: 168
+    completed_tasks: 5
+  - name: alpha_vantage
+    description: Tests des outils Alpha Vantage
+    total_tasks: 129
+    completed_tasks: 10
+  - name: trading_analysis
+    description: Tests Trading et Analyse Boursière
+    total_tasks: 130
+    completed_tasks: 0
+
+total_tasks: 618
+completed_tasks: 71
+progress_percentage: 11

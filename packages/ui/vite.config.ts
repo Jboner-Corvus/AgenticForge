@@ -69,7 +69,10 @@ export default defineConfig(({ mode }) => {
 
   // Log the actual values for debugging
   console.log('🔐 [Vite Config] Root AUTH_TOKEN value:', rootEnv.AUTH_TOKEN);
-  console.log('🔐 [Vite Config] Local VITE_AUTH_TOKEN value:', localEnv.VITE_AUTH_TOKEN);
+  console.log(
+    '🔐 [Vite Config] Local VITE_AUTH_TOKEN value:',
+    localEnv.VITE_AUTH_TOKEN,
+  );
 
   return {
     // Use '/' as the base path for the app
@@ -134,16 +137,28 @@ export default defineConfig(({ mode }) => {
       // Injecte AUTH_TOKEN du serveur vers le frontend
       // Priorité: local .env > root .env > process.env
       'import.meta.env.AUTH_TOKEN': JSON.stringify(
-        localEnv.VITE_AUTH_TOKEN || rootEnv.AUTH_TOKEN || process.env.AUTH_TOKEN || '',
+        localEnv.VITE_AUTH_TOKEN ||
+          rootEnv.AUTH_TOKEN ||
+          process.env.AUTH_TOKEN ||
+          '',
       ),
       'import.meta.env.VITE_AUTH_TOKEN': JSON.stringify(
-        localEnv.VITE_AUTH_TOKEN || rootEnv.AUTH_TOKEN || process.env.AUTH_TOKEN || '',
+        localEnv.VITE_AUTH_TOKEN ||
+          rootEnv.AUTH_TOKEN ||
+          process.env.AUTH_TOKEN ||
+          '',
       ),
       'import.meta.env.VITE_BACKEND_PORT': JSON.stringify(
-        localEnv.VITE_BACKEND_PORT || rootEnv.VITE_BACKEND_PORT || process.env.VITE_BACKEND_PORT || '3001',
+        localEnv.VITE_BACKEND_PORT ||
+          rootEnv.VITE_BACKEND_PORT ||
+          process.env.VITE_BACKEND_PORT ||
+          '3001',
       ),
       'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
-        localEnv.VITE_API_BASE_URL || rootEnv.VITE_API_BASE_URL || process.env.VITE_API_BASE_URL || '',
+        localEnv.VITE_API_BASE_URL ||
+          rootEnv.VITE_API_BASE_URL ||
+          process.env.VITE_API_BASE_URL ||
+          '',
       ),
       'process.env.NODE_ENV': JSON.stringify(
         process.env.NODE_ENV || 'development',
@@ -159,27 +174,64 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       port: 3003,
       headers: {
-        'Content-Security-Policy': "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws: http: https:; img-src 'self' data: https:; media-src 'self';",
+        'Content-Security-Policy':
+          "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws: http: https:; img-src 'self' data: https:; media-src 'self';",
       },
       proxy: {
         '/api': {
-                    target: `http://localhost:${rootEnv.PUBLIC_PORT || rootEnv.PORT || '3001'}`, // Use backend port from environment
+          target: `http://localhost:${rootEnv.PUBLIC_PORT || rootEnv.PORT || '3001'}`, // Use backend port from environment
           changeOrigin: true,
           secure: false,
           ws: true, // Support WebSockets pour SSE
           configure: (proxy) => {
+            // Debug logging for proxy target
+            console.log('🔧 [Proxy] Target set to:', `http://localhost:${rootEnv.PUBLIC_PORT || rootEnv.PORT || '3001'}`);
+            console.log('🔧 [Proxy] Root env PUBLIC_PORT:', rootEnv.PUBLIC_PORT);
+            console.log('🔧 [Proxy] Root env PORT:', rootEnv.PORT);
+
             proxy.on('proxyReq', (proxyReq, req, res) => {
+              console.log('🔄 [Proxy] Proxying request:', req.url);
+
+              // Remove any existing Authorization header first
+              proxyReq.removeHeader('Authorization');
+
               // Forcer l'auth header sur toutes les requêtes proxy
               // Priorité: local .env > root .env > process.env
-              const authToken = localEnv.VITE_AUTH_TOKEN || rootEnv.AUTH_TOKEN || process.env.AUTH_TOKEN || '';
-              console.log('🔐 [Proxy] Setting Authorization header with token:', authToken ? 'PRÉSENT' : 'ABSENT');
-              if (authToken) {
-                console.log('🔐 [Proxy] Token value (first 20 chars):', authToken.substring(0, 20));
-              }
-              proxyReq.setHeader(
-                'Authorization',
-                'Bearer ' + authToken,
+              const authToken =
+                localEnv.VITE_AUTH_TOKEN ||
+                rootEnv.AUTH_TOKEN ||
+                process.env.AUTH_TOKEN ||
+                '';
+
+              console.log(
+                '🔐 [Proxy] Setting Authorization header with token:',
+                authToken ? 'PRÉSENT' : 'ABSENT',
               );
+
+              if (authToken) {
+                console.log(
+                  '🔐 [Proxy] Token value (first 20 chars):',
+                  authToken.substring(0, 20),
+                );
+                proxyReq.setHeader('Authorization', 'Bearer ' + authToken);
+                console.log('✅ [Proxy] Authorization header set successfully');
+              } else {
+                console.log('❌ [Proxy] No auth token available');
+              }
+
+              // Ensure Content-Type is set
+              if (!proxyReq.getHeader('Content-Type')) {
+                proxyReq.setHeader('Content-Type', 'application/json');
+              }
+            });
+            proxy.on('proxyRes', (proxyRes, req, res) => {
+              console.log('✅ [Proxy] Proxy response received:', proxyRes.statusCode);
+              console.log('📋 [Proxy] Response headers:', Object.keys(proxyRes.headers));
+              if (proxyRes.statusCode !== 200) {
+                console.log('❌ [Proxy] Error response details:');
+                console.log('   Status:', proxyRes.statusCode);
+                console.log('   Status Message:', proxyRes.statusMessage);
+              }
             });
             proxy.on('error', (err, req, res) => {
               console.error('🚨 [Proxy] Proxy error:', err);
@@ -196,11 +248,12 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       port: 3003,
       headers: {
-        'Content-Security-Policy': "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws: http: https:; img-src 'self' data: https:; media-src 'self';",
+        'Content-Security-Policy':
+          "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' ws: http: https:; img-src 'self' data: https:; media-src 'self';",
       },
       proxy: {
         '/api': {
-                    target: `http://localhost:${rootEnv.PUBLIC_PORT || rootEnv.PORT || '3001'}`, // Use backend port from environment
+          target: `http://localhost:${rootEnv.PUBLIC_PORT || rootEnv.PORT || '3001'}`, // Use backend port from environment
           changeOrigin: true,
           secure: false,
           ws: true, // Support WebSockets pour SSE
@@ -208,15 +261,22 @@ export default defineConfig(({ mode }) => {
             proxy.on('proxyReq', (proxyReq, req, res) => {
               // Forcer l'auth header sur toutes les requêtes proxy
               // Priorité: local .env > root .env > process.env
-              const authToken = localEnv.VITE_AUTH_TOKEN || rootEnv.AUTH_TOKEN || process.env.AUTH_TOKEN || '';
-              console.log('🔐 [Preview Proxy] Setting Authorization header with token:', authToken ? 'PRÉSENT' : 'ABSENT');
-              if (authToken) {
-                console.log('🔐 [Preview Proxy] Token value (first 20 chars):', authToken.substring(0, 20));
-              }
-              proxyReq.setHeader(
-                'Authorization',
-                'Bearer ' + authToken,
+              const authToken =
+                localEnv.VITE_AUTH_TOKEN ||
+                rootEnv.AUTH_TOKEN ||
+                process.env.AUTH_TOKEN ||
+                '';
+              console.log(
+                '🔐 [Preview Proxy] Setting Authorization header with token:',
+                authToken ? 'PRÉSENT' : 'ABSENT',
               );
+              if (authToken) {
+                console.log(
+                  '🔐 [Preview Proxy] Token value (first 20 chars):',
+                  authToken.substring(0, 20),
+                );
+              }
+              proxyReq.setHeader('Authorization', 'Bearer ' + authToken);
             });
             proxy.on('error', (err, req, res) => {
               console.error('🚨 [Preview Proxy] Proxy error:', err);

@@ -85,42 +85,56 @@ export const useSessionStore = create<SessionState>()(
         setSessionTokensUsed: (sessionTokensUsed) => set({ sessionTokensUsed }),
 
         addMessage: (messageData) => {
-           console.log('🔥 [SessionStore] addMessage called with:', messageData);
-           console.log('🔥 [SessionStore] Message type:', messageData.type);
-           console.log('🔥 [SessionStore] Message content:', (messageData as any).content);
-           const baseProps = {
-             id: generateUUID(),
-             timestamp: Date.now(),
-           };
-           const newMessage = {
-             ...baseProps,
-             ...messageData,
-           } as StoreChatMessage;
-           console.log('🔥 [SessionStore] Creating message:', newMessage);
-           console.log('🔥 [SessionStore] Message ID:', newMessage.id);
+          console.log('🔥 [SessionStore] addMessage called with:', messageData);
+          console.log('🔥 [SessionStore] Message type:', messageData.type);
+          console.log(
+            '🔥 [SessionStore] Message content:',
+            (messageData as any).content,
+          );
+          const baseProps = {
+            id: generateUUID(),
+            timestamp: Date.now(),
+          };
+          const newMessage = {
+            ...baseProps,
+            ...messageData,
+          } as StoreChatMessage;
+          console.log('🔥 [SessionStore] Creating message:', newMessage);
+          console.log('🔥 [SessionStore] Message ID:', newMessage.id);
 
-           // Estimate tokens for this message
-           const messageTokens = estimateMessageTokens(newMessage);
-           console.log('🔥 [SessionStore] Estimated tokens for message:', messageTokens);
+          // Estimate tokens for this message
+          const messageTokens = estimateMessageTokens(newMessage);
+          console.log(
+            '🔥 [SessionStore] Estimated tokens for message:',
+            messageTokens,
+          );
 
-           set((state) => {
-             const newState = {
-               messages: [...state.messages, newMessage],
-               sessionTokensUsed: state.sessionTokensUsed + messageTokens,
-             };
-             console.log(
-               '🔥 [SessionStore] New messages array length:',
-               newState.messages.length,
-             );
-             console.log('🔥 [SessionStore] Updated session tokens:', newState.sessionTokensUsed);
-             console.log('🔥 [SessionStore] All messages:', newState.messages);
-             console.log('🔥 [SessionStore] Last message:', newState.messages[newState.messages.length - 1]);
-             return newState;
-           });
-         },
+          set((state) => {
+            const newState = {
+              messages: [...state.messages, newMessage],
+              sessionTokensUsed: state.sessionTokensUsed + messageTokens,
+            };
+            console.log(
+              '🔥 [SessionStore] New messages array length:',
+              newState.messages.length,
+            );
+            console.log(
+              '🔥 [SessionStore] Updated session tokens:',
+              newState.sessionTokensUsed,
+            );
+            console.log('🔥 [SessionStore] All messages:', newState.messages);
+            console.log(
+              '🔥 [SessionStore] Last message:',
+              newState.messages[newState.messages.length - 1],
+            );
+            return newState;
+          });
+        },
 
         clearMessages: () => {
-          console.log('🔥 [SessionStore] Clearing messages and resetting tokens');
+          console.log(
+            '🔥 [SessionStore] Clearing messages and resetting tokens',
+          );
           set({ messages: [], sessionTokensUsed: 0 });
         },
 
@@ -166,36 +180,40 @@ export const useSessionStore = create<SessionState>()(
         },
 
         loadSession: async (id: string) => {
-           set({ isLoadingSessions: true });
-           try {
-             const sessionData = await loadSessionApi(id);
-             if (sessionData) {
-               const messages = sessionData.messages || [];
-               // Recalculate tokens for all messages in the loaded session
-               const totalTokens = messages.reduce((sum, message) => {
-                 return sum + estimateMessageTokens(message);
-               }, 0);
+          set({ isLoadingSessions: true });
+          try {
+            const sessionData = await loadSessionApi(id);
+            if (sessionData) {
+              const messages = sessionData.messages || [];
+              // Recalculate tokens for all messages in the loaded session
+              const totalTokens = messages.reduce((sum, message) => {
+                return sum + estimateMessageTokens(message);
+              }, 0);
 
-               console.log(`🔥 [SessionStore] Loaded session with ${messages.length} messages, ${totalTokens} estimated tokens`);
+              console.log(
+                `🔥 [SessionStore] Loaded session with ${messages.length} messages, ${totalTokens} estimated tokens`,
+              );
 
-               set({
-                 sessionId: id,
-                 activeSessionId: id,
-                 messages: messages,
-                 sessionTokensUsed: totalTokens,
-                 sessionStatus:
-                   (sessionData.status as SessionStatus | undefined) || 'valid',
-               });
-               console.log(`✅ Session loaded: ${sessionData.name} (${totalTokens} tokens)`);
-             }
-           } catch (error) {
-             console.error('Failed to load session:', error);
-             set({ sessionStatus: 'error' });
-             throw error;
-           } finally {
-             set({ isLoadingSessions: false });
-           }
-         },
+              set({
+                sessionId: id,
+                activeSessionId: id,
+                messages: messages,
+                sessionTokensUsed: totalTokens,
+                sessionStatus:
+                  (sessionData.status as SessionStatus | undefined) || 'valid',
+              });
+              console.log(
+                `✅ Session loaded: ${sessionData.name} (${totalTokens} tokens)`,
+              );
+            }
+          } catch (error) {
+            console.error('Failed to load session:', error);
+            set({ sessionStatus: 'error' });
+            throw error;
+          } finally {
+            set({ isLoadingSessions: false });
+          }
+        },
 
         deleteSession: async (id: string) => {
           set({ isDeletingSession: true });
@@ -295,32 +313,40 @@ export const useSessionStore = create<SessionState>()(
         },
 
         createNewSession: async () => {
-           const state = get();
-           const oldSessionId = state.sessionId;
+          const state = get();
+          const oldSessionId = state.sessionId;
 
-           // Clean up Redis data for the old session if it exists
-           if (oldSessionId) {
-             try {
-               console.log('🧹 [sessionStore] Cleaning up Redis data for old session:', oldSessionId);
-               await cleanupRedisSessionData(oldSessionId);
-               console.log('✅ [sessionStore] Redis cleanup completed for session:', oldSessionId);
-             } catch (error) {
-               console.warn('⚠️ [sessionStore] Redis cleanup failed:', error);
-               // Continue with session creation even if cleanup fails
-             }
-           }
+          // Clean up Redis data for the old session if it exists
+          if (oldSessionId) {
+            try {
+              console.log(
+                '🧹 [sessionStore] Cleaning up Redis data for old session:',
+                oldSessionId,
+              );
+              await cleanupRedisSessionData(oldSessionId);
+              console.log(
+                '✅ [sessionStore] Redis cleanup completed for session:',
+                oldSessionId,
+              );
+            } catch (error) {
+              console.warn('⚠️ [sessionStore] Redis cleanup failed:', error);
+              // Continue with session creation even if cleanup fails
+            }
+          }
 
-           const newSessionId = generateUUID();
-           console.log('🔄 [sessionStore] Creating new session:', newSessionId);
-           set({
-             sessionId: newSessionId,
-             activeSessionId: newSessionId,
-             messages: [],
-             sessionTokensUsed: 0, // Reset tokens for new session
-             sessionStatus: 'valid',
-           });
-           console.log('✅ [sessionStore] New session created successfully (tokens reset to 0)');
-         },
+          const newSessionId = generateUUID();
+          console.log('🔄 [sessionStore] Creating new session:', newSessionId);
+          set({
+            sessionId: newSessionId,
+            activeSessionId: newSessionId,
+            messages: [],
+            sessionTokensUsed: 0, // Reset tokens for new session
+            sessionStatus: 'valid',
+          });
+          console.log(
+            '✅ [sessionStore] New session created successfully (tokens reset to 0)',
+          );
+        },
 
         addTokensUsed: (tokens: number) => {
           set((state) => ({

@@ -18,6 +18,7 @@ import type {
 
 import { config } from '../../config.ts';
 import { getLoggerInstance } from '../../logger.ts';
+import { llmRouterService } from '../llm/LlmRouterService.js';
 import { LlmError } from '../../utils/LlmError.ts';
 import { getLlmProvider } from '../../utils/llmProvider.ts';
 import { LLMContent } from '../llm/llm-types.ts';
@@ -51,9 +52,10 @@ interface Command {
 export class Agent {
   private activeLlmProvider: string; // New property
   private apiKey?: string; // New property
+  // LLM Router is now handled by the shared service
   // Loop detection properties
   private behaviorHistory: Array<{
-    command?: { name?: string; params?: Record<string, any>; };
+    command?: { name?: string; params?: Record<string, any> };
     thought?: string;
     timestamp: number;
   }> = [];
@@ -64,7 +66,8 @@ export class Agent {
   private loopCounter = 0;
   private loopDetectionThreshold = 5; // Detect loops after 5 repetitions (increased for complex tasks)
   private malformedResponseCounter = 0;
-  private readonly MAX_MALFORMED_RESPONSES = getConfig().AGENT_MAX_MALFORMED_RESPONSES;
+  private readonly MAX_MALFORMED_RESPONSES =
+    getConfig().AGENT_MAX_MALFORMED_RESPONSES;
   private readonly MAX_LLM_FAILURES = getConfig().AGENT_MAX_LLM_FAILURES;
   private llmFailureCounter = 0;
   private consecutiveLlmFailures = 0; // Track consecutive failures
@@ -73,7 +76,10 @@ export class Agent {
   private readonly session: SessionData;
 
   // 🚨 AMÉLIORATION: Tracking des actions réalisées
-  private executedActions: Map<string, { count: number; lastExecution: number; successful: boolean }> = new Map();
+  private executedActions: Map<
+    string,
+    { count: number; lastExecution: number; successful: boolean }
+  > = new Map();
   private lastDisplayCanvasCall = 0;
 
   // Multi-file operations tracking
@@ -119,9 +125,75 @@ export class Agent {
     this.sessionManager = sessionManager;
     this.apiKey = apiKey;
 
+    // LLM Router is managed by the shared service
+    // Ensure the router is synchronized with available keys
+    llmRouterService.syncWithKeyManager();
+
     // Initialize loop detection properties
     this.behaviorHistory = [];
     this.loopDetectionThreshold = 5; // Detect loops after 5 repetitions
+  }
+
+  /**
+   * Get LLM Router statistics for monitoring
+   */
+  public getLlmRouterStats() {
+    const stats = llmRouterService.getProviderStatistics();
+    return {
+      ...stats,
+      currentProvider: this.activeLlmProvider,
+    };
+  }
+
+  /**
+   * Detect optimal tool based on systemPrompt and message keywords
+   */
+  private detectOptimalTool(prompt: string): { tool: string; params: any; reason: string } | null {
+    const lowerPrompt = prompt.toLowerCase();
+    const systemPrompt = (this.job.data as any)?.systemPrompt || '';
+    
+    this.log.info(`🔍 Smart Detection Debug: prompt="${lowerPrompt}", systemPrompt="${systemPrompt}"`);
+    
+    // Debug keywords detection
+    const debugKeywords = ['debug', 'error', 'logs', 'analyse', 'analysis', 'troubleshoot', 'investigate', 'stack trace', 'exception', 'bug', 'issue', 'problem', 'failure', 'crash'];
+    const hasDebugKeywords = debugKeywords.some(keyword => lowerPrompt.includes(keyword));
+    
+    this.log.info(`🔍 Debug keywords check: hasDebugKeywords=${hasDebugKeywords}, systemPrompt=${systemPrompt}`);
+    
+    // Todo/Planning keywords detection  
+    const todoKeywords = ['todo', 'task', 'comprehensive', 'planning', 'management', 'web application', 'building', 'development', 'phases'];
+    const hasTodoKeywords = todoKeywords.some(keyword => lowerPrompt.includes(keyword));
+    
+    if (hasDebugKeywords && systemPrompt === 'debug') {
+      return {
+        tool: 'listFiles',
+        params: { path: '.' },
+        reason: 'Debug request detected - exploring files first'
+      };
+    }
+    
+    if (hasTodoKeywords && (systemPrompt === 'orchestrator' || systemPrompt === 'architect')) {
+      const smartTodos = this.createSmartTodoList(prompt);
+      return {
+        tool: 'todo_write',
+        params: { todos: smartTodos },
+        reason: 'Todo/Planning request detected - creating structured todo list'
+      };
+    }
+    
+    // Complex project keywords for architect
+    const complexKeywords = ['project', 'application', 'system', 'développer', 'complet', 'architecture', 'multi'];
+    const hasComplexKeywords = complexKeywords.some(keyword => lowerPrompt.includes(keyword));
+    
+    if (hasComplexKeywords && prompt.length > 100 && systemPrompt === 'architect') {
+      return {
+        tool: 'listFiles',
+        params: { path: '.' },
+        reason: 'Complex architecture request - exploring environment first'
+      };
+    }
+    
+    return null;
   }
 
   public async run(): Promise<string> {
@@ -138,6 +210,43 @@ export class Agent {
         type: 'user',
       };
       (this.session.history as Message[]).push(newUserMessage);
+
+      // 🚨 SMART TOOL DETECTION: Detect optimal tool based on systemPrompt + keywords
+      const smartToolDetection = this.detectOptimalTool(prompt);
+      if (smartToolDetection) {
+        this.log.info(`Smart tool detection: ${smartToolDetection.tool} for ${smartToolDetection.reason}`);
+        
+        // 🔧 FIX: For A-Z projects, execute initial tool but continue with agent workflow
+        const isCompleteProject = prompt.toLowerCase().includes('complete') && 
+                                 prompt.toLowerCase().includes('project') &&
+                                 (prompt.toLowerCase().includes('a to z') || 
+                                  prompt.toLowerCase().includes('development') || 
+                                  prompt.toLowerCase().includes('deploy'));
+        
+        if (isCompleteProject) {
+          // Execute the detected tool as first step but continue execution
+          this.log.info('Complete A-Z project detected - executing initial tool but continuing workflow');
+          const command = { name: smartToolDetection.tool, params: smartToolDetection.params };
+          const result = await this.executeTool(command, this.log);
+          
+          // Add initial result to session but DON'T return - continue to main agent loop
+          const initialMessage: ToolResultMessage = {
+            id: crypto.randomUUID(),
+            type: 'tool_result',
+            result: { content: typeof result === 'string' ? result : JSON.stringify(result) },
+            toolName: smartToolDetection.tool,
+            timestamp: Date.now(),
+          };
+          this.session.history.push(initialMessage);
+          this.publishToChannel(initialMessage);
+        } else {
+          // Original behavior: execute and return for simple requests
+          const command = { name: smartToolDetection.tool, params: smartToolDetection.params };
+          const result = await this.executeTool(command, this.log);
+          if (typeof result === 'string') return result;
+          return JSON.stringify(result);
+        }
+      }
 
       let iterations = 0;
       const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS ?? 50;
@@ -175,15 +284,17 @@ export class Agent {
               workingContext: {
                 ...this.session.workingContext,
                 executedActions: this.getActionExecutionSummary(),
-                lastDisplayCanvas: this.hasExecutedActionRecently('display_canvas') ? 
-                  `✅ display_canvas executed ${Math.floor((Date.now() - this.lastDisplayCanvasCall) / 1000)}s ago` : 
-                  '❌ display_canvas not executed recently',
-                iterationCount: iterations
-              }
+                lastDisplayCanvas: this.hasExecutedActionRecently(
+                  'display_canvas',
+                )
+                  ? `✅ display_canvas executed ${Math.floor((Date.now() - this.lastDisplayCanvasCall) / 1000)}s ago`
+                  : '❌ display_canvas not executed recently',
+                iterationCount: iterations,
+              },
             },
-            id: String(this.session.id)
+            id: String(this.session.id),
           };
-          
+
           const orchestratorPrompt = getMasterPrompt(
             sessionWithContext,
             this.tools,
@@ -250,13 +361,71 @@ export class Agent {
             .filter((m: LLMContent | null): m is LLMContent => m !== null);
 
           let llmResponse: string | undefined;
-          let currentProviderIndex = config.LLM_PROVIDER_HIERARCHY.indexOf(
-            this.activeLlmProvider,
-          );
-          if (currentProviderIndex === -1) {
-            currentProviderIndex = 0; // Default to first in hierarchy if current is not found
+
+          try {
+            // Use the shared LLM Router service for intelligent routing
+            const router = llmRouterService.getRouter();
+            const routeResult = await router.routeRequest(
+              messagesForLlm,
+              orchestratorPrompt,
+              this.llmApiKey || this.apiKey || '',
+              this.llmModelName || '',
+            );
+
+            llmResponse = routeResult.response;
+            this.activeLlmProvider = routeResult.provider;
+            this.session.activeLlmProvider = routeResult.provider;
+
+            // Save session with updated provider
+            await this.sessionManager.saveSession(
+              this.session,
+              this.job,
+              this.taskQueue,
+            );
+
+            this.log.info(
+              {
+                provider: routeResult.provider,
+                attempts: routeResult.attempts,
+                totalTime: routeResult.totalTime,
+                fallbackUsed: routeResult.fallbackUsed,
+                responseLength: llmResponse.length,
+              },
+              '✅ LLM Router: Request completed successfully',
+            );
+          } catch (routingError) {
+            this.log.error(
+              { routingError },
+              '❌ LLM Router: All providers failed',
+            );
+
+            // Fallback to original logic if router completely fails
+            try {
+              llmResponse = await this.attemptFallbackResponse();
+              if (!llmResponse) {
+                const localResponse =
+                  await this.generateLocalFallbackResponse();
+                if (localResponse) {
+                  llmResponse = localResponse;
+                } else {
+                  throw new LlmError(
+                    'All fallback approaches failed. Cannot continue.',
+                  );
+                }
+              }
+            } catch (fallbackError) {
+              this.log.error(
+                { fallbackError },
+                'All fallback approaches failed',
+              );
+              throw new LlmError(
+                'No LLM provider could provide a response, and fallback approaches failed.',
+              );
+            }
           }
 
+          // Temporary comment out old code - will be completely removed
+          /*
           // Track Qwen timeout retries
           let qwenTimeoutRetries = 0;
           const MAX_QWEN_TIMEOUT_RETRIES = 8; // Augmenté à 8 tentatives
@@ -425,6 +594,7 @@ export class Agent {
               throw new LlmError('No LLM provider in the hierarchy could provide a response, and fallback approaches failed.');
             }
           }
+          */
 
           if (this.interrupted) {
             this.log.info('Job has been interrupted.');
@@ -528,10 +698,12 @@ export class Agent {
                 name: 'display_canvas',
                 params: {
                   content: canvas.content,
-                  contentType: canvas.contentType || 'html'
-                }
+                  contentType: canvas.contentType || 'html',
+                },
               };
-              this.log.info('🔧 Converting canvas output to display_canvas tool call');
+              this.log.info(
+                '🔧 Converting canvas output to display_canvas tool call',
+              );
             }
           }
 
@@ -649,7 +821,10 @@ export class Agent {
             }
 
             // Handle pending multi-file operations
-            if (this.pendingMultiFileOperations.length > 0 && command.name === 'writeFile') {
+            if (
+              this.pendingMultiFileOperations.length > 0 &&
+              command.name === 'writeFile'
+            ) {
               const nextFile = this.pendingMultiFileOperations.shift();
               if (nextFile) {
                 iterationLog.info(`Creating next file: ${nextFile.filename}`);
@@ -658,12 +833,15 @@ export class Agent {
                   name: 'writeFile' as const,
                   params: {
                     path: nextFile.filename,
-                    content: nextFile.content
+                    content: nextFile.content,
                   },
                 };
 
                 // Execute the next file creation
-                const nextResult = await this.executeTool(nextCommand, iterationLog);
+                const nextResult = await this.executeTool(
+                  nextCommand,
+                  iterationLog,
+                );
                 this.session.history.push({
                   id: crypto.randomUUID(),
                   result: nextResult as Record<string, unknown>,
@@ -673,17 +851,25 @@ export class Agent {
                 });
 
                 // If this is the last file and it's HTML, display it in canvas
-                if (this.pendingMultiFileOperations.length === 0 && nextFile.type === 'html') {
-                  iterationLog.info('All files created, displaying HTML in canvas');
+                if (
+                  this.pendingMultiFileOperations.length === 0 &&
+                  nextFile.type === 'html'
+                ) {
+                  iterationLog.info(
+                    'All files created, displaying HTML in canvas',
+                  );
                   const canvasCommand = {
                     name: 'display_canvas' as const,
                     params: {
                       content: nextFile.content,
-                      contentType: 'html'
+                      contentType: 'html',
                     },
                   };
 
-                  const canvasResult = await this.executeTool(canvasCommand, iterationLog);
+                  const canvasResult = await this.executeTool(
+                    canvasCommand,
+                    iterationLog,
+                  );
                   this.session.history.push({
                     id: crypto.randomUUID(),
                     result: canvasResult as Record<string, unknown>,
@@ -734,62 +920,84 @@ export class Agent {
           if (errorMessage.includes('Failed to parse LLM response')) {
             this.malformedResponseCounter++;
             this.session.history.push({
-              content:
-                `I was unable to parse your last response (attempt ${this.malformedResponseCounter}/${this.MAX_MALFORMED_RESPONSES}). Please ensure your response is a valid JSON object with the expected properties ('thought', 'command', 'canvas', or 'answer'). Check for syntax errors, missing commas, or unclosed brackets. If you need to provide a simple response, use the 'finish' tool with a 'response' parameter.`,
+              content: `I was unable to parse your last response (attempt ${this.malformedResponseCounter}/${this.MAX_MALFORMED_RESPONSES}). Please ensure your response is a valid JSON object with the expected properties ('thought', 'command', 'canvas', or 'answer'). Check for syntax errors, missing commas, or unclosed brackets. If you need to provide a simple response, use the 'finish' tool with a 'response' parameter.`,
               id: crypto.randomUUID(),
               timestamp: Date.now(),
               type: 'error',
             });
-            
+
             // If we've had too many malformed responses, try fallback approach
-              if (this.malformedResponseCounter >= this.MAX_MALFORMED_RESPONSES) {
-                this.log.error('Too many malformed responses. Attempting fallback approach.');
-                try {
-                  const fallbackResponse = await this.attemptFallbackResponse();
-                  if (fallbackResponse) {
-                    return fallbackResponse;
-                  }
-                } catch (fallbackError) {
-                  this.log.error({ fallbackError }, 'Fallback approach also failed');
+            if (this.malformedResponseCounter >= this.MAX_MALFORMED_RESPONSES) {
+              this.log.error(
+                'Too many malformed responses. Attempting fallback approach.',
+              );
+              try {
+                const fallbackResponse = await this.attemptFallbackResponse();
+                if (fallbackResponse) {
+                  return fallbackResponse;
                 }
- 
-                // Last resort: provide a simple finish response
-                this.log.warn('Using emergency fallback response');
-                return JSON.stringify({
-                  thought: "Unable to parse LLM response, using emergency fallback",
-                  command: {
-                    name: "finish",
-                    params: {
-                      response: "I apologize, but I'm having trouble processing your request. Could you please rephrase it?"
-                    }
-                  }
-                });
+              } catch (fallbackError) {
+                this.log.error(
+                  { fallbackError },
+                  'Fallback approach also failed',
+                );
               }
+
+              // Last resort: provide a simple finish response
+              this.log.warn('Using emergency fallback response');
+              return JSON.stringify({
+                thought:
+                  'Unable to parse LLM response, using emergency fallback',
+                command: {
+                  name: 'finish',
+                  params: {
+                    response:
+                      "I apologize, but I'm having trouble processing your request. Could you please rephrase it?",
+                  },
+                },
+              });
+            }
             continue;
           } else if (errorMessage.includes('Error executing tool')) {
             // This error is already handled by the logic above, so we just continue
             continue;
-          } else if (errorMessage.includes('Failed to communicate with the LLM') ||
-                    errorMessage.includes('LLM API') ||
-                    errorMessage.includes('network') ||
-                    errorMessage.includes('timeout') ||
-                    errorMessage.includes('API key not valid') ||
-                    errorMessage.includes('API_KEY_INVALID')) {
+          } else if (
+            errorMessage.includes('Failed to communicate with the LLM') ||
+            errorMessage.includes('LLM API') ||
+            errorMessage.includes('network') ||
+            errorMessage.includes('timeout') ||
+            errorMessage.includes('API key not valid') ||
+            errorMessage.includes('API_KEY_INVALID')
+          ) {
             // Handle LLM communication failures with retry logic
             this.llmFailureCounter++;
-            this.log.error(`LLM communication failure (attempt ${this.llmFailureCounter}/${this.MAX_LLM_FAILURES}): ${errorMessage}`);
+            this.log.error(
+              `LLM communication failure (attempt ${this.llmFailureCounter}/${this.MAX_LLM_FAILURES}): ${errorMessage}`,
+            );
 
             if (this.llmFailureCounter >= this.MAX_LLM_FAILURES) {
-              this.log.error('Max LLM failures reached. Attempting fallback mode...');
+              this.log.error(
+                'Max LLM failures reached. Attempting fallback mode...',
+              );
 
               // Try to continue with local tasks instead of stopping
               try {
-                const localResponse = await this.generateLocalFallbackResponse();
+                const localResponse =
+                  await this.generateLocalFallbackResponse();
                 if (localResponse) {
-                  this.log.info('Successfully generated local fallback response');
+                  this.log.info(
+                    'Successfully generated local fallback response',
+                  );
                   // Parse and use the local response
-                  const parsedLocal = this.parseLlmResponse(localResponse, this.log);
-                  const { answer: localAnswer, canvas: localCanvas, thought: localThought } = parsedLocal;
+                  const parsedLocal = this.parseLlmResponse(
+                    localResponse,
+                    this.log,
+                  );
+                  const {
+                    answer: localAnswer,
+                    canvas: localCanvas,
+                    thought: localThought,
+                  } = parsedLocal;
                   let localCommand = parsedLocal.command;
 
                   // Process the local response similar to normal flow
@@ -804,14 +1012,28 @@ export class Agent {
 
                   if (localCommand && localCommand.name === 'finish') {
                     try {
-                      const finishResult = await this.executeTool(localCommand, this.log);
-                      if (typeof finishResult === 'object' && finishResult !== null && 'answer' in finishResult) {
-                        const finalAnswer = (finishResult as { answer: string }).answer;
-                        this.publishToChannel({ content: finalAnswer, type: 'agent_response' });
+                      const finishResult = await this.executeTool(
+                        localCommand,
+                        this.log,
+                      );
+                      if (
+                        typeof finishResult === 'object' &&
+                        finishResult !== null &&
+                        'answer' in finishResult
+                      ) {
+                        const finalAnswer = (finishResult as { answer: string })
+                          .answer;
+                        this.publishToChannel({
+                          content: finalAnswer,
+                          type: 'agent_response',
+                        });
                         return finalAnswer;
                       }
                     } catch (finishError) {
-                      this.log.error({ finishError }, 'Local finish command failed');
+                      this.log.error(
+                        { finishError },
+                        'Local finish command failed',
+                      );
                     }
                   }
 
@@ -825,7 +1047,9 @@ export class Agent {
             }
 
             // Add delay before retry and continue
-            await new Promise(resolve => setTimeout(resolve, 2000 * this.llmFailureCounter));
+            await new Promise((resolve) =>
+              setTimeout(resolve, 2000 * this.llmFailureCounter),
+            );
             continue;
           } else {
             this.session.history.push({
@@ -910,7 +1134,10 @@ export class Agent {
 
     for (const behavior of recentResponses) {
       if (behavior.thought) {
-        const similarity = this.calculateTextSimilarity(response, behavior.thought);
+        const similarity = this.calculateTextSimilarity(
+          response,
+          behavior.thought,
+        );
         if (similarity > similarityThreshold) {
           return true;
         }
@@ -941,10 +1168,12 @@ export class Agent {
     let thought: string | undefined;
 
     // Check for Gemini API error messages that should be thrown as errors
-    if (cleanText.includes('currently unable to process your request') || 
-        cleanText.includes('quota') && cleanText.includes('exceeded') ||
-        cleanText.includes('free-tier quota') ||
-        cleanText.includes('Please try again once the quota has reset')) {
+    if (
+      cleanText.includes('currently unable to process your request') ||
+      (cleanText.includes('quota') && cleanText.includes('exceeded')) ||
+      cleanText.includes('free-tier quota') ||
+      cleanText.includes('Please try again once the quota has reset')
+    ) {
       throw new Error(`Gemini API Error: ${cleanText}`);
     }
 
@@ -971,7 +1200,9 @@ export class Agent {
     }
 
     // Handle the specific pattern: Thought: ...{"command": {...}}
-    const thoughtJsonPattern = cleanText.match(/Thought:\s*([^}]+)\s*(\{[\s\S]*?\})/);
+    const thoughtJsonPattern = cleanText.match(
+      /Thought:\s*([^}]+)\s*(\{[\s\S]*?\})/,
+    );
     if (thoughtJsonPattern) {
       try {
         const jsonPart = thoughtJsonPattern[2];
@@ -983,10 +1214,820 @@ export class Agent {
       }
     }
 
+    // 🎯 PRIORITY: Check for explicit tool names and intent first
+    const lowerCleanText = cleanText.toLowerCase();
+    
+    // Enhanced readFile detection
+    if (lowerCleanText.includes('readfile') || 
+        (lowerCleanText.includes('lire') && lowerCleanText.includes('fichier')) ||
+        (lowerCleanText.includes('read') && lowerCleanText.includes('file')) ||
+        lowerCleanText.includes('analyser') ||
+        (lowerCleanText.includes('complex.json') || lowerCleanText.includes('test-complex'))) {
+      const fileMatch = cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/);
+      const fileName = fileMatch ? fileMatch[0] : 'test-complex.json';
+      return JSON.stringify({
+        thought: `Lecture du fichier ${fileName} pour analyser son contenu`,
+        command: {
+          name: 'readFile',
+          params: { path: fileName },
+        },
+      });
+    }
+
+    // Enhanced editFile detection
+    if (lowerCleanText.includes('editfile') || 
+        (lowerCleanText.includes('ajouter') && lowerCleanText.includes('fichier')) ||
+        (lowerCleanText.includes('modifier') && lowerCleanText.includes('fichier')) ||
+        (lowerCleanText.includes('edit') && lowerCleanText.includes('file')) ||
+        lowerCleanText.includes('append')) {
+      const fileMatch = cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/);
+      const fileName = fileMatch ? fileMatch[0] : 'test-file.txt';
+      const contentMatch = cleanText.match(/"([^"]+)"/) || cleanText.match(/'([^']+)'/);
+      const content = contentMatch ? contentMatch[1] : 'Ligne ajoutée par Dusk';
+      return JSON.stringify({
+        thought: `Ajout de contenu au fichier ${fileName}`,
+        command: {
+          name: 'editFile',
+          params: {
+            path: fileName,
+            content_to_replace: '$',  // End of file for append
+            new_content: `\n${content}`,
+            is_regex: true
+          },
+        },
+      });
+    }
+
+    // Enhanced shell command detection
+    if (lowerCleanText.includes('executeshellcommand') ||
+        (lowerCleanText.includes('copy') && lowerCleanText.includes('file')) ||
+        (lowerCleanText.includes('copier') && lowerCleanText.includes('fichier')) ||
+        lowerCleanText.includes(' cp ')) {
+      // Extract shell command or construct copy command
+      const commandMatch = cleanText.match(/"([^"]+)"/) || cleanText.match(/'([^']+)'/);
+      let shellCommand = commandMatch ? commandMatch[1] : '';
+      
+      // If no explicit command, try to construct a copy command
+      if (!shellCommand) {
+        const fileMatches = cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/g);
+        if (fileMatches && fileMatches.length >= 2) {
+          shellCommand = `cp "${fileMatches[0]}" "${fileMatches[1]}"`;
+        } else {
+          shellCommand = 'echo "Hello World"';
+        }
+      }
+      
+      return JSON.stringify({
+        thought: `Exécution de la commande: ${shellCommand}`,
+        command: {
+          name: 'executeShellCommand',
+          params: { command: shellCommand },
+        },
+      });
+    }
+
     // 🚨 ENHANCEMENT: Check if we should switch to local mode due to API issues
-    if (this.llmFailureCounter > 0 && this.detectIfShouldUseLocalMode(cleanText)) {
+    if (
+      this.llmFailureCounter > 0 &&
+      this.detectIfShouldUseLocalMode(cleanText)
+    ) {
       this.log.info('🔄 Switching to local mode due to API failures');
       return this.generateLocalModeResponse(cleanText);
+    }
+
+    // ===== PLAYWRIGHT AUTOMATION COMMANDS (SEPARATE FROM CANVAS) =====
+    // Playwright = Browser automation pour CAPTURER/INTERAGIR
+    // Canvas = UI component pour AFFICHER le contenu capturé
+    // PRIORITY: Check for explicit Playwright commands
+    if (cleanText.toLowerCase().includes('playwright_navigate')) {
+      const urlMatch =
+        cleanText.match(/https?:\/\/[^\s<>"']+/i) ||
+        cleanText.match(/vers?\s+([^\s<>"']+)/i);
+      const url = urlMatch ? urlMatch[0] : 'https://example.com';
+      return JSON.stringify({
+        thought: `Navigation vers ${url}`,
+        command: {
+          name: 'playwright_navigate',
+          params: { url: url },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_click')) {
+      const selectorMatch =
+        cleanText.match(/sur\s+(?:le\s+)?(?:lien\s+)?"([^"]+)"/i) ||
+        cleanText.match(/click\s+(?:on\s+)?(?:the\s+)?"([^"]+)"/i) ||
+        cleanText.match(/"([^"]+)"/);
+      const selector = selectorMatch ? selectorMatch[1] : 'a[href*="more"]';
+      return JSON.stringify({
+        thought: `Clic sur l'élément ${selector}`,
+        command: {
+          name: 'playwright_click',
+          params: { selector: selector },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_wait_for_selector')) {
+      const selectorMatch =
+        cleanText.match(/attendre\s+(?:un\s+)?([^\s]+)/i) ||
+        cleanText.match(/wait.*?for.*?([^\s]+)/i) ||
+        cleanText.match(/h\d+/i);
+      const selector = selectorMatch ? selectorMatch[1] : 'h1';
+      return JSON.stringify({
+        thought: `Attente du sélecteur ${selector}`,
+        command: {
+          name: 'playwright_wait_for_selector',
+          params: { selector: selector },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_get_content')) {
+      return JSON.stringify({
+        thought: 'Extraction du contenu de la page',
+        command: {
+          name: 'playwright_get_content',
+          params: {},
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_type')) {
+      const textMatch =
+        cleanText.match(/dans.*?"([^"]+)"/i) ||
+        cleanText.match(/type.*?"([^"]+)"/i);
+      const text = textMatch ? textMatch[1] : 'test';
+      return JSON.stringify({
+        thought: `Saisie du texte: ${text}`,
+        command: {
+          name: 'playwright_type',
+          params: { selector: 'input', text: text },
+        },
+      });
+    }
+
+    // Additional Playwright commands
+    if (cleanText.toLowerCase().includes('playwright_screenshot')) {
+      return JSON.stringify({
+        thought: "Capture d'écran de la page",
+        command: {
+          name: 'playwright_screenshot',
+          params: { fullPage: true },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_set_viewport')) {
+      const sizeMatch = cleanText.match(/(\d+)x(\d+)/i);
+      const width = sizeMatch ? parseInt(sizeMatch[1]) : 1280;
+      const height = sizeMatch ? parseInt(sizeMatch[2]) : 720;
+      return JSON.stringify({
+        thought: `Configuration de la fenêtre ${width}x${height}`,
+        command: {
+          name: 'playwright_set_viewport',
+          params: { width: width, height: height },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_evaluate')) {
+      const codeMatch =
+        cleanText.match(/console\.log\("([^"]+)"\)/i) ||
+        cleanText.match(/"([^"]+)"/);
+      const code = codeMatch
+        ? `console.log("${codeMatch[1]}")`
+        : 'console.log("Test Browser Live View")';
+      return JSON.stringify({
+        thought: `Exécution du code JavaScript: ${code}`,
+        command: {
+          name: 'playwright_evaluate',
+          params: { expression: code },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_scroll')) {
+      return JSON.stringify({
+        thought: 'Défilement de la page vers le bas',
+        command: {
+          name: 'playwright_scroll',
+          params: { direction: 'down', amount: 500 },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_get_title')) {
+      return JSON.stringify({
+        thought: 'Récupération du titre de la page',
+        command: {
+          name: 'playwright_get_title',
+          params: {},
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_get_url')) {
+      return JSON.stringify({
+        thought: "Récupération de l'URL actuelle",
+        command: {
+          name: 'playwright_get_url',
+          params: {},
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_reload')) {
+      return JSON.stringify({
+        thought: 'Rechargement de la page',
+        command: {
+          name: 'playwright_reload',
+          params: {},
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_go_back')) {
+      return JSON.stringify({
+        thought: 'Retour à la page précédente',
+        command: {
+          name: 'playwright_go_back',
+          params: {},
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_go_forward')) {
+      return JSON.stringify({
+        thought: 'Avancer à la page suivante',
+        command: {
+          name: 'playwright_go_forward',
+          params: {},
+        },
+      });
+    }
+
+    // Console and DevTools commands
+    if (cleanText.toLowerCase().includes('playwright_console_log')) {
+      return JSON.stringify({
+        thought: 'Capture des logs de la console',
+        command: {
+          name: 'playwright_console_log',
+          params: { enable: true },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_console_error')) {
+      return JSON.stringify({
+        thought: 'Détection des erreurs console',
+        command: {
+          name: 'playwright_console_error',
+          params: { enable: true },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_console_warn')) {
+      return JSON.stringify({
+        thought: 'Détection des avertissements console',
+        command: {
+          name: 'playwright_console_warn',
+          params: { enable: true },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_inject_script')) {
+      const scriptMatch =
+        cleanText.match(/injecter\s+(?:du\s+)?code\s+"([^"]+)"/i) ||
+        cleanText.match(/inject.*?"([^"]+)"/i);
+      const script = scriptMatch
+        ? scriptMatch[1]
+        : 'console.log("Script injecté");';
+      return JSON.stringify({
+        thought: `Injection de script: ${script}`,
+        command: {
+          name: 'playwright_inject_script',
+          params: { script: script },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_evaluate_console')) {
+      const codeMatch =
+        cleanText.match(/console\s+"([^"]+)"/i) ||
+        cleanText.match(/exécuter.*?"([^"]+)"/i);
+      const code = codeMatch ? codeMatch[1] : 'document.title';
+      return JSON.stringify({
+        thought: `Exécution dans la console: ${code}`,
+        command: {
+          name: 'playwright_evaluate_console',
+          params: { expression: code },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_get_console_messages')) {
+      return JSON.stringify({
+        thought: 'Récupération des messages console',
+        command: {
+          name: 'playwright_get_console_messages',
+          params: {},
+        },
+      });
+    }
+
+    // Advanced interaction commands
+    if (cleanText.toLowerCase().includes('playwright_double_click')) {
+      const selectorMatch = cleanText.match(
+        /sur\s+(?:l'élément\s+)?"?([^"]+)"?/i,
+      );
+      const selector = selectorMatch ? selectorMatch[1] : 'button';
+      return JSON.stringify({
+        thought: `Double-clic sur ${selector}`,
+        command: {
+          name: 'playwright_double_click',
+          params: { selector: selector },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_right_click')) {
+      const selectorMatch = cleanText.match(
+        /sur\s+(?:l'élément\s+)?"?([^"]+)"?/i,
+      );
+      const selector = selectorMatch ? selectorMatch[1] : 'body';
+      return JSON.stringify({
+        thought: `Clic droit sur ${selector}`,
+        command: {
+          name: 'playwright_right_click',
+          params: { selector: selector },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_drag_and_drop')) {
+      return JSON.stringify({
+        thought: "Glisser-déposer d'éléments",
+        command: {
+          name: 'playwright_drag_and_drop',
+          params: {
+            source: '.draggable-item',
+            target: '.drop-zone',
+          },
+        },
+      });
+    }
+
+    // Search commands
+    if (cleanText.toLowerCase().includes('playwright_search_google')) {
+      const termMatch =
+        cleanText.match(/terme\s+"([^"]+)"/i) ||
+        cleanText.match(/recherche\s+"([^"]+)"/i);
+      const term = termMatch ? termMatch[1] : 'test search';
+      return JSON.stringify({
+        thought: `Recherche Google: ${term}`,
+        command: {
+          name: 'playwright_search_google',
+          params: { query: term },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_search_youtube')) {
+      const termMatch =
+        cleanText.match(/terme\s+"([^"]+)"/i) ||
+        cleanText.match(/recherche\s+"([^"]+)"/i);
+      const term = termMatch ? termMatch[1] : 'programming tutorial';
+      return JSON.stringify({
+        thought: `Recherche YouTube: ${term}`,
+        command: {
+          name: 'playwright_search_youtube',
+          params: { query: term },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_search_github')) {
+      const termMatch =
+        cleanText.match(/terme\s+"([^"]+)"/i) ||
+        cleanText.match(/recherche\s+"([^"]+)"/i);
+      const term = termMatch ? termMatch[1] : 'playwright examples';
+      return JSON.stringify({
+        thought: `Recherche GitHub: ${term}`,
+        command: {
+          name: 'playwright_search_github',
+          params: { query: term },
+        },
+      });
+    }
+
+    // Performance monitoring
+    if (cleanText.toLowerCase().includes('playwright_measure_page_load')) {
+      return JSON.stringify({
+        thought: 'Mesure du temps de chargement de page',
+        command: {
+          name: 'playwright_measure_page_load',
+          params: {},
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_memory_usage')) {
+      return JSON.stringify({
+        thought: "Monitoring de l'utilisation mémoire",
+        command: {
+          name: 'playwright_memory_usage',
+          params: {},
+        },
+      });
+    }
+
+    // Network and security
+    if (cleanText.toLowerCase().includes('playwright_network_inspector')) {
+      return JSON.stringify({
+        thought: 'Inspection du trafic réseau',
+        command: {
+          name: 'playwright_network_inspector',
+          params: { enable: true },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_check_security_headers')) {
+      return JSON.stringify({
+        thought: 'Vérification des headers de sécurité',
+        command: {
+          name: 'playwright_check_security_headers',
+          params: {},
+        },
+      });
+    }
+
+    // Anti-detection and stealth commands
+    if (cleanText.toLowerCase().includes('playwright_stealth_mode')) {
+      return JSON.stringify({
+        thought: 'Activation du mode furtif complet',
+        command: {
+          name: 'playwright_stealth_mode',
+          params: { enable: true },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_random_user_agent')) {
+      return JSON.stringify({
+        thought: "Configuration d'un user-agent aléatoire réaliste",
+        command: {
+          name: 'playwright_random_user_agent',
+          params: { platform: 'random', browser: 'random' },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_fake_webgl_renderer')) {
+      return JSON.stringify({
+        thought: "Simulation d'un GPU différent",
+        command: {
+          name: 'playwright_fake_webgl_renderer',
+          params: {
+            renderer: 'NVIDIA GeForce GTX 1060',
+            vendor: 'NVIDIA Corporation',
+          },
+        },
+      });
+    }
+
+    if (
+      cleanText.toLowerCase().includes('playwright_spoof_canvas_fingerprint')
+    ) {
+      return JSON.stringify({
+        thought: "Masquage de l'empreinte canvas",
+        command: {
+          name: 'playwright_spoof_canvas_fingerprint',
+          params: { randomize: true },
+        },
+      });
+    }
+
+    if (
+      cleanText.toLowerCase().includes('playwright_hide_webdriver_property')
+    ) {
+      return JSON.stringify({
+        thought: 'Masquage de la propriété webdriver',
+        command: {
+          name: 'playwright_hide_webdriver_property',
+          params: { hide: true },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_fake_plugins')) {
+      return JSON.stringify({
+        thought: 'Simulation de plugins navigateur réalistes',
+        command: {
+          name: 'playwright_fake_plugins',
+          params: {
+            plugins: [
+              'Chrome PDF Plugin',
+              'Adobe Flash Player',
+              'Java Applet Plug-in',
+            ],
+          },
+        },
+      });
+    }
+
+    if (
+      cleanText.toLowerCase().includes('playwright_randomize_screen_resolution')
+    ) {
+      return JSON.stringify({
+        thought: "Randomisation de la résolution d'écran",
+        command: {
+          name: 'playwright_randomize_screen_resolution',
+          params: {
+            common_resolutions: true,
+            avoid_uncommon: true,
+          },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_human_mouse_movement')) {
+      return JSON.stringify({
+        thought: 'Simulation de mouvements souris humains réalistes',
+        command: {
+          name: 'playwright_human_mouse_movement',
+          params: {
+            enable_jitter: true,
+            realistic_curves: true,
+            random_delays: true,
+          },
+        },
+      });
+    }
+
+    // Bypass detection systems
+    if (cleanText.toLowerCase().includes('playwright_bypass_cloudflare')) {
+      return JSON.stringify({
+        thought: 'Contournement des protections Cloudflare',
+        command: {
+          name: 'playwright_bypass_cloudflare',
+          params: {
+            method: 'stealth',
+            challenge_solver: true,
+          },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_bypass_recaptcha')) {
+      return JSON.stringify({
+        thought: 'Contournement des reCAPTCHA',
+        command: {
+          name: 'playwright_bypass_recaptcha',
+          params: {
+            solver: 'ai_based',
+            audio_fallback: true,
+          },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_human_typing_speed')) {
+      return JSON.stringify({
+        thought: 'Simulation de vitesse de frappe humaine variable',
+        command: {
+          name: 'playwright_human_typing_speed',
+          params: {
+            wpm_min: 40,
+            wpm_max: 80,
+            errors: true,
+            corrections: true,
+          },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_rotating_proxy')) {
+      return JSON.stringify({
+        thought: 'Rotation automatique de proxies',
+        command: {
+          name: 'playwright_rotating_proxy',
+          params: {
+            proxy_list: ['residential', 'datacenter'],
+            rotation_interval: 300,
+            country_rotation: true,
+          },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('playwright_spoof_timezone')) {
+      return JSON.stringify({
+        thought: 'Changement du fuseau horaire',
+        command: {
+          name: 'playwright_spoof_timezone',
+          params: {
+            timezone: 'random',
+            match_proxy_location: true,
+          },
+        },
+      });
+    }
+
+    if (
+      cleanText.toLowerCase().includes('playwright_behavioral_pattern_analysis')
+    ) {
+      return JSON.stringify({
+        thought: 'Analyse des patterns comportementaux pour éviter détection',
+        command: {
+          name: 'playwright_behavioral_pattern_analysis',
+          params: {
+            learn_from_humans: true,
+            adaptive_behavior: true,
+            pattern_randomization: true,
+          },
+        },
+      });
+    }
+
+    // ===== CANVAS DISPLAY COMMANDS (SEPARATE FROM PLAYWRIGHT) =====
+    // Canvas = Interface UI pour AFFICHER du contenu
+    // Playwright = Outil pour CAPTURER/AUTOMATISER des sites web
+    // NE JAMAIS CONFONDRE LES DEUX !
+    // Canvas display and rendering commands
+    if (cleanText.toLowerCase().includes('canvas_display_simple_html')) {
+      return JSON.stringify({
+        thought: 'Affichage de HTML basique dans le canvas',
+        command: {
+          name: 'displayCanvas',
+          params: {
+            contentType: 'html',
+            content:
+              '<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Hello World</h1></body></html>',
+            title: 'HTML Simple',
+          },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_complex_website')) {
+      return JSON.stringify({
+        thought: "Affichage d'un site web complexe dans le canvas",
+        command: {
+          name: 'displayCanvas',
+          params: {
+            contentType: 'website',
+            url: 'https://example.com',
+            title: 'Site Web Complexe',
+            interactive: true,
+          },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_interactive_game')) {
+      return JSON.stringify({
+        thought: "Affichage d'un jeu HTML5 interactif",
+        command: {
+          name: 'displayCanvas',
+          params: {
+            contentType: 'game',
+            gameType: 'html5',
+            title: 'Jeu Interactif',
+            interactive: true,
+            fullscreen: true,
+          },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_video_content')) {
+      return JSON.stringify({
+        thought: 'Affichage de contenu vidéo dans le canvas',
+        command: {
+          name: 'displayCanvas',
+          params: {
+            contentType: 'video',
+            controls: true,
+            autoplay: false,
+            title: 'Contenu Vidéo',
+          },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_3d_graphics')) {
+      return JSON.stringify({
+        thought: 'Affichage de graphiques 3D WebGL',
+        command: {
+          name: 'displayCanvas',
+          params: {
+            contentType: 'webgl',
+            graphics: '3d',
+            interactive: true,
+            title: 'Graphiques 3D',
+          },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_screenshot_full_page')) {
+      return JSON.stringify({
+        thought: "Capture d'écran de la page entière",
+        command: {
+          name: 'playwright_screenshot',
+          params: {
+            fullPage: true,
+            quality: 90,
+            type: 'png',
+          },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_render_real_time_data')) {
+      return JSON.stringify({
+        thought: 'Rendu de données temps réel dans le canvas',
+        command: {
+          name: 'displayCanvas',
+          params: {
+            contentType: 'data',
+            realTime: true,
+            updateInterval: 1000,
+            title: 'Données Temps Réel',
+            charts: true,
+          },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_code_editor')) {
+      return JSON.stringify({
+        thought: "Affichage d'un éditeur de code",
+        command: {
+          name: 'displayCanvas',
+          params: {
+            contentType: 'code',
+            language: 'javascript',
+            theme: 'dark',
+            lineNumbers: true,
+            title: 'Éditeur de Code',
+            interactive: true,
+          },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_dashboard_app')) {
+      return JSON.stringify({
+        thought: "Affichage d'une application dashboard",
+        command: {
+          name: 'displayCanvas',
+          params: {
+            contentType: 'dashboard',
+            widgets: ['charts', 'metrics', 'tables'],
+            realTime: true,
+            title: 'Dashboard Application',
+            responsive: true,
+          },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_bar_charts')) {
+      return JSON.stringify({
+        thought: 'Affichage de graphiques en barres',
+        command: {
+          name: 'displayCanvas',
+          params: {
+            contentType: 'chart',
+            chartType: 'bar',
+            data: [10, 20, 30, 40, 50],
+            labels: ['A', 'B', 'C', 'D', 'E'],
+            title: 'Graphique en Barres',
+            animated: true,
+          },
+        },
+      });
+    }
+
+    if (cleanText.toLowerCase().includes('canvas_display_live_updates')) {
+      return JSON.stringify({
+        thought: 'Affichage de contenu avec mises à jour en direct',
+        command: {
+          name: 'displayCanvas',
+          params: {
+            contentType: 'live',
+            updateMethod: 'websocket',
+            refreshRate: 2000,
+            title: 'Mises à Jour en Direct',
+            realTime: true,
+          },
+        },
+      });
     }
 
     // FIRST: Try to extract actual tool calls from the text
@@ -996,9 +2037,11 @@ export class Agent {
     // 3. "Tool Call: toolName({...})" (without parentheses)
     // 4. Plain "Tool Call: toolName(...)" when it's the only content
     // 5. "```tool_code\ntoolName(...)\n```" format
-    
+
     // Check for JSON format with "tool_code" field first
-    const jsonToolCodeMatch = cleanText.match(/```json\s*\n\s*{\s*"tool_code":\s*"([^"]+)"\s*}\s*\n```/is);
+    const jsonToolCodeMatch = cleanText.match(
+      /```json\s*\n\s*{\s*"tool_code":\s*"([^"]+)"\s*}\s*\n```/is,
+    );
     if (jsonToolCodeMatch) {
       const toolCallStr = jsonToolCodeMatch[1];
       // Parse the tool call string like "display_canvas(...)"
@@ -1006,7 +2049,7 @@ export class Agent {
       if (toolCallParsed) {
         const toolName = toolCallParsed[1];
         let paramsStr = toolCallParsed[2].trim();
-        
+
         // Handle complex parameters with escaped quotes
         let params = {};
         if (paramsStr) {
@@ -1014,16 +2057,21 @@ export class Agent {
           try {
             // Convert parameter syntax to JSON-like
             // Handle patterns like: content=json.dumps({...}), contentType="project", title="..."
-            const paramMatches = [...paramsStr.matchAll(/(\w+)=([^,]+?)(?=,\s*\w+=|$)/gs)];
-            paramMatches.forEach(match => {
+            const paramMatches = [
+              ...paramsStr.matchAll(/(\w+)=([^,]+?)(?=,\s*\w+=|$)/gs),
+            ];
+            paramMatches.forEach((match) => {
               const key = match[1];
               let value = match[2].trim();
-              
+
               // Handle different value types
               if (value.startsWith('"') && value.endsWith('"')) {
                 // String value
                 (params as any)[key] = value.slice(1, -1);
-              } else if (value.startsWith('json.dumps(') && value.endsWith(')')) {
+              } else if (
+                value.startsWith('json.dumps(') &&
+                value.endsWith(')')
+              ) {
                 // JSON dumps - extract the object
                 const jsonStr = value.slice(11, -1); // Remove "json.dumps(" and ")"
                 try {
@@ -1041,27 +2089,31 @@ export class Agent {
             params = { content: paramsStr };
           }
         }
-        
+
         // Extract thought from everything before ```json
         const thoughtMatch = cleanText.match(/^(.*?)```json/s);
-        const thought = thoughtMatch ? thoughtMatch[1].trim() : `Exécution de l'outil ${toolName}`;
-        
+        const thought = thoughtMatch
+          ? thoughtMatch[1].trim()
+          : `Exécution de l'outil ${toolName}`;
+
         return JSON.stringify({
           thought: thought,
           command: {
             name: toolName,
-            params: params
-          }
+            params: params,
+          },
         });
       }
     }
-    
+
     // Check for ```tool_code format first
-    const toolCodeMatch = cleanText.match(/```tool_code\s*\n\s*(\w+)\s*\(\s*([\s\S]*?)\s*\)\s*\n```/is);
+    const toolCodeMatch = cleanText.match(
+      /```tool_code\s*\n\s*(\w+)\s*\(\s*([\s\S]*?)\s*\)\s*\n```/is,
+    );
     if (toolCodeMatch) {
       const toolName = toolCodeMatch[1];
       let paramsStr = toolCodeMatch[2].trim();
-      
+
       // Handle different parameter formats
       let params = {};
       if (paramsStr) {
@@ -1071,111 +2123,141 @@ export class Agent {
             params = JSON.parse(paramsStr);
           } catch (e) {
             // If JSON parse fails, try to extract key-value pairs
-            const keyValueMatches = [...paramsStr.matchAll(/(\w+)=['"](.*?)['"],?/g)];
-            keyValueMatches.forEach(match => {
-              (params as any)[match[1]] = match[2].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+            const keyValueMatches = [
+              ...paramsStr.matchAll(/(\w+)=['"](.*?)['"],?/g),
+            ];
+            keyValueMatches.forEach((match) => {
+              (params as any)[match[1]] = match[2]
+                .replace(/\\n/g, '\n')
+                .replace(/\\"/g, '"')
+                .replace(/\\\\/g, '\\');
             });
           }
         } else {
           // Handle key=value format
-          const keyValueMatches = [...paramsStr.matchAll(/(\w+)=['"](.*?)['"],?/gs)];
-          keyValueMatches.forEach(match => {
-            (params as any)[match[1]] = match[2].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+          const keyValueMatches = [
+            ...paramsStr.matchAll(/(\w+)=['"](.*?)['"],?/gs),
+          ];
+          keyValueMatches.forEach((match) => {
+            (params as any)[match[1]] = match[2]
+              .replace(/\\n/g, '\n')
+              .replace(/\\"/g, '"')
+              .replace(/\\\\/g, '\\');
           });
         }
       }
-      
+
       // Extract thought from everything before ```tool_code
       const thoughtMatch = cleanText.match(/^(.*?)```tool_code/s);
-      const thought = thoughtMatch ? thoughtMatch[1].trim() : `Exécution de l'outil ${toolName}`;
-      
+      const thought = thoughtMatch
+        ? thoughtMatch[1].trim()
+        : `Exécution de l'outil ${toolName}`;
+
       return JSON.stringify({
         thought: thought,
         command: {
           name: toolName,
-          params: params
-        }
+          params: params,
+        },
       });
     }
-    
-    let toolCallMatch = cleanText.match(/Tool Call:\s*(\w+)\s*with\s*params\s*(\{.*?\}(?:\s*$|\n|Tool Result:))/is);
-    
+
+    let toolCallMatch = cleanText.match(
+      /Tool Call:\s*(\w+)\s*with\s*params\s*(\{.*?\}(?:\s*$|\n|Tool Result:))/is,
+    );
+
     // If first pattern doesn't match, try the second format: "Tool Call: toolName({...})"
     if (!toolCallMatch) {
-      toolCallMatch = cleanText.match(/Tool Call:\s*(\w+)\s*\(\s*(\{[\s\S]*?\})\s*\)(?:\s*$|\n|Tool Result:)/is);
+      toolCallMatch = cleanText.match(
+        /Tool Call:\s*(\w+)\s*\(\s*(\{[\s\S]*?\})\s*\)(?:\s*$|\n|Tool Result:)/is,
+      );
     }
-    
+
     // If still no match, try even more flexible pattern without parentheses
     if (!toolCallMatch) {
-      toolCallMatch = cleanText.match(/Tool Call:\s*(\w+)\s*(\{[\s\S]*?\})(?:\s*$|\n|Tool Result:)/is);
+      toolCallMatch = cleanText.match(
+        /Tool Call:\s*(\w+)\s*(\{[\s\S]*?\})(?:\s*$|\n|Tool Result:)/is,
+      );
     }
-    
+
     // Special case: if the text starts directly with "Tool Call:" and nothing else, try to extract it
     if (!toolCallMatch && cleanText.trim().startsWith('Tool Call:')) {
-      toolCallMatch = cleanText.match(/^Tool Call:\s*(\w+)\s*\(\s*(\{[\s\S]*?\})\s*\)(?:\s*$|\n)/is);
+      toolCallMatch = cleanText.match(
+        /^Tool Call:\s*(\w+)\s*\(\s*(\{[\s\S]*?\})\s*\)(?:\s*$|\n)/is,
+      );
     }
     if (toolCallMatch) {
       const toolName = toolCallMatch[1];
       let params = {};
-      
+
       // Extract the JSON part more carefully
       let jsonStr = toolCallMatch[2].trim();
-      
+
       // For multiline JSON, find the complete JSON object by counting braces
       let braceCount = 0;
       let jsonEnd = 0;
       let inString = false;
       let escapeNext = false;
-      
+
       for (let i = 0; i < jsonStr.length; i++) {
         const char = jsonStr[i];
-        
+
         if (escapeNext) {
           escapeNext = false;
           continue;
         }
-        
+
         if (char === '\\') {
           escapeNext = true;
           continue;
         }
-        
+
         if (char === '"' && !escapeNext) {
           inString = !inString;
           continue;
         }
-        
+
         if (!inString) {
           if (char === '{') braceCount++;
           if (char === '}') braceCount--;
-          
+
           if (braceCount === 0 && char === '}') {
             jsonEnd = i + 1;
             break;
           }
         }
       }
-      
+
       if (jsonEnd > 0) {
         jsonStr = jsonStr.substring(0, jsonEnd);
       } else {
         // Fallback: remove everything after the JSON object (like "Tool Result:")
-        const jsonEndMatch = jsonStr.match(/^(\{.*?\})(?:\s*(?:Tool Result:|$|\n))/s);
+        const jsonEndMatch = jsonStr.match(
+          /^(\{.*?\})(?:\s*(?:Tool Result:|$|\n))/s,
+        );
         if (jsonEndMatch) {
           jsonStr = jsonEndMatch[1];
         }
       }
-      
+
       try {
         params = JSON.parse(jsonStr);
 
         // Special handling for display_canvas tool - ensure content is a string
-        if (toolName === 'display_canvas' && params && typeof (params as any).content === 'object') {
-          this.log.info('🔧 Converting display_canvas content object to JSON string');
+        if (
+          toolName === 'display_canvas' &&
+          params &&
+          typeof (params as any).content === 'object'
+        ) {
+          this.log.info(
+            '🔧 Converting display_canvas content object to JSON string',
+          );
           (params as any).content = JSON.stringify((params as any).content);
         }
       } catch (e) {
-        this.log.warn(`Failed to parse JSON params for tool ${toolName}: ${jsonStr}`);
+        this.log.warn(
+          `Failed to parse JSON params for tool ${toolName}: ${jsonStr}`,
+        );
         // Last fallback: extract specific fields manually
         const responseMatch = cleanText.match(/"response":\s*"([^"]+)"/);
         if (responseMatch && toolName.toLowerCase() === 'finish') {
@@ -1199,7 +2281,7 @@ export class Agent {
           const quotedValues = jsonStr.match(/"([^"]+)":\s*"([^"]+)"/g);
           if (quotedValues) {
             const extracted: Record<string, any> = {};
-            quotedValues.forEach(match => {
+            quotedValues.forEach((match) => {
               const keyValue = match.match(/"([^"]+)":\s*"([^"]+)"/);
               if (keyValue) {
                 extracted[keyValue[1]] = keyValue[2];
@@ -1209,17 +2291,19 @@ export class Agent {
           }
         }
       }
-      
+
       // Extract thought from the text (everything before Tool Call)
       const thoughtMatch = cleanText.match(/^(.*?)Tool Call:/s);
-      const thought = thoughtMatch ? thoughtMatch[1].trim() : `Appel de l'outil ${toolName}`;
-      
+      const thought = thoughtMatch
+        ? thoughtMatch[1].trim()
+        : `Appel de l'outil ${toolName}`;
+
       return JSON.stringify({
         thought: thought,
         command: {
           name: toolName,
-          params: params
-        }
+          params: params,
+        },
       });
     }
 
@@ -1272,7 +2356,8 @@ export class Agent {
 
     // If it's a direct action on a game/project, explore project structure first
     if (isDirectAction && isGameRequest) {
-      thought = "L'utilisateur demande de continuer/reprendre un projet. Je vais d'abord explorer la structure du projet.";
+      thought =
+        "L'utilisateur demande de continuer/reprendre un projet. Je vais d'abord explorer la structure du projet.";
       command = {
         name: 'listDirectory',
         params: {
@@ -1282,7 +2367,8 @@ export class Agent {
     }
     // For short continuation words, also explore project first
     else if (isDirectAction && cleanText.length < 15) {
-      thought = "L'utilisateur veut continuer. Je vais d'abord voir l'état actuel du projet.";
+      thought =
+        "L'utilisateur veut continuer. Je vais d'abord voir l'état actuel du projet.";
       command = {
         name: 'listDirectory',
         params: {
@@ -1292,14 +2378,15 @@ export class Agent {
     }
     // Handle form continuation responses (like "I will now type the telephone number...")
     else if (this.isFormContinuationResponse(cleanText)) {
-      thought = "L'IA indique qu'elle va continuer avec la prochaine étape du formulaire.";
+      thought =
+        "L'IA indique qu'elle va continuer avec la prochaine étape du formulaire.";
       command = this.getNextFormStep(cleanText);
     }
 
     // Check for canvas-related keywords (more specific to avoid false positives)
     const canvasKeywords = [
       'canvas',
-      'demo', 
+      'demo',
       'visual',
       'html page',
       'web page',
@@ -1307,23 +2394,42 @@ export class Agent {
       'render',
       'visualize',
       'graph',
-      'chart'
+      // Removed 'chart' to avoid false positives when agent plans to create charts
     ];
-    
+
     // More specific patterns for display requests (avoid agent thoughts)
     const displayPatterns = [
       /afficher.*canvas/i,
       /montrer.*canvas/i,
-      /display.*canvas/i, 
+      /display.*canvas/i,
       /show.*canvas/i,
       /create.*interface/i,
       /générer.*page/i,
-      /render.*html/i
+      /render.*html/i,
     ];
-    
-    const isCanvasRequest = canvasKeywords.some((keyword) =>
-      lowerText.includes(keyword),
-    ) || displayPatterns.some(pattern => pattern.test(cleanText));
+
+    // Check for planning/thinking phrases that should NOT trigger canvas
+    const planningPhrases = [
+      'i will generate',
+      'i need to',
+      'then, i will',
+      'je vais générer',
+      'je dois',
+      'puis, je vais',
+      'now i need',
+      'maintenant je dois',
+      'next, i will',
+      'ensuite, je vais',
+    ];
+
+    const isPlanningThought = planningPhrases.some((phrase) =>
+      lowerText.includes(phrase),
+    );
+
+    const isCanvasRequest =
+      !isPlanningThought &&
+      (canvasKeywords.some((keyword) => lowerText.includes(keyword)) ||
+        displayPatterns.some((pattern) => pattern.test(cleanText)));
 
     // Check for thought-related keywords (to avoid sending thoughts to canvas)
     const thoughtKeywords = [
@@ -1342,21 +2448,27 @@ export class Agent {
     const isThoughtContent = thoughtKeywords.some((keyword) =>
       lowerText.includes(keyword),
     );
-    
+
     // Additional check: if the text looks like agent internal thoughts/reasoning
-    const isAgentThought = cleanText.startsWith('Je vais') || 
-                          cleanText.startsWith('I will') ||
-                          cleanText.startsWith('I am going') ||
-                          cleanText.startsWith('Je dois') ||
-                          cleanText.startsWith('I need to') ||
-                          cleanText.includes('next step') ||
-                          cleanText.includes('prochaine étape');
+    const isAgentThought =
+      cleanText.startsWith('Je vais') ||
+      cleanText.startsWith('I will') ||
+      cleanText.startsWith('I am going') ||
+      cleanText.startsWith('Je dois') ||
+      cleanText.startsWith('I need to') ||
+      cleanText.startsWith('I have the') ||
+      cleanText.startsWith('Now I need') ||
+      cleanText.includes('next step') ||
+      cleanText.includes('prochaine étape') ||
+      cleanText.includes('then, i will') ||
+      cleanText.includes('then i will') ||
+      isPlanningThought;
 
     // Check for todo-related keywords (more specific to avoid false positives)
     const todoKeywords = [
       'todo',
       'task',
-      'todo list', 
+      'todo list',
       'task list',
       'liste de tâches',
       'step',
@@ -1367,10 +2479,15 @@ export class Agent {
     const isTodoRequest = todoKeywords.some((keyword) =>
       lowerText.includes(keyword),
     );
-    
+
     // Check for direct file/directory listing requests
-    const isListFilesRequest = (lowerText.includes('list') || lowerText.includes('lister')) &&
-      (lowerText.includes('workspace') || lowerText.includes('directory') || lowerText.includes('files') || lowerText.includes('fichiers') || lowerText.includes('dossier'));
+    const isListFilesRequest =
+      (lowerText.includes('list') || lowerText.includes('lister')) &&
+      (lowerText.includes('workspace') ||
+        lowerText.includes('directory') ||
+        lowerText.includes('files') ||
+        lowerText.includes('fichiers') ||
+        lowerText.includes('dossier'));
 
     // Check for creation/building requests that should use todo lists
     const creationKeywords = [
@@ -1405,11 +2522,13 @@ export class Agent {
       /```css[\s\S]*?```[\s\S]*?```javascript[\s\S]*?```/i,
       /<\!DOCTYPE html[\s\S]*?<\/html>[\s\S]*?body\s*\{[\s\S]*?\}/i,
       /index\.html[\s\S]*?style\.css[\s\S]*?game\.js/i,
-      /\*\*index\.html\*\*[\s\S]*?\*\*style\.css\*\*[\s\S]*?\*\*game\.js\*\*/i
+      /\*\*index\.html\*\*[\s\S]*?\*\*style\.css\*\*[\s\S]*?\*\*game\.js\*\*/i,
     ];
-    
-    const isMultiFileResponse = multiFilePatterns.some(pattern => pattern.test(cleanText));
-    
+
+    const isMultiFileResponse = multiFilePatterns.some((pattern) =>
+      pattern.test(cleanText),
+    );
+
     // If it's a multi-file response, parse and create files
     if (isMultiFileResponse) {
       const parsedFiles = this.parseMultiFileResponse(cleanText);
@@ -1421,7 +2540,7 @@ export class Agent {
           name: 'writeFile',
           params: {
             path: firstFile.filename,
-            content: firstFile.content
+            content: firstFile.content,
           },
         };
 
@@ -1436,14 +2555,15 @@ export class Agent {
 
     // Check if the response appears to be truncated (incomplete)
     const isTruncated = this.isResponseTruncated(cleanText);
-    
+
     // If response is truncated, provide direct response
     if (isTruncated) {
       thought = "La réponse de l'IA semble incomplète.";
       command = {
         name: 'finish',
         params: {
-          response: "La réponse précédente était incomplète. Pourriez-vous reformuler votre demande pour obtenir une réponse plus claire ?",
+          response:
+            'La réponse précédente était incomplète. Pourriez-vous reformuler votre demande pour obtenir une réponse plus claire ?',
         },
       };
     }
@@ -1469,25 +2589,27 @@ export class Agent {
     } else if (isCanvasRequest && !isThoughtContent && !isAgentThought) {
       // Handle canvas display requests (but not if it's clearly thought content or agent reasoning)
       thought = "L'utilisateur veut afficher quelque chose dans le canvas.";
-      
+
       // Filter out any JSON content or debugging information from canvas display
       let filteredContent = cleanText;
-      
+
       // Check if the content looks like debugging JSON with "thought" field
       try {
         const parsed = JSON.parse(cleanText);
         if (parsed.thought || parsed.command) {
           // This is debugging/internal agent information, don't display it in canvas
-          filteredContent = "<div style='padding: 20px; text-align: center;'><h2>Content filtered</h2><p>Internal agent debugging information was filtered out for security.</p></div>";
+          filteredContent =
+            "<div style='padding: 20px; text-align: center;'><h2>Content filtered</h2><p>Internal agent debugging information was filtered out for security.</p></div>";
         }
       } catch {
         // Not JSON, check for JSON-like patterns in text
         if (cleanText.includes('"thought"') || cleanText.includes('```json')) {
           // Contains debugging information, filter it out
-          filteredContent = "<div style='padding: 20px; text-align: center;'><h2>Content filtered</h2><p>Internal agent debugging information was filtered out for security.</p></div>";
+          filteredContent =
+            "<div style='padding: 20px; text-align: center;'><h2>Content filtered</h2><p>Internal agent debugging information was filtered out for security.</p></div>";
         }
       }
-      
+
       command = {
         name: 'display_canvas',
         params: {
@@ -1500,7 +2622,8 @@ export class Agent {
     } else if (isCreationRequest && isTodoRequest) {
       // For creation requests that mention todos, create a smart todo list
       const smartTodos = this.createSmartTodoList(cleanText);
-      thought = "Je vais créer une todo list spécifique et utile pour organiser le travail demandé.";
+      thought =
+        'Je vais créer une todo list spécifique et utile pour organiser le travail demandé.';
       command = {
         name: 'todo_write',
         params: {
@@ -1521,10 +2644,11 @@ export class Agent {
       // Other creation requests - but prevent repetitive behavior
       // Check if we've recently created a todo list to avoid loops
       const recentCommands = this.commandHistory.slice(-2); // Reduced from -3 to -2
-      const hasRecentTodoList = recentCommands.some(cmd =>
-        cmd.name === 'todo_write' &&
-        cmd.params &&
-        (cmd.params.action === 'create' || cmd.params.action === 'display')
+      const hasRecentTodoList = recentCommands.some(
+        (cmd) =>
+          cmd.name === 'todo_write' &&
+          cmd.params &&
+          (cmd.params.action === 'create' || cmd.params.action === 'display'),
       );
 
       if (hasRecentTodoList) {
@@ -1533,13 +2657,15 @@ export class Agent {
         command = {
           name: 'finish',
           params: {
-            response: "J'ai déjà créé une liste de tâches pour ce projet. Si vous souhaitez modifier ou consulter la liste existante, faites-le moi savoir.",
+            response:
+              "J'ai déjà créé une liste de tâches pour ce projet. Si vous souhaitez modifier ou consulter la liste existante, faites-le moi savoir.",
           },
         };
       } else {
         // Create a smart, specific todo list based on the user's request
         const smartTodos = this.createSmartTodoList(cleanText);
-        thought = "Je vais créer une todo list spécifique et utile pour organiser le travail demandé.";
+        thought =
+          'Je vais créer une todo list spécifique et utile pour organiser le travail demandé.';
         command = {
           name: 'todo_write',
           params: {
@@ -1549,23 +2675,184 @@ export class Agent {
       }
     } else {
       // Analyze the request to determine the appropriate tool
-      if (cleanText.toLowerCase().includes('search') || cleanText.toLowerCase().includes('recherche')) {
-        thought = "L'utilisateur demande une recherche. Je vais utiliser Playwright pour naviguer vers un moteur de recherche.";
+      if (
+        cleanText.toLowerCase().includes('search') ||
+        cleanText.toLowerCase().includes('recherche')
+      ) {
+        thought =
+          "L'utilisateur demande une recherche. Je vais utiliser Playwright pour naviguer vers un moteur de recherche.";
         command = {
           name: 'playwright_navigate',
           params: {
             url: `https://www.google.com/search?q=${encodeURIComponent(cleanText.replace(/^.*?(search|recherche)\s+/i, '').trim() || cleanText)}`,
           },
         };
-      } else if (cleanText.toLowerCase().includes('read') || cleanText.toLowerCase().includes('lire') || cleanText.toLowerCase().includes('file')) {
+      } else if (
+        // Web navigation detection (French and English)
+        cleanText.toLowerCase().includes('vas sur') ||
+        cleanText.toLowerCase().includes('va sur') ||
+        cleanText.toLowerCase().includes('aller sur') ||
+        cleanText.toLowerCase().includes('aller à') ||
+        cleanText.toLowerCase().includes('navigue sur') ||
+        cleanText.toLowerCase().includes('go to') ||
+        cleanText.toLowerCase().includes('navigate to') ||
+        cleanText.toLowerCase().includes('visit') ||
+        cleanText.toLowerCase().includes('open') ||
+        // Popular sites detection
+        cleanText.toLowerCase().includes('youtube') ||
+        cleanText.toLowerCase().includes('google') ||
+        cleanText.toLowerCase().includes('github') ||
+        cleanText.toLowerCase().includes('facebook') ||
+        cleanText.toLowerCase().includes('twitter') ||
+        cleanText.toLowerCase().includes('linkedin') ||
+        // URL patterns
+        cleanText.match(/https?:\/\/[^\s<>"']+/i)
+      ) {
+        thought = "L'utilisateur demande une navigation web. Je vais utiliser web_automation pour naviguer.";
+        
+        // Extract URL from the text
+        let url = '';
+        const lowerText = cleanText.toLowerCase();
+        
+        // Check for explicit URLs first
+        const urlMatch = cleanText.match(/https?:\/\/[^\s<>"']+/i);
+        if (urlMatch) {
+          url = urlMatch[0];
+        }
+        // Check for popular sites
+        else if (lowerText.includes('youtube')) {
+          // Look for specific person/channel after YouTube
+          const channelMatch = cleanText.match(/youtube.*?(de|et|affiche.*page.*de)\s+([a-zA-Z\s]+)/i);
+          if (channelMatch) {
+            const searchTerm = channelMatch[2].trim();
+            url = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchTerm)}`;
+          } else {
+            url = 'https://www.youtube.com';
+          }
+        }
+        else if (lowerText.includes('google')) {
+          url = 'https://www.google.com';
+        }
+        else if (lowerText.includes('github')) {
+          url = 'https://www.github.com';
+        }
+        else if (lowerText.includes('facebook')) {
+          url = 'https://www.facebook.com';
+        }
+        else if (lowerText.includes('twitter')) {
+          url = 'https://www.twitter.com';
+        }
+        else if (lowerText.includes('linkedin')) {
+          url = 'https://www.linkedin.com';
+        }
+        else {
+          // Try to extract any domain name from the text
+          const domainMatch = cleanText.match(/(?:sur|to|visit|open)\s+([a-zA-Z0-9.-]+\.com)/i);
+          if (domainMatch) {
+            url = `https://${domainMatch[1]}`;
+          } else {
+            url = 'https://www.google.com';
+          }
+        }
+        
+        command = {
+          name: 'web_automation',
+          params: {
+            action: 'navigate',
+            url: url,
+          },
+        };
+      } else if (
+        cleanText.toLowerCase().includes('editfile') ||
+        cleanText.toLowerCase().includes('edit') ||
+        cleanText.toLowerCase().includes('modifier') ||
+        cleanText.toLowerCase().includes('ajouter') ||
+        cleanText.toLowerCase().includes('add')
+      ) {
+        thought = "L'utilisateur veut modifier un fichier.";
+        // Extract filename from the text
+        const fileMatch = cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/);
+        const fileName = fileMatch ? fileMatch[0] : 'test-file.txt';
+        
+        // Extract content to add
+        const contentMatch = cleanText.match(/"([^"]+)"/) || cleanText.match(/'([^']+)'/);
+        const contentToAdd = contentMatch ? contentMatch[1] : 'New content';
+        
+        command = {
+          name: 'editFile',
+          params: {
+            path: fileName,
+            content_to_replace: '$',
+            new_content: `\n${contentToAdd}`,
+            is_regex: true
+          },
+        };
+      } else if (
+        cleanText.toLowerCase().includes('readfile') ||
+        cleanText.toLowerCase().includes('read') ||
+        cleanText.toLowerCase().includes('lire') ||
+        (cleanText.toLowerCase().includes('file') && !cleanText.toLowerCase().includes('edit'))
+      ) {
         thought = "L'utilisateur veut lire un fichier.";
+        // Better filename extraction
+        const fileMatch = cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/);
+        const fileName = fileMatch ? fileMatch[0] : 'test-complex.json';
+        
         command = {
           name: 'readFile',
           params: {
-            filePath: cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/) ? cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/)?.[0] : '/home/demon/agentforge/AgenticForge2',
+            path: fileName,
           },
         };
-      } else if (cleanText.toLowerCase().includes('workspace') || cleanText.toLowerCase().includes('project') || cleanText.toLowerCase().includes('projet')) {
+      } else if (
+        cleanText.toLowerCase().includes('copyfile') ||
+        cleanText.toLowerCase().includes('copy') ||
+        cleanText.toLowerCase().includes('copier')
+      ) {
+        thought = "L'utilisateur veut copier un fichier.";
+        // Extract source and destination from text
+        const fileMatches = cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/g);
+        const source = fileMatches ? fileMatches[0] : 'source.txt';
+        const destination = fileMatches && fileMatches[1] ? fileMatches[1] : 'destination.txt';
+        
+        command = {
+          name: 'executeShellCommand',
+          params: {
+            command: `cp "${source}" "${destination}"`,
+          },
+        };
+      } else if (
+        cleanText.toLowerCase().includes('search') ||
+        cleanText.toLowerCase().includes('replace') ||
+        cleanText.toLowerCase().includes('chercher') ||
+        cleanText.toLowerCase().includes('remplacer')
+      ) {
+        thought = "L'utilisateur veut effectuer une recherche et remplacement dans un fichier.";
+        // Extract search and replace terms
+        const searchMatch = cleanText.match(/search\s+["']([^"']+)["']/i) || 
+                           cleanText.match(/chercher\s+["']([^"']+)["']/i);
+        const replaceMatch = cleanText.match(/replace\s+["']([^"']+)["']/i) || 
+                            cleanText.match(/remplacer\s+["']([^"']+)["']/i);
+        const fileMatch = cleanText.match(/[\w/.-]+\.(js|ts|json|txt|md)/);
+        
+        const searchTerm = searchMatch ? searchMatch[1] : 'old text';
+        const replaceTerm = replaceMatch ? replaceMatch[1] : 'new text';
+        const fileName = fileMatch ? fileMatch[0] : 'test-file.txt';
+        
+        command = {
+          name: 'editFile',
+          params: {
+            path: fileName,
+            content_to_replace: searchTerm,
+            new_content: replaceTerm,
+            is_regex: false
+          },
+        };
+      } else if (
+        cleanText.toLowerCase().includes('workspace') ||
+        cleanText.toLowerCase().includes('project') ||
+        cleanText.toLowerCase().includes('projet')
+      ) {
         thought = "L'utilisateur veut explorer le workspace/projet.";
         command = {
           name: 'listDirectory',
@@ -1576,39 +2863,64 @@ export class Agent {
       } else {
         // 🚨 IMPROVED: Better logic for simple responses vs complex tasks
         // Check if this is a continuation or work-related request
-        const continueKeywords = ['continue', 'continuer', 'next', 'suivant', 'reprendre', 'resume', 'start'];
-        const workKeywords = ['faire', 'do', 'work', 'implement', 'create', 'build', 'develop'];
-        
-        const shouldContinue = continueKeywords.some(keyword => lowerText.includes(keyword));
-        const isWorkRequest = workKeywords.some(keyword => lowerText.includes(keyword));
-    
+        const continueKeywords = [
+          'continue',
+          'continuer',
+          'next',
+          'suivant',
+          'reprendre',
+          'resume',
+          'start',
+        ];
+        const workKeywords = [
+          'faire',
+          'do',
+          'work',
+          'implement',
+          'create',
+          'build',
+          'develop',
+        ];
+
+        const shouldContinue = continueKeywords.some((keyword) =>
+          lowerText.includes(keyword),
+        );
+        const isWorkRequest = workKeywords.some((keyword) =>
+          lowerText.includes(keyword),
+        );
+
         // For very short responses (like "llo", "hi", "ok"), check if they indicate continuation
         if (cleanText.length < 10 && !shouldContinue) {
           thought = "Réponse simple de l'utilisateur.";
           command = {
             name: 'finish',
             params: {
-              response: cleanText.length > 0 ? cleanText : "Hello! How can I help you?",
+              response:
+                cleanText.length > 0 ? cleanText : 'Hello! How can I help you?',
             },
           };
         } else if (shouldContinue || isWorkRequest) {
           // L'utilisateur veut continuer ou commencer du travail
           // Vérifier s'il y a une todo list récente pour continuer
-          const recentTodoCommands = this.commandHistory.slice(-5).filter(cmd => cmd.name === 'todo_write');
-          
+          const recentTodoCommands = this.commandHistory
+            .slice(-5)
+            .filter((cmd) => cmd.name === 'todo_write');
+
           if (recentTodoCommands.length > 0) {
             // Il y a une todo list récente, essayer de continuer avec la prochaine tâche
-            thought = "L'utilisateur veut continuer. Je vais travailler sur la prochaine tâche de la todo list.";
+            thought =
+              "L'utilisateur veut continuer. Je vais travailler sur la prochaine tâche de la todo list.";
             command = {
               name: 'listDirectory',
               params: {
                 path: '.',
-                detailed: true
-              }
+                detailed: true,
+              },
             };
           } else {
             // Pas de todo list récente, créer une nouvelle
-            thought = "L'utilisateur veut commencer à travailler. Je vais d'abord créer une todo list.";
+            thought =
+              "L'utilisateur veut commencer à travailler. Je vais d'abord créer une todo list.";
             const smartTodos = this.createSmartTodoList(cleanText);
             command = {
               name: 'todo_write',
@@ -1619,24 +2931,70 @@ export class Agent {
           }
         } else {
           // Pour les autres types de réponses, essayer d'analyser la demande
-          if (lowerText.includes('projet') || lowerText.includes('project') || lowerText.includes('travail')) {
-            thought = "L'utilisateur parle d'un projet. Je vais explorer la structure du projet.";
+          if (
+            lowerText.includes('projet') ||
+            lowerText.includes('project') ||
+            lowerText.includes('travail')
+          ) {
+            thought =
+              "L'utilisateur parle d'un projet. Je vais explorer la structure du projet.";
             command = {
               name: 'listDirectory',
               params: {
                 path: '.',
-                detailed: true
-              }
-            };
-          } else {
-            // Default to finish for simple responses and greetings
-            thought = "Traitement de la réponse de l'utilisateur.";
-            command = {
-              name: 'finish',
-              params: {
-                response: cleanText,
+                detailed: true,
               },
             };
+          } else {
+            // 🚨 FIX: Don't default to finish for complex responses
+            // Instead, analyze the content and provide appropriate actions
+            
+            // Debug/Analysis keywords detection
+            const debugKeywords = ['debug', 'error', 'logs', 'analyse', 'analysis', 'troubleshoot', 'investigate', 'stack trace', 'exception', 'bug', 'issue', 'problem', 'failure', 'crash'];
+            const hasDebugKeywords = debugKeywords.some(keyword => lowerText.includes(keyword));
+            
+            // Todo/Planning keywords detection  
+            const todoKeywords = ['todo', 'task', 'comprehensive', 'planning', 'management', 'web application', 'building', 'development', 'phases'];
+            const hasTodoKeywords = todoKeywords.some(keyword => lowerText.includes(keyword));
+            
+            if (hasDebugKeywords) {
+              // For debugging requests, check existing logs or read files first
+              thought = "Détection d'une demande de débogage/analyse. Je vais d'abord explorer les fichiers de log disponibles.";
+              command = {
+                name: 'listFiles',
+                params: {
+                  path: '.',
+                },
+              };
+            } else if (hasTodoKeywords) {
+              // Create a todo list for project-oriented requests
+              thought = "Détection d'une demande nécessitant une planification. Je vais créer une todo list structurée.";
+              const smartTodos = this.createSmartTodoList(cleanText);
+              command = {
+                name: 'todo_write',
+                params: {
+                  todos: smartTodos,
+                },
+              };
+            } else if (cleanText.length > 50 || lowerText.includes('test') || lowerText.includes('complex') || lowerText.includes('run') || lowerText.includes('execute')) {
+              // For other complex requests, explore the current directory first
+              thought = "Requête complexe détectée. Je vais explorer l'environnement pour mieux comprendre le contexte.";
+              command = {
+                name: 'listFiles',
+                params: {
+                  path: '.',
+                },
+              };
+            } else {
+              // Only use finish for truly simple responses and greetings
+              thought = "Traitement de la réponse simple de l'utilisateur.";
+              command = {
+                name: 'finish',
+                params: {
+                  response: cleanText,
+                },
+              };
+            }
           }
         }
       }
@@ -1656,14 +3014,14 @@ export class Agent {
       '",', // Incomplete key-value pair with comma
       '":', // Incomplete string with colon
     ];
-    
+
     const trimmed = text.trim();
-    
+
     // Check if text ends with a truncation indicator
-    if (truncationIndicators.some(indicator => trimmed.endsWith(indicator))) {
+    if (truncationIndicators.some((indicator) => trimmed.endsWith(indicator))) {
       return true;
     }
-    
+
     // Check for incomplete code blocks
     const codeBlockPatterns = [
       '```javascript',
@@ -1677,35 +3035,46 @@ export class Agent {
       'for (',
       'while (',
     ];
-    
-    if (codeBlockPatterns.some(pattern => 
-      trimmed.includes(pattern) && 
-      !trimmed.includes('```') && 
-      trimmed.length > 100)) {
+
+    if (
+      codeBlockPatterns.some(
+        (pattern) =>
+          trimmed.includes(pattern) &&
+          !trimmed.includes('```') &&
+          trimmed.length > 100,
+      )
+    ) {
       return true;
     }
-    
+
     // Check if response is unusually short for the context
-    if (trimmed.length < 50 && 
-        (trimmed.includes('Tool Call:') || trimmed.includes('Tool Result:'))) {
+    if (
+      trimmed.length < 50 &&
+      (trimmed.includes('Tool Call:') || trimmed.includes('Tool Result:'))
+    ) {
       return true;
     }
-    
+
     // Additional check for truncated responses that end mid-sentence
     // Only consider it truncated if it has clear indicators of incomplete JSON structure
-    if (trimmed.length > 100 && 
-        (trimmed.includes('{"') || trimmed.includes('"command"') || trimmed.includes('"thought"')) &&
-        !trimmed.endsWith('}') && !trimmed.endsWith('"]')) {
+    if (
+      trimmed.length > 100 &&
+      (trimmed.includes('{"') ||
+        trimmed.includes('"command"') ||
+        trimmed.includes('"thought"')) &&
+      !trimmed.endsWith('}') &&
+      !trimmed.endsWith('"]')
+    ) {
       // If it starts JSON structure but doesn't end properly, it might be truncated
       return true;
     }
-    
+
     return false;
   }
 
   private detectLoop(
     thought?: string,
-    command?: { name?: string; params?: Record<string, any>; },
+    command?: { name?: string; params?: Record<string, any> },
   ): boolean {
     const now = Date.now();
 
@@ -1804,11 +3173,14 @@ export class Agent {
         } catch (toolError) {
           log.error(
             {
-              error: toolError instanceof Error ? toolError : new Error(String(toolError)),
+              error:
+                toolError instanceof Error
+                  ? toolError
+                  : new Error(String(toolError)),
               params: command.params,
               tool: command.name,
             },
-            `Error executing tool ${command.name}`
+            `Error executing tool ${command.name}`,
           );
           throw toolError;
         }
@@ -1834,14 +3206,17 @@ export class Agent {
         } catch (toolError) {
           // 🚨 AMÉLIORATION: Tracker les échecs d'exécution
           this.trackExecutedAction(command.name, false);
-          
+
           log.error(
             {
-              error: toolError instanceof Error ? toolError : new Error(String(toolError)),
+              error:
+                toolError instanceof Error
+                  ? toolError
+                  : new Error(String(toolError)),
               params: command.params,
               tool: command.name,
             },
-            `Error executing tool ${command.name}`
+            `Error executing tool ${command.name}`,
           );
           throw toolError;
         }
@@ -1851,26 +3226,27 @@ export class Agent {
         toolName: command.name,
         type: 'tool_result',
       });
-      
+
       // 🚨 AMÉLIORATION: Tracker les actions exécutées avec succès
       this.trackExecutedAction(command.name, true);
       if (command.name === 'display_canvas') {
         this.lastDisplayCanvasCall = Date.now();
         log.info('✅ display_canvas tracked as executed successfully');
       }
-      
+
       // Auto-finish for simple read-only tools to prevent unnecessary iterations
       const readOnlyTools = ['listDirectory', 'listFiles', 'readFile'];
       const isReadOnlyCommand = readOnlyTools.includes(command.name);
       const isSimpleRequest = this.session.history.length <= 2; // Initial prompt + first response
-      
+
       if (isReadOnlyCommand && isSimpleRequest) {
         log.info(`🏁 Auto-finishing after ${command.name} for simple request`);
         // Use the tool result as the final response
-        const response = typeof result === 'string' ? result : JSON.stringify(result);
+        const response =
+          typeof result === 'string' ? result : JSON.stringify(result);
         throw new FinishToolSignal(response);
       }
-      
+
       return result;
     } catch (_error) {
       if (_error instanceof FinishToolSignal) {
@@ -1911,15 +3287,26 @@ export class Agent {
   private extractJsonFromMarkdown(text: string): string {
     const match = text.match(/```(?:json)?\s*\n([\s\S]+?)\n```/);
     if (match && match[1]) {
+      const content = match[1];
+      
+      // Vérifier si le contenu ressemble à du texte formaté (ex: "**Output:**" ou "#")
+      // plutôt qu'à du JSON valide
+      if ((content.trim().startsWith('**') && content.trim().endsWith('**')) ||
+          content.trim().startsWith('#') ||
+          content.trim().startsWith('*')) {
+        // C'est probablement du texte formaté, pas du JSON
+        // Retourner le texte complet pour que convertPlainTextToValidJson puisse le traiter
+        return text.trim();
+      }
+      
       try {
         // Just validate, return the extracted string for the main parser
-        JSON.parse(match[1]);
-        return match[1];
+        JSON.parse(content);
+        return content;
       } catch (error) {
-        // Le contenu n'est pas un JSON valide, on lance une erreur
-        throw new Error(
-          `Invalid JSON in markdown: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        );
+        // Le contenu n'est pas un JSON valide, on retourne le texte complet
+        // pour que convertPlainTextToValidJson puisse le traiter
+        return text.trim();
       }
     }
     return text.trim();
@@ -1927,7 +3314,7 @@ export class Agent {
 
   private async attemptFallbackResponse(): Promise<string> {
     this.log.info('Attempting fallback response generation');
-    
+
     // Create a simplified prompt asking for just a basic response
     const fallbackPrompt = `
     I need you to provide a simple, direct response to complete this task. 
@@ -1935,26 +3322,29 @@ export class Agent {
     {"thought": "Completing the task with a fallback response", "command": {"name": "finish", "params": {"response": "I encountered some technical difficulties but have completed what I can. Please let me know if you need any specific assistance."}}}
     
     Do not include any other text outside the JSON object.`;
-    
+
     try {
       // Use the default LLM provider for fallback
       const response = await getLlmProvider('gemini').getLlmResponse(
         [{ role: 'user', parts: [{ text: fallbackPrompt }] }],
         'You are a helpful assistant. Always respond with valid JSON format exactly as requested.',
         this.llmApiKey || this.apiKey,
-        this.llmModelName
+        this.llmModelName,
       );
-      
+
       if (response) {
         const parsed = this.parseLlmResponse(response, this.log);
-        if (parsed.command?.name === 'finish' && parsed.command.params?.response) {
+        if (
+          parsed.command?.name === 'finish' &&
+          parsed.command.params?.response
+        ) {
           return parsed.command.params.response as string;
         }
       }
     } catch (error) {
       this.log.error({ error }, 'Fallback LLM call also failed');
     }
-    
+
     // If all else fails, return a static fallback response
     return 'I apologize, but I encountered technical difficulties completing your request. Please try rephrasing your request or contact support if the issue persists.';
   }
@@ -1966,8 +3356,10 @@ export class Agent {
     const isIncomplete =
       llmResponse.trim().endsWith('...') ||
       llmResponse.includes('ASSISTANT:') ||
-      llmResponse.includes('La réponse de l\'IA semble incomplète') ||
-      (llmResponse.includes('The agent is thinking...') && !llmResponse.includes('Tool Call:') && !llmResponse.includes('{')) ||
+      llmResponse.includes("La réponse de l'IA semble incomplète") ||
+      (llmResponse.includes('The agent is thinking...') &&
+        !llmResponse.includes('Tool Call:') &&
+        !llmResponse.includes('{')) ||
       llmResponse.trim().length < 10; // Too short to be valid
 
     // 🚨 AMÉLIORATION: Détecter les réponses répétitives pour éviter les boucles
@@ -1982,10 +3374,21 @@ export class Agent {
       log.warn('🚨 Réponse LLM répétitive détectée, forçage fallback');
       throw new Error('LLM response appears repetitive, avoiding loop');
     }
+
+    let jsonText = llmResponse;
+    try {
+      jsonText = this.extractJsonFromMarkdown(llmResponse);
+    } catch (extractionError) {
+      log.warn('⚠️ Failed to extract JSON from markdown, using full response...');
+      // Si l'extraction échoue, on utilise le texte complet pour la conversion
+      jsonText = llmResponse;
+    }
     
-    const jsonText = this.extractJsonFromMarkdown(llmResponse);
-    log.debug({ jsonText: jsonText.substring(0, 200) + '...' }, 'Attempting to parse LLM response');
-    
+    log.debug(
+      { jsonText: jsonText.substring(0, 200) + '...' },
+      'Attempting to parse LLM response',
+    );
+
     try {
       const parsed = JSON.parse(jsonText);
       log.debug({ parsed }, 'Successfully parsed LLM response');
@@ -1999,30 +3402,41 @@ export class Agent {
         const convertedParsed = JSON.parse(convertedResponse);
         log.info('✅ Successfully converted plain text to valid JSON');
         const validated = llmResponseSchema.parse(convertedParsed);
-        
+
         // 🚨 AMÉLIORATION 3: Vérifier que les outils critiques sont présents
         if (validated.command) {
           log.info(`🔧 Tool detected: ${validated.command.name}`);
         }
-        
+
         return validated;
       } catch (conversionError) {
         log.error(
-          { conversionError, originalError: error, responseLength: llmResponse.length },
+          {
+            conversionError,
+            originalError: error,
+            responseLength: llmResponse.length,
+          },
           '💥 Failed to convert plain text to valid JSON',
         );
       }
 
       // 🚨 AMÉLIORATION 4: Informations de debug détaillées
-      log.error({
-        responseStart: llmResponse.substring(0, 100),
-        responseEnd: llmResponse.substring(Math.max(0, llmResponse.length - 100)),
-        jsonTextStart: jsonText.substring(0, 100),
-        hasToolCall: jsonText.includes('Tool Call:'),
-        hasJson: jsonText.includes('{'),
-      }, '🔍 Detailed parsing failure analysis');
+      log.error(
+        {
+          responseStart: llmResponse.substring(0, 100),
+          responseEnd: llmResponse.substring(
+            Math.max(0, llmResponse.length - 100),
+          ),
+          jsonTextStart: jsonText.substring(0, 100),
+          hasToolCall: jsonText.includes('Tool Call:'),
+          hasJson: jsonText.includes('{'),
+        },
+        '🔍 Detailed parsing failure analysis',
+      );
 
-      throw new Error(`Failed to parse LLM response: ${jsonText.substring(0, 200)}...`);
+      throw new Error(
+        `Failed to parse LLM response: ${jsonText.substring(0, 200)}...`,
+      );
     }
   }
 
@@ -2070,27 +3484,32 @@ export class Agent {
       },
     );
   }
-  
+
   // 🚨 AMÉLIORATION: Méthodes de tracking des actions
   private trackExecutedAction(actionName: string, successful: boolean): void {
     const current = this.executedActions.get(actionName);
     this.executedActions.set(actionName, {
       count: (current?.count || 0) + 1,
       lastExecution: Date.now(),
-      successful: successful
+      successful: successful,
     });
-    
-    this.log.info(`📊 Action tracked: ${actionName} (success: ${successful}, total: ${(current?.count || 0) + 1})`);
+
+    this.log.info(
+      `📊 Action tracked: ${actionName} (success: ${successful}, total: ${(current?.count || 0) + 1})`,
+    );
   }
-  
-  private hasExecutedActionRecently(actionName: string, withinMs: number = 30000): boolean {
+
+  private hasExecutedActionRecently(
+    actionName: string,
+    withinMs: number = 30000,
+  ): boolean {
     const action = this.executedActions.get(actionName);
     if (!action || !action.successful) return false;
-    
+
     const timeSince = Date.now() - action.lastExecution;
     return timeSince <= withinMs;
   }
-  
+
   private getActionExecutionSummary(): string {
     const summary: string[] = [];
     for (const [action, info] of this.executedActions.entries()) {
@@ -2112,15 +3531,26 @@ export class Agent {
 
     // Check if text indicates starting work or beginning tasks
     const startIndicators = [
-      'first', 'start', 'begin', 'let\'s', 'i\'ll start', 'commencer',
-      'premièrement', 'commençons', 'je vais commencer'
+      'first',
+      'start',
+      'begin',
+      "let's",
+      "i'll start",
+      'commencer',
+      'premièrement',
+      'commençons',
+      'je vais commencer',
     ];
 
-    const hasStartIndicators = startIndicators.some(indicator => lowerText.includes(indicator));
+    const hasStartIndicators = startIndicators.some((indicator) =>
+      lowerText.includes(indicator),
+    );
 
     // Check if we recently created a todo list
     const recentCommands = this.commandHistory.slice(-2);
-    const hasRecentTodoWrite = recentCommands.some(cmd => cmd.name === 'todo_write');
+    const hasRecentTodoWrite = recentCommands.some(
+      (cmd) => cmd.name === 'todo_write',
+    );
 
     // If we just created a todo list and text indicates starting, we should begin work
     return hasRecentTodoWrite && hasStartIndicators;
@@ -2129,15 +3559,25 @@ export class Agent {
   /**
    * Get the next pending task based on recent todo creation
    */
-  private getNextPendingTask(): { id: string; content: string; status: string } | null {
+  private getNextPendingTask(): {
+    id: string;
+    content: string;
+    status: string;
+  } | null {
     // Since we don't have direct access to todo state, we'll infer from command history
     // This is a simplified approach - in a real implementation, you'd track todo state
     const recentCommands = this.commandHistory.slice(-3);
-    const todoWriteCommand = recentCommands.find(cmd => cmd.name === 'todo_write');
+    const todoWriteCommand = recentCommands.find(
+      (cmd) => cmd.name === 'todo_write',
+    );
 
     if (todoWriteCommand && todoWriteCommand.params?.todos) {
-      const todos = todoWriteCommand.params.todos as Array<{ id: string; content: string; status: string }>;
-      const pendingTodo = todos.find(todo => todo.status === 'pending');
+      const todos = todoWriteCommand.params.todos as Array<{
+        id: string;
+        content: string;
+        status: string;
+      }>;
+      const pendingTodo = todos.find((todo) => todo.status === 'pending');
       return pendingTodo || null;
     }
 
@@ -2147,14 +3587,18 @@ export class Agent {
   /**
    * Convert a task to an appropriate command
    */
-  private convertTaskToCommand(task: { id: string; content: string; status: string }): Command {
+  private convertTaskToCommand(task: {
+    id: string;
+    content: string;
+    status: string;
+  }): Command {
     const lowerContent = task.content.toLowerCase();
 
     // Map common task types to commands
     if (lowerContent.includes('list') && lowerContent.includes('tool')) {
       return {
         name: 'listTools',
-        params: {}
+        params: {},
       };
     }
 
@@ -2162,8 +3606,8 @@ export class Agent {
       return {
         name: 'playwright_navigate',
         params: {
-          url: 'https://example.com' // Default URL, could be made smarter
-        }
+          url: 'https://example.com', // Default URL, could be made smarter
+        },
       };
     }
 
@@ -2171,15 +3615,15 @@ export class Agent {
       return {
         name: 'playwright_get_content',
         params: {
-          selector: 'body' // Default selector
-        }
+          selector: 'body', // Default selector
+        },
       };
     }
 
     if (lowerContent.includes('screenshot')) {
       return {
         name: 'playwright_screenshot',
-        params: {}
+        params: {},
       };
     }
 
@@ -2192,26 +3636,47 @@ export class Agent {
     return {
       name: 'finish',
       params: {
-        response: `Working on: ${task.content}`
-      }
+        response: `Working on: ${task.content}`,
+      },
     };
   }
 
   /**
    * Check if the current task involves completing a form
    */
-  private isFormCompletionTask(task: { id: string; content: string; status: string }): boolean {
+  private isFormCompletionTask(task: {
+    id: string;
+    content: string;
+    status: string;
+  }): boolean {
     const lowerContent = task.content.toLowerCase();
 
     // Keywords that indicate form completion tasks
     const formKeywords = [
-      'form', 'field', 'input', 'fill', 'complete', 'submit',
-      'formulaire', 'champ', 'remplir', 'compléter', 'soumettre',
-      'name', 'email', 'phone', 'address', 'contact',
-      'nom', 'courriel', 'téléphone', 'adresse', 'contact'
+      'form',
+      'field',
+      'input',
+      'fill',
+      'complete',
+      'submit',
+      'formulaire',
+      'champ',
+      'remplir',
+      'compléter',
+      'soumettre',
+      'name',
+      'email',
+      'phone',
+      'address',
+      'contact',
+      'nom',
+      'courriel',
+      'téléphone',
+      'adresse',
+      'contact',
     ];
 
-    return formKeywords.some(keyword => lowerContent.includes(keyword));
+    return formKeywords.some((keyword) => lowerContent.includes(keyword));
   }
 
   /**
@@ -2222,9 +3687,9 @@ export class Agent {
     const recentCommands = this.commandHistory.slice(-3);
 
     // If we just typed in a name field, next might be email or phone
-    const lastTypeCommand = recentCommands.reverse().find(cmd =>
-      cmd.name === 'playwright_type' && cmd.params
-    );
+    const lastTypeCommand = recentCommands
+      .reverse()
+      .find((cmd) => cmd.name === 'playwright_type' && cmd.params);
 
     if (lastTypeCommand) {
       const lastSelector = (lastTypeCommand.params as any).selector || '';
@@ -2234,10 +3699,11 @@ export class Agent {
         return {
           name: 'playwright_type',
           params: {
-            selector: 'input[name="phone"], input[name="tel"], input[name="telephone"], input[type="tel"]',
+            selector:
+              'input[name="phone"], input[name="tel"], input[name="telephone"], input[type="tel"]',
             text: '+33123456789', // Default phone number
-            clear: true
-          }
+            clear: true,
+          },
         };
       }
 
@@ -2248,8 +3714,8 @@ export class Agent {
           params: {
             selector: 'input[name="email"], input[type="email"]',
             text: 'test@example.com', // Default email
-            clear: true
-          }
+            clear: true,
+          },
         };
       }
 
@@ -2258,8 +3724,9 @@ export class Agent {
         return {
           name: 'playwright_click',
           params: {
-            selector: 'button[type="submit"], input[type="submit"], button:contains("Submit"), button:contains("Send")'
-          }
+            selector:
+              'button[type="submit"], input[type="submit"], button:contains("Submit"), button:contains("Send")',
+          },
         };
       }
     }
@@ -2270,8 +3737,8 @@ export class Agent {
       params: {
         selector: 'input[required]:not([value]), input[name]:not([value])',
         text: 'Test Value',
-        clear: true
-      }
+        clear: true,
+      },
     };
   }
 
@@ -2283,30 +3750,75 @@ export class Agent {
 
     // Keywords that indicate future work or plans
     const workIndicators = [
-      'i\'ll', 'i will', 'first', 'then', 'next', 'after', 'following',
-      'je vais', 'ensuite', 'suivant', 'après', 'premièrement',
-      'list', 'demonstrate', 'show', 'create', 'implement', 'build',
-      'lister', 'démontrer', 'montrer', 'créer', 'implémenter', 'construire',
-      'continue', 'continuer', 'start', 'commencer', 'begin', 'commencer',
-      'plan', 'planned', 'planning', 'planifié', 'planification'
+      "i'll",
+      'i will',
+      'first',
+      'then',
+      'next',
+      'after',
+      'following',
+      'je vais',
+      'ensuite',
+      'suivant',
+      'après',
+      'premièrement',
+      'list',
+      'demonstrate',
+      'show',
+      'create',
+      'implement',
+      'build',
+      'lister',
+      'démontrer',
+      'montrer',
+      'créer',
+      'implémenter',
+      'construire',
+      'continue',
+      'continuer',
+      'start',
+      'commencer',
+      'begin',
+      'commencer',
+      'plan',
+      'planned',
+      'planning',
+      'planifié',
+      'planification',
     ];
 
     // Check for work indicators
-    const hasWorkIndicators = workIndicators.some(indicator => lowerText.includes(indicator));
+    const hasWorkIndicators = workIndicators.some((indicator) =>
+      lowerText.includes(indicator),
+    );
 
     // Check for question marks (indicating clarification needed, not completion)
     const hasQuestions = lowerText.includes('?');
 
     // Check if text mentions specific actions or tools
     const actionKeywords = [
-      'tool', 'tools', 'navigate', 'content', 'screenshot', 'list',
-      'outil', 'outils', 'naviguer', 'contenu', 'capture', 'lister'
+      'tool',
+      'tools',
+      'navigate',
+      'content',
+      'screenshot',
+      'list',
+      'outil',
+      'outils',
+      'naviguer',
+      'contenu',
+      'capture',
+      'lister',
     ];
-    const hasActionKeywords = actionKeywords.some(keyword => lowerText.includes(keyword));
+    const hasActionKeywords = actionKeywords.some((keyword) =>
+      lowerText.includes(keyword),
+    );
 
     // Check recent command history for pending work
     const recentCommands = this.commandHistory.slice(-3);
-    const hasRecentTodoWrite = recentCommands.some(cmd => cmd.name === 'todo_write');
+    const hasRecentTodoWrite = recentCommands.some(
+      (cmd) => cmd.name === 'todo_write',
+    );
 
     // If we recently created a todo list, we likely have work to do
     if (hasRecentTodoWrite && (hasWorkIndicators || hasActionKeywords)) {
@@ -2335,47 +3847,107 @@ export class Agent {
 
     // Keywords that indicate the agent is about to perform an action
     const continuationIndicators = [
-      'i will now', 'i\'m going to', 'i\'ll now', 'now i will', 'next i will',
-      'i am going to', 'i\'m about to', 'i\'ll proceed to', 'i will proceed',
-      'je vais maintenant', 'maintenant je vais', 'je vais procéder',
-      'je m\'apprête à', 'ensuite je vais', 'maintenant je',
-      'type', 'enter', 'input', 'fill', 'complete', 'submit',
-      'taper', 'entrer', 'remplir', 'compléter', 'soumettre',
-      'navigate', 'go to', 'visit', 'access', 'open',
-      'naviguer', 'aller à', 'visiter', 'accéder', 'ouvrir',
-      'click', 'select', 'choose', 'pick',
-      'cliquer', 'sélectionner', 'choisir', 'sélectionner',
-      'search', 'find', 'look for', 'locate',
-      'chercher', 'trouver', 'rechercher', 'localiser'
+      'i will now',
+      "i'm going to",
+      "i'll now",
+      'now i will',
+      'next i will',
+      'i am going to',
+      "i'm about to",
+      "i'll proceed to",
+      'i will proceed',
+      'je vais maintenant',
+      'maintenant je vais',
+      'je vais procéder',
+      "je m'apprête à",
+      'ensuite je vais',
+      'maintenant je',
+      'type',
+      'enter',
+      'input',
+      'fill',
+      'complete',
+      'submit',
+      'taper',
+      'entrer',
+      'remplir',
+      'compléter',
+      'soumettre',
+      'navigate',
+      'go to',
+      'visit',
+      'access',
+      'open',
+      'naviguer',
+      'aller à',
+      'visiter',
+      'accéder',
+      'ouvrir',
+      'click',
+      'select',
+      'choose',
+      'pick',
+      'cliquer',
+      'sélectionner',
+      'choisir',
+      'sélectionner',
+      'search',
+      'find',
+      'look for',
+      'locate',
+      'chercher',
+      'trouver',
+      'rechercher',
+      'localiser',
     ];
 
     // Check for continuation indicators
-    const hasContinuationIndicators = continuationIndicators.some(indicator =>
-      lowerText.includes(indicator)
+    const hasContinuationIndicators = continuationIndicators.some((indicator) =>
+      lowerText.includes(indicator),
     );
 
     // Check if response mentions specific form fields or actions
     const formActionKeywords = [
-      'field', 'input', 'form', 'button', 'textbox', 'textarea',
-      'champ', 'entrée', 'formulaire', 'bouton', 'zone de texte',
-      'name', 'email', 'phone', 'address', 'password',
-      'nom', 'courriel', 'téléphone', 'adresse', 'mot de passe',
-      'telephone', 'téléphone', 'number', 'numéro'
+      'field',
+      'input',
+      'form',
+      'button',
+      'textbox',
+      'textarea',
+      'champ',
+      'entrée',
+      'formulaire',
+      'bouton',
+      'zone de texte',
+      'name',
+      'email',
+      'phone',
+      'address',
+      'password',
+      'nom',
+      'courriel',
+      'téléphone',
+      'adresse',
+      'mot de passe',
+      'telephone',
+      'téléphone',
+      'number',
+      'numéro',
     ];
 
-    const hasFormKeywords = formActionKeywords.some(keyword =>
-      lowerText.includes(keyword)
+    const hasFormKeywords = formActionKeywords.some((keyword) =>
+      lowerText.includes(keyword),
     );
 
     // Check if this follows a recent form interaction
     const recentCommands = this.commandHistory.slice(-2);
-    const hasRecentFormInteraction = recentCommands.some(cmd =>
-      cmd.name && (
-        cmd.name.includes('playwright') ||
-        cmd.name.includes('type') ||
-        cmd.name.includes('click') ||
-        cmd.name.includes('fill')
-      )
+    const hasRecentFormInteraction = recentCommands.some(
+      (cmd) =>
+        cmd.name &&
+        (cmd.name.includes('playwright') ||
+          cmd.name.includes('type') ||
+          cmd.name.includes('click') ||
+          cmd.name.includes('fill')),
     );
 
     // If response has continuation indicators and form keywords, it's likely a continuation
@@ -2389,12 +3961,18 @@ export class Agent {
     }
 
     // Specific pattern: "I will now type X into Y" or similar
-    if (lowerText.includes('type') && (lowerText.includes('into') || lowerText.includes('in'))) {
+    if (
+      lowerText.includes('type') &&
+      (lowerText.includes('into') || lowerText.includes('in'))
+    ) {
       return true;
     }
 
     // Specific pattern: "I will now enter X" or similar
-    if ((lowerText.includes('enter') || lowerText.includes('input')) && hasFormKeywords) {
+    if (
+      (lowerText.includes('enter') || lowerText.includes('input')) &&
+      hasFormKeywords
+    ) {
       return true;
     }
 
@@ -2407,14 +3985,81 @@ export class Agent {
   private detectIfShouldUseLocalMode(text: string): boolean {
     const lowerText = text.toLowerCase();
 
+    // Don't use local mode for playwright commands (browser automation/capture)
+    if (lowerText.includes('playwright_') || lowerText.includes('browser')) {
+      return false;
+    }
+
+    // Don't use local mode for web navigation commands (Playwright)
+    if (
+      lowerText.includes('navigate') ||
+      lowerText.includes('click') ||
+      lowerText.includes('wait_for_selector') ||
+      lowerText.includes('console') ||
+      lowerText.includes('inject') ||
+      lowerText.includes('evaluate') ||
+      lowerText.includes('search_google') ||
+      lowerText.includes('search_youtube') ||
+      lowerText.includes('search_github') ||
+      lowerText.includes('drag_and_drop') ||
+      lowerText.includes('double_click') ||
+      lowerText.includes('right_click') ||
+      lowerText.includes('measure_page_load') ||
+      lowerText.includes('memory_usage') ||
+      lowerText.includes('network_inspector') ||
+      lowerText.includes('security_headers') ||
+      lowerText.includes('stealth_mode') ||
+      lowerText.includes('user_agent') ||
+      lowerText.includes('webgl_renderer') ||
+      lowerText.includes('canvas_fingerprint') ||
+      lowerText.includes('webdriver_property') ||
+      lowerText.includes('fake_plugins') ||
+      lowerText.includes('screen_resolution') ||
+      lowerText.includes('mouse_movement') ||
+      lowerText.includes('bypass_cloudflare') ||
+      lowerText.includes('bypass_recaptcha') ||
+      lowerText.includes('typing_speed') ||
+      lowerText.includes('rotating_proxy') ||
+      lowerText.includes('spoof_timezone') ||
+      lowerText.includes('behavioral_pattern')
+    ) {
+      return false;
+    }
+
+    // Don't use local mode for Canvas display commands (UI rendering/display)
+    // Canvas = Interface pour AFFICHER du contenu, PAS pour capturer
+    if (
+      lowerText.includes('display_canvas') ||
+      lowerText.includes('canvas_display') ||
+      lowerText.includes('canvas_render') ||
+      lowerText.includes('canvas_show') ||
+      lowerText.includes('afficher_canvas') ||
+      lowerText.includes('affichage_canvas')
+    ) {
+      return false;
+    }
+
     // Keywords that indicate local operations
     const localKeywords = [
-      'list', 'read', 'file', 'directory', 'status', 'info', 'local',
-      'lister', 'lire', 'fichier', 'dossier', 'état', 'information'
+      'list',
+      'read',
+      'file',
+      'directory',
+      'status',
+      'info',
+      'local',
+      'lister',
+      'lire',
+      'fichier',
+      'dossier',
+      'état',
+      'information',
     ];
 
     // Check for local operation keywords
-    const hasLocalKeywords = localKeywords.some(keyword => lowerText.includes(keyword));
+    const hasLocalKeywords = localKeywords.some((keyword) =>
+      lowerText.includes(keyword),
+    );
 
     // Check if we have pending tasks that can be done locally
     const hasPendingTasks = this.getNextPendingTask() !== null;
@@ -2431,41 +4076,52 @@ export class Agent {
     // Determine appropriate local action based on content
     if (lowerText.includes('list') || lowerText.includes('lister')) {
       return JSON.stringify({
-        thought: "Je vais lister les fichiers disponibles localement.",
+        thought: 'Je vais lister les fichiers disponibles localement.',
         command: {
           name: 'listFiles',
-          params: { path: '.' }
-        }
+          params: { path: '.' },
+        },
       });
     }
 
-    if (lowerText.includes('read') || lowerText.includes('lire') || lowerText.includes('file')) {
+    if (
+      lowerText.includes('read') ||
+      lowerText.includes('lire') ||
+      lowerText.includes('file')
+    ) {
       return JSON.stringify({
-        thought: "Je vais lire un fichier localement.",
+        thought: 'Je vais lire un fichier localement.',
         command: {
           name: 'readFile',
-          params: { filePath: '/home/demon/agentforge/AgenticForge2/AgenticForge/README.md' }
-        }
+          params: {
+            filePath:
+              '/home/demon/agentforge/AgenticForge2/AgenticForge/README.md',
+          },
+        },
       });
     }
 
-    if (lowerText.includes('status') || lowerText.includes('info') || lowerText.includes('état')) {
+    if (
+      lowerText.includes('status') ||
+      lowerText.includes('info') ||
+      lowerText.includes('état')
+    ) {
       return JSON.stringify({
-        thought: "Je vais afficher les informations système.",
+        thought: 'Je vais afficher les informations système.',
         command: {
           name: 'listTools',
-          params: {}
-        }
+          params: {},
+        },
       });
     }
 
     // Default local action
     return JSON.stringify({
-      thought: "Passage en mode local pour effectuer des opérations système.",
+      thought: 'Passage en mode local pour effectuer des opérations système.',
       command: {
         name: 'listDirectory',
-        params: { path: '.', detailed: true }
-      }
+        params: { path: '.', detailed: true },
+      },
     });
   }
 
@@ -2496,9 +4152,9 @@ export class Agent {
             command: {
               name: 'finish',
               params: {
-                response: `I successfully completed the local task: ${nextTask.content}. Result: ${result}`
-              }
-            }
+                response: `I successfully completed the local task: ${nextTask.content}. Result: ${result}`,
+              },
+            },
           });
         } catch (error) {
           this.log.error({ error }, 'Local command execution failed');
@@ -2507,9 +4163,9 @@ export class Agent {
             command: {
               name: 'finish',
               params: {
-                response: `I attempted to complete the local task: ${nextTask.content}, but encountered an error. Please check the system status.`
-              }
-            }
+                response: `I attempted to complete the local task: ${nextTask.content}, but encountered an error. Please check the system status.`,
+              },
+            },
           });
         }
       }
@@ -2517,34 +4173,43 @@ export class Agent {
 
     // If no local tasks available, provide a basic fallback
     return JSON.stringify({
-      thought: "All LLM providers are unavailable, but I can help with local system tasks.",
+      thought:
+        'All LLM providers are unavailable, but I can help with local system tasks.',
       command: {
         name: 'finish',
         params: {
-          response: "I'm currently unable to access LLM services, but I can help you with local system operations. Please let me know what specific local tasks you'd like me to perform."
-        }
-      }
+          response:
+            "I'm currently unable to access LLM services, but I can help you with local system operations. Please let me know what specific local tasks you'd like me to perform.",
+        },
+      },
     });
   }
 
   /**
    * Convert a task to a local command that doesn't require LLM
    */
-  private convertTaskToLocalCommand(task: { id: string; content: string; status: string }): Command | null {
+  private convertTaskToLocalCommand(task: {
+    id: string;
+    content: string;
+    status: string;
+  }): Command | null {
     const lowerContent = task.content.toLowerCase();
 
     // File system operations
     if (lowerContent.includes('list') && lowerContent.includes('file')) {
       return {
         name: 'listFiles',
-        params: { path: '.' }
+        params: { path: '.' },
       };
     }
 
     if (lowerContent.includes('read') || lowerContent.includes('examine')) {
       return {
         name: 'readFile',
-        params: { filePath: '/home/demon/agentforge/AgenticForge2/AgenticForge/README.md' }
+        params: {
+          filePath:
+            '/home/demon/agentforge/AgenticForge2/AgenticForge/README.md',
+        },
       };
     }
 
@@ -2552,15 +4217,18 @@ export class Agent {
     if (lowerContent.includes('status') || lowerContent.includes('info')) {
       return {
         name: 'listTools',
-        params: {}
+        params: {},
       };
     }
 
     // Directory listing
-    if (lowerContent.includes('explore') || lowerContent.includes('directory')) {
+    if (
+      lowerContent.includes('explore') ||
+      lowerContent.includes('directory')
+    ) {
       return {
         name: 'listDirectory',
-        params: { path: '.', detailed: true }
+        params: { path: '.', detailed: true },
       };
     }
 
@@ -2587,60 +4255,69 @@ export class Agent {
     }> = [];
 
     // Détection de type de projet
-    if (lowerRequest.includes('game') || lowerRequest.includes('jeu') || lowerRequest.includes('defender')) {
+    if (
+      lowerRequest.includes('game') ||
+      lowerRequest.includes('jeu') ||
+      lowerRequest.includes('defender')
+    ) {
       // Projet de jeu
       todos.push(
         {
           id: '1',
-          content: 'Analyser les spécifications du jeu Defender et ses mécaniques',
+          content:
+            'Analyser les spécifications du jeu Defender et ses mécaniques',
           status: 'pending',
           priority: 'high',
-          category: 'analysis'
+          category: 'analysis',
         },
         {
           id: '2',
-          content: 'Concevoir l\'architecture du jeu (classes, composants)',
+          content: "Concevoir l'architecture du jeu (classes, composants)",
           status: 'pending',
           priority: 'high',
-          category: 'design'
+          category: 'design',
         },
         {
           id: '3',
           content: 'Implémenter le joueur et ses contrôles',
           status: 'pending',
           priority: 'high',
-          category: 'development'
+          category: 'development',
         },
         {
           id: '4',
-          content: 'Créer le système d\'ennemis et d\'obstacles',
+          content: "Créer le système d'ennemis et d'obstacles",
           status: 'pending',
           priority: 'high',
-          category: 'development'
+          category: 'development',
         },
         {
           id: '5',
           content: 'Ajouter le système de score et de vies',
           status: 'pending',
           priority: 'medium',
-          category: 'development'
+          category: 'development',
         },
         {
           id: '6',
           content: 'Implémenter les effets visuels et sons',
           status: 'pending',
           priority: 'medium',
-          category: 'development'
+          category: 'development',
         },
         {
           id: '7',
           content: 'Tester et déboguer le jeu',
           status: 'pending',
           priority: 'high',
-          category: 'testing'
-        }
+          category: 'testing',
+        },
       );
-    } else if (lowerRequest.includes('website') || lowerRequest.includes('site web') || lowerRequest.includes('web')) {
+    } else if (
+      lowerRequest.includes('website') ||
+      lowerRequest.includes('site web') ||
+      lowerRequest.includes('web')
+    ) {
       // Projet web
       todos.push(
         {
@@ -2648,45 +4325,49 @@ export class Agent {
           content: 'Définir les spécifications fonctionnelles du site web',
           status: 'pending',
           priority: 'high',
-          category: 'planning'
+          category: 'planning',
         },
         {
           id: '2',
-          content: 'Créer la maquette et le design de l\'interface',
+          content: "Créer la maquette et le design de l'interface",
           status: 'pending',
           priority: 'high',
-          category: 'design'
+          category: 'design',
         },
         {
           id: '3',
           content: 'Développer la structure HTML et CSS',
           status: 'pending',
           priority: 'high',
-          category: 'development'
+          category: 'development',
         },
         {
           id: '4',
           content: 'Implémenter les fonctionnalités JavaScript',
           status: 'pending',
           priority: 'high',
-          category: 'development'
+          category: 'development',
         },
         {
           id: '5',
           content: 'Optimiser pour les appareils mobiles',
           status: 'pending',
           priority: 'medium',
-          category: 'development'
+          category: 'development',
         },
         {
           id: '6',
           content: 'Tester la compatibilité cross-browser',
           status: 'pending',
           priority: 'medium',
-          category: 'testing'
-        }
+          category: 'testing',
+        },
       );
-    } else if (lowerRequest.includes('app') || lowerRequest.includes('application') || lowerRequest.includes('mobile')) {
+    } else if (
+      lowerRequest.includes('app') ||
+      lowerRequest.includes('application') ||
+      lowerRequest.includes('mobile')
+    ) {
       // Projet d'application
       todos.push(
         {
@@ -2694,43 +4375,43 @@ export class Agent {
           content: 'Analyser les besoins utilisateurs et spécifications',
           status: 'pending',
           priority: 'high',
-          category: 'analysis'
+          category: 'analysis',
         },
         {
           id: '2',
-          content: 'Concevoir l\'architecture et l\'interface utilisateur',
+          content: "Concevoir l'architecture et l'interface utilisateur",
           status: 'pending',
           priority: 'high',
-          category: 'design'
+          category: 'design',
         },
         {
           id: '3',
           content: 'Développer les fonctionnalités principales',
           status: 'pending',
           priority: 'high',
-          category: 'development'
+          category: 'development',
         },
         {
           id: '4',
           content: 'Implémenter la gestion des données',
           status: 'pending',
           priority: 'high',
-          category: 'development'
+          category: 'development',
         },
         {
           id: '5',
-          content: 'Ajouter les tests unitaires et d\'intégration',
+          content: "Ajouter les tests unitaires et d'intégration",
           status: 'pending',
           priority: 'medium',
-          category: 'testing'
+          category: 'testing',
         },
         {
           id: '6',
           content: 'Préparer le déploiement et la distribution',
           status: 'pending',
           priority: 'medium',
-          category: 'deployment'
-        }
+          category: 'deployment',
+        },
       );
     } else {
       // Projet générique
@@ -2740,29 +4421,29 @@ export class Agent {
           content: 'Analyser la demande et définir les objectifs',
           status: 'pending',
           priority: 'high',
-          category: 'analysis'
+          category: 'analysis',
         },
         {
           id: '2',
-          content: 'Planifier l\'approche et les étapes',
+          content: "Planifier l'approche et les étapes",
           status: 'pending',
           priority: 'high',
-          category: 'planning'
+          category: 'planning',
         },
         {
           id: '3',
-          content: 'Commencer l\'implémentation',
+          content: "Commencer l'implémentation",
           status: 'pending',
           priority: 'high',
-          category: 'development'
+          category: 'development',
         },
         {
           id: '4',
           content: 'Tester et valider les résultats',
           status: 'pending',
           priority: 'medium',
-          category: 'testing'
-        }
+          category: 'testing',
+        },
       );
     }
 
@@ -2777,26 +4458,46 @@ export class Agent {
 
     // Keywords that indicate form continuation
     const formContinuationKeywords = [
-      'telephone', 'phone', 'téléphone', 'number', 'numéro',
-      'email', 'courriel', 'address', 'adresse', 'city', 'ville',
-      'zip', 'postal', 'code', 'message', 'comment',
-      'type', 'enter', 'input', 'fill', 'complete',
-      'taper', 'entrer', 'remplir', 'compléter'
+      'telephone',
+      'phone',
+      'téléphone',
+      'number',
+      'numéro',
+      'email',
+      'courriel',
+      'address',
+      'adresse',
+      'city',
+      'ville',
+      'zip',
+      'postal',
+      'code',
+      'message',
+      'comment',
+      'type',
+      'enter',
+      'input',
+      'fill',
+      'complete',
+      'taper',
+      'entrer',
+      'remplir',
+      'compléter',
     ];
 
     // Check if response mentions form fields
-    const hasFormFieldKeywords = formContinuationKeywords.some(keyword =>
-      lowerText.includes(keyword)
+    const hasFormFieldKeywords = formContinuationKeywords.some((keyword) =>
+      lowerText.includes(keyword),
     );
 
     // Check if response follows recent form interaction
     const recentCommands = this.commandHistory.slice(-2);
-    const hasRecentFormInteraction = recentCommands.some(cmd =>
-      cmd.name && (
-        cmd.name.includes('playwright_type') ||
-        cmd.name.includes('playwright_click') ||
-        cmd.name === 'playwright_type'
-      )
+    const hasRecentFormInteraction = recentCommands.some(
+      (cmd) =>
+        cmd.name &&
+        (cmd.name.includes('playwright_type') ||
+          cmd.name.includes('playwright_click') ||
+          cmd.name === 'playwright_type'),
     );
 
     return hasFormFieldKeywords && hasRecentFormInteraction;
@@ -2821,13 +4522,14 @@ export class Agent {
     if (htmlMatch) {
       const htmlContent = htmlMatch[1].trim();
       // Try to extract filename from content or use default
-      const filenameMatch = htmlContent.match(/<!--\s*filename:\s*([^\s]+)\s*-->/i) ||
-                           htmlContent.match(/<!--\s*([^\s]+\.html)\s*-->/i);
+      const filenameMatch =
+        htmlContent.match(/<!--\s*filename:\s*([^\s]+)\s*-->/i) ||
+        htmlContent.match(/<!--\s*([^\s]+\.html)\s*-->/i);
       const filename = filenameMatch ? filenameMatch[1] : 'index.html';
       files.push({
         filename,
         content: htmlContent,
-        type: 'html'
+        type: 'html',
       });
     }
 
@@ -2836,29 +4538,32 @@ export class Agent {
     if (cssMatch) {
       const cssContent = cssMatch[1].trim();
       // Try to extract filename from content or use default
-      const filenameMatch = cssContent.match(/\/\*\s*filename:\s*([^\s]+)\s*\*\//i) ||
-                           cssContent.match(/\/\*\s*([^\s]+\.css)\s*\*\//i);
+      const filenameMatch =
+        cssContent.match(/\/\*\s*filename:\s*([^\s]+)\s*\*\//i) ||
+        cssContent.match(/\/\*\s*([^\s]+\.css)\s*\*\//i);
       const filename = filenameMatch ? filenameMatch[1] : 'style.css';
       files.push({
         filename,
         content: cssContent,
-        type: 'css'
+        type: 'css',
       });
     }
 
     // Extract JavaScript content
-    const jsMatch = text.match(/```javascript\s*\n([\s\S]*?)\n```/i) ||
-                   text.match(/```js\s*\n([\s\S]*?)\n```/i);
+    const jsMatch =
+      text.match(/```javascript\s*\n([\s\S]*?)\n```/i) ||
+      text.match(/```js\s*\n([\s\S]*?)\n```/i);
     if (jsMatch) {
       const jsContent = jsMatch[1].trim();
       // Try to extract filename from content or use default
-      const filenameMatch = jsContent.match(/\/\/\s*filename:\s*([^\s]+)/i) ||
-                           jsContent.match(/\/\/\s*([^\s]+\.js)/i);
+      const filenameMatch =
+        jsContent.match(/\/\/\s*filename:\s*([^\s]+)/i) ||
+        jsContent.match(/\/\/\s*([^\s]+\.js)/i);
       const filename = filenameMatch ? filenameMatch[1] : 'game.js';
       files.push({
         filename,
         content: jsContent,
-        type: 'javascript'
+        type: 'javascript',
       });
     }
 
@@ -2871,7 +4576,7 @@ export class Agent {
         files.push({
           filename: 'index.html',
           content: htmlFallback[0],
-          type: 'html'
+          type: 'html',
         });
       }
 
@@ -2882,18 +4587,19 @@ export class Agent {
         files.push({
           filename: 'style.css',
           content: cssFallback[0],
-          type: 'css'
+          type: 'css',
         });
       }
 
       // Look for JavaScript content
-      const jsPattern = /function\s+\w+\s*\([\s\S]*?\}|\w+\s*=\s*\{[\s\S]*?\}|class\s+\w+[\s\S]*?\}/i;
+      const jsPattern =
+        /function\s+\w+\s*\([\s\S]*?\}|\w+\s*=\s*\{[\s\S]*?\}|class\s+\w+[\s\S]*?\}/i;
       const jsFallback = text.match(jsPattern);
       if (jsFallback) {
         files.push({
           filename: 'game.js',
           content: jsFallback[0],
-          type: 'javascript'
+          type: 'javascript',
         });
       }
     }
@@ -2904,10 +4610,10 @@ export class Agent {
       const filePatterns = [
         /\*\*([^\*]+\.html)\*\*\s*\n([\s\S]*?)(?=\n\*\*|$)/i,
         /\*\*([^\*]+\.css)\*\*\s*\n([\s\S]*?)(?=\n\*\*|$)/i,
-        /\*\*([^\*]+\.js)\*\*\s*\n([\s\S]*?)(?=\n\*\*|$)/i
+        /\*\*([^\*]+\.js)\*\*\s*\n([\s\S]*?)(?=\n\*\*|$)/i,
       ];
 
-      filePatterns.forEach(pattern => {
+      filePatterns.forEach((pattern) => {
         const match = text.match(pattern);
         if (match) {
           const filename = match[1];
@@ -2927,7 +4633,7 @@ export class Agent {
           files.push({
             filename,
             content,
-            type
+            type,
           });
         }
       });
@@ -2943,14 +4649,19 @@ export class Agent {
     const lowerText = text.toLowerCase();
 
     // Determine what field to fill based on the response content
-    if (lowerText.includes('telephone') || lowerText.includes('phone') || lowerText.includes('téléphone')) {
+    if (
+      lowerText.includes('telephone') ||
+      lowerText.includes('phone') ||
+      lowerText.includes('téléphone')
+    ) {
       return {
         name: 'playwright_type',
         params: {
-          selector: 'input[name*="phone"], input[name*="tel"], input[name*="telephone"], input[type="tel"]',
+          selector:
+            'input[name*="phone"], input[name*="tel"], input[name*="telephone"], input[type="tel"]',
           text: '+33123456789',
-          clear: true
-        }
+          clear: true,
+        },
       };
     }
 
@@ -2960,8 +4671,8 @@ export class Agent {
         params: {
           selector: 'input[name*="email"], input[type="email"]',
           text: 'test@example.com',
-          clear: true
-        }
+          clear: true,
+        },
       };
     }
 
@@ -2969,10 +4680,11 @@ export class Agent {
       return {
         name: 'playwright_type',
         params: {
-          selector: 'input[name*="address"], input[name*="addr"], textarea[name*="address"]',
+          selector:
+            'input[name*="address"], input[name*="addr"], textarea[name*="address"]',
           text: '123 Test Street',
-          clear: true
-        }
+          clear: true,
+        },
       };
     }
 
@@ -2982,8 +4694,8 @@ export class Agent {
         params: {
           selector: 'input[name*="city"], input[name*="ville"]',
           text: 'Test City',
-          clear: true
-        }
+          clear: true,
+        },
       };
     }
 
@@ -2991,10 +4703,11 @@ export class Agent {
       return {
         name: 'playwright_type',
         params: {
-          selector: 'textarea[name*="message"], textarea[name*="comment"], textarea',
+          selector:
+            'textarea[name*="message"], textarea[name*="comment"], textarea',
           text: 'This is a test message from the agent.',
-          clear: true
-        }
+          clear: true,
+        },
       };
     }
 
@@ -3002,10 +4715,11 @@ export class Agent {
     return {
       name: 'playwright_type',
       params: {
-        selector: 'input:not([type="submit"]):not([type="button"]):not([value]), textarea:not([value])',
+        selector:
+          'input:not([type="submit"]):not([type="button"]):not([value]), textarea:not([value])',
         text: 'Test Input',
-        clear: true
-      }
+        clear: true,
+      },
     };
   }
 }

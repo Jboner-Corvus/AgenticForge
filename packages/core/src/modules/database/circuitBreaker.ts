@@ -32,8 +32,13 @@ export class DatabaseCircuitBreaker {
         this.state.state = 'HALF_OPEN';
         logger.info('Circuit breaker moved to HALF_OPEN');
       } else {
-        const remainingTime = Math.ceil((this.resetTimeout - (Date.now() - this.state.lastFailureTime)) / 1000);
-        throw new Error(`Circuit breaker is OPEN - database unavailable. Retry in ${remainingTime}s`);
+        const remainingTime = Math.ceil(
+          (this.resetTimeout - (Date.now() - this.state.lastFailureTime)) /
+            1000,
+        );
+        throw new Error(
+          `Circuit breaker is OPEN - database unavailable. Retry in ${remainingTime}s`,
+        );
       }
     }
 
@@ -61,32 +66,42 @@ export class DatabaseCircuitBreaker {
 
     if (this.state.failures >= this.failureThreshold) {
       this.state.state = 'OPEN';
-      logger.warn({
-        failures: this.state.failures,
-        threshold: this.failureThreshold
-      }, 'Circuit breaker opened due to too many failures');
+      logger.warn(
+        {
+          failures: this.state.failures,
+          threshold: this.failureThreshold,
+        },
+        'Circuit breaker opened due to too many failures',
+      );
     } else {
-      logger.warn({
-        failures: this.state.failures,
-        threshold: this.failureThreshold
-      }, 'Database operation failed, incrementing failure count');
+      logger.warn(
+        {
+          failures: this.state.failures,
+          threshold: this.failureThreshold,
+        },
+        'Database operation failed, incrementing failure count',
+      );
     }
   }
 
   private logState() {
-    logger.debug({
-      state: this.state.state,
-      failures: this.state.failures,
-      timeSinceLastFailure: Date.now() - this.state.lastFailureTime
-    }, 'Circuit breaker state');
+    logger.debug(
+      {
+        state: this.state.state,
+        failures: this.state.failures,
+        timeSinceLastFailure: Date.now() - this.state.lastFailureTime,
+      },
+      'Circuit breaker state',
+    );
   }
 
   public getState() {
     return {
       ...this.state,
       timeSinceLastFailure: Date.now() - this.state.lastFailureTime,
-      isAvailable: this.state.state !== 'OPEN' ||
-        (Date.now() - this.state.lastFailureTime > this.resetTimeout)
+      isAvailable:
+        this.state.state !== 'OPEN' ||
+        Date.now() - this.state.lastFailureTime > this.resetTimeout,
     };
   }
 

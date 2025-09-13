@@ -7,7 +7,7 @@ import * as hooks from '../../store/hooks';
 
 // Mock des dépendances
 vi.mock('../../store/uiStore', () => ({
-  useUIStore: vi.fn()
+  useUIStore: vi.fn(),
 }));
 
 // Mock the UI store selectors properly
@@ -73,7 +73,7 @@ const createMockState = (overrides: any = {}) => ({
   refreshAuthToken: vi.fn(),
   getValidAuthToken: vi.fn(),
   getSystemStatus: vi.fn(),
-  ...overrides
+  ...overrides,
 });
 
 vi.mocked(useUIStore).mockImplementation((selector) => {
@@ -108,20 +108,20 @@ vi.mock('../../store/hooks', () => ({
   useStreamCloseFunc: vi.fn(),
   useDebugLog: vi.fn(),
   useIsSettingsModalOpen: vi.fn(),
-  useSessionTokensUsed: vi.fn()
+  useSessionTokensUsed: vi.fn(),
 }));
 
 vi.mock('../../lib/hooks/useAgentStream', () => ({
-  useAgentStream: vi.fn()
+  useAgentStream: vi.fn(),
 }));
 vi.mock('../../lib/contexts/LanguageContext', () => ({
   useLanguage: () => ({
     translations: {
       typeYourMessage: 'Tapez votre message...',
       sendMessage: 'Send message',
-      stop: 'Stop'
-    }
-  })
+      stop: 'Stop',
+    },
+  }),
 }));
 
 // Mock des composants UI
@@ -130,13 +130,13 @@ vi.mock('../ui/button', () => ({
     <button onClick={onClick} disabled={disabled} {...props}>
       {children}
     </button>
-  )
+  ),
 }));
 
 vi.mock('../ui/textarea', () => ({
   Textarea: ({ value, onChange, ...props }: any) => (
     <textarea value={value} onChange={onChange} {...props} />
-  )
+  ),
 }));
 
 vi.mock('../ui/select', () => ({
@@ -159,7 +159,7 @@ vi.mock('../ui/select', () => ({
   SelectItem: ({ value, children }: any) => (
     <option value={value}>{children}</option>
   ),
-  SelectTrigger: ({ children }: any) => <div>{children}</div>
+  SelectTrigger: ({ children }: any) => <div>{children}</div>,
 }));
 
 describe('System Prompt Integration Tests - End-to-End', () => {
@@ -176,13 +176,13 @@ describe('System Prompt Integration Tests - End-to-End', () => {
     // Mock the useAgentStream hook properly
     vi.mocked(useAgentStream).mockReturnValue({
       startAgent: mockStartAgent,
-      interruptAgent: mockInterruptAgent
+      interruptAgent: mockInterruptAgent,
     });
 
     // Mock du hook useAgentStream
     (useAgentStream as any).mockReturnValue({
       startAgent: mockStartAgent,
-      interruptAgent: mockInterruptAgent
+      interruptAgent: mockInterruptAgent,
     });
   });
 
@@ -190,7 +190,9 @@ describe('System Prompt Integration Tests - End-to-End', () => {
     beforeEach(() => {
       // Update the mock state for this test
       vi.mocked(useUIStore).mockImplementation((selector) => {
-        const mockState = createMockState({ selectedSystemPrompt: 'architect' });
+        const mockState = createMockState({
+          selectedSystemPrompt: 'architect',
+        });
         if (typeof selector === 'function') {
           return selector(mockState);
         }
@@ -200,7 +202,9 @@ describe('System Prompt Integration Tests - End-to-End', () => {
 
     it('should send architect-specific system prompt', async () => {
       // Mock the input value to be available
-      (hooks.useMessageInputValue as any).mockReturnValue('Design a microservices architecture');
+      (hooks.useMessageInputValue as any).mockReturnValue(
+        'Design a microservices architecture',
+      );
 
       render(<UserInput />);
 
@@ -209,15 +213,18 @@ describe('System Prompt Integration Tests - End-to-End', () => {
       fireEvent.click(sendButton);
 
       await waitFor(() => {
-        expect(mockStartAgent).toHaveBeenCalledWith('Design a microservices architecture');
+        expect(mockStartAgent).toHaveBeenCalledWith(
+          'Design a microservices architecture',
+        );
       });
-
     });
 
     it('should display architect mode in dropdown', () => {
       render(<UserInput />);
       // Look for the specific span with the architect text
-      expect(screen.getByText('Architect', { selector: 'span.text-xs' })).toBeInTheDocument();
+      expect(
+        screen.getByText('Architect', { selector: 'span.text-xs' }),
+      ).toBeInTheDocument();
     });
   });
 
@@ -235,7 +242,9 @@ describe('System Prompt Integration Tests - End-to-End', () => {
 
     it('should send coder-specific system prompt', async () => {
       // Mock the input value
-      (hooks.useMessageInputValue as any).mockReturnValue('Write a React component');
+      (hooks.useMessageInputValue as any).mockReturnValue(
+        'Write a React component',
+      );
 
       render(<UserInput />);
 
@@ -278,7 +287,9 @@ describe('System Prompt Integration Tests - End-to-End', () => {
 
     it('should handle educational queries', async () => {
       // Mock the input value
-      (hooks.useMessageInputValue as any).mockReturnValue('Explain how closures work in JavaScript');
+      (hooks.useMessageInputValue as any).mockReturnValue(
+        'Explain how closures work in JavaScript',
+      );
 
       render(<UserInput />);
 
@@ -286,7 +297,9 @@ describe('System Prompt Integration Tests - End-to-End', () => {
       fireEvent.click(sendButton);
 
       await waitFor(() => {
-        expect(mockStartAgent).toHaveBeenCalledWith('Explain how closures work in JavaScript');
+        expect(mockStartAgent).toHaveBeenCalledWith(
+          'Explain how closures work in JavaScript',
+        );
       });
     });
   });
@@ -304,7 +317,9 @@ describe('System Prompt Integration Tests - End-to-End', () => {
 
     it('should handle debugging queries', async () => {
       // Mock the input value
-      (hooks.useMessageInputValue as any).mockReturnValue('Debug this error: TypeError: Cannot read property');
+      (hooks.useMessageInputValue as any).mockReturnValue(
+        'Debug this error: TypeError: Cannot read property',
+      );
 
       render(<UserInput />);
 
@@ -312,7 +327,9 @@ describe('System Prompt Integration Tests - End-to-End', () => {
       fireEvent.click(sendButton);
 
       await waitFor(() => {
-        expect(mockStartAgent).toHaveBeenCalledWith('Debug this error: TypeError: Cannot read property');
+        expect(mockStartAgent).toHaveBeenCalledWith(
+          'Debug this error: TypeError: Cannot read property',
+        );
       });
     });
   });
@@ -320,7 +337,9 @@ describe('System Prompt Integration Tests - End-to-End', () => {
   describe('Orchestrate Mode', () => {
     beforeEach(() => {
       vi.mocked(useUIStore).mockImplementation((selector) => {
-        const mockState = createMockState({ selectedSystemPrompt: 'orchestrate' });
+        const mockState = createMockState({
+          selectedSystemPrompt: 'orchestrate',
+        });
         if (typeof selector === 'function') {
           return selector(mockState);
         }
@@ -330,7 +349,9 @@ describe('System Prompt Integration Tests - End-to-End', () => {
 
     it('should handle project management queries', async () => {
       // Mock the input value
-      (hooks.useMessageInputValue as any).mockReturnValue('Plan the development of a new feature');
+      (hooks.useMessageInputValue as any).mockReturnValue(
+        'Plan the development of a new feature',
+      );
 
       render(<UserInput />);
 
@@ -338,7 +359,9 @@ describe('System Prompt Integration Tests - End-to-End', () => {
       fireEvent.click(sendButton);
 
       await waitFor(() => {
-        expect(mockStartAgent).toHaveBeenCalledWith('Plan the development of a new feature');
+        expect(mockStartAgent).toHaveBeenCalledWith(
+          'Plan the development of a new feature',
+        );
       });
     });
   });
@@ -356,7 +379,9 @@ describe('System Prompt Integration Tests - End-to-End', () => {
 
     it('should handle frontend development queries', async () => {
       // Mock the input value
-      (hooks.useMessageInputValue as any).mockReturnValue('Create a responsive navigation component');
+      (hooks.useMessageInputValue as any).mockReturnValue(
+        'Create a responsive navigation component',
+      );
 
       render(<UserInput />);
 
@@ -364,7 +389,9 @@ describe('System Prompt Integration Tests - End-to-End', () => {
       fireEvent.click(sendButton);
 
       await waitFor(() => {
-        expect(mockStartAgent).toHaveBeenCalledWith('Create a responsive navigation component');
+        expect(mockStartAgent).toHaveBeenCalledWith(
+          'Create a responsive navigation component',
+        );
       });
     });
   });
@@ -373,7 +400,9 @@ describe('System Prompt Integration Tests - End-to-End', () => {
     it('should render in different modes without errors', () => {
       // Test architect mode
       vi.mocked(useUIStore).mockImplementation((selector) => {
-        const mockState = createMockState({ selectedSystemPrompt: 'architect' });
+        const mockState = createMockState({
+          selectedSystemPrompt: 'architect',
+        });
         if (typeof selector === 'function') {
           return selector(mockState);
         }
@@ -419,7 +448,7 @@ describe('System Prompt Integration Tests - End-to-End', () => {
         const mockState = createMockState({
           messageInputValue: 'Test message',
           selectedSystemPrompt: 'architect',
-          isProcessing: true
+          isProcessing: true,
         });
         if (typeof selector === 'function') {
           return selector(mockState);

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getConfig } from '../../../../config.ts';
 import type { Tool } from '../../../../types.ts';
 import {
   makeAlphaVantageRequest,
@@ -10,8 +11,7 @@ import {
   DataTypeParam,
 } from './common.ts';
 
-const TimeSeriesIntradayParams = AlphaVantageBaseParams
-  .merge(SymbolParam)
+const TimeSeriesIntradayParams = AlphaVantageBaseParams.merge(SymbolParam)
   .merge(IntervalParam)
   .merge(OutputSizeParam)
   .merge(DataTypeParam)
@@ -33,31 +33,32 @@ const TimeSeriesIntradayParams = AlphaVantageBaseParams
     entitlement: z
       .enum(['delayed', 'realtime'])
       .optional()
-      .describe('Data entitlement: "delayed" for 15-minute delayed data, "realtime" for real-time data'),
+      .describe(
+        'Data entitlement: "delayed" for 15-minute delayed data, "realtime" for real-time data',
+      ),
   });
 
 export const timeSeriesIntradayTool: Tool<typeof TimeSeriesIntradayParams> = {
-  description: 'Returns current and 20+ years of historical intraday OHLCV time series data for the specified equity',
-  
+  description:
+    'Returns current and 20+ years of historical intraday OHLCV time series data for the specified equity',
+
   execute: async (params, context) => {
     const { log } = context;
     const parsedParams = TimeSeriesIntradayParams.parse(params);
-    
+
     try {
-      log.info('Fetching intraday time series data', { 
-        symbol: parsedParams.symbol, 
-        interval: parsedParams.interval 
+      log.info('Fetching intraday time series data', {
+        symbol: parsedParams.symbol,
+        interval: parsedParams.interval,
       });
 
       // Prepare API parameters
       const apiParams: Record<string, string> = {
         symbol: parsedParams.symbol,
         interval: parsedParams.interval,
-        adjusted: parsedParams.adjusted.toString(),
-        extended_hours: parsedParams.extended_hours.toString(),
-        outputsize: parsedParams.outputsize,
-        datatype: parsedParams.datatype,
-        apikey: parsedParams.apikey,
+        outputsize: parsedParams.outputsize || 'compact',
+        datatype: parsedParams.datatype || 'json',
+        apikey: parsedParams.apikey || getConfig().ALPHA_VANTAGE_API_KEY || '',
       };
 
       // Add optional parameters
@@ -69,25 +70,31 @@ export const timeSeriesIntradayTool: Tool<typeof TimeSeriesIntradayParams> = {
         apiParams.entitlement = parsedParams.entitlement;
       }
 
-      const data = await makeAlphaVantageRequest('TIME_SERIES_INTRADAY', apiParams, parsedParams.datatype);
-      
-      log.info('Successfully fetched intraday time series data', { 
+      const data = await makeAlphaVantageRequest(
+        'TIME_SERIES_INTRADAY',
+        apiParams,
+        parsedParams.datatype,
+      );
+
+      log.info('Successfully fetched intraday time series data', {
         symbol: parsedParams.symbol,
-        dataType: typeof data
+        dataType: typeof data,
       });
 
       return formatAlphaVantageResponse(data, 'TIME_SERIES_INTRADAY');
-      
     } catch (error) {
-      log.error({ err: error, params: parsedParams }, 'Error fetching intraday time series data');
+      log.error(
+        { err: error, params: parsedParams },
+        'Error fetching intraday time series data',
+      );
       throw new Error(
         `Failed to fetch intraday time series data for ${parsedParams.symbol}: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
     }
   },
-  
+
   name: 'time_series_intraday',
   parameters: TimeSeriesIntradayParams,
 };

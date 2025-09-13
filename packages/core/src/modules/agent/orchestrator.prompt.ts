@@ -33,7 +33,17 @@ const getSystemPromptContent = (): string => {
   const possiblePaths = [
     path.resolve(__dirname, 'system.prompt.md'), // dist/modules/agent/system.prompt.md
     path.resolve(__dirname, '..', '..', '..', 'system.prompt.md'), // dist/system.prompt.md
-    path.resolve(__dirname, '..', '..', '..', '..', 'src', 'modules', 'agent', 'system.prompt.md'), // src/modules/agent/system.prompt.md
+    path.resolve(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      '..',
+      'src',
+      'modules',
+      'agent',
+      'system.prompt.md',
+    ), // src/modules/agent/system.prompt.md
   ];
 
   for (const filePath of possiblePaths) {
@@ -50,7 +60,8 @@ const getSystemPromptContent = (): string => {
 
   // Fallback if file not found
   console.warn('Warning: system.prompt.md not found, using fallback content');
-  PREAMBLE_CONTENT = '# AgenticForge - AI Assistant\n\nYou are AgenticForge, an AI assistant. Please respond helpfully.';
+  PREAMBLE_CONTENT =
+    '# AgenticForge - AI Assistant\n\nYou are AgenticForge, an AI assistant. Please respond helpfully.';
   return PREAMBLE_CONTENT;
 };
 
@@ -246,7 +257,7 @@ const formatHistoryMessage = (message: Message): string => {
   }
 
   // Truncate long content to avoid excessively long prompts
-  const MAX_CONTENT_LENGTH = 5000;
+  const MAX_CONTENT_LENGTH = 3500;
   if (content.length > MAX_CONTENT_LENGTH) {
     content = `${content.substring(0, MAX_CONTENT_LENGTH)}... (truncated)`;
   }
@@ -278,5 +289,16 @@ export const getMasterPrompt = (
       ? `${HISTORY_SECTION_HEADER}\n${formattedHistory}`
       : '';
 
-  return `${getPreamble()}\n\n${workingContextSection}${toolsSection}\n\n${historySection}\n\nASSISTANT's turn. Your response:`;
+  const todoInstructions = `
+  ## Task Management Instructions:
+  - For "Créer une todo list simple" (Create a simple todo list), always use the todo_write tool to create exactly 3-5 relevant tasks with status "pending". Do not use finish after creating the list; the task is complete only after creating multiple tasks and confirming the list is ready.
+  - For "Ajouter des éléments à la liste de tâches" (Add items to the todo list), use todo_write to append 2-3 new tasks to the existing list with status "pending". Do not use finish until all items are added.
+  - For "Marquer la première tâche comme terminée" (Mark the first task as done), use todo_write to update the status of the first task in the list to "completed". Do not use finish until the task is fully done.
+  - Always use the todo_write tool for managing todo lists. Only use finish when the entire todo-related task is complete with no further actions needed.
+  - The todo_write tool takes a "todos" parameter which is an array of objects with id, content, status (pending/completed), priority (high/medium/low), and category (e.g., personal/work).
+  
+  Remember: For todo-related tasks, prioritize using todo_write before finishing. Create multiple tasks for creation requests and continue iterations if needed to complete the task fully.
+  `;
+
+  return `${getPreamble()}\n\n${workingContextSection}${toolsSection}\n\n${todoInstructions}\n\n${historySection}\n\nASSISTANT's turn. Your response:`;
 };

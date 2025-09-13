@@ -3,8 +3,8 @@ const require = createRequire(import.meta.url);
 import {
   playwrightClickTool,
   playwrightNavigateTool
-} from "../../../../chunk-S3WSHVEJ.js";
-import "../../../../chunk-7VLMTJV3.js";
+} from "../../../../chunk-XKUVRLWK.js";
+import "../../../../chunk-CCOK3BPH.js";
 import {
   beforeEach,
   describe,
@@ -12,9 +12,9 @@ import {
   it,
   vi
 } from "../../../../chunk-AQKYZ7X3.js";
-import "../../../../chunk-DZQ27DDR.js";
-import "../../../../chunk-BINOZDZV.js";
-import "../../../../chunk-J2EL6RJU.js";
+import "../../../../chunk-KQDCL5B7.js";
+import "../../../../chunk-AGIO4OHP.js";
+import "../../../../chunk-6VZJ5SGS.js";
 import {
   init_esm_shims
 } from "../../../../chunk-SB7UONON.js";
@@ -70,7 +70,10 @@ describe("Playwright MCP Tools", () => {
       const validParams = { selector: ".button" };
       const result = params.safeParse(validParams);
       globalExpect(result.success).toBe(true);
-      const validParamsWithButton = { selector: ".button", button: "right" };
+      const validParamsWithButton = {
+        selector: ".button",
+        button: "right"
+      };
       const resultWithButton = params.safeParse(validParamsWithButton);
       globalExpect(resultWithButton.success).toBe(true);
     });

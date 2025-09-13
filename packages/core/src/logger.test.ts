@@ -21,7 +21,7 @@ describe('logger', () => {
     // Reset the logger instance for testing
     const loggerModule = await import('./logger.ts');
     loggerModule.resetLoggerForTesting();
-    
+
     const logger = loggerModule.getLogger();
     expect(logger).toBeDefined();
     expect(pino).toHaveBeenCalled();

@@ -17,7 +17,9 @@ export const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
 }) => {
   const tokenStats = useLatestTokenStats();
   const isProcessing = useIsProcessing();
-  const fetchLatestTokenStats = useUIStore((state) => state.fetchLatestTokenStats);
+  const fetchLatestTokenStats = useUIStore(
+    (state) => state.fetchLatestTokenStats,
+  );
 
   // Fetch token stats when processing finishes
   useEffect(() => {
@@ -32,7 +34,7 @@ export const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
       const interval = setInterval(() => {
         fetchLatestTokenStats();
       }, 5000);
-      
+
       return () => clearInterval(interval);
     }
   }, [isProcessing, fetchLatestTokenStats]);
@@ -44,10 +46,10 @@ export const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
   const formatTime = (timestamp: number | null) => {
     if (!timestamp) return '';
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('fr-FR', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
     });
   };
 
@@ -84,24 +86,30 @@ export const TokenUsageDisplay: React.FC<TokenUsageDisplayProps> = ({
           </Badge>
         )}
       </div>
-      
+
       <div className="grid grid-cols-3 gap-2 text-xs">
         <div className="flex items-center gap-1">
           <Eye className="h-3 w-3 text-blue-500" />
           <span className="text-muted-foreground">Entrée:</span>
-          <span className="font-mono">{formatTokenCount(tokenStats.input_tokens)}</span>
+          <span className="font-mono">
+            {formatTokenCount(tokenStats.input_tokens)}
+          </span>
         </div>
-        
+
         <div className="flex items-center gap-1">
           <Activity className="h-3 w-3 text-green-500" />
           <span className="text-muted-foreground">Sortie:</span>
-          <span className="font-mono">{formatTokenCount(tokenStats.output_tokens)}</span>
+          <span className="font-mono">
+            {formatTokenCount(tokenStats.output_tokens)}
+          </span>
         </div>
-        
+
         <div className="flex items-center gap-1">
           <TrendingUp className="h-3 w-3 text-orange-500" />
           <span className="text-muted-foreground">Total:</span>
-          <span className="font-mono font-medium">{formatTokenCount(tokenStats.total_tokens)}</span>
+          <span className="font-mono font-medium">
+            {formatTokenCount(tokenStats.total_tokens)}
+          </span>
         </div>
       </div>
     </motion.div>
