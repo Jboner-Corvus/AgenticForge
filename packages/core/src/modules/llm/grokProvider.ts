@@ -6,6 +6,24 @@ import { getRedisClientInstance } from '../redis/redisClient.ts';
 import { LLMContent } from './llm-types.ts';
 import { LlmApiKey, LlmKeyErrorType, LlmKeyManager } from './LlmKeyManager.ts';
 
+// Helper function to get display-friendly provider names
+function getDisplayProvider(provider: string): string {
+  const providerMap: Record<string, string> = {
+    'openrouter-sky': 'openrouter',
+    'openrouter-dusk': 'openrouter',
+    'openrouter': 'openrouter',
+    'qwen': 'qwen',
+    'gemini': 'gemini',
+    'anthropic': 'anthropic',
+    'grok': 'grok',
+    'huggingface': 'huggingface',
+    'mistral': 'mistral',
+    'openai': 'openai'
+  };
+
+  return providerMap[provider] || provider;
+}
+
 export class GrokProvider implements ILlmProvider {
   public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
     if (statusCode === 401 || statusCode === 403) {
@@ -83,7 +101,7 @@ export class GrokProvider implements ILlmProvider {
       log.info(
         `[LLM CALL] Sending request to model: ${
           activeKey.apiModel
-        } via ${activeKey.apiProvider}`,
+        } via ${getDisplayProvider(activeKey.apiProvider)}`,
       );
       const response = await fetch(apiUrl, {
         body,

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Canvas Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .button {
+            background: #ff6b6b;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .button:hover {
+            background: #ff5252;
+            transform: scale(1.05);
+        }
+        .info {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Canvas Test Page</h1>
+        <div class="info">
+            <h2>Welcome to Canvas Display!</h2>
+            <p>This is a test of the canvas rendering system.</p>
+            <p>Features:</p>
+            <ul style="text-align: left; display: inline-block;">
+                <li>✅ HTML5 Canvas Support</li>
+                <li>✅ CSS3 Styling</li>
+                <li>✅ Interactive Elements</li>
+                <li>✅ Responsive Design</li>
+            </ul>
+        </div>
+        <button class="button" onclick="showAlert()">Click Me!</button>
+        <button class="button" onclick="changeColor()">Change Background</button>
+    </div>
+    
+    <script>
+        function showAlert() {
+            alert('Canvas display is working! 🎉');
+        }
+        
+        function changeColor() {
+            document.body.style.background = 
+                document.body.style.background.includes('667eea') 
+                    ? 'linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%)' 
+                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        }
+    </script>
+</body>
+</html>

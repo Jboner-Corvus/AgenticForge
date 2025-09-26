@@ -11,6 +11,24 @@ import { QwenProvider } from '../modules/llm/qwenProvider.ts';
 import { getRedisClientInstance } from '../modules/redis/redisClient.ts';
 import { Gpt5Provider } from './gpt5Provider.ts';
 
+// Helper function to get display-friendly provider names
+function getDisplayProvider(provider: string): string {
+  const providerMap: Record<string, string> = {
+    'openrouter-sky': 'openrouter',
+    'openrouter-dusk': 'openrouter',
+    'openrouter': 'openrouter',
+    'qwen': 'qwen',
+    'gemini': 'gemini',
+    'anthropic': 'anthropic',
+    'grok': 'grok',
+    'huggingface': 'huggingface',
+    'mistral': 'mistral',
+    'openai': 'openai'
+  };
+
+  return providerMap[provider] || provider;
+}
+
 class AnthropicProvider implements ILlmProvider {
   public getErrorType(statusCode: number, _errorBody: string): LlmKeyErrorType {
     if (statusCode === 401 || statusCode === 403) {
@@ -99,7 +117,7 @@ class AnthropicProvider implements ILlmProvider {
 
     try {
       log.info(
-        `[LLM CALL] Sending request to model: ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
+        `[LLM CALL] Sending request to model: ${modelName || getConfig().LLM_MODEL_NAME} via ${getDisplayProvider(activeKey.apiProvider)}`,
       );
       const response = await fetch(apiUrl, {
         body,
@@ -277,7 +295,7 @@ class GrokProvider implements ILlmProvider {
 
     try {
       log.info(
-        `[LLM CALL] Sending request to model: ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
+        `[LLM CALL] Sending request to model: ${modelName || getConfig().LLM_MODEL_NAME} via ${getDisplayProvider(activeKey.apiProvider)}`,
       );
       const response = await fetch(apiUrl, {
         body,
@@ -438,7 +456,7 @@ class HuggingFaceProvider implements ILlmProvider {
 
     try {
       log.info(
-        `[LLM CALL] Sending request to model: ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
+        `[LLM CALL] Sending request to model: ${modelName || getConfig().LLM_MODEL_NAME} via ${getDisplayProvider(activeKey.apiProvider)}`,
       );
       const response = await fetch(apiUrl, {
         body,
@@ -602,7 +620,7 @@ class MistralProvider implements ILlmProvider {
     try {
       // Log 2: Avant chaque appel LLM
       log.info(
-        `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
+        `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${getDisplayProvider(activeKey.apiProvider)}`,
       );
       const response = await fetch(apiUrl, {
         body,
@@ -771,7 +789,7 @@ class OpenAIProvider implements ILlmProvider {
     try {
       // Log 2: Avant chaque appel LLM
       log.info(
-        `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
+        `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${getDisplayProvider(activeKey.apiProvider)}`,
       );
       const response = await fetch(apiUrl, {
         body,
@@ -972,19 +990,19 @@ class OpenRouterProvider implements ILlmProvider {
       }
     }
 
-    // CRITICAL FIX: Simplify request for Sonoma models to prevent empty responses
+    // CRITICAL FIX: Simplify request for Sonoma models and Grok models to prevent empty responses
     let useSimplifiedRequest = false;
-    if (finalModelName && (finalModelName.includes('sonoma') || finalModelName.includes('dusk'))) {
+    if (finalModelName && (finalModelName.includes('sonoma') || finalModelName.includes('dusk') || finalModelName.includes('grok'))) {
       useSimplifiedRequest = true;
-      log.info('🎯 Using simplified request format for Sonoma/Dusk model to prevent empty responses');
+      log.info('🎯 Using simplified request format for Sonoma/Dusk/Grok model to prevent empty responses');
     }
 
     // Process messages - use simplified format for Sonoma models
     let openRouterMessages: Array<{content: string, role: string}>;
 
     if (useSimplifiedRequest) {
-      // CRITICAL FIX: For Sonoma models, use only user messages (no system message)
-      // This matches the curl format that works
+      // CRITICAL FIX: For Sonoma models, use only user messages but include system prompt in content
+      // This matches the curl format that works while preserving system prompt
       openRouterMessages = messages
         .filter((msg) => msg.role === 'user') // Only user messages
         .map((msg) => ({
@@ -992,15 +1010,18 @@ class OpenRouterProvider implements ILlmProvider {
           role: 'user',
         }));
 
-      // If no user messages found, create a simple one
+      // If no user messages found, create a simple one with system prompt included
       if (openRouterMessages.length === 0) {
         openRouterMessages = [{
-          content: 'Hello, can you help me?',
+          content: systemPrompt ? `${systemPrompt}\n\nHello, can you help me?` : 'Hello, can you help me?',
           role: 'user'
         }];
+      } else if (systemPrompt) {
+        // Include system prompt in the first user message
+        openRouterMessages[0].content = `${systemPrompt}\n\n${openRouterMessages[0].content}`;
       }
 
-      log.info(`🎯 Using simplified message format for Sonoma model: ${openRouterMessages.length} user messages only`);
+      log.info(`🎯 Using simplified message format for Sonoma model: ${openRouterMessages.length} user messages with system prompt included`);
     } else {
       // Standard message processing for other models
       openRouterMessages = messages.map((msg) => ({
@@ -1059,7 +1080,7 @@ class OpenRouterProvider implements ILlmProvider {
 
       // Log 2: Avant chaque appel LLM
       log.info(
-        `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
+        `[LLM CALL] Envoi de la requête au modèle : ${modelName || getConfig().LLM_MODEL_NAME} via ${getDisplayProvider(activeKey.apiProvider)}`,
       );
 
       // Debug: Log request details
@@ -1169,10 +1190,10 @@ class OpenRouterProvider implements ILlmProvider {
         } else {
           // If all retries exhausted, try switching to the other OpenRouter model
           if (activeKey.apiProvider === 'openrouter-sky' && !apiKey) {
-            log.warn('OpenRouter Sky failed, trying OpenRouter Dusk as fallback');
+            log.warn(`${getDisplayProvider('openrouter-sky')} failed, trying ${getDisplayProvider('openrouter-dusk')} as fallback`);
             const fallbackKey = await LlmKeyManager.getNextAvailableKey('openrouter-dusk');
             if (fallbackKey) {
-              log.info('Switching to OpenRouter Dusk for this request');
+              log.info(`Switching to ${getDisplayProvider('openrouter-dusk')} for this request`);
               return this.getLlmResponseWithRetry(
                 messages,
                 systemPrompt,
@@ -1182,10 +1203,10 @@ class OpenRouterProvider implements ILlmProvider {
               );
             }
           } else if (activeKey.apiProvider === 'openrouter-dusk' && !apiKey) {
-            log.warn('OpenRouter Dusk failed, trying OpenRouter Sky as fallback');
+            log.warn(`${getDisplayProvider('openrouter-dusk')} failed, trying ${getDisplayProvider('openrouter-sky')} as fallback`);
             const fallbackKey = await LlmKeyManager.getNextAvailableKey('openrouter-sky');
             if (fallbackKey) {
-              log.info('Switching to OpenRouter Sky for this request');
+              log.info(`Switching to ${getDisplayProvider('openrouter-sky')} for this request`);
               return this.getLlmResponseWithRetry(
                 messages,
                 systemPrompt,
@@ -1642,7 +1663,7 @@ export class GeminiProvider implements ILlmProvider {
           ? ` (retry ${retryCount}/${GeminiProvider.MAX_RETRIES})`
           : '';
       log.info(
-        `[LLM CALL] Envoi de la requête au modèle : ${geminiModelName} via ${activeKey.apiProvider}${retryInfo}`,
+        `[LLM CALL] Envoi de la requête au modèle : ${geminiModelName} via ${getDisplayProvider(activeKey.apiProvider)}${retryInfo}`,
       );
 
       // Add timeout to prevent hanging requests

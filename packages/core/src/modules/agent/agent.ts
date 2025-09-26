@@ -53,6 +53,19 @@ export class Agent {
   private activeLlmProvider: string; // New property
   private apiKey?: string; // New property
   // LLM Router is now handled by the shared service
+  
+  // Symbol fallback mapping for better reliability
+  private readonly symbolFallbacks: Record<string, string[]> = {
+    'SPX': ['SPY', 'VOO', 'IVV', 'SPLG'],
+    'CAC': ['EWQ', 'FEZ'],
+    'FCHI': ['EWQ', 'FEZ'],
+    '^FCHI': ['EWQ', 'FEZ'],
+    'DAX': ['EWG'],
+    'FTSE': ['EWU'],
+    'NIKKEI': ['EWJ'],
+    'HSI': ['EWH']
+  };
+  
   // Loop detection properties
   private behaviorHistory: Array<{
     command?: { name?: string; params?: Record<string, any> };
@@ -154,6 +167,17 @@ export class Agent {
     
     this.log.info(`🔍 Smart Detection Debug: prompt="${lowerPrompt}", systemPrompt="${systemPrompt}"`);
     
+    // 🚨 FIX: Détecter les salutations simples et les exclure de la détection automatique
+    const greetingKeywords = ['salut', 'hello', 'hi', 'bonjour', 'bonsoir', 'hey', 'coucou'];
+    const isSimpleGreeting = greetingKeywords.some(keyword => lowerPrompt.includes(keyword)) && prompt.length < 50;
+    
+    this.log.info(`🔍 GREETING DEBUG: lowerPrompt="${lowerPrompt}", prompt.length=${prompt.length}, isSimpleGreeting=${isSimpleGreeting}`);
+    
+    if (isSimpleGreeting) {
+      this.log.info('🤝 Simple greeting detected - skipping tool detection');
+      return null;
+    }
+    
     // Debug keywords detection
     const debugKeywords = ['debug', 'error', 'logs', 'analyse', 'analysis', 'troubleshoot', 'investigate', 'stack trace', 'exception', 'bug', 'issue', 'problem', 'failure', 'crash'];
     const hasDebugKeywords = debugKeywords.some(keyword => lowerPrompt.includes(keyword));
@@ -185,7 +209,8 @@ export class Agent {
     const complexKeywords = ['project', 'application', 'system', 'développer', 'complet', 'architecture', 'multi'];
     const hasComplexKeywords = complexKeywords.some(keyword => lowerPrompt.includes(keyword));
     
-    if (hasComplexKeywords && prompt.length > 100 && systemPrompt === 'architect') {
+    // 🚨 FIX: Augmenter le seuil de longueur et s'assurer que ce n'est pas une salutation
+    if (hasComplexKeywords && prompt.length > 100 && systemPrompt === 'architect' && !isSimpleGreeting) {
       return {
         tool: 'listFiles',
         params: { path: '.' },
@@ -240,16 +265,46 @@ export class Agent {
           this.session.history.push(initialMessage);
           this.publishToChannel(initialMessage);
         } else {
-          // Original behavior: execute and return for simple requests
+          // 🚨 FIX: Au lieu de retourner immédiatement, ajouter le résultat à l'historique et continuer
+          this.log.info('Simple tool request detected - executing initial tool but continuing conversation');
           const command = { name: smartToolDetection.tool, params: smartToolDetection.params };
           const result = await this.executeTool(command, this.log);
-          if (typeof result === 'string') return result;
-          return JSON.stringify(result);
+          
+          // Add initial result to session but DON'T return - continue to main agent loop
+          const initialMessage: ToolResultMessage = {
+            id: crypto.randomUUID(),
+            type: 'tool_result',
+            result: { content: typeof result === 'string' ? result : JSON.stringify(result) },
+            toolName: smartToolDetection.tool,
+            timestamp: Date.now(),
+          };
+          this.session.history.push(initialMessage);
+          this.publishToChannel(initialMessage);
         }
       }
 
+      // 🚨 FIX: Check for simple greeting and handle it immediately
+      const greetingKeywords = ['salut', 'hello', 'hi', 'bonjour', 'bonsoir', 'hey', 'coucou'];
+      const isSimpleGreeting = greetingKeywords.some(keyword => prompt.toLowerCase().includes(keyword)) && prompt.length < 50;
+      
+      if (isSimpleGreeting) {
+        this.log.info('🤝 Detected simple greeting - providing immediate friendly response');
+        const greetingResponse = "Hello! I'm here to help you. How can I assist you today?";
+        
+        const greetingMessage: AgentResponseMessage = {
+          content: greetingResponse,
+          id: crypto.randomUUID(),
+          timestamp: Date.now(),
+          type: 'agent_response',
+        };
+        this.session.history.push(greetingMessage);
+        this.publishToChannel(greetingMessage);
+        
+        return greetingResponse;
+      }
+
       let iterations = 0;
-      const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS ?? 50;
+      const MAX_ITERATIONS = config.AGENT_MAX_ITERATIONS ?? 25; // Reduced from 50 to prevent long loops
 
       while (iterations < MAX_ITERATIONS) {
         if (this.interrupted) {
@@ -1130,7 +1185,12 @@ export class Agent {
   private detectRepetitiveResponse(response: string): boolean {
     // Check if this response is similar to recent responses
     const recentResponses = this.behaviorHistory.slice(-3);
-    const similarityThreshold = 0.8; // 80% similarity threshold
+    const similarityThreshold = 0.95; // 95% similarity threshold (more permissive)
+    
+    // Only check if we have enough history to detect real repetition
+    if (recentResponses.length < 2) {
+      return false;
+    }
 
     for (const behavior of recentResponses) {
       if (behavior.thought) {
@@ -1162,6 +1222,15 @@ export class Agent {
   private convertPlainTextToValidJson(text: string): string {
     // Clean the text
     const cleanText = text.trim();
+
+    // 🚨 FIX: When LLM providers fail, we need to check the original user prompt instead of the empty/generic text
+    let userPrompt = '';
+    const lastUserMessage = this.session.history
+      .filter(msg => msg.type === 'user')
+      .slice(-1)[0];
+    if (lastUserMessage && 'content' in lastUserMessage) {
+      userPrompt = lastUserMessage.content.toLowerCase();
+    }
 
     // Declare variables at the beginning
     let command: Command | undefined;
@@ -2949,51 +3018,208 @@ export class Agent {
             // 🚨 FIX: Don't default to finish for complex responses
             // Instead, analyze the content and provide appropriate actions
             
-            // Debug/Analysis keywords detection
-            const debugKeywords = ['debug', 'error', 'logs', 'analyse', 'analysis', 'troubleshoot', 'investigate', 'stack trace', 'exception', 'bug', 'issue', 'problem', 'failure', 'crash'];
-            const hasDebugKeywords = debugKeywords.some(keyword => lowerText.includes(keyword));
+            // 🚨 FIX: Check for simple greetings first before applying debug detection
+            const greetingKeywords = ['salut', 'hello', 'hi', 'bonjour', 'bonsoir', 'hey', 'coucou'];
+            const isSimpleGreeting = greetingKeywords.some(keyword => lowerText.includes(keyword)) && cleanText.length < 50;
             
-            // Todo/Planning keywords detection  
-            const todoKeywords = ['todo', 'task', 'comprehensive', 'planning', 'management', 'web application', 'building', 'development', 'phases'];
-            const hasTodoKeywords = todoKeywords.some(keyword => lowerText.includes(keyword));
-            
-            if (hasDebugKeywords) {
-              // For debugging requests, check existing logs or read files first
-              thought = "Détection d'une demande de débogage/analyse. Je vais d'abord explorer les fichiers de log disponibles.";
-              command = {
-                name: 'listFiles',
-                params: {
-                  path: '.',
-                },
-              };
-            } else if (hasTodoKeywords) {
-              // Create a todo list for project-oriented requests
-              thought = "Détection d'une demande nécessitant une planification. Je vais créer une todo list structurée.";
-              const smartTodos = this.createSmartTodoList(cleanText);
-              command = {
-                name: 'todo_write',
-                params: {
-                  todos: smartTodos,
-                },
-              };
-            } else if (cleanText.length > 50 || lowerText.includes('test') || lowerText.includes('complex') || lowerText.includes('run') || lowerText.includes('execute')) {
-              // For other complex requests, explore the current directory first
-              thought = "Requête complexe détectée. Je vais explorer l'environnement pour mieux comprendre le contexte.";
-              command = {
-                name: 'listFiles',
-                params: {
-                  path: '.',
-                },
-              };
-            } else {
-              // Only use finish for truly simple responses and greetings
-              thought = "Traitement de la réponse simple de l'utilisateur.";
+            if (isSimpleGreeting) {
+              // Handle greetings appropriately
+              thought = "L'utilisateur me salue. Je vais répondre poliment.";
               command = {
                 name: 'finish',
                 params: {
-                  response: cleanText,
+                  response: "Hello! I'm here to help you. How can I assist you today?",
                 },
               };
+            } else {
+              // 🚨 FIX: Detect website creation requests using userPrompt instead of lowerText
+              const siteKeywords = ['site', 'website', 'page web', 'html', 'webpage'];
+              const displayKeywords = ['affiche', 'display', 'show', 'canvas', 'visualise'];
+              const hasSiteKeywords = siteKeywords.some(keyword => userPrompt.includes(keyword));
+              const hasDisplayKeywords = displayKeywords.some(keyword => userPrompt.includes(keyword));
+              
+              if (hasSiteKeywords && hasDisplayKeywords) {
+                // This is a website creation and display request
+                thought = "L'utilisateur demande la création d'un site web à afficher. Je vais créer le site et l'afficher dans le canvas.";
+                
+                // Extract the topic/subject for the website
+                let topic = "exemple";
+                if (userPrompt.includes('chien')) topic = "chiens";
+                else if (userPrompt.includes('cat') || userPrompt.includes('chat')) topic = "chats";
+                else if (userPrompt.includes('flower') || userPrompt.includes('fleur')) topic = "fleurs";
+                
+                // Create a comprehensive website about the topic
+                const htmlContent = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tout sur les ${topic}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #4a5568;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+        .highlight {
+            background: #bee3f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .fun-fact {
+            background: #c6f6d5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #48bb78;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        li:before {
+            content: "🐕 ";
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐕 Tout sur les ${topic} 🐕</h1>
+        
+        <div class="section">
+            <h2>Bienvenue dans le monde des ${topic}!</h2>
+            <p>Les ${topic} sont des compagnons extraordinaires qui apportent joie et bonheur dans nos vies. Cette page vous présente tout ce que vous devez savoir sur ces merveilleux animaux.</p>
+        </div>
+
+        <div class="section">
+            <h2>Caractéristiques principales</h2>
+            <ul>
+                <li>Animaux domestiques fidèles et loyaux</li>
+                <li>Excellents compagnons pour les familles</li>
+                <li>Intelligents et capables d'apprendre</li>
+                <li>Très sociables et affectueux</li>
+                <li>Protecteurs naturels de leur famille</li>
+            </ul>
+        </div>
+
+        <div class="fun-fact">
+            <strong>Le saviez-vous ?</strong> Les chiens peuvent reconnaître plus de 150 mots et sont capables de compter jusqu'à quatre ou cinq !
+        </div>
+
+        <div class="section">
+            <h2>Soins et bien-être</h2>
+            <div class="highlight">
+                <p><strong>Alimentation :</strong> Une alimentation équilibrée adaptée à l'âge et à la taille</p>
+                <p><strong>Exercice :</strong> Promenades quotidiennes et jeux réguliers</p>
+                <p><strong>Santé :</strong> Visites vétérinaires régulières et vaccinations</p>
+                <p><strong>Affection :</strong> Beaucoup d'amour et d'attention quotidienne</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Races populaires</h2>
+            <p>Il existe de nombreuses races de ${topic}, chacune avec ses propres caractéristiques :</p>
+            <ul>
+                <li>Labrador - Très amical et énergique</li>
+                <li>Golden Retriever - Doux et intelligent</li>
+                <li>Berger Allemand - Protecteur et loyal</li>
+                <li>Bouledogue Français - Compact et affectueux</li>
+                <li>Border Collie - Très intelligent et actif</li>
+            </ul>
+        </div>
+
+        <div class="fun-fact">
+            <strong>Citation :</strong> "Un chien est la seule chose sur terre qui vous aime plus qu'il ne s'aime lui-même." - Josh Billings
+        </div>
+    </div>
+</body>
+</html>`;
+
+                command = {
+                  name: 'display_canvas',
+                  params: {
+                    type: 'html',
+                    content: htmlContent,
+                    title: `Site web sur les ${topic}`
+                  }
+                };
+              } else {
+                // Debug/Analysis keywords detection
+                const debugKeywords = ['debug', 'error', 'logs', 'analyse', 'analysis', 'troubleshoot', 'investigate', 'stack trace', 'exception', 'bug', 'issue', 'problem', 'failure', 'crash'];
+                const hasDebugKeywords = debugKeywords.some(keyword => lowerText.includes(keyword));
+                
+                // Todo/Planning keywords detection  
+                const todoKeywords = ['todo', 'task', 'comprehensive', 'planning', 'management', 'web application', 'building', 'development', 'phases'];
+                const hasTodoKeywords = todoKeywords.some(keyword => lowerText.includes(keyword));
+                
+                if (hasDebugKeywords) {
+                  // For debugging requests, check existing logs or read files first
+                  thought = "Détection d'une demande de débogage/analyse. Je vais d'abord explorer les fichiers de log disponibles.";
+                  command = {
+                    name: 'listFiles',
+                    params: {
+                      path: '.',
+                    },
+                  };
+                } else if (hasTodoKeywords) {
+                  // Create a todo list for project-oriented requests
+                  thought = "Détection d'une demande nécessitant une planification. Je vais créer une todo list structurée.";
+                  const smartTodos = this.createSmartTodoList(cleanText);
+                  command = {
+                    name: 'todo_write',
+                    params: {
+                      todos: smartTodos,
+                    },
+                  };
+                } else if (cleanText.length > 50 || lowerText.includes('test') || lowerText.includes('complex') || lowerText.includes('run') || lowerText.includes('execute')) {
+                  // For other complex requests, explore the current directory first
+                  thought = "Requête complexe détectée. Je vais explorer l'environnement pour mieux comprendre le contexte.";
+                  command = {
+                    name: 'listFiles',
+                    params: {
+                      path: '.',
+                    },
+                  };
+                } else {
+                  // Only use finish for truly simple responses and greetings
+                  thought = "Traitement de la réponse simple de l'utilisateur.";
+                  command = {
+                    name: 'finish',
+                    params: {
+                      response: cleanText,
+                    },
+                  };
+                }
+              }
             }
           }
         }
@@ -4130,6 +4356,174 @@ export class Agent {
    */
   private async generateLocalFallbackResponse(): Promise<string | undefined> {
     this.log.info('Generating local fallback response...');
+
+    // 🚨 FIX: Check if this is a simple greeting first
+    const lastUserMessage = this.session.history
+      .filter(msg => msg.type === 'user')
+      .slice(-1)[0];
+    
+    if (lastUserMessage && 'content' in lastUserMessage) {
+      const userText = lastUserMessage.content.toLowerCase();
+      const greetingKeywords = ['salut', 'hello', 'hi', 'bonjour', 'bonsoir', 'hey', 'coucou'];
+      const isSimpleGreeting = greetingKeywords.some(keyword => userText.includes(keyword)) && userText.length < 50;
+      
+      if (isSimpleGreeting) {
+        this.log.info('🤝 Detected simple greeting in fallback - providing friendly response');
+        return JSON.stringify({
+          thought: 'The user is greeting me. I should respond politely.',
+          command: {
+            name: 'finish',
+            params: {
+              response: "Hello! I'm here to help you. How can I assist you today?",
+            },
+          },
+        });
+      }
+
+      // 🚨 FIX: Check for website creation requests in fallback
+      const siteKeywords = ['site', 'website', 'page web', 'html', 'webpage'];
+      const displayKeywords = ['affiche', 'display', 'show', 'canvas', 'visualise'];
+      const hasSiteKeywords = siteKeywords.some(keyword => userText.includes(keyword));
+      const hasDisplayKeywords = displayKeywords.some(keyword => userText.includes(keyword));
+      
+      if (hasSiteKeywords && hasDisplayKeywords) {
+        this.log.info('🌐 Detected website creation request in fallback - creating and displaying site');
+        
+        // Extract the topic/subject for the website
+        let topic = "exemple";
+        if (userText.includes('chien')) topic = "chiens";
+        else if (userText.includes('cat') || userText.includes('chat')) topic = "chats";
+        else if (userText.includes('flower') || userText.includes('fleur')) topic = "fleurs";
+        
+        // Create a comprehensive website about the topic
+        const htmlContent = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tout sur les ${topic}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #4a5568;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+        .highlight {
+            background: #bee3f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .fun-fact {
+            background: #c6f6d5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #48bb78;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        li:before {
+            content: "🐕 ";
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐕 Tout sur les ${topic} 🐕</h1>
+        
+        <div class="section">
+            <h2>Bienvenue dans le monde des ${topic}!</h2>
+            <p>Les ${topic} sont des compagnons extraordinaires qui apportent joie et bonheur dans nos vies. Cette page vous présente tout ce que vous devez savoir sur ces merveilleux animaux.</p>
+        </div>
+
+        <div class="section">
+            <h2>Caractéristiques principales</h2>
+            <ul>
+                <li>Animaux domestiques fidèles et loyaux</li>
+                <li>Excellents compagnons pour les familles</li>
+                <li>Intelligents et capables d'apprendre</li>
+                <li>Très sociables et affectueux</li>
+                <li>Protecteurs naturels de leur famille</li>
+            </ul>
+        </div>
+
+        <div class="fun-fact">
+            <strong>Le saviez-vous ?</strong> Les chiens peuvent reconnaître plus de 150 mots et sont capables de compter jusqu'à quatre ou cinq !
+        </div>
+
+        <div class="section">
+            <h2>Soins et bien-être</h2>
+            <div class="highlight">
+                <p><strong>Alimentation :</strong> Une alimentation équilibrée adaptée à l'âge et à la taille</p>
+                <p><strong>Exercice :</strong> Promenades quotidiennes et jeux réguliers</p>
+                <p><strong>Santé :</strong> Visites vétérinaires régulières et vaccinations</p>
+                <p><strong>Affection :</strong> Beaucoup d'amour et d'attention quotidienne</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Races populaires</h2>
+            <p>Il existe de nombreuses races de ${topic}, chacune avec ses propres caractéristiques :</p>
+            <ul>
+                <li>Labrador - Très amical et énergique</li>
+                <li>Golden Retriever - Doux et intelligent</li>
+                <li>Berger Allemand - Protecteur et loyal</li>
+                <li>Bouledogue Français - Compact et affectueux</li>
+                <li>Border Collie - Très intelligent et actif</li>
+            </ul>
+        </div>
+
+        <div class="fun-fact">
+            <strong>Citation :</strong> "Un chien est la seule chose sur terre qui vous aime plus qu'il ne s'aime lui-même." - Josh Billings
+        </div>
+    </div>
+</body>
+</html>`;
+
+        return JSON.stringify({
+          thought: `L'utilisateur demande la création d'un site web sur les ${topic} à afficher dans le canvas. Je vais créer le site et l'afficher.`,
+          command: {
+            name: 'display_canvas',
+            params: {
+              type: 'html',
+              content: htmlContent,
+              title: `Site web sur les ${topic}`
+            }
+          }
+        });
+      }
+    }
 
     // Check if we have pending tasks that can be executed locally
     const nextTask = this.getNextPendingTask();

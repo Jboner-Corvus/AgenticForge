@@ -21,21 +21,6 @@ curl -X POST http://localhost:3002/api/test-chat \
 ```
 
 
-```bash
-curl -X POST 'http://192.168.40.28:3001/api/session/614b25ee-865d-4b54-a6c6-e51dc95b98d7/job' \
--H 'Authorization: Bearer Qp5brxkUkTbmWJHmdrGYUjfgNY1hT9WOxUmzpG77JU0' \
--H 'Content-Type: application/json' \
--d '{
-    "type": "agent_automation",
-    "title": "Test Playwright Press - Keyboard Actions",
-    "prompt": "Test playwright_press tool by:\n1. Navigate to https://the-internet.herokuapp.com/key_presses\n2. Use playwright_press to send key presses (ENTER, TAB, SPACE, etc.)\n3. Verify the key press feedback\n4. Take a screenshot to confirm the test",
-    "config": {
-        "max_iterations": 20,
-        "workspace_path": "/home/demon/agentforge/AgenticForge2/AgenticForge/packages/core/workspace",
-        "llm_provider": "gemini-pro-1"
-    }
-}'
-```
 
 
 

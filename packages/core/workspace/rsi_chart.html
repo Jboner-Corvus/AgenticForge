@@ -1,0 +1,50 @@
+<!DOCTYPE html><html><head><title>SPY RSI Analysis</title><script src="https://cdn.jsdelivr.net/npm/chart.js"></script></head><body><h1>SPY RSI (14-Day)</h1><canvas id="rsiChart" width="800" height="400"></canvas><h2>Analysis</h2><p id="analysis"></p><script>const rsiData = {"2025-09-15":{"RSI":"70.4715"},"2025-09-12":{"RSI":"67.7392"},"2025-09-11":{"RSI":"68.1070"},"2025-09-10":{"RSI":"63.5833"},"2025-09-09":{"RSI":"61.8400"},"2025-09-08":{"RSI":"60.4368"},"2025-09-05":{"RSI":"58.9511"},"2025-09-04":{"RSI":"61.4862"},"2025-09-03":{"RSI":"56.5173"},"2025-09-02":{"RSI":"52.8760"},"2025-08-29":{"RSI":"59.2192"},"2025-08-28":{"RSI":"65.0896"},"2025-08-27":{"RSI":"63.0785"},"2025-08-26":{"RSI":"61.7657"},"2025-08-25":{"RSI":"59.3070"},"2025-08-22":{"RSI":"63.2974"},"2025-08-21":{"RSI":"53.2622"},"2025-08-20":{"RSI":"57.0622"},"2025-08-19":{"RSI":"59.6881"},"2025-08-18":{"RSI":"65.4277"},"2025-08-15":{"RSI":"65.6629"},"2025-08-14":{"RSI":"68.1153"},"2025-08-13":{"RSI":"68.0713"},"2025-08-12":{"RSI":"66.4972"},"2025-08-11":{"RSI":"61.0039"},"2025-08-08":{"RSI":"62.7830"},"2025-08-07":{"RSI":"58.3722"},"2025-08-06":{"RSI":"59.0711"},"2025-08-05":{"RSI":"54.4781"},"2025-08-04":{"RSI":"58.5360"},"2025-08-01":{"RSI":"47.8928"},"2025-07-31":{"RSI":"64.8343"},"2025-07-30":{"RSI":"70.1260"},"2025-07-29":{"RSI":"71.9592"},"2025-07-28":{"RSI":"75.8243"},"2025-07-25":{"RSI":"76.1862"},"2025-07-24":{"RSI":"74.2767"},"2025-07-23":{"RSI":"74.1257"},"2025-07-22":{"RSI":"69.9543"},"2025-07-21":{"RSI":"69.8785"},"2025-07-18":{"RSI":"68.9149"},"2025-07-17":{"RSI":"69.7154"},"2025-07-16":{"RSI":"66.7359"},"2025-07-15":{"RSI":"64.9947"},"2025-07-14":{"RSI":"69.3199"},"2025-07-11":{"RSI":"68.4510"},"2025-07-10":{"RSI":"71.9492"},"2025-07-09":{"RSI":"70.8422"},"2025-07-08":{"RSI":"68.3944"},"2025-07-07":{"RSI":"68.8852"},"2025-07-03":{"RSI":"75.8086"},"2025-07-02":{"RSI":"73.1823"},"2025-07-01":{"RSI":"71.5394"},"2025-06-30":{"RSI":"71.8313"},"2025-06-27":{"RSI":"70.1701"}};
+const dates = Object.keys(rsiData).reverse();
+const values = dates.map(date => parseFloat(rsiData[date].RSI));
+const latestRSI = values[values.length - 1];
+const analysisEl = document.getElementById('analysis');
+if (latestRSI > 70) {
+  analysisEl.textContent = `The latest RSI is ${latestRSI.toFixed(2)}, which is above 70. This suggests the asset may be overbought and could be due for a price correction.`;
+  analysisEl.style.color = 'red';
+} else if (latestRSI < 30) {
+  analysisEl.textContent = `The latest RSI is ${latestRSI.toFixed(2)}, which is below 30. This suggests the asset may be oversold and could be due for a price rebound.`;
+  analysisEl.style.color = 'green';
+} else {
+  analysisEl.textContent = `The latest RSI is ${latestRSI.toFixed(2)}. This is in the neutral range (between 30 and 70).`;
+}
+const ctx = document.getElementById('rsiChart').getContext('2d');
+const rsiChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: dates,
+        datasets: [{
+            label: 'RSI',
+            data: values,
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1,
+            fill: false
+        }, {
+            label: 'Overbought (70)',
+            data: Array(dates.length).fill(70),
+            borderColor: 'rgba(255, 99, 132, 0.5)',
+            borderWidth: 2,
+            pointRadius: 0,
+            borderDash: [5, 5]
+        }, {
+            label: 'Oversold (30)',
+            data: Array(dates.length).fill(30),
+            borderColor: 'rgba(54, 162, 235, 0.5)',
+            borderWidth: 2,
+            pointRadius: 0,
+            borderDash: [5, 5]
+        }]
+    },
+    options: {
+        scales: {
+            y: {
+                beginAtZero: false
+            }
+        }
+    }
+});
+</script></body></html>

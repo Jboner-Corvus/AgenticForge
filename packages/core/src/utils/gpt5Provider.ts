@@ -8,6 +8,24 @@ import {
 import { LlmApiKey, LlmKeyManager } from '../modules/llm/LlmKeyManager.ts';
 import { getRedisClientInstance } from '../modules/redis/redisClient.ts';
 
+// Helper function to get display-friendly provider names
+function getDisplayProvider(provider: string): string {
+  const providerMap: Record<string, string> = {
+    'openrouter-sky': 'openrouter',
+    'openrouter-dusk': 'openrouter',
+    'openrouter': 'openrouter',
+    'qwen': 'qwen',
+    'gemini': 'gemini',
+    'anthropic': 'anthropic',
+    'grok': 'grok',
+    'huggingface': 'huggingface',
+    'mistral': 'mistral',
+    'openai': 'openai'
+  };
+
+  return providerMap[provider] || provider;
+}
+
 export interface Gpt5ReasoningOptions {
   effort: 'high' | 'low' | 'medium' | 'minimal';
 }
@@ -113,7 +131,7 @@ export class Gpt5Provider {
     try {
       // Log before each LLM call
       log.info(
-        `[LLM CALL] Envoi de la requête au modèle GPT-5 : ${modelName || getConfig().LLM_MODEL_NAME} via ${activeKey.apiProvider}`,
+        `[LLM CALL] Envoi de la requête au modèle GPT-5 : ${modelName || getConfig().LLM_MODEL_NAME} via ${getDisplayProvider(activeKey.apiProvider)}`,
       );
 
       const response = await fetch(apiUrl, {

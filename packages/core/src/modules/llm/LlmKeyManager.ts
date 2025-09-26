@@ -249,6 +249,9 @@ export class LlmKeyManager {
   ): Promise<LlmApiKey | null> {
     const log = getLogger().child({ module: 'LlmKeyManager' });
 
+    // Helper function to display user-friendly provider name in logs
+    const getDisplayProvider = (prov: string) => prov === 'openrouter-sky' ? 'openrouter' : prov;
+
     try {
       // First, ensure we have the latest keys from Redis with fallback
       const keys = await this.getKeysWithFallback(provider);
@@ -257,7 +260,7 @@ export class LlmKeyManager {
       const providerKeys = this.apiKeys.get(provider) || [];
 
       if (providerKeys.length === 0) {
-        log.warn(`No API keys configured for provider: ${provider}`);
+        log.warn(`No API keys configured for provider: ${getDisplayProvider(provider)}`);
         // Try fallback to environment variable
         return this.getEnvironmentFallbackKey(provider);
       }
@@ -280,7 +283,7 @@ export class LlmKeyManager {
 
     // If no working keys, try cleanup and retry once
     if (workingKeys.length === 0 && providerKeys.length > 0) {
-      log.warn({ provider }, 'No working keys found, attempting cleanup');
+      log.warn({ provider: getDisplayProvider(provider) }, 'No working keys found, attempting cleanup');
       const cleanupResult = await this.cleanupFailedKeys(provider);
 
       if (cleanupResult.cleaned > 0) {
@@ -301,7 +304,7 @@ export class LlmKeyManager {
 
         if (newWorkingKeys.length > 0) {
           log.info(
-            { provider, cleanedCount: cleanupResult.cleaned },
+            { provider: getDisplayProvider(provider), cleanedCount: cleanupResult.cleaned },
             'Keys recovered after cleanup',
           );
           // Continue with the cleaned keys - simple round-robin selection
@@ -318,7 +321,7 @@ export class LlmKeyManager {
 
       // Still no working keys, try environment fallback
       log.warn(
-        { provider },
+        { provider: getDisplayProvider(provider) },
         'No working keys after cleanup, using environment fallback',
       );
       return this.getEnvironmentFallbackKey(provider);
@@ -384,7 +387,7 @@ export class LlmKeyManager {
 
     const selectedKey = availableKeys[nextIndex];
     log.info(
-      `Selected API key ${selectedKey.apiKey.substring(0, 8)}... for provider ${provider}`,
+      `Selected API key ${selectedKey.apiKey.substring(0, 8)}... for provider ${getDisplayProvider(provider)}`,
     );
 
     return selectedKey;

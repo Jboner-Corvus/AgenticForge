@@ -1,0 +1,81 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>STOCH Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <canvas id="stochChart" width="800" height="400"></canvas>
+    <script>
+        const stochData = {
+    "2025-09-15": {"SlowK": "56.4656", "SlowD": "68.7475"},
+    "2025-09-12": {"SlowK": "67.2820", "SlowD": "79.4671"},
+    "2025-09-11": {"SlowK": "82.4948", "SlowD": "88.1840"},
+    "2025-09-10": {"SlowK": "88.6245", "SlowD": "90.5249"},
+    "2025-09-09": {"SlowK": "93.4326", "SlowD": "88.7653"},
+    "2025-09-08": {"SlowK": "89.5176", "SlowD": "79.7310"},
+    "2025-09-05": {"SlowK": "83.3456", "SlowD": "69.9144"},
+    "2025-09-04": {"SlowK": "66.3298", "SlowD": "64.4442"},
+    "2025-09-03": {"SlowK": "60.0677", "SlowD": "69.3710"},
+    "2025-09-02": {"SlowK": "66.9351", "SlowD": "76.4631"},
+    "2025-08-29": {"SlowK": "81.1103", "SlowD": "72.2692"},
+    "2025-08-28": {"SlowK": "81.3438", "SlowD": "61.5404"},
+    "2025-08-27": {"SlowK": "54.3536", "SlowD": "48.5304"},
+    "2025-08-26": {"SlowK": "48.9239", "SlowD": "53.4001"},
+    "2025-08-25": {"SlowK": "42.3136", "SlowD": "61.2033"},
+    "2025-08-22": {"SlowK": "68.9628", "SlowD": "74.8227"},
+    "2025-08-21": {"SlowK": "72.3336", "SlowD": "76.1712"},
+    "2025-08-20": {"SlowK": "83.1716", "SlowD": "70.2584"},
+    "2025-08-19": {"SlowK": "73.0082", "SlowD": "56.0870"},
+    "2025-08-18": {"SlowK": "54.5952", "SlowD": "38.8732"},
+    "2025-08-15": {"SlowK": "40.6577", "SlowD": "26.1709"},
+    "2025-08-14": {"SlowK": "21.3667", "SlowD": "14.9591"},
+    "2025-08-13": {"SlowK": "16.4884", "SlowD": "14.7738"},
+    "2025-08-12": {"SlowK": "7.0223", "SlowD": "20.4095"},
+    "2025-08-11": {"SlowK": "20.8105", "SlowD": "32.0368"},
+    "2025-08-08": {"SlowK": "33.3958", "SlowD": "37.1896"},
+    "2025-08-07": {"SlowK": "41.9041", "SlowD": "35.4370"},
+    "2025-08-06": {"SlowK": "36.2689", "SlowD": "28.1790"},
+    "2025-08-05": {"SlowK": "28.1380", "SlowD": "25.6880"},
+    "2025-08-04": {"SlowK": "20.1300", "SlowD": "26.5019"}
+};
+
+        const dates = Object.keys(stochData).reverse();
+        const slowK = dates.map(date => stochData[date].SlowK);
+        const slowD = dates.map(date => stochData[date].SlowD);
+
+        const ctx = document.getElementById('stochChart').getContext('2d');
+        const stochChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [
+                    {
+                        label: '%K',
+                        data: slowK,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1,
+                        fill: false
+                    },
+                    {
+                        label: '%D',
+                        data: slowD,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

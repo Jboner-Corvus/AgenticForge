@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SPY Price and EMA Chart</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+  <canvas id="myChart"></canvas>
+  <script>
+    const dailyData = {
+      "2025-09-15": { "1. open": "659.6400", "2. high": "661.0400", "3. low": "659.3400", "4. close": "660.9100", "5. volume": "63099291" },
+      "2025-09-12": { "1. open": "657.6000", "2. high": "659.1100", "3. low": "656.9000", "4. close": "657.4100", "5. volume": "72780135" },
+      "2025-09-11": { "1. open": "654.1800", "2. high": "658.3300", "3. low": "653.5900", "4. close": "657.6300", "5. volume": "69934360" },
+      "2025-09-10": { "1. open": "653.6200", "2. high": "654.5500", "3. low": "650.6300", "4. close": "652.2100", "5. volume": "78034529" },
+      "2025-09-09": { "1. open": "648.9700", "2. high": "650.8600", "3. low": "647.2200", "4. close": "650.3300", "5. volume": "66133856" }
+    };
+    const emaData = {
+      "2025-09-15": { "EMA": "651.5525" },
+      "2025-09-12": { "EMA": "649.8511" },
+      "2025-09-11": { "EMA": "648.4768" },
+      "2025-09-10": { "EMA": "646.8126" },
+      "2025-09-09": { "EMA": "645.8312" }
+    };
+    const labels = Object.keys(dailyData).reverse();
+    const priceData = labels.map(date => dailyData[date]['4. close']);
+    const emaValues = labels.map(date => emaData[date] ? emaData[date]['EMA'] : null);
+
+    const ctx = document.getElementById('myChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'SPY Close Price',
+            data: priceData,
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1,
+            fill: false
+          },
+          {
+            label: '12-Day EMA',
+            data: emaValues,
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day'
+            }
+          },
+          y: {
+            beginAtZero: false
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
