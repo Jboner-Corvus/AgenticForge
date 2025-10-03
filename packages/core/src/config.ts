@@ -37,6 +37,7 @@ const configSchema = z.object({
       'grok',
       'openrouter',
       'qwen',
+      'zai',
     ])
     .default('gemini'),
   LLM_PROVIDER_HIERARCHY: z
