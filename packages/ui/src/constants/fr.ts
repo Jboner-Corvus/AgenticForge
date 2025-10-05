@@ -159,7 +159,7 @@ export const fr = {
   agentHtmlOutput: "Sortie HTML de l'agent",
   agentUrlOutput: "Sortie URL de l'agent",
   agentOutputCanvas: "Canevas de sortie de l'agent",
-  welcomeTitle: 'Bienvenue sur AgenticForge !',
+  welcomeTitle: 'Bienvenue sur Agent MCP !',
   welcomeMessage:
     "Pour commencer, veuillez configurer votre authentification et vos clés d'API LLM.",
   setupAuthToken: "Configurer le jeton d'authentification",

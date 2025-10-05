@@ -46,7 +46,7 @@ export interface UIState {
   toolCreationEnabled: boolean;
   codeExecutionEnabled: boolean;
 
-  // Backend Authentication (pour l'accès à l'API AgenticForge)
+  // Backend Authentication (pour l'accès à l'API Agent MCP)
   // IMPORTANT: Ceci n'est PAS un token LLM !
   authToken: string | null; // Token d'authentification backend
   jobId: string | null;
@@ -369,7 +369,7 @@ export const useUIStore = create<UIState>()(
       setCodeExecutionEnabled: (codeExecutionEnabled) =>
         set({ codeExecutionEnabled }),
 
-      // Backend Auth (for AgenticForge API access)
+      // Backend Auth (for Agent MCP API access)
       setAuthToken: (authToken) => {
         console.log(
           '🔐 [UIStore] Setting backend auth token:',
@@ -460,7 +460,7 @@ export const useUIStore = create<UIState>()(
       },
     }),
     {
-      name: 'agenticforge-ui-store',
+      name: 'agentmcp-ui-store',
       partialize: (state) => ({
         // Persist UI preferences but not temporary states
         currentPage: state.currentPage,

@@ -1,4 +1,4 @@
-// AgenticForge Fast Response Mode
+// Agent MCP Fast Response Mode
 // Solution pour éviter que le frontend ne perde le fil pendant les latences élevées
 
 interface FastResponseConfig {
@@ -21,9 +21,9 @@ class FastResponseManager {
       enableTimeoutMode: true,
       maxWaitTime: 5000, // 5 secondes max avant fallback
       fallbackResponses: {
-        'greeting': 'Bonjour ! Je suis AgenticForge, comment puis-je vous aider ?',
+        'greeting': 'Bonjour ! Je suis Agent MCP, comment puis-je vous aider ?',
         'simple_test': '✅ Test reçu ! Le système fonctionne parfaitement.',
-        'status_check': '🚀 AgenticForge est opérationnel !',
+        'status_check': '🚀 Agent MCP est opérationnel !',
         'canvas_test': '🎨 Canvas prêt ! Je peux créer des visuels interactifs.',
         'todo_test': '📋 Todo List actif ! Je peux gérer vos tâches.',
         'default': '⚡ Réponse rapide : Demande reçue et en cours de traitement...'

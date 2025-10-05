@@ -164,7 +164,7 @@ export const EnhancedMessage: React.FC<EnhancedMessageProps> = ({
                     ? 'Vous'
                     : isSystem
                       ? 'Système'
-                      : 'AgenticForge Assistant'}
+                      : 'Agent MCP Assistant'}
                 </span>
 
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">

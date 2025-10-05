@@ -1,6 +1,6 @@
 # Enhanced Chat Interface 💬✨
 
-Interface de chat moderne et intelligente inspirée de Claude Code, conçue pour offrir une expérience utilisateur exceptionnelle avec AgenticForge.
+Interface de chat moderne et intelligente inspirée de Claude Code, conçue pour offrir une expérience utilisateur exceptionnelle avec Agent MCP.
 
 ## 🌟 Fonctionnalités
 
@@ -144,4 +144,4 @@ Cette interface s'inspire des meilleures pratiques de :
 - **Discord/Slack**
 - **WhatsApp Web**
 
-L'objectif est de créer l'interface de chat IA la plus moderne et fonctionnelle possible pour AgenticForge ! 🚀
+L'objectif est de créer l'interface de chat IA la plus moderne et fonctionnelle possible pour Agent MCP ! 🚀

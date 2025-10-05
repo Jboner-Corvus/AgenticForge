@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Card Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            font-family: Arial, sans-serif;
+        }
+        .game-container {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        canvas {
+            border: 3px solid #333;
+            border-radius: 10px;
+            background: #2c3e50;
+            cursor: pointer;
+        }
+        .score {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+        .controls {
+            margin-top: 15px;
+            color: #666;
+        }
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin: 10px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .moves {
+            color: #e74c3c;
+        }
+        .pairs {
+            color: #27ae60;
+        }
+        .win-message {
+            color: #27ae60;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🧩 Memory Card Game</h1>
+        <div class="game-info">
+            <div class="moves">Coups: <span id="moves">0</span></div>
+            <div class="pairs">Paires: <span id="pairs">0</span>/8</div>
+        </div>
+        <canvas id="gameCanvas" width="600" height="400"></canvas>
+        <div class="win-message" id="winMessage">🎉 Félicitations! Vous avez gagné!</div>
+        <div class="controls">
+            <p>Cliquez sur les cartes pour trouver les paires</p>
+            <p>R : Recommencer</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const movesElement = document.getElementById('moves');
+        const pairsElement = document.getElementById('pairs');
+        const winMessageElement = document.getElementById('winMessage');
+
+        // Configuration du jeu
+        const CARD_WIDTH = 60;
+        const CARD_HEIGHT = 80;
+        const CARD_SPACING = 10;
+        const COLS = 8;
+        const ROWS = 4;
+        const TOTAL_PAIRS = 8;
+
+        // Symboles pour les cartes
+        const SYMBOLS = ['🌟', '🎈', '🎨', '🎯', '🎪', '🎭', '🎸', '🎺'];
+        const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
+
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        let gameWon = false;
+        let canFlip = true;
+
+        // Classe Carte
+        class Card {
+            constructor(x, y, symbol, color, id) {
+                this.x = x;
+                this.y = y;
+                this.width = CARD_WIDTH;
+                this.height = CARD_HEIGHT;
+                this.symbol = symbol;
+                this.color = color;
+                this.id = id;
+                this.isFlipped = false;
+                this.isMatched = false;
+                this.flipAnimation = 0;
+            }
+
+            draw() {
+                ctx.save();
+                
+                // Animation de retournement
+                if (this.flipAnimation > 0 && this.flipAnimation < 1) {
+                    const scaleX = Math.cos(this.flipAnimation * Math.PI);
+                    ctx.translate(this.x + this.width/2, this.y + this.height/2);
+                    ctx.scale(scaleX, 1);
+                    ctx.translate(-(this.x + this.width/2), -(this.y + this.height/2));
+                }
+
+                // Dessiner la carte
+                if (this.isMatched) {
+                    // Carte trouvée - verte
+                    ctx.fillStyle = '#27ae60';
+                } else if (this.isFlipped) {
+                    // Carte retournée - couleur du symbole
+                    ctx.fillStyle = this.color;
+                } else {
+                    // Carte face cachée - bleue
+                    ctx.fillStyle = '#3498db';
+                }
+                
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                
+                // Bordure
+                ctx.strokeStyle = '#2c3e50';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(this.x, this.y, this.width, this.height);
+
+                // Dessiner le symbole si retournée
+                if (this.isFlipped || this.isMatched) {
+                    ctx.font = '30px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.symbol, this.x + this.width/2, this.y + this.height/2);
+                } else {
+                    // Dessiner un point d'interrogation sur les cartes cachées
+                    ctx.font = '24px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = 'white';
+                    ctx.fillText('?', this.x + this.width/2, this.y + this.height/2);
+                }
+
+                ctx.restore();
+            }
+
+            isPointInside(x, y) {
+                return x >= this.x && x <= this.x + this.width &&
+                       y >= this.y && y <= this.y + this.height;
+            }
+
+            flip() {
+                if (!this.isMatched && !this.isFlipped && canFlip) {
+                    this.isFlipped = true;
+                    this.animateFlip();
+                    return true;
+                }
+                return false;
+            }
+
+            animateFlip() {
+                const animate = () => {
+                    if (this.flipAnimation < 1) {
+                        this.flipAnimation += 0.1;
+                        drawGame();
+                        requestAnimationFrame(animate);
+                    }
+                };
+                this.flipAnimation = 0.01;
+                animate();
+            }
+        }
+
+        // Initialiser le jeu
+        function initGame() {
+            cards = [];
+            flippedCards = [];
+            matchedPairs = 0;
+            moves = 0;
+            gameWon = false;
+            canFlip = true;
+            
+            movesElement.textContent = moves;
+            pairsElement.textContent = matchedPairs;
+            winMessageElement.style.display = 'none';
+
+            // Créer les paires de cartes
+            const cardPairs = [];
+            for (let i = 0; i < TOTAL_PAIRS; i++) {
+                cardPairs.push({ symbol: SYMBOLS[i], color: COLORS[i] });
+                cardPairs.push({ symbol: SYMBOLS[i], color: COLORS[i] });
+            }
+
+            // Mélanger les cartes
+            for (let i = cardPairs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cardPairs[i], cardPairs[j]] = [cardPairs[j], cardPairs[i]];
+            }
+
+            // Créer les objets cartes
+            let cardIndex = 0;
+            const startX = (canvas.width - (COLS * (CARD_WIDTH + CARD_SPACING))) / 2;
+            const startY = (canvas.height - (ROWS * (CARD_HEIGHT + CARD_SPACING))) / 2;
+
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if (cardIndex < cardPairs.length) {
+                        const x = startX + col * (CARD_WIDTH + CARD_SPACING);
+                        const y = startY + row * (CARD_HEIGHT + CARD_SPACING);
+                        const card = new Card(
+                            x, y,
+                            cardPairs[cardIndex].symbol,
+                            cardPairs[cardIndex].color,
+                            cardIndex
+                        );
+                        cards.push(card);
+                        cardIndex++;
+                    }
+                }
+            }
+
+            drawGame();
+        }
+
+        // Dessiner le jeu
+        function drawGame() {
+            // Effacer le canvas
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Dessiner toutes les cartes
+            for (let card of cards) {
+                card.draw();
+            }
+        }
+
+        // Gérer le clic sur une carte
+        function handleCardClick(card) {
+            if (card.flip()) {
+                flippedCards.push(card);
+                
+                if (flippedCards.length === 2) {
+                    canFlip = false;
+                    moves++;
+                    movesElement.textContent = moves;
+                    
+                    setTimeout(() => {
+                        checkMatch();
+                    }, 1000);
+                }
+            }
+        }
+
+        // Vérifier si deux cartes correspondent
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            
+            if (card1.symbol === card2.symbol) {
+                // Paire trouvée!
+                card1.isMatched = true;
+                card2.isMatched = true;
+                matchedPairs++;
+                pairsElement.textContent = matchedPairs;
+                
+                if (matchedPairs === TOTAL_PAIRS) {
+                    gameWon = true;
+                    winMessageElement.style.display = 'block';
+                }
+            } else {
+                // Pas de paire - retourner les cartes
+                card1.isFlipped = false;
+                card2.isFlipped = false;
+            }
+            
+            flippedCards = [];
+            canFlip = true;
+            drawGame();
+        }
+
+        // Gérer les clics sur le canvas
+        canvas.addEventListener('click', (e) => {
+            if (gameWon) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            for (let card of cards) {
+                if (card.isPointInside(x, y)) {
+                    handleCardClick(card);
+                    break;
+                }
+            }
+        });
+
+        // Contrôles clavier
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyR') {
+                initGame();
+            }
+        });
+
+        // Initialiser le jeu
+        initGame();
+    </script>
+</body>
+</html>

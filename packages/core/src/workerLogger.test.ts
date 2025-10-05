@@ -32,6 +32,12 @@ describe('WorkerLogger', () => {
   it('devrait créer un fichier de log avec le bon nom', () => {
     const logger = new WorkerLogger(testJobId, testSessionId, testLogDir);
     
+    // Forcer l'écriture d'un message pour créer le fichier
+    logger.info('Test message');
+    
+    // Forcer l'écriture immédiate des logs
+    logger['logger'].flush();
+    
     // Vérifier qu'un fichier de log a été créé
     const files = require('fs').readdirSync(testLogDir);
     const logFiles = files.filter((file: string) => file.includes(`worker-${testJobId}`));
