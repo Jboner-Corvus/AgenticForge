@@ -7,6 +7,8 @@ import { config, loadConfig } from './config.ts';
 // Add debug log at the very beginning
 getLoggerInstance().info('🚀 [WORKER] Worker file loaded and starting...');
 import { getLoggerInstance } from './logger.ts';
+import { WorkerLogger } from './workerLogger.ts';
+import { getWorkerLogConfig } from './workerLogConfig.ts';
 import { Agent } from './modules/agent/agent.ts';
 import { LlmKeyManager } from './modules/llm/LlmKeyManager.ts';
 import { getRedisClientInstance } from './modules/redis/redisClient.ts';
@@ -133,7 +135,17 @@ export async function initializeWorker(redisConnection: Redis) {
           jobId: _job.id,
           originalJobId: _job.data.jobId,
         });
+        
+        // Créer un WorkerLogger pour cette commande détachée
+        const workerLogger = new WorkerLogger(
+          _job.id as string,
+          _job.data.sessionId || 'detached',
+          './logs',
+          getWorkerLogConfig(_job.name, process.env.NODE_ENV)
+        );
+        
         log.info(`Executing detached shell command: ${command}`);
+        workerLogger.info(`Executing detached shell command`, { command, jobId: _job.id });
 
         return new Promise((resolve, reject) => {
           const env = {
@@ -177,12 +189,14 @@ export async function initializeWorker(redisConnection: Redis) {
           child.stdout.on('data', (data: Buffer) => {
             const chunk = data.toString();
             log.info(`[stdout] ${chunk}`);
+            workerLogger.info(`Command stdout`, { output: chunk.trim() });
             streamToFrontend('stdout', chunk, 'executeShellCommand');
           });
 
           child.stderr.on('data', (data: Buffer) => {
             const chunk = data.toString();
             log.error(`[stderr] ${chunk}`);
+            workerLogger.warn(`Command stderr`, { output: chunk.trim() });
             streamToFrontend('stderr', chunk, 'executeShellCommand');
           });
 
@@ -191,6 +205,9 @@ export async function initializeWorker(redisConnection: Redis) {
               { err: error },
               `Failed to start detached shell command: ${command}`,
             );
+            workerLogger.error(`Failed to start detached shell command: ${command}`, error, { command });
+            workerLogger.finalize({ success: false, error: error.message });
+            
             redisConnection.publish(
               notificationChannel,
               JSON.stringify({
@@ -206,6 +223,9 @@ export async function initializeWorker(redisConnection: Redis) {
 Command: ${command}
 Exit Code: ${code}`;
             log.info(finalMessage);
+            workerLogger.info(`Detached command finished`, { command, exitCode: code });
+            workerLogger.finalize({ success: code === 0, exitCode: code });
+            
             streamToFrontend(
               'stdout',
               `
@@ -249,6 +269,14 @@ export async function processJob(
   _sessionManager: SessionManager,
   redisConnection: Redis,
 ): Promise<string> {
+  // Créer un WorkerLogger pour ce job
+  const workerLogger = new WorkerLogger(
+    _job.id as string,
+    _job.data.sessionId,
+    './logs',
+    getWorkerLogConfig(_job.name, process.env.NODE_ENV)
+  );
+
   const log = getLoggerInstance().child({
     jobId: _job.id,
     sessionId: _job.data.sessionId,
@@ -257,6 +285,7 @@ export async function processJob(
   // Log initial memory usage
   logMemoryUsage('Job Start', log);
   log.info(`Traitement du job ${_job.id}`);
+  workerLogger.info(`Starting job processing`, { jobId: _job.id, sessionId: _job.data.sessionId });
 
   const channel = `job:${_job.id}:events`;
 
@@ -283,6 +312,8 @@ export async function processJob(
     const finalModelName = llmModelName || config.LLM_MODEL_NAME;
   
     log.info(`Agent starting with ${tools.length} tools available`);
+    workerLogger.info(`Agent starting with ${tools.length} tools available`, { toolCount: tools.length });
+    
     const agent = new Agent(
       _job,
       session,
@@ -293,9 +324,15 @@ export async function processJob(
       llmApiKey,
       finalModelName,
     );
+    
     log.info(`Agent execution starting...`);
+    workerLogger.info(`Agent execution starting...`);
+    const agentStartTime = Date.now();
     const finalResponse = await agent.run();
+    const agentDuration = Date.now() - agentStartTime;
+    
     log.info(`Agent execution completed successfully`);
+    workerLogger.performance('agent_execution', agentDuration, { responseLength: finalResponse.length });
 
     session.history.push({
       content: finalResponse,
@@ -369,10 +406,14 @@ export async function processJob(
 
     // Log final memory usage
     logMemoryUsage('Job End', log);
+    workerLogger.info(`Job completed successfully`, { jobId: _job.id });
+    workerLogger.finalize({ success: true, response: finalResponse });
+    
     return finalResponse;
   } catch (error: unknown) {
     const errDetails = getErrDetails(error);
     log.error({ err: errDetails }, "Erreur dans l'exécution de l'agent");
+    workerLogger.error("Erreur dans l'exécution de l'agent", error instanceof Error ? error : undefined, { errDetails });
 
     let errorMessage = errDetails.message;
     let eventType = 'error';
@@ -404,6 +445,8 @@ export async function processJob(
       );
     }
 
+    // Finaliser le WorkerLogger même en cas d'erreur
+    workerLogger.finalize({ success: false, error: errDetails.message });
     throw error;
   } finally {
     try {

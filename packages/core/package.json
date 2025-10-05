@@ -1,6 +1,6 @@
 {
   "name": "@gforge/core",
-  "version": "1.0.729",
+  "version": "1.0.733",
   "description": "G-Forge Core Backend",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -60,6 +60,7 @@
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.0.0",
     "pino": "^9.7.0",
+    "commander": "^12.0.0",
     "@playwright/mcp": "^0.0.35",
     "playwright": "^1.54.1",
     "puppeteer": "^24.15.0",
