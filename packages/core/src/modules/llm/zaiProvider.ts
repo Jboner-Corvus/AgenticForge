@@ -69,8 +69,9 @@ export class ZaiProvider implements ILlmProvider {
       activeKey.apiKey = authToken;
     }
 
-    // Use z.ai API endpoint for PaaS GLM-4.6 model - correct URL found
-    const apiUrl = 'https://api.z.ai/api/paas/v4/chat/completions';
+    // Use z.ai Anthropic-compatible endpoint for proxy
+    const baseUrl = getConfig().ANTHROPIC_BASE_URL || 'https://api.z.ai/api/anthropic';
+    const apiUrl = `${baseUrl}/v1/messages`;
 
     // Format messages for Claude API (Anthropic-compatible)
     const claudeMessages = messages.map((msg) => ({
@@ -78,22 +79,17 @@ export class ZaiProvider implements ILlmProvider {
       role: msg.role === 'user' ? 'user' : 'assistant',
     }));
 
-    // Z.ai API format with PaaS GLM-4.6 (OpenAI-style format)
+    // Anthropic Claude API format for Z.ai proxy
     const requestBody: any = {
-      model: modelName || activeKey?.apiModel || 'glm-4.6',
+      model: modelName || activeKey?.apiModel || 'claude-3-sonnet-20240229',
       messages: claudeMessages,
-      temperature: 0.6,
       max_tokens: 4000,
-      stream: false
+      temperature: 0.6,
     };
 
-    // Add system prompt as first message (OpenAI-style format)
+    // Add system prompt separately (Anthropic-style format)
     if (systemPrompt) {
-      claudeMessages.unshift({
-        content: systemPrompt,
-        role: 'system'
-      });
-      requestBody.messages = claudeMessages;
+      requestBody.system = systemPrompt;
     }
 
     const body = JSON.stringify(requestBody);
@@ -113,8 +109,8 @@ export class ZaiProvider implements ILlmProvider {
         body,
         headers: {
           'Content-Type': 'application/json',
-          'Accept-Language': 'en-US,en',
           'x-api-key': activeKey?.apiKey || '',
+          'anthropic-version': '2023-06-01',
         },
         method: 'POST',
         signal: controller.signal,
@@ -145,13 +141,13 @@ export class ZaiProvider implements ILlmProvider {
 
       let content: string | undefined;
 
-      // Handle OpenAI-style response structure (Z.ai PaaS format)
-      if (data.choices && Array.isArray(data.choices) && data.choices.length > 0) {
-        content = data.choices[0]?.message?.content;
-      }
-      // Handle Claude API response structure (fallback)
-      else if (data.content && Array.isArray(data.content) && data.content.length > 0) {
+      // Handle Claude API response structure (Anthropic format)
+      if (data.content && Array.isArray(data.content) && data.content.length > 0) {
         content = data.content[0]?.text;
+      }
+      // Handle OpenAI-style response structure (fallback)
+      else if (data.choices && Array.isArray(data.choices) && data.choices.length > 0) {
+        content = data.choices[0]?.message?.content;
       }
       // Handle direct text response
       else if (typeof data.text === 'string') {

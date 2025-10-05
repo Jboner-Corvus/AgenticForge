@@ -104,13 +104,18 @@ export class ZaiAnthropicProxyProvider implements ILlmProvider {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout
 
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
+      };
+      
+      if (activeKey?.apiKey) {
+        headers['x-api-key'] = activeKey.apiKey;
+      }
+      
       const response = await fetch(apiUrl, {
         body,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': activeKey?.apiKey,
-          'anthropic-version': '2023-06-01',
-        },
+        headers,
         method: 'POST',
         signal: controller.signal,
       });
