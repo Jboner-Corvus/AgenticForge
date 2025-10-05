@@ -143,3 +143,4 @@ worker.pid
 .claude
 __pycache__
 .qoder
+.qoder/quests
