@@ -5,7 +5,7 @@ import { LlmError } from './llm-types.ts';
 import { LlmApiKey, LlmKeyErrorType, LlmKeyManager } from './LlmKeyManager.ts';
 import { getRedisClientInstance } from '../redis/redisClient.ts';
 
-export class ZaiProvider implements ILlmProvider {
+export class ZaiAnthropicProxyProvider implements ILlmProvider {
   public getErrorType(statusCode: number, errorBody: string): LlmKeyErrorType {
     if (statusCode === 401 || statusCode === 403) {
       return LlmKeyErrorType.PERMANENT;
@@ -28,7 +28,7 @@ export class ZaiProvider implements ILlmProvider {
     apiKey?: string,
     modelName?: string,
   ): Promise<string> {
-    const log = getLogger().child({ module: 'ZaiProvider' });
+    const log = getLogger().child({ module: 'ZaiAnthropicProxyProvider' });
 
     let activeKey: LlmApiKey | null;
     let authToken: string;
@@ -37,7 +37,7 @@ export class ZaiProvider implements ILlmProvider {
       activeKey = {
         apiKey: apiKey,
         apiModel: modelName || getConfig().LLM_MODEL_NAME,
-        apiProvider: 'zai',
+        apiProvider: 'zai-anthropic-proxy',
         errorCount: 0,
         isPermanentlyDisabled: false,
       };
@@ -48,7 +48,7 @@ export class ZaiProvider implements ILlmProvider {
     }
 
     if (!activeKey && !authToken) {
-      const errorMessage = 'No z.ai API key available.';
+      const errorMessage = 'No Z.ai Anthropic proxy API key available.';
       log.error(errorMessage);
       throw new LlmError(errorMessage);
     }
@@ -58,7 +58,7 @@ export class ZaiProvider implements ILlmProvider {
       activeKey = {
         apiKey: authToken,
         apiModel: modelName || getConfig().LLM_MODEL_NAME,
-        apiProvider: 'zai',
+        apiProvider: 'zai-anthropic-proxy',
         errorCount: 0,
         isPermanentlyDisabled: false,
       };
@@ -69,43 +69,38 @@ export class ZaiProvider implements ILlmProvider {
       activeKey.apiKey = authToken;
     }
 
-    // Use z.ai API endpoint for PaaS GLM-4.6 model - correct URL found
-    const apiUrl = 'https://api.z.ai/api/paas/v4/chat/completions';
+    // Use Z.ai Anthropic proxy endpoint
+    const apiUrl = `${getConfig().ANTHROPIC_BASE_URL || 'https://api.z.ai/api/anthropic'}/v1/messages`;
 
-    // Format messages for Claude API (Anthropic-compatible)
+    // Format messages for Claude API (Anthropic format)
     const claudeMessages = messages.map((msg) => ({
       content: msg.parts.map((part) => part.text).join(''),
       role: msg.role === 'user' ? 'user' : 'assistant',
     }));
 
-    // Z.ai API format with PaaS GLM-4.6 (OpenAI-style format)
+    // Build Anthropic-style request
     const requestBody: any = {
-      model: modelName || activeKey?.apiModel || 'glm-4.6',
+      model: modelName || activeKey?.apiModel || 'claude-3-5-sonnet-20241022',
       messages: claudeMessages,
-      temperature: 0.6,
       max_tokens: 4000,
-      stream: false
+      temperature: 0.6,
     };
 
-    // Add system prompt as first message (OpenAI-style format)
+    // Add system prompt if provided
     if (systemPrompt) {
-      claudeMessages.unshift({
-        content: systemPrompt,
-        role: 'system'
-      });
-      requestBody.messages = claudeMessages;
+      requestBody.system = systemPrompt;
     }
 
     const body = JSON.stringify(requestBody);
 
     try {
       log.info(
-        `[LLM CALL] Sending request to model: ${activeKey?.apiModel} via ${activeKey?.apiProvider}`,
+        `[ZAI PROXY] Sending request to model: ${activeKey?.apiModel} via ${activeKey?.apiProvider}`,
       );
-      log.info(`[LLM CALL] Request URL: ${apiUrl}`);
-      log.info(`[LLM CALL] Request body: ${body.substring(0, 200)}...`);
+      log.info(`[ZAI PROXY] Request URL: ${apiUrl}`);
+      log.info(`[ZAI PROXY] Request body: ${body.substring(0, 200)}...`);
 
-      // Set timeout for the API call - increased to 120 seconds for complex requests
+      // Set timeout for the API call
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout
 
@@ -113,8 +108,8 @@ export class ZaiProvider implements ILlmProvider {
         body,
         headers: {
           'Content-Type': 'application/json',
-          'Accept-Language': 'en-US,en',
-          'x-api-key': activeKey?.apiKey || '',
+          'x-api-key': activeKey?.apiKey,
+          'anthropic-version': '2023-06-01',
         },
         method: 'POST',
         signal: controller.signal,
@@ -124,7 +119,7 @@ export class ZaiProvider implements ILlmProvider {
 
       if (!response.ok) {
         const errorBody = await response.text();
-        const errorMessage = `z.ai API request failed with status ${response.status}: ${errorBody}`;
+        const errorMessage = `Z.ai Anthropic proxy API request failed with status ${response.status}: ${errorBody}`;
         log.error({ errorBody, status: response.status }, errorMessage);
 
         const errorType = this.getErrorType(response.status, errorBody);
@@ -140,28 +135,20 @@ export class ZaiProvider implements ILlmProvider {
 
       const data = await response.json();
 
-      // Handle Z.ai API response (OpenAI-style format)
-      log.info({ response: data }, 'Z.ai API response structure');
+      // Handle Z.ai proxy response (Anthropic-style format)
+      log.info({ response: data }, 'Z.ai Anthropic proxy response structure');
 
       let content: string | undefined;
 
-      // Handle OpenAI-style response structure (Z.ai PaaS format)
-      if (data.choices && Array.isArray(data.choices) && data.choices.length > 0) {
-        content = data.choices[0]?.message?.content;
-      }
-      // Handle Claude API response structure (fallback)
-      else if (data.content && Array.isArray(data.content) && data.content.length > 0) {
+      // Handle Anthropic-style response structure
+      if (data.content && Array.isArray(data.content) && data.content.length > 0) {
         content = data.content[0]?.text;
-      }
-      // Handle direct text response
-      else if (typeof data.text === 'string') {
-        content = data.text;
       }
       // Handle error response
       else if (data.error && data.error.message) {
         log.error(
           { response: data },
-          'Z.ai API returned error response',
+          'Z.ai Anthropic proxy returned error response',
         );
         const errorType = this.getErrorType(
           response.status,
@@ -175,35 +162,14 @@ export class ZaiProvider implements ILlmProvider {
           );
         }
         throw new LlmError(
-          `Z.ai API error: ${data.error.message}`,
-        );
-      }
-      // Handle empty array response (old issue)
-      else if (Array.isArray(data) && data.length === 0) {
-        log.error(
-          { response: data },
-          'Z.ai API returned empty array - endpoint may have changed',
-        );
-        const errorType = this.getErrorType(
-          response.status,
-          JSON.stringify(data),
-        );
-        if (activeKey) {
-          await LlmKeyManager.markKeyAsBad(
-            activeKey.apiProvider,
-            activeKey.apiKey,
-            errorType,
-          );
-        }
-        throw new LlmError(
-          'Z.ai API returned empty response. The endpoint format may have changed.',
+          `Z.ai Anthropic proxy error: ${data.error.message}`,
         );
       }
 
       if (content === undefined || content === null || content === '') {
         log.error(
           { response: data },
-          'Could not extract content from Z.ai API response',
+          'Could not extract content from Z.ai Anthropic proxy response',
         );
         const errorType = this.getErrorType(
           response.status,
@@ -217,17 +183,20 @@ export class ZaiProvider implements ILlmProvider {
           );
         }
         throw new LlmError(
-          `Unable to extract content from Z.ai API response. Response structure: ${JSON.stringify(data)}`,
+          `Unable to extract content from Z.ai Anthropic proxy response. Response structure: ${JSON.stringify(data)}`,
         );
       }
 
-      // Get token usage from OpenAI-style response
-      const inputTokens = data.usage?.prompt_tokens || 0;
-      const outputTokens = data.usage?.completion_tokens || 0;
+      // Get token usage from Anthropic-style response
+      const inputTokens = data.usage?.input_tokens || 0;
+      const outputTokens = data.usage?.output_tokens || 0;
       const totalTokens = inputTokens + outputTokens;
 
       log.info(
-        `Token usage - Input: ${inputTokens}, Output: ${outputTokens}, Total: ${totalTokens}`,
+        `[ZAI PROXY] Token usage - Input: ${inputTokens}, Output: ${outputTokens}, Total: ${totalTokens}`,
+      );
+      log.info(
+        `[ZAI PROXY] Actual model used: ${data.model || 'unknown'}`,
       );
 
       // Store token usage in Redis for tracking
@@ -247,6 +216,8 @@ export class ZaiProvider implements ILlmProvider {
           output_tokens: outputTokens,
           timestamp: Date.now(),
           total_tokens: totalTokens,
+          provider: 'zai-anthropic-proxy',
+          actual_model: data.model || 'unknown',
         })
         .catch((_error: unknown) => {
           getLogger().error(
@@ -267,25 +238,24 @@ export class ZaiProvider implements ILlmProvider {
       if (error instanceof LlmError) {
         throw error;
       }
-      
+
       const typedError = error as Error;
-      log.error({ error: typedError }, 'Failed to get response from z.ai API');
-      
+      log.error({ error: typedError }, 'Failed to get response from Z.ai Anthropic proxy API');
+
       if (activeKey) {
-        // For network errors or timeouts, mark as temporary; for other errors, check the error message
         let errorType = LlmKeyErrorType.TEMPORARY;
         if (typedError.message.includes('AbortError') || typedError.name === 'AbortError') {
-          log.warn('z.ai API request timed out');
+          log.warn('Z.ai Anthropic proxy API request timed out');
         }
-        
+
         await LlmKeyManager.markKeyAsBad(
           activeKey.apiProvider,
           activeKey.apiKey,
           errorType,
         );
       }
-      
-      throw new LlmError('Failed to communicate with the z.ai API.');
+
+      throw new LlmError('Failed to communicate with the Z.ai Anthropic proxy API.');
     }
   }
 }

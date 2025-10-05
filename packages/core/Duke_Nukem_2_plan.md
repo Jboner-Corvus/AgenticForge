@@ -7,7 +7,7 @@
 - **Nombre total de tâches:** 12
 - **Estimation totale:** 54 heures
 - **Phases:** 3
-- **Date de génération:** 03/10/2025
+- **Date de génération:** 04/10/2025
 
 ## 📋 Plan détaillé
 

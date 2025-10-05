@@ -18,7 +18,9 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY packages/ui ./packages/ui
 
-# Build the UI
+# Build the UI with environment variables
+ARG VITE_AUTH_TOKEN
+ENV VITE_AUTH_TOKEN=$VITE_AUTH_TOKEN
 RUN cd packages/ui && NODE_ENV=production pnpm run build
 
 # Stage 2: Serve the application with Nginx
