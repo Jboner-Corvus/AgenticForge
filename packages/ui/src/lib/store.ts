@@ -1,6 +1,6 @@
 // packages/ui/src/lib/store.ts
 // 🚨 IMPORTANT: AUTH TOKEN CLARIFICATION
-// authToken = Token d'authentification BACKEND pour l'accès à l'API AgenticForge
+// authToken = Token d'authentification BACKEND pour l'accès à l'API Agent MCP
 // LLM API Keys = Gérées séparément dans llmApiKeys (ce sont les clés pour OpenAI, Anthropic, etc.)
 // 📝 NE PAS confondre ces deux types de tokens!
 
@@ -419,7 +419,7 @@ export const useStore = create<AppState>((set, get) => ({
   // LLM API Key Management initialization
   llmApiKeys: (() => {
     try {
-      const saved = localStorage.getItem('agenticForgeLlmApiKeys');
+      const saved = localStorage.getItem('agentmcpLlmApiKeys');
       if (saved) {
         const keys = JSON.parse(saved);
         // Remove duplicates based on provider and key combination, but preserve master key
@@ -447,7 +447,7 @@ export const useStore = create<AppState>((set, get) => ({
         if (uniqueKeys.length !== keys.length) {
           console.log('🔑 [CLEANUP] Removed duplicate LLM API keys');
           localStorage.setItem(
-            'agenticForgeLlmApiKeys',
+            'agentmcpLlmApiKeys',
             JSON.stringify(uniqueKeys),
           );
         }
@@ -460,7 +460,7 @@ export const useStore = create<AppState>((set, get) => ({
   })(),
   activeLlmApiKeyIndex: (() => {
     try {
-      const saved = localStorage.getItem('agenticForgeActiveLlmKeyIndex');
+      const saved = localStorage.getItem('agentmcpActiveLlmKeyIndex');
       return saved ? parseInt(saved, 10) : -1;
     } catch {
       return -1;
@@ -551,7 +551,7 @@ export const useStore = create<AppState>((set, get) => ({
   toggleDarkMode: () =>
     set((state) => {
       const newDarkMode = !state.isDarkMode;
-      localStorage.setItem('agenticForgeDarkMode', String(newDarkMode));
+      localStorage.setItem('agentmcpDarkMode', String(newDarkMode));
       if (newDarkMode) {
         document.documentElement.classList.add('dark');
       } else {
@@ -579,7 +579,7 @@ export const useStore = create<AppState>((set, get) => ({
         createLlmApiKey(provider, key, baseUrl, model),
       ];
       set({ llmApiKeys: newKeys });
-      localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(newKeys));
+      localStorage.setItem('agentmcpLlmApiKeys', JSON.stringify(newKeys));
       updateLeaderboardStats({ apiKeysAdded: 1 });
     } catch (error) {
       console.error('Failed to add LLM API key to backend:', error);
@@ -594,8 +594,8 @@ export const useStore = create<AppState>((set, get) => ({
       await removeLlmApiKeyApi(index);
       const newKeys = get().llmApiKeys.filter((_, i) => i !== index);
       set({ llmApiKeys: newKeys, activeLlmApiKeyIndex: -1 });
-      localStorage.setItem('agenticForgeLlmApiKeys', JSON.stringify(newKeys));
-      localStorage.setItem('agenticForgeActiveLlmKeyIndex', '-1');
+      localStorage.setItem('agentmcpLlmApiKeys', JSON.stringify(newKeys));
+      localStorage.setItem('agentmcpActiveLlmKeyIndex', '-1');
     } catch (error) {
       console.error('Failed to remove LLM API key from backend:', error);
     } finally {
@@ -646,7 +646,7 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       await setActiveLlmProviderApi(selectedProvider, authToken, sessionId);
       set({ activeLlmApiKeyIndex: index });
-      localStorage.setItem('agenticForgeActiveLlmKeyIndex', index.toString());
+      localStorage.setItem('agentmcpActiveLlmKeyIndex', index.toString());
       addDebugLog(
         `[${new Date().toLocaleTimeString()}] [INFO] Active LLM provider set to: ${selectedProvider}`,
       );
@@ -815,7 +815,7 @@ export const useStore = create<AppState>((set, get) => ({
           state.leaderboardStats.apiKeysAdded + (stats.apiKeysAdded || 0),
       };
       localStorage.setItem(
-        'agenticForgeLeaderboardStats',
+        'agentmcpLeaderboardStats',
         JSON.stringify(updatedStats),
       );
       return { leaderboardStats: updatedStats };
@@ -855,7 +855,7 @@ export const useStore = create<AppState>((set, get) => ({
         sessionToSave,
       ];
       localStorage.setItem(
-        'agenticForgeSessions',
+        'agentmcpSessions',
         JSON.stringify(updatedSessions),
       );
       set({ sessions: updatedSessions });
@@ -871,7 +871,7 @@ export const useStore = create<AppState>((set, get) => ({
     setIsLoadingSessions(true);
     try {
       const sessionToLoad = await loadSessionApi(id);
-      localStorage.setItem('agenticForgeSessionId', sessionToLoad.id);
+      localStorage.setItem('agentmcpSessionId', sessionToLoad.id);
       set({
         sessionId: sessionToLoad.id,
         messages: sessionToLoad.messages,
@@ -911,7 +911,7 @@ export const useStore = create<AppState>((set, get) => ({
         await deleteSessionApi(session.id);
       }
       // Clear all sessions from local storage
-      localStorage.removeItem('agenticForgeSessions');
+      localStorage.removeItem('agentmcpSessions');
       // Update state
       set({ sessions: [], activeSessionId: null });
     } catch (error) {
@@ -1065,10 +1065,10 @@ export const useStore = create<AppState>((set, get) => ({
           // Set all keys at once instead of one by one to avoid multiple re-renders
           set({ llmApiKeys: validKeys, activeLlmApiKeyIndex: 0 });
           localStorage.setItem(
-            'agenticForgeLlmApiKeys',
+            'agentmcpLlmApiKeys',
             JSON.stringify(validKeys),
           );
-          localStorage.setItem('agenticForgeActiveLlmKeyIndex', '0');
+          localStorage.setItem('agentmcpActiveLlmKeyIndex', '0');
           console.log(
             '🔑 [INIT] Keys loaded successfully, active index set to 0',
           );
@@ -1088,7 +1088,7 @@ export const useStore = create<AppState>((set, get) => ({
       const backendSessions = await loadAllSessionsApi(authToken, null);
       if (backendSessions && backendSessions.length > 0) {
         setSessions(backendSessions);
-        const currentSessionId = localStorage.getItem('agenticForgeSessionId');
+        const currentSessionId = localStorage.getItem('agentmcpSessionId');
         let activeSession = backendSessions.find(
           (s: SessionData) => s.id === currentSessionId,
         );
@@ -1096,7 +1096,7 @@ export const useStore = create<AppState>((set, get) => ({
         if (!activeSession) {
           // If the stored session ID doesn't exist in backend sessions, try to find a session with matching messages
           const storedMessages = localStorage.getItem(
-            `agenticForgeSession_${currentSessionId}_messages`,
+            `agentmcpSession_${currentSessionId}_messages`,
           );
           if (storedMessages) {
             const parsedStoredMessages = JSON.parse(storedMessages);

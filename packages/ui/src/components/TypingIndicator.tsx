@@ -41,7 +41,7 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
         {/* Message et animation de frappe */}
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-medium">AgenticForge Assistant</span>
+            <span className="text-sm font-medium">Agent MCP Assistant</span>
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 1, repeat: Infinity }}

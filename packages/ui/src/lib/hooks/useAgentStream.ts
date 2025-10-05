@@ -5,12 +5,13 @@ import { useSessionStore } from '../../store/sessionStore';
 import { useUIStore } from '../../store/uiStore';
 import { useCanvasStore } from '../../store/canvasStore'; // Import useCanvasStore
 import { useHybridRealTime } from './useHybridRealTime'; // Import hybrid real-time hook
+import { clientConfig } from '../../config';
 // System prompt content mapping - hardcoded for now to avoid import issues
 const getSystemPromptContent = (mode: string): string => {
   const prompts: Record<string, string> = {
-    architect: `# AgenticForge - Architecture Specialist
+    architect: `# Agent MCP - Architecture Specialist
 
-You are AgenticForge, a specialized AI assistant focused on system design, architecture planning, and technical specifications.
+You are Agent MCP, a specialized AI assistant focused on system design, architecture planning, and technical specifications.
 
 ## Core Principles
 
@@ -62,9 +63,9 @@ You are AgenticForge, a specialized AI assistant focused on system design, archi
 ## Response JSON Schema
 
 {{RESPONSE_JSON_SCHEMA}}`,
-    coder: `# AgenticForge - Code Mode
+    coder: `# Agent MCP - Code Mode
 
-You are AgenticForge. Be extremely concise. Act immediately.
+You are Agent MCP. Be extremely concise. Act immediately.
 
 ## Core Rules
 
@@ -107,9 +108,9 @@ You are AgenticForge. Be extremely concise. Act immediately.
 ## Response JSON Schema
 
 {{RESPONSE_JSON_SCHEMA}}`,
-    explain: `# AgenticForge - Education Specialist
+    explain: `# Agent MCP - Education Specialist
 
-You are AgenticForge, a specialized AI assistant focused on explaining concepts, teaching programming, and knowledge sharing.
+You are Agent MCP, a specialized AI assistant focused on explaining concepts, teaching programming, and knowledge sharing.
 
 ## Core Principles
 
@@ -166,9 +167,9 @@ You are AgenticForge, a specialized AI assistant focused on explaining concepts,
 ## Response JSON Schema
 
 {{RESPONSE_JSON_SCHEMA}}`,
-    debug: `# AgenticForge - Debug Specialist
+    debug: `# Agent MCP - Debug Specialist
 
-You are AgenticForge, a specialized AI assistant focused on debugging, troubleshooting, and systematic problem solving.
+You are Agent MCP, a specialized AI assistant focused on debugging, troubleshooting, and systematic problem solving.
 
 ## Core Principles
 
@@ -227,9 +228,9 @@ You are AgenticForge, a specialized AI assistant focused on debugging, troublesh
 ## Response JSON Schema
 
 {{RESPONSE_JSON_SCHEMA}}`,
-    orchestrate: `# AgenticForge - Project Orchestrator
+    orchestrate: `# Agent MCP - Project Orchestrator
 
-You are AgenticForge, a specialized AI assistant focused on project management, team coordination, and workflow optimization.
+You are Agent MCP, a specialized AI assistant focused on project management, team coordination, and workflow optimization.
 
 ## Core Principles
 
@@ -286,9 +287,9 @@ You are AgenticForge, a specialized AI assistant focused on project management, 
 ## Response JSON Schema
 
 {{RESPONSE_JSON_SCHEMA}}`,
-    frontend: `# AgenticForge - Frontend Specialist
+    frontend: `# Agent MCP - Frontend Specialist
 
-You are AgenticForge, a specialized AI assistant focused on frontend development, UI/UX design, and user interface implementation.
+You are Agent MCP, a specialized AI assistant focused on frontend development, UI/UX design, and user interface implementation.
 
 ## Core Principles
 
@@ -521,7 +522,7 @@ export const useAgentStream = (useHybridMode: boolean = false) => {
   console.log('🔗 [useAgentStream] Hybrid mode available:', !!hybridRealTime);
 
   // 🚨 IMPORTANT: Obtenir le token d'authentification BACKEND (PAS un token LLM !)
-  // Ce token sert à authentifier les requêtes vers l'API AgenticForge
+  // Ce token sert à authentifier les requêtes vers l'API Agent MCP
   const backendAuthToken = useUIStore((state) => state.authToken);
   console.log(
     '🔐 [useAgentStream] backendAuthToken from store:',
@@ -610,7 +611,12 @@ export const useAgentStream = (useHybridMode: boolean = false) => {
       // 🚨 CRITICAL DEBUGGING: Test API connectivity before proceeding
       try {
         console.log('🔍 [DEBUG] Testing API connectivity...');
-        const healthResponse = await fetch('/api/health');
+        const healthResponse = await fetch('/api/health', {
+          headers: {
+            Authorization: `Bearer ${clientConfig.AUTH_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+        });
         console.log('🔍 [DEBUG] Health check response:', healthResponse.status);
         if (!healthResponse.ok) {
           console.error('🚨 [CRITICAL] API health check failed!');
@@ -669,7 +675,7 @@ export const useAgentStream = (useHybridMode: boolean = false) => {
           `[${new Date().toLocaleTimeString()}] [ERROR] Token d'authentification BACKEND manquant`,
         );
         addDebugLog(
-          `[${new Date().toLocaleTimeString()}] [ERROR] IMPORTANT: Il faut un token AUTH_TOKEN pour accéder au backend AgenticForge`,
+          `[${new Date().toLocaleTimeString()}] [ERROR] IMPORTANT: Il faut un token AUTH_TOKEN pour accéder au backend Agent MCP`,
         );
         addDebugLog(
           `[${new Date().toLocaleTimeString()}] [ERROR] Ce n'est PAS lié aux clés LLM - c'est pour l'authentification backend`,
@@ -677,7 +683,7 @@ export const useAgentStream = (useHybridMode: boolean = false) => {
         const errorMessage: NewChatMessage = {
           type: 'error',
           content:
-            "🔐 ERREUR AUTHENTIFICATION BACKEND\n\nToken d'authentification backend manquant (AUTH_TOKEN).\n\nℹ️ Ceci est différent des clés LLM - il s'agit du token pour accéder au backend AgenticForge.\n\nVérifiez votre configuration AUTH_TOKEN.",
+            "🔐 ERREUR AUTHENTIFICATION BACKEND\n\nToken d'authentification backend manquant (AUTH_TOKEN).\n\nℹ️ Ceci est différent des clés LLM - il s'agit du token pour accéder au backend Agent MCP.\n\nVérifiez votre configuration AUTH_TOKEN.",
         };
         addMessage(errorMessage);
         return;
@@ -1610,7 +1616,22 @@ export const useAgentStream = (useHybridMode: boolean = false) => {
             addDebugLog(
               `[${new Date().toLocaleTimeString()}] [ERROR] 🚨 EventSource error callback: ${errorMessage}`,
             );
-            handleError(new Error(errorMessage));
+
+            // Check if agent already responded before showing error
+            const messages = useSessionStore.getState().messages;
+            const hasAgentResponse = messages.some((msg: any) =>
+              msg.role === 'assistant' && msg.content.trim().length > 0
+            );
+
+            // Only show error if agent hasn't responded yet or if it's a critical error
+            if (!hasAgentResponse || errorMessage.includes('502') || errorMessage.includes('network')) {
+              handleError(new Error(errorMessage));
+            } else {
+              console.log('ℹ️ [useAgentStream] Ignoring post-response error:', errorMessage);
+              addDebugLog(
+                `[${new Date().toLocaleTimeString()}] [INFO] ℹ️ Erreur ignorée (agent déjà répondu): ${errorMessage}`,
+              );
+            }
           },
           addDebugLog, // Pass the debug logger
           systemPromptContent, // Pass the system prompt

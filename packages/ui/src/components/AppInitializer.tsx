@@ -15,8 +15,10 @@ export const AppInitializer = () => {
   const addDebugLog = useStore((state) => state.addDebugLog);
   const addMessage = useStore((state) => state.addMessage);
   const setAuthToken = useStore((state) => state.setAuthToken);
+  const authToken = useStore((state) => state.authToken);
   const setServerHealthy = useStore((state) => state.setServerHealthy);
   const setSessionId = useStore((state) => state.setSessionId);
+  const sessionId = useStore((state) => state.sessionId);
   const setTokenStatus = useStore((state) => state.setTokenStatus);
   const fetchAndDisplayToolCount = useStore(
     (state) => state.fetchAndDisplayToolCount,
@@ -56,7 +58,7 @@ export const AppInitializer = () => {
 
     try {
       const startTime = Date.now();
-      const healthy = await testServerHealth();
+      const healthy = await testServerHealth(authToken, sessionId);
       const duration = Date.now() - startTime;
 
       setServerHealthy(healthy);
@@ -111,6 +113,8 @@ export const AppInitializer = () => {
     translations.serverStatus,
     translations.serverHealthCheckFailed,
     addMessage,
+    authToken,
+    sessionId,
   ]);
 
   const initializeAuthToken = useCallback(() => {

@@ -53,7 +53,7 @@ export const ChatMessagesContainer = React.memo(() => {
           <div className="text-center text-slate-500 dark:text-slate-400">
             <div className="text-6xl mb-4">🤖</div>
             <h3 className="text-lg font-medium mb-2">
-              Bonjour ! Je suis AgenticForge
+              Bonjour ! Je suis Agent MCP
             </h3>
             <p className="text-sm">
               Décrivez-moi ce que vous souhaitez créer ou automatiser

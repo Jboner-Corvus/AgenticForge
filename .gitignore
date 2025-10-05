@@ -144,3 +144,5 @@ worker.pid
 __pycache__
 .qoder
 .qoder/quests
+.kilocode/mcp.json
+packages/core/Duke_Nukem_2_plan.md

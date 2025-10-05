@@ -1232,12 +1232,17 @@ clean_all() {
     
     # Clean build directories
     echo -e "${COLOR_YELLOW}🧹 Cleaning build directories...${NC}"
+    echo -e "${COLOR_CYAN}   🗑️ Removing core/dist folder...${NC}"
     rm -rf packages/core/dist 2>/dev/null || true
+    echo -e "${COLOR_CYAN}   🗑️ Removing core/build folder...${NC}"
     rm -rf packages/core/build 2>/dev/null || true
+    echo -e "${COLOR_CYAN}   🗑️ Removing ui/dist folder...${NC}"
     rm -rf packages/ui/dist 2>/dev/null || true
+    echo -e "${COLOR_CYAN}   🗑️ Removing ui/build folder...${NC}"
     rm -rf packages/ui/build 2>/dev/null || true
+    echo -e "${COLOR_CYAN}   🗑️ Removing ui/.vite folder...${NC}"
     rm -rf packages/ui/.vite 2>/dev/null || true
-    echo -e "${COLOR_GREEN}✅ Build directories cleaned${NC}"
+    echo -e "${COLOR_GREEN}✅ Build directories cleaned (including core/dist and ui/dist)${NC}"
     
     # Clean Docker cache
     echo -e "${COLOR_YELLOW}🧼 Cleaning Docker cache...${NC}"

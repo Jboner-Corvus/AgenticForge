@@ -421,9 +421,10 @@ export const getTools = async (authToken: string, sessionId: string) => {
 /**
  * Teste la santé du serveur.
  */
-export async function testServerHealth(): Promise<boolean> {
+export async function testServerHealth(authToken?: string | null, sessionId?: string | null): Promise<boolean> {
   try {
-    const response = await fetch(buildApiUrl('/api/health'));
+    const headers = getAuthHeaders(authToken || null, sessionId || null);
+    const response = await fetch(buildApiUrl('/api/health'), { headers });
     return response.ok;
   } catch (error) {
     console.error(

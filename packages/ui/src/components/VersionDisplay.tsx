@@ -94,8 +94,8 @@ export function VersionDisplay({
           redis: 'localhost:6379',
         },
         environment: 'development',
-        repository: 'https://github.com/Jboner-Corvus/AgenticForge.git',
-        homepage: 'https://github.com/Jboner-Corvus/AgenticForge#readme',
+        repository: 'https://github.com/Jboner-Corvus/AgentMCP.git',
+        homepage: 'https://github.com/Jboner-Corvus/AgentMCP#readme',
       });
     } finally {
       setIsLoading(false);
