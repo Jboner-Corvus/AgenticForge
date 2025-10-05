@@ -828,11 +828,23 @@ export async function initializeWebServer(
               // Parse the message
               const eventData = JSON.parse(message);
 
-              // Filter out agent_thought messages to prevent them from being displayed in the canvas
+              // CRITICAL FIX: Always forward all non-agent_thought messages to frontend
               if (eventData.type === 'agent_thought') {
                 console.log(
                   `[FILTER] Skipping agent_thought message for job ${jobId}`,
                 );
+                return;
+              }
+
+              // CRITICAL DEBUG: Log all message types
+              console.log(`[SSE CRITICAL] Processing message type: ${eventData.type} for job ${jobId}`);
+              console.log(`[SSE CRITICAL] Message content:`, JSON.stringify(eventData).substring(0, 200));
+
+              // CRITICAL FIX: Always send agent_response messages immediately
+              if (eventData.type === 'agent_response') {
+                console.log(`[SSE CRITICAL] FOUND AGENT RESPONSE - IMMEDIATE FORWARD:`, eventData.content);
+                safeWrite(`data: ${JSON.stringify(eventData)}\n\n`);
+                console.log(`[SSE CRITICAL] Agent response sent to frontend successfully`);
                 return;
               }
 
@@ -845,6 +857,7 @@ export async function initializeWebServer(
                 safeWrite(`data: ${JSON.stringify(eventData)}\n\n`);
               } else {
                 // Send the event data for other message types
+                console.log(`[SSE] Sending message type: ${eventData.type} to frontend`);
                 safeWrite(`data: ${JSON.stringify(eventData)}\n\n`);
               }
 

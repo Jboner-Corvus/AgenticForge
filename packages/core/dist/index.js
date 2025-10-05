@@ -5,44 +5,45 @@ import {
   getDeadLetterQueue,
   getJobQueue,
   initializeWebServer
-} from "./chunk-3L33HO6G.js";
+} from "./chunk-2CYHY3V5.js";
 import {
   Agent,
   getMasterPrompt,
   initializeWorker,
   processJob
-} from "./chunk-AM4GJKIJ.js";
-import "./chunk-T4MTCLTX.js";
+} from "./chunk-NL66UE3E.js";
+import "./chunk-AKU4JLXF.js";
 import {
   getAllTools
-} from "./chunk-GXTIBN4V.js";
+} from "./chunk-KLZ3AMQA.js";
 import {
   FinishToolSignal
 } from "./chunk-CZQPSXPM.js";
-import "./chunk-XRBL44PZ.js";
+import "./chunk-JIOQZAQJ.js";
 import {
   SessionManager
-} from "./chunk-NMML2OV4.js";
-import "./chunk-UOGMHA7M.js";
+} from "./chunk-BAFUHQCO.js";
+import "./chunk-HUQW6XTX.js";
 import "./chunk-DE5MSL2E.js";
+import "./chunk-AJXRYR4E.js";
 import {
   LlmError
-} from "./chunk-JTLCE7PU.js";
+} from "./chunk-KPT2EWH6.js";
+import {
+  LlmKeyErrorType
+} from "./chunk-ALYUQHRN.js";
+import {
+  disconnectRedis,
+  getRedisClientInstance,
+  setRedisClientInstance
+} from "./chunk-R5KECPXI.js";
 import {
   _internalLoadTools,
   _resetTools,
   fileExtension,
   getTools,
   getToolsDir
-} from "./chunk-E3AXM3WK.js";
-import {
-  LlmKeyErrorType
-} from "./chunk-VMBRYIUP.js";
-import {
-  disconnectRedis,
-  getRedisClientInstance,
-  setRedisClientInstance
-} from "./chunk-KQDCL5B7.js";
+} from "./chunk-ZJR465AH.js";
 import {
   AppError,
   EnqueueTaskError,
@@ -52,17 +53,19 @@ import {
   getErrDetails,
   handleError,
   toolRegistry
-} from "./chunk-MIYXXGFV.js";
+} from "./chunk-6L3QFPP4.js";
 import {
   getLogger,
   getLoggerInstance,
   resetLoggerForTesting
-} from "./chunk-AGIO4OHP.js";
+} from "./chunk-UUQVNJLY.js";
 import {
   config,
   getConfig,
   loadConfig
-} from "./chunk-6VZJ5SGS.js";
+} from "./chunk-UF4JYCJP.js";
+import "./chunk-OF2HMYE5.js";
+import "./chunk-FPTTOHZQ.js";
 import {
   __commonJS,
   __require,

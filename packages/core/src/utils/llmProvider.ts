@@ -8,6 +8,7 @@ import {
 import { LlmApiKey, LlmKeyManager } from '../modules/llm/LlmKeyManager.ts';
 import { LlmKeyErrorType } from '../modules/llm/LlmKeyManager.ts';
 import { QwenProvider } from '../modules/llm/qwenProvider.ts';
+import { ZaiProvider } from '../modules/llm/zaiProvider.ts';
 import { getRedisClientInstance } from '../modules/redis/redisClient.ts';
 import { Gpt5Provider } from './gpt5Provider.ts';
 
@@ -2259,6 +2260,9 @@ export function getLlmProvider(
       break;
     case 'qwen':
       currentLlmProvider = new QwenProvider();
+      break;
+    case 'zai':
+      currentLlmProvider = new ZaiProvider();
       break;
     default:
       getLogger().warn(

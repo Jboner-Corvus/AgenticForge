@@ -15,6 +15,22 @@ import { getLlmProvider } from '../../utils/llmProvider.ts';
 import { getRedisClientInstance } from '../redis/redisClient.ts';
 import { summarizeTool } from '../tools/definitions/ai/summarize.tool.ts';
 
+// 🚀 Enhanced Memory System for Semantic Compression
+interface SemanticMemory {
+  keyDecisions: Array<{decision: string; context: string; timestamp: number}>;
+  codePatterns: Array<{pattern: string; file?: string; usage: string}>;
+  userPreferences: Record<string, any>;
+  conversationThemes: string[];
+  importantInsights: Array<{insight: string; context: string; importance: 'low' | 'medium' | 'high'}>;
+}
+
+interface CompressedHistory {
+  semanticMemory: SemanticMemory;
+  recentMessages: Message[]; // Only recent, important messages
+  summary: string; // Generated summary of older messages
+  compressionRatio: number; // How much was compressed
+}
+
 export type Session = SessionData;
 
 export class SessionManager {
@@ -124,6 +140,266 @@ export class SessionManager {
       log.error({ error }, 'Error summarizing history');
       throw error;
     }
+  }
+
+  // 🚀 ENHANCED SEMANTIC MEMORY: Claude Code-inspired memory compression
+  private static async compressHistorySemantically(
+    session: SessionData,
+    _job: Job,
+    taskQueue: Queue,
+  ): Promise<CompressedHistory> {
+    const log = getLogger().child({
+      module: 'SemanticCompressor',
+      sessionId: session.id,
+    });
+
+    log.info('Performing semantic compression...');
+
+    // Initialize semantic memory
+    const semanticMemory: SemanticMemory = {
+      keyDecisions: [],
+      codePatterns: [],
+      userPreferences: {},
+      conversationThemes: [],
+      importantInsights: []
+    };
+
+    // Split history: recent messages (keep) vs older messages (compress)
+    const recentMessageCount = Math.min(50, config.HISTORY_MAX_LENGTH / 2);
+    const recentMessages = session.history.slice(-recentMessageCount);
+    const olderMessages = session.history.slice(0, -recentMessageCount);
+
+    // Extract semantic information from older messages
+    for (const message of olderMessages) {
+      this.extractSemanticInfo(message, semanticMemory);
+    }
+
+    // Generate intelligent summary
+    const summary = await this.generateSemanticSummary(olderMessages, semanticMemory, _job, taskQueue, log);
+
+    // Calculate compression ratio
+    const compressionRatio = (olderMessages.length - 1) / olderMessages.length;
+
+    log.info(`Semantic compression completed: ${compressionRatio.toFixed(2)} ratio, ${semanticMemory.keyDecisions.length} decisions, ${semanticMemory.codePatterns.length} patterns`);
+
+    return {
+      semanticMemory,
+      recentMessages,
+      summary,
+      compressionRatio
+    };
+  }
+
+  /**
+   * Extract semantic information from a message
+   */
+  private static extractSemanticInfo(message: Message, memory: SemanticMemory): void {
+    const content = 'content' in message ? String(message.content) : '';
+    const lowerContent = content.toLowerCase();
+
+    // Extract decisions and intentions
+    if (message.type === 'user') {
+      // User preferences and intentions
+      if (lowerContent.includes('prefer') || lowerContent.includes('like') || lowerContent.includes('want')) {
+        const preference = content.match(/prefer (.+)|like (.+)|want (.+)/i)?.[0];
+        if (preference) {
+          memory.userPreferences.communication = preference;
+        }
+      }
+    } else if (message.type === 'agent_response') {
+      // Agent decisions and insights
+      const decisionPatterns = [
+        /I (will|shall|should|must|need to)/gi,
+        /going to/gi,
+        /decided to/gi,
+        /plan to/gi
+      ];
+
+      for (const pattern of decisionPatterns) {
+        const matches = content.match(pattern);
+        if (matches) {
+          memory.keyDecisions.push({
+            decision: matches[0],
+            context: content.substring(0, 100),
+            timestamp: message.timestamp
+          });
+        }
+      }
+
+      // Important insights (numbered lists, conclusions, summaries)
+      if (content.includes(':') || content.includes('•') || content.includes('-') || content.includes('Conclusion')) {
+        const insightMatch = content.match(/^([^:\n]+)[:\n]\s*(.+)$/m);
+        if (insightMatch) {
+          memory.importantInsights.push({
+            insight: insightMatch[2].substring(0, 100),
+            context: insightMatch[1],
+            importance: content.includes('important') || content.includes('critical') ? 'high' : 'medium'
+          });
+        }
+      }
+    } else if (message.type === 'tool_call') {
+      // Tool usage patterns
+      const toolName = (message as any).toolName || '';
+      if (toolName.includes('File') || toolName.includes('write') || toolName.includes('read')) {
+        memory.codePatterns.push({
+          pattern: `File operation: ${toolName}`,
+          usage: content.substring(0, 50)
+        });
+      }
+    }
+
+    // Extract themes and topics
+    const themes = this.extractThemes(content);
+    themes.forEach(theme => {
+      if (!memory.conversationThemes.includes(theme)) {
+        memory.conversationThemes.push(theme);
+      }
+    });
+
+    // Keep only most important items to prevent memory bloat
+    if (memory.keyDecisions.length > 20) {
+      memory.keyDecisions = memory.keyDecisions.slice(-20);
+    }
+    if (memory.importantInsights.length > 15) {
+      memory.importantInsights = memory.importantInsights.slice(-15);
+    }
+    if (memory.codePatterns.length > 30) {
+      memory.codePatterns = memory.codePatterns.slice(-30);
+    }
+    if (memory.conversationThemes.length > 10) {
+      memory.conversationThemes = memory.conversationThemes.slice(-10);
+    }
+  }
+
+  /**
+   * Extract conversation themes from content
+   */
+  private static extractThemes(content: string): string[] {
+    const themes: string[] = [];
+    const lowerContent = content.toLowerCase();
+
+    const themeKeywords = {
+      'development': ['develop', 'code', 'implement', 'build', 'create'],
+      'testing': ['test', 'verify', 'check', 'debug', 'fix'],
+      'planning': ['plan', 'design', 'architecture', 'structure'],
+      'documentation': ['document', 'explain', 'describe', 'comment'],
+      'optimization': ['optimize', 'improve', 'performance', 'efficiency'],
+      'deployment': ['deploy', 'release', 'publish', 'production'],
+      'troubleshooting': ['error', 'issue', 'problem', 'troubleshoot']
+    };
+
+    for (const [theme, keywords] of Object.entries(themeKeywords)) {
+      if (keywords.some(keyword => lowerContent.includes(keyword))) {
+        themes.push(theme);
+      }
+    }
+
+    return themes;
+  }
+
+  /**
+   * Generate semantic summary using LLM
+   */
+  private static async generateSemanticSummary(
+    messages: Message[],
+    memory: SemanticMemory,
+    _job: Job,
+    taskQueue: Queue,
+    log: Logger
+  ): Promise<string> {
+    if (messages.length === 0) return '';
+
+    // Convert messages to text
+    const textToSummarize = messages
+      .map((msg: Message) => {
+        if ('content' in msg && typeof msg.content === 'string') {
+          return `${msg.type}: ${msg.content}`;
+        }
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n');
+
+    if (textToSummarize.length < 100) {
+      return textToSummarize; // Too short to summarize
+    }
+
+    try {
+      // Create a minimal session context for the summarization tool
+      const tempSession: SessionData = {
+        history: messages,
+        id: 'temp-summarization',
+        identities: [],
+        name: 'Temp Summarization Session',
+        timestamp: Date.now()
+      };
+      const context = this.createToolContext(_job, tempSession, taskQueue, log);
+
+      // Enhanced prompt for semantic summarization
+      const enhancedPrompt = `Please provide a comprehensive but concise summary of this conversation. Focus on:
+
+1. Key decisions made and important outcomes
+2. Technical patterns and code changes discussed
+3. User preferences and requirements identified
+4. Current state and next steps
+5. Important insights or conclusions
+
+Conversation to summarize:
+${textToSummarize}
+
+Provide a structured summary that preserves the semantic meaning while being much more concise than the original.`;
+
+      const summary = await summarizeTool.execute(
+        { text: enhancedPrompt },
+        context,
+      );
+
+      return String(summary);
+    } catch (error) {
+      log.error({ error }, 'Error generating semantic summary, falling back to basic summary');
+      // Fallback to basic summarization
+      return `Conversation summary: ${textToSummarize.substring(0, 200)}... (${messages.length} messages compressed)`;
+    }
+  }
+
+  /**
+   * Apply semantic compression to session history
+   */
+  public static async applySemanticCompression(
+    session: SessionData,
+    _job: Job,
+    taskQueue: Queue
+  ): Promise<void> {
+    if (session.history.length <= config.HISTORY_MAX_LENGTH) {
+      return; // No compression needed
+    }
+
+    const compressed = await this.compressHistorySemantically(session, _job, taskQueue);
+
+    // Create compressed history structure
+    const compressionMessage: Message = {
+      content: `🧠 Semantic Memory Compression:
+${compressed.summary}
+
+Key Decisions: ${compressed.semanticMemory.keyDecisions.length}
+Code Patterns: ${compressed.semanticMemory.codePatterns.length}
+Themes: ${compressed.semanticMemory.conversationThemes.join(', ')}
+Compression Ratio: ${(compressed.compressionRatio * 100).toFixed(1)}%`,
+      id: crypto.randomUUID(),
+      timestamp: Date.now(),
+      type: 'agent_response',
+    };
+
+    // Update session history with compressed version
+    session.history = [
+      compressionMessage,
+      ...compressed.recentMessages
+    ];
+
+    getLogger().info(
+      { sessionId: session.id, originalLength: session.history.length + compressed.semanticMemory.keyDecisions.length },
+      'Applied semantic compression to session history'
+    );
   }
 
   public async deleteSession(sessionId: string): Promise<void> {
@@ -247,7 +523,8 @@ export class SessionManager {
   ): Promise<void> {
     try {
       if (session.history.length > config.HISTORY_MAX_LENGTH && job) {
-        await SessionManager.summarizeHistory(session, job, taskQueue);
+        // 🚀 Use enhanced semantic compression instead of basic summarization
+        await SessionManager.applySemanticCompression(session, job, taskQueue);
       }
 
       await this.pgClient.query(

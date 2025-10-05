@@ -1,4 +1,0 @@
-Ceci est un fichier de test
-Ligne 2 avec du contenu important
-Ligne 3 à modifier
-Ligne 4 finale

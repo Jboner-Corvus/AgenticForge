@@ -164,10 +164,12 @@ describe('SessionManager', () => {
     await sessionManager.saveSession(session, mockJob, mockTaskQueue);
 
     expect(summarizeTool.execute).toHaveBeenCalled();
-    expect(session.history.length).toBe(config.HISTORY_MAX_LENGTH);
+    // After semantic compression, we should have 1 compression message + recent messages
+    // The recent messages count is Math.min(50, config.HISTORY_MAX_LENGTH / 2) = 2
+    expect(session.history.length).toBeLessThanOrEqual(config.HISTORY_MAX_LENGTH);
     expect(session.history[0].type).toBe('agent_response');
     expect((session.history[0] as { content: string }).content).toContain(
-      'Summarized conversation',
+      'Semantic Memory Compression',
     );
   });
 

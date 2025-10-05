@@ -37,6 +37,7 @@ const configSchema = z.object({
       'grok',
       'openrouter',
       'qwen',
+      'zai',
     ])
     .default('gemini'),
   LLM_PROVIDER_HIERARCHY: z
@@ -108,6 +109,12 @@ const configSchema = z.object({
   AGENT_MAX_MALFORMED_RESPONSES: z.coerce.number().default(3), // 🚨 RÉDUIT: 5 -> 3 pour éviter les boucles
   AGENT_MAX_LLM_FAILURES: z.coerce.number().default(3), // Max consecutive LLM failures
   AGENT_FALLBACK_ENABLED: z.boolean().default(true), // Enable fallback responses
+
+  // Z.ai / Claude API simulation configuration
+  ANTHROPIC_BASE_URL: z.string().optional(),
+  ANTHROPIC_AUTH_TOKEN: z.string().optional(),
+  LLM_MODEL_NAME_ZAI: z.string().default('glm-4.6'),
+  LLM_API_KEY_ZAI: z.string().optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;

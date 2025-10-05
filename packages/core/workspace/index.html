@@ -3,10 +3,220 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Page</title>
+    <title>Simple Frontend Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 90%;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .status {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            font-weight: bold;
+        }
+        
+        .status.success {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+        }
+        
+        .button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .button:active {
+            transform: translateY(0);
+        }
+        
+        .counter {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 2rem 0;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        
+        .feature {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .feature h3 {
+            margin-bottom: 0.5rem;
+            color: #ffd700;
+        }
+        
+        .time {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 2rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Hello World</h1>
-    <p>This is a test page</p>
+    <div class="container">
+        <h1>🚀 Simple Frontend Test</h1>
+        <p class="subtitle">Served via Nginx - Static Files Test</p>
+        
+        <div class="status success">
+            ✅ Frontend Loaded Successfully!
+        </div>
+        
+        <div class="time" id="clock">00:00:00</div>
+        
+        <div class="counter" id="counter">0</div>
+        
+        <div>
+            <button class="button" onclick="incrementCounter()">Click Me!</button>
+            <button class="button" onclick="resetCounter()">Reset</button>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <h3>HTML5</h3>
+                <p>Semantic Markup</p>
+            </div>
+            <div class="feature">
+                <h3>CSS3</h3>
+                <p>Modern Styling</p>
+            </div>
+            <div class="feature">
+                <h3>JavaScript</h3>
+                <p>Interactive Logic</p>
+            </div>
+            <div class="feature">
+                <h3>Responsive</h3>
+                <p>Mobile Friendly</p>
+            </div>
+        </div>
+        
+        <div style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.8;">
+            <p>Server: Nginx</p>
+            <p>Protocol: HTTP/HTTPS</p>
+            <p>Cache: Static Files</p>
+        </div>
+    </div>
+    
+    <script>
+        let count = 0;
+        
+        function incrementCounter() {
+            count++;
+            document.getElementById('counter').textContent = count;
+            
+            // Add animation effect
+            const counter = document.getElementById('counter');
+            counter.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                counter.style.transform = 'scale(1)';
+            }, 200);
+        }
+        
+        function resetCounter() {
+            count = 0;
+            document.getElementById('counter').textContent = count;
+        }
+        
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        
+        // Update clock every second
+        setInterval(updateClock, 1000);
+        updateClock(); // Initial call
+        
+        // Log that the page loaded successfully
+        console.log('✅ Frontend loaded successfully via Nginx!');
+        console.log('📁 Static files are being served correctly');
+        console.log('🎨 CSS styles loaded');
+        console.log('⚡ JavaScript is functional');
+        
+        // Test local storage
+        try {
+            localStorage.setItem('test', 'nginx-test');
+            const testValue = localStorage.getItem('test');
+            console.log('💾 Local storage working:', testValue);
+            localStorage.removeItem('test');
+        } catch (e) {
+            console.log('⚠️ Local storage not available:', e);
+        }
+    </script>
 </body>
 </html>

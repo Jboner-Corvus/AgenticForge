@@ -9,7 +9,10 @@ export default defineConfig({
     'src/utils/toolLoader.ts',
     'src/utils/llmProvider.ts',
     'src/modules/llm/LlmKeyManager.ts', // Add this line
+    'src/modules/llm/zaiProvider.ts', // Add Zai provider
     'src/modules/tools/toolRegistry.ts',
+    'src/modules/agent/enhancedWorkingContext.ts',
+    'src/modules/context/tokenOptimizer.ts',
     'src/modules/tools/definitions/**/*.ts',
   ],
   format: ['esm'],
