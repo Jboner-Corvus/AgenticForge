@@ -139,3 +139,7 @@ bourse.yxy
 worker.log
 worker.pid
 .env
+.build-cache
+.claude
+__pycache__
+.qoder
