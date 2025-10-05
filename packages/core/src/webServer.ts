@@ -805,114 +805,129 @@ export async function initializeWebServer(
           'data: {"type":"connection","message":"Connected to stream"}\n\n',
         );
 
+        // Performance optimization: Message buffering for MCP
+        const messageBuffer: string[] = [];
+        let bufferTimeout: NodeJS.Timeout | null = null;
+        const BUFFER_FLUSH_INTERVAL = 50; // 50ms for MCP compatibility
+        const MAX_BUFFER_SIZE = 10;
+
+        const flushBuffer = () => {
+          if (messageBuffer.length > 0 && !responseEnded && !res.writableEnded) {
+            const batchData = messageBuffer.join('\n');
+            safeWrite(`data: ${batchData}\n\n`);
+            messageBuffer.length = 0; // Clear buffer
+            console.log(`[SSE BUFFER] Flushed ${messageBuffer.length} messages`);
+          }
+
+          if (bufferTimeout) {
+            clearTimeout(bufferTimeout);
+            bufferTimeout = null;
+          }
+        };
+
+        const bufferMessage = (data: string, isUrgent: boolean = false) => {
+          if (isUrgent) {
+            // Immediate send for critical messages
+            flushBuffer();
+            safeWrite(data);
+            return;
+          }
+
+          messageBuffer.push(data);
+
+          if (messageBuffer.length >= MAX_BUFFER_SIZE) {
+            flushBuffer();
+          } else if (!bufferTimeout) {
+            bufferTimeout = setTimeout(flushBuffer, BUFFER_FLUSH_INTERVAL);
+          }
+        };
+
         try {
           // Create Redis subscriber for job events
           const subscriber = redisClient.duplicate();
+          console.log(`[SSE SETUP] Creating Redis subscriber for job ${jobId}`);
 
           // Handle client disconnect
           req.on('close', () => {
-            console.log(`Client disconnected from stream for job ${jobId}`);
+            console.log(`[SSE CLEANUP] Client disconnected from stream for job ${jobId}`);
             subscriber.quit();
           });
 
-          // Subscribe to job events
-          await subscriber.subscribe(`job:${jobId}:events`);
+          // Subscribe to both job events and completion channels
+          const eventsChannel = `job:${jobId}:events`;
+          const completionChannel = `job:${jobId}:completed`;
 
+          console.log(`[SSE SETUP] Subscribing to channels: ${eventsChannel}, ${completionChannel}`);
+          await subscriber.subscribe(eventsChannel, completionChannel);
+          console.log(`[SSE SETUP] Successfully subscribed to Redis channels`);
+
+          // SINGLE unified message handler for all channels
           subscriber.on('message', (channel, message) => {
             try {
               // Check if response is already ended
               if (responseEnded || res.writableEnded) {
+                console.log(`[SSE SKIP] Response ended, skipping message from ${channel}`);
                 return;
               }
 
-              // Parse the message
+              console.log(`[SSE MESSAGE] Received message from channel: ${channel}`);
               const eventData = JSON.parse(message);
+              console.log(`[SSE MESSAGE] Processing message type: ${eventData.type} for job ${jobId}`);
 
-              // CRITICAL FIX: Always forward all non-agent_thought messages to frontend
-              if (eventData.type === 'agent_thought') {
-                console.log(
-                  `[FILTER] Skipping agent_thought message for job ${jobId}`,
-                );
-                return;
-              }
-
-              // CRITICAL DEBUG: Log all message types
-              console.log(`[SSE CRITICAL] Processing message type: ${eventData.type} for job ${jobId}`);
-              console.log(`[SSE CRITICAL] Message content:`, JSON.stringify(eventData).substring(0, 200));
-
-              // CRITICAL FIX: Always send agent_response messages immediately
-              if (eventData.type === 'agent_response') {
-                console.log(`[SSE CRITICAL] FOUND AGENT RESPONSE - IMMEDIATE FORWARD:`, eventData.content);
+              // Handle completion channel messages
+              if (channel === completionChannel) {
+                console.log(`[SSE COMPLETION] Processing completion message for job ${jobId}`);
                 safeWrite(`data: ${JSON.stringify(eventData)}\n\n`);
-                console.log(`[SSE CRITICAL] Agent response sent to frontend successfully`);
-                return;
-              }
-
-              // Special handling for chat_header_todo messages - forward them to frontend
-              if (eventData.type === 'chat_header_todo') {
-                console.log(
-                  `[FORWARD] Forwarding chat_header_todo message for job ${jobId}`,
-                );
-                // Send the event data as-is for chat header todo messages
-                safeWrite(`data: ${JSON.stringify(eventData)}\n\n`);
-              } else {
-                // Send the event data for other message types
-                console.log(`[SSE] Sending message type: ${eventData.type} to frontend`);
-                safeWrite(`data: ${JSON.stringify(eventData)}\n\n`);
-              }
-
-              // If this is a completion event, end the stream
-              if (
-                eventData.type === 'completed' ||
-                eventData.type === 'error'
-              ) {
-                safeWrite(
-                  'data: {"type":"stream_end","message":"Stream closed"}\n\n',
-                );
+                safeWrite('data: {"type":"stream_end","message":"Job completed"}\n\n');
                 safeEnd();
                 subscriber.quit();
-              }
-            } catch (err) {
-              console.error('Error processing stream message:', err);
-              if (!responseEnded && !res.writableEnded) {
-                safeWrite(
-                  `data: {"type":"error","message":"Error processing message"}\n\n`,
-                );
-              }
-            }
-          });
-
-          // Also listen for job completion through another channel if needed
-          const jobCompletionChannel = `job:${jobId}:completed`;
-          await subscriber.subscribe(jobCompletionChannel);
-
-          subscriber.on('message', (channel, message) => {
-            if (channel === jobCompletionChannel) {
-              // Check if response is already ended
-              if (responseEnded || res.writableEnded) {
                 return;
               }
 
-              try {
-                const completionData = JSON.parse(message);
-                safeWrite(`data: ${JSON.stringify(completionData)}\n\n`);
-                safeWrite(
-                  'data: {"type":"stream_end","message":"Stream closed"}\n\n',
-                );
-                safeEnd();
-                subscriber.quit();
-              } catch (err) {
-                console.error('Error processing completion message:', err);
-                if (!responseEnded && !res.writableEnded) {
-                  safeWrite(
-                    `data: {"type":"error","message":"Error processing completion"}\n\n`,
-                  );
+              // Handle events channel messages
+              if (channel === eventsChannel) {
+                // CRITICAL FIX: Always forward all non-agent_thought messages to frontend
+                if (eventData.type === 'agent_thought') {
+                  console.log(`[SSE FILTER] Skipping agent_thought message for job ${jobId}`);
+                  return;
+                }
+
+                // CRITICAL FIX: Always send agent_response messages immediately (urgent for MCP)
+                if (eventData.type === 'agent_response') {
+                  console.log(`[SSE CRITICAL] FOUND AGENT RESPONSE - IMMEDIATE FORWARD:`, eventData.content?.substring(0, 100));
+                  bufferMessage(`data: ${JSON.stringify(eventData)}\n\n`, true); // Urgent
+                  console.log(`[SSE SUCCESS] Agent response sent to frontend successfully`);
+                  return;
+                }
+
+                // Special handling for chat_header_todo messages
+                if (eventData.type === 'chat_header_todo') {
+                  console.log(`[SSE TODO] Forwarding chat_header_todo message for job ${jobId}`);
+                  bufferMessage(`data: ${JSON.stringify(eventData)}\n\n`);
+                } else {
+                  // Send all other message types (buffered for performance)
+                  console.log(`[SSE FORWARD] Sending message type: ${eventData.type} to frontend`);
+                  bufferMessage(`data: ${JSON.stringify(eventData)}\n\n`);
+                }
+
+                // If this is a completion event, end the stream
+                if (eventData.type === 'completed' || eventData.type === 'error' || eventData.type === 'close') {
+                  console.log(`[SSE COMPLETION] Ending stream due to event type: ${eventData.type}`);
+                  flushBuffer(); // Flush any remaining buffered messages
+                  safeWrite('data: {"type":"stream_end","message":"Stream closed"}\n\n');
                   safeEnd();
                   subscriber.quit();
                 }
               }
+            } catch (err) {
+              console.error(`[SSE ERROR] Error processing message from ${channel}:`, err);
+              if (!responseEnded && !res.writableEnded) {
+                safeWrite(`data: {"type":"error","message":"Error processing message: ${err}"}\n\n`);
+              }
             }
           });
+
+          console.log(`[SSE READY] Stream setup complete for job ${jobId}`);
         } catch (error) {
           console.error('Error in SSE stream:', error);
           if (!responseEnded && !res.writableEnded) {
