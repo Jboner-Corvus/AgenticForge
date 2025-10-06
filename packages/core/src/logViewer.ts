@@ -7,6 +7,7 @@ interface LogEntry {
   level: string;
   type: string;
   message: string;
+  msg: string; // Champ Pino
   jobId: string;
   sessionId: string;
   metrics?: any;
@@ -177,9 +178,11 @@ export class LogViewer {
       const timestamp = new Date(log.timestamp).toLocaleString();
       const level = log.level.toUpperCase().padEnd(5);
       const type = log.type ? `[${log.type}]` : '';
-      
-      let message = `[${timestamp}] ${level} ${type} ${log.message}`;
-      
+
+      // Utiliser le champ 'msg' de Pino, ou 'message' en fallback
+      const messageContent = log.msg || log.message || 'No message';
+      let message = `[${timestamp}] ${level} ${type} ${messageContent}`;
+
       if (colorize) {
         const colors = {
           debug: '\x1b[36m',    // Cyan
@@ -189,11 +192,11 @@ export class LogViewer {
           fatal: '\x1b[35m',    // Magenta
           reset: '\x1b[0m'      // Reset
         };
-        
+
         const color = colors[log.level as keyof typeof colors] || colors.reset;
         message = `${color}${message}${colors.reset}`;
       }
-      
+
       console.log(message);
 
       // Afficher les détails supplémentaires
@@ -212,7 +215,11 @@ export class LogViewer {
       if (showMetrics && log.metrics) {
         console.log(`  Metrics: uptime=${log.metrics.uptime}ms, errors=${log.metrics.errors}, warnings=${log.metrics.warnings}`);
       }
-      
+
+      if (log.result) {
+        console.log(`  Result: ${JSON.stringify(log.result, null, 2)}`);
+      }
+
       if (log.error) {
         console.log(`  Error: ${log.error.message}`);
       }

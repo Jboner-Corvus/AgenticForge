@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const { TestUtils } = require('./test_utils.cjs');
 
 /**
  * AgenticForge Playwright Browser Test
@@ -10,6 +11,8 @@ class PlaywrightBrowserTester {
         this.browser = null;
         this.context = null;
         this.page = null;
+        this.testUtils = new TestUtils();
+        this.testName = 'playwright_browser';
         this.metrics = {
             screenshots: [],
             automations: [],
@@ -54,28 +57,18 @@ class PlaywrightBrowserTester {
     }
 
     async takeScreenshot(name, description) {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `playwright_${timestamp}_${name}.png`;
+        const filename = await this.testUtils.takeScreenshot(this.page, this.testName, description);
 
-        try {
-            await this.page.screenshot({
-                path: filename,
-                fullPage: true
-            });
-
+        if (filename) {
             this.metrics.screenshots.push({
                 filename,
                 name,
                 description,
                 timestamp: Date.now()
             });
-
-            console.log(`📸 Screenshot: ${filename}`);
-            return filename;
-        } catch (error) {
-            console.error(`❌ Erreur screenshot ${name}:`, error.message);
-            return null;
         }
+
+        return filename;
     }
 
     async navigateToApp() {
@@ -280,7 +273,13 @@ Timeout: 30 secondes maximum`;
             const results = await this.verifyPlaywrightResults();
             const finalAnalysis = await this.performFinalAnalysis();
 
+            // Attendre un peu pour les logs et les afficher
+            await this.testUtils.waitForLogsAndDisplay('recent', 2000);
+
             console.log('\n🎉 TEST PLAYWRIGHT BROWSER TERMINÉ AVEC SUCCÈS !');
+
+            // Afficher le résumé des screenshots
+            this.testUtils.displayScreenshotsSummary(this.testName);
 
             return {
                 success: results.automationExecuted,

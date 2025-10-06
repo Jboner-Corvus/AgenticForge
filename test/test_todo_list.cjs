@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+const { TestUtils } = require('./test_utils.cjs');
 
 /**
  * AgenticForge Todo List Test - Version Optimisée
@@ -10,6 +11,8 @@ class TodoListTester {
         this.browser = null;
         this.context = null;
         this.page = null;
+        this.testUtils = new TestUtils();
+        this.testName = 'todo_list';
         this.metrics = {
             screenshots: [],
             todos: [],
@@ -54,28 +57,18 @@ class TodoListTester {
     }
 
     async takeScreenshot(name, description) {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `todo_${timestamp}_${name}.png`;
+        const filename = await this.testUtils.takeScreenshot(this.page, this.testName, description);
 
-        try {
-            await this.page.screenshot({
-                path: filename,
-                fullPage: true
-            });
-
+        if (filename) {
             this.metrics.screenshots.push({
                 filename,
                 name,
                 description,
                 timestamp: Date.now()
             });
-
-            console.log(`📸 Screenshot: ${filename}`);
-            return filename;
-        } catch (error) {
-            console.error(`❌ Erreur screenshot ${name}:`, error.message);
-            return null;
         }
+
+        return filename;
     }
 
     async navigateToApp() {
@@ -261,7 +254,13 @@ Utilise tes vrais outils MCP pour faire ces tâches concrètes. Montre les résu
             const results = await this.verifyTodoResults();
             const finalAnalysis = await this.performFinalAnalysis();
 
+            // Attendre un peu pour les logs et les afficher
+            await this.testUtils.waitForLogsAndDisplay('recent', 2000);
+
             console.log('\n🎉 TEST TODO LIST TERMINÉ AVEC SUCCÈS !');
+
+            // Afficher le résumé des screenshots
+            this.testUtils.displayScreenshotsSummary(this.testName);
 
             return {
                 success: results.processed,

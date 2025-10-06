@@ -13,6 +13,7 @@ export default defineConfig({
     'src/modules/tools/toolRegistry.ts',
     'src/modules/agent/enhancedWorkingContext.ts',
     'src/modules/context/tokenOptimizer.ts',
+    'src/logViewer.ts', // Add log viewer
     'src/modules/tools/definitions/**/*.ts',
   ],
   format: ['esm'],
